@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+  ],
+  "completed_at": "2026-10-23T13:19:46.097Z",
+  "dispatched_at": "2026-10-23T12:56:12Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_view_serves_every_view.py",
+      "line": "268",
+      "severity": "non-blocking",
+      "text": "non-blocking: this docstring sentence was rewritten outside the dispatched write paths; the edit is justified (it repoints a reference to the reckon.mcp.CREW_TOOL_VIEWS symbol this diff deletes) and touches no code or assertion, but the node was fenced away from this file."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": "1656",
+      "severity": "non-blocking",
+      "text": "non-blocking: _accepted_op_verbs derives the accepted verbs from the documentation mapping _OP_VOCAB rather than the dispatch owner reckon/_store.py:_OP_DISPATCH, so it admits 'push' for any document type although only project_state.py:2451 dispatches it for a sprint; ops=[{'op':'push'}] against a plan passes the pre-flight and still reaches storage to be refused there."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "249",
+      "severity": "non-blocking",
+      "text": "non-blocking: _view_refusal returns {'detail': ...} while the plan and roadmap reads' own ViewRequestError handler at reckon/mcp.py:1709 returns error_response (message/hint/operation), so an invalid view answers a different response shape depending on which path refuses it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'Refuse a malformed reckon MCP request before any file is opened'; the pre-flight now sits at the head of each of the four tools (reckon/mcp.py:1127 _read_plan_tool calls mcp_views.normalize_view, reckon/mcp.py:2086 _roadmap_tool calls normalize_roadmap_view, reckon/mcp.py:2279 _crew calls _crew_argument_refusal, reckon/mcp_edit_plan.py:1131 calls _refuse_unknown_op_verbs), and under the open-blocking stub every malformed call is refused with the stub unreached, so the stated deliverable is present.\nVERDICT done_when: the done_when names three refusals under an open-blocking stub plus the base arm, the seven-file gate and the pre-existing width failure; gate.log records '1 failed, 148 passed in 100.49s (0:01:40)' EXIT=1 at d98826f04, base-arm.log records '5 failed, 1 passed' at base 3a985827, and negative-control.log opens with the head arm '10 passed' EXIT=0 \u2014 the measure the done_when asserts is the one the gate ran.\nVERDICT write_paths: the dispatched fence names reckon/mcp.py, reckon/mcp_edit_plan.py, the new test file, the landing fragment and an unused figure directory; the manifest's orientation_write_paths widens that to reckon/mcp_views.py, reckon/crew/query.py and tests/test_crew_view_serves_every_view.py, and git diff --name-status 3a985827..d98826f04 names seven paths, six of them inside the dispatched set and one (the docstring edit); the two source additions the review rounds named are accounted for in evidence_inputs.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081540567684-a-malformed-request-is-refused-before-storage/manifest.md; status complete, tests: is the literal seven-target pytest command the gate.log header repeats, failure_attribution discloses the width test as pre-existing on main, negative_control_log is one bare path whose last line is EXIT=1, and follow_ons (4) names the out-of-scope docstring edit rather than hiding it.\nVERDICT diff: read commit by commit against base 3a985827baf90836c57d16ab069ec38c3cb80e24 \u2014 eea81d325b5fda4e2f9843ff13c10123700efebb (the pre-flights), 42a4eb7fc8d8c6df31658cf0de952db2fd060ae7 (admits every live field the view serves), 319a04730 and dd8c7e41b (the one-owner live vocabulary), 9fe32b93e and 68f81e7b6 (a view judged by the read that serves it), d98826f04 (the control log reordered); the four views and the op vocabulary are each checked through the owner's own validator, and no reckon/roadmap.py change appears.\nCALL_SITES: reckon/mcp.py:1127, reckon/mcp.py:2086, reckon/mcp.py:2279, reckon/mcp_edit_plan.py:1131, reckon/mcp_views.py:3574, reckon/mcp_views.py:3865\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: every tool's argument check now precedes its first read (reckon/mcp.py:1127, reckon/mcp.py:2086, reckon/mcp.py:2279, reckon/mcp_edit_plan.py:1131) and negative-control.log arm 1 shows every refused call reaching the stub once the checks move after the read, which is the stated deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log ('1 failed, 148 passed in 100.49s', EXIT=1), base-arm.log ('5 failed, 1 passed', EXIT=1) and negative-control.log are all on disk with revision/tree/command headers, and the single gate failure is the pre-existing reckon/roadmap.py size the done_when declares.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: six of the seven changed paths are inside the declared write paths, but tests/test_crew_view_serves_every_view.py is not one of them \u2014 the dispatched fence lists reckon/mcp.py, reckon/mcp_edit_plan.py, the new test file, the fragment and the figure directory \u2014 so the one-sentence docstring edit the node's own follow_ons (4) flags is a genuine out-of-scope write.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows four independent arms each reddening a distinct guard \u2014 the moved pre-flight (6 failures), the narrowed live projection (1), the declaration missing COMMON_RUN_FIELDS (2) and the case-sensitive view match (1) \u2014 against a head arm that opens the log at '10 passed' EXIT=0, and tests/test_a_malformed_request_is_refused_before_storage.py:85 compares the declared set against classify_pointer's own output rather than against the input passed in.\nSCORE fit: 16\nJUSTIFICATION fit: the added helpers follow the surrounding style and introduce no forbidden name, but reckon/mcp.py:249 _view_refusal answers 'detail' where the plan and roadmap reads' own ViewRequestError handler (reckon/mcp.py:1709) answers error_response's 'message'/'hint', so one error carries two shapes.\nSCORE reuse: 16\nJUSTIFICATION reuse: the view and field checks delegate to their owners (reckon/mcp_views.py:3750 crew_view_name reads CREW_VIEWS, reckon/mcp_views.py:3546 normalize_roadmap_view wraps normalize_view, reckon/crew/query.py:274 LIVE_FIELD_VOCABULARY is the one declaration), while reckon/mcp_edit_plan.py:1656 _accepted_op_verbs derives the verb set from the documentation dict _OP_VOCAB rather than the store's dispatch owner.\nFINDING tests/test_crew_view_serves_every_view.py:268 non-blocking: this docstring sentence was rewritten outside the dispatched write paths; the edit is justified (it repoints a reference to the reckon.mcp.CREW_TOOL_VIEWS symbol this diff deletes) and touches no code or assertion, but the node was fenced away from this file and should have requested a scope change.\nFINDING reckon/mcp_edit_plan.py:1656 non-blocking: _accepted_op_verbs derives the accepted verbs from the documentation mapping _OP_VOCAB rather than the dispatch owner reckon/_store.py:_OP_DISPATCH, so it admits 'push' for any document type although only project_state.py:2451 dispatches it for a sprint; ops=[{'op':'push'}] against a plan therefore passes the pre-flight and still reaches storage to be refused there.\nFINDING reckon/mcp.py:249 non-blocking: _view_refusal returns {'detail': ...} while the plan and roadmap reads' own ViewRequestError handler at reckon/mcp.py:1709 returns error_response (message/hint/operation), so an invalid view answers a different response shape depending on which path refuses it; the crew read's own path also uses 'detail', so the divergence is confined to the plan and roadmap tools.",
+  "review_run_id": "r-20261023T125338015373-review-of-a-malformed-request-is-refused-before-storage-d98826f047d1",
+  "reviewed_base_sha": "3a985827baf90836c57d16ab069ec38c3cb80e24",
+  "reviewed_head_sha": "d98826f047d1fd761d6cc1d10e5b544fb0c56f57",
+  "reviewed_run_id": "r-20261023T081540567684-a-malformed-request-is-refused-before-storage",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T13:20:38.615140+00:00",
+  "total": 102
+}
