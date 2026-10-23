@@ -580,13 +580,12 @@ def compose_repair_node(
     Returns ``None`` when the review carries no blocking finding: a clean review
     is not work, and neither is a round whose findings are all non-blocking or
     all disposed — composing an empty node for either would dispatch a repair
-    with
-    nothing to do. When it carries blocking findings, the returned mapping names
-    the node, its brief, its write scope, the findings the record left unmarked
-    and the round it belongs to, so a caller can
-    dispatch it or print it without re-deriving any of them. The reviewed
-    run's node id names the node when the record carries one, so the repair
-    reads as work on the run rather than on the review.
+    with nothing to do. When it carries blocking findings, the returned mapping
+    names the node, its brief, its write scope, the findings the record left
+    unmarked and the round it belongs to, so a caller can dispatch it or print
+    it without re-deriving any of them. The reviewed run's node id names the
+    node when the record carries one, so the repair reads as work on the run
+    rather than on the review.
 
     ``suite_command`` is the reviewed run's own recorded suite command, when it
     had one. A non-empty command adds both suite observations to the done-when —

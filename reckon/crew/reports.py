@@ -824,9 +824,8 @@ def _coerce_list_field(value: Any) -> Any:
 # prose, so it is refused naming the field and the separator instead of being
 # read as the one entry it is not. The entry-shaped test keeps a semicolon
 # inside a sentence — a blocker or a non-blocking finding — from being mistaken
-# for a join,
-# because the token after it there is a word and neither a path nor an
-# identifier.
+# for a join, because the token after it there is a word and neither a path nor
+# an identifier.
 _JOINED_LIST_SEPARATOR = ";"
 _PATH_LIKE_TOKEN = re.compile(r"[A-Za-z0-9_.-]+\.[A-Za-z0-9]+")
 _COMMIT_IDENTIFIER_TOKEN = re.compile(r"[0-9a-fA-F]{7,40}")
@@ -1720,11 +1719,10 @@ def _plan_label_findings(
 # without the key rather than defaulted, which keeps a judgement nobody made
 # out of the record — and leaves the gate that reads the record unable to tell
 # a blocking defect from a non-blocking finding. Judging the record at the
-# write, while
-# the reviewer still holds its turn, is what lets the reviewer restate the
-# severities instead of costing a corrective node hours later. The record is
-# read through the review store's own reader so this check and every other
-# consumer see one parse of one file.
+# write, while the reviewer still holds its turn, is what lets the reviewer
+# restate the severities instead of costing a corrective node hours later. The
+# record is read through the review store's own reader so this check and every
+# other consumer see one parse of one file.
 
 _HEAD_KEYED_RECORD_NAME = re.compile(r"\.at-[0-9A-Fa-f]{7,64}\Z")
 
