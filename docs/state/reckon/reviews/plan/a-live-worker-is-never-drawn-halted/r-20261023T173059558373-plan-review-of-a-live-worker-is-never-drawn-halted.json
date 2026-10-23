@@ -1,0 +1,75 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T18:10:21.214Z",
+  "dispatched_at": "2026-10-23T17:54:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:325",
+      "id": "reasoning-1",
+      "reason": "a node told to find one remover across three runs will spend part of its budget on a run that never exhibited the defect, and the section's evidence base is two runs, not three.",
+      "text": "\u00a713 states \"Measured 2026-10-23 on three runs\" ending \"at launch with `worker did not spawn: CrewError: no live run '<run>'`\", but the middle cited run `r-20261023T094330660097-plan-review-of-a-review-gate-judges-what-it-covers` records no launch failure at all: its watch rows run `dispatched \u2192 queued \u2192 dispatched \u2192 working \u2192 queued \u2192 abandoned \u2192 discarded`, and its abandoned row's reason is the lane-allowance refusal \"the lane's router grants 0 extra workers to session efd0ee8c\u2026; admission headroom is 6\" (`~/.config/reckon/crew/watch/reckon-18dc8a86709b.events`), not a missing pointer",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:325",
+      "id": "anchors_resolve-1",
+      "reason": "the records \u00a713 names cannot name a remover, so \u00a713 must instead point the node at where a launch failure does survive (the watch stream's `dispatched \u2192 abandoned launch-failed` transition and the pointer-side records the relaunch did not overwrite), or the node's required evidence is unobtainable by the route given.",
+      "text": "\u00a713 directs the node to \"each run directory's `supervisor.json`, `attempt-1-exit.json` and `tree-snapshot.json`\" and to \"the entries for those run ids in `admission-verdicts.jsonl`\", but at HEAD each cited run directory holds a single completed attempt \u2014 `attempt-1-exit.json` for `r-20261023T140534758900-a-producer-off-the-fleet-node-gives-up-its-seat` reads `launched_at: 2026-10-23T15:02:17Z`, `ended_during: working`, `exit_code: 0`, which is the *successful relaunch* the section itself dates at 15:02:13Z, and the failing launch's own exit record was overwritten by it \u2014 while `admission-verdicts.jsonl` (428 lines, covering 2026-10-23T15:58:35Z\u201317:55:43Z) contains no entry naming any of the three run ids; the string `no live run` occurs zero times in both the run directories and the watch stream",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:325",
+      "id": "wiring-1",
+      "reason": "if the remover resolves into `runs.py`, the coordinator's declared independence invites a concurrent dispatch that collides with \u00a74 and \u00a79 on a shared file; the section should fence the remover's home or declare the dependency it may acquire.",
+      "text": "\u00a713 closes with \"\u00a713 writes no file another section writes, so it is independent of every other section\", yet its write paths are `reckon/crew/queue_admission.py` plus \"the module the remover lives in if it is another one (named in the manifest)\", and `reckon/crew/runs.py` is both part of the removal machinery \u00a713 cites (`write_handover`/`clear_handover`, `list_live`) and a write path already assigned to \u00a74 and \u00a79",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:325",
+      "id": "done_when-1",
+      "reason": "a done-when whose success path is unreachable on its recorded evidence makes the no-change report the node's only reachable outcome, so the section should either cite runs whose records show a remover or restate the gate around the failure it can actually prove.",
+      "text": "\u00a713's done-when requires the manifest to \"name the remover with record lines from at least two of the three runs\", but as recorded none of those runs carries a remover, so the gate can only be met through the section's fallback (\"the node reports that with the records it read and lands no product change\")",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a47d6b3fdd13d61d1be0605b53ec32fa0b7a72d9c5139bc426cf59e7d728d189",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T173059558373-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "172eec929ee3bfb37bb7fe07b49f6aefd1b06a46",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the per-run records \u00a713 names are the successful relaunch's, not the failing launch's: each cited run's `attempt-1-exit.json` reads `exit_code: 0`, `ended_during: working`, and `admission-verdicts.jsonl` at HEAD holds no entry for any of the three cited run ids.",
+    "done_when": "a finding \u2014 \u00a713's done-when requires the manifest to \"name the remover with record lines from at least two of the three runs\", but no record it names carries a remover, so the only reachable outcome is the section's own fallback (\"lands no product change\").",
+    "evidence_paths": "pass \u2014 \u00a713 names the gate log and repository paths (`queue_admission.py`, the new test); no session scratchpad, node-local temporary path, or non-durable location for the evidence it asks for.",
+    "naming": "pass \u2014 \u00a713 introduces no plan labels, stage names, ticket numbers or changelog prose into symbols, files or comments.",
+    "reasoning": "a finding \u2014 only two of the three runs \u00a713 cites as measured instances of the launch failure actually record one, and none of the three records the pointer removal the section's mechanism asserts.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable (an admitted launch's pointer survives until its supervisor reads it) and one gate.",
+    "wiring": "a finding \u2014 \u00a713 declares itself independent of every other section, but leaves its write scope open to \"the module the remover lives in if it is another one\", and a plausible home for that remover (`reckon/crew/runs.py`) is a file this plan already assigns to \u00a74 and \u00a79."
+  },
+  "section_digests": {
+    "_document": "77f3c30ac1fae1a90bce2394ee13207c57973da1594d680d7cacc4b40bbe201b",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "928be57771c429d0e8372b33d7a14af3b1fdd4ccf96b21742f9039579d68e340",
+    "s13": "4bb89603ea485df0aadf4ea1c4f0442186c945b438caed8917c83301bbbc44c4",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "1fbaee6774bb925bffb02f59d8d4442ab2ecbdce493922561ca3818683ca89fe",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T18:20:25.343761+00:00"
+}
