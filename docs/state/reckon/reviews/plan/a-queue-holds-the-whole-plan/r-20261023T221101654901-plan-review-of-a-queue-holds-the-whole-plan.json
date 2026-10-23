@@ -1,0 +1,112 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:25:50.634Z",
+  "dispatched_at": "2026-10-23T22:12:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:64",
+      "id": "wiring-1",
+      "reason": "one edge (s15 depends on s5) or one sentence in \u00a715 prevents a node from implementing the fallback against a narrower notion of a named route than \u00a75 relies on.",
+      "text": "\u00a75 makes \"a route set by `crew queue edit`\" a named route that \"\u00a715's fallback never moves\", but the plan's `plan-section-depends-on` gives s15 only s4, s7 and s8, so a node implementing \u00a715 from its own text would treat only `--local`, `--backend` and `--model` as dispatcher-named and would fall back a route the coordinator set by edit.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "done_when-1",
+      "reason": "the cycle refusal is the section's only protection against a deadlocked queue, and as written the node will either invent an undeclared batch API or drop the guard, leaving it unproved.",
+      "text": "\u00a78's arm \"a test queues three requests whose `--after` refs form a cycle, and the batch is refused naming all three, with nothing stored\" cannot be built as written: `--after <request-id>` must name an existing request (the same section refuses \"a wait that names ... a request that does not exist\"), a request id is the run id a dispatch assigns at queue time, and no batch queue surface is declared, so three new requests cannot reference one another in one batch.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "reasoning-1",
+      "reason": "an implementer must import a private helper or invent a second landed predicate, which is exactly the drift \u00a78 closes for manifest statuses by naming one vocabulary.",
+      "text": "\u00a78 requires \"landing, not promotion of an unreviewed head, ... satisfies a wait\" and \"Even a `complete` manifest satisfies a wait only once its run has landed\", yet it names no reader of a run's landed state; the only reader in the tree is the private `_promoted_run_ids` (`reckon/crew/recovery_repair_dispatch.py:550`), which is not in \u00a78's write paths.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "878245857063876f30321fd445b0889fc33c2ec6706fdc6bf6d95fc8160847a1",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 28,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-23T22:25:43.890029+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-23T22:26:10.019680+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T22:26:38.668379+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:26:10.019680+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:26:38.668379+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:25:43.890029+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v28.json",
+  "review_run_id": "r-20261023T221101654901-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "59087d9ef267c1da896b103c8f35c619bd10faba",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file and symbol \u00a75 and \u00a78 cite resolves in the tree: `_launch_queued` (`reckon/crew/queue_admission.py:158`), `_node_from_pointer` (`:106`), `_store_brief` (`reckon/crew/dispatch_admission.py:2241`), `_brief_digest` (`:2204`), `parse_manifest` (`reckon/crew/reports.py:317`), `TERMINAL_MANIFEST_STATUSES` (`:126`), `parse_plan_ref` (`reckon/_schema.py:276`), `--brief` (`reckon/crew_dispatch_commands.py:1088`), `TaskNode` (`reckon/crew/node.py:724`).",
+    "done_when": "a finding \u2014 \u00a78's cycle arm (\"queues three requests whose `--after` refs form a cycle, and the batch is refused\") cannot be constructed from the `--after` surface \u00a78 itself declares.",
+    "evidence_paths": "pass \u2014 \u00a75's logs are declared under the run directory and both sections' write paths are repository paths plus a new test file; nothing lands in a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 neither section carries a plan label, stage name, ticket number or version tag into a symbol, a file or a comment, and neither writes changelog prose; `steering.md` and `RUN_DELIVERED_STATUSES` are mechanism names.",
+    "reasoning": "a finding \u2014 \u00a78 makes a wait resolve only once the upstream run \"has landed\" but names no reader of landed state, so the section's own vocabulary rule is not carried through to the landing predicate.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable (the launch-time steering file and the verbs that edit it), and \u00a78 carries one (the cross-plan DAG wait); \u00a75's `reprioritise` takes its semantics from \u00a74 and its `drop` takes over `crew discard`'s existing behaviour.",
+    "wiring": "a finding \u2014 \u00a75 defines a route set by `crew queue edit` as a \"named route\" that \"\u00a715's fallback never moves\", but `plan-section-depends-on` (snapshot line 22) gives s15 the edges s4, s7 and s8 and none to s5, so \u00a715 can be dispatched without the definition it consumes."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "1b33e80f28eb603b08b8c69c1883ff5306cbce5dead0f58256dd31f3184439b3",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "8ecd4062895074b8eeb19c5d84d54a0052f391b64bbfc75979c4b2cec8a022b4",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:25:28.440739+00:00"
+}
