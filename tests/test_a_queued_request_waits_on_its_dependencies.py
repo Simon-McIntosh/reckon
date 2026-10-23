@@ -489,6 +489,62 @@ def test_a_dispatch_of_a_section_without_waits_queues_it_plainly(
     assert not pointers[0].get("waits")
 
 
+def test_a_working_run_redispatch_keeps_its_phase_and_its_pool(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run already launched is answered, never re-read as a waiting request.
+
+    The waits decide a request that has not launched; a pointer already
+    ``starting`` is the record of a launch that happened. Reading its waits and
+    writing the hold over it would take that run off its lane and leave it
+    stored as a request nothing is running, so the re-dispatch answers the run
+    that exists and its pointer is left exactly as it stands.
+    """
+    _declare_section_wait(
+        dispatch_repo,
+        section="dispatch",
+        refs=[f"{PLAN}#upstream"],
+        sections=("upstream",),
+    )
+    hold_tests._configure(dispatch_repo, monkeypatch, session_slots=4)
+    hold_tests._stub_hold(monkeypatch, offered_local=True)
+
+    first = hold_tests._invoke(dispatch_repo, node="working-redispatch")
+    assert first.exit_code == 0, first.output
+    pointers = runs.list_live(project=hold_tests.PROJECT)
+    assert len(pointers) == 1
+    assert pointers[0]["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
+
+    # The request the first dispatch stored is then launched by hand, which is
+    # the state the re-dispatch has to leave alone.
+    run_id = str(pointers[0]["run_id"])
+
+    def launch(pointer: dict) -> dict:
+        launched = {
+            key: value
+            for key, value in pointer.items()
+            if key not in ("waits", "waits_at")
+        }
+        return {**launched, "phase": "starting", "backend": hold_tests.LOCAL}
+
+    runs._mutate_pointer(run_id, launch)
+
+    second = hold_tests._invoke(dispatch_repo, node="working-redispatch")
+    assert second.exit_code == 0, second.output
+
+    live = runs.list_live(project=hold_tests.PROJECT)
+    assert len(live) == 1, live
+    assert live[0]["phase"] == "starting"
+    assert live[0]["backend"] == hold_tests.LOCAL
+    assert str(live[0]["run_id"]) == run_id
+    # The hold writes its refs and the time it wrote them in one write, so a
+    # pointer carrying no ``waits_at`` is one the hold never touched, whatever
+    # the refs it carried before.
+    assert not live[0].get("waits_at")
+    assert not live[0].get("waits")
+    assert live[0]["phase"] not in queue_admission.WAITING_UPSTREAM_PHASES
+
+
 # ── the watch line knows the two phases ──────────────────────────────────────
 #
 # A request that is stored and not launched has to be drawable, or a held
@@ -515,9 +571,17 @@ def test_the_watch_line_reads_both_waiting_phases(
         "session": SESSION,
     }
     reading = recovery_classification.classify_pointer(record, now_seconds=0.0)
-    assert reading["classification"] == phase
-    assert recovery_vocabulary.RECOVERY_VERBS[phase] == verb
+
+    # The classifier is read against what it must publish for this phase -- the
+    # verb its own vocabulary maps the word to, and the remedy that verb
+    # produces -- rather than against the phase this test wrote into the record,
+    # which would only echo the input back. A classifier that echoed any word
+    # would still have to map it to this arm's verb, and the two arms' verbs
+    # differ, so an echo of the wrong phase fails here.
+    classification = str(reading["classification"])
+    assert recovery_vocabulary.RECOVERY_VERBS.get(classification) == verb
     assert remedy in str(reading.get("next_action") or "")
+    assert recovery_vocabulary.RECOVERY_VERBS[phase] == verb
 
 
 def test_only_the_unreleasable_waiting_phase_is_a_duty() -> None:

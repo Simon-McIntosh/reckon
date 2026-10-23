@@ -29,6 +29,17 @@ FENCES = ("scope", "time", "evidence", "delivery")
 
 INTERRUPTED_RUN_PHASE = "interrupted"
 
+# The request phases: the one a request carries while it waits for a lane slot,
+# the two it carries while it waits on another section, and the tuple every
+# reader filters on. They live in this leaf so the admission pass that writes
+# them and the recovery readers that draw them take the same words from one
+# import without either reaching the other: ``reckon.crew.node`` imports
+# neither, so both can name it.
+QUEUED_PHASE = "queued"
+AWAITING_UPSTREAM_PHASE = "awaiting-upstream"
+BLOCKED_UPSTREAM_PHASE = "blocked-upstream"
+WAITING_UPSTREAM_PHASES = (AWAITING_UPSTREAM_PHASE, BLOCKED_UPSTREAM_PHASE)
+
 _TERMINAL_RUN_PHASES = frozenset(
     {"complete", "failed", "stopped", INTERRUPTED_RUN_PHASE}
 )

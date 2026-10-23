@@ -36,25 +36,31 @@ from reckon.crew.dispatch_admission import (
     _dispatch_lane_gate,
 )
 from reckon.crew.dispatch_plan import _dispatch_lane_allowance
-from reckon.crew.node import CrewError, TaskNode
+from reckon.crew.node import (
+    AWAITING_UPSTREAM_PHASE,
+    BLOCKED_UPSTREAM_PHASE,
+    QUEUED_PHASE,
+    WAITING_UPSTREAM_PHASES,
+    CrewError,
+    TaskNode,
+)
 
 ADMIT_LOCK_NAME = "admit.lock"
 DEFAULT_ADMIT_INTERVAL_SECONDS = 5.0
 #: The phase a request carries while it waits for a lane slot. The admission
 #: pass admits from this phase, and every reader that reports where a request
-#: stands reads its place through :func:`queued_placements`.
-QUEUED_PHASE = "queued"
+#: stands reads its place through :func:`queued_placements`. It is declared in
+#: ``reckon.crew.node`` beside the wait phases and re-exported here with them.
 LAUNCH_FAILED_PHASE = "launch-failed"
 #: The request-phase vocabulary, one place every reader of a request's phase
 #: takes its words from. ``awaiting-upstream`` is a request whose section
 #: declares refs that have not landed; ``blocked-upstream`` is the same request
 #: once one of those refs is closed as abandoned or failed, which no admission
 #: pass will launch: the wait is not a slot hold and no lane will clear it.
-AWAITING_UPSTREAM_PHASE = "awaiting-upstream"
-BLOCKED_UPSTREAM_PHASE = "blocked-upstream"
-#: The two phases a request carries while it waits on refs rather than on a
-#: lane slot. Both are read here rather than spelled out at each filter.
-WAITING_UPSTREAM_PHASES = (AWAITING_UPSTREAM_PHASE, BLOCKED_UPSTREAM_PHASE)
+#: The two names are declared in ``reckon.crew.node``, which the recovery
+#: readers also import, so this module and those readers name the same words
+#: without either importing the other. They are re-exported here because this
+#: is where the request phase vocabulary is written and read.
 #: A run whose phase is one of these will not deliver the section it names, so
 #: a ref waiting on that section is blocked rather than pending.
 DEAD_RUN_PHASES = frozenset({"failed"})
@@ -1643,6 +1649,19 @@ def hold_request_for_upstream(
     return refs
 
 
+class _PointerNotHoldableError(Exception):
+    """A request that is a live run, not a waiting request, may not be held.
+
+    Only a request still waiting for a slot — ``queued`` — or already waiting
+    for its upstream — any of ``WAITING_UPSTREAM_PHASES`` — can be held. Every
+    other phase names a run the fleet is working on: one being admitted holds a
+    worktree, and one starting or working is a live worker. Writing a wait over
+    such a pointer would take a running run off its lane and re-store it as a
+    request nothing had launched, so the write is refused and the pointer is
+    left exactly as it stands.
+    """
+
+
 def _hold_pointer(run_id: str, refs: Sequence[str]) -> bool:
     """Record a request's refs and its waiting phase in one write.
 
@@ -1651,9 +1670,20 @@ def _hold_pointer(run_id: str, refs: Sequence[str]) -> bool:
     by the pass that never sees it waiting. A pointer that cannot be written
     stays queued and launches when the lane reaches it, which is the behaviour
     of a request whose plan declares no wait.
+
+    A pointer carrying a run that is already admitted or working is not the
+    record of a request at all, so nothing is written to it and the hold
+    reports that it did not land. The phase is read inside the same mutation
+    that writes, under the pointer's own lock, so a run admitted between the
+    caller's decision and this write is refused too.
     """
 
     def hold(current: dict[str, Any]) -> dict[str, Any]:
+        if str(current.get("phase") or "") not in (
+            QUEUED_PHASE,
+            *WAITING_UPSTREAM_PHASES,
+        ):
+            raise _PointerNotHoldableError(run_id)
         current["waits"] = list(refs)
         current["phase"] = AWAITING_UPSTREAM_PHASE
         current["waits_at"] = _utc_now()
@@ -1661,6 +1691,8 @@ def _hold_pointer(run_id: str, refs: Sequence[str]) -> bool:
 
     try:
         runs._mutate_pointer(run_id, hold)
+    except _PointerNotHoldableError:
+        return False
     except Exception:  # noqa: BLE001 - an unwritable pointer stays where it is
         return False
     return True

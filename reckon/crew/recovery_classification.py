@@ -12,8 +12,11 @@ from typing import Any, Callable, Mapping, Sequence
 from reckon import ledger
 from reckon._timestamps import parse_utc
 from reckon.crew.node import (
+    BLOCKED_UPSTREAM_PHASE,
     INTERRUPTED_RUN_PHASE,
     LOG_STALE_AFTER_SECONDS,
+    QUEUED_PHASE,
+    WAITING_UPSTREAM_PHASES,
     CrewError,
 )
 from reckon.crew.reports import (
@@ -663,12 +666,8 @@ def classify_pointer(
     marker = None
     needs_help_complete_value = None
     session_refusal: dict[str, str] | None = None
-    from reckon.crew.queue_admission import (
-        BLOCKED_UPSTREAM_PHASE,
-        WAITING_UPSTREAM_PHASES,
-    )
 
-    if phase in ("queued", *WAITING_UPSTREAM_PHASES):
+    if phase in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES):
         classification = phase
         if phase in WAITING_UPSTREAM_PHASES:
             # A request held on a section it waits for is stored, not launched,
