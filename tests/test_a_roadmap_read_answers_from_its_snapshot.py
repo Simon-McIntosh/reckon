@@ -720,6 +720,12 @@ class _InterleavingMemo:
     time and records whatever combination it lands on.
     """
 
+    # The two fields a memo written as separate stores would carry, so a reader
+    # handed that shape sees a real pair of values rather than an attribute it
+    # never had.
+    stamp: int | None = None
+    mounts: dict[str, Path] | None = None
+
     def __init__(self, observe) -> None:
         object.__setattr__(self, "_observe", observe)
         object.__setattr__(self, "pair", None)
