@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T05:15:58.969Z",
+  "dispatched_at": "2026-10-23T04:47:43Z",
+  "findings": [
+    {
+      "file": "docs/ui/shell.jsx",
+      "line": 215,
+      "severity": "blocking",
+      "summary": "the diff writes docs/ui/shell.jsx, outside both the node's declared write paths and section 16's write-path list, so promotion against the run's grant is refused until the coordinator widens scope.",
+      "text": "the diff writes docs/ui/shell.jsx, outside both the node's declared write paths and section 16's write-path list, so promotion against the run's grant is refused until the coordinator widens scope. The excursion is three additive lines and is disclosed in the manifest."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 16 of docs/plans/every-plan-write-goes-through-edit-plan.html asks the crew page to render each open decision with its plan, key, title, held sections, recommendation and wait, to link to the plan's decision, to respect the project filter and to derive nothing; docs/ui/crew.jsx:360 CrewOpenDecisions draws exactly those fields and the single empty line, so the deliverable is met.\nVERDICT done_when: the gate ran the named crew browser cases plus the poll contract, at base (logs/gate-base.log, 35 passed, EXIT=0) and head (logs/gate-head.log, 37 passed, EXIT=0), with zero added failures and no SKIPPED line under -rs, so it asserts the done_when's measure.\nVERDICT write_paths: the declared paths are docs/ui/crew.jsx, docs/ui/crew.css, tests/test_the_crew_page_shows_open_decisions.py, docs/evidence/fragments/every-plan-write-goes-through-edit-plan/the-crew-page-shows-open-decisions.html and the figures directory; the diff also changes docs/ui/shell.jsx, which none of those names.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T010632561503-the-crew-page-shows-open-decisions/manifest.md; it reports status complete, a literal tests: command, both arm logs, the shell.jsx excursion in changed_paths and both negative controls.\nVERDICT diff: read all six commits against 3d80d6544; b7d949674 adds the component, its CSS and the browser test, 12f8524e3 carries the payload down the shell's single poll, 2b31734f3 narrows both lists to one filter, retargets the href and drops the duplicate assertion, and three docs commits record the evidence; five files changed.\nCALL_SITES: docs/ui/shell.jsx:319 (the single /crew poll), docs/ui/shell.jsx:534 (passes decisions down to CrewView), reckon/serve.py:3142 (populates open_decisions on the payload), reckon/roadmap.py:1125 (unsettled_decisions builds the rows)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/ui/crew.jsx:360 CrewOpenDecisions renders plan, key, title, sections, recommendation, the waited stamp and the section 16 empty line, the row linking to the decisions section anchor at ids the served plan page carries (reckon/_plan_html.py:1765) rather than a per-decision anchor the page does not render.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-base.log (35 passed) and logs/gate-head.log (37 passed) each open with a revision and the literal command and close with EXIT=0 with no SKIPPED, and the declared control logs/negative-control.log is genuinely red (2 failed, EXIT=1, assert '' == 'transport'), against after_suite naming revision 2b31734f3, the code head one docs-only commit before the reviewed head.\nSCORE scope_discipline: 8\nJUSTIFICATION scope_discipline: four of the five changed paths lie inside the declared write paths, but docs/ui/shell.jsx:215 lies outside them and outside section 16's own write-path list.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_crew_page_shows_open_decisions.py:268-273 read fixture literals (DECISION_KEY, DECISION_TITLE, SCOPED_SECTION) off the browser-rendered DOM so dropping the row or the #decisions fragment reddens :270-271, and tests/test_a_poll_waits_for_its_previous_answer.py:215 pins the single poll that logs/negative-control-poll.log reddens with assert (1 + 1) == 1.\nSCORE fit: 18\nJUSTIFICATION fit: the added names (crewDecisionPlanHref, crewDecisionScope, CrewOpenDecisions, r-crew-decision-*) follow the file's inline-href and r-crew-* idiom at docs/ui/crew.jsx:92 and carry no plan, ticket, version or author label.\nSCORE reuse: 16\nJUSTIFICATION reuse: a capability search over docs/ui found no owner of a plan-document href carrying a decision anchor (each surface composes its own inline, e.g. docs/ui/sprint.jsx:460), and the change deletes its forked filter and reuses crewRunsForVisibleProjects at docs/ui/crew.jsx:328 for both lists.\nFINDING docs/ui/shell.jsx:215 blocking: the diff writes docs/ui/shell.jsx, which is outside both the node's declared write paths and section 16's write-path list, so promotion against the run's grant is refused until the coordinator widens the scope (a documented, goal-necessary three-line excursion, but a real fence violation).",
+  "review_run_id": "r-20261023T044113006537-review-of-the-crew-page-shows-open-decisions-284bf43b54a0",
+  "reviewed_base_sha": "3d80d6544c00c10a390bb3f557287c6a1d03c572",
+  "reviewed_head_sha": "284bf43b54a0805314c84761078b31b471ba4a2f",
+  "reviewed_run_id": "r-20261023T010632561503-the-crew-page-shows-open-decisions",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 8
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T05:49:23.378759+00:00",
+  "total": 96
+}
