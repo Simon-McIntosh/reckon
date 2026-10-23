@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest carries no baseline_suite key and its after_site prose, so the pair was read from its logs: delta-base.log (the head tree with reckon/crew/queue_admission.py, dispatch.py and obligation_snapshot.py taken from 43677d0d, over 14 ids: 14 failed, EXIT=1) and gate-round4.log at 0ce92aa7a (1321 passed, 23 failed, 1 skipped, 1 error, EXIT=1). The base arm's 14 ids are a subset of the head's 23, so no failure is added; the remaining 9 head failures have no base arm log in the run directory.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1579",
+    "reckon/crew/dispatch.py:1597",
+    "reckon/crew/queue_admission.py:1505 (inside admit_once, reached from reckon/crew_run_commands.py:3556)",
+    "reckon/crew/recovery_classification.py:671",
+    "reckon/crew/obligation_snapshot.py:1060"
+  ],
+  "completed_at": "2026-10-23T17:30:27.382Z",
+  "dispatched_at": "2026-10-23T17:16:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1597 non-blocking",
+      "text": "the wait hold now runs ahead of the existing-run guard at :1645 and hold_request_for_upstream writes the phase unconditionally through runs._mutate_pointer, so a re-dispatch of a node whose section waits read unmet rewrites whatever pointer carries that node, including an in-flight one, to awaiting-upstream and takes a running run off its lane."
+    },
+    {
+      "file": "reckon/crew/recovery_vocabulary.py",
+      "line": "78 non-blocking",
+      "text": "the two waiting phase names are added as string literals in a second vocabulary rather than taken from reckon/crew/queue_admission.py:53, against the plan's rule that every phase reader reads them from that vocabulary, so a rename in queue_admission silently stops the watch line drawing a held request and nothing fails."
+    },
+    {
+      "file": "manifest.md",
+      "line": "18 non-blocking",
+      "text": "the manifest names neg-wiring.log as this round's control, but that log's header reads revision 06c368dce and its mutation removes two hold_request_for_upstream calls, while the reviewed head holds through the single call at reckon/crew/dispatch.py:1597, so the control does not exercise the wiring it is offered for."
+    },
+    {
+      "file": "manifest.md",
+      "line": "16 non-blocking",
+      "text": "the manifest asserts the 23 failures are pre-existing because the same ids fail at HEAD~1, but no log in the run directory records that run; the base arm delta-base.log exercises 14 ids, so 9 of the head's 23 failures are argued rather than measured."
+    },
+    {
+      "file": "tests/test_a_queued_request_waits_on_its_dependencies.py",
+      "line": "518 non-blocking",
+      "text": "assert reading[\"classification\"] == phase compares the classifier's output against the phase the test itself wrote into the record at :510, against the assertions independence rule; the companion assertion at :520 on the remedy string is the independent half of that arm."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read against the base from 43677d0d to b65536558; ten landed changes over seven files, +1741/-11, the repair at 0ce92aa7a moving the wait hold ahead of every lane branch at reckon/crew/dispatch.py:1577 and the landing record at b65536558.",
+    "done_when": "the done_when asks for a three-section chain queued in one call launching in dependency order with no coordinator call between, a negative arm blocking the tail, and a malformed node refused at queue time; tests/test_a_queued_request_waits_on_its_dependencies.py:194, :219 and :356 carry all three and gate-round4.log records the run at 0ce92aa7a.",
+    "goal": "the goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/dispatch.py:1579 reads the section's waits and :1597 writes the hold, and reckon/crew/queue_admission.py:1478 releases the request when its last ref lands.",
+    "manifest": "read; it states status complete, names gate-round4.log as the head arm and eight logs in test_logs, carries after_suite as prose and no baseline_suite key, and offers neg-wiring.log as this round's control although that log's header reads revision 06c368dce, before the repair at 0ce92aa7a.",
+    "write_paths": "the dispatch record fences six paths; the diff touches seven, and three of them -- reckon/crew/obligation_snapshot.py, reckon/crew/recovery_vocabulary.py and reckon/crew/recovery_classification.py -- sit outside the fence, disclosed in the manifest's scope_note with an authority the dispatch record does not carry."
+  },
+  "node": "review-of-a-queued-request-waits-on-its-dependencies-b65536558a8f",
+  "node:reviewed": "a-queued-request-waits-on-its-dependencies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/dispatch.py:1579 reads the section's waits and :1597 writes the hold, and reckon/crew/queue_admission.py:1478 releases the request when its last ref lands.\nVERDICT done_when: the done_when asks for a three-section chain queued in one call launching in dependency order with no coordinator call between, a negative arm blocking the tail, and a malformed node refused at queue time; tests/test_a_queued_request_waits_on_its_dependencies.py:194, :219 and :356 carry all three and gate-round4.log records the run at 0ce92aa7a.\nVERDICT write_paths: the dispatch record fences six paths; the diff touches seven, and three of them -- reckon/crew/obligation_snapshot.py, reckon/crew/recovery_vocabulary.py and reckon/crew/recovery_classification.py -- sit outside the fence, disclosed in the manifest's scope_note with an authority the dispatch record does not carry.\nVERDICT manifest: read; it states status complete, names gate-round4.log as the head arm and eight logs in test_logs, carries after_suite as prose and no baseline_suite key, and offers neg-wiring.log as this round's control although that log's header reads revision 06c368dce, before the repair at 0ce92aa7a.\nVERDICT diff: read against the base from 43677d0d to b65536558; ten landed changes over seven files, +1741/-11, the repair at 0ce92aa7a moving the wait hold ahead of every lane branch at reckon/crew/dispatch.py:1577 and the landing record at b65536558.\nCALL_SITES: reckon/crew/dispatch.py:1579, reckon/crew/dispatch.py:1597, reckon/crew/queue_admission.py:1505 (inside admit_once, reached from reckon/crew_run_commands.py:3556), reckon/crew/recovery_classification.py:671, reckon/crew/obligation_snapshot.py:1060\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1597 stores the node awaiting-upstream carrying its refs and reckon/crew/queue_admission.py:1505 releases it through the same readiness the roadmap derivation uses.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-round4.log records 1321 passed, 23 failed, EXIT=1 over the named modules, but no baseline_suite is recorded and the base arm delta-base.log measures 14 of the 23 ids, so 9 failures rest on the manifest's sentence rather than a log.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: three of the seven changed files, including reckon/crew/recovery_classification.py and reckon/crew/recovery_vocabulary.py, are outside the six paths the dispatch record fences.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_queued_request_waits_on_its_dependencies.py:194 asserts the launch order and :431 the free-lane hold from the pointer store, but the control log neg-wiring.log was run before the repair it is offered for.\nSCORE fit: 15\nJUSTIFICATION fit: the added functions follow the module's idiom and use its constants, but reckon/crew/recovery_vocabulary.py:78 restates the two phase names as string literals and reckon/crew/queue_admission.py:864 duplicates :887.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:1295 reads readiness through the roadmap derivation and :1181 uses reckon._schema.parse_plan_ref rather than a second parser, so no owned capability is forked.\nFINDING reckon/crew/dispatch.py:1597 non-blocking: the wait hold now runs ahead of the existing-run guard at :1645 and hold_request_for_upstream writes the phase unconditionally through runs._mutate_pointer, so a re-dispatch of a node whose section waits read unmet rewrites whatever pointer carries that node, including an in-flight one, to awaiting-upstream, taking a running run off its lane.\nFINDING reckon/crew/recovery_vocabulary.py:78 non-blocking: the two waiting phase names are added as string literals in a second vocabulary rather than taken from reckon/crew/queue_admission.py:53, against the plan's rule that every phase reader reads them from that vocabulary, so a rename in queue_admission silently stops the watch line drawing a held request and nothing fails.\nFINDING manifest.md:18 non-blocking: the manifest names neg-wiring.log as this round's control, but that log's header reads revision 06c368dce and its mutation removes two hold_request_for_upstream calls, while the reviewed head holds through the single call at reckon/crew/dispatch.py:1597, so the control does not exercise the wiring it is offered for.\nFINDING manifest.md:16 non-blocking: the manifest asserts the 23 failures are pre-existing because the same ids fail at HEAD~1, but no log in the run directory records that run; the base arm delta-base.log exercises 14 ids, so 9 of the head's 23 failures are argued rather than measured.\nFINDING tests/test_a_queued_request_waits_on_its_dependencies.py:518 non-blocking: assert reading[\"classification\"] == phase compares the classifier's output against the phase the test itself wrote into the record at :510, so it holds for any classifier that echoes its input; the companion assertion at :520 on the remedy string is the independent half of that arm.\n",
+  "review_run_id": "r-20261023T165943828944-review-of-a-queued-request-waits-on-its-dependencies-b65536558a8f",
+  "reviewed_base_sha": "43677d0d2697ae3d8841b6d19addcdb77cc572be",
+  "reviewed_head_sha": "b65536558a8fed01b08b01905380d0657fadc5f2",
+  "reviewed_run_id": "r-20261023T112727139233-a-queued-request-waits-on-its-dependencies",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T18:05:00+00:00",
+  "total": 92
+}
