@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T23:35:25.461Z",
+  "dispatched_at": "2026-10-23T23:24:56Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap_snapshot.py",
+      "line": 77,
+      "severity": "non-blocking",
+      "text": "The three cases prove the store is one value, but none proves the reader takes it once. reckon/roadmap_snapshot.py:77 now reads `pair = _MOUNTS_MEMO.pair` into a local, and the docstring at :73-75 states that property as the reason the race is closed. The probe at tests/test_a_roadmap_read_answers_from_its_snapshot.py:711-734 fires only from `__setattr__`, so it observes states between stores and never a pair of reads inside remembered_mounts. A regression that kept the one-value store and re-read the global twice, e.g. `if _MOUNTS_MEMO.pair is not None and _MOUNTS_MEMO.pair[0] == stamp: return _MOUNTS_MEMO.pair[1]`, would leave test_a_reader_never_sees_a_stamp_beside_mounts_from_another_store green while reopening the mixed pair it exists to prevent. The store half of the fix is well guarded; the read half is asserted only by inspection."
+    },
+    {
+      "file": "prompt.txt",
+      "line": 69,
+      "severity": "non-blocking",
+      "text": "The dispatch's FENCE - SCOPE (prompt.txt:69-76) lists reckon/serve.py, reckon/mcp.py, reckon/_store.py, the test module, the evidence fragment and the figure, and again omits reckon/roadmap_snapshot.py, which the gained commit ef5407e63 writes. Plan section 50 at docs/plans/a-read-answers-inside-its-deadline.html:318 names reckon/roadmap_snapshot.py in its write paths explicitly, so the write is plan-authorized and the fence is the defective artefact rather than the worker's scope. Recorded because the third consecutive dispatch of this node carries the same omission, so a worker who obeyed the fence literally would be unable to answer any finding in the module the section assigns it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node goal is a warm roadmap read answered from a snapshot keyed on the project write generation (prompt.txt:30), and the three commits gained since the last review (c981fcae3..7adae8ae5) correct the concurrency defect the increment's own mounts memo introduced, by storing the (stamp, mounts) pair as one value at reckon/roadmap_snapshot.py:77-81 and covering it with three cases.\nVERDICT done_when: the source done-when (prompt.txt:106) names tests/test_a_roadmap_read_answers_from_its_snapshot.py plus the section-50 gate files, zero added failures at head against the gate's base arm, logs that name their revision and close with EXIT=, baseline_suite and after_suite in node-id form, and ruff not exceeding base; manifest.md records split6-head-gate.log at 42 passed in arm 1 and 14 in arm 2 against 29 and 14 in split6-base-gate.log, all EXIT=0, split6-ruff-head.log at 17 findings on reckon/serve.py against 17 at base with 0 on roadmap_snapshot.py and 0 on the test module, format check clean on all three, and split6-width.log at 4,191 tokens for roadmap_snapshot.py and 48,238 for serve.py under the 50,000 bound.\nVERDICT write_paths: prompt.txt:69-76 fences reckon/serve.py, reckon/mcp.py, reckon/_store.py, the test module, the evidence fragment and the figure, and omits reckon/roadmap_snapshot.py; plan section 50 at docs/plans/a-read-answers-inside-its-deadline.html:318 names reckon/roadmap_snapshot.py, so the gained diff's two paths are plan-authorized though one lies outside the dispatch fence.\nVERDICT manifest: read manifest.md at the reviewed head; status in-progress with a checkpoint naming the memo stored as one value and three cases covering it, commits ending 7adae8ae5, baseline_suite and after_suite both exit_status 0 with completed true and empty failure_ids, and negative_control_log pointing at split6-negative-control.log.\nVERDICT diff: read c981fcae3..7adae8ae5 commit by commit; three commits over two files, +136/-7, with ef5407e63 replacing the two-attribute store with a single pair value and adding three cases, cde4113bb giving the test probe the stamp/mounts pair, and 7adae8ae5 moving the fixtures onto tmp_path so no case writes a literal /tmp path.\nCALL_SITES: reckon/serve.py:1163, reckon/mcp.py:1799\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/roadmap_snapshot.py:77-81 now assigns the whole (stamp, mounts) pair once, so the mounts a snapshot key is composed over can no longer pair a new stamp with the previous resolution.\nSCORE evidence: 18\nJUSTIFICATION evidence: split6-head-gate.log:17 and :37 record 42 and 14 passed with EXIT=0 against split6-base-gate.log:18 and :35 at 29 and 14, and split6-negative-control.log ends EXIT=1 with the reader case failing on the mixed pair (8, p7 mounts).\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the gained diff touches only tests/test_a_roadmap_read_answers_from_its_snapshot.py and reckon/roadmap_snapshot.py, both named in the plan's write paths at docs/plans/a-read-answers-inside-its-deadline.html:318, though the dispatch fence at prompt.txt:69 omits the second.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_roadmap_read_answers_from_its_snapshot.py:786 fails on the restored two-attribute store, test_a_second_call_with_the_same_stamp_resolves_nothing_again at :739 fails if the memo resolves per call, and the three cases pass at 7adae8ae5 against an independent resolved_for map rather than a value the test handed in.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/roadmap_snapshot.py:47-82 keeps the module's docstring-plus-annotation idiom, the comments state the thread-safety mechanism rather than any plan label, and the three commits carry conventional subjects with bodies and no attribution trailer.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the existing _MountsMemo owner at reckon/roadmap_snapshot.py:47 rather than adding a store, and a search over reckon/ for another stamp-keyed mounts or snapshot memo found reckon/change_streams.py's watch and reckon/crew/recovery_memo.py's per-run reuse key, neither of which caches a mounts resolution.\nFINDING reckon/roadmap_snapshot.py:77 non-blocking: the one-value store is guarded by the probe test, but the reader's single load of that value is asserted by no case, so a regression that re-read the global twice inside remembered_mounts would stay green.\nFINDING prompt.txt:69 non-blocking: the dispatch fence omits reckon/roadmap_snapshot.py, which plan section 50 assigns and the gained commit writes, so the fence and the plan disagree for the third time.\n",
+  "review_run_id": "r-20261023T232349153693-review-of-a-roadmap-read-answers-from-its-snapshot-7adae8ae5e6b",
+  "reviewed_base_sha": "c981fcae3100bd02bebecd0b65f9d3d9f94eb79b",
+  "reviewed_head_sha": "7adae8ae5e6b3ca4d4a513865e510ad936f76926",
+  "reviewed_run_id": "r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:36:25.422801+00:00",
+  "total": 108
+}
