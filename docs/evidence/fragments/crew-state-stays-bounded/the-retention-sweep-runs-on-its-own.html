@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:crew-state-stays-bounded">
+  <meta name="plan-verifies" content="reckon:crew-state-stays-bounded#s7">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-23">
+  <title>The retention sweep runs on its own | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-retention-sweep-runs-on-its-own-sweep">
+  <h2>An hourly timer runs the run-directory retention across every mount</h2>
+  <p><code>reckon.crew.gc.retention_sweep</code> is the pass, and
+  <code>python -m reckon.crew.gc --apply</code> is the entry point the installed unit runs;
+  <code>reckon crew retention-sweep</code> is the operator surface, with <code>--apply</code>,
+  <code>--limit</code>, <code>--project</code> and <code>--install-timer</code>. The pass starts no
+  git process and inspects no worktree — it is the run-directory retention alone — because
+  <code>garbage_collect</code>'s worktree checks are where the unscheduled pass spent its ten
+  minutes. Both <code>garbage_collect</code> and the sweep classify a directory through the one
+  predicate <code>_run_directory_retention_report</code>, so the hourly pass and the on-demand gc
+  cannot drift on what a run directory is. Each pass removes at most
+  <code>RETENTION_SWEEP_LIMIT</code> (500) directories, so a pass over the backlog stays short on
+  shared storage and the next hour takes the rest.</p>
+  <p>Every mounted project's ledger is read once, through <code>ledger.runs</code> — the
+  index-backed reader the rest of reckon uses — and each run directory is judged against the ledger
+  of the project that dispatched it. That is what retires a run another project dispatched, which
+  one project's ledger could never judge. A directory no mounted project's ledger records is left to
+  gc's existing unledgered-directory pass; a project with no readable mount is reported under
+  <code>unreachable_projects</code> rather than judged, since without a checkout there is no
+  committed-review store to test a review-owed run against. A pass appends its removals to
+  <code>crew/logs/retention-sweep.log</code> through <code>_WatchLogStream</code>, which rotates the
+  file to one <code>.1</code> sibling at a fixed size, and writes nothing at all when it removed
+  nothing.</p>
+  <p>The units are installed by <code>reckon.service.install_timer_units</code> — the one generic
+  write-and-enable step in <code>reckon/service.py</code>, modelled on <code>install_timer</code> in
+  <code>reckon/crew/paid_lanes.py</code>; that module is held by another run and is not changed here.
+  <code>reckon.crew.gc.install_retention_timer</code> renders the hourly service and timer and
+  delegates the write, reload and enable to it, so an unchanged re-run writes nothing and calls
+  nothing.</p>
+</section>
+<section id="the-retention-sweep-runs-on-its-own-measure">
+  <h2>What the gate measures</h2>
+  <p>One temporary crew home holds finished runs for two projects, each ledgered in its own project
+  under its own mount: one pass removes <strong>both</strong>, and its log carries both paths. A
+  second pass with nothing left removes nothing and leaves the log <strong>byte-identical</strong>.
+  A pass over <strong>1,200</strong> removable fixtures removes <strong>500</strong> and leaves
+  <strong>700</strong> on disk for the next. A pass whose fixture checkout carries a registered git
+  worktree removes both runs while a git shim first on <code>PATH</code> records
+  <strong>no invocation</strong> — a measured absence, since the same pass completed its removals. A
+  spy on the ledger's index-backed reader records <strong>both</strong> mounted projects read
+  through it: the pass reaches that reader once per mounted project, so a pass that parsed an
+  aggregate instead would leave the record empty and the case red. Installing under a temporary
+  systemd user directory writes
+  <code>reckon-crew-retention.service</code> with <code>ExecStart</code>,
+  <code>reckon-crew-retention.timer</code> with <code>OnUnitActiveSec=1h</code> and
+  <code>Unit=reckon-crew-retention.service</code>, and issues <code>daemon-reload</code> then
+  <code>enable --now reckon-crew-retention.timer</code>; a second install reports
+  <code>changed: false</code>, issues no command and leaves both files' mtimes untouched. The gate
+  reporting those six cases is <strong>140 passed in 157.86s (0:02:37)</strong> at revision
+  <code>341d6a5be</code> — the six new cases, the paid-lanes timer cases, and every existing module
+  that imports the systemd surface — with <code>ruff check</code> and
+  <code>ruff format --check</code> reporting nothing added on the staged paths.</p>
+  <p>The unit sections live in <code>reckon/service.py</code> rather than in the sweep's own module.
+  One thing a periodic pass does not inherit is its ordering: the shared template takes an
+  <code>after</code> argument, the publish service passes <code>network.target</code> because it
+  reads providers over the network, and the sweep passes nothing because it only touches the local
+  crew home. A case renders both and requires the directive on the publish unit and its absence
+  from the sweep's, so dropping the line shows up as a failing test rather than as a timer that
+  starts before the network is up.
+  A repo-wide case inventories every module whose source carries a systemd section and fails when one
+  appears elsewhere, so that a policy repair cannot land on one copy of a unit and miss another; the
+  retention service and timer therefore render through
+  <code>service.render_periodic_service_unit</code> and
+  <code>service.render_periodic_timer_unit</code>, and only one module writes the sections.</p>
+</section>
+<section id="the-retention-sweep-runs-on-its-own-negative-control">
+  <h2>Declared negative control: only the first project's ledger is read</h2>
+  <p>The declared mutation narrows the sweep's project list to its first entry, so only the first
+  project's ledger is read. The two-project case —
+  <code>test_a_pass_retires_the_finished_run_of_every_mounted_project</code> — then fails, because
+  the second project's finished run is left in place, which is exactly the failure mode the section
+  exists to remove. The head arm fails no test. The mutation was applied and the case file run
+  against it: <strong>3 failed, 3 passed</strong>, exit 1, the head arm having passed all six. The
+  three failures are the two-project case, the git-shim case (which also needs both projects
+  retired) and the ledger-read spy (which asserts both projects are read), and the three that pass
+  are the cases a single project exercises. The mutated source was restored from a byte-identical
+  backup, and the worktree is clean at that revision afterwards.</p>
+</section>
+</main>
+</body>
+</html>

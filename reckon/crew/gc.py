@@ -1,7 +1,9 @@
 import os
+import shlex
 import shutil
+import sys
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 
 from reckon import review_tiers
 from reckon.crew.routing import (
@@ -270,6 +272,95 @@ def _committed_review_exists(project: str, run_id: str, repo: Path) -> bool:
     return bool(heads)
 
 
+def _run_directory_retention_report(
+    directory: Path,
+    record: Mapping[str, Any],
+    *,
+    project: str,
+    repo_root: Path,
+    cutoff: datetime,
+    live_review_targets: set[str],
+) -> dict[str, Any] | None:
+    """Classify one ledgered run directory under the retention rule.
+
+    ``None`` means the pass has nothing to say about this directory — it is
+    neither offered for removal nor withheld. A ``withheld`` row names the
+    reason a reader needs to see why a directory older than the window is still
+    there; a ``prune`` row is a directory nothing can still need whose grace
+    window has passed. Stated once so the hourly sweep and
+    :func:`garbage_collect` classify a directory identically.
+    """
+    from reckon.crew.dispatch_launch import tree_size_bytes
+
+    run_id = directory.name
+    # A review in flight is a run of its own that names this run as its subject;
+    # the reviewed run's own pointer is already gone, so a live-pointer test
+    # cannot see it.
+    if run_id in live_review_targets:
+        return None
+    # A review is owed while the run's tier says one is required and no complete
+    # review of it is committed yet. The directory holds the stream and diff such
+    # a review reads, so it is kept until the review lands.
+    tier = str(record.get("review_tier") or "").strip().lower()
+    if (
+        tier
+        and tier != review_tiers.NONE
+        and not _committed_review_exists(project, run_id, repo_root)
+    ):
+        return {
+            "run_id": run_id,
+            "path": str(directory),
+            "action": "withheld",
+            "removed": False,
+            "withheld": "review-owed",
+            "reason": (
+                "a review of this run is required and its "
+                "committed record is not yet stored, so the "
+                "directory still holds the evidence the review "
+                "reads; it stays until the review lands"
+            ),
+            "review_tier": tier,
+        }
+    modified = datetime.fromtimestamp(directory.stat().st_mtime, tz=timezone.utc)
+    if modified > cutoff:
+        return None
+    figure_status = {
+        field: _figure_retention(record, field) for field in STREAM_DERIVED_FIELDS
+    }
+    missing = tuple(
+        field for field, state in figure_status.items() if state == "missing"
+    )
+    absent = tuple(
+        field for field, state in figure_status.items() if state == "explicitly-absent"
+    )
+    if missing:
+        return {
+            "run_id": run_id,
+            "path": str(directory),
+            "action": "withheld",
+            "removed": False,
+            "withheld": "missing-derived-figure",
+            "reason": (
+                "the run is past its retention window but the figures "
+                "derived from its stream were never recorded; their "
+                "keys are absent from the ledger row, so the derivation "
+                "has not run and reaping would destroy the only copy of "
+                + ", ".join(missing)
+            ),
+            "missing_figures": list(missing),
+            "figure_status": figure_status,
+        }
+    return {
+        "run_id": run_id,
+        "path": str(directory),
+        "action": "prune",
+        "removed": False,
+        "bytes": tree_size_bytes(directory, limit=RUN_DIRECTORY_SIZE_LIMIT),
+        "explicitly_absent_figures": list(absent),
+        "figure_status": figure_status,
+    }
+
+
 def _run_directory_grace_seconds(project: str | None, repo_root: Path) -> int:
     """The configured grace window for a finished run's directory, in seconds.
 
@@ -325,7 +416,9 @@ def _orphan_ledger_indexes(
     current = now or datetime.now(tz=UTC)
     stale_before = current - timedelta(days=LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS)
     entries: list[dict[str, Any]] = []
-    for index in sorted(path for path in root.glob("ledger-*.sqlite") if path.is_file()):
+    for index in sorted(
+        path for path in root.glob("ledger-*.sqlite") if path.is_file()
+    ):
         recorded = ledger_module.recorded_ledger_path(index)
         if recorded is not None:
             if Path(recorded).exists():
@@ -657,7 +750,6 @@ def garbage_collect(
         live_review_targets = _live_review_targets()
         run_reports: list[dict[str, Any]] = []
         run_file_reports: list[dict[str, Any]] = []
-        from reckon.crew.dispatch_launch import tree_size_bytes
         from reckon.crew.fleet_supervisor import bound_run_files, run_file_limit_bytes
 
         run_file_limit = run_file_limit_bytes(repo_root, project)
@@ -677,90 +769,17 @@ def garbage_collect(
                         directory, record, limit_bytes=run_file_limit, apply=apply
                     )
                 )
-                # A review in flight is a run of its own that names this run as
-                # its subject; the reviewed run's own pointer is already gone,
-                # so the live-pointer test above cannot see it.
-                if directory.name in live_review_targets:
-                    continue
-                # A review is owed while the run's tier says one is required and
-                # no complete review of it is committed yet. The directory holds
-                # the stream and diff such a review reads, so it is kept until
-                # the review lands.
-                tier = str(record.get("review_tier") or "").strip().lower()
-                if (
-                    tier
-                    and tier != review_tiers.NONE
-                    and not _committed_review_exists(
-                        str(record.get("project") or project or ""),
-                        directory.name,
-                        repo_root,
-                    )
-                ):
-                    run_reports.append(
-                        {
-                            "run_id": directory.name,
-                            "path": str(directory),
-                            "action": "withheld",
-                            "removed": False,
-                            "withheld": "review-owed",
-                            "reason": (
-                                "a review of this run is required and its "
-                                "committed record is not yet stored, so the "
-                                "directory still holds the evidence the review "
-                                "reads; it stays until the review lands"
-                            ),
-                            "review_tier": tier,
-                        }
-                    )
-                    continue
-                modified = datetime.fromtimestamp(
-                    directory.stat().st_mtime, tz=timezone.utc
+                report = _run_directory_retention_report(
+                    directory,
+                    record,
+                    project=str(record.get("project") or project or ""),
+                    repo_root=repo_root,
+                    cutoff=run_directory_cutoff,
+                    live_review_targets=live_review_targets,
                 )
-                if modified > run_directory_cutoff:
+                if report is None:
                     continue
-                figure_status = {
-                    field: _figure_retention(record, field)
-                    for field in STREAM_DERIVED_FIELDS
-                }
-                missing = tuple(
-                    field
-                    for field, state in figure_status.items()
-                    if state == "missing"
-                )
-                absent = tuple(
-                    field
-                    for field, state in figure_status.items()
-                    if state == "explicitly-absent"
-                )
-                if missing:
-                    report = {
-                        "run_id": directory.name,
-                        "path": str(directory),
-                        "action": "withheld",
-                        "removed": False,
-                        "withheld": "missing-derived-figure",
-                        "reason": (
-                            "the run is past its retention window but the figures "
-                            "derived from its stream were never recorded; their "
-                            "keys are absent from the ledger row, so the derivation "
-                            "has not run and reaping would destroy the only copy of "
-                            + ", ".join(missing)
-                        ),
-                        "missing_figures": list(missing),
-                        "figure_status": figure_status,
-                    }
-                    run_reports.append(report)
-                    continue
-                report = {
-                    "run_id": directory.name,
-                    "path": str(directory),
-                    "action": "prune",
-                    "removed": False,
-                    "bytes": tree_size_bytes(directory, limit=RUN_DIRECTORY_SIZE_LIMIT),
-                    "explicitly_absent_figures": list(absent),
-                    "figure_status": figure_status,
-                }
-                if apply:
+                if report["action"] == "prune" and apply:
                     if any(
                         str(record.get("run_id") or "") == directory.name
                         for record in list_live()
@@ -809,9 +828,7 @@ def garbage_collect(
             # by a swept tree, and there is none to judge. It is dropped from
             # the age-based list so the run's lock is reported once.
             run_lock_reports = [_clear_run_lock(run_id, apply=apply)]
-            lock_reports = [
-                row for row in lock_reports if row["run_id"] != run_id
-            ]
+            lock_reports = [row for row in lock_reports if row["run_id"] != run_id]
         unledgered_run_reports = _unledgered_run_directories(
             apply=apply,
             now=now,
@@ -913,9 +930,7 @@ def garbage_collect(
         "withheld_worktrees": withheld,
         "residue_report": residue_report,
         "worktree_trash": trash_rows,
-        "worktree_trash_removed": sum(
-            1 for item in trash_rows if item.get("removed")
-        ),
+        "worktree_trash_removed": sum(1 for item in trash_rows if item.get("removed")),
         "pointers": pointer_reports,
         "run_directories": run_reports,
         "run_files": run_file_reports,
@@ -1250,3 +1265,286 @@ def garbage_collect_scratch(
         "removed": removed,
         "unattributed": unattributed,
     }
+
+
+#: How many run directories one sweep removes. A pass over a large backlog is
+#: kept short on shared storage at this rate, and the next hour takes the rest,
+#: so a sweep that runs unattended never holds the disk for a long stretch. The
+#: first passes reclaim the accumulated backlog at this rate.
+RETENTION_SWEEP_LIMIT = 500
+
+#: The user units that run the retention sweep on its own clock.
+RETENTION_SERVICE_NAME = "reckon-crew-retention.service"
+RETENTION_TIMER_NAME = "reckon-crew-retention.timer"
+RETENTION_BOOT_DELAY = "2min"
+RETENTION_INTERVAL = "1h"
+
+#: The one file a pass appends its removals to, under the crew home, and the
+#: size at which it rotates to a single ``.1`` sibling. A pass that removed
+#: nothing writes nothing, so the log carries removals rather than heartbeat
+#: noise and can be read to see what the sweep took and when.
+RETENTION_LOG_NAME = "retention-sweep.log"
+RETENTION_LOG_MAX_BYTES = 2 * 1024 * 1024
+
+
+def retention_log_path() -> Path:
+    """The file a sweep appends its removals to, under the crew home."""
+    return runs_dir().parent / "logs" / RETENTION_LOG_NAME
+
+
+def _retention_ledger_records(
+    projects: list[str], mounted: Mapping[str, Path]
+) -> tuple[Path, dict[str, dict[str, Any]], dict[str, str], dict[str, Path]]:
+    """Read every mounted project's ledger once, keyed by the run it records.
+
+    Each run directory is judged against the ledger of the project that
+    dispatched it, so a run another project dispatched is judged rather than
+    skipped. The ledger is read through its index, which is the reader the rest
+    of reckon uses, so a sweep never parses an aggregate or a ``crew.json`` to
+    learn a run's project. Returns the runs root, the record by run id, the
+    project that recorded each run, and the checkout each project resolves in.
+
+    A project with no readable mount is left out: without a checkout there is no
+    committed-review store to judge a review-owed run against, so the pass
+    declines to judge that project's runs rather than guess.
+    """
+    runs_root = runs_dir()
+    records: dict[str, dict[str, Any]] = {}
+    owner: dict[str, str] = {}
+    roots: dict[str, Path] = {}
+    for name in projects:
+        docs = mounted.get(name)
+        if docs is None:
+            continue
+        root = docs.parent
+        roots[name] = root
+        for record in ledger.runs(name, root=root):
+            run_id = str(record.get("run_id") or "")
+            if run_id and run_id not in records:
+                records[run_id] = record
+                owner[run_id] = name
+    return runs_root, records, owner, roots
+
+
+def retention_sweep(
+    *,
+    project: str | None = None,
+    apply: bool = False,
+    limit: int = RETENTION_SWEEP_LIMIT,
+    now: datetime | None = None,
+    log: Path | None = None,
+) -> dict[str, Any]:
+    """Retire finished runs' directories across every mounted project.
+
+    This is the run-directory retention alone, not the rest of gc: it starts no
+    git process and inspects no worktree, because gc's worktree checks are where
+    a pass over the whole home spent its time. It removes at most ``limit``
+    directories, so one pass stays short on shared storage; the rest wait for
+    the next hour. A removal is written to one log under the crew home, and a
+    pass that removed nothing writes nothing.
+    """
+    from reckon import flight
+
+    moment = now or datetime.now(tz=timezone.utc)
+    if limit < 1:
+        raise CrewError("retention sweep limit must be at least one directory")
+    mounted = flight.mounted_project_docs()
+    projects = [project] if project else sorted(mounted)
+    runs_root, records, owner_of, roots = _retention_ledger_records(projects, mounted)
+    live_ids = {str(record.get("run_id") or "") for record in list_live()}
+    live_review_targets = _live_review_targets()
+    unreachable = [name for name in projects if name not in roots]
+
+    offered: list[dict[str, Any]] = []
+    withheld: list[dict[str, Any]] = []
+    if runs_root.is_dir():
+        for directory in sorted(path for path in runs_root.iterdir() if path.is_dir()):
+            run_id = directory.name
+            record = records.get(run_id)
+            # A directory no mounted project's ledger records is not this pass's
+            # to judge: gc's own unledgered-directory pass owns it.
+            if record is None:
+                continue
+            # A live pointer or a queued entry is a run still in flight or
+            # waiting to launch, so its directory is needed outright.
+            if run_id in live_ids:
+                continue
+            seat = owner_of[run_id]
+            root = roots[seat]
+            cutoff = moment - timedelta(
+                seconds=_run_directory_grace_seconds(seat, root)
+            )
+            row = _run_directory_retention_report(
+                directory,
+                record,
+                project=str(record.get("project") or seat),
+                repo_root=root,
+                cutoff=cutoff,
+                live_review_targets=live_review_targets,
+            )
+            if row is None:
+                continue
+            if row["action"] != "prune":
+                withheld.append(row)
+                continue
+            if len(offered) >= limit:
+                break
+            if apply:
+                print(f"removing run directory {directory} ({row['bytes']} bytes)")
+                shutil.rmtree(directory)
+                row["removed"] = True
+            offered.append(row)
+
+    removed = [row for row in offered if row["removed"]]
+    written = ""
+    if removed:
+        from reckon.crew.watch_unit import _WatchLogStream
+
+        target = log or retention_log_path()
+        stream = _WatchLogStream(target, max_bytes=RETENTION_LOG_MAX_BYTES)
+        try:
+            for row in removed:
+                stream.write(f"removed {row['path']} ({row['bytes']} bytes)\n")
+        finally:
+            stream.close()
+        written = str(target)
+
+    return {
+        "dry_run": not apply,
+        "projects": projects,
+        "unreachable_projects": unreachable,
+        "limit": limit,
+        "offered": offered,
+        "withheld": withheld,
+        "removed": [row["run_id"] for row in removed],
+        "removed_count": len(removed),
+        "log": written,
+    }
+
+
+def render_retention_service_unit(
+    executable: str | Path | None = None,
+    *,
+    root: str | Path | None = None,
+    environment: Mapping[str, str] | None = None,
+) -> str:
+    """Render the oneshot service that runs the retention pass once.
+
+    ``ExecStart`` is the interpreter that ran the install with
+    ``-m reckon.crew.gc --apply``, so the timer runs this checkout's own code
+    under the environment the install ran from. ``WorkingDirectory`` is the
+    checkout root, which puts that tree on the module search path even where the
+    package is not installed into the interpreter's environment.
+    """
+    from reckon import service
+
+    interpreter = str(executable or sys.executable)
+    working_directory = str(root or Path(__file__).resolve().parents[2])
+    argv = [interpreter, "-m", "reckon.crew.gc", "--apply"]
+    forwarded = dict(environment or {})
+    home = os.environ.get("RECKON_HOME")
+    if home:
+        forwarded.setdefault("RECKON_HOME", str(Path(home).expanduser().resolve()))
+    return service.render_periodic_service_unit(
+        description="retire finished crew run directories",
+        exec_start=" ".join(shlex.quote(part) for part in argv),
+        working_directory=working_directory,
+        environment=forwarded,
+    )
+
+
+def render_retention_timer_unit(*, service: str = RETENTION_SERVICE_NAME) -> str:
+    """Render the timer that activates the retention service hourly."""
+    from reckon import service as service_module
+
+    return service_module.render_periodic_timer_unit(
+        description="run the crew run-directory retention sweep every hour",
+        service=service,
+        interval=RETENTION_INTERVAL,
+        boot_delay=RETENTION_BOOT_DELAY,
+    )
+
+
+def install_retention_timer(
+    executable: str | Path | None = None,
+    *,
+    directory: str | Path | None = None,
+    run: Callable[[Sequence[str]], Any] | None = None,
+) -> dict[str, Any]:
+    """Install the retention service and its hourly timer, and start the timer."""
+    from reckon import service
+
+    return service.install_timer_units(
+        RETENTION_SERVICE_NAME,
+        render_retention_service_unit(executable),
+        RETENTION_TIMER_NAME,
+        render_retention_timer_unit(),
+        directory=Path(directory) if directory is not None else None,
+        run=run,
+    )
+
+
+USAGE = """\
+usage: python -m reckon.crew.gc [--apply] [--limit N] [--project NAME] [--install-timer]
+
+Retire finished crew run directories across every mounted project. Without
+--apply the pass reports what it would remove and removes nothing.
+"""
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Run the retention pass; ``--install-timer`` installs the hourly timer.
+
+    The entry point the installed service runs, and the command an operator
+    copies to run a pass by hand. ``--help`` prints the usage and returns
+    without removing anything, because asking what the command does must not be
+    the same act as running it.
+    """
+    import json
+
+    args = list(sys.argv[1:] if argv is None else argv)
+    apply = False
+    install = False
+    project: str | None = None
+    limit = RETENTION_SWEEP_LIMIT
+    index = 0
+    while index < len(args):
+        flag = args[index]
+        if flag == "--apply":
+            apply = True
+        elif flag == "--install-timer":
+            install = True
+        elif flag in ("--help", "-h"):
+            sys.stdout.write(USAGE)
+            return 0
+        elif flag == "--project":
+            index += 1
+            project = args[index] if index < len(args) else None
+        elif flag == "--limit":
+            index += 1
+            value = args[index] if index < len(args) else ""
+            try:
+                limit = int(value)
+            except ValueError:
+                sys.stderr.write(f"limit must be an integer, not {value!r}\n")
+                return 2
+        else:
+            sys.stderr.write(f"unknown argument {flag!r}\n{USAGE}")
+            return 2
+        index += 1
+
+    if install:
+        result = install_retention_timer()
+        sys.stdout.write(
+            json.dumps({"changed": result["changed"], "timer": str(result["timer"])})
+            + "\n"
+        )
+        return 0
+
+    report = retention_sweep(project=project, apply=apply, limit=limit)
+    sys.stdout.write(json.dumps(report, indent=2, default=str) + "\n")
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

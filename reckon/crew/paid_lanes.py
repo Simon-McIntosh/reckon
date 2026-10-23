@@ -46,6 +46,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from reckon import service
 from reckon._store import write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew import window_reading
@@ -120,30 +121,11 @@ _INTERVAL_UNIT_SECONDS = {
     "d": 86400.0,
 }
 
-SERVICE_TEMPLATE = """\
-[Unit]
-Description=publish the metered-backend headroom document
-After=network.target
-
-[Service]
-Type=oneshot
-WorkingDirectory={working_directory}
-{environment}\
-ExecStart={exec_start}
-"""
-
-TIMER_TEMPLATE = """\
-[Unit]
-Description=republish the metered-backend headroom document every five minutes
-
-[Timer]
-OnBootSec={boot_delay}
-OnUnitActiveSec={interval}
-Unit={service}
-
-[Install]
-WantedBy=timers.target
-"""
+#: What the publish service waits for before it runs: it reads providers over
+#: the network and serves a document a pre-flight reads, so it follows the
+#: network target. The retention sweep's service passes no ordering directive
+#: because it only touches the local crew home.
+SERVICE_AFTER = "network.target"
 
 OBSERVED = "observed"
 UNKNOWN = "unknown"
@@ -1359,20 +1341,22 @@ def render_service_unit(
     home = os.environ.get(RECKON_HOME_ENV)
     if home:
         forwarded.setdefault(RECKON_HOME_ENV, str(Path(home).expanduser().resolve()))
-    override = "".join(
-        f'Environment="{name}={value}"\n' for name, value in sorted(forwarded.items())
-    )
-    return SERVICE_TEMPLATE.format(
-        working_directory=working_directory,
-        environment=override,
+    return service.render_periodic_service_unit(
+        description="publish the metered-backend headroom document",
         exec_start=" ".join(shlex.quote(part) for part in argv),
+        working_directory=working_directory,
+        environment=forwarded,
+        after=SERVICE_AFTER,
     )
 
 
-def render_timer_unit(*, service: str = SERVICE_NAME) -> str:
+def render_timer_unit(*, service_name: str = SERVICE_NAME) -> str:
     """Render the timer that activates the publish service on its own clock."""
-    return TIMER_TEMPLATE.format(
-        boot_delay=BOOT_DELAY, interval=REFRESH_INTERVAL, service=service
+    return service.render_periodic_timer_unit(
+        description="republish the metered-backend headroom document every five minutes",
+        service=service_name,
+        interval=REFRESH_INTERVAL,
+        boot_delay=BOOT_DELAY,
     )
 
 
@@ -1384,35 +1368,18 @@ def install_timer(
 ) -> dict[str, Any]:
     """Install the refresh service and timer, then bring the timer up.
 
-    Two units are written under the user's systemd directory and, only when the
-    definition actually changed, the manager is reloaded and the timer enabled
-    and started. An unchanged re-run writes nothing and calls nothing, so
-    installing repeatedly is free and leaves a running timer untouched. The
-    manager is reached through ``systemctl --user`` on PATH, so a caller can
-    substitute a stub by putting one earlier on PATH.
+    The write, reload and enable steps belong to
+    :func:`reckon.service.install_timer_units`, the one owner of them, so this
+    pass supplies its two rendered units and its unit names and nothing else.
     """
-    from reckon import service
-
-    target = Path(directory) if directory is not None else None
-    service_path, service_changed = service.write_named_unit(
-        SERVICE_NAME, render_service_unit(executable), directory=target
+    return service.install_timer_units(
+        SERVICE_NAME,
+        render_service_unit(executable),
+        TIMER_NAME,
+        render_timer_unit(),
+        directory=Path(directory) if directory is not None else None,
+        run=run,
     )
-    timer_path, timer_changed = service.write_named_unit(
-        TIMER_NAME, render_timer_unit(), directory=target
-    )
-    changed = service_changed or timer_changed
-    commands: list[list[str]] = []
-    if changed:
-        command = run or (lambda args: service.systemctl(*args))
-        for args in (("daemon-reload",), ("enable", "--now", TIMER_NAME)):
-            command(list(args))
-            commands.append(list(args))
-    return {
-        "changed": changed,
-        "service": service_path,
-        "timer": timer_path,
-        "commands": commands,
-    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:

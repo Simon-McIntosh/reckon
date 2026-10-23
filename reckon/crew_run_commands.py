@@ -1555,6 +1555,63 @@ def crew_suite_waive(project, reason, who, checkout_path, pretty):
     _emit_crew_result({"project": project, "waiver": str(path)}, pretty)
 
 
+@crew.command(name="retention-sweep")
+@click.option(
+    "--project",
+    default=None,
+    help="Confine the pass to one mounted project; every mount by default.",
+)
+@click.option(
+    "--limit",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Remove at most this many run directories in one pass.",
+)
+@click.option(
+    "--apply",
+    is_flag=True,
+    help="Perform the removals; omission reports the exact dry run.",
+)
+@click.option(
+    "--install-timer",
+    "install_timer",
+    is_flag=True,
+    help="Write the hourly user service and timer, and start the timer.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_retention_sweep(project, limit, apply, install_timer, pretty):
+    """Retire finished run directories across every mounted project.
+
+    The pass runs the run-directory retention alone, judging each directory
+    against the ledger of the project that dispatched it, and removes at most
+    one pass's worth so it stays short on shared storage. ``--install-timer``
+    writes the hourly user units the sweep runs from.
+    """
+    from reckon.crew import gc as gc_module
+
+    if install_timer:
+        from reckon import service
+
+        try:
+            result = gc_module.install_retention_timer()
+        except service.ServiceError as exc:
+            raise click.ClickException(
+                f"could not install the retention timer: {exc}"
+            ) from exc
+        _emit(
+            {
+                "changed": result["changed"],
+                "service": str(result["service"]),
+                "timer": str(result["timer"]),
+            },
+            pretty,
+        )
+        return
+    settings = {} if limit is None else {"limit": limit}
+    report = gc_module.retention_sweep(project=project, apply=apply, **settings)
+    _emit_crew_result(report, pretty)
+
+
 @crew.command(name="gc")
 @click.option(
     "--repo",

@@ -18,8 +18,9 @@ import shutil
 import socket
 import subprocess
 import sys
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 UNIT_NAME = "reckon.service"
 
@@ -49,6 +50,38 @@ TimeoutStopSec=30
 
 [Install]
 WantedBy=default.target
+"""
+
+
+#: A periodic pass: an activation-triggered unit that runs to completion and a
+#: timer that activates it. Both live here rather than in the module that
+#: describes the pass, so the unit sections a manager parses are written in one
+#: place and a policy repair cannot land on one copy and miss another. The
+#: ordering directive is a caller's to pass: a pass that reads or publishes
+#: over the network waits for it, and one that only touches the local crew home
+#: has nothing to wait for.
+PERIODIC_SERVICE_TEMPLATE = """\
+[Unit]
+Description={description}
+{after}\
+[Service]
+Type=oneshot
+WorkingDirectory={working_directory}
+{environment}\
+ExecStart={exec_start}
+"""
+
+PERIODIC_TIMER_TEMPLATE = """\
+[Unit]
+Description={description}
+
+[Timer]
+OnBootSec={boot_delay}
+OnUnitActiveSec={interval}
+Unit={service}
+
+[Install]
+WantedBy=timers.target
 """
 
 
@@ -319,6 +352,93 @@ def write_named_unit(
     if not unchanged:
         target.write_text(content, encoding="utf-8")
     return target, not unchanged
+
+
+def render_periodic_service_unit(
+    *,
+    description: str,
+    exec_start: str,
+    working_directory: str | Path,
+    environment: Mapping[str, str] | None = None,
+    after: str | None = None,
+) -> str:
+    """Render the oneshot unit the timer activates.
+
+    ``after`` names a unit this pass must follow, such as ``network.target`` for
+    a pass that publishes over the network. A pass with nothing to wait for
+    passes nothing and gets no ordering directive, so the directive is one
+    caller's decision rather than a line every periodic unit inherits.
+    """
+    override = "".join(
+        f'Environment="{name}={value}"\n'
+        for name, value in sorted((environment or {}).items())
+    )
+    ordering = f"After={after}\n" if after else ""
+    return PERIODIC_SERVICE_TEMPLATE.format(
+        description=description,
+        after=ordering,
+        working_directory=working_directory,
+        environment=override,
+        exec_start=exec_start,
+    )
+
+
+def render_periodic_timer_unit(
+    *,
+    description: str,
+    service: str,
+    interval: str,
+    boot_delay: str,
+) -> str:
+    """Render the timer that activates ``service`` on ``interval``."""
+    return PERIODIC_TIMER_TEMPLATE.format(
+        description=description,
+        service=service,
+        interval=interval,
+        boot_delay=boot_delay,
+    )
+
+
+def install_timer_units(
+    service_name: str,
+    service_content: str,
+    timer_name: str,
+    timer_content: str,
+    *,
+    directory: str | Path | None = None,
+    run: Callable[[Sequence[str]], Any] | None = None,
+) -> dict[str, Any]:
+    """Write a service and its timer, then bring the timer up.
+
+    This is the one place a timer-backed pass is installed: a caller renders its
+    two unit files and names them, so the write, reload and enable steps exist
+    once rather than once per pass. Both units are written under the user's
+    systemd directory and, only when a definition actually changed, the manager
+    is reloaded and the timer enabled and started. An unchanged re-run writes
+    nothing and calls nothing, so installing repeatedly is free and leaves a
+    running timer untouched. The manager is reached through ``systemctl --user``
+    on PATH, so a caller can substitute a stub by putting one earlier on PATH.
+    """
+    target = Path(directory) if directory is not None else None
+    service_path, service_changed = write_named_unit(
+        service_name, service_content, directory=target
+    )
+    timer_path, timer_changed = write_named_unit(
+        timer_name, timer_content, directory=target
+    )
+    changed = service_changed or timer_changed
+    commands: list[list[str]] = []
+    if changed:
+        command = run or (lambda args: systemctl(*args))
+        for args in (("daemon-reload",), ("enable", "--now", timer_name)):
+            command(list(args))
+            commands.append(list(args))
+    return {
+        "changed": changed,
+        "service": service_path,
+        "timer": timer_path,
+        "commands": commands,
+    }
 
 
 def parse_restart_count(output: str) -> int | None:
