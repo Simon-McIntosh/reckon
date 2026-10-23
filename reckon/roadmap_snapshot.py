@@ -44,6 +44,35 @@ _ROADMAP_SNAPSHOT_LOCK = threading.Lock()
 _ROADMAP_SNAPSHOTS: dict[str, tuple[str, dict[str, Any]]] = {}
 
 
+class _MountsMemo:
+    """The mounts last resolved for a stamp, held until the stamp moves."""
+
+    stamp: int | None = None
+    mounts: dict[str, Path] | None = None
+
+
+_MOUNTS_MEMO = _MountsMemo()
+
+
+def remembered_mounts(
+    stamp: int | None, resolve: Callable[[], dict[str, Path]]
+) -> dict[str, Path]:
+    """Return the mounts resolved for ``stamp``, resolving them if it has moved.
+
+    ``resolve`` establishes that each mount's docs tree exists, and that stat
+    lands on a path inside the covered tree — the one place a key would
+    otherwise touch it on every call, to learn nothing that changed. Holding the
+    answer until the mounts file's own stamp moves is the only way a mount can
+    be added, removed or repointed under a running process.
+    """
+    memo = _MOUNTS_MEMO
+    if memo.mounts is not None and memo.stamp == stamp:
+        return memo.mounts
+    resolved = resolve()
+    memo.stamp, memo.mounts = stamp, resolved
+    return resolved
+
+
 def roadmap_revalidate_window() -> float:
     """Seconds a snapshot may be served before a full revalidation is forced."""
     raw = str(os.environ.get("RECKON_ROADMAP_REVALIDATE_S") or "").strip()
@@ -310,6 +339,6 @@ def roadmap_snapshot_store(project: str, key: str, payload: dict[str, Any]) -> N
         tmp.replace(path)
     except (OSError, TypeError, ValueError):
         # A snapshot that cannot be persisted costs the next process a cold
-        # read, which is the behaviour this section removes rather than a
-        # correctness failure — the answer served is the one just computed.
+        # read rather than an incorrect one: the answer already served is the
+        # composition just computed, and only the cache of it is lost.
         return

@@ -172,6 +172,7 @@ from reckon.roadmap_snapshot import (  # noqa: F401 - the import surface of this
     _ROADMAP_SNAPSHOT_VERSION,
     _head_commit_of,
     _roadmap_live_readings,
+    remembered_mounts,
     roadmap_project_generation,
     roadmap_revalidate_window,
     roadmap_snapshot_key,
@@ -1144,21 +1145,13 @@ _SERVED_SIGNATURE_TTL_S = 60.0
 # ── Roadmap snapshots ───────────────────────────────────────────────────────
 
 
-# The resolved mounts the last snapshot key was built over, with the stamp of
-# the file it was read from.
-_MOUNTS_MEMO: tuple[int | None, dict[str, Path]] | None = None
-
-
 def mounts_for_snapshot() -> dict[str, Path]:
-    """Resolve the mounts a snapshot key is built over, reusing the last answer.
+    """Return the mounts a snapshot key is built over, reusing the last answer.
 
-    ``load_mounts`` establishes that each mount's docs tree exists, and that
-    stat lands on a path inside the covered tree — the one place the key would
-    otherwise touch it, on every call, to learn nothing that changed. The
-    resolution is held until the mounts file itself moves, which is the only
-    way a mount can be added, removed or repointed under a running process.
+    The memo holding the last resolution, and the stamp that decides whether it
+    can be reused, belong to the snapshot key and live beside the store in
+    ``reckon.roadmap_snapshot``.
     """
-    global _MOUNTS_MEMO
     path = _MOUNTS_FILE
     if path is None:
         _resolve_paths()
@@ -1167,11 +1160,7 @@ def mounts_for_snapshot() -> dict[str, Path]:
         stamp = path.stat().st_mtime_ns if path is not None else None
     except OSError:
         stamp = None
-    if _MOUNTS_MEMO is not None and _MOUNTS_MEMO[0] == stamp:
-        return _MOUNTS_MEMO[1]
-    resolved = load_mounts()
-    _MOUNTS_MEMO = (stamp, resolved)
-    return resolved
+    return remembered_mounts(stamp, load_mounts)
 
 
 
