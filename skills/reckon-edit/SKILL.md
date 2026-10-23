@@ -165,9 +165,16 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    `review_owed` beside `review_invocation`: the outstanding units the coverage
    predicate `plan_review.review_coverage` reports uncovered, each with its
    measured change where one exists, and the one-line command that composes a
-   review of them. A **non-empty `review_owed` on the last write of an authoring
-   session** — not on each edit of a burst — means rule 9's read-back is owed.
-   Run the invocation once, with your session in place of its `<session>`,
+   review of them. **Act on `uncovered_by_write` after your own write, and on
+   `review_owed` before a build.** `uncovered_by_write` is the narrower list of
+   units *this write* moved from covered to uncovered; `review_owed` is the
+   plan's whole debt, which a stored review leaves standing until its prose is
+   reviewed again. A metadata, sprint, status or comment write therefore
+   reports the debt it inherited and an empty `uncovered_by_write` — composing
+   a review for that would pay for content nobody changed. A **non-empty
+   `uncovered_by_write` on the last write of an authoring session** — not on
+   each edit of a burst — means rule 9's read-back is owed: run the invocation
+   once, with your session in place of its `<session>`,
 
    ```bash
    reckon crew review --project <project> --plan <slug> --rubric content --session <session>
@@ -180,7 +187,10 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    **unknown** — the coverage predicate could not read the plan back, and
    `review_owed_error` names why — so treat it as owed and run the invocation
    before a build. An empty list and a null are different facts: nothing is
-   owed, versus the debt is unknown.
+   owed, versus the debt is unknown. The same distinction holds for
+   `uncovered_by_write`: a **null** there means the plan's coverage before the
+   write could not be read, and `uncovered_by_write_error` names why, so treat
+   it as unknown rather than as a write that uncovered nothing.
 
 ## Authoring for faithful display (the SPA render contract)
 

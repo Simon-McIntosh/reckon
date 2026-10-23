@@ -566,7 +566,11 @@ def _stale_plan_review(project: str, plan_slug: str) -> tuple[int, str] | None:
 
 
 def _review_owed_fields(
-    project: str, slug: str, written_path: str | None
+    project: str,
+    slug: str,
+    written_path: str | None,
+    *,
+    uncovered_before: set[str] | None = None,
 ) -> dict[str, Any]:
     """The review a successful plan write owes its author.
 
@@ -581,9 +585,22 @@ def _review_owed_fields(
     so a burst of edits earns one review and no review is attributed to a
     session that did not ask for it.
 
+    ``uncovered_by_write`` is the narrower list: the units THIS write moved from
+    covered to uncovered, found by subtracting the coverage the caller read
+    before the write (``uncovered_before``) from the coverage now. A stored
+    review leaves a unit uncovered until its prose is reviewed again, so a
+    metadata or lifecycle write reports the whole debt in ``review_owed`` while
+    uncovering nothing here, and a coordinator acting on its own write would
+    otherwise compose a review the plan did not need. A create declares an
+    empty ``uncovered_before`` — it has no content before it — so it names
+    every unit it wrote. A caller that could not read the plan's coverage
+    before the write passes ``None``, and the field is null: what the write
+    uncovered is unknown, which is a different fact from "it uncovered nothing".
+
     A predicate that cannot answer is reported as unknown, not as nothing owed:
-    ``review_owed`` is null and ``review_owed_error`` names why (the written
-    path was not reported, or the predicate raised). An empty list and a null
+    ``review_owed`` and ``uncovered_by_write`` are null and
+    ``review_owed_error`` names why (the written path was not reported, or the
+    predicate raised). An empty list and a null
     are different facts — nothing is owed, or the debt is unknown — and
     collapsing the second into the first would let a failed read pass for a
     clean answer. The write itself has already succeeded, so every exception at
@@ -598,6 +615,7 @@ def _review_owed_fields(
     if written_path is None:
         return {
             "review_owed": None,
+            "uncovered_by_write": None,
             "review_owed_error": "the successful write reported no path to the plan",
             "review_invocation": invocation,
         }
@@ -608,11 +626,31 @@ def _review_owed_fields(
     except Exception as error:  # noqa: BLE001 — named in the response, not swallowed
         return {
             "review_owed": None,
+            "uncovered_by_write": None,
             "review_owed_error": f"{type(error).__name__}: {error}",
             "review_invocation": invocation,
         }
     owed = [{"unit": unit, "change": changes.get(unit)} for unit in sorted(uncovered)]
-    return {"review_owed": owed, "review_invocation": invocation}
+    if uncovered_before is None:
+        fields: dict[str, Any] = {
+            "review_owed": owed,
+            "uncovered_by_write": None,
+            "uncovered_by_write_error": (
+                "the plan's coverage before the write could not be read, so what "
+                "this write uncovered is unknown"
+            ),
+            "review_invocation": invocation,
+        }
+        return fields
+    by_write = [
+        {"unit": unit, "change": changes.get(unit)}
+        for unit in sorted(uncovered - uncovered_before)
+    ]
+    return {
+        "review_owed": owed,
+        "uncovered_by_write": by_write,
+        "review_invocation": invocation,
+    }
 
 
 def _plan_status(

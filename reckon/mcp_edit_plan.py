@@ -1890,6 +1890,42 @@ def _refuse_unknown_op_verbs(ops: Any, resource_type: str) -> dict[str, Any] | N
     return None
 
 
+def _uncovered_before_write(
+    project: str,
+    slug: str,
+    checkout_path: str | None,
+    doc_type: str | None,
+    *,
+    create: bool,
+) -> set[str] | None:
+    """The units a plan reported uncovered just before a write lands.
+
+    ``review_owed`` on the answer is the plan's whole debt, so the write's own
+    contribution is that set minus this one. A create has no content before it,
+    so its before-set is empty by definition and every unit it writes is its
+    own. A plan whose file cannot be read answers ``None``, which the answer
+    reports as unknown rather than as nothing uncovered.
+    """
+
+    if create:
+        return set()
+    root = checkout_path
+    if root is None:
+        root, _refusal = _run_scoped_checkout(project, slug, doc_type)
+    written = _written_path(project, slug, root, doc_type)
+    if written is None:
+        return None
+    from reckon.crew import plan_review
+
+    try:
+        _records, uncovered, _changes = plan_review.review_coverage(
+            project, slug, plan=Path(written)
+        )
+    except Exception:  # noqa: BLE001 — reported as unknown on the answer
+        return None
+    return uncovered
+
+
 def _edit_plan_tool(
     project: str,
     slug: str,
@@ -1926,6 +1962,14 @@ def _edit_plan_tool(
     within the limit, or in a project declaring no limit, carries no warning.
     """
 
+    # The plan's coverage before the write is read here, because the write is
+    # what destroys it: ``review_owed`` on the answer is the plan's whole debt,
+    # and only the difference against this set is the write's own doing.
+    uncovered_before = (
+        _uncovered_before_write(project, slug, checkout_path, doc_type, create=create)
+        if _document_type(slug, doc_type) == "plan"
+        else None
+    )
     result = _edit_plan(
         project=project,
         slug=slug,
@@ -1943,7 +1987,11 @@ def _edit_plan_tool(
     # A plan write reports the review it owes; a doc write and an index write
     # do not, so the note is attached only to a plan.
     if result.get("ok") and result.get("resource", {}).get("type") == "plan":
-        result.update(_review_owed_fields(project, slug, result.get("path")))
+        result.update(
+            _review_owed_fields(
+                project, slug, result.get("path"), uncovered_before=uncovered_before
+            )
+        )
         # A write that moves a section declaration can be the one that leaves
         # the plan finished, so that write also answers with the plan's
         # readiness and what still stands before its close.
