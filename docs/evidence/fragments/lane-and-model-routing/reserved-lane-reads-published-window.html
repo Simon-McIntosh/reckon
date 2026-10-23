@@ -1,0 +1,66 @@
+<article class="r-evidence" data-node="reserved-lane-reads-published-window">
+  <h3 id="reserved-lane-reads-published-window-title">A reserved lane reads the window its account publishes, and any lift releases it</h3>
+  <p id="reserved-lane-reads-published-window-why">
+    The account surface reports one operative window and names it <code>primary</code> whatever
+    its length, so both of the clocks the picker knew by name read <code>not_published</code>.
+    <code>_reserved_five_hour_utilisation</code> read only <code>clocks.five_hour</code>, returned
+    nothing, and <code>_reserved_lane_exclusion</code> treated nothing as no headroom, so codex was
+    withheld on a reading that was four seconds old. Separately, only a credits lift released the
+    window term, and a session lift governs its own session over a global one, so granting the
+    stronger lift removed the release the weaker one gave.
+  </p>
+  <h4 id="reserved-lane-reads-published-window-what-changed">What changed</h4>
+  <ul id="reserved-lane-reads-published-window-list">
+    <li id="reserved-lane-reads-published-window-fill-clock">
+      <code>reckon/pace_report.py</code>: <code>fill_window_clock</code> is the one reader of a
+      group's fill window. It returns the observed five-hour clock, or -- when neither named clock
+      is observed -- the group's observed operative window from its allowance (utilisation,
+      <code>observed_at</code>, <code>resets_at</code>, <code>window_minutes</code>), written in the
+      clock shape. <code>pace_row</code>'s inline fallback is replaced by a call to it, with
+      unchanged output.
+    </li>
+    <li id="reserved-lane-reads-published-window-window-term">
+      <code>reckon/crew/picker/snapshot.py</code>: the picker's window term
+      (<code>_reserved_fill_window_utilisation</code>, formerly
+      <code>_reserved_five_hour_utilisation</code>) reads through that reader and keeps the picker's
+      own freshness rules -- the shelf life, taken from the published document for a
+      document-sourced group, and a reset that has not already passed. A group publishing a fresh
+      operative window therefore sends no <code>refresh_reserved_window</code> probe.
+    </li>
+    <li id="reserved-lane-reads-published-window-lift-release">
+      Whether any lift governs the lane's group for the pick's session is resolved for every
+      candidate whose lane is reserved, whatever the freshness of its reading -- the no-window case
+      is exactly where the release matters, and a bare <code>credit_lift</code> flag cannot carry it
+      because <code>_budget_exclusion_reasons</code> returns before it resolves the block.
+      <code>_reserved_lane_exclusion</code> takes <code>lift_in_force</code> in place of
+      <code>credit_lift</code> and skips its window term under any lift, so the lift-aware budget
+      verdict governs the lane and the tier term alone keeps an ordinary node local.
+    </li>
+  </ul>
+  <h4 id="reserved-lane-reads-published-window-evidence">Evidence</h4>
+  <p id="reserved-lane-reads-published-window-gate">
+    <code>tests/test_a_reserved_lane_reads_its_published_window.py</code> drives nine cases through
+    a live snapshot carrying <code>checked_at</code>, a budget view and a lift store in a temporary
+    crew home, and asserts the real crew home is untouched: an operative window at 0% offers the
+    lane to a hardest-tier node and the tier term withholds it from an ordinary one; the same window
+    at 70% is withheld naming 70% and the 60% ceiling; past its shelf life it is withheld as
+    <code>unknown or stale</code>; an observed five-hour clock at 30% beside an operative window at
+    90% governs and offers the lane; with no window at all an uncapped session lift over a global
+    credits lift offers the lane to a hardest-tier node and the tier term withholds it from an
+    ordinary one; the same with a session lift naming another session is withheld as
+    <code>unknown or stale</code>; a drain-by lift leaves the budget verdict to withhold it; a fresh
+    operative window sends no probe; and <code>pace_row</code> fills
+    <code>clocks[five_hour]</code> with the operative window's <code>primary</code> clock while
+    <code>clocks[seven_day]</code> stays <code>not_published</code>.
+  </p>
+  <p id="reserved-lane-reads-published-window-controls">
+    Both negative controls were applied alone, under pytest with the default short summary.
+    Removing the operative-window fallback failed the first case (4 failed, 5 passed). Restricting
+    the window-term release to credits lifts failed the uncapped session-lift case (2 failed, 7
+    passed). Neither mutation was left in the tree.
+  </p>
+  <p id="reserved-lane-reads-published-window-arms">
+    The importing test files (<code>pytest -n 8</code>, both arms on the fleet node) ran 2 failed,
+    539 passed at base <code>ecd22bbd7</code> against 2 failed, 548 passed at head.
+  </p>
+</article>
