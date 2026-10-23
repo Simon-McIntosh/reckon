@@ -91,9 +91,10 @@ def _subject(path, *, run_id, rubric):
 
 
 def _deliver(path, *, run_id, rubric, report):
-    """Write a delivered plan report and sidecar, and let the store read them.
-    """
-    fields = recovery._review_dispatch_fields(_subject(path, run_id=run_id, rubric=rubric))
+    """Write a delivered plan report and sidecar, and let the store read them."""
+    fields = recovery._review_dispatch_fields(
+        _subject(path, run_id=run_id, rubric=rubric)
+    )
     sidecar = json.loads(Path(fields["sidecar"]).read_text())
     Path(sidecar["report_path"]).write_text(report)
     refusals = plan_review.store_delivered_reviews("sample", "fixture")
@@ -149,9 +150,9 @@ def test_a_code_report_with_one_health_rubric_line_stores_that_item(project):
     report = "RUBRIC width: pass\nTREATMENT: none — nothing to repair\n"
     record = plan_review.delivered_report_record(_code_sidecar(report))
     assert record["rubric_items"] == {"width": "pass"}
-    assert [item for item in record["absent_items"] if item != "width"] == list(
+    assert [item for item in record["absent_items"] if item != "width"] == [
         item for item in HEALTH_ITEMS_WRITTEN if item != "width"
-    )
+    ]
 
 
 def test_a_bulleted_plan_report_is_admitted_and_its_finding_answerable(section_plan):

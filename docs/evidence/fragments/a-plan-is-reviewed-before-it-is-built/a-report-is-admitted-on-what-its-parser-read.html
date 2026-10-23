@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="reckon-fragment" content="a-report-is-admitted-on-what-its-parser-read">
+<meta name="plan" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="section" content="s41">
+<title>A report is admitted on what its own parser read</title>
+</head>
+<body>
+<article id="a-report-is-admitted-on-what-its-parser-read-record">
+<h3>A report is admitted on what its own parser read</h3>
+
+<p id="a-report-is-admitted-on-what-its-parser-read-guard">The separate admission
+guard is gone. <code>delivered_report_record</code> now reads the sidecar's
+subject once, dispatches a <code>code</code> subject to
+<code>_code_review_record</code> and every other subject to
+<code>parse_review_report</code>, and refuses the report as not a review when the
+parse of its own grammar holds no rubric item and no finding. The refusal names
+the grammar the report was read under — <code>plan</code> or
+<code>health</code>. <code>_report_line_reader</code> and
+<code>report_carries_review_lines</code> are deleted with it.</p>
+
+<p id="a-report-is-admitted-on-what-its-parser-read-effect">A code report whose
+only emitted lines are <code>RUBRIC evidence: pass</code> and a
+<code>TREATMENT</code> line is now refused rather than stored with six absent
+items: <code>evidence</code> is not a health-rubric item, so the health grammar
+reads no item and no finding in it. A plan report whose only <code>RUBRIC</code>
+line names an item outside its own rubric is refused the same way. A bulleted
+plan report is still admitted, its finding still stored and still answerable
+through <code>crew review --answer</code>.</p>
+
+<p id="a-report-is-admitted-on-what-its-parser-read-measure">Head arm: the
+declared gate ran 85 cases, 82 passed and 3 failed. The three failures are two
+test files outside this node's write scope whose fixtures deliver a report
+carrying only <code>RUBRIC wiring: pass</code> under the design rubric, so the
+new rule refuses them. Negative control: the base revision with the new test file
+copied in failed 2 cases
+(<code>test_a_code_report_outside_the_health_rubric_is_refused</code> and
+<code>test_a_plan_report_naming_an_item_outside_its_rubric_is_refused</code>)
+with <code>EXIT=1</code> — the ids the head arm does not fail.</p>
+</article>
+</body>
+</html>
