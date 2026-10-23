@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:53:46.726Z",
+  "dispatched_at": "2026-10-23T22:46:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:172",
+      "id": "done_when-1",
+      "reason": "a second plan that succeeds in the same batch would make the retry re-write a plan whose version already advanced, and no assertion in the single-plan case would catch it.",
+      "text": "\u00a79's done-when moves one plan between two sprints, so a retry handling only the pending plan is indistinguishable from one that re-writes every moved plan (or that records success after completing only one of several pending plans), while the receipt field and the retry loop are per-plan lists",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4bc0b9e0aa3d33adc9bb1e139fec6db982b0ec53fca5c483223714a829e9dcc9",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 62,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T224520583475-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "fec8774d57ac7de9921018b700e3c3beec09c7b7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/mcp_edit_plan.py:1728`, `:1744`, `:1324`, `_store.py record_write_receipt` and `_store.py _apply_move` all resolve at head, and \"near\" absorbs the one-line offset (the partial-write result is assigned at `:1729`).",
+    "done_when": "a finding \u2014 \u00a79's measure moves one plan, while the receipt it introduces is a per-plan list, so a retry that re-writes an already-completed plan cannot be distinguished from one that writes only pending plans.",
+    "evidence_paths": "pass \u2014 \u00a79 names its test file and states its logs sit under the run directory, a durable path on the run's record (the same form \u00a78 carries).",
+    "naming": "pass \u2014 the new symbols the plan implies (the receipt's pending-plan field, `tests/test_a_retried_partial_move_is_not_replayed.py`) are named by mechanism; no plan label, stage name or ticket number enters code.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (a partial write still records a receipt at `:1744` and `:1324` replays it as success), the mechanism produces the done-when, and it runs on the real retry path (`_edit_plan`'s receipt lookup, `record_write_receipt`), with the caller named.",
+    "single_goal": "pass \u2014 \u00a79 has one deliverable: a retried partial sprint move is not replayed as success and its pending plan writes complete.",
+    "wiring": "pass \u2014 \u00a79 declares no dependency it needs: the section it repairs (\u00a78) is `done` in `plan-section-declarations` and its code is present at head, and its open followup `f-tprt-009` (`plan.html:224`) dispatches it."
+  },
+  "section_digests": {
+    "_document": "99c9e3cf9942e999d5740a5fbefff3d49790d2568cd12c6bc07b4892fcca6913",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "7cdc797dcf16f38ad2a631560de8b391ecf7c195068950b179a484275f2d9ece"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:01:14.512316+00:00"
+}
