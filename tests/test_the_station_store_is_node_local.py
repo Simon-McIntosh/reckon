@@ -136,34 +136,31 @@ def test_a_shared_filesystem_root_is_refused_naming_its_type(
     tmp_path, monkeypatch, kind
 ):
     runtime = _runtime_root(tmp_path)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     monkeypatch.setattr(host, "_filesystem_type", lambda target, mounts: kind)
 
     with pytest.raises(station_store.StationStoreError) as refusal:
-        station_store.StationStore.at_runtime_root(
-            environ={"XDG_RUNTIME_DIR": str(runtime)}
-        )
+        station_store.StationStore.at_runtime_root()
     assert kind in str(refusal.value)
 
 
 def test_an_undeterminable_root_is_refused(tmp_path, monkeypatch):
     runtime = _runtime_root(tmp_path)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     monkeypatch.setattr(host, "_filesystem_type", lambda target, mounts: None)
 
     with pytest.raises(
         station_store.StationStoreError, match="could not be determined"
     ):
-        station_store.StationStore.at_runtime_root(
-            environ={"XDG_RUNTIME_DIR": str(runtime)}
-        )
+        station_store.StationStore.at_runtime_root()
 
 
 def test_a_tmpfs_root_is_accepted(tmp_path, monkeypatch):
     runtime = _runtime_root(tmp_path)
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     monkeypatch.setattr(host, "_filesystem_type", lambda target, mounts: "tmpfs")
 
-    store = station_store.StationStore.at_runtime_root(
-        environ={"XDG_RUNTIME_DIR": str(runtime)}
-    )
+    store = station_store.StationStore.at_runtime_root()
     store.connect()
     assert store.database.parent == runtime
 
