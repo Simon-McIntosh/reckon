@@ -323,9 +323,9 @@ def test_the_read_probes_git_only_for_a_claim_that_can_meet_its_own(
     probed = [Path(cwd).resolve() for _command, cwd in probes]
     assert set(probed) <= {first.resolve(), second.resolve()}, probes
     assert len(set(probed)) == len(probed) <= 2, probes
-    assert not [
-        cwd for cwd in probed if (tmp_path / "checkouts") in cwd.parents
-    ], probes
+    assert not [cwd for cwd in probed if (tmp_path / "checkouts") in cwd.parents], (
+        probes
+    )
 
 
 def test_a_claim_that_cannot_meet_the_dispatch_is_returned_unread(home, tmp_path):
