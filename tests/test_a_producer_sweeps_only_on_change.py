@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon import checkout_trust
 from reckon.crew import (
     budget_lift,
     recovery_classification,
@@ -118,6 +119,14 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     # No run holds a worker record here, so the descendant probe never runs;
     # pin it so the case cannot read this host's process table either.
     monkeypatch.setattr(recovery_watch, "_live_descendant", lambda pid: None)
+    # The opening sweep reads this process's own code identity, and the git
+    # reads behind it are held in a module-level cache keyed by the checkout
+    # root and held against ``HEAD``. One such read anywhere earlier in the
+    # same process leaves that entry behind, and the sweep that follows then
+    # exercises no git at all, so the quiet case's positive control would be
+    # reading a warm cache rather than the instrument. Give this case its own
+    # empty hold, so the opening sweep asks git whatever ran before it.
+    monkeypatch.setattr(checkout_trust, "_identity_hold", {})
     tree, base = _worktree(tmp_path)
     records = [
         _pointer(f"r-s{index}", worktree=tree, base_sha=base) for index in range(THREE)

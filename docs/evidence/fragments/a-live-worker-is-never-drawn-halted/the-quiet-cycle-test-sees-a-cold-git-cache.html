@@ -1,0 +1,45 @@
+<section data-reckon="evidence" id="the-quiet-cycle-test-sees-a-cold-git-cache">
+  <h2>The quiet-cycle test reads a cold identity hold, not a warm one</h2>
+  <p id="the-quiet-cycle-test-sees-a-cold-git-cache-what">
+    <code>test_quiet_cycles_list_nothing_and_spawn_no_git</code> opens by
+    requiring that its opening sweep spawned git at least once, so that its
+    later claim — a quiet beat spawns none — is a measurement rather than a
+    vacuous one. That opening spawn is not produced by the fleet fixture at
+    all: it comes from the producer's own first pass taking the seat
+    (<code>watch_ticker</code> &rarr; <code>_watch_registration</code> &rarr;
+    <code>runs._project_watch_claim</code> &rarr;
+    <code>follower_registration.running_code_stamp</code> &rarr;
+    <code>checkout_trust.source_code_identity</code>), which reads this
+    process's own checkout through <code>git ls-tree</code>. Those git reads
+    are held in <code>checkout_trust._identity_hold</code>, a process-global
+    cache keyed by the checkout root and held against a spawn-free reading of
+    <code>HEAD</code>. Any earlier test in the same process that took that
+    reading leaves the entry behind, <code>HEAD</code> has not moved, and the
+    opening sweep is then answered from the hold and spawns no git at all. The
+    positive control measured the cache's state rather than the instrument.
+  </p>
+  <p id="the-quiet-cycle-test-sees-a-cold-git-cache-measure">
+    <strong>Measure.</strong> Ordered run of the 73 test files that reach
+    <code>recovery_classification</code> and <code>recovery_liveness</code>,
+    followed by <code>tests/test_a_producer_sweeps_only_on_change.py</code> in
+    one pytest process. At the base revision the quiet case fails
+    <code>assert marks["spawn"][0] &gt;= 1</code> —
+    <code>AssertionError: the opening sweep must have exercised git, assert 0
+    &gt;= 1</code> — with 13 failed, 634 passed, 1 skipped, exit 1
+    (<code>gate-base.log</code>). With the fix, the same 73 files hold
+    <code>checkout_trust._identity_hold</code> at exactly one key — the session
+    checkout root — when the quiet case is set up, and the case passes
+    (<code>gate-head.log</code>). The fix is one
+    <code>monkeypatch.setattr(checkout_trust, "_identity_hold", {})</code> in
+    that file's <code>fleet</code> fixture; no product module changed.
+  </p>
+  <p id="the-quiet-cycle-test-sees-a-cold-git-cache-scope">
+    <strong>Scope.</strong>
+    <code>tests/test_a_producer_sweeps_only_on_change.py</code>. The base arm
+    and the head arm run the same ordered cohort; the failures the cohort adds
+    beside the quiet case (in <code>test_a_folded_finding_widens_its_repair.py</code>,
+    <code>test_a_resume_is_not_drawn_halted.py</code> and five further files)
+    are present at the base revision too and are outside this node's write
+    scope, so they are recorded as follow-ons rather than repaired here.
+  </p>
+</section>
