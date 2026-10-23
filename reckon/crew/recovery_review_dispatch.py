@@ -65,6 +65,15 @@ FIGURE_REVIEW_DISPATCH_FIELD = "figure_review_dispatch"
 # about a resume a person typed.
 RESUME_SUPERSEDED_HEAD = "resume_superseded_head"
 
+# The margin a manifest write must clear the recorded resume instant by before
+# it reads as the resumed attempt's own delivery. The instant is stored at
+# whole-second resolution, so a write inside the second the resume was stamped
+# in cannot be ordered against it; reading only writes clear of that whole
+# second keeps a manifest the resume itself rewrote from counting as a
+# delivery. A record carrying the manifest generation the resume began from
+# needs no margin, because that comparison uses the write times themselves.
+RESUME_DELIVERY_SECONDS = 1.0
+
 
 def resume_superseded_head(record: Mapping[str, Any]) -> str:
     """The revision a resume of this run replaced, or empty.
@@ -110,6 +119,19 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
         return False
     from reckon.crew.dispatch import _WORKER_DONE_MANIFEST_STATUSES
 
+    # The resume records the manifest generation it began from, and comparing
+    # the manifest's own write against it needs no clock. The resume instant is
+    # the fallback for a record that carries no baseline, and it is stored at
+    # whole-second resolution, so a write anywhere inside the second the resume
+    # was stamped in cannot be told from the one the resume itself rewrote: a
+    # delivery is read only once the write is clear of that whole second.
+    baseline_ns = record.get("manifest_baseline_mtime_ns")
+    try:
+        baseline_ns = int(baseline_ns) if baseline_ns is not None else None
+    except (TypeError, ValueError):
+        baseline_ns = None
+    resumed_ns = int((resumed_at.timestamp() + RESUME_DELIVERY_SECONDS) * 1_000_000_000)
+
     node = record.get("node")
     candidates: list[Path] = []
     for raw in (
@@ -125,7 +147,7 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
     for manifest in candidates:
         try:
             text = manifest.read_text(encoding="utf-8")
-            written_at = manifest.stat().st_mtime
+            written_ns = manifest.stat().st_mtime_ns
         except OSError:
             continue
         try:
@@ -136,7 +158,9 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
             return False
         if status.lower() not in _WORKER_DONE_MANIFEST_STATUSES:
             return False
-        return written_at > resumed_at.timestamp()
+        if baseline_ns is not None:
+            return written_ns > baseline_ns
+        return written_ns > resumed_ns
     return False
 
 
