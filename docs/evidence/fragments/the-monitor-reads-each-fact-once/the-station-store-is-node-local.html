@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s5">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <title>One node-local store, and a root it refuses to open without proof</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="the-station-store-is-node-local-landing" data-node="the-station-store-is-node-local" data-reckon="landed" data-when="2026-10-23">
+  <h2>The station's store: one node-local database, one day file per UTC day, and a root it must prove</h2>
+
+  <p id="the-station-store-is-node-local-module"><strong>What landed.</strong> <code>reckon/crew/station_store.py</code> owns one SQLite database in WAL mode under the node-local runtime root, with tables <code>pointers</code>, <code>streams</code>, <code>cursors</code>, <code>obligations</code> and <code>station</code>, plus one events database per UTC day under the root's <code>events</code> directory, attached one at a time for reads. Events carry the fields the plan names — id, time, project, audience, run, kind, from, to, detail, duty — with indexes on <code>(audience, id)</code> and <code>(project, id)</code>. A missing database is rebuilt from the crew home by <code>rebuild()</code>, which discovers the crew home's live pointers and each pointer's stream and ingests them. The stat identity stored for a pointer and for a stream is <code>reckon.file_memo.file_signature</code>'s five-tuple, so the station keys a file exactly as every in-process memo does and re-parses a pointer only when that identity moves.</p>
+
+  <p id="the-station-store-is-node-local-root"><strong>The root and the two refusals.</strong> <code>reckon/crew/dispatch_watch.py</code> gains <code>session_host_runtime_root</code> and <code>session_host_runtime_candidate</code>, public, so the station and the session host that starts it resolve one directory; the private spelling the crew surface re-exports is kept as a thin alias, so no import in <code>reckon/crew/dispatch.py</code> moved. The candidate answer names which of the three candidates produced the root, because only <code>$XDG_RUNTIME_DIR</code> and then <code>/run/user/&lt;uid&gt;</code> are shared by every process on the node: a root reached only through <code>TMPDIR</code> is refused, since <code>TMPDIR</code> differs per session and a store there would be per-session rather than the node's. The root's mount type is read through <code>reckon.host._filesystem_type</code> and every type in <code>host._SHARED_FILESYSTEMS</code> is refused naming its type; a type that cannot be determined is refused too, so the guard fails closed. <code>host._is_node_local</code> is deliberately not called: it accepts the runtime root by path prefix before it consults the mount type (<code>reckon/host.py:190</code>–<code>192</code>), which is exactly the root this store uses. Both refusals raise <code>station_store.StationStoreError</code>, the module's own class, which joins no entry of <code>reckon.crew.refusals.DISPATCH_REFUSAL_REMEDIES</code>.</p>
+
+  <p id="the-station-store-is-node-local-retention"><strong>Retention.</strong> A day file is named for the UTC day it holds, and <code>sweep_retention</code> unlinks every file whose day falls outside the window (seven days, a constructor value) so the rows leave with the file. A name that encodes no day is never unlinked, which is what makes the first negative control below red rather than silently green.</p>
+
+  <p id="the-station-store-is-node-local-gate"><strong>Gate.</strong> <code>tests/test_the_station_store_is_node_local.py</code> drives all of it: <strong>15 passed, EXIT=0</strong>. Its cases are a rebuild from a fixture crew home of three pointers and two streams compared row-for-row against an incremental build of the same home (pointer rows and observation rows equal, both streams at <code>consumed &gt; 0</code>); a day file nine days old unlinked by a sweep at a fixed <code>now</code>, its rows gone from the store's read path, and every surviving file inside the window; a root under a temporary <code>$XDG_RUNTIME_DIR</code> refused once per type in <code>host._SHARED_FILESYSTEMS</code>, naming that type, with <code>host._filesystem_type</code> steered to each of the eight; the same root refused when the type reads <code>None</code>; accepted when it reads <code>tmpfs</code>; a root resolving only through <code>TMPDIR</code> refused; and a pointer whose <code>file_memo.file_signature</code> is unchanged parsed zero further times across a second tick, then parsed exactly once more after its phase changes.</p>
+
+  <p id="the-station-store-is-node-local-negative"><strong>Negative controls.</strong> Both declared mutations were applied to the delivered module and reverted immediately. Writing events into one undated file turns the retention case red — <strong>1 failed, EXIT=1</strong> (<code>logs/negative-undated-events.log</code>): the store reports no file to unlink at all, so the row that should have left has not. Checking the root through <code>host._is_node_local</code> rather than the mount type turns all eight shared-type cases red — <strong>8 failed, EXIT=1</strong> (<code>logs/negative-is-node-local-root.log</code>): the root sits under <code>$XDG_RUNTIME_DIR</code>, which that predicate accepts by path prefix whatever the mount type says, so every shared type is accepted and the refusal never fires.</p>
+
+  <p id="the-station-store-is-node-local-scope"><strong>What this section adds and what it does not.</strong> The module and the two public root resolvers are added; nothing reads the store yet, so nothing is retired here — the surfaces it replaces are retired where they are named. Ingest that reads only bytes it has not read, the one-station-per-node process and its lock, the subscriber's cursor and generation wake, the obligations snapshot export, the once-per-change review reflex and the measured cutover are the later sections of this plan.</p>
+</article>
+</body>
+</html>
