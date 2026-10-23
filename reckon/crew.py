@@ -190,7 +190,6 @@ _MODULE_EXPORTS = {
         "_as_list",
         "parse_needs_help",
         "audit_manifest",
-        "followup_ops_from_manifest",
     ),
     "summary": ("validate_summary",),
     # No facade-level exports: the grid is reached through the module that

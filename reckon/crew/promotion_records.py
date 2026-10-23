@@ -123,7 +123,7 @@ def _rebuild_record_from_run_directory(
     # says it delivered, so a rebuilt record presents that declaration in place
     # of the lost assignment. Without it a run citing its own commit is refused
     # for changing paths no surviving declaration contains, which is exactly the
-    # discarded run that reached main through a follow-on.
+    # discarded run that reached main through an outside-scope entry.
     if manifest.is_file():
         try:
             manifest_data = parse_manifest(manifest.read_text(encoding="utf-8"))

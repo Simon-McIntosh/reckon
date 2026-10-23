@@ -21,7 +21,6 @@ from reckon import crew
 from reckon.roadmap import build_roadmap
 from tests.mcp_family_reload import reload_mcp_family
 
-
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
 
@@ -516,9 +515,11 @@ def test_a_cross_project_dependency_is_not_claimed_as_a_local_feed() -> None:
 def test_the_chain_stays_intact_from_worker_to_sprint(setup) -> None:
     """One trace across all three altitudes.
 
-    A worker reports a follow-on it was fenced out of; that becomes a plan
-    followup in the same writeback that resolves the driving one; and the sprint
-    holding the plan reports the sprint it feeds. No altitude ends silently.
+    A worker reports work outside its fence under the manifest's
+    ``outside_scope`` field; the coordinator answers it by authoring a plan
+    section in the same writeback that resolves the driving followup; and the
+    sprint holding the plan reports the sprint it feeds. No altitude ends
+    silently, and nothing is parked in a bucket.
     """
     docs_dir, _, project = setup
     _plan_html(
@@ -538,15 +539,18 @@ def test_the_chain_stays_intact_from_worker_to_sprint(setup) -> None:
         "commits: 1a2b3c4\n"
         "changed_paths: reckon/_backends.py\n"
         "tests: uv run pytest tests/test_backends.py -q -> 28 passed\n"
-        "follow_ons: the observe command needs a --wait flag\n"
+        "outside_scope: the observe command needs a --wait flag\n"
         "blockers: none\n"
     )
 
-    # Worker altitude: the candidate follow-on becomes an append op.
-    ops = crew.followup_ops_from_manifest(manifest, slug="plan-a", section="§3")
-    assert len(ops) == 1
+    # Worker altitude: the entry reaches the coordinator, and becomes no plan
+    # followup on its own — the surface that reads it is the promotion report.
+    parsed = crew.parse_manifest(manifest)
+    assert parsed["outside_scope"] == ["the observe command needs a --wait flag"]
+    assert not hasattr(crew, "followup_ops_from_manifest")
 
-    # Plan altitude: the same writeback resolves the driver and appends the next.
+    # Plan altitude: the same writeback resolves the driver and authors the
+    # section the entry asked for.
     result = mcp_module._edit_plan(
         project,
         "plan-a",
@@ -558,17 +562,32 @@ def test_the_chain_stays_intact_from_worker_to_sprint(setup) -> None:
                 "by": "reckon-build",
                 "outcome": "§2 landed — commit 1a2b3c4; 28 tests green",
             },
-            *ops,
+            {
+                "op": "insert_section",
+                "id": "s4",
+                "title": "§4 — The observe command waits",
+                "body": "<p>The observe command needs a --wait flag.</p>",
+                "effort_hours": 1.0,
+                "capability": {
+                    "version": "1.0",
+                    "class": "general",
+                    "requirements": {
+                        "reasoning": "standard",
+                        "verification": "strict",
+                        "risk": "low",
+                    },
+                },
+                "links": [],
+            },
         ],
         0,
     )
     assert result["ok"] is True
 
     data, _ = _store_module.read_plan(project, "plan-a")
-    carried = [f for f in data["followups"] if f["status"] == "open"]
-    assert len(carried) == 1
-    assert carried[0]["prompt"] == "/reckon-build plan-a §3"
-    assert "fenced out of its write scope" in carried[0]["body"]
+    section_ids = [section["id"] for section in data["sections"]]
+    assert "s4" in section_ids
+    assert [f for f in data["followups"] if f["status"] == "open"] == []
 
     # Sprint altitude: what closing this sprint would let us start.
     inventory = [

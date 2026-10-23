@@ -105,6 +105,9 @@ from reckon.crew.reports import (
     _NONE_VALUES as _MANIFEST_NOTHING,
 )
 from reckon.crew.reports import (
+    OUTSIDE_SCOPE as OUTSIDE_SCOPE_MANIFEST_FIELD,
+)
+from reckon.crew.reports import (
     TERMINAL_MANIFEST_STATUSES,
     ManifestParseError,
     parse_manifest,
@@ -1263,11 +1266,16 @@ def _complete_locked(
     # alone; the run directory survives, pruned only later by crew gc. An
     # unreadable manifest
     # leaves outside-scope paths unmeasured (key absent) and the dispute count
-    # "unknown" — a node never measured is not one that measured zero. The
-    # manifest field keeps its own name here; the committed row takes the
-    # renamed one.
+    # "unknown" — a node never measured is not one that measured zero.
+    outside_scope_entries = (
+        None
+        if manifest is None
+        else list(manifest.get(OUTSIDE_SCOPE_MANIFEST_FIELD) or [])
+    )
     outside_scope_paths = (
-        None if manifest is None else ledger.follow_on_paths(manifest.get("follow_ons"))
+        None
+        if outside_scope_entries is None
+        else ledger.follow_on_paths(outside_scope_entries)
     )
     predecessor = ledger.predecessor_run_id(
         supplied=_coordinator_supplied_predecessor(record),
@@ -1779,6 +1787,11 @@ def _complete_locked(
             "impl_move": dict(impl_move),
             "negative_control": dict(negative_control),
             "landing_check": landing_check,
+            # Work the worker found beyond its fence rides the report so the
+            # dispatching coordinator answers each entry — as a plan section or
+            # as an instruction in the next dispatch's prompt — rather than
+            # leaving it in a bucket no roadmap reads.
+            "outside_scope": outside_scope_entries,
         }
 
 

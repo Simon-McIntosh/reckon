@@ -90,7 +90,7 @@ read task requirements + apply explicit runtime routing + applicable skill
 → reckon crew verify-gate — re-run a promoted run's own gate at the merged head
 → read and merge the worker-authored record, may edit or append (§5 step 7), then write impl
 → emit the completion summary, WHY carrying the gate evidence
-→ re-triage open followups + manifest follow_ons; fold them into the DAG until dry
+→ answer every `outside_scope` entry on each landed run — a plan section or a prompt
 → write the drain ledger; foldable-remaining, unreconciled-runs and executable-remaining must read 0
 → record any deliberate live-pointer remainder through reckon crew drain
 → record plan/evidence/sprint outcomes + continuation at all three altitudes
@@ -229,8 +229,8 @@ measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
     inactive, contradictory, cyclic, sprint-order, or membership findings are
     wiring repairs, not scientific blockers and not override prompts.
 16. **Drain followups and live run pointers before closure, and sign both.** Re-triage open
-    followups after every landing beat, route that node's manifest `follow_ons`
-    through the same loop, and repeat until a complete pass finds nothing foldable.
+    followups after every landing beat, answer that node's manifest `outside_scope`
+    entries the same way, and repeat until a complete pass finds nothing foldable.
     Write the §7c drain ledger before any closing report: every row disposed as
     `folded` (with its node id), `authority-required`, `dissent-reopen`,
     `foreign-owner`, or `context-exhausted` (with its figure). **A session does not
@@ -1016,15 +1016,16 @@ two dangling.
 
 | Altitude | What it owes | How |
 |---|---|---|
-| **Worker** | candidate follow-ons it was fenced out of | classify the manifest's `follow_ons`: same-plan work becomes a section; different-plan work routes to its owning plan |
+| **Worker** | the work it found beyond its fence | answer each `outside_scope` entry: author a plan section, or write it into the next dispatch's prompt |
 | **Plan landing** | visible continuation, or an explicit end | keep same-plan sections active; use a one-line followup only for another plan, or close the plan with the `close` op when the chain ends |
 | **Sprint close** | the sprints this one lets us start | `roadmap(project)` → each sprint row's `feeds_sprints` and `unblocks`, derived from the dependency graph |
 
-A worker's out-of-scope discovery has nowhere to go but prose, where it is lost.
-Classify every `follow_ons` entry before writing it. Never feed same-plan work
-blindly into `crew.followup_ops_from_manifest`: author it as a section and add
-its nodes to the live DAG. Only cross-plan work may become a followup invocation,
-pointing at the plan whose lifecycle owns and surfaces it.
+A worker's out-of-scope discovery has nowhere to go but the manifest's
+`outside_scope` field, and from there to the promotion report and the ledger row
+below it. It is a bucket no roadmap reads, so the coordinator answers **each
+entry**: author a plan section and add its nodes to the live DAG, or write the
+work into the next dispatch's prompt. A manifest entry is never converted into a
+plan followup.
 
 **The plan altitude is enforced at the write boundary.** A writeback that lands a
 plan — one that resolves a followup or closes it — is **refused** unless an open
@@ -1040,8 +1041,8 @@ that feeds nothing says so instead of staying silent.
 
 **A followup generated during execution is triage input for the current run,
 not a handoff by default.** After every landing beat, collect the selected plan's
-open followups and the landed manifest's `follow_ons` entries into one
-triage queue. Manifest `follow_ons` enter the same triage loop as open plan
+open followups and the landed manifest's `outside_scope` entries into one
+triage queue. Manifest `outside_scope` entries enter the same triage queue as open plan
 followups; their origin changes the evidence trail, not their disposal.
 
 Folding is the default. For each queue entry, either fold its executable work
@@ -1076,7 +1077,7 @@ After folding and executing the added nodes, re-read open followups before
 testing for completion: landing that work may have generated more. Re-triage
 after every landing beat and terminate only when a complete pass finds nothing
 foldable. A fixed pass count, the end of the original DAG, or an empty
-`follow_ons` field from one manifest is not the termination condition.
+`outside_scope` field from one manifest is not the termination condition.
 
 **The drain ledger — the check that makes this rule hold.** "A complete pass
 found nothing foldable" is unfalsifiable unless the pass leaves an object behind,
