@@ -672,34 +672,34 @@ def classify_pointer(
         WAITING_UPSTREAM_PHASES,
     )
 
-    if phase in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES):
+    if phase in WAITING_UPSTREAM_PHASES:
         classification = phase
-        if phase in WAITING_UPSTREAM_PHASES:
-            # A request held on a section it waits for is stored, not launched,
-            # and no lane slot will release it: what releases it is the upstream
-            # section landing, which the admission pass reads back from this
-            # same pointer. The two waiting phases are told apart because their
-            # remedies differ -- one is released by time, the other never is.
-            waits = [str(ref) for ref in record.get("waits") or ()]
-            waiting_on = ", ".join(waits) or "an upstream section"
-            if phase == BLOCKED_UPSTREAM_PHASE:
-                detail = str(record.get("reason") or "") or (
-                    f"a section this request waits on can no longer land: {waiting_on}"
-                )
-                action = f"recover or drop this request: {waiting_on}"
-            else:
-                detail = str(record.get("reason") or "") or (
-                    f"waiting for {waiting_on} to land"
-                )
-                action = f"wait for {waiting_on} to land"
+        # A request held on a section it waits for is stored, not launched, and
+        # no lane slot will release it: what releases it is the upstream section
+        # landing, which the admission pass reads back from this same pointer.
+        # The two waiting phases are told apart because their remedies differ --
+        # one is released by time, the other never is.
+        waits = [str(ref) for ref in record.get("waits") or ()]
+        waiting_on = ", ".join(waits) or "an upstream section"
+        if phase == BLOCKED_UPSTREAM_PHASE:
+            detail = str(record.get("reason") or "") or (
+                f"a section this request waits on can no longer land: {waiting_on}"
+            )
+            action = f"recover or drop this request: {waiting_on}"
         else:
-            session_refusal = _queued_failure_remedy(record)
-            if session_refusal is not None:
-                detail = session_refusal["detail"]
-                action = session_refusal["next_command"]
-            else:
-                detail = str(record.get("reason") or "waiting for a local lane slot")
-                action = "wait for a local lane slot"
+            detail = str(record.get("reason") or "") or (
+                f"waiting for {waiting_on} to land"
+            )
+            action = f"wait for {waiting_on} to land"
+    elif phase == QUEUED_PHASE:
+        classification = "queued"
+        session_refusal = _queued_failure_remedy(record)
+        if session_refusal is not None:
+            detail = session_refusal["detail"]
+            action = session_refusal["next_command"]
+        else:
+            detail = str(record.get("reason") or "waiting for a local lane slot")
+            action = "wait for a local lane slot"
     elif _attempt_awaits_its_worker(record) and (
         not manifest_status or manifest_status in NON_TERMINAL_MANIFEST_STATUSES
     ):
