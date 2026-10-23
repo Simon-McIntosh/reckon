@@ -67,8 +67,8 @@
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>head (this change, committed)</td>
-        <td><code>cce801f3</code></td>
-        <td><strong>1100 passed</strong>, 13 failed, 1 skipped, exit 1 — every failure pre-existing</td></tr>
+        <td><code>06c368dce</code></td>
+        <td><strong>1101 passed</strong>, 14 failed, 1 skipped, exit 1 — every failure pre-existing</td></tr>
       <tr><td>base (this node's source change reverted, its test module kept)</td>
         <td><code>cce801f3</code> tree + <code>43677d0d</code> <code>queue_admission.py</code></td>
         <td><strong>3 failed</strong>, exit 1</td></tr>
@@ -128,19 +128,81 @@
   module fails nothing. That is the defect this node exists to close, and the
   control confirms the test detects it rather than merely passing.</p>
 
+  <h3>Repair round: the hold is reached from the command that queues</h3>
+
+  <p>The first attempt built the hold and the pass that releases it, and left
+  the hold unreachable: nothing in production called it, so a dispatched node
+  could never enter <code>awaiting-upstream</code> and only a test could. A
+  dispatch that records a queued request now writes the hold itself. That is
+  both places a dispatch stores one — the local lane's allowance check, and the
+  yield to a session's older queued request — so the entry point is the command
+  a coordinator runs rather than a helper behind it. The refs are read from the
+  plan the node names, the same declaration the pass re-reads, so a wait is
+  never stated twice.
+
+  <p>Two further changes came with it. A request held on its refs is listed on
+  its session's duties view: the view reads the phase from the pointer and the
+  refs from the pointer, rather than the classification word, because that word
+  is built from a phase vocabulary the view does not own and has not yet
+  learned these two phases — a held request was therefore real, released on
+  time, and drawn nowhere. And the section ref is now parsed by the
+  repository's own reader (<code>reckon._schema.parse_plan_ref</code>, which
+  the roadmap and the ledger already share) instead of a local split, so two
+  spellings of one ref compare equal here as they do elsewhere, including in
+  the match against a blocker row the roadmap reports.
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head, the whole gate</td>
+        <td><code>06c368dce</code></td>
+        <td><strong>1101 passed</strong>, 14 failed, 1 skipped, exit 1</td></tr>
+      <tr><td>the same 14 ids, base</td>
+        <td><code>43677d0d</code> sources in the head tree</td>
+        <td><strong>14 failed</strong> — the same 14, byte for byte</td></tr>
+      <tr><td>base, the node's test module</td>
+        <td><code>43677d0d</code> sources in the head tree</td>
+        <td><strong>4 failed</strong>, 1 passed, exit 1</td></tr>
+      <tr><td>negative control: the dispatch wiring removed</td>
+        <td><code>06c368dce</code> + mutation</td>
+        <td><strong>1 failed</strong> (the dispatch arm), 4 passed, exit 1</td></tr>
+      <tr><td>negative control: released without re-reading readiness</td>
+        <td><code>cce801f3</code> + mutation</td>
+        <td><strong>2 failed</strong>, 1 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>Each log names its revision, its <code>measurement_cwd</code> and its
+  <code>measurement_module</code>, and ends with a bare
+  <code>EXIT=&lt;code&gt;</code>, so a reader can tell which tree answered
+  rather than only which revision was asked about. The base arm was rebuilt
+  after the repair and re-run, because the earlier one measured the previous
+  commit's sources.</p>
+
+  <p><strong>What the base arm shows, and what it does not.</strong> At base
+  the node's test module fails on all four arms that need the entry point, and
+  the ordering probe — three nodes stored through the production path. At base
+  all three are stored <code>queued</code> and <em>nothing can wait</em>; at
+  head the middle and the tail are stored <code>awaiting-upstream</code>
+  carrying their refs. The probe's own admission pass launched nothing in
+  either tree, so the base arm does <em>not</em> show the chain launching at
+  once; it shows the store as the launchable-now state, which is the same defect
+  one step earlier. That the chain then launches out of order when readiness is
+  not re-read is what the second negative control above measures, and it is the
+  stronger of the two observations.</p>
+
   <h3>What is not measured here</h3>
 
   <ul>
     <li><strong>The obligations view does not yet read the two phases.</strong>
-    The phase filters that decide whether a request is surfaced on its owning
-    session's obligations live in <code>reckon/crew/obligation_snapshot.py</code>
-    and <code>reckon/crew/obligations.py</code>, and the watch stream's
-    classification lives in <code>reckon/crew/recovery_classification.py</code>.
-    All three are outside this node's write fence. A request held
-    <code>awaiting-upstream</code> is therefore real, listed in the live
-    pointers, and released on time, but it is not yet drawn on the session's
-    duties view. This is a requirement of the section's prose rather than part
-    of this node's declared done-when measure, and it is recorded in the
-    manifest's <code>follow_ons</code> for a node with the scope to take it.</li>
+    The obligations view now lists a request held on its refs, which
+    closed the largest part of this. What is still outside this node's fence is
+    the rest of the vocabulary: <code>reckon/crew/obligations.py</code> resolves
+    placements through <code>queued_placements</code> alone, and the watch
+    stream's classification reads neither new phase, so the stream and the
+    derivation's own phase-to-verb map still do not know the two phases by
+    name. A held request is real, listed on its session's duties view, and
+    released on time; it is the watch line that does not draw it yet. The
+    manifest's <code>follow_ons</code> names that remainder.</li>
   </ul>
 </section>
