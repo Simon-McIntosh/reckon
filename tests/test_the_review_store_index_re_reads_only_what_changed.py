@@ -115,6 +115,19 @@ def _from_scratch(directory: Path, run_id: str, head: str | None = None) -> Any:
     return _lookup(directory, run_id, head)
 
 
+def _also_rebuilt(directory: Path, run_id: str, head: str | None, answered: Any) -> Any:
+    """Rebuild the same lookup and assert ``answered`` equals it in full.
+
+    Both sides are the whole result — the path and the record's body, its head
+    and its disposition among them — so an index that answers the right path
+    from facts it should have re-read turns the caller's case red. Returns the
+    rebuilt answer so the caller can also hold it against a written-out record.
+    """
+    rebuilt = _from_scratch(directory, run_id, head)
+    assert answered == rebuilt, "the updated index answers what a rebuild answers"
+    return rebuilt
+
+
 def _store_under(base: Path, run_id: str) -> Path:
     """One record in a store beneath ``base``, which names the store's root."""
     directory = review_module.review_store_root(base) / PROJECT
@@ -142,14 +155,12 @@ def test_adding_a_record_parses_only_the_new_file(
     path = review_module.review_path(PROJECT, "r-reviewer-arrival")
     _write_record(path, _record(run_id, HEAD))
 
-    assert _lookup(store, run_id, HEAD)[0] == path
+    updated = _lookup(store, run_id, HEAD)
+    assert updated[0] == path
     assert len(parses) == 1, "one new file is one parse, not a pass over the store"
 
-    _forget_the_process()
-    assert _from_scratch(store, run_id, HEAD) == (
-        path,
-        _misfiled(_record(run_id, HEAD)),
-    )
+    rebuilt = _also_rebuilt(store, run_id, HEAD, updated)
+    assert rebuilt == (path, _misfiled(_record(run_id, HEAD)))
 
 
 def test_rewriting_a_record_parses_only_that_file(
@@ -163,11 +174,14 @@ def test_rewriting_a_record_parses_only_that_file(
     rewritten = dict(_record(run_id, _head(7)), total=81)
     _write_record(path, rewritten)
 
-    assert _lookup(store, run_id, None)[0] == path
+    updated = _lookup(store, run_id, None)
+    assert updated[0] == path
     assert len(parses) == 1, "the file that moved is re-read, its siblings are not"
 
-    _forget_the_process()
-    assert _from_scratch(store, run_id, None) == (path, _misfiled(rewritten))
+    rebuilt = _also_rebuilt(store, run_id, None, updated)
+    assert rebuilt == (path, _misfiled(rewritten)), (
+        "the body is the rewritten record, not the one the index was built from"
+    )
 
 
 def test_deleting_a_record_drops_its_entry(store: Path, parses: list[str]) -> None:
@@ -178,9 +192,10 @@ def test_deleting_a_record_drops_its_entry(store: Path, parses: list[str]) -> No
 
     path.unlink()
 
-    assert _lookup(store, run_id, None) == (None, None)
+    updated = _lookup(store, run_id, None)
+    assert updated == (None, None)
     assert parses == [], "a deleted record is dropped from the listing, not parsed"
-    assert _from_scratch(store, run_id, None) == (None, None)
+    assert _also_rebuilt(store, run_id, None, updated) == (None, None)
 
 
 def test_two_stores_under_different_bases_are_indexed_apart(
@@ -193,13 +208,22 @@ def test_two_stores_under_different_bases_are_indexed_apart(
     second = _store_under(tmp_path / "second", "r-two")
     assert first != second, "one project name under two roots is two store directories"
 
-    assert _lookup(first, "r-one", HEAD)[0] is not None
-    assert _lookup(second, "r-two", HEAD)[0] is not None
-    assert _lookup(first, "r-two", HEAD) == (None, None), (
+    first_here = _lookup(first, "r-one", HEAD)
+    second_here = _lookup(second, "r-two", HEAD)
+    crossed = _lookup(first, "r-two", HEAD)
+    crossed_back = _lookup(second, "r-one", HEAD)
+    assert first_here[0] is not None
+    assert second_here[0] is not None
+    assert crossed == (None, None), (
         "a lookup in one store never reads another store's entries"
     )
-    assert _lookup(second, "r-one", HEAD) == (None, None)
-    assert len(set(parses)) == 2, "each store's own two records are the only files read"
+    assert crossed_back == (None, None)
+    assert len(set(parses)) == 2, "each store's own record is the only file read"
+
+    assert _also_rebuilt(first, "r-one", HEAD, first_here)
+    assert _also_rebuilt(second, "r-two", HEAD, second_here)
+    assert _also_rebuilt(first, "r-two", HEAD, crossed) == (None, None)
+    assert _also_rebuilt(second, "r-one", HEAD, crossed_back) == (None, None)
 
 
 def test_a_fresh_process_parses_nothing_when_nothing_changed(
@@ -212,14 +236,13 @@ def test_a_fresh_process_parses_nothing_when_nothing_changed(
 
     _forget_the_process()
 
-    assert _lookup(store, run_id, None)[0] == path
+    updated = _lookup(store, run_id, None)
+    assert updated[0] == path
     assert _lookup(store, ABSENT) == (None, None)
     assert parses == [], "the persisted index answers without parsing a record"
 
-    assert _from_scratch(store, run_id, None) == (
-        path,
-        _misfiled(_record(run_id, _head(23))),
-    )
+    rebuilt = _also_rebuilt(store, run_id, None, updated)
+    assert rebuilt == (path, _misfiled(_record(run_id, _head(23))))
 
 
 def test_a_persisted_index_under_another_code_stamp_is_rebuilt(
@@ -237,8 +260,10 @@ def test_a_persisted_index_under_another_code_stamp_is_rebuilt(
     parses.clear()
 
     _forget_the_process()
-    assert _lookup(store, ABSENT) == (None, None)
+    answered = _lookup(store, ABSENT)
+    assert answered == (None, None)
     assert parses == [], "the rebuild is persisted under the stamp that made it"
+    assert _also_rebuilt(store, ABSENT, None, answered) == (None, None)
 
 
 def test_a_record_changed_between_processes_is_still_found(
@@ -253,12 +278,11 @@ def test_a_record_changed_between_processes_is_still_found(
     path = review_module.review_path(PROJECT, "r-reviewer-incoming")
     _write_record(path, _record(run_id, HEAD))
 
-    assert _lookup(store, run_id, HEAD)[0] == path
+    updated = _lookup(store, run_id, HEAD)
+    assert updated[0] == path
     assert len(parses) == 1, "the file added since the index was persisted is parsed"
-    assert _from_scratch(store, run_id, HEAD) == (
-        path,
-        _misfiled(_record(run_id, HEAD)),
-    )
+    rebuilt = _also_rebuilt(store, run_id, HEAD, updated)
+    assert rebuilt == (path, _misfiled(_record(run_id, HEAD)))
 
 
 def _misfiled(record: dict[str, Any]) -> dict[str, Any]:

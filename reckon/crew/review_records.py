@@ -1169,12 +1169,25 @@ def _store_indexes(
 
 
 def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
-    """Return the reviewed-run index, rebuilt only when the directory moves."""
+    """Return the reviewed-run index, loaded and updated rather than rebuilt.
+
+    A process holding no index for the store directory starts from the one
+    another process on this node persisted for it, and a move of the directory's
+    stat identity is answered by updating that index from one listing of the
+    store, so only a file new to the index or changed since it was read costs a
+    parse. A document that is missing, unreadable or stamped by other code is
+    not usable, and only then is the index built from scratch. The sequence is
+    :func:`_store_indexes`, which owns it for both indexes.
+    """
     return _store_indexes(directory)[0]
 
 
 def _review_run_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
-    """Return the review-run index, rebuilt only when the directory moves."""
+    """Return the review-run index, loaded and updated rather than rebuilt.
+
+    The same index and the same sequence as :func:`_store_index`, keyed by the
+    review run that produced a record rather than by the run it reviewed.
+    """
     return _store_indexes(directory)[1]
 
 
