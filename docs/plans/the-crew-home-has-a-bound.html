@@ -25,8 +25,8 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="71">
-<meta name="plan-modified" content="2026-10-17">
+<meta name="plan-version" content="72">
+<meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
   <main class="plan-doc">
@@ -288,6 +288,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-s5-reopened-on-review" data-who="reckon-build" data-when="2026-10-16T16:40:00Z">
     <div class="r-comment-body"><p>§5 is moved back to deferred, acting on content-review finding <code>done_when-2</code>. The reclaim it describes has run (see <code>c-close-s5</code>), but its combined-size clause is not met. Marking the section done would quietly drop that shortfall from the roadmap. The open decision <code>reports-bound-across-projects</code> holds it until the lead chooses.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20261023-runs-owner" data-who="reckon-edit" data-when="2026-10-23T07:05:00Z">
+    <div class="r-comment-body"><p>Run directories now have a lifecycle owner. <a href="/reckon/plans/crew-state-stays-bounded">crew-state-stays-bounded</a> §3 retires a finished run's directory once nothing can need it, §6 removes harness caches at exit, and §7 runs that sweep hourly across every project, reclaiming the 17,341-directory backlog at 500 a pass. This section's reclaim therefore need not count on <code>gc --apply</code>'s thirty-day pass to shrink <code>~/.config/reckon/crew/runs</code>. Its other stores (ledger indexes, reports, locks, redirection-named directories, stray files and clean worktrees) stay here.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-s6-gc-run-promoted-1013" data-who="reckon-build" data-when="2026-10-13T00:10:00Z">
     <div class="r-comment-body"><p>A further case for this section, measured on 2026-10-12 and 2026-10-13 on seven runs of session <code>67139f13</code>. The obligations hook's <code>worktree-held</code> remedy is <code>reckon crew gc --run &lt;id&gt; --apply</code>. For a run that has been promoted and released, that command exits 1 with "no record names a worktree for run …", although the run's merged, clean worktree still exists on disk. So the prescribed remedy can never discharge the obligation.</p><p>Each tree was released by hand instead, after re-checking that it was clean, that its head is on main, and that no live pointer claims it.</p><p>When this section is built, <code>gc --run</code> should find a promoted run's worktree from the ledger row or the worktree root, and release it under the same checks, or the hook should name a remedy that works.</p></div>

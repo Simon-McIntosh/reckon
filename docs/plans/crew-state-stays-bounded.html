@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="crew-state-stays-bounded">
   <meta name="plan-title" content="Crew State Stays Bounded">
-  <meta name="plan-summary" content="Pointers reach 94 KB, runs/ holds 17,159 entries and event logs 252 MB; live records carry only live facts and every store has a bound.">
+  <meta name="plan-summary" content="Pointers reach 94 KB, runs/ holds 17,341 directories (~270 GB) for 40 in flight; live records carry only live facts and every store has a bound.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="9.0">
@@ -20,10 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
   <main class="plan-doc">
@@ -40,6 +42,24 @@
     </ul>
     <p>Every reader of these pays for their size, and every scan pays for their count. This plan bounds each
     one. It is independent of the station except where a section says so.</p>
+    <p>Measured again on clu-2068 on 2026-10-23: <code>runs/</code> holds 17,341 directories, of which 40 have a live
+    pointer and none a queued entry; 8,861 are review runs. By last change, 533 are under a day old, 1,170 one to three
+    days, 2,285 three to seven, 3,124 one to two weeks, 6,004 two to four weeks and 4,225 older than thirty days. A random
+    sample of 200 held 3.1 GB, which puts the directory at about 270 GB. The largest holders in the sample were each codex
+    run's own download of the codex plugin catalog under <code>codex-home/cache/</code> and <code>codex-home/plugins/</code>,
+    per-run tool caches under <code>cache/</code> (matplotlib, xdg, numba), <code>stream.jsonl</code>,
+    <code>resume-*.jsonl</code> and <code>baseline-tree.tar</code>.</p>
+    <p><code>crew gc</code> already prunes a ledgered run directory older than thirty days whose stream-derived figures
+    are on its ledger row (the <code>retention_days</code> pass in <code>reckon/crew/gc.py</code>). Three things keep
+    that from bounding the directory: no unit or timer runs it, so it prunes only when an operator remembers; it judges
+    runs against one project's ledger, so a run another project dispatched is never judged; and it keys on the
+    directory's age rather than on whether anything can still need the run. It is also too slow to schedule as built: a dry run of <code>crew gc --project reckon</code> on 2026-10-23 printed
+    nothing and was killed at its ten-minute limit, and when sampled it was running
+    <code>git status --untracked-files=all</code> inside one of the checkout's 48 worktrees.</p>
+    <p>The committed run records under <code>docs/state/&lt;project&gt;/runs/</code> are a different store, owned by
+    <a href="/reckon/plans/history-persists-as-detail-washes-out">history-persists-as-detail-washes-out</a>; this plan
+    bounds the crew home. The one-off reclaim of the crew home's other backlogs stays with
+    <a href="/reckon/plans/the-crew-home-has-a-bound">the-crew-home-has-a-bound</a> §5.</p>
 
     <h2 id="s2">§2 — A live pointer carries only live facts</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -54,18 +74,27 @@
     pointer of the new shape and one of the old. Negative control: an accessor without the fallback must fail
     the old-shape test.</p>
 
-    <h2 id="s3">§3 — Promoted runs live in dated directories</h2>
+    <h2 id="s3">§3 — Only a run something can still need keeps its directory</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p>A run's directory is created under <code>runs/&lt;run&gt;</code> as today and moved at release to
-    <code>runs/&lt;yyyy&gt;/&lt;mm&gt;/&lt;dd&gt;/&lt;run&gt;</code>, dated by the run id's own timestamp, by one rename
-    on the same filesystem. <code>runs.run_dir</code> resolves both locations, so no caller changes. A
-    migration verb moves existing released runs in bounded slices of 500, skipping any run with a live
-    pointer or a queued entry, and prints every move.</p>
-    <p>Done when: <code>run_dir</code> finds a run in either location; a release moves the directory and a
-    later <code>crew view</code> of that run reads its manifest; the migration, run in a dry-run mode
-    against a copy of 2,000 run directories, lists the moves and moves nothing, and in the real mode leaves
-    no live or queued run moved. Negative control: a resolver that only looks in the flat directory must
-    fail the second test.</p>
+    <p>A run's directory is kept while something can still need it, and retired once nothing can. Something needs it
+    while the run has a live pointer or a queued entry; while it has no terminal ledger row, being neither promoted nor
+    discarded, and so may still be resumed; while a review of it is owed or in flight; and while the figures derived from
+    its stream are not yet on its ledger row. Once none of those holds, the directory is removed after a grace window
+    declared in flight config, one day by default, so that a reader holding a path to it does not lose it mid-read.
+    Nothing is archived. The run's durable facts are its ledger row, its committed run record and its evidence fragment,
+    and they outlive the directory. Research that needs a worker's stream copies it as evidence before the window
+    closes. Review runs are runs, and the same rule retires them.</p>
+    <p>The rule extends the retention pass in <code>reckon/crew/gc.py</code>, which already withholds a run whose
+    derived figures are missing. It replaces that pass's thirty-day directory age with the test above and adds no second
+    sweep. With finished runs retired, <code>runs/</code> holds the runs in flight and about a day of finished ones,
+    a few hundred entries. That is why the dated subdirectories this section first proposed are dropped, and why
+    <code>runs.run_dir</code> keeps one location.</p>
+    <p>Done when: in a temporary crew home, a dry run of the sweep over fixture runs in seven states lists only the
+    last of them for removal. The states are live, queued, unpromoted, promoted with a review owed, promoted with derived
+    figures missing, promoted and reviewed inside the grace window, and promoted and reviewed past it. The real run
+    removes exactly that one and leaves the other six, and each removal is printed with its path and size before it
+    happens. Negative control: the predicate reduced to directory age alone must fail on the unpromoted fixture,
+    whose directory is older than thirty days.</p>
 
     <h2 id="s4">§4 — The old event logs are retired</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -87,18 +116,56 @@
     never under the crew home, and the lease-record functions are gone. Negative control: a cache resolver
     returning the crew-home path must fail the path test.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
+
+    <h2 id="s6">§6 — A worker&#x27;s harness caches leave with the worker</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §1's sample found that the bulk of a codex run's directory is caches its harness built for
+    that one process, kept for as long as the directory lives. One is the codex plugin catalog under
+    <code>codex-home/cache/</code> and <code>codex-home/plugins/</code>, which every codex run downloads afresh. The
+    other is the <code>cache/</code> tree a worker's tools fill (matplotlib, xdg, numba). Nothing reads either after
+    the process ends.</p>
+    <p><strong>Change.</strong> When a run's exit is recorded, those caches are removed from its directory. The
+    harness session files a resume needs, <code>codex-home/sessions/</code> (named by <code>RUN_HOME_SESSIONS</code>
+    in <code>reckon/crew/rollout.py</code>), are kept until §3 retires the directory. The removal runs where the exit
+    is recorded, so a run that is still working is never touched.</p>
+    <p>Done when: a fixture run whose directory holds both caches and a sessions tree, put through the exit path, keeps
+    the sessions tree and has neither cache; a fixture that has not exited keeps everything; the removed paths and
+    their sizes are on the exit record. Negative control: a removal that also takes <code>codex-home/sessions/</code>
+    must fail the resume fixture.</p>
+
+    <h2 id="s7">§7 — The retention sweep runs on its own, across every project</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §3 says which directories may go, and §1 shows that a rule nobody runs bounds nothing: the
+    thirty-day pass has existed while 4,225 directories older than thirty days accumulated.</p>
+    <p><strong>Change.</strong> An hourly user timer, the same arrangement as <code>reckon-paid-lanes.timer</code>,
+    runs the §3 sweep over every project in <code>mounts.json</code>, judging each run directory against the ledger
+    of the project that dispatched it. Each pass removes at most 500 directories, so one pass stays short on shared
+    storage, and the first passes reclaim the existing backlog at that rate. A pass appends its removals to one log
+    under the crew home, which rotates at a fixed size, and writes nothing when there is nothing to remove. A directory
+    no mounted project's ledger records is left to <code>crew gc</code>'s existing unledgered-directory pass. The pass
+    runs the run-directory retention alone, not the rest of <code>gc</code>, and runs no git command, because
+    <code>gc</code>'s worktree checks are where §1's dry run spent its ten minutes.</p>
+    <p>Done when: one pass over a temporary crew home holding finished runs for two projects, each ledgered in its own
+    project, removes both; a second pass with nothing left writes no log line; a pass over 1,200 removable fixtures
+    removes 500 and leaves 700 for the next; a pass whose fixture checkout carries worktrees starts no git process;
+    and the unit files install the timer at an hourly interval. Negative
+    control: a pass that reads only the first project's ledger must leave the second project's run in place and
+    fail.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-cssb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build crew-state-stays-bounded §2" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Slim the pointer first</h4>
-        <div class="r-fu-body"><p>§2 and §3 are independent of the station and can start now; §4 waits for the station cutover and §5 for the station.</p></div>
-        <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §2</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-cssb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build crew-state-stays-bounded §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Slim the pointer first</h4>
+    <div class="r-fu-body"><p>§2 and §3 are independent of the station and can start now; §4 waits for the station cutover and §5 for the station.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §2</pre>
+    </article>
+<article class="r-fu" data-id="f-cssb-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-23 07:00" data-recommends-skill="/reckon-build crew-state-stays-bounded §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Retire finished runs</h4>
+    <div class="r-fu-body"><p>§3 now retires a finished run's directory instead of dating it, §6 removes harness caches at exit and §7 runs the sweep hourly across every project. All three are independent of the station. A content review of the revised §1, §3 and the new §6 and §7 is owed before dispatch; §3 lands before §7, which calls it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §3</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
