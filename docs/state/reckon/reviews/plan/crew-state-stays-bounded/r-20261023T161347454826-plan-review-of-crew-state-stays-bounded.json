@@ -1,0 +1,46 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T16:52:14.267Z",
+  "dispatched_at": "2026-10-23T16:37:04Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-1",
+      "reason": "without the caller or the bypassing route named, a node dispatched on \u00a78 cannot produce the done-when's third case and may edit a path that already removes scratch.",
+      "text": "\u00a78's change paragraph asserts \"Review and plan-review promotions go through the same release step as an implementation run\", resting on bullet 3's \"13 review and plan-review runs have no release block at all, so a review's promotion never removes its scratch\", and the done-when makes \"a promoted review run's scratch is removed by its promotion\" one of its three cases \u2014 but \u00a78 names no caller for that change, and in the code `remove_worker_scratch` is reached only through `_release_run_workspace` and `_release_scratch_when_release_raised` (reckon/crew/promotion_release.py:460, reckon/crew/promotion_records.py:632) while `_release_after_promotion` is already called on every completion path the repository has (reckon/crew/promotion.py:1122, reckon/crew/promotion.py:1744, reckon/crew/promotion_records.py:188, reckon/crew_run_commands.py:2533), so the stated cause is either not the one the measurement shows or the promotion route that bypasses the release step is unnamed, and with no implementation site named the clause cannot be built",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "71a6c532f27b413d1cbbcf0f6a1af0d6a663e35c3a5e88da621ae0508258f4c9",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T161347454826-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "fd0c3e9bd75440ae979f5532701908a46b090a2e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `remove_worker_scratch` resolves at reckon/crew/dispatch_launch.py:816, the `scratch_removed` field resolves in the release result, the cited run r-20261020T202608740663-shc-gap-docs-regen resolves with the release block \u00a78 quotes, and the cited docs/evidence/archive/crew-state-stays-bounded-landed.html carries both `#s3` and `#s6`.",
+    "done_when": "pass \u2014 \u00a78 states three concrete cases (a release on the scratch's host removes it and records `scratch_removed: true`; a release elsewhere leaves it and records a removal owed; a promoted review's scratch leaves with its promotion) and declares a negative control whose mutation \u2014 removing without the host comparison \u2014 fails the second case.",
+    "evidence_paths": "pass \u2014 \u00a78's gate logs sit under the run directory and the durable record of a gate is the committed evidence fragment, which \u00a78 requires to quote each gate's command and summary line; this is the arrangement an earlier review accepted for \u00a76.",
+    "naming": "pass \u2014 \u00a78's new prose and the field it proposes carry no plan labels, ticket numbers or version tags, and the names it cites (`scratch_removed`, `remove_worker_scratch`) are existing mechanisms rather than plan artefacts.",
+    "reasoning": "a finding \u2014 \u00a78 attributes the survival of review-run scratch to a promotion route that runs no release step, but \u00a78 names no caller for that branch and no such distinct route is visible in the code.",
+    "single_goal": "pass \u2014 \u00a78 has one deliverable, a run's scratch leaving with the run, carried by one record-then-remove mechanism plus the promotion route that must reach it.",
+    "wiring": "pass \u2014 \u00a78's new `plan-section-depends-on` entry resolves as `s8`\u2192`s7`\u2192`s3`, matching followup f-cssb-008's statement that \u00a78 runs after \u00a77 and the section's own text that \u00a77's sweep settles the removal \u00a78 owes."
+  },
+  "section_digests": {
+    "_document": "7b027ab93025f3f1274af4c8c21f7e58c154d6e99dbdf5e7f4aa8931cbb1f280",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "3340b5e07178237854719d5362ea522e5eed77e971a747114d33259d9fb97546"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T16:53:20.637090+00:00"
+}
