@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import json
 import re
 import shlex
 from datetime import datetime, timezone
@@ -171,6 +172,67 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     return {"detail": detail, "next_command": command}
 
 
+def _filed_review_record(
+    record: Mapping[str, Any], *, alive: bool | None
+) -> tuple[Path, Path] | None:
+    """A review run's latest filed review record, and the store record it names.
+
+    A review run's deliverable is the review it writes for another run, and the
+    per-run supervisor files each delivered record into the store as its worker
+    exits, recording where it put them in the per-attempt file named by
+    ``REVIEW_FILED_RECORD_NAME`` beside the exit record. That receipt is the
+    run's own account that a review reached the store, and it survives on the
+    shared home where the pointer's pid does not — so a review whose process has
+    ended but whose manifest never advanced past a working word is read from the
+    record it filed rather than from the status it never wrote.
+
+    Read only when the process is observed to have ended and the run is a
+    review: a reviewer still in its turn has at most an earlier attempt's filed
+    record, and a run of any other role files none. The record named is the
+    first store entry :func:`_review_is_complete` accepts — a stored review
+    holding every measurement its rubric demands, read through the one
+    predicate that owns that question rather than a spelling of its own — keyed
+    on the attempt the run's own marker names so a record filed by a superseded
+    attempt cannot stand in for the attempt running now. Returns the receipt's
+    path and the store record's path, or None when nothing eligible is filed.
+    """
+    if alive is not False:
+        return None
+    if _pointer_role(record) != REVIEW_ROLE:
+        return None
+    attempt = _current_attempt_number(record)
+    if attempt is None:
+        return None
+    # Imported here rather than at module scope: the supervisor's module reaches
+    # back into the recovery package, so a top-level import would close the loop.
+    from reckon.crew.dispatch_launch import REVIEW_FILED_RECORD_NAME
+
+    filed_path = (
+        _run_directory(record) / f"attempt-{attempt}-{REVIEW_FILED_RECORD_NAME}"
+    )
+    try:
+        payload = json.loads(filed_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    run_id = str(record.get("run_id") or "")
+    recorded = str(payload.get("run_id") or "")
+    if run_id and recorded and recorded != run_id:
+        return None
+    if _int_or_none(payload.get("attempt")) != attempt:
+        return None
+    for entry in payload.get("filed") or ():
+        stored_path = Path(str(entry))
+        try:
+            stored = json.loads(stored_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(stored, Mapping) and _review_is_complete(stored):
+            return filed_path, stored_path
+    return None
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -327,6 +389,14 @@ def classify_pointer(
     ended_exit = exit_record if exit_record is not None and alive is not True else None
     if ended_exit is not None:
         alive = False
+    # A review run whose worker has ended is read from the review it filed
+    # rather than from the working word its manifest may still carry: the
+    # supervisor files each delivered record into the store and records where,
+    # and that receipt outlives a manifest the worker never advanced. Computed
+    # from the pointer and the attempt marker alone, so the readings below that
+    # withdraw a predecessor's manifest word cannot take this evidence with
+    # them.
+    filed_review = _filed_review_record(record, alive=alive)
     # A manifest a previous attempt wrote is not this attempt's report; while the
     # current attempt lives or moves the run is read from that liveness rather
     # than from the old status word. Computed here, after the exit record has
@@ -672,6 +742,27 @@ def classify_pointer(
         else:
             detail = str(record.get("reason") or "waiting for a local lane slot")
             action = "wait for a local lane slot"
+    elif filed_review is not None:
+        # The reviewer's process has ended and its latest attempt filed a
+        # parsed review into the store, which is the review run's whole
+        # deliverable. The word its manifest still carries — most often the
+        # working word it never advanced past — is superseded by that receipt,
+        # so the run reads delivered and promotable rather than still working,
+        # and a coordinator is pointed at the record that was filed instead of
+        # at a worker that has already ended.
+        filed_path, stored_path = filed_review
+        classification = "promotable"
+        detail = (
+            f"the {REVIEW_ROLE} run's worker has ended and attempt "
+            f"{_current_attempt_number(record)} filed a review record holding "
+            f"every measurement its rubric demands ({stored_path}) at "
+            f"{filed_path}; the run reads "
+            "delivered whatever its manifest's status word says"
+        )
+        action = (
+            f"promote the completed {REVIEW_ROLE} run; its filed review is at "
+            f"{stored_path}"
+        )
     elif _attempt_awaits_its_worker(record) and (
         not manifest_status or manifest_status in NON_TERMINAL_MANIFEST_STATUSES
     ):
@@ -1762,6 +1853,7 @@ from .recovery_vocabulary import (  # noqa: E402
 from .recovery_wait import (  # noqa: E402
     _background_wait_signal,
     _newest_stream_shows_work,
+    _run_directory,
     _run_wait_condition_probe,
     _wait_condition_observation,
 )
