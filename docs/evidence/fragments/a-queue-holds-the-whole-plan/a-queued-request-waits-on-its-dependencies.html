@@ -363,3 +363,62 @@
   is named as excluded, so the failures quoted as pre-existing are read from
   the base rather than from a revision one commit below the head.</p>
 </section>
+
+<section>
+  <h2>Fifth round: one reader for the manifest status, and the phase words inside the fence</h2>
+
+  <p><strong>The status read was a second implementation.</strong>
+  <code>reckon/crew/queue_admission.py</code> carried its own manifest-status
+  reader beside the one <code>parse_manifest</code> in
+  <code>reckon/crew/reports.py</code> owns. The two agreed on the prose a worker
+  writes and disagreed on a JSON-form manifest:
+  <code>_manifest_status('{"status": "complete"}')</code> returned the empty
+  string where <code>parse_manifest</code> returns <code>complete</code>, and an
+  empty status is not a terminal one — so a request waiting on such an upstream
+  stayed pending however long that upstream took. The local reader is deleted
+  and the status is read through <code>parse_manifest</code>, so the admission
+  pass and the rest of the fleet cannot disagree about what a manifest says. The
+  arm <code>test_a_json_manifest_upstream_releases_the_wait</code> writes a JSON
+  body as the upstream's manifest and reads the waiting request released.</p>
+
+  <p><strong>The phase words moved into the fence.</strong> The queued phase and
+  the two waiting phase names had been declared in
+  <code>reckon/crew/node.py</code>, outside this node's write scope and claimed
+  by another live run. That file is now identical to the run's base — the diff
+  against <code>43677d0d26</code> for it is empty — and the names live in
+  <code>reckon/crew/queue_admission.py</code>, the module that writes them.</p>
+
+  <p><strong>The cycle is why the vocabulary keeps literal keys.</strong> A
+  module-level import of the admission module from
+  <code>reckon/crew/recovery_vocabulary.py</code> was tried in both orders and
+  fails either way, ending
+  <code>ImportError: cannot import name '_resolve_commit' from partially
+  initialized module 'reckon.crew.recovery'</code> along
+  <code>recovery_vocabulary → queue_admission → dispatch_plan → recovery →
+  ticker → recovery_vocabulary</code>. The phase-to-verb map therefore keeps the
+  two spellings as literal keys, and a test pins them to the constants the
+  admission module declares so the two cannot drift apart quietly.
+  <code>reckon/crew/recovery_classification.py</code> needs them inside one
+  function only and imports them there, where no cycle forms.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check --fix</code> and
+  <code>ruff format</code> ran on the staged paths only. The changed modules
+  read two findings, both pre-existing at <code>reckon/crew/dispatch.py</code>,
+  so this change adds none.</p>
+
+  <p><strong>Measured.</strong> The gate ran at <code>18f05d0da</code>:
+  <strong>1320 passed, 27 failed, 1 skipped, 1 error, <code>EXIT=1</code></strong>
+  over the same targets the base gate runs. The base at
+  <code>43677d0d26</code> reads 1303 passed, 28 failed, 1 skipped, 1 error.
+  Twenty-five of the twenty-eight ids failing at the head are in the base list.
+  The other three are
+  <code>test_session_host.py</code>'s two child-survival arms and
+  <code>test_test_watchers_are_reaped.py</code>'s child-session arm, each a
+  ten-second watchdog waiting for a spawned child to appear. Both modules pass
+  serially at this same revision — 20 passed, 1 skipped, <code>EXIT=0</code>, in
+  <code>gate-round6-sessionhost-serial.log</code> — so those three are the load
+  of eight concurrent workers on this allocation rather than this change. The
+  node's own module is 14 passed, the JSON-manifest arm among them. Four base
+  ids pass at the head, the same flakiness in the other direction; with the
+  serial re-run read beside the gate, the added count is <strong>zero</strong>.</p>
+</section>
