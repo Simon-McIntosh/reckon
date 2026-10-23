@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T19:24:11.514Z",
+  "dispatched_at": "2026-10-23T19:06:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": 731,
+      "severity": "non-blocking",
+      "summary": "the `if merged is None: continue` guard is unreachable: `_record_with_merged_answers` returns the record it was handed and only yields None when the selected record is None, which the caller has already excluded by parsing the file into a Mapping. Should that helper's contract later widen to return None for a record it could not merge, this branch would silently drop an enumerated record and change which records the lookup returns, the one property the plan requires to be unchanged."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "stored_records_for_run is reached from reckon/crew/recovery_review_dispatch.py:2309 (_open_review_refusal), reckon/crew/promotion_checks.py:2783, reckon/crew/review_lifecycle.py:364 (_run_review_records), reckon/crew/obligations.py:1198 (the hot-set predicate) and reckon/crew/needs_you.py:251, and is re-exported at reckon/crew/review.py:3534.",
+    "diff": "Read commit by commit against c4bcc1c: b85ea34eb changes one function body and its docstring in reckon/crew/review_records.py, and afd3f6e5b adds a 5-line evidence fragment and the 364-line test file, totalling 389 insertions and 1 deletion, all inside the declared write paths.",
+    "done_when": "The done_when names tests/test_a_disposition_after_promotion_reaches_the_reflex.py plus every test file importing reckon.crew.review_records, reckon.crew.recovery_review_dispatch or reckon.crew.review_lifecycle, at base and at head, judged by delta, with each log opening on its revision and literal command and closing on EXIT=; the manifest records that population, its after_suite and baseline_suite carry node-id failure_ids, and an independent re-run of the named file at the reviewed head returned 4 passed in 3.59s.",
+    "goal": "The node's goal is that stored_records_for_run returns each stored review record with every copy of its answers merged; the diff at reckon/crew/review_records.py:723-733 routes every enumerated record through _record_with_merged_answers, which merges the record's own staging copy, its head-keyed staging siblings and the committed record under the project's reviews tree through _merge_record_answers, so finding_dispositions and dimension_dispositions recorded after a promotion reach every caller of the lookup.",
+    "manifest": "Read; it reports status complete with the head arm at afd3f6e5 (1 failed / 149 passed, the pre-existing sweep failure) against the base arm at c4bcc1c (3 failed / 147 passed), names the four logs under the run directory, and records the negative control's path.",
+    "write_paths": "The manifest declares reckon/crew/review_records.py, tests/test_a_disposition_after_promotion_reaches_the_reflex.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-disposition-after-promotion-reaches-the-reflex.html and docs/figures/the-monitor-shows-the-work-it-watches/a-disposition-after-promotion-reaches-the-reflex; the diff c4bcc1c..afd3f6e5 changes exactly the first three, and the unused figures path carries nothing."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261023T190343087887-review-of-a-disposition-after-promotion-reaches-the-reflex-afd3f6e5bd8b",
+  "reviewed_base_sha": "c4bcc1cedd63f88386009b78c90d15c7324ad1ab",
+  "reviewed_head_sha": "afd3f6e5bd8b6bee7a5ca8bd898ed4497ce8c6c0",
+  "reviewed_run_id": "r-20261023T163506923854-a-disposition-after-promotion-reaches-the-reflex",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T19:32:28.014199+00:00",
+  "total": 115
+}
