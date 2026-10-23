@@ -197,6 +197,22 @@ def _deliver(world: dict, run_id: str, head: str, *, status: str = "complete") -
     _place_manifest(manifest, _resume_stamp(run_id) + AFTER_SECONDS)
 
 
+def _record_manifest_baseline(run_id: str) -> int:
+    """Record the manifest generation the resumed attempt begins from.
+
+    The resume door reads the manifest's generation before it resets the
+    delivered status and spawns the attempt, and stores it on the pointer as
+    ``manifest_baseline_mtime_ns``. Doing the same here is what puts the
+    production path under test: the generation comparison, not the recorded
+    instant, is then the leg that decides.
+    """
+    record = runs.read_pointer(run_id)
+    baseline = runs._manifest_mtime_ns(str(record.get("manifest_path") or ""))
+    record["manifest_baseline_mtime_ns"] = baseline
+    runs._write_json(runs.pointer_path(run_id), record)
+    return baseline
+
+
 def _kinds(run_id: str) -> list[str]:
     report = obligations_module.obligations(PROJECT, SESSION)
     return sorted(
@@ -275,6 +291,60 @@ def test_a_delivery_before_the_resume_instant_is_withheld(world):
     _place_manifest(manifest, _resume_stamp(run_id) - BEFORE_SECONDS)
     record = runs.read_pointer(run_id)
 
+    assert dispatch_module.supersedes_head(record, head) is True
+    assert _kinds(run_id) == []
+
+
+def test_a_delivery_after_the_recorded_generation_settles_the_head(world):
+    """The production path: the generation the resume recorded decides.
+
+    The delivery is placed inside the whole second the resume was stamped in,
+    so the recorded instant cannot order it and only the recorded generation
+    can settle the head. Without that case every test would exercise the
+    fallback leg alone, while the resume door records a generation on every
+    real resume and so never reaches it.
+    """
+    head = _commit_plan(world["repo"])
+    run_id = "r-delivered-after-the-generation"
+    _write_run(world, run_id=run_id, head=head)
+    baseline = _record_manifest_baseline(run_id)
+    resumption_module._record_resume_supersedes_head(run_id)
+
+    _deliver(world, run_id, head)
+    _place_manifest(_manifest_of(world, run_id), _resume_stamp(run_id) + 0.5)
+    written_ns = _manifest_of(world, run_id).stat().st_mtime_ns
+    resume_margin_ns = int(
+        (_resume_stamp(run_id) + dispatch_module.RESUME_DELIVERY_SECONDS)
+        * 1_000_000_000
+    )
+
+    # The write is the resumed attempt's own: after the generation the resume
+    # began from, but inside the second the resume was stamped in, so the
+    # recorded instant alone would withhold it.
+    assert written_ns > baseline
+    assert written_ns < resume_margin_ns
+    record = runs.read_pointer(run_id)
+
+    assert dispatch_module.supersedes_head(record, head) is False
+    assert _kinds(run_id) == ["review-missing"]
+
+
+def test_a_delivery_before_the_recorded_generation_is_withheld(world):
+    """A delivered manifest older than the recorded generation is not a delivery."""
+    head = _commit_plan(world["repo"])
+    run_id = "r-delivered-before-the-generation"
+    _write_run(world, run_id=run_id, head=head)
+    baseline = _record_manifest_baseline(run_id)
+    resumption_module._record_resume_supersedes_head(run_id)
+
+    manifest = _manifest_of(world, run_id)
+    manifest.write_text(
+        f"node: {run_id}\nstatus: complete\ncommits: [{head}]\n", encoding="utf-8"
+    )
+    _place_manifest(manifest, baseline / 1_000_000_000 - 1.0)
+    record = runs.read_pointer(run_id)
+
+    assert manifest.stat().st_mtime_ns <= baseline
     assert dispatch_module.supersedes_head(record, head) is True
     assert _kinds(run_id) == []
 

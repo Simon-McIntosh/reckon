@@ -102,34 +102,39 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
     A resume carries a stopped run forward from the revision it delivered, and
     it resets a delivered manifest's status while the new attempt runs — see
     ``resumption._reset_delivered_manifest_status``. So a manifest that reads a
-    delivered status and was last written after the resume instant is the
-    resumed attempt's own verdict: the run has finished at the revision its
-    resume replaced, and that revision is settled rather than still owed.
+    delivered status and was written by the resumed attempt is that attempt's
+    own verdict: the run has finished at the revision its resume replaced, and
+    that revision is settled rather than still owed.
 
-    Every leg fails closed toward withholding, which is the direction the
-    wait exists for: no resume stamp, no readable manifest, a status outside
-    the delivered pair, or a manifest written before the resume all read as an
-    attempt still in flight, and the head stands superseded. The comparison is
-    against the manifest's own write time rather than anything a worker states
-    about itself, because the status word alone cannot tell a fresh delivery
-    from the head-reset copy the resume itself left behind.
+    Whether a write belongs to the attempt is decided by
+    ``runs._manifest_freshness``, the one owner of that rule, compared against
+    the manifest generation the resume door recorded before it started the
+    attempt. The recorded resume instant only stands in for a record carrying
+    no generation, and it is stored at whole-second resolution, so a write
+    inside the second the resume was stamped in cannot be ordered against it.
+
+    Every leg fails closed toward withholding — the direction the wait exists
+    for: no resume stamp, no readable manifest, a status outside the delivered
+    pair, or a manifest not written by this attempt all read as an attempt
+    still in flight, and the head stands superseded. The comparison is against
+    the manifest's own write rather than anything a worker states about
+    itself, because the status word alone cannot tell a fresh delivery from the
+    head-reset copy the resume itself left behind.
     """
     resumed_at = resume_superseded_at(record)
     if resumed_at is None:
         return False
     from reckon.crew.dispatch import _WORKER_DONE_MANIFEST_STATUSES
 
-    # The resume records the manifest generation it began from, and comparing
-    # the manifest's own write against it needs no clock. The resume instant is
-    # the fallback for a record that carries no baseline, and it is stored at
-    # whole-second resolution, so a write anywhere inside the second the resume
-    # was stamped in cannot be told from the one the resume itself rewrote: a
-    # delivery is read only once the write is clear of that whole second.
-    baseline_ns = record.get("manifest_baseline_mtime_ns")
-    try:
-        baseline_ns = int(baseline_ns) if baseline_ns is not None else None
-    except (TypeError, ValueError):
-        baseline_ns = None
+    # The resume records the manifest generation it began from, and whether a
+    # write belongs to the attempt that began there is the question
+    # ``runs._manifest_freshness`` already answers for the rest of the system.
+    # The recorded instant is the fallback for a record that carries no
+    # baseline, and it is stored at whole-second resolution, so a write
+    # anywhere inside the second the resume was stamped in cannot be told from
+    # the one the resume itself rewrote: a delivery is read only once the write
+    # is clear of that whole second.
+    baseline_known = record.get("manifest_baseline_mtime_ns") is not None
     resumed_ns = int((resumed_at.timestamp() + RESUME_DELIVERY_SECONDS) * 1_000_000_000)
 
     node = record.get("node")
@@ -158,8 +163,16 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
             return False
         if status.lower() not in _WORKER_DONE_MANIFEST_STATUSES:
             return False
-        if baseline_ns is not None:
-            return written_ns > baseline_ns
+        if baseline_known:
+            # Whether a write belongs to the attempt that began at the
+            # recorded generation is the question runs._manifest_freshness
+            # owns for the rest of the system, so it is asked rather than
+            # answered again here. The owner resolves the manifest from the
+            # record, so the candidate this read resolved is handed to it.
+            present, fresh = runs._manifest_freshness(
+                {**record, "manifest_path": str(manifest)}
+            )
+            return present and fresh
         return written_ns > resumed_ns
     return False
 
