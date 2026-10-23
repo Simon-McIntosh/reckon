@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T14:47:02.890Z",
+  "dispatched_at": "2026-10-23T14:28:50Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-page-paints-from-an-index/r-20261023T142724681830-plan-review-of-the-page-paints-from-an-index/plan.html:273",
+      "id": "done_when-1",
+      "reason": "the section's own rule is that each case carries its own control, and without one the detector half of deliverable (b) is measured by an assertion a stale-rows implementation also satisfies.",
+      "text": "case (3) reads \"a JSON file added to a recorded directory leaves the rows unchanged, and an HTML file added to one appears in the next read's rows\", but its single control (\"drop the build on every moved directory, and the read reads every recorded directory's identity\") only falsifies the locality claim; nothing makes the covered-addition claim fail, so the detector path \u2014 the source whose job is to decide \"whether a covered entry was added, removed or replaced\" \u2014 could be implemented without ever surfacing an added covered file and still pass this node's gate. Case (2) proves the same claim for the kernel watch with its own second control (\"ignore HTML names, and the read returns stale rows\"), so the omission is local to case (3).",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-page-paints-from-an-index/r-20261023T142724681830-plan-review-of-the-page-paints-from-an-index/plan.html:22",
+      "id": "done_when-2",
+      "reason": "the total and the impl figure are what a scheduler sizes the remaining work from, and \u00a715 is the section that grew.",
+      "text": "the head declares `plan-effort-hours` 14.0 while the eight section records sum to 15.0: s15's `data-effort-hours` moved 3.0 \u2192 5.0 in this revision (the only section-level change against the previous review snapshot) and no head field moved with it, so the declared total understates the plan's own sections by 2.0 h, and `plan-impl` 0.86 sits below the 14 of 15 sections the declarations mark `done` (0.93).",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-page-paints-from-an-index/r-20261023T142724681830-plan-review-of-the-page-paints-from-an-index/plan.html:273",
+      "id": "reasoning-1",
+      "reason": "it is a description of the current code, not a requirement of the deliverable, so the node's work and its gate are unchanged.",
+      "text": "\u00a715(a) says \"`consume()` and `drain()` read each event's name and discard it today\", but `drain()` (`reckon/change_streams.py:120-130`) never parses an event: it selects on the descriptor and discards a raw `os.read` buffer, so there is no name for it to read and the \"today\" clause describes `consume()` alone; the deliverable still stands, but a worker taking the sentence as its starting point will find drain() has no name-parsing to preserve.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "afd3169b72a891b947999f44a8b40b6bd555a7562477b75808f27f070bc6d9b9",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 109,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T142724681830-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "59ae1d995ff1aa1d9c241fcf6562bf20a0f739f1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a715 cites resolves in the module it names: `_CACHE` (`reckon/metadata_index.py:251`), `index_rows` (:347), `_reuse_covered` (:395), `_walk_covered` (:698), `_covered_files_for_project` (:801), `_FleetChangeWatch._run` (`reckon/change_streams.py:517`), `_fast_tree` (:414), `consume()` (:71), `drain()` (:120).",
+    "done_when": "a finding \u2014 \u00a715's case (3) asserts that an HTML file added through the detector's fast pass \"appears in the next read's rows\" and gives that claim no control, although the same class of claim in case (2) carries one, so the detector path's covered-addition has nothing that shows it can fail.",
+    "evidence_paths": "pass \u2014 \u00a715's logs sit under the run directory with a revision header and an EXIT= line, and the acceptance is a live pass recorded by the coordinator; no scratch or node-local path is named as a store.",
+    "naming": "pass \u2014 \u00a715's new test and its new vocabulary are named by behaviour (`test_the_cached_index_absorbs_each_change.py`, \"marks a path\"), with no section number, ticket id or version tag in a symbol.",
+    "reasoning": "a finding \u2014 the mechanism and the callers it names are real (`_reuse_covered` \u2192 `covered_dir_identity` \u2192 `_dir_identity` is the sweep `reckon/metadata_index.py:429-439` runs, and `_FleetChangeWatch._run` does invalidate the whole tree per burst), but \u00a715(a)'s description of the code it changes is wrong for one of the two functions it names.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable: keep `_CACHE` across attributable changes and re-read only the marked paths.",
+    "wiring": "pass \u2014 \u00a715 declares `depends-on: s14` (the section it shares `reckon/metadata_index.py` with) and the chain s13\u2192s14\u2192s15 resolves; no section declares a dependency on s15, so nothing points at a missing node."
+  },
+  "section_digests": {
+    "_document": "f463b5e41f61ce538f9142e4869bcc7bb2305bf07635480da31fc68db8ffad86",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "1bdc304b35db27986d4690c25bb8020f78955adfbe54a8ce7afa344e65c2531f",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T14:51:38.340784+00:00"
+}
