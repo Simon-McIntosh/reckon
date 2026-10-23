@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:754",
+    "reckon/crew/recovery_review_dispatch.py:1245",
+    "reckon/crew/recovery_review_dispatch.py:2364",
+    "reckon/crew/resumption.py:1474"
+  ],
+  "completed_at": "2026-10-23T09:27:13.513Z",
+  "dispatched_at": "2026-10-23T08:59:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "162",
+      "severity": "non-blocking",
+      "text": "the baseline leg (written_ns > baseline_ns) is the production path \u2014 the resume door records manifest_baseline_mtime_ns at resumption.py:1428 and writes it at :1472 before calling _record_resume_supersedes_head at :1474 \u2014 but no test sets a baseline alongside a superseded head, so every case in tests/test_a_resume_that_delivers_at_the_same_head_is_reviewed.py exercises only the resumed_ns fallback at :163; a regression in the baseline comparison would leave the suite green."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "128",
+      "severity": "non-blocking",
+      "text": "_resumed_attempt_delivered re-implements the manifest-generation comparison the repository already owns as runs._manifest_freshness (reckon/crew/runs.py:149, fresh = manifest.stat().st_mtime_ns > int(baseline)) instead of calling it; the recovery-review path is a second copy of a freshness rule that four other modules already read through the owner."
+    }
+  ],
+  "node": "review-of-a-resume-that-delivers-at-the-same-head-is-reviewed-e913004ef254",
+  "node:reviewed": "a-resume-that-delivers-at-the-same-head-is-reviewed",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to review a resumed run that delivers at the head it carried, per plan section 89; the landed change makes supersedes_head (reckon/crew/recovery_review_dispatch.py:167-190) answer the pair \u2014 the run still carries the superseded revision AND the resumed attempt has not delivered \u2014 via the new _resumed_attempt_delivered at :99-165.\nVERDICT done_when: the measure is the new test file plus every test file importing reckon.crew.recovery_review_dispatch or naming resume_superseded_head, judged by delta; gate-head.log records 2 failed / 198 passed at 07e89f344 and gate-base.log records the same 2 failed / 193 passed, both closing with EXIT=1 and failing the identical ids, so the change adds zero failures.\nVERDICT write_paths: the manifest declares reckon/crew/recovery_review_dispatch.py, tests/test_a_resume_that_delivers_at_the_same_head_is_reviewed.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resume-that-delivers-at-the-same-head-is-reviewed.html; the diffstat over ada5187d7..e913004ef lists exactly those three files.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081419340299-a-resume-that-delivers-at-the-same-head-is-reviewed/manifest.md; status complete, three commits, baseline_suite and after_suite both completed with the same two failure ids, negative_control_log named and its log closing EXIT=1.\nVERDICT diff: read commit by commit against ada5187d7; 3b84a26f6 adds _resumed_attempt_delivered and the supersedes_head conjunct, 07e89f344 adds the manifest_baseline_mtime_ns leg with the one-second fallback margin, e913004ef is the evidence fragment only \u2014 414 insertions, 1 deletion, all inside the declared paths.\nCALL_SITES: reckon/crew/obligations.py:754, reckon/crew/recovery_review_dispatch.py:1245, reckon/crew/recovery_review_dispatch.py:2364, reckon/crew/resumption.py:1474\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:190 returns not _resumed_attempt_delivered(record), so a resumed run that delivered at its superseded head settles it and the review duty returns, exactly as section 89 specifies.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log and gate-base.log record identical 2-failure arms with a closing EXIT= line at revisions 07e89f344 and ada5187d7, so the zero-added-failure claim is read from the logs rather than claimed; the gate ran at 07e89f344 one docs-only commit before the reviewed head e913004ef.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diffstat over ada5187d7..e913004ef touches only the three declared write paths, and no product file outside reckon/crew/recovery_review_dispatch.py.\nSCORE durability: 14\nJUSTIFICATION durability: the negative control at negative-control.log reddens the two settling cases (2 failed / 3 passed, EXIT=1) when the manifest check is dropped, but the baseline leg at reckon/crew/recovery_review_dispatch.py:162 that production actually takes is exercised by no test.\nSCORE fit: 16\nJUSTIFICATION fit: the new symbols (_resumed_attempt_delivered, RESUME_DELIVERY_SECONDS) are mechanism-named with no plan label, matching the surrounding style of reckon/crew/recovery_review_dispatch.py:65-120.\nSCORE reuse: 12\nJUSTIFICATION reuse: the freshness comparison at reckon/crew/recovery_review_dispatch.py:128 duplicates runs._manifest_freshness... see FINDING; the delivered-status set is correctly imported from dispatch rather than redefined.\nFINDING reckon/crew/recovery_review_dispatch.py:162 non-blocking: the baseline leg is the production path (resumption.py:1472 writes manifest_baseline_mtime_ns) yet no test sets a baseline alongside a superseded head, so only the fallback at :163 is covered and a regression in the baseline comparison would stay green.\nFINDING reckon/crew/recovery_review_dispatch.py:128 non-blocking: _resumed_attempt_delivered re-implements the manifest-generation comparison owned by runs._manifest_freshness (reckon/crew/runs.py:149) without calling it.",
+  "review_run_id": "r-20261023T085702846782-review-of-a-resume-that-delivers-at-the-same-head-is-reviewed-e913004ef254",
+  "reviewed_base_sha": "ada5187d79e4e538455a097b92728ff7e3d8034e",
+  "reviewed_head_sha": "e913004ef254738439bb70aec72e5396968707c8",
+  "reviewed_run_id": "r-20261023T081419340299-a-resume-that-delivers-at-the-same-head-is-reviewed",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T09:29:32.848586+00:00",
+  "total": 101
+}
