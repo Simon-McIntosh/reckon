@@ -1,0 +1,75 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T13:40:49.043Z",
+  "dispatched_at": "2026-10-23T13:23:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261023T132055781416-plan-review-of-a-worker-cannot-write-your-home/plan.html:26",
+      "id": "wiring-1",
+      "reason": "the plan's own convention carries each implementable section with a `/reckon-build ... \u00a7N` followup (f-awcwyh-016 to 020); without two, the roadmap has nothing to schedule for \u00a720 and \u00a721 and their relationships are unstated.",
+      "text": "\u00a720 and \u00a721 joined `plan-section-declarations` as `implementable` and are the only work left on the plan, yet no followup carries either: the list ends at `f-awcwyh-020` (:1790), whose outcome for \u00a719 reads \"No open section remains on this plan\", and the new sections are absent from `plan-section-depends-on` (:31) even though \u00a720 writes `reckon/hooks/worker_git_guard.py`, the module \u00a72 holds and whose test files its done-when runs \u2014 the same edge shape this plan's \u00a718 gained depends-on for. Nothing in the followups or the depends-on map records that the plan has two undispatched sections, so it reads as complete while its last two deliverables have no invocation.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261023T132055781416-plan-review-of-a-worker-cannot-write-your-home/plan.html:1596",
+      "id": "anchors_resolve-1",
+      "reason": "a reader cannot open the run record behind the section's central measurement, which is the one thing an anchor here exists to permit.",
+      "text": "\u00a720 attributes the walk to run `r-20261023T120024426977-review-of-an-exited-review-with-a-filed-record-reads-complete`, and no directory resolves at `~/.config/reckon/crew/runs/<that id>`; the record the section describes is `r-20261023T120024426977-review-of-an-exited-review-with-a-filed-record-reads-complete-a9888a470824`, the only entry matching the prefix, and \u00a719 of this plan was already repaired for the identical defect.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261023T132055781416-plan-review-of-a-worker-cannot-write-your-home/plan.html:1600",
+      "id": "reasoning-1",
+      "reason": "the sentence mis-explains the motivation, but the deliverable's rule (report a separation finding for an item whose whitespace splits into declared paths, and quote each stray path) is unaffected, so an implementer is not sent down a wrong path.",
+      "text": "\u00a721 says \"The finding joins stray paths with `, `, so a single parsed path prints exactly like three paths\", but `reckon/crew/reports.py:2600` composes the message as `\", \".join(stray)`, so three strays print comma-separated and a single space-joined item does not \u2014 the join is the one feature that distinguishes three strays from one, and the observed refusal (space-separated, no comma) is evidence of one item rather than of an indiscernible message.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "fbd17f6061b865b5e6de14bec3b980e1917a5bd0e981d8e6962f7f079161e6a8",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 229,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T132055781416-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "46ed6a96ae3c13d7edc9c2ee798051230aca0cfa",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every module, symbol and CLI verb \u00a720 and \u00a721 cite resolves (`worker_git_guard.py`'s tokeniser, segment split and cd tracking, `install.py`, `crew view findings`, `crew directory --run`, `reports.py`), and \u00a721's cited run resolves exactly as written, but \u00a720's cited run does not.",
+    "done_when": "pass \u2014 each node's done-when names runnable cases and a declared negative control (\u00a720 removes the ancestor rule, \u00a721 restores the unquoted scope finding); the one caveat is that the fixture's crew-home path must be substituted into the control command as it must be into the five quoted commands, since the control names the real absolute path.",
+    "evidence_paths": "pass \u2014 both sections end with an explicit `Write paths:` clause naming modules and the gate test file, and neither routes evidence to a scratchpad path.",
+    "naming": "pass \u2014 `reckon/hooks/worker_walk_guard.py`, `tests/test_a_worker_cannot_walk_the_crew_home.py` and `tests/test_a_scope_refusal_names_the_paths_it_parsed.py` name what they do, and neither section carries a plan label, stage name, ticket number or changelog prose into code.",
+    "reasoning": "a finding \u2014 the two incident claims hold against their own evidence (\u00a720's quoted walk is in the cited run's stream with its second `grep -rn` segment, and \u00a721's root cause is exactly the as-delivered manifest), but \u00a721 draws the wrong conclusion from the join it cites.",
+    "single_goal": "pass \u2014 \u00a720 delivers the walk guard (with the tokeniser move in scope as a step of it) and \u00a721 the comma-separation finding, one reviewable deliverable each.",
+    "wiring": "a finding \u2014 \u00a720 and \u00a721 are declared `implementable` at plan.html:26 while the followups (ending at `f-awcwyh-020`, plan.html:1790) are all resolved and carry neither section's `/reckon-build` invocation, and `plan-section-depends-on` (:31) declares nothing for either section although \u00a720's write paths include `reckon/hooks/worker_git_guard.py`, the module \u00a72 holds and whose test file \u00a720's done-when runs."
+  },
+  "section_digests": {
+    "_document": "6706dd2391b5a6b4e98bb1dff5f578e988b9f126ea87f3b87b53358c8f03c3c7",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "2d2d08c8567a83cca3bdd3a30b5cca94fa8e377c6e1552aed6dfb8e1d15db707",
+    "s18": "8f63d2e9144312cbecd9a2f55a3526ba207f322d3d1f237392b076ed1b4abf53",
+    "s19": "19da2176124b0de549bb7c585cc22ee853204ec373eb89082871457fa89862bf",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s20": "31a42052543d6ce32f00771c478dada2785a4529c7b973e062149889d200617e",
+    "s21": "fef8559f42ef30e4c834b3180f5ccde86f2bf3ecf9d33a73fcd447b8b15c5e09",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T13:46:03.194594+00:00"
+}
