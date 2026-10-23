@@ -114,7 +114,14 @@ def sweep(
     bound = budget_lift.ceilings(config)
     resolver = readings_for if readings_for is not None else _default_readings
 
-    document = budget_lift.read_document()
+    # Read through the settling reader: the first pass that observes a lift's end
+    # stamps it on the record, so a reading that flips between two figures cannot
+    # end the lift on one poll and revive it on the next under the same id.
+    document = budget_lift.settled_document(
+        readings_for=lambda lift_group: resolver(lift_group, config, moment),
+        now=moment,
+        bound=bound,
+    )
     by_id: dict[str, dict[str, Any]] = {}
     in_force: dict[str, dict[str, Any]] = {}
     for lift in document.get("lifts", []):
