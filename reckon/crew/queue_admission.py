@@ -1228,8 +1228,6 @@ def _request_state(ref: str, *, live: Sequence[Mapping[str, Any]]) -> str:
     nothing recorded stays pending — an unobserved request is not evidence that
     its upstream landed.
     """
-    from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
-
     run_id = str(ref[len(REQUEST_REF_PREFIX) :]).strip()
     if not run_id:
         return PENDING

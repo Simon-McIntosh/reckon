@@ -21,11 +21,12 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import queue_admission, runs
-
-dispatch_module = importlib.import_module("reckon.crew.dispatch")
 from reckon.crew.node import CrewError, TaskNode
+from reckon.crew import recovery_classification, recovery_vocabulary
 from tests import test_a_jev_hold_queues_for_the_local_lane as hold_tests
 from tests import test_dispatch_names_its_backend as backend_tests
+
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "proj"
 SESSION = "coordinator-a"
@@ -250,7 +251,9 @@ def _declare_wait_refs(repository: Path, *, section: str, refs: list[str]) -> No
     _run(repository, "commit", "-q", "-m", "chore: declare the waits")
 
 
-def _gate_section(repository: Path, *, gate_id: str, section: str, verdict: str) -> None:
+def _gate_section(
+    repository: Path, *, gate_id: str, section: str, verdict: str
+) -> None:
     """Give the plan a gate on one section, as an authored plan carries one.
 
     The gate names the section its outcome comes from, so the roadmap resolves
@@ -267,7 +270,9 @@ def _gate_section(repository: Path, *, gate_id: str, section: str, verdict: str)
         '<h4 class="r-gate-measure">the section lands green</h4></div></section>'
     )
     if 'data-reckon="gates"' in text:
-        text = re.sub(r'<section data-reckon="gates">.*?</section>', "", text, flags=re.S)
+        text = re.sub(
+            r'<section data-reckon="gates">.*?</section>', "", text, flags=re.DOTALL
+        )
     path.write_text(text + block, encoding="utf-8")
     _run(repository, "add", "--", str(path.relative_to(repository)))
     _run(repository, "commit", "-q", "-m", "chore: author the gate")
@@ -302,7 +307,9 @@ def test_a_gate_ref_holds_and_releases_as_the_gate_verdict_moves(
     assert _unmet(chain_repo, section="s2") == [f"gate:{PLAN}#g1"]
 
     _declare(chain_repo, "s1")
-    assert _unmet(chain_repo, section="s2") == [], "the gate's source lands and releases it"
+    assert _unmet(chain_repo, section="s2") == [], (
+        "the gate's source lands and releases it"
+    )
 
 
 def test_a_wait_on_another_request_reads_that_requests_own_record(
@@ -341,7 +348,9 @@ def test_a_wait_on_another_request_reads_that_requests_own_record(
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text("status: complete\n", encoding="utf-8")
     runs.pointer_path("r-n2").unlink()
-    assert _unmet(chain_repo, section="s2") == [], "a delivered request releases the wait"
+    assert _unmet(chain_repo, section="s2") == [], (
+        "a delivered request releases the wait"
+    )
 
 
 def test_a_malformed_node_is_refused_at_queue_time(chain_repo: Path) -> None:
@@ -419,6 +428,53 @@ def test_a_dispatch_holds_the_request_it_queues_for_upstream(
     assert payload["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
 
 
+def test_a_dispatch_holds_on_waits_though_its_lane_has_room(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The waits decide the hold, not the lane: room must not walk past them."""
+    _declare_section_wait(
+        dispatch_repo,
+        section="dispatch",
+        refs=[f"{PLAN}#upstream"],
+        sections=("upstream",),
+    )
+    hold_tests._configure(dispatch_repo, monkeypatch, session_slots=4)
+    hold_tests._stub_hold(monkeypatch, offered_local=True)
+
+    result = hold_tests._invoke(dispatch_repo, node="waiting-free-lane")
+    payload = hold_tests._payload(result)
+
+    assert result.exit_code == 0, result.output
+    pointers = runs.list_live(project=hold_tests.PROJECT)
+    assert len(pointers) == 1
+    assert pointers[0]["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
+    assert pointers[0]["waits"] == [f"{PLAN}#upstream"]
+    assert payload["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
+    # Stored and not launched: no worker was started for this node.
+    assert not payload.get("pid")
+    assert not pointers[0].get("pid")
+
+
+def test_a_dispatch_of_a_section_without_waits_launches_on_a_free_lane(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The discriminator for the arm above: the same lane, with no waits."""
+    hold_tests._configure(dispatch_repo, monkeypatch, session_slots=4)
+    hold_tests._stub_hold(monkeypatch, offered_local=True)
+
+    result = hold_tests._invoke(dispatch_repo, node="plain-free-lane")
+    payload = hold_tests._payload(result)
+
+    assert result.exit_code == 0, result.output
+    assert payload["ok"] is True
+    assert payload.get("phase") != queue_admission.AWAITING_UPSTREAM_PHASE
+    pointers = runs.list_live(project=hold_tests.PROJECT)
+    assert pointers and not any(
+        pointer.get("phase") in queue_admission.WAITING_UPSTREAM_PHASES
+        for pointer in pointers
+    )
+
+
 def test_a_dispatch_of_a_section_without_waits_queues_it_plainly(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -431,3 +487,41 @@ def test_a_dispatch_of_a_section_without_waits_queues_it_plainly(
     assert len(pointers) == 1
     assert pointers[0]["phase"] == queue_admission.QUEUED_PHASE
     assert not pointers[0].get("waits")
+
+
+# ── the watch line knows the two phases ──────────────────────────────────────
+#
+# A request that is stored and not launched has to be drawable, or a held
+# request is real and visible nowhere. The classification is read from the
+# pointer's own phase and the remedy comes from the phase-to-verb map, so both
+# have to carry the two names the admission pass writes.
+
+
+@pytest.mark.parametrize(
+    ("phase", "verb", "remedy"),
+    [
+        (queue_admission.AWAITING_UPSTREAM_PHASE, "wait", "to land"),
+        (queue_admission.BLOCKED_UPSTREAM_PHASE, "decide", "recover or drop"),
+    ],
+)
+def test_the_watch_line_reads_both_waiting_phases(
+    phase: str, verb: str, remedy: str
+) -> None:
+    record = {
+        "run_id": "r-watch",
+        "project": PROJECT,
+        "phase": phase,
+        "waits": [f"{PLAN}#upstream"],
+        "session": SESSION,
+    }
+    reading = recovery_classification.classify_pointer(record, now_seconds=0.0)
+    assert reading["classification"] == phase
+    assert recovery_vocabulary.RECOVERY_VERBS[phase] == verb
+    assert remedy in str(reading.get("next_action") or "")
+
+
+def test_only_the_unreleasable_waiting_phase_is_a_duty() -> None:
+    """A held request is a duty only once nothing will ever release it."""
+    actionable = recovery_vocabulary.ACTIONABLE_RECOVERY_CLASSIFICATIONS
+    assert queue_admission.AWAITING_UPSTREAM_PHASE not in actionable
+    assert queue_admission.BLOCKED_UPSTREAM_PHASE in actionable

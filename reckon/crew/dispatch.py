@@ -1565,6 +1565,82 @@ def dispatch(
     local_backend = str(config.get("local_backend") or "")
     is_local = backend_name == local_backend and bool(local_backend)
 
+    # A node whose section's waits have not landed is stored awaiting upstream
+    # here, whatever the lane state and before any lane-specific branch is
+    # taken. The waits decide this and not the lane: a node whose upstream has
+    # not landed cannot run at any lane occupancy, so a lane with room must not
+    # launch it, and one whose refs have all landed is dispatched by the checks
+    # below as it always was. The refs are read through the same readiness the
+    # admission pass re-reads and recorded by the same writer that pass reads
+    # back, so a node is held here for exactly the reason the pass would hold
+    # it.
+    from reckon.crew import queue_admission
+
+    waiting = queue_admission.unmet_waits(node, repo_root=repo_root, project=project)
+    if waiting:
+        queued, position = queue_dispatch(
+            _queued_request_record(
+                run_id=run_id,
+                project=project,
+                node=node,
+                repo_root=repo_root,
+                session=session,
+                backend_name=backend_name,
+                launch_kind=launch_kind,
+                lane_allowance=lane_allowance,
+                dispatch_options=dispatch_options,
+                queued_at=_utc_now(),
+                admitted_from=admitted_from,
+            ),
+            cap=queued_dispatch_cap(_queued_share_cap(backend)),
+        )
+        held_refs = queue_admission.hold_request_for_upstream(
+            str(queued["run_id"]), node=node, repo_root=repo_root
+        )
+        held = LaneHeld(
+            {
+                "detail": "waiting on " + ", ".join(waiting),
+                "reason": "this section's waits have not landed",
+            }
+        )
+        held.queued = {
+            "run_id": str(queued["run_id"]),
+            "position": position,
+            # A request the writer could not move off ``queued`` is reported
+            # as the phase it really holds, so the answer never claims a wait
+            # the pointer does not carry.
+            "phase": (
+                queue_admission.AWAITING_UPSTREAM_PHASE
+                if held_refs
+                else str(queued.get("phase") or queue_admission.QUEUED_PHASE)
+            ),
+            "waits": list(held_refs or waiting),
+            "reason": "this section's waits have not landed",
+        }
+        if held_selection is not None:
+            # The hold that offered the local lane is kept in the outcome
+            # history, marked queued with the run it became, so a reader of the
+            # holds file reads Jev's answer and where it landed.
+            from reckon.crew.picker.outcomes import record_picker_hold
+
+            record_picker_hold(
+                project=project,
+                node=node.id,
+                plan=node.plan,
+                selection=held_selection,
+                reason=_picker_refusal_reasons(held_selection),
+                run_id=str(queued["run_id"]),
+                queued=True,
+            )
+        _arrange_dispatch_follower(
+            project,
+            session,
+            launch_kind,
+            watch_required=watch_required,
+            watch_override=watch_override,
+        )
+        raise held
+
     # A node that already has a run — queued, being admitted, or in flight — is
     # answered rather than dispatched a second time. This is read before the
     # scope check and before any worktree, so a re-dispatch of a queued node
@@ -1668,24 +1744,16 @@ def dispatch(
             )
             from reckon.crew import queue_admission
 
-            waits = queue_admission.hold_request_for_upstream(
-                str(queued["run_id"]), node=node, repo_root=repo_root
-            )
+            # A node whose waits are unmet is held on them above, whatever the
+            # lane state, so what this branch stores is a request the lane had
+            # no room for and it carries no wait.
             held = LaneHeld(lane_allowance)
             held.queued = {
                 "run_id": queued["run_id"],
                 "position": position,
-                "phase": str(
-                    queued.get("phase") or queue_admission.QUEUED_PHASE
-                )
-                if not waits
-                else queue_admission.AWAITING_UPSTREAM_PHASE,
-                "waits": list(waits),
-                "reason": (
-                    "waiting on " + ", ".join(waits)
-                    if waits
-                    else lane_allowance.get("reason")
-                ),
+                "phase": str(queued.get("phase") or queue_admission.QUEUED_PHASE),
+                "waits": [],
+                "reason": lane_allowance.get("reason"),
             }
             if held_selection is not None:
                 # The hold that offered the local lane is kept in the outcome
@@ -1711,50 +1779,6 @@ def dispatch(
             )
             raise held
         raise LaneHeld(lane_allowance)
-
-    # A node whose section's waits have not landed is stored as a request and
-    # held, whatever the lane state. The waits decide this and not the lane: a
-    # node whose upstream has not landed cannot run at any lane occupancy, so a
-    # lane with room must not launch it. The refs are read through the same
-    # readiness the admission pass re-reads, so a node is held here for exactly
-    # the reason the pass would hold it, and one whose refs have all landed is
-    # launched by the checks below as it always was.
-    from reckon.crew import queue_admission
-
-    waiting = queue_admission.unmet_waits(node, repo_root=repo_root, project=project)
-    if waiting:
-        queued, position = queue_dispatch(
-            _queued_request_record(
-                run_id=run_id, project=project, node=node, repo_root=repo_root,
-                session=session, backend_name=backend_name,
-                launch_kind=launch_kind,
-                lane_allowance=lane_allowance,
-                dispatch_options=dispatch_options,
-                queued_at=_utc_now(),
-                admitted_from=admitted_from,
-            ),
-            cap=queued_dispatch_cap(_queued_share_cap(backend)),
-        )
-        held = LaneHeld(
-            {
-                "detail": "waiting on " + ", ".join(waiting),
-                "reason": "this section's waits have not landed",
-            }
-        )
-        held.queued = {
-            "run_id": str(queued["run_id"]),
-            "position": position,
-            "phase": queue_admission.AWAITING_UPSTREAM_PHASE,
-            "waits": list(waiting),
-        }
-        _arrange_dispatch_follower(
-            project,
-            session,
-            launch_kind,
-            watch_required=watch_required,
-            watch_override=watch_override,
-        )
-        raise held
 
     # A dispatch that found room on its lane yields the slot to its own session's
     # oldest waiting request for that lane, launching that request through the
@@ -1800,16 +1824,13 @@ def dispatch(
                 )
                 from reckon.crew import queue_admission
 
-                waits = queue_admission.hold_request_for_upstream(
-                    str(queued["run_id"]), node=node, repo_root=repo_root
-                )
+                # The waits are answered above, whatever the lane state, so a
+                # request queued here waits only on the slot it yielded.
                 held.queued = {
                     "run_id": str(queued["run_id"]),
                     "position": position,
-                    "phase": queue_admission.AWAITING_UPSTREAM_PHASE
-                    if waits
-                    else str(queued.get("phase") or queue_admission.QUEUED_PHASE),
-                    "waits": list(waits),
+                    "phase": str(queued.get("phase") or queue_admission.QUEUED_PHASE),
+                    "waits": [],
                     "reason": "waiting behind this session's older queued request",
                 }
                 _arrange_dispatch_follower(
