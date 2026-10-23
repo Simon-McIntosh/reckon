@@ -1726,6 +1726,27 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
     return record
 
 
+def status_repair_record(run_id: str) -> dict[str, Any] | None:
+    """The recorded status repair for a run, or None when it has none.
+
+    A status repair is a coordinator's own act, so the transition into the
+    halted word it caused asks that same coordinator for nothing. The producer
+    reads this record to stamp the event with the repair's instant and reason,
+    and the stream withholds the stamped row. An unreadable or absent record
+    answers None: a repair the fleet cannot corroborate stamps nothing.
+
+    The record is read from the run's own directory, the home
+    :func:`repair_manifest_status` writes it to, so no second caller has to
+    know where a repair is kept.
+    """
+    path = run_dir(run_id) / STATUS_REPAIR_RECORD_NAME
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return dict(data) if isinstance(data, Mapping) else None
+
+
 def _project_executable_remainder(project: str) -> tuple[int | None, int | None]:
     """Return a declared-scope lower bound and its uncovered plan count.
 

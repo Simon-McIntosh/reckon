@@ -1210,6 +1210,16 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
     the rule the follower's summary lines read before naming anything, stated
     once here so the stream and the summaries cannot disagree about what is news.
     """
+    if event.get("status_repair"):
+        # A transition a coordinator's own ``crew repair --status`` caused: the
+        # coordinator wrote the word itself, so the row carries nothing it does
+        # not already know — the same reading a ``landed`` or ``dropped`` row
+        # from its own merge or discard is given. The repair is a duty the
+        # coordinator discharged, not one it owes, so it is left to ``crew
+        # view`` and the pane history and prints nothing. A repair not followed
+        # by a resume still leaves the run in the needs-you summary, so nothing
+        # actionable is lost with the row.
+        return False
     to_state = str(event.get("to_state") or "")
     if to_state == LIMIT_RESET or to_state in LIFT_STATES:
         return True
