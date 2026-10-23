@@ -4,6 +4,13 @@
   "added_failures_note": "The reviewed manifest records neither baseline_suite nor after_suite (both absent), so the suite arm pair the contract derives from does not exist and the count was taken from the gate logs the run does name. Its own head population (logs/head-population.log, -n 4) ends '4 failed, 158 passed' EXIT=1; every one of those four is reproduced by the run's own base arms and none reaches the covered-set code this node changed. logs/base-window.log fails tests/test_every_module_fits_a_worker_window.py at the base revision on reckon/roadmap.py's 51232-token estimate, and logs/head-population.log fails the same test at head and touches no file this node changed. The other three are tests/test_page_paints_from_the_index.py cases whose own red assertions are the browser harness's 'reckon server did not become ready within 15 seconds' (tests/spa_browser_harness.py:827) and 'a change-stream handler thread outlived its test' (tests/test_page_paints_from_the_index.py:799), neither of which reads the covered set; the run's own arms show that file failing a different case set at each revision and run (logs/base-page-paints-alone.log 2 of 18, logs/head-page-paints-alone.log 5 of 18, head population 3) on a node it records at load average 84 against 28 CPUs. Count recorded as 0 by those logs, not by a base/after arm pair.",
   "completed_at": "2026-10-23T03:04:28.074Z",
   "dispatched_at": "2026-10-23T02:35:22Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-restart-reuses-rows-by-stat-identity",
+      "recorded_at": "2026-10-23T03:15:12.095776+00:00"
+    }
+  },
   "findings": [
     {
       "file": "reckon/metadata_index.py",
