@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="A Live Worker Is Never Drawn Halted">
+  <meta name="plan-summary" content="Five sessions report false halted rows on live workers and repeating noise rows; each mechanism is traced to its classifier or row-policy cause and fixed.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="12.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="a-seat-held-elsewhere-is-not-restarted">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <title>A Live Worker Is Never Drawn Halted | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: the halted word is wrong often enough that coordinators check it by hand</h2>
+    <p>On 2026-10-23 the lead relayed another session's report: "The halted status is false again." The run
+    was <code>r-20261023T122142119208-wil-schema-change-rebuilds-the-index</code> (imas-ambix). Its
+    supervisor pid 3928477 was alive and committing, and its manifest read <code>status: in-progress</code>
+    with a checkpoint. Five coordinator sessions were then asked which monitor rows had misled them in the
+    last 24 hours: imas-ambix-7e, reckon-2c, reckon-a1, reckon-28 and nova-47. All five named false
+    <em>halted</em> rows on live workers. Four named the same repeating noise rows, and each now treats those
+    rows as routine and checks a halted row by hand before acting on it. A row that has to be checked by hand
+    has stopped doing its job.</p>
+    <p>A census of every project's watch stream (<code>~/.config/reckon/crew/watch/*.events</code>, 48 hours
+    to 2026-10-23T12:37Z, 20,675 events over 1,340 runs) reclassified each event through
+    <code>ticker.stream_carries</code> and <code>ticker._pane_word</code>. It found 242 carried
+    <em>halted</em> rows. The mechanisms are below. Each was confirmed against a run's own records, not only
+    against its rows.</p>
+    <table>
+      <thead><tr><th>Mechanism</th><th>Evidence</th><th>Section</th></tr></thead>
+      <tbody>
+        <tr><td>A live worker's in-progress manifest that the strict parser refuses is classified
+          <code>unwritten</code>, which the pane draws as halted.</td>
+          <td>24 rows with <code>process_alive: true</code>, all <code>working → running</code> classified
+          <code>unwritten</code>. Reported runs: <code>wil-schema-change-rebuilds-the-index</code> (manifest
+          joins <code>changed_paths</code> with <code>;</code>, refused by
+          <code>reports.parse_manifest</code>) and <code>callers-grouped-by-account</code> (status
+          <code>in-progress-placeholder</code>).</td><td>§2</td></tr>
+        <tr><td>A resumed attempt is read through the previous attempt's records: a manifest the coordinator
+          repaired to <code>blocked</code>, or the previous attempt's exit. The new attempt's own claim and
+          worker record are ignored, and its pid is unprobeable from a producer on another node.</td>
+          <td>reckon-2c: six runs drawn halted after <code>crew repair --status blocked</code> then
+          <code>crew resume</code>, each with the new worker alive. reckon-a1 and reckon-28: halted about a
+          minute after a resume. 30 <code>exited-unfinished</code> rows that returned to working within
+          4–10 s of the next attempt's claim. On
+          <code>a-plan-write-refuses-the-bucket</code>, attempt 4 launched 12:15:11Z and exited 12:27:56Z,
+          yet the row at 12:25:51Z read <code>process_alive: false</code> and drew halted.</td><td>§3</td></tr>
+        <tr><td>The coordinator's own <code>crew repair --status</code> prints a halted row for a duty the
+          coordinator itself just created.</td>
+          <td>Every repair-then-resume above opens with a <code>complete → blocked</code> row 10–15 s before
+          the resume.</td><td>§4</td></tr>
+        <tr><td>A wait that ages and then recovers prints <code>waiting → waiting</code>, because
+          <code>wait-aged</code> and <code>waiting</code> share one pane word.</td>
+          <td>reckon-a1: <code>a-plans-coordinator-is-derived-from-the-ledger</code> at 10:47:05Z
+          (<code>waiting → wait-aged</code>) and 10:52:33Z (<code>wait-aged → waiting</code>).</td><td>§5</td></tr>
+        <tr><td>Budget lifts flap between in force and ended, and every pane prints each flip.</td>
+          <td>1,788 <code>lift-granted</code> and 1,803 <code>lift-ended</code> transitions for
+          <code>codex-sub</code> in the imas-codex stream in 24 h. In the nova stream, 15 lift ids cycled at
+          up to 345 transitions an hour (22:00–23:00Z), each ending with cause <code>reset</code> and then
+          granted again under the same id. It went quiet after 02:00Z. Four sessions named it as noise they
+          now ignore.</td><td>§6</td></tr>
+        <tr><td>The orchestrator reset row <code>limit claude-orchestrators new → working</code> does not say
+          what it is.</td><td>imas-ambix-7e: three such rows, each cost a check. reckon-28 and reckon-2c
+          ignore it.</td><td>§7</td></tr>
+        <tr><td>The obligations hook reports <code>review-missing</code> while the run's review is already
+          dispatched and queued.</td><td>nova-47: <code>dd-readers</code> from 10:08Z, review
+          <code>r-20261023T100757187263</code> queued at position 1.</td><td>§8</td></tr>
+        <tr><td>Two producers run off the fleet node. reckon's is on <code>98dci4-clu-2018</code>, a node
+          now allocated to another user, and was restarted there at 10:26:49Z. nova's is on the login node
+          <code>98dci4-srv-1006</code>. Every worker runs on <code>98dci4-clu-2068</code> (job 1291586), so
+          these producers cannot probe a single worker pid.</td>
+          <td>Seat locks <code>watch/reckon-18dc8a86709b.lock</code> and
+          <code>watch/nova-19e05df6b2e5.lock</code>. Every live reckon run's newest row reads
+          <code>process_alive: null</code> while its pid is alive on clu-2068.</td><td>§9</td></tr>
+      </tbody>
+    </table>
+    <p>Prior art, not repeated here: <a href="/reckon/a-seat-held-elsewhere-is-not-restarted">a-seat-held-elsewhere-is-not-restarted</a>
+    §7 (first status on another host) and §10 (manifest read mid-write) cover an orientation-only body and
+    a truncate-and-write window. <code>recovery_liveness._orientation_write_of_a_run_in_motion</code> is the
+    predicate they built. It refuses any body carrying a <code>status:</code> line, so the in-progress
+    manifests the dispatch prompt now asks for (<code>prompts.py</code>: "record them under status:
+    in-progress with a checkpoint line") fall outside it. The killed-dispatch pointer that reckon-2c,
+    reckon-28 and reckon-a1 also reported belongs to
+    <a href="/reckon/a-dispatch-returns-without-its-worker">a-dispatch-returns-without-its-worker</a>.
+    The plan reviews that print <em>delivered</em> while the reviewer is still writing (reckon-28) belong to
+    <a href="/reckon/the-monitor-shows-the-work-it-watches">the-monitor-shows-the-work-it-watches</a>.</p>
+    <p>The census script is in the coordinator's scratch. The section briefs restate each mechanism's
+    fixture, so no node depends on it.</p>
+
+    <h2 id="s2">§2 — A live worker's unreadable in-progress manifest is not unwritten</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>In <code>recovery_classification</code>, the arm that runs when <code>alive is True</code> sets
+    <code>manifest_unwritten = True</code> whenever a present manifest carries no readable status and has a
+    parse error. Two kinds of manifest reach that arm. One is unreadable because it is non-terminal and
+    loosely written: a <code>;</code>-joined list field, or a non-vocabulary status such as
+    <code>in-progress-placeholder</code>. The other is a delivery that really is missing its verdict. A live
+    worker is still writing the first kind, so it is not a missing verdict. The run must keep the
+    classification its liveness and stream already give it, and the parse error must stay visible in the
+    run's <code>detail</code>. The same motion evidence decides it as the orientation-write predicate:
+    a proven-live worker, or for unknown liveness an assistant turn in the newest stream inside
+    <code>LOG_STALE_AFTER_SECONDS</code>. Extend that predicate, or the arm beside it, so that a non-terminal
+    or unreadable body of a run in motion is covered. Do not add a second motion rule. Once the worker has
+    exited, the same manifest is still <code>unreadable</code> or <code>unwritten</code> and draws halted,
+    because then it is the delivery.</p>
+    <p>Done when one new test file builds three fixture runs, each with a live pid (the test process) and a
+    newest stream carrying an assistant record: (a) <code>status: in-progress</code> with
+    <code>changed_paths: a.py; b.py</code>, (b) <code>status: in-progress-placeholder</code> with the
+    orientation keys, and (c) <code>status: in-progress</code> and a checkpoint. For all three,
+    <code>recovery.recover</code> gives a <code>recovery_classification</code> whose
+    <code>ticker._pane_word</code> is <code>working</code>, and the detail of (a) and (b) names the parse
+    error. A process-gone arm of (a) and (b) still classifies <code>unreadable</code> or
+    <code>unwritten</code>. Negative control: (a) and (b) at the base revision give pane word
+    <code>halted</code>, recorded in the gate log. The tests covering
+    <code>recovery_classification</code> and <code>recovery_liveness</code> add no failures against the
+    base, and <code>ruff check</code> and <code>ruff format --check</code> add no findings on the staged
+    paths. Write paths: <code>reckon/crew/recovery_classification.py</code>,
+    <code>reckon/crew/recovery_liveness.py</code> and the new test.</p>
+
+    <h2 id="s3">§3 — A resumed attempt is read through its own records</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>A resume writes <code>attempt-N.claim</code>, then <code>attempt-N-worker.json</code> and
+    <code>worker.json</code>. It moves the previous attempt's <code>exit.json</code> to
+    <code>attempt-(N-1)-exit.json</code>, and when a coordinator has repaired the status it leaves
+    <code>status-repair.json</code> beside the manifest. The current attempt is live when its claim or worker
+    record is newer than the newest exit record and no exit record for attempt N exists. The supervisor on
+    the launching host writes the exit record, so its absence crosses hosts in a way a pid probe does not.
+    While that holds, a manifest status the coordinator wrote (its <code>status-repair.json</code>
+    <code>repaired_at</code> is older than the claim) and the previous attempt's exit do not decide the run.
+    It classifies <code>starting</code> until the current attempt's worker record exists, and
+    <code>working</code> after. A manifest the <em>current</em> attempt writes is read as it is today. A
+    terminal status the worker itself wrote still counts, and stays provisional while the worker is alive
+    or, with liveness unknown, while its stream is in motion inside the stall window. A launch-failed attempt
+    whose next attempt's claim already exists also classifies <code>starting</code> (reckon-a1's
+    <code>plan-review-of-an-mcp-failure-names-its-cause</code>). Name in the manifest where the current
+    attempt is resolved today. Extend that resolver rather than adding a parallel one.</p>
+    <p>Done when one new test file builds fixture run directories. (i) Repair then resume: the manifest is
+    <code>blocked</code>, <code>status-repair.json</code> is older than <code>attempt-2.claim</code>,
+    <code>attempt-1-exit.json</code> is present and there is no attempt-2 exit; the run classifies
+    <code>starting</code>. (ii) Arm (i) plus <code>attempt-2-worker.json</code>, a pid this host cannot
+    probe (the pointer's <code>launcher_host</code> names another host) and a stream written inside the
+    stall window; it classifies <code>working</code>. (iii) An attempt-1 launch failure with
+    <code>attempt-2.claim</code> present; it classifies <code>starting</code>. (iv) An exit-unfinished
+    attempt 4 and a newer <code>attempt-5.claim</code>; it classifies <code>starting</code>. None of the four
+    draws pane word <code>halted</code>. Negative controls: arm (ii) with <code>attempt-2-exit.json</code>
+    written after the repair and the manifest still <code>blocked</code> draws <code>halted</code>, and arms
+    (i)–(iv) at the base revision draw <code>halted</code>, both recorded in the gate log. The suite tests
+    importing <code>recovery_classification</code> or <code>recovery_liveness</code> add no failures
+    against the base. Ruff adds no findings on the staged paths. Write paths:
+    <code>reckon/crew/recovery_classification.py</code>, <code>reckon/crew/recovery_liveness.py</code> and
+    the new test. It runs after §2, which writes the same files.</p>
+
+    <h2 id="s4">§4 — A coordinator's own status repair prints no halted row</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>A transition into a halted word whose cause is a <code>crew repair --status</code> is a duty the
+    coordinator has just created by its own act. Like a <code>landed</code> or <code>dropped</code> row from
+    its own merge or discard, it carries nothing new to that coordinator. The producer stamps the event with
+    the repair's <code>repaired_at</code> and reason when <code>status-repair.json</code> is newer than the
+    previous observation. <code>ticker.stream_carries</code> then withholds the row. It stays in
+    <code>crew view</code> and the pane history. A repair that is not followed by a resume therefore leaves
+    the run in the needs-you summary, as today, without an alarm row.</p>
+    <p>Done when a test feeds the row policy a <code>complete → blocked</code> event carrying the repair
+    stamp and the stream prints nothing, and feeds the same event without the stamp and the stream prints
+    the halted row. A producer test asserts the stamp is present on the event emitted after a fixture
+    <code>status-repair.json</code> is written. Negative control: the stamped event at the base revision
+    is printed, recorded in the gate log. The tests importing <code>ticker</code> add no failures against
+    the base. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/ticker.py</code>,
+    the producer module that composes transition events (named in the manifest), and the new test.</p>
+
+    <h2 id="s5">§5 — A wait that recovers from aged prints no row</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p><code>wait-aged</code> and <code>waiting</code> share the pane word <code>waiting</code>. The aging
+    row is news, because the wait is overdue. The return to <code>waiting</code> is not, because nothing
+    the coordinator must do has changed, yet it prints as <code>waiting → waiting</code>. The stream no
+    longer carries a row whose pane word is the same on both sides and whose wait facts (condition, probe,
+    terminal) are unchanged. The aging row is drawn with the word <code>overdue</code> in its reason clause,
+    so it no longer reads as a repeat.</p>
+    <p>Done when a test feeds the row policy the recorded pair from
+    <code>a-plans-coordinator-is-derived-from-the-ledger</code> (<code>waiting → wait-aged</code>, then
+    <code>wait-aged → waiting</code>, same condition) and the stream prints exactly one row, which names the
+    wait as overdue. A pair whose second row changes the condition prints two rows. Negative control: the
+    first pair at the base revision prints two rows, recorded in the gate log. The tests importing
+    <code>ticker</code> add no failures against the base. Ruff adds no findings on the staged paths. Write
+    paths: <code>reckon/crew/ticker.py</code> and the new test. It runs after §4, which writes
+    <code>ticker.py</code>.</p>
+
+    <h2 id="s6">§6 — An ended lift stays ended</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>A lift ends when its clock's reset is observed. The end is read at the moment of use, so a reading
+    that flips between two figures (two backends or two streams reporting different
+    <code>resets_at</code>, or a utilisation read on either side of the grant figure) ends the lift and then
+    revives it under the same id. The nova stream holds the reproduction: from 2026-10-22T20:00Z, 15 lift ids
+    in group <code>codex-sub</code> alternated <code>lift-in-force → lift-ended</code> ("cause reset") and
+    <code>lift-granted</code>, up to 345 transitions an hour. Trace which reading flips. Then make the end
+    final: once a lift's end has been observed it is stamped on the lift record through the existing
+    stamping path (<code>budget_lift</code>, the backfill for a lift cleared before its end was stamped), and
+    no later reading returns that id to in force. The producer emits at most one
+    <code>lift-granted</code> and one <code>lift-ended</code> per lift id.</p>
+    <p>Done when the manifest names the flipping reading with the recorded rows that show it, and a test
+    drives the lift reader through a sequence of readings alternating between the two figures. The test
+    gets one <code>lift-ended</code>, no second <code>lift-granted</code> for that id, and a stamped end on
+    the record. A separate test confirms a lift whose end has not been observed stays in force across the
+    same number of steady readings. Negative control: the alternating sequence at the base revision yields
+    more than one <code>lift-granted</code> for the id, recorded in the gate log. The tests importing
+    <code>budget_lift</code> or <code>lift_watch</code> add no failures against the base. Ruff adds no
+    findings on the staged paths. Write paths: <code>reckon/crew/budget_lift.py</code>,
+    <code>reckon/crew/lift_watch.py</code> and the new test.</p>
+
+    <h2 id="s7">§7 — The orchestrator reset row says what it is</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>The row a <code>reckon crew budget --reset --group claude-orchestrators</code> announcement draws
+    reads <code>limit claude-orchestrators new → working</code>. Its reader has to infer that it is the lead's
+    reset and that it means "continue". It is drawn as <code>limit reset · claude-orchestrators ·
+    &lt;clock&gt; · orchestrator sessions may continue</code>, with the recorded reason when one exists. It is
+    still drawn once per pane.</p>
+    <p>Done when a test renders the recorded reset event and the line contains <code>limit reset</code>,
+    the group, the clock and <code>may continue</code>, and does not contain <code>new → working</code>.
+    Negative control: the same render at the base revision contains <code>new → working</code>, recorded in
+    the gate log. The tests importing <code>ticker</code> add no failures against the base. Ruff adds no
+    findings on the staged paths. Write paths: <code>reckon/crew/ticker.py</code> and the new test. It runs
+    after §5.</p>
+
+    <h2 id="s8">§8 — A queued review is not a missing review</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+    <p>The obligations view derives <code>review-missing</code> from the review store and the live pointers.
+    A review dispatched into the queue has neither a live pointer nor a stored record, so the run's duty
+    reads missing while its review is waiting to launch. A queued review run whose target is the run counts
+    as the review in flight. The duty reads <code>review-queued</code> with the queue position, and it raises
+    no Stop refusal while the queued run exists.</p>
+    <p>Done when a test builds a delivered run and a queued review record targeting it in a temporary crew
+    home, and the obligations view gives the run <code>review-queued</code> rather than
+    <code>review-missing</code>. Removing the queued record returns <code>review-missing</code>. Negative
+    control: the first arm at the base revision gives <code>review-missing</code>, recorded in the gate log.
+    The tests importing <code>obligations</code> add no failures against the base. Ruff adds no findings on
+    the staged paths. Write paths: <code>reckon/crew/obligations.py</code>, the hook module that prints the
+    duty if its wording table lives elsewhere, and the new test.</p>
+
+    <h2 id="s9">§9 — A producer off the fleet node gives up its seat</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>The fleet record <code>~/.local/state/fleet/record.json</code> names the node every worker runs on.
+    A producer whose host is not that node cannot probe a worker pid, so every liveness reading it publishes
+    is unknown, and it still holds the seat that would let a producer on the fleet node start. At start and
+    on each lease renewal, a producer whose host differs from the fleet record's node, and whose project's
+    runs carry a <code>launcher_host</code> equal to that node, releases its seat and exits. When it was
+    started as a systemd user unit, it first disables that unit, so <code>Restart=always</code> does not
+    bring it back every five seconds. The release is announced once on the stream, naming both hosts. With
+    no fleet record, nothing changes.</p>
+    <p>Done when a test runs the producer start-up decision against a temporary fleet record and seat. A
+    foreign host plus runs launched on the fleet node gives release-and-exit, with the unit-disable command
+    composed (not run) when the unit environment variable is set. The same host gives hold, and an absent
+    fleet record gives hold. Negative control: the foreign-host arm at the base revision holds the seat,
+    recorded in the gate log. The tests of the watch producer and seat modules add no failures against the
+    base. Ruff adds no findings on the staged paths. Write paths: the producer seat module named in the
+    manifest, and the new test. A test must not read or write the real fleet record or seat.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-alwh-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-23" data-recommends-skill="/reckon-build a-live-worker-is-never-drawn-halted" data-resolved-at="" data-resolved-by="">
+        <h4 class="r-fu-title">Remove the false halted rows and the noise rows</h4>
+        <div class="r-fu-body"><p>§2, §4, §6, §8 and §9 are independent. §3 follows §2, and §5 then §7 follow §4.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-live-worker-is-never-drawn-halted</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
