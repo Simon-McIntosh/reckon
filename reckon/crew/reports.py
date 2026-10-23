@@ -70,9 +70,17 @@ from reckon.crew.node import (
     negative_control_is_none,
     parse_duration,
 )
-from reckon.crew.runs import _utc_now, runs_dir
+from reckon.crew.runs import runs_dir
 
 # ── Worker reports ──────────────────────────────────────────────────────────
+
+# The manifest field naming the work a worker found beyond its own write scope,
+# and the spelling it replaced. A manifest written before the rename carries the
+# retired key; the parser maps it onto the current one on the way in, so an old
+# manifest and a new one answer alike, and the retired spelling is never written
+# back. The committed ledger row's key is a separate rename.
+OUTSIDE_SCOPE = "outside_scope"
+RETIRED_OUTSIDE_SCOPE = "follow_ons"
 
 _MANIFEST_LIST_KEYS = (
     "commits",
@@ -81,7 +89,7 @@ _MANIFEST_LIST_KEYS = (
     "test_logs",
     "artifacts",
     "evidence_inputs",
-    "follow_ons",
+    OUTSIDE_SCOPE,
     "blockers",
 )
 _NONE_VALUES = {"", "none", "n/a", "-", "nil"}
@@ -778,6 +786,11 @@ def _normalise_manifest_fields(
     fields: dict[str, Any], *, path: str | None = None
 ) -> dict[str, Any]:
     """Apply the typed post-processing shared by both manifest formats."""
+    # The retired spelling of the outside-scope field is mapped onto the current
+    # one and dropped, so a manifest written either way presents one key.
+    if RETIRED_OUTSIDE_SCOPE in fields:
+        retired = fields.pop(RETIRED_OUTSIDE_SCOPE)
+        fields.setdefault(OUTSIDE_SCOPE, retired)
     has_retry_failures = "retry_failures" in fields
     for name in _GUARDED_LIST_KEYS:
         _refuse_joined_list_separator(name, fields.get(name), path=path)
@@ -2785,50 +2798,3 @@ def _resolves_under(path: str, root: str) -> bool:
         return os.path.commonpath((os.path.realpath(path), root)) == root
     except (OSError, ValueError):
         return False
-
-
-def followup_ops_from_manifest(
-    text: str,
-    *,
-    slug: str,
-    section: str = "",
-    written_by: str = "reckon-build",
-    now: str | None = None,
-) -> list[dict[str, Any]]:
-    """Turn a manifest's candidate follow-ons into plan followup append ops.
-
-    This is the worker end of the continuation chain. A worker fenced out of
-    work it discovered has nowhere to put it but prose, where it is lost; an op
-    per candidate carries it into plan state, and the one-line invocation keeps
-    the live plan as the only place guidance lives. An unreadable manifest names
-    no follow-ons: the refusal lands on the classification surfaces, and this
-    reader stays tolerant so nothing downstream of it crashes.
-    """
-    try:
-        manifest = parse_manifest(text)
-    except ManifestParseError:
-        return []
-    stamp = now or _utc_now()
-    invocation = f"/reckon-build {slug}" + (f" {section}" if section else "")
-    ops: list[dict[str, Any]] = []
-    for index, candidate in enumerate(manifest["follow_ons"], start=1):
-        ops.append(
-            {
-                "op": "append",
-                "target": "followups",
-                "item": {
-                    "id": f"f-{re.sub(r'[^a-z0-9]+', '-', slug.lower())}-{stamp.replace(':', '').replace('-', '')}-{index}",
-                    "status": "open",
-                    "written_by": written_by,
-                    "written_at": stamp,
-                    "title": candidate[:120],
-                    "body": (
-                        f"<p>Found by a worker on {slug} and fenced out of its "
-                        f"write scope: {candidate}</p>"
-                    ),
-                    "recommends_skill": invocation,
-                    "prompt": invocation,
-                },
-            }
-        )
-    return ops

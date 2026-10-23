@@ -114,7 +114,7 @@ baseline_suite: <inline JSON observation when the project suite is armed, otherw
 after_suite: <inline JSON observation when the project suite is armed, otherwise none>
 artifacts: <paths/urls plus headline metrics>
 evidence_inputs: <facts needed for reckon writeback>
-follow_ons: <work discovered but fenced out of scope, or none>
+outside_scope: <work discovered but fenced out of scope, or none>
 blockers: <none or exact unmet condition>
 ```
 
@@ -132,11 +132,12 @@ or another unfinished measurement — and must never be interpreted as an empty
 failure set. `revision` binds each observation to the tree it measured;
 `failure_count` must equal the number of `failure_ids`.
 
-`follow_ons` is the worker end of the continuation chain. Work a worker
-discovered but was fenced out of otherwise has nowhere to go but prose, where it
-is lost. The orchestrator either folds each candidate into the current wave or
-writes it as a plan followup; `crew.followup_ops_from_manifest` builds the append
-ops so the invocation line stays canonical.
+`outside_scope` is where a worker records work it found beyond its own fence.
+That work has nowhere else to go: no deferred-work bucket, and no plan write by
+the worker. It reaches the coordinator on the promotion report and on the run's
+ledger row, and the coordinator answers **each entry** with a plan section or
+with an instruction in the next dispatch's prompt. Neither route is a list
+nobody reads.
 
 ### The declared external wait
 

@@ -18,7 +18,7 @@ happened to be split rather than on what the schema says:
 
 A mapping written under a list field is one item per line rather than a refusal.
 Workers label the entries of a list field (``test_logs``, ``artifacts``,
-``follow_ons``, a bare ``commits`` block of sha-and-subject lines), which
+``outside_scope``, a bare ``commits`` block of sha-and-subject lines), which
 composes as a mapping — the shape no list field declared — and refusing it cost
 27 delivered manifests that the line-scanning reader had accepted. The refusal
 is kept for a shape no field declares, which is a mapping body under a text
@@ -239,9 +239,9 @@ def test_a_single_labelled_entry_reads_as_a_one_item_list() -> None:
 
 
 # r-20260907T164554588285-nia-convergence-atlas
-_FOLLOW_ONS_NUMBERED_WITH_ITS_OWN_KEYS = """\
+_OUTSIDE_SCOPE_NUMBERED_WITH_ITS_OWN_KEYS = """\
 status: complete
-follow_ons:
+outside_scope:
   1. limited-class panel with flux contours: relabel a limited frame on H200 and persist its flux raster (relabelled limited corpus and pre-correction reads survive only as classifications today) — then add the panel(s) to the atlas grid
   2. reversed-current-block panel: solve one of shots 22475/22550/22626 with negative polarity on H200, persist the terminal (axis-admission-failed) flux raster, add the panel showing the failure beside EFIT references
   3. DIII-D flux persistence: the diiid operands persist no flux field; persisting per_cell_flux_values (or the EFIT psirz already used) lets the DIII-D contours come from Nova's own map
@@ -249,16 +249,16 @@ follow_ons:
 """
 
 
-def test_a_labelled_follow_on_keeps_its_label_and_the_colon_inside_it() -> None:
-    manifest = reports.parse_manifest(_FOLLOW_ONS_NUMBERED_WITH_ITS_OWN_KEYS)
+def test_a_labelled_outside_scope_entry_keeps_its_label_and_colon() -> None:
+    manifest = reports.parse_manifest(_OUTSIDE_SCOPE_NUMBERED_WITH_ITS_OWN_KEYS)
 
-    assert len(manifest["follow_ons"]) == 4
-    assert manifest["follow_ons"][0].startswith(
+    assert len(manifest["outside_scope"]) == 4
+    assert manifest["outside_scope"][0].startswith(
         "1. limited-class panel with flux contours: relabel a limited frame"
     )
-    assert manifest["follow_ons"][0].endswith("add the panel(s) to the atlas grid")
-    assert manifest["follow_ons"][3].startswith("4. optional: persistence")
-    assert manifest["follow_ons"][3].endswith("shadow render on the MAST rows")
+    assert manifest["outside_scope"][0].endswith("add the panel(s) to the atlas grid")
+    assert manifest["outside_scope"][3].startswith("4. optional: persistence")
+    assert manifest["outside_scope"][3].endswith("shadow render on the MAST rows")
 
 
 # r-20260915T112004448735-the-skill-mirrors-the-runtime-contract

@@ -759,7 +759,7 @@ RUNTIME FILESYSTEM
             " This gate measures only this node's own change; verifying the "
             "merged result belongs to a separately dispatched test node, and "
             "a failure outside this node's declared scope is reported under "
-            "follow_ons rather than triaged or fixed."
+            "outside_scope rather than triaged or fixed."
         )
     # The attempt's own launch instant is what the fence is measured against,
     # so it is stated beside the deadline it sets rather than only carried in
@@ -837,7 +837,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   failure_attribution: <inline JSON {{failure_id: "scaffolding: cause"}} only when your own probe, measurement script or helper failed before reaching code under test; armed test-role suite failures still map failure ids to candidate commits>
   artifacts: <paths plus headline metrics; a metric quoted from a gate log is that log's own summary line, so the record reconciles with the log it cites>
   evidence_inputs: <facts the orchestrator needs for writeback>
-  follow_ons: <work you found but were fenced out of, or none>
+  outside_scope: <work you found but were fenced out of, or none. Record it here and nowhere else: no bucket list and no plan write. The coordinator answers each entry as a plan section or as an instruction in the next dispatch's prompt>
   blockers: <none, or the exact unmet condition>
 WORKTREE AND PARALLEL-SAFETY RULES (binding)
   1. Work only in {worktree}. Do not create, checkout or switch branches.

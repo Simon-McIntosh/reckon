@@ -128,8 +128,8 @@ def _declared_arm_paths(declared: Mapping[str, Any]) -> list[Path]:
     Only the structured fields that carry a declared path are read: the two log
     fields, the suite records' own log and basetemp, and the artifacts field. A
     path that merely appears in prose is not a declaration of ownership, so a
-    landing line, a checkpoint or a follow-on naming another session's
-    directory is never a removal candidate. The run's own scratch directory and
+    landing line, a checkpoint or an outside-scope entry naming another
+    session's directory is never a removal candidate. The run's own scratch directory and
     its timestamp-stemmed siblings are not read here either; the scratch
     removal that runs immediately before this step owns them.
     """

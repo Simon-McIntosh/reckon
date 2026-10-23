@@ -182,13 +182,13 @@ def test_an_entry_retaining_a_semicolon_after_splitting_is_refused() -> None:
     assert "';'" in str(raised.value)
 
 
-def test_follow_ons_prose_naming_two_paths_is_accepted() -> None:
+def test_outside_scope_prose_naming_two_paths_is_accepted() -> None:
     # A prose field that names two paths either side of a semicolon is not a
     # joined entry list, so it is read as written rather than refused. The same
     # text written as changed_paths is refused, which shows the refusal is
     # scoped to the guarded fields rather than to the semicolon.
-    parsed = parse_manifest(_manifest(follow_ons=PROSE_WITH_PATHS))
-    assert parsed["follow_ons"] == [PROSE_WITH_PATHS]
+    parsed = parse_manifest(_manifest(outside_scope=PROSE_WITH_PATHS))
+    assert parsed["outside_scope"] == [PROSE_WITH_PATHS]
 
     with pytest.raises(ManifestParseError) as raised:
         parse_manifest(_manifest(PROSE_WITH_PATHS))

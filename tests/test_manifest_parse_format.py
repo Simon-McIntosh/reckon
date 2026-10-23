@@ -72,7 +72,7 @@ _REAL_SHAPED_JSON = """\
   "failure_attribution": "not applicable - implement role, zero added failures",
   "artifacts": ["commit 036dfe72 - 3 files, +101/-8"],
   "evidence_inputs": {"mechanism": "audits.resolve_retired_operator_spellings"},
-  "follow_ons": ["workers.py is outside the fence"],
+  "outside_scope": ["workers.py is outside the fence"],
   "blockers": "none"
 }
 """
@@ -118,7 +118,7 @@ def test_a_real_shaped_json_manifest_reads_fully() -> None:
     assert fields["evidence_inputs"] == {
         "mechanism": "audits.resolve_retired_operator_spellings"
     }
-    assert fields["follow_ons"] == ["workers.py is outside the fence"]
+    assert fields["outside_scope"] == ["workers.py is outside the fence"]
     assert fields["blockers"] == []
     assert fields["needs_help"] is None
 

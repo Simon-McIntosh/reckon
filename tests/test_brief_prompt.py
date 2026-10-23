@@ -328,7 +328,7 @@ FENCE — TIME
   20m. Your process ends when this turn ends: never wait across a backgrounded command. Write your manifest with what you know now before starting one, and update it afterward if a later turn arrives — that is keyed to starting the wait, not to finishing the work. A run that ends mid-wait is resumable, so if you run out of turns, leave a record naming exactly what you were waiting for — set status: waiting and fill the wait_condition, wait_probe, wait_terminal and resume_brief keys in the manifest block so a resume sweep can wake you. Declaration is for a wait you hold: the wait block states something you are actually waiting on, never a note about where you are. A resumed worker whose wait is met has nothing left to wait on: record where work stands under the checkpoint key and continue, rather than writing the wait block again. So does any worker recording progress at any point, not only a resumed one.
 
 FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
-  the composed prompt matches the authority given to it This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node, and a failure outside this node's declared scope is reported under follow_ons rather than triaged or fixed.
+  the composed prompt matches the authority given to it This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node, and a failure outside this node's declared scope is reported under outside_scope rather than triaged or fixed.
 
 FENCE — DELIVERY
   Write your manifest to /state/runs/carrier-node/manifest.md BEFORE finishing, then reply with that path and a summary.
@@ -380,7 +380,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   failure_attribution: <inline JSON {failure_id: "scaffolding: cause"} only when your own probe, measurement script or helper failed before reaching code under test; armed test-role suite failures still map failure ids to candidate commits>
   artifacts: <paths plus headline metrics; a metric quoted from a gate log is that log's own summary line, so the record reconciles with the log it cites>
   evidence_inputs: <facts the orchestrator needs for writeback>
-  follow_ons: <work you found but were fenced out of, or none>
+  outside_scope: <work you found but were fenced out of, or none. Record it here and nowhere else: no bucket list and no plan write. The coordinator answers each entry as a plan section or as an instruction in the next dispatch's prompt>
   blockers: <none, or the exact unmet condition>
 WORKTREE AND PARALLEL-SAFETY RULES (binding)
   1. Work only in /repo/worktree. Do not create, checkout or switch branches.
