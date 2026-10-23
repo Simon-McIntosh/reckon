@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -171,6 +171,17 @@
     <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §3</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20261023-s2-owners" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
+    <div class="r-comment-body"><p>Design review on 2026-10-23: <code>supervisor.json</code>, composed at dispatch by <code>_supervisor_spec</code> in <code>reckon/crew/dispatch_launch.py</code>, already carries <code>argv</code> in the run directory, so §2 should extend it rather than add a second sidecar. The review also lists the live-pointer read sites §2 must route, among them <code>reckon/run_record.py</code>, <code>reckon/crew/promotion.py</code>, <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/recovery_watch.py</code> and <code>reckon/serve.py</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20261023-s4-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
+    <div class="r-comment-body"><p>Reviews on 2026-10-23: §4's done-when does not assert that the archive exists or holds the removed bytes, so a sweep that deletes without archiving passes; and §4 names no module or caller for its sweep. Settle both before dispatch.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20261023-s7-owners" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
+    <div class="r-comment-body"><p>Design review on 2026-10-23: the timer should be rendered and installed by <code>render_timer_unit</code> and <code>install_timer</code> in <code>reckon/crew/paid_lanes.py</code>, and the pass's log should reuse the rotation in <code>_WatchLogStream</code> in <code>reckon/crew/watch_unit.py</code>; §7 should also say what surface it retires or merges.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -46,6 +46,7 @@
     <section data-reckon="section" data-id="s2" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p>Dispatch accepts a node whose section waits are unmet. A wait is a <code>plan-section-depends-on</code> ref, a gate, or another queued request named by id. The request is stored in a new <code>waiting</code> state carrying the refs it waits on, and every contract check that does not depend on the upstream's output runs at queue time, so a malformed node is still refused at once. Each admission pass re-reads readiness through the same derivation <code>roadmap</code> uses. A waiting request becomes <code>queued</code> when its last ref lands, and <code>blocked-upstream</code>, surfaced on the owning session's obligations, when a ref is closed as abandoned or failed. Write scopes are checked at launch, not at queue time: two requests may queue on one file, and the earlier-ranked one launches first, as the existing overlap hold already does for queued requests.</p>
     <p><strong>Done when</strong> a test queues a three-section chain in one call and the sections launch in dependency order as each upstream promotes, with no coordinator call in between. A negative arm marks the middle section's upstream abandoned: the tail must go <code>blocked-upstream</code> and never launch. A malformed node in the same batch must be refused at queue time.</p>
+    <p><strong>Owners.</strong> The admission pass is <code>admit_once</code> in <code>reckon/crew/queue_admission.py</code>: the readiness re-read and the moves from <code>waiting</code> to <code>queued</code> and to <code>blocked-upstream</code> are made there. The two new states join the request-phase vocabulary beside <code>QUEUED_PHASE</code> and <code>LAUNCH_FAILED_PHASE</code> in the same module, and every reader that filters on a request's phase, <code>queued_placements</code>, the obligations view and the watch stream among them, reads them from that vocabulary rather than from string literals. Write paths: <code>reckon/crew/queue_admission.py</code>, the module that stores a queued request (<code>reckon/crew/dispatch_admission.py</code>) and a new test file. Every log is under the run directory.</p>
 
     <h2 id="s3">§3 — Queue depth is bounded by the project, not by a per-session count</h2>
     <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -85,6 +86,18 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s6" data-id="c-20261023-s6-driver" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v1 on 2026-10-23, finding reasoning-2, declined for the first wave: §6 says a delivered run lands mechanically but names no process that performs the landing or wakes on its conditions. Which process does it is the author's design choice. Name it before dispatching §6.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20261023-s6-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
+    <div class="r-comment-body"><p>Design review on 2026-10-23: the landing condition already exists as <code>REVIEW_ACCEPTANCE_FLOOR</code> and <code>_review_accepts_promotion</code> in <code>reckon/crew/recovery_review_acceptance.py</code>; the landing pass should call that rather than restate it.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20261023-s3-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
+    <div class="r-comment-body"><p>Content review of v3 on 2026-10-23, for the author before §3 is dispatched: §3 justifies retiring the per-session clamp by §4's ranking while the edges order §3 before §4; it asserts the obligations and live views answer inside their deadlines with 500 queued but states no deadline; and it cites a read-time budget in crew-state-stays-bounded that that plan does not declare.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20261023-s4-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
+    <div class="r-comment-body"><p>Content and design reviews on 2026-10-23, for the author before §4 is dispatched: the priority order stated here (critical path, then ROI, then the active sprint) differs from the roadmap's own key, <code>_priority_key</code> in <code>reckon/roadmap_ranking.py</code>, which puts sprint position before ROI, and that key and its signal vocabulary are what §4 should reuse; during the transition <code>_dispatch_lane_allowance</code> in <code>reckon/crew/dispatch_plan.py</code> still holds requests on the router's per-session figure.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20261023-s5-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
+    <div class="r-comment-body"><p>Design review on 2026-10-23: <code>_store_brief</code> is defined in <code>reckon/crew/dispatch_admission.py</code>, not <code>dispatch.py</code>, and §5's new <code>crew queue</code> verbs should name what they retire or merge against the CLI surface.</p></div>
 </div>
 </section>
 </main>
