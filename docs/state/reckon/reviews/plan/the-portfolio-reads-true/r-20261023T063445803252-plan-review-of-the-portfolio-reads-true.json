@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T06:47:01.762Z",
+  "dispatched_at": "2026-10-23T06:36:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:165",
+      "id": "reasoning-1",
+      "reason": "a worker dispatched at `_apply_move` finds a pure index-only applier and cannot write a second document from it; the plan must name the write layer that owns both writes (the caller in mcp_edit_plan.py, or the op carrying the plan path), or the node builds a mechanism that cannot run.",
+      "text": "\u00a78 says \"`_apply_move` in `reckon/_store.py` writes the moved plan's `plan-sprint` through the plan's own store write in the same call as the two sprint resources\", but `_apply_move` (reckon/_store.py:3404) refuses anything but the index (`if not is_index: raise OpError(\"move op is index-only\")`, :3405-3406), it receives only `(working, op, is_index, warnings)` and no repository, path or store handle, and the layer that dispatches it is documented \"Pure: never touches disk or version fields\" (`apply_ops`, reckon/_store.py:3927). Its only production caller (reckon/mcp_edit_plan.py:1452) applies one batch to one document, and the plan document is a different document from the index. So the write \u00a78 describes cannot be reached from the site \u00a78 names, and no caller is named for it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:165",
+      "id": "evidence_paths-1",
+      "reason": "without declared write paths the node cannot be fenced to `reckon/_store.py` and its test, and the coordinator has no path to audit the landing against.",
+      "text": "\u00a78 ends without the `Write paths:` line every other section carries, and names no evidence or gate log path, so nothing in the node sits on a durable path a later reader can open",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:165",
+      "id": "done_when-1",
+      "reason": "\u00a71\u2013\u00a77 each name their test file so the gate is one runnable command; \u00a78's gate cannot be dispatched or re-run by id.",
+      "text": "the measure reads \"a test moves a plan between two sprints\", naming no test file, so the gate is not a command anyone can run and \u00a74's audit clause (\"\u00a74's audit reports no mismatch after a move\") names no invocation either",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:163",
+      "id": "wiring-1",
+      "reason": "dispatched in the order the plan now allows (\u00a76 first), \u00a76 writes exactly the stale `plan-sprint` state \u00a78 is written to prevent, so the ordering the plan leaves unstated decides whether \u00a78's fix is exercised before or after the moves it protects.",
+      "text": "\u00a78 declares no `depends-on` and no \"runs after\" line, while \u00a76 (line 144, `implementable`, all three gates `passed`) is open and its deliverable is to \"move every live S22 member into an advancing sprint or the backlog\", which is the sprint move \u00a78 exists to fix; \u00a76's own \u00a74 audit would report the mismatches \u00a78 removes",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "aae79b875ca2df2575169ffb232767754502086f5eaffd05d2f4f837968b1a03",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 55,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T063445803252-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "cdca04f49ab7a5a7a4bc5f00d5d56e0b48dde8f2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_apply_move` resolves at `reckon/_store.py:3407` and \u00a74's `SPRINT_MEMBERSHIP` audit resolves; no bad anchor in the changed units.",
+    "done_when": "a finding \u2014 \u00a78's measure says \"a test\" but names no test file, so its gate is not a runnable command.",
+    "evidence_paths": "a finding \u2014 \u00a78 declares no write paths and no evidence or log path, alone among \u00a71\u2013\u00a77.",
+    "naming": "pass \u2014 \u00a78's new text carries no plan label, stage name, ticket number or version tag into code.",
+    "reasoning": "a finding \u2014 \u00a78 names `_apply_move` as the site that writes the moved plan's `plan-sprint`, but that function sits in a pure, single-document op applier with no handle on the plan document or on disk.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, the write-through on the move op, with its refusal path as the same mechanism's atomicity requirement.",
+    "wiring": "a finding \u2014 \u00a78 declares neither a `depends-on` nor the prose ordering line every other section carries, and \u00a76, which is implementable with all three gates closed, performs the very sprint moves \u00a78 fixes."
+  },
+  "section_digests": {
+    "_document": "a4fd3a93071e61a2e7a88ce84d76e3c3bf6325bbf8a50402ad7a8fdc3143e6fc",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "6128b9f7a621b7cefb0be00b79b1a8b3dd7ff50e0a5cc7b8dc50d0b3711ad94b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T06:57:14.856090+00:00"
+}
