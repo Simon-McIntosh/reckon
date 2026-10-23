@@ -20,10 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="a-seat-held-elsewhere-is-not-restarted">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
   <main class="plan-doc">
@@ -104,9 +106,11 @@
 
     <h2 id="s2">§2 — A live worker's unreadable in-progress manifest is not unwritten</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p>In <code>recovery_classification</code>, the arm that runs when <code>alive is True</code> sets
-    <code>manifest_unwritten = True</code> whenever a present manifest carries no readable status and has a
-    parse error. Two kinds of manifest reach that arm. One is unreadable because it is non-terminal and
+    <p>In <code>recovery_classification</code>, the arm that runs when <code>alive is True</code> first
+    asks <code>_absence_of_a_verdict_is_transient</code>. That check holds the reading back within
+    <code>LAUNCH_WINDOW_SECONDS</code> of dispatch and within <code>MANIFEST_REWRITE_WINDOW_SECONDS</code>
+    of the manifest's own mtime. Past both windows, the arm sets <code>manifest_unwritten = True</code>
+    when a present manifest carries no readable status and has a parse error. Two kinds of manifest reach that arm. One is unreadable because it is non-terminal and
     loosely written: a <code>;</code>-joined list field, or a non-vocabulary status such as
     <code>in-progress-placeholder</code>. The other is a delivery that really is missing its verdict. A live
     worker is still writing the first kind, so it is not a missing verdict. The run must keep the
@@ -117,8 +121,10 @@
     or unreadable body of a run in motion is covered. Do not add a second motion rule. Once the worker has
     exited, the same manifest is still <code>unreadable</code> or <code>unwritten</code> and draws halted,
     because then it is the delivery.</p>
-    <p>Done when one new test file builds three fixture runs, each with a live pid (the test process) and a
-    newest stream carrying an assistant record: (a) <code>status: in-progress</code> with
+    <p>Done when one new test file builds three fixture runs, each with a live pid (the test process), a
+    newest stream carrying an assistant record, and a dispatch time and manifest mtime set outside both
+    windows above (stated in the test, and derived from the window constants rather than written as
+    literals): (a) <code>status: in-progress</code> with
     <code>changed_paths: a.py; b.py</code>, (b) <code>status: in-progress-placeholder</code> with the
     orientation keys, and (c) <code>status: in-progress</code> and a checkpoint. For all three,
     <code>recovery.recover</code> gives a <code>recovery_classification</code> whose
@@ -147,7 +153,15 @@
     or, with liveness unknown, while its stream is in motion inside the stall window. A launch-failed attempt
     whose next attempt's claim already exists also classifies <code>starting</code> (reckon-a1's
     <code>plan-review-of-an-mcp-failure-names-its-cause</code>). Name in the manifest where the current
-    attempt is resolved today. Extend that resolver rather than adding a parallel one.</p>
+    attempt is resolved today. Extend that resolver rather than adding a parallel one. The guard that
+    already owns this reading is <code>_manifest_is_the_predecessor_attempts_report</code>, which reads
+    <code>recovery_liveness._manifest_predates_the_current_attempt</code> and
+    <code>_current_attempt_number</code>. Two stored code reviews flagged its liveness narrowing at
+    <code>recovery_classification.py:72</code> as letting "the predecessor's blocked word govern a live
+    resumed attempt". Reproduce the recorded case (<code>r-20261023T012524464845-a-plan-write-refuses-the-bucket</code>:
+    repair at 12:14:30Z, attempt 4 launched 12:15:11Z, drawn halted at 12:25:51Z, exited 12:27:56Z) to
+    find which of its three conditions failed, and fix that condition. If the guard itself is sound, the
+    cause is elsewhere: say which in the manifest.</p>
     <p>Done when one new test file builds fixture run directories. (i) Repair then resume: the manifest is
     <code>blocked</code>, <code>status-repair.json</code> is older than <code>attempt-2.claim</code>,
     <code>attempt-1-exit.json</code> is present and there is no attempt-2 exit; the run classifies
@@ -238,9 +252,12 @@
 <section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p>The obligations view derives <code>review-missing</code> from the review store and the live pointers.
     A review dispatched into the queue has neither a live pointer nor a stored record, so the run's duty
-    reads missing while its review is waiting to launch. A queued review run whose target is the run counts
-    as the review in flight. The duty reads <code>review-queued</code> with the queue position, and it raises
-    no Stop refusal while the queued run exists.</p>
+    reads missing while its review is waiting to launch. The kind for this already exists:
+    <code>REVIEW_QUEUED_DUTY_KIND</code> (<code>review-queued</code>), which
+    <code>_queued_review_fields</code> reads today from a <code>lane-paused</code> refusal record only. A
+    queued review run whose target is the run becomes a second source for that same kind, read by extending
+    <code>_queued_review_fields</code>. No parallel reader and no second kind. The duty carries the queue
+    position, and it raises no Stop refusal while the queued run exists.</p>
     <p>Done when a test builds a delivered run and a queued review record targeting it in a temporary crew
     home, and the obligations view gives the run <code>review-queued</code> rather than
     <code>review-missing</code>. Removing the queued record returns <code>review-missing</code>. Negative
@@ -267,18 +284,24 @@
     base. Ruff adds no findings on the staged paths. Write paths: the producer seat module named in the
     manifest, and the new test. A test must not read or write the real fleet record or seat.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
+
+    <h2 id="s10">§10 — A wait nothing can lift says it needs the coordinator</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p>A worker may end its turn while it holds a declared wait, and the recovery sweep then resumes it when the wait's condition probe reports a terminal state. When the probe cannot answer, the sweep never will. The row still reads <code>waiting</code>, and its next action still promises "the recovery sweep will resume … when the condition test reports a terminal state". Measured on imas-efit <code>r-20261023T065106939911-cbl-render-step-routine</code>: attempt 1 exited 07:50:51Z holding a wait on build 1293562. At 08:09:50Z the row read <code>wait-aged</code> with "condition probe did not answer successfully" and that promise. The coordinator found the stall by hand and resumed it at 08:33Z. A declared wait whose worker has an exit record for the current attempt and whose probe did not answer is classified with a halted word. Its next action names the resume command and says the probe could not answer. A wait whose worker is still live, or whose probe answers non-terminal, is unchanged.</p><p>Done when a test builds a fixture run with a declared wait, a current-attempt exit record and a probe that exits non-zero. It classifies to a pane word <code>halted</code>, with a next action containing <code>reckon crew resume</code> and not <code>the recovery sweep will resume</code>. The same fixture with a live worker, or with a probe answering non-terminal, stays <code>waiting</code>. Negative control: the first fixture at the base revision stays <code>waiting</code> with the sweep promise, recorded in the gate log. The tests importing <code>recovery_classification</code> add no failures against the base. Ruff adds no findings on the staged paths. Write paths: the classification module that composes a wait's next action (named in the manifest) and the new test. It runs after §3 when that module is <code>recovery_classification.py</code>.</p>
+
+    <h2 id="s11">§11 — The census finds no live worker drawn halted</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p>The instrument behind §1 is committed and re-run once §2–§10 have landed and every producer has reloaded onto that code. For every project's watch stream over a stated window, it reclassifies each event through <code>ticker.stream_carries</code> and <code>ticker._pane_word</code>. It counts carried <em>halted</em> rows, and among them the rows whose own event records <code>process_alive: true</code> and the rows followed within 30 minutes by a <code>working</code> row with no new attempt claim between them. It also counts lift transitions per lift id, and same-word <code>waiting → waiting</code> rows. It reads the streams and writes only its report.</p><p>Done when the instrument is committed under <code>scripts/</code> with a test that runs it on a synthetic stream holding one row of each counted kind and asserts each count is 1. Its report over the 24 hours after the last producer reload, run on the fleet node, records zero carried halted rows with <code>process_alive: true</code>, zero halted rows returning to working with no new attempt claim, at most one <code>lift-granted</code> per lift id, and zero same-word wait rows. Each figure sits beside the census in §1. Negative control: the same instrument over the 48 hours ending 2026-10-23T12:37Z reproduces §1's 24 halted rows with <code>process_alive: true</code>, recorded in the report. Write paths: the script, its test, and the report at <code>docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census.html</code>.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-alwh-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-23" data-recommends-skill="/reckon-build a-live-worker-is-never-drawn-halted" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Remove the false halted rows and the noise rows</h4>
-        <div class="r-fu-body"><p>§2, §4, §6, §8 and §9 are independent. §3 follows §2, and §5 then §7 follow §4.</p></div>
-        <pre class="r-fu-prompt">/reckon-build a-live-worker-is-never-drawn-halted</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-alwh-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-23" data-recommends-skill="/reckon-build a-live-worker-is-never-drawn-halted" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Remove the false halted rows and the noise rows</h4>
+    <div class="r-fu-body"><p>§2, §4, §6, §8 and §9 are independent. §3 follows §2, and §5 then §7 follow §4.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-live-worker-is-never-drawn-halted</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
