@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the run's own arms: gate-round5.log at a20ea94a4 (23 failed, 1322 passed, 1 skipped, 1 error, EXIT=1) carries 24 failing ids and gate-base2.log at 43677d0d (28 failed, 1303 passed, 1 skipped, 1 error, EXIT=1) carries 29; comm of the two id sets is empty in the head, so no failure is added and the 5 base-only ids pass at the head.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1630",
+    "reckon/crew/dispatch.py:1651",
+    "reckon/crew/queue_admission.py:1819",
+    "reckon/crew/recovery_classification.py:670",
+    "reckon/crew/obligation_snapshot.py:1060",
+    "reckon/crew/recovery_vocabulary.py:80"
+  ],
+  "completed_at": "2026-10-23T19:57:08.335Z",
+  "dispatched_at": "2026-10-23T19:41:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1164 non-blocking",
+      "text": "the added _manifest_status re-implements the manifest-status read that reckon/crew/reports.py:309 parse_manifest already owns, and diverges on a JSON-form manifest: probed at head, _manifest_status('{\"status\": \"complete\"}') returns '' while parse_manifest returns 'complete', so a request waiting on a run whose manifest is JSON reads PENDING forever instead of the owner's SATISFIED."
+    },
+    {
+      "file": "reckon/crew/node.py",
+      "line": "38 non-blocking",
+      "text": "QUEUED_PHASE and the two waiting phase names are declared here, outside both the six-path dispatch fence and the manifest's own orientation_write_paths, and the done_when names reckon/crew/queue_admission.py as where each phase filter takes its words from."
+    },
+    {
+      "file": "tests/test_a_queued_request_waits_on_its_dependencies.py",
+      "line": "12 non-blocking",
+      "text": "the new test file's import block is unsorted (ruff I001), an added finding against the repo's adds-no-findings rule and against the done_when's claim that ruff reports nothing added on the staged paths; measured: base files 11 findings, head 12, the delta is this line."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1546 non-blocking",
+      "text": "queue_requests is a public batch entry with no production caller, so the one-call chain the done_when measures is reached only from tests; the hold a coordinator actually gets comes from dispatch() at reckon/crew/dispatch.py:1651."
+    },
+    {
+      "file": "manifest.md",
+      "line": "0 non-blocking",
+      "text": "the source manifest carries after_suite as prose and no baseline_suite key, so the armed-only gate receipt its own contract requires cannot be filled from the record and the delta had to be re-derived from gate-round5.log and gate-base2.log."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read against 43677d0d to f88db6c82; eleven commits over eight files, +1955/-50, the head commit docs-only.",
+    "done_when": "tests/test_a_queued_request_waits_on_its_dependencies.py:194, :219, :356 carry the chain, the abandoned-upstream arm and the malformed-node refusal, and gate-round5.log records the run; the done_when's 'defined in reckon/crew/queue_admission.py beside QUEUED_PHASE' landed in reckon/crew/node.py:38-40 instead, re-exported.",
+    "goal": "the goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/dispatch.py:1630 reads the waits and :1651 writes the hold, and reckon/crew/queue_admission.py:1819 releases it in admit_once.",
+    "manifest": "read; status complete, gate-round5.log as the head arm, ten logs in test_logs, after_suite as prose and no baseline_suite key.",
+    "write_paths": "the dispatch fences six paths and the manifest lists nine; the diff touches eight and reckon/crew/node.py is in neither, disclosed in the manifest's scope_note."
+  },
+  "node": "review-of-a-queued-request-waits-on-its-dependencies-f88db6c82362",
+  "node:reviewed": "a-queued-request-waits-on-its-dependencies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/dispatch.py:1630 reads the waits and :1651 writes the hold, and reckon/crew/queue_admission.py:1819 releases the request in admit_once when its last ref lands.\nVERDICT done_when: the done_when asks for a three-section chain queued in one call launching in dependency order with no coordinator call between, a negative arm blocking the tail, a malformed node refused at queue time, the two states defined in queue_admission.py beside QUEUED_PHASE and every phase filter reading them from there, and readiness read through the roadmap derivation; tests/test_a_queued_request_waits_on_its_dependencies.py:194, :219, :356 carry the first three and gate-round5.log records the run, but the two states landed in reckon/crew/node.py:38-40 and re-exported, not defined in queue_admission.py, which is the stated deviation.\nVERDICT write_paths: the dispatch fences six paths and the manifest's own orientation_write_paths lists nine; the diff touches eight, and reckon/crew/node.py is in neither list, disclosed in the manifest's scope_note.\nVERDICT manifest: read; it states status complete, names gate-round5.log as the head arm and ten logs in test_logs, carries after_suite as prose with no baseline_suite key, and offers neg-wiring-redispatch.log as the control, whose log records revision a20ea94a4 and 2 failed of 6 against 14 passed unmutated.\nVERDICT diff: read against the base from 43677d0d to f88db6c82; eleven commits over eight files, +1955/-50, the head commit f88db6c82 changing docs only so the gate at a20ea94a4 covers the code.\nCALL_SITES: reckon/crew/dispatch.py:1630, reckon/crew/dispatch.py:1651, reckon/crew/queue_admission.py:1819, reckon/crew/recovery_classification.py:670, reckon/crew/obligation_snapshot.py:1060, reckon/crew/recovery_vocabulary.py:80\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1651 stores the node awaiting-upstream carrying its refs and reckon/crew/queue_admission.py:1819 releases it through the same readiness the roadmap derivation builds, though the batch entry reckon/crew/queue_admission.py:1546 has no production caller.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-round5.log records revision a20ea94a4, its tree and command on the first lines and EXIT=1 with 23 failed/1322 passed, and gate-base2.log at 43677d0d gives zero added failures, but the source manifest carries after_suite as prose with no baseline_suite key so the gate receipt cannot be filled mechanically.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: reckon/crew/node.py:38-40 changed outside both the six-path dispatch fence and the manifest's own orientation_write_paths, disclosed in the manifest's scope_note.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_request_waits_on_its_dependencies.py:194 asserts the launch order, :219 the abandoned-upstreams negative arm and :492 the working-redispatch guard, and neg-wiring-redispatch.log records EXIT=1 with two failing ids the unmutated head passes.\nSCORE fit: 15\nJUSTIFICATION fit: the added code follows the module's idiom and takes its phase names from reckon/crew/node.py, but tests/test_a_queued_request_waits_on_its_dependencies.py:12 adds a ruff I001 finding and reckon/crew/queue_admission.py:1546 adds a public function no production caller reaches.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:1164 re-implements the manifest-status read owned by reckon/crew/reports.py:309 parse_manifest and diverges on a JSON manifest rather than extending the owner.\nFINDING reckon/crew/queue_admission.py:1164 non-blocking: the added _manifest_status re-implements the manifest-status read that reckon/crew/reports.py:309 parse_manifest already owns, and diverges on a JSON-form manifest: probed at head, _manifest_status('{\"status\": \"complete\"}') returns '' while parse_manifest returns 'complete', so a request waiting on a run whose manifest is JSON reads PENDING forever instead of the owner's SATISFIED.\nFINDING reckon/crew/node.py:38 non-blocking: QUEUED_PHASE and the two waiting phase names are declared here, outside both the six-path dispatch fence and the manifest's own orientation_write_paths, and the done_when names reckon/crew/queue_admission.py as where each phase filter takes its words from.\nFINDING tests/test_a_queued_request_waits_on_its_dependencies.py:12 non-blocking: the new test file's import block is unsorted (ruff I001), an added finding against the repo's adds-no-findings rule and against the done_when's claim that ruff reports nothing added on the staged paths; measured: base files 11 findings, head 12, the delta is this line.\nFINDING reckon/crew/queue_admission.py:1546 non-blocking: queue_requests is a public batch entry with no production caller, so the one-call chain the done_when measures is reached only from tests; the hold a coordinator actually gets comes from dispatch() at reckon/crew/dispatch.py:1651.\nFINDING manifest.md:0 non-blocking: the source manifest carries after_suite as prose and no baseline_suite key, so the armed-only gate receipt its own contract requires cannot be filled from the record and the delta had to be re-derived from gate-round5.log and gate-base2.log.\n",
+  "review_run_id": "r-20261023T191650195690-review-of-a-queued-request-waits-on-its-dependencies-f88db6c82362",
+  "reviewed_base_sha": "43677d0d2697ae3d8841b6d19addcdb77cc572be",
+  "reviewed_head_sha": "f88db6c8236291550ab3ee8a14ff2fc094f8fc88",
+  "reviewed_run_id": "r-20261023T112727139233-a-queued-request-waits-on-its-dependencies",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T20:25:00+00:00",
+  "total": 83
+}
