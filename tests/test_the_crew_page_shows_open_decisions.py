@@ -21,6 +21,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from urllib.error import URLError
+from urllib.parse import urlsplit
 from urllib.request import urlopen
 
 from reckon._plan_html import write_state
@@ -34,6 +35,9 @@ _SERVER_BOOT_SECONDS = 90.0
 PROJECT = "sample"
 SLUG = "waiting-work"
 DECISION_KEY = "transport"
+#: The plan page renders the decisions section under this anchor, and no anchor
+#: per decision, so it is the anchor a row addresses.
+DECISION_ANCHOR = "decisions"
 DECISION_TITLE = "Which transport carries the payload?"
 SCOPED_SECTION = "s2"
 #: The plan's own last-modified date, fixed in the fixture rather than taken
@@ -168,6 +172,19 @@ def _served_project(tmp_path: Path, docs: Path) -> Iterator[ServedSpa]:
             shutil.rmtree(server_home, ignore_errors=True)
 
 
+def _served_page(spa: ServedSpa, href: str) -> str:
+    """Fetch the page a row's link names, as a reader's browser would."""
+
+    if not href:
+        return ""
+    origin = urlsplit(spa.url)
+    base = f"{origin.scheme}://{origin.netloc}"
+    with urlopen(  # noqa: S310 - loopback origin of the server this case started
+        base + href.split("#", 1)[0], timeout=10
+    ) as response:
+        return response.read().decode("utf-8")
+
+
 def _mounts_preload(docs: Path) -> str:
     """Answer the shell's project list with the temporary project.
 
@@ -238,14 +255,20 @@ def test_the_crew_page_shows_the_open_decision_it_is_served(tmp_path: Path) -> N
             ready_expression="Boolean(window.STATE)",
             preload_expression=_mounts_preload(docs),
         )
+        # The link is followed as a reader follows it: the page it names must
+        # answer, and must carry the decision anchor it addresses rather than
+        # the plan alone.
+        landed = _served_page(
+            spa, seen.get("href", "") if isinstance(seen, dict) else ""
+        )
 
     assert isinstance(seen, dict), seen
     assert seen["drawn"] is True, seen
     assert seen["empty"] is False, seen
-    assert seen["empty"] is False, seen
     assert seen["key"] == DECISION_KEY, seen
     assert DECISION_TITLE in seen["question"], seen
-    assert f"/{PROJECT}/#plan/{SLUG}" == seen["href"], seen
+    assert seen["href"] == f"/{PROJECT}/plans/{SLUG}#{DECISION_ANCHOR}", seen
+    assert f'id="{DECISION_ANCHOR}"' in landed, landed[:2000]
     assert SCOPED_SECTION in seen["holds"], seen
     assert "accept" in seen["recommendation"], seen
 

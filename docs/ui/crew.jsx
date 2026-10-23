@@ -322,10 +322,13 @@ function CrewRunCard({ run }) {
   );
 }
 
-function crewRunsForVisibleProjects(runs, visibleProjects) {
-  if (!Array.isArray(visibleProjects)) return runs || [];
+// The crew page's project filter. Both row kinds the payload carries name the
+// project they belong to, so one filter narrows the runs and the decisions to
+// the projects the page is showing.
+function crewRunsForVisibleProjects(rows, visibleProjects) {
+  if (!Array.isArray(visibleProjects)) return rows || [];
   const visible = new Set(visibleProjects);
-  return (runs || []).filter(run => visible.has(run.project));
+  return (rows || []).filter(row => visible.has(row.project));
 }
 
 function crewScopedProjects(selectedProject, visibleProjects, allVisible) {
@@ -335,12 +338,15 @@ function crewScopedProjects(selectedProject, visibleProjects, allVisible) {
   return [selectedProject];
 }
 
-// The plan page a decision's row links to. The reader route names the plan by
-// slug, so the decision key rides on the row rather than the fragment.
+// The plan page a decision's row links to, addressed at the decision. The plan
+// page renders one anchor for its decisions — the decisions section — and no
+// anchor per decision, so the row addresses that section. It rides on the plan
+// document's own route rather than the reader route, whose fragment already
+// names the plan by slug and so cannot carry a second one.
 function crewDecisionPlanHref(row) {
   const project = row?.project || window.STATE?.project || "";
   if (!row?.plan) return "";
-  return `/${encodeURIComponent(project)}/#plan/${encodeURIComponent(row.plan)}`;
+  return `/${encodeURIComponent(project)}/plans/${encodeURIComponent(row.plan)}#decisions`;
 }
 
 // The scope the served row already carries: the sections it holds, or the whole
@@ -351,18 +357,12 @@ function crewDecisionScope(row) {
   return row?.holds_whole_plan ? "whole plan" : "";
 }
 
-function crewDecisionsForProjects(decisions, visibleProjects) {
-  if (!Array.isArray(visibleProjects)) return decisions || [];
-  const visible = new Set(visibleProjects);
-  return (decisions || []).filter(row => visible.has(row.project));
-}
-
 function CrewOpenDecisions({ decisions, visibleProjects }) {
   // A payload not yet read is not an empty list: the empty line asserts that
   // nothing waits, which is a claim about an answer the page does not have
   // yet, so the list is drawn only once the payload has arrived.
   if (!Array.isArray(decisions)) return null;
-  const rows = crewDecisionsForProjects(decisions, visibleProjects);
+  const rows = crewRunsForVisibleProjects(decisions, visibleProjects);
   return (
     <section className="r-crew-decisions" aria-label="Open decisions holding work">
       <header className="r-crew-decisions-head">
