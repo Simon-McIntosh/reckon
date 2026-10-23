@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s50">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <title>A roadmap read answers from a snapshot keyed on the project's write generation | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-roadmap-read-answers-from-its-snapshot" data-node="a-roadmap-read-answers-from-its-snapshot" data-reckon="landing" data-when="2026-10-23">
+  <h2>A roadmap read answers from a snapshot keyed on the project's write generation</h2>
+  <p id="a-roadmap-read-answers-from-its-snapshot-key">
+    A warm <code>reckon.mcp._roadmap</code> call is answered from a snapshot of
+    the composed result, keyed on the few facts that result is a function of.
+    Each mounted project contributes three: the modification time of its
+    <code>.git/index</code>, the commit <code>HEAD</code> resolves to, and the
+    store's plan-write counter, advanced by <code>reckon/_store.py</code>'s
+    <code>write_plan</code> — the one place every plan-state writer in every
+    process reaches — and persisted one file per project under the shared crew
+    home so a write in one process is seen by readers in all of them. The
+    process's held code stamp joins the key, and a read never re-takes it. A
+    live run's classification is a function of files the crew owns and of the
+    clock, so the key carries, per live run of this project only, the crew
+    watcher's own per-run reduction (<code>_watch_snapshot</code>), so a clock advance or
+    a classification change moves the key exactly as it moves the watch, and a
+    peer project's run cannot invalidate this project's snapshot. The key is
+    read with <code>stat</code> and <code>open</code> only: no git subprocess,
+    no walk, and no file in the docs tree.
+  </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-store">
+    A matching key and a stored snapshot inside the revalidation window return
+    the stored composition. Anything else recomposes through
+    <code>build_roadmap</code>'s existing path and stores what it composed,
+    under the key the project is in <em>after</em> the read, so a write that
+    landed while the read ran is never answered from the composition made
+    before it. The snapshot is persisted node-locally through
+    <code>reckon.crew.review_records.node_local_cache_dir(project)</code>, so a
+    fresh process, another session's server and the current-code child answer
+    their first call from a snapshot one of them computed. A write that neither
+    reckon nor git made moves none of the three facts, so a full revalidation
+    is forced at most once per window, 120 s by default. The mounts resolution
+    the key reads is held until the mounts file itself moves, because
+    establishing that a docs tree exists is a stat inside the covered tree —
+    the one place the key would otherwise touch it to learn nothing.
+  </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-measure">
+    <strong>Measure.</strong> The gate command is
+    <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 -rf</code>
+    over the section's named files
+    (<code>test_a_roadmap_read_answers_from_its_snapshot.py</code>,
+    <code>test_a_warm_read_revalidates_once.py</code>,
+    <code>test_cross_node_writes_refresh_the_index.py</code>,
+    <code>test_discovery_reads_each_file_once.py</code>,
+    <code>test_metadata_index_survives_restart.py</code>,
+    <code>test_rollup_reuses_watched_walks.py</code>,
+    <code>test_resource_identity_reads_the_digest_index.py</code>).
+    Head arm at <code>a27a50b96</code>: <strong>44 passed</strong>, EXIT=0.
+    Base arm at <code>04c10e00c</code> over the same six files that exist
+    there: <strong>39 passed</strong>, EXIT=0 — 39 + the 5 new cases is the
+    head's 44, so the change adds no failure and removes no test id. Both logs
+    name their revision, the tree, the literal command and the module under
+    test, and end in a bare <code>EXIT=</code> line.
+  </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-cases">
+    <strong>Cases held.</strong> A second read with nothing changed takes
+    <strong>0</strong> stats of a covered file (two synthetic mounted projects,
+    200 covered files each across ten directories) and <strong>2</strong>
+    stat-or-open calls per mounted project for the key — far inside the section's
+    bound of 8 and far below the walk it replaces — while returning the first
+    call's answer unchanged. A store write, a sibling project's commit, an
+    in-place edit that neither reckon nor git made (seen only after the window),
+    and a sibling project's live pointer (which does <em>not</em> disturb this
+    project's read) each behave as the section states.
+  </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-control">
+    <strong>Negative control.</strong> Dropping the write counter from the key —
+    <code>roadmap_project_generation</code> returning a constant third fact —
+    turns the gate red: <code>test_a_store_write_makes_the_next_read_recompose</code>
+    FAILED, 1 failed / 4 passed, EXIT=1, which the head arm passes.
+  </p>
+</article>
+</body>
+</html>
