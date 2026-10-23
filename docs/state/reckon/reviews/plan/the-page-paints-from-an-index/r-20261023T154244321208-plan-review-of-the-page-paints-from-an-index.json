@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T16:01:11.082Z",
+  "dispatched_at": "2026-10-23T15:43:59Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-page-paints-from-an-index/r-20261023T154244321208-plan-review-of-the-page-paints-from-an-index/plan.html:273",
+      "id": "reasoning-1",
+      "reason": "a node implementing the four named sources would leave the stream handler's invalidation dropping the build, so the section's stated guarantee (\"a change the index does cover must not drop it either\") would be false in production while every measure in the section passes, and closing it requires the handler's own call site and its name-carrying `consume()`/`drain()` usage to be named as a fifth reporter.",
+      "text": "\u00a715's deliverable says \"Four sources report changes, each with the paths it can name\" and names only `_FleetChangeWatch._run` as the caller that carries the kernel watch's names, but a second, independent reporter invalidates the same tree: `_send_project_changes` builds its own `_ProjectChangeWatch` (`reckon/serve.py:2737-2740`), consumes the same kernel events through `watch.wait()` \u2192 `consume()` (`serve.py:2777`), calls `watch.drain()` (`:2785`) and then `_invalidate_tree_views(docs_dir, changed_at=changed_at)` (`:2805`) \u2014 a call site that is neither named as a source nor given any path, so under \u00a715's own rule (\"a change no source can attribute ... drops the build as today\") it still reaches `metadata_index.invalidate_tree` and clears `_CACHE`. It is also the worst place to pay it: the very next statement, `_served_index_rows(docs_dir, project)` at `serve.py:2806`, is a cache-miss read that re-enters `_reuse_covered` and stat-sweeps every recorded directory \u2014 the 11.3 s GPFS sweep \u00a715 exists to remove \u2014 inside the request thread. Nothing in the section would catch this: its six unit cases drive the sources directly and its live two-arm measure times `/_index/reckon` with no change stream open, while \u00a711's landed evidence records the crew view holding a stream open in the live deployment, so the head arm reads under 1 s and the gate is green while the fix is absent on the path a reader is looking at.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d363facdf04d8f19dd4463ee83d5fae31c7f057021602de2b61cac8c8cb4b570",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 117,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T154244321208-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "2c572395a01c657b398309cee445e90719fb115c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited symbols all resolve at the reviewed revision: `_CACHE`/`index_rows`/`_reuse_covered`/`covered_dir_identity`/`_dir_identity`/`_walk_covered` in `reckon/metadata_index.py`, `consume()` (`change_streams.py:71`), `drain()` (`:120`), `_fast_tree` (`:414`), `_slow_tree` (`:471`), `_FleetChangeWatch._run` (`:517`) and `_walk_discovery_signature` (`serve.py:1332`); \u00a77's cited 6.5 s / 11.3 s live pass matches \u00a77's own landed comment, and \"the three state files\" the signature also reads are exactly three.",
+    "done_when": "pass \u2014 \u00a715's six cases each carry their own negative control (a mutation that reddens that case) and the live measure carries a base arm whose \u22651 s second pass shows the script exercised the drop, so no clause rests on a run that cannot fail.",
+    "evidence_paths": "pass \u2014 gate logs and both live arms' logs sit under the run directory with a revision header and an `EXIT=` last line, and the section's write paths name files under `reckon/` and `tests/`.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, file or comment, and the new test name states the mechanism (`test_the_cached_index_absorbs_each_change.py`).",
+    "reasoning": "a finding \u2014 \u00a715's four-source account of attributed changes omits the change-stream handler's own `_invalidate_tree_views` call, which invalidates the same tree with no paths and so keeps dropping the cached build on the production path where a page holds a stream open.",
+    "single_goal": "pass \u2014 the section carries one deliverable, \"the cached index absorbs each change without a full sweep\", and its four sources are the arms of that one mechanism rather than separate deliverables.",
+    "wiring": "pass \u2014 s15 depends on s14, which depends on s15's shared module `reckon/metadata_index.py` via s13, matching \u00a715's own \"This runs after \u00a714\"; no `informs`/`gates` edge is named that misdirects."
+  },
+  "section_digests": {
+    "_document": "f463b5e41f61ce538f9142e4869bcc7bb2305bf07635480da31fc68db8ffad86",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "92d1c0d7392b8d1390230559df7225c679077a1af64575e7c8588be3497aa01f",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T16:05:03.813020+00:00"
+}
