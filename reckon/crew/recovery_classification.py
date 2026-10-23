@@ -316,32 +316,24 @@ def _filed_review_record(
     return None
 
 
-# The details the classifier's probe reader composes when a declared probe
-# produced no answer at all: the command could not run, or it ran and failed.
-# Every other reading is an answer — a printed state, a state outside the
-# terminal list, or an empty one — so these texts are the only ones that mean
-# nothing was learned about the condition.
-_WAIT_PROBE_FAILED_TO_ANSWER = (
-    "condition probe could not answer",
-    "condition probe did not answer successfully",
-)
-
-
-def _the_probe_did_not_answer(observation: Mapping[str, str] | None) -> bool:
-    """Whether the declared condition's probe failed rather than answered.
+def _the_probe_did_not_answer(observation: Mapping[str, Any] | None) -> bool:
+    """Whether the declared condition's probe produced no answer at all.
 
     A probe that prints a state matching no declared terminal is answering:
     the run is still waiting on something that may yet arrive, and the sweep
     lifts it when the state it prints becomes terminal. A probe that exits
     non-zero or cannot run reported nothing about the condition, so no later
-    sweep will see a terminal state and the wait cannot end itself. Both
-    readings normalise to ``unknown``, so the difference is read from the
-    reader's own failure details.
+    sweep will see a terminal state and the wait cannot end itself.
+
+    The question is read from the structured ``answered`` flag the probe
+    reader sets, never from its detail text: the text is prose for a person
+    and changes whenever the reader's wording does, so a decision resting on
+    it would break silently on that change. A probe result carrying no flag
+    is one that answered, because it produced the state it reports.
     """
-    if observation is None or observation.get("state") != "unknown":
+    if observation is None:
         return False
-    detail = str(observation.get("detail") or "")
-    return any(text in detail for text in _WAIT_PROBE_FAILED_TO_ANSWER)
+    return observation.get("answered") is False
 
 
 def _exit_record_ends_the_current_attempt(
@@ -681,7 +673,7 @@ def classify_pointer(
         # a live run reads running from liveness with the same text beside it,
         # so both readings share one refusal instead of each arm re-deriving it.
         manifest_error = str(wait["error"])
-    wait_observation: dict[str, str] | None = None
+    wait_observation: dict[str, Any] | None = None
     if wait is not None and wait["valid"]:
         observe_condition = (
             _run_wait_condition_probe if condition_test is None else condition_test

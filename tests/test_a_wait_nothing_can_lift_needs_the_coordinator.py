@@ -41,6 +41,9 @@ RUN_IDS = (
     "r-wait-unanswering-probe-ended-worker",
     "r-wait-unanswering-probe-ended-worker-live",
     "r-wait-probe-answers-non-terminal",
+    "r-wait-probe-flag-reworded-detail-failed",
+    "r-wait-probe-flag-reworded-detail-answered",
+    "r-wait-superseded-exit-record",
 )
 
 
@@ -71,6 +74,11 @@ def _absent_path(directory: Path) -> Path:
     return directory / "never-written" / "still-running.txt"
 
 
+def _absent_pid() -> int:
+    """A pid the kernel will never allocate: beyond the pid_max ceiling."""
+    return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
+
+
 def _waiting_run(
     run_id: str,
     *,
@@ -78,13 +86,20 @@ def _waiting_run(
     terminal: list[str] = ("COMPLETED", "FAILED"),
     exit_record: bool = False,
     pid: int | None = None,
+    attempt: int = 1,
+    exit_attempt: int = 1,
+    worker_attempt: int | None = None,
 ) -> dict:
     """One parked run with its manifest, attempt record and optional receipts.
 
-    ``exit_record`` writes the supervisor's receipt for attempt 1 — the record
-    that says this attempt's worker ended. ``pid`` names a live process the run
-    holds instead, so the same declaration can be read over a worker that has
-    not stopped.
+    ``exit_record`` writes the supervisor's receipt stamped ``exit_attempt``.
+    ``attempt`` is the attempt the run's own attempt record names, so the two
+    can be made to disagree: a run on attempt 2 still holding attempt 1's
+    receipt. ``worker_attempt`` writes a worker record naming that attempt —
+    the record a resumed run holds for the attempt now running — with a pid no
+    process will answer for. ``pid`` names a live process the run holds
+    instead, so the same declaration can be read over a worker that has not
+    stopped.
     """
     directory = runs_dir() / run_id
     directory.mkdir(parents=True, exist_ok=True)
@@ -106,18 +121,23 @@ def _waiting_run(
     stamp = NOW_SECONDS - 10.0
     os.utime(manifest, (stamp, stamp))
     _write_json(
-        directory / "attempt.json", {"attempt": 1, "at": "2026-09-15T00:00:00Z"}
+        directory / "attempt.json", {"attempt": attempt, "at": "2026-09-15T00:00:00Z"}
     )
     if exit_record:
         _write_json(
             directory / "exit.json",
             {
                 "run_id": run_id,
-                "attempt": 1,
+                "attempt": exit_attempt,
                 "exit_code": 0,
                 "exited_at": "2026-09-15T00:05:00Z",
                 "stream_records_seen": 40,
             },
+        )
+    if worker_attempt is not None:
+        _write_json(
+            directory / "worker.json",
+            {"attempt": worker_attempt, "pid": _absent_pid()},
         )
     tree = runs_dir() / f"{run_id}-tree"
     tree.mkdir(parents=True, exist_ok=True)
@@ -136,7 +156,7 @@ def _waiting_run(
         "stderr_path": str(directory / "stderr.log"),
         "manifest_path": str(manifest),
         "phase": "waiting",
-        "attempt": 1,
+        "attempt": attempt,
         "process_alive": None if pid is not None else False,
         "node": {
             "id": run_id,
@@ -154,11 +174,12 @@ def _waiting_run(
     return record
 
 
-def _row(run: dict) -> dict:
+def _row(run: dict, condition_test=None) -> dict:
     return recovery.classify_pointer(
         run,
         now_seconds=NOW_SECONDS,
         stale_after_seconds=STALE_AFTER_SECONDS,
+        condition_test=condition_test,
     )
 
 
@@ -243,6 +264,81 @@ def test_a_probe_answering_non_terminal_keeps_the_wait_waiting() -> None:
     assert row["exit_record"] is not None
     assert row["wait_condition_state"] == "unknown"
     assert row["wait_observed"] == "RUNNING"
+    assert row["classification"] == "waiting"
+    assert row["recovery_classification"] == "waiting"
+    assert _pane_word(row) == "waiting"
+    assert "the recovery sweep will resume" in row["next_action"]
+
+
+def test_the_probe_flag_decides_not_the_reworded_detail_text() -> None:
+    """Whether the probe answered is a structured fact, not the reader's prose.
+
+    The failure detail is wording for a person and changes whenever the reader
+    is reworded, so the halted reading tests the flag the probe result carries
+    and not its text. Both observations below are worded nothing like the
+    reader's own details; only the flag differs, and the reading follows it.
+    """
+    failed_run = _waiting_run(
+        RUN_IDS[3],
+        probe=["test", "-e", "/nonexistent/rewording-subject"],
+        exit_record=True,
+    )
+    failed_row = _row(
+        failed_run,
+        condition_test=lambda _pointer, _wait: {
+            "state": "unknown",
+            "observed": "unavailable",
+            "answered": False,
+            "detail": "the scheduler page did not render this cycle",
+        },
+    )
+    assert _pane_word(failed_row) == "halted", failed_row["recovery_classification"]
+    assert "reckon crew resume" in failed_row["next_action"]
+
+    answered_run = _waiting_run(
+        RUN_IDS[4],
+        probe=["test", "-e", "/nonexistent/rewording-subject"],
+        exit_record=True,
+    )
+    answered_row = _row(
+        answered_run,
+        condition_test=lambda _pointer, _wait: {
+            "state": "unknown",
+            "observed": "RUNNING",
+            "answered": True,
+            "detail": "the scheduler page is still being polled",
+        },
+    )
+    assert answered_row["classification"] == "waiting"
+    assert _pane_word(answered_row) == "waiting"
+    assert "the recovery sweep will resume" in answered_row["next_action"]
+
+
+def test_a_superseded_attempts_exit_record_keeps_the_wait_waiting() -> None:
+    """Only the current attempt's receipt may read as the worker's end.
+
+    A resumed run reuses the run directory, so attempt 1's exit record sits
+    beside the attempt record naming attempt 2. That record describes a
+    predecessor whose end says nothing about the attempt now running, so the
+    probe's failure cannot be read as a stop nothing can lift: the run stays
+    waiting on its condition.
+    """
+    run = _waiting_run(
+        RUN_IDS[5],
+        probe=["test", "-e", "/nonexistent/current-attempt-still-running"],
+        exit_record=True,
+        exit_attempt=1,
+        attempt=2,
+        worker_attempt=2,
+    )
+
+    row = _row(run)
+
+    assert row["external_wait"] is not None
+    assert row["external_wait"]["valid"] is True
+    # The predecessor's receipt is still carried on the row; what it is not is
+    # this attempt's end.
+    assert row["exit_record"] is not None
     assert row["classification"] == "waiting"
     assert row["recovery_classification"] == "waiting"
     assert _pane_word(row) == "waiting"
