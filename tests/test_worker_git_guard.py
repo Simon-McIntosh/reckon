@@ -461,10 +461,16 @@ def test_the_sync_installer_wires_the_guard_behind_the_same_opt_in(
     )
     guard_script = cli._worker_git_guard_path()
     interpreter = guard_script.parents[2] / ".venv" / "bin" / "python"
-    assert bash_commands == [shlex.join([str(interpreter), str(guard_script)])]
-    assert [group for group in opted_groups if group.get("matcher") == "Bash"] == [
-        installer.worker_git_guard_group(guard_script)
-    ]
+    assert bash_commands[0] == shlex.join([str(interpreter), str(guard_script)])
+    bash_groups = [group for group in opted_groups if group.get("matcher") == "Bash"]
+    assert installer.worker_git_guard_group(guard_script) in bash_groups
+    # The same flag installs the walk guard, on this matcher and on Grep|Glob.
+    assert any(installer.is_worker_walk_guard_group(group) for group in bash_groups)
+    assert [
+        group["matcher"]
+        for group in opted_groups
+        if installer.is_worker_walk_guard_group(group)
+    ] == list(installer.WALK_GUARD_MATCHERS)
     assert interpreter.is_file()
     assert guard_script.name == "worker_git_guard.py"
 
@@ -499,9 +505,16 @@ def test_sync_replaces_an_installed_guard_without_duplicating_it(
 
     groups = json.loads(target.read_text())["hooks"]["PreToolUse"]
     guards = [group for group in groups if group.get("matcher") == "Bash"]
-    assert len(guards) == 1
-    assert installer._is_crew_guard_group(guards[0])
-    assert len(_pre_tool_use_bash_commands({"hooks": {"PreToolUse": guards}})) == 1
+    assert all(installer._is_crew_guard_group(group) for group in guards)
+    # The already-installed group is not duplicated by the merge: it is still
+    # bound once, beside the walk guard the same opt-in composes.
+    assert (
+        len([group for group in guards if installer.is_worker_git_guard_group(group)])
+        == 1
+    )
+    assert len(_pre_tool_use_bash_commands({"hooks": {"PreToolUse": guards}})) == len(
+        guards
+    )
 
 
 def test_guard_group_recognises_bare_and_composed_commands() -> None:

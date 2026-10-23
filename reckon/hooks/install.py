@@ -67,8 +67,15 @@ WORKER_STOP_SCRIPT_NAME = "worker_stop.py"
 # a separate decision from installing the obligations and stop hooks, so it is
 # opt-in here and the fragment is unchanged when the caller does not ask.
 WORKER_GIT_GUARD_SCRIPT_NAME = "worker_git_guard.py"
+WORKER_WALK_GUARD_SCRIPT_NAME = "worker_walk_guard.py"
 NATIVE_AGENT_GUARD_SCRIPT_NAME = "native_agent_guard.py"
 WORKER_MESSAGE_GUARD_SCRIPT_NAME = "worker_message_guard.py"
+
+# The matchers the worker walk guard is bound under. It reads two kinds of
+# payload — a Bash command's text and the Grep/Glob tools' target directory —
+# and a harness group filters by one matcher each, so it takes one group per
+# matcher rather than one group with two.
+WALK_GUARD_MATCHERS = ("Bash", "Grep|Glob")
 
 # The obligations hook's two modes and the harness events each one serves.
 # Prompt mode opens every turn with the current duties; stop mode holds the turn
@@ -86,9 +93,21 @@ HOOK_SCRIPT_NAMES = (
     COORDINATOR_HOOK_SCRIPT_NAME,
     WORKER_STOP_SCRIPT_NAME,
     WORKER_GIT_GUARD_SCRIPT_NAME,
+    WORKER_WALK_GUARD_SCRIPT_NAME,
     NATIVE_AGENT_GUARD_SCRIPT_NAME,
     WORKER_MESSAGE_GUARD_SCRIPT_NAME,
 )
+
+# The hook script each PreToolUse matcher's crew guard group runs. A matcher may
+# carry more than one crew guard — the walk guard shares the Bash matcher with
+# the git guard — so a group is recognised by the script it runs, not by its
+# matcher alone.
+CREW_GUARD_SCRIPTS = {
+    "Agent": (NATIVE_AGENT_GUARD_SCRIPT_NAME,),
+    "SendMessage": (WORKER_MESSAGE_GUARD_SCRIPT_NAME,),
+    "Bash": (WORKER_GIT_GUARD_SCRIPT_NAME, WORKER_WALK_GUARD_SCRIPT_NAME),
+    "Grep|Glob": (WORKER_WALK_GUARD_SCRIPT_NAME,),
+}
 RECKON_IMPORTING_SCRIPT_NAMES = (
     COORDINATOR_HOOK_SCRIPT_NAME,
     WORKER_STOP_SCRIPT_NAME,
@@ -130,6 +149,11 @@ def worker_git_guard_script_path() -> Path:
     return Path(__file__).resolve().with_name(WORKER_GIT_GUARD_SCRIPT_NAME)
 
 
+def worker_walk_guard_script_path() -> Path:
+    """Return the worker walk guard script shipped beside this module."""
+    return Path(__file__).resolve().with_name(WORKER_WALK_GUARD_SCRIPT_NAME)
+
+
 def interpreter_path(script_path: Path | str | None = None) -> Path:
     """Return the interpreter the coordinator hook commands run under.
 
@@ -156,8 +180,9 @@ def build_hook_snippet(
     script_path: Path | str | None = None,
     *,
     include_git_guard: bool = False,
+    include_walk_guard: bool = False,
     include_core_hooks: bool = True,
-    crew_guard_paths: tuple[Path, Path, Path] | None = None,
+    crew_guard_paths: tuple[Path, Path, Path, Path] | None = None,
 ) -> dict[str, Any]:
     """Return the settings fragment, as it would be merged, for every hook script.
 
@@ -165,6 +190,14 @@ def build_hook_snippet(
     git guard. It is off by default, so the fragment a caller composes without
     asking for the guard is byte-identical to the one before the guard existed;
     a caller opts in when the guard is to be installed.
+
+    ``include_walk_guard`` adds the two PreToolUse entries that bind the worker
+    walk guard, one per matcher, taking its script path from the fourth entry of
+    ``crew_guard_paths``. The operator path installs the two together — a run
+    that may not touch a peer's checkout is the same run that may not walk the
+    crew home, and ``--include-git-guard`` is the only decision an operator makes
+    about them — while they stay separable here so a caller composing one leaf
+    leaves the other's entries alone.
     """
     script = Path(script_path) if script_path is not None else hook_script_path()
     interpreter = str(interpreter_path())
@@ -179,7 +212,7 @@ def build_hook_snippet(
             _command_group(worker_stop_command),
         ]
     if crew_guard_paths is not None:
-        native, message, _ = crew_guard_paths
+        native, message, _, _ = crew_guard_paths
         entries["PreToolUse"] = [
             _command_group(shlex.join([str(native)])) | {"matcher": "Agent"},
             _command_group(shlex.join([str(message)])) | {"matcher": "SendMessage"},
@@ -187,6 +220,9 @@ def build_hook_snippet(
     if include_git_guard:
         git_path = crew_guard_paths[2] if crew_guard_paths is not None else None
         entries.setdefault("PreToolUse", []).append(worker_git_guard_group(git_path))
+    if include_walk_guard:
+        walk_path = crew_guard_paths[3] if crew_guard_paths is not None else None
+        entries.setdefault("PreToolUse", []).extend(worker_walk_guard_groups(walk_path))
     return {"hooks": entries}
 
 
@@ -197,6 +233,7 @@ def install_hook_settings(
     script_path: Path | str | None = None,
     stream: IO[str] | None = None,
     include_git_guard: bool = False,
+    include_walk_guard: bool = False,
 ) -> HookInstallResult:
     """Print the hook fragment, merging it only when asked to write.
 
@@ -213,7 +250,11 @@ def install_hook_settings(
     The result carries the document that was printed and the two entry lists,
     so a caller can report what the merge did without comparing documents.
     """
-    snippet = build_hook_snippet(script_path, include_git_guard=include_git_guard)
+    snippet = build_hook_snippet(
+        script_path,
+        include_git_guard=include_git_guard,
+        include_walk_guard=include_walk_guard,
+    )
     if not write:
         _print(snippet, stream)
         return HookInstallResult(
@@ -237,9 +278,16 @@ def configure_crew_guards(
     *,
     remove: bool,
     include_git_guard: bool = False,
-    guard_paths: tuple[Path, Path, Path],
+    include_walk_guard: bool = False,
+    guard_paths: tuple[Path, Path, Path, Path],
 ) -> bool:
-    """Merge or remove sync's guard entries using the installer's settings writer."""
+    """Merge or remove sync's guard entries using the installer's settings writer.
+
+    ``guard_paths`` names the four crew guards in the order the fragment
+    composes them — native agent, worker message, worker git, worker walk — so
+    the caller resolves each one the way it resolves the rest of the package's
+    scripts, rather than this module reaching for a sibling by name.
+    """
     target = _settings_target(settings_path)
     original = _read_bytes(target)
     settings, _ = upgrade_registered_commands(_parse_settings(original, target))
@@ -274,6 +322,7 @@ def configure_crew_guards(
         snippet = build_hook_snippet(
             include_core_hooks=False,
             include_git_guard=include_git_guard,
+            include_walk_guard=include_walk_guard,
             crew_guard_paths=guard_paths,
         )
         updated, _, _, _ = _merge_settings(updated, snippet, target)
@@ -312,11 +361,7 @@ def upgrade_registered_commands(
 def _is_crew_guard_group(group: Any) -> bool:
     if not isinstance(group, dict):
         return False
-    expected = {
-        "Agent": NATIVE_AGENT_GUARD_SCRIPT_NAME,
-        "SendMessage": WORKER_MESSAGE_GUARD_SCRIPT_NAME,
-        "Bash": WORKER_GIT_GUARD_SCRIPT_NAME,
-    }.get(group.get("matcher"))
+    expected = CREW_GUARD_SCRIPTS.get(group.get("matcher"))
     if expected is None:
         return False
     hooks = group.get("hooks")
@@ -334,7 +379,7 @@ def _is_crew_guard_group(group: Any) -> bool:
     if len(tokens) != 1:
         return False
     script = Path(tokens[0])
-    return script.name == expected and script.parent.name == "hooks"
+    return script.name in expected and script.parent.name == "hooks"
 
 
 def _settings_target(settings_path: Path | str | None) -> Path:
@@ -371,6 +416,55 @@ def worker_git_guard_group(script_path: Path | str | None = None) -> dict[str, A
             }
         ],
     }
+
+
+def worker_walk_guard_groups(script_path: Path | str | None = None) -> list[dict]:
+    """Return the PreToolUse groups that bind the worker walk guard.
+
+    One group per matcher, because the matcher is what the harness filters by
+    and the guard reads two kinds of payload: a Bash command's text, and the
+    Grep/Glob tools' target directory. Each group names the checkout interpreter
+    and the guard script, for the same reason the git guard's group does: the
+    guard loads the git guard's shell splitter from the checkout it is launched
+    beside, and a standalone copy would fail closed on every Bash call.
+    """
+    script = (
+        worker_walk_guard_script_path() if script_path is None else Path(script_path)
+    ).resolve()
+    interpreter = interpreter_path(script)
+    command = shlex.join([str(interpreter), str(script)])
+    return [
+        {
+            "matcher": matcher,
+            "hooks": [{"type": "command", "command": command}],
+        }
+        for matcher in WALK_GUARD_MATCHERS
+    ]
+
+
+def is_worker_walk_guard_group(group: Any) -> bool:
+    """Recognise a bare or interpreter-bound worker walk guard group."""
+    if not isinstance(group, dict) or group.get("matcher") not in WALK_GUARD_MATCHERS:
+        return False
+    hooks = group.get("hooks")
+    if not isinstance(hooks, list) or len(hooks) != 1:
+        return False
+    hook = hooks[0]
+    if not isinstance(hook, dict) or hook.get("type") != "command":
+        return False
+    try:
+        command = shlex.split(str(hook.get("command") or ""))
+    except ValueError:
+        return False
+    if len(command) == 2:
+        if not interpreter_bootstrap.is_checkout_interpreter(command[0]):
+            return False
+        path = Path(command[1])
+    elif len(command) == 1:
+        path = Path(command[0])
+    else:
+        return False
+    return path.name == WORKER_WALK_GUARD_SCRIPT_NAME and path.parent.name == "hooks"
 
 
 def is_worker_git_guard_group(group: Any) -> bool:

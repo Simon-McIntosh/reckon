@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="A worker cannot walk the crew home">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s20">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <title>A worker cannot walk the crew home — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-worker-cannot-walk-the-crew-home-landing" data-node="a-worker-cannot-walk-the-crew-home" data-reckon="landed" data-when="2026-10-23">
+  <h2 id="a-worker-cannot-walk-the-crew-home-title">A worker cannot walk the crew home</h2>
+  <p>A new pre-tool-use hook, <code>reckon/hooks/worker_walk_guard.py</code>, refuses a crew run's recursive walk rooted at the crew home, at a store root inside it (<code>runs/</code>, <code>reviews/</code>, <code>reports/</code>), or at an ancestor of the crew home up to <code>/</code>. It is scoped by <code>RECKON_RUN_ID</code> exactly as <code>worker_git_guard.py</code> is, resolves the crew home through that guard's own config-home resolver so <code>RECKON_HOME</code> moves it in a test as it moves every other reckon path, and reads a Bash command through that guard's tokeniser, segment split and <code>cd</code> tracking rather than a second shell parser. The git guard's interpreter hand-off moved into its entry point, so loading its module to reach the splitter has no side effect on the loader.</p>
+  <p>Refused for Bash: <code>grep</code>/<code>egrep</code>/<code>fgrep</code>/<code>ugrep</code> with <code>-r</code>, <code>-R</code> or <code>--recursive</code> (bundled groups such as <code>-rl</code> included), <code>rg</code>, <code>fd</code>, <code>tree</code>, <code>du</code>, <code>ls -R</code>, and <code>find</code>/<code>bfs</code> without <code>-maxdepth 0</code> or <code>-maxdepth 1</code>. The Grep and Glob tools are judged on their <code>path</code>. The refusal names the root it would have walked and where each kind of record lives.</p>
+  <table id="a-worker-cannot-walk-the-crew-home-measures">
+    <tbody>
+      <tr><th scope="row">Gate</th><td>20 passed; EXIT=0 (<code>tests/test_a_worker_cannot_walk_the_crew_home.py</code>)</td></tr>
+      <tr><th scope="row">Measure</th><td>The five measured walks refused naming their root; the section's allowed cases allowed; a Grep on the crew home refused and one on a run directory allowed; every case allowed with no <code>RECKON_RUN_ID</code></td></tr>
+      <tr><th scope="row">Install path</th><td><code>_configure_crew_guards(settings, remove=False, include_git_guard=True)</code> writes a <code>Bash</code> and a <code>Grep|Glob</code> group naming <code>worker_walk_guard.py</code>; a later <code>remove=True</code> takes both back out</td></tr>
+      <tr><th scope="row">Head arm</th><td>other tests importing <code>reckon/hooks/install.py</code>, <code>reckon/hooks/worker_git_guard.py</code> or the sync CLI: 216 passed, 0 failed; EXIT=0</td></tr>
+      <tr><th scope="row">Base arm</th><td>the same file set without the new test file, in a scratch extraction of <code>7544038ce</code>: 196 passed, 0 failed; EXIT=0 — 0 added failures</td></tr>
+      <tr><th scope="row">Negative control</th><td>ancestor rule removed (<code>WALK_GUARD_MUTATION=1</code>): 1 failed, 19 passed; EXIT=1; failing id <code>test_a_walk_at_an_ancestor_of_the_crew_home_is_refused</code></td></tr>
+      <tr><th scope="row">ruff</th><td><code>ruff check</code> and <code>ruff format --check</code>: 0 findings on the three changed source files and the new test file</td></tr>
+    </tbody>
+  </table>
+  <p>Installing the guard is a the operator path rather than a new option: <code>--include-git-guard</code> binds the pair. <code>reckon/cli_entry.py</code> resolves the walk guard beside the git guard and passes both paths to <code>hook_installer.configure_crew_guards</code>, which composes the walk guard's <code>Bash</code> and <code>Grep|Glob</code> groups whenever it composes the git guard's. Two assertions in <code>tests/test_worker_git_guard.py</code> that required that flag to bind exactly one <code>Bash</code> entry were relaxed to require the git group once among the <code>Bash</code> groups, because the flag now binds both guards; that file sits outside this node's declared write scope and was reached because the flag's meaning is where the change lands.</p>
+</article>
+</body>
+</html>
