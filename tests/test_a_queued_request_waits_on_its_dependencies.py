@@ -11,6 +11,7 @@ transitive so the tail of a chain is blocked with the middle.
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import re
@@ -20,6 +21,8 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import queue_admission, runs
+
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
 from reckon.crew.node import CrewError, TaskNode
 from tests import test_a_jev_hold_queues_for_the_local_lane as hold_tests
 from tests import test_dispatch_names_its_backend as backend_tests
@@ -235,6 +238,112 @@ def test_an_abandoned_upstream_blocks_the_tail_and_never_launches(
     assert _phase_of(chain_repo, "s3") == queue_admission.BLOCKED_UPSTREAM_PHASE
 
 
+def _declare_wait_refs(repository: Path, *, section: str, refs: list[str]) -> None:
+    """Declare on the plan that one section waits on exactly ``refs``."""
+    path = repository / "docs" / "plans" / f"{PLAN}.html"
+    text = path.read_text(encoding="utf-8")
+    match = re.search(r'name="plan-section-depends-on" content="([^"]*)"', text)
+    assert match is not None, "the fixture always writes a waits meta in the plan"
+    declaration = json.dumps({section: refs}).replace('"', "&quot;")
+    path.write_text(text.replace(match.group(1), declaration, 1), encoding="utf-8")
+    _run(repository, "add", "--", str(path.relative_to(repository)))
+    _run(repository, "commit", "-q", "-m", "chore: declare the waits")
+
+
+def _gate_section(repository: Path, *, gate_id: str, section: str, verdict: str) -> None:
+    """Give the plan a gate on one section, as an authored plan carries one.
+
+    The gate names the section its outcome comes from, so the roadmap resolves
+    it into a blocker row on the gated section carrying the gate's id, which is
+    the row a wait on the gate reads.
+    """
+    path = repository / "docs" / "plans" / f"{PLAN}.html"
+    text = path.read_text(encoding="utf-8")
+    block = (
+        '<section data-reckon="gates">'
+        f'<div class="r-gate" data-id="{gate_id}" data-section="{section}"'
+        f' data-status="open" data-verdict="{verdict}"'
+        f' data-gating-plan="{PLAN}#s1">'
+        '<h4 class="r-gate-measure">the section lands green</h4></div></section>'
+    )
+    if 'data-reckon="gates"' in text:
+        text = re.sub(r'<section data-reckon="gates">.*?</section>', "", text, flags=re.S)
+    path.write_text(text + block, encoding="utf-8")
+    _run(repository, "add", "--", str(path.relative_to(repository)))
+    _run(repository, "commit", "-q", "-m", "chore: author the gate")
+
+
+def _unmet(chain_repo: Path, *, section: str) -> list[str]:
+    return queue_admission.unmet_waits(
+        _node("n-wait", section), repo_root=chain_repo, project=PROJECT
+    )
+
+
+def test_a_section_ref_holds_until_that_section_lands(chain_repo: Path) -> None:
+    _declare_wait_refs(chain_repo, section="s2", refs=[f"{PLAN}#s1"])
+    assert _unmet(chain_repo, section="s2") == [f"{PLAN}#s1"]
+
+    _declare(chain_repo, "s1")
+    assert _unmet(chain_repo, section="s2") == [], "a landed section releases the wait"
+
+
+def test_a_gate_ref_holds_and_releases_as_the_gate_verdict_moves(
+    chain_repo: Path,
+) -> None:
+    """A gate wait reads the roadmap's own gate edge, not a copy of it.
+
+    The gate names the section its outcome comes from, and the roadmap reports
+    that edge as a blocker on the gated section while the source has not
+    landed, so the wait is not satisfied. Once the source lands the roadmap's
+    gate edge reads satisfied and holds no blocker, so the wait releases.
+    """
+    _gate_section(chain_repo, gate_id="g1", section="s2", verdict="")
+    _declare_wait_refs(chain_repo, section="s2", refs=[f"gate:{PLAN}#g1"])
+    assert _unmet(chain_repo, section="s2") == [f"gate:{PLAN}#g1"]
+
+    _declare(chain_repo, "s1")
+    assert _unmet(chain_repo, section="s2") == [], "the gate's source lands and releases it"
+
+
+def test_a_wait_on_another_request_reads_that_requests_own_record(
+    chain_repo: Path,
+) -> None:
+    """A request named by id is read where its own record lives.
+
+    A request still in the queue is pending, so the wait holds. One that has
+    left the queue with its manifest recording a completed run is satisfied, so
+    the wait releases without any coordinator call.
+    """
+    _declare_wait_refs(chain_repo, section="s2", refs=["run:r-n2"])
+    assert _unmet(chain_repo, section="s2") == ["run:r-n2"]
+
+    # The request exists and is still in the queue: the wait holds.
+    queued, _position = runs.queue_dispatch(
+        {
+            "run_id": "r-n2",
+            "project": PROJECT,
+            "phase": queue_admission.QUEUED_PHASE,
+            "session": SESSION,
+            "queued_at": queue_admission._utc_now(),
+            "node": {"id": "n2", "plan": PLAN, "section": "s2"},
+        }
+    )
+    assert queued["run_id"] == "r-n2"
+    assert _unmet(chain_repo, section="s2") == ["run:r-n2"]
+
+    def queued_pointer(pointer: dict) -> dict:
+        pointer["phase"] = queue_admission.QUEUED_PHASE
+        return pointer
+
+    runs._mutate_pointer("r-n2", queued_pointer)
+
+    manifest = runs.run_dir("r-n2") / runs.DEFAULT_MANIFEST_NAME
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text("status: complete\n", encoding="utf-8")
+    runs.pointer_path("r-n2").unlink()
+    assert _unmet(chain_repo, section="s2") == [], "a delivered request releases the wait"
+
+
 def test_a_malformed_node_is_refused_at_queue_time(chain_repo: Path) -> None:
     malformed = _node("n2", "s2", inputs=["a-file-the-repository-does-not-hold.csv"])
     with pytest.raises(CrewError) as refusal:
@@ -266,16 +375,21 @@ def dispatch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return backend_tests.dispatch_repo.__wrapped__(tmp_path, monkeypatch)
 
 
-def _declare_section_wait(repository: Path, *, section: str, refs: list[str]) -> None:
+def _declare_section_wait(
+    repository: Path, *, section: str, refs: list[str], sections: tuple[str, ...] = ()
+) -> None:
     """Declare on the fixture's plan that one section waits on ``refs``."""
     path = repository / "docs" / "plans" / f"{PLAN}.html"
     text = path.read_text(encoding="utf-8")
     declaration = json.dumps({section: refs}).replace('"', "&quot;")
+    anchors = "".join(f'<h2 id="{name}">§{name}</h2>' for name in sections)
     text = text.replace(
         "</head>",
         f'<meta name="plan-section-depends-on" content="{declaration}"></head>',
         1,
     )
+    if anchors:
+        text = text.replace("</body>", f"{anchors}</body>", 1)
     path.write_text(text, encoding="utf-8")
     _run(repository, "add", "--", str(path.relative_to(repository)))
     _run(repository, "commit", "-q", "-m", "chore: declare the section wait")
@@ -284,7 +398,12 @@ def _declare_section_wait(repository: Path, *, section: str, refs: list[str]) ->
 def test_a_dispatch_holds_the_request_it_queues_for_upstream(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _declare_section_wait(dispatch_repo, section="dispatch", refs=[f"{PLAN}#upstream"])
+    _declare_section_wait(
+        dispatch_repo,
+        section="dispatch",
+        refs=[f"{PLAN}#upstream"],
+        sections=("upstream",),
+    )
     hold_tests._configure(dispatch_repo, monkeypatch, session_slots=0)
     hold_tests._stub_hold(monkeypatch, offered_local=True)
 

@@ -1712,6 +1712,50 @@ def dispatch(
             raise held
         raise LaneHeld(lane_allowance)
 
+    # A node whose section's waits have not landed is stored as a request and
+    # held, whatever the lane state. The waits decide this and not the lane: a
+    # node whose upstream has not landed cannot run at any lane occupancy, so a
+    # lane with room must not launch it. The refs are read through the same
+    # readiness the admission pass re-reads, so a node is held here for exactly
+    # the reason the pass would hold it, and one whose refs have all landed is
+    # launched by the checks below as it always was.
+    from reckon.crew import queue_admission
+
+    waiting = queue_admission.unmet_waits(node, repo_root=repo_root, project=project)
+    if waiting:
+        queued, position = queue_dispatch(
+            _queued_request_record(
+                run_id=run_id, project=project, node=node, repo_root=repo_root,
+                session=session, backend_name=backend_name,
+                launch_kind=launch_kind,
+                lane_allowance=lane_allowance,
+                dispatch_options=dispatch_options,
+                queued_at=_utc_now(),
+                admitted_from=admitted_from,
+            ),
+            cap=queued_dispatch_cap(_queued_share_cap(backend)),
+        )
+        held = LaneHeld(
+            {
+                "detail": "waiting on " + ", ".join(waiting),
+                "reason": "this section's waits have not landed",
+            }
+        )
+        held.queued = {
+            "run_id": str(queued["run_id"]),
+            "position": position,
+            "phase": queue_admission.AWAITING_UPSTREAM_PHASE,
+            "waits": list(waiting),
+        }
+        _arrange_dispatch_follower(
+            project,
+            session,
+            launch_kind,
+            watch_required=watch_required,
+            watch_override=watch_override,
+        )
+        raise held
+
     # A dispatch that found room on its lane yields the slot to its own session's
     # oldest waiting request for that lane, launching that request through the
     # admission pass's own path and queueing itself behind it. A session's new

@@ -1011,6 +1011,18 @@ SATISFIED = "satisfied"
 ABANDONED = "abandoned"
 PENDING = "pending"
 
+#: The two refs a section may name beside another section: a gate, and another
+#: queued request by its run id. The prefixes are what tell the three apart, so
+#: a gate id spelled like a section id is still read as a gate.
+GATE_REF_PREFIX = "gate:"
+REQUEST_REF_PREFIX = "run:"
+
+#: The statuses a run's own manifest records when it delivered, and when it
+#: ended without delivering. They are the run vocabulary and not the plan's: a
+#: plan reads ``shipped`` or ``done``, while a manifest reads ``complete``.
+RUN_DELIVERED_STATUSES = ("complete", "completed", "done", "landed", "promoted")
+RUN_FAILED_STATUSES = ("failed", "blocked", "abandoned")
+
 
 def section_wait_refs(plan_html: str, section: str) -> list[str]:
     """The refs one section declares it waits on, read from the plan itself.
@@ -1125,6 +1137,190 @@ def _section_ref(ref: str) -> tuple[str, str] | None:
     if parsed is None or not parsed.stage:
         return None
     return parsed.slug, parsed.stage
+
+
+def wait_ref_kind(ref: str) -> str:
+    """Which of the three kinds of wait one ref names.
+
+    A section waits on a section, a gate, or another queued request, and the
+    three are spelled apart rather than guessed from a ref's shape: a gate id
+    and a section id are both bare words, so a reader guessing between them
+    reads a wait as its own opposite.
+    """
+    text = str(ref).strip()
+    if text.startswith(GATE_REF_PREFIX):
+        return "gate"
+    if text.startswith(REQUEST_REF_PREFIX):
+        return "request"
+    return "section"
+
+
+def _manifest_status(text: str) -> str:
+    """A manifest's top-level ``status:`` value, or an empty string.
+
+    Only a line starting at column zero counts, so an indented or quoted
+    mention of the word in the worker's own prose is not read as its status.
+    """
+    for line in text.splitlines():
+        if line.startswith("---"):
+            break
+        if line.startswith("status:"):
+            return line.split(":", 1)[1].strip()
+    return ""
+
+
+def _gate_state(
+    ref: str,
+    *,
+    rows: Mapping[str, Mapping[str, Any]],
+    inventory: Mapping[str, Mapping[str, Any]],
+) -> str:
+    """Resolve a wait on a gate through the roadmap's own gate edges.
+
+    A gate that holds execution reaches the roadmap as a blocker row carrying
+    the gate's id in the section readiness split, so its verdict is read there
+    rather than re-derived from the plan's gate records. The roadmap is the
+    reader that already knows which gate holds which section; a second reading
+    is how a request comes to be held on a gate the roadmap would call passed.
+
+    A gate the roadmap holds no blocker for has passed or gates nothing this
+    request waits on, so the wait is satisfied.
+    """
+    from reckon._schema import parse_plan_ref
+    from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
+
+    parsed = parse_plan_ref(ref[len(GATE_REF_PREFIX) :].strip())
+    if parsed is None or not parsed.stage:
+        return PENDING
+    slug, gate_id = parsed.slug, parsed.stage
+    row = rows.get(slug)
+    if row is None:
+        status = str(
+            (inventory.get(slug) or {}).get("workflow_status")
+            or (inventory.get(slug) or {}).get("status")
+            or ""
+        )
+        if status in COMPLETED_STATUSES:
+            return SATISFIED
+        if status in TERMINAL_STATUSES:
+            return ABANDONED
+        return PENDING
+    for held in row.get("section_readiness") or ():
+        for blocker in held.get("blockers") or ():
+            if str(blocker.get("gate") or "") != gate_id:
+                continue
+            status = str(blocker.get("status") or "")
+            if status in TERMINAL_STATUSES and status not in COMPLETED_STATUSES:
+                return ABANDONED
+            return PENDING
+    return SATISFIED
+
+
+def _request_state(ref: str, *, live: Sequence[Mapping[str, Any]]) -> str:
+    """Resolve a wait on another queued request, named by its run id.
+
+    The named request's own pointer is what is read. One still in flight is
+    pending: its queue place is not evidence that it delivered anything, so a
+    request waiting on it is not released by it, only by what it lands. One
+    recorded failed, blocked upstream, or deliberately discarded is abandoned,
+    since nothing in it will deliver. One that has left the queue with its
+    manifest recording a completed run is satisfied, and one that has left with
+    nothing recorded stays pending — an unobserved request is not evidence that
+    its upstream landed.
+    """
+    from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
+
+    run_id = str(ref[len(REQUEST_REF_PREFIX) :]).strip()
+    if not run_id:
+        return PENDING
+    for pointer in live:
+        if str(pointer.get("run_id") or "") != run_id:
+            continue
+        phase = str(pointer.get("phase") or "")
+        if phase in (BLOCKED_UPSTREAM_PHASE, *DEAD_RUN_PHASES) or _discarded(run_id):
+            return ABANDONED
+        return PENDING
+    if _discarded(run_id):
+        return ABANDONED
+    try:
+        manifest = runs.run_dir(run_id) / runs.DEFAULT_MANIFEST_NAME
+        text = manifest.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return PENDING
+    status = _manifest_status(text)
+    if status in RUN_DELIVERED_STATUSES:
+        return SATISFIED
+    if status in RUN_FAILED_STATUSES:
+        return ABANDONED
+    return PENDING
+
+
+def _wait_state(
+    ref: str,
+    *,
+    waiting_section: str,
+    rows: Mapping[str, Mapping[str, Any]],
+    inventory: Mapping[str, Mapping[str, Any]],
+    dead_sections: set[tuple[str, str]],
+    live: Sequence[Mapping[str, Any]],
+) -> str:
+    """Resolve one wait ref of any of the three kinds."""
+    kind = wait_ref_kind(ref)
+    if kind == "gate":
+        return _gate_state(ref, rows=rows, inventory=inventory)
+    if kind == "request":
+        return _request_state(ref, live=live)
+    return _ref_state(
+        ref,
+        waiting_section=waiting_section,
+        rows=rows,
+        inventory=inventory,
+        dead_sections=dead_sections,
+    )
+
+
+def unmet_waits(
+    node: TaskNode,
+    *,
+    repo_root: str | Path,
+    project: str = "",
+    live: Sequence[Mapping[str, Any]] | None = None,
+) -> list[str]:
+    """The refs a node declares that have not landed.
+
+    A dispatch asks this before it launches anything, so a node whose upstream
+    has not landed is stored as a request and held rather than launched on a
+    lane that happens to have room. The answer is the readiness the admission
+    pass re-reads, so a node is held for the reason the pass would hold it, and
+    a node whose refs have all landed returns nothing and launches as usual.
+    """
+    refs = section_wait_refs(_plan_html(repo_root, node.plan), node.section)
+    if not refs:
+        return []
+    docs_dir = Path(str(repo_root)) / "docs"
+    if live is None:
+        try:
+            live = runs.list_live()
+        except Exception:  # noqa: BLE001 - an unreadable live set holds no wait
+            live = []
+    cache: dict[str, Any] = {}
+    rows, inventory = _readiness_rows(
+        project or _project_of_docs_dir(docs_dir), docs_dir, cache
+    )
+    dead = _dead_sections(live)
+    return [
+        ref
+        for ref in refs
+        if _wait_state(
+            ref,
+            waiting_section=node.section,
+            rows=rows,
+            inventory=inventory,
+            dead_sections=dead,
+            live=live,
+        )
+        != SATISFIED
+    ]
 
 
 def _ref_state(
@@ -1260,7 +1456,7 @@ def resolve_waits(
         cache,
     )
     states = [
-        _ref_state(
+        _wait_state(
             ref,
             waiting_section=str(
                 dict(pointer.get("node") or {}).get("section")
@@ -1270,6 +1466,7 @@ def resolve_waits(
             rows=rows,
             inventory=inventory,
             dead_sections=dead_sections,
+            live=live,
         )
         for ref in refs
     ]
@@ -1280,9 +1477,7 @@ def resolve_waits(
     return AWAITING_UPSTREAM_PHASE
 
 
-def advance_waiting_requests(
-    live: list[dict[str, Any]], *, now: datetime | None = None
-) -> dict[str, Any]:
+def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     """Move each waiting request to the phase its refs now justify.
 
     The pass re-reads readiness for every request in ``WAITING_UPSTREAM_PHASES``
@@ -1591,7 +1786,7 @@ def admit_once(
         # to ``blocked-upstream`` the moment one is closed as abandoned or
         # failed, with no coordinator turn in between. This is what lets a
         # batch queued in one call launch in dependency order.
-        upstream = advance_waiting_requests(live, now=moment)
+        upstream = advance_waiting_requests(live)
         result["promoted_upstream"] = upstream["promoted"]
         result["blocked_upstream"] = upstream["blocked"]
         runs.sweep_handovers(str(pointer.get("run_id") or "") for pointer in live)
