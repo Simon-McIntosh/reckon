@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-queue-holds-the-whole-plan">
+  <meta name="plan-title" content="A Queue Holds the Whole Plan">
+  <meta name="plan-summary" content="Queue every section of a plan at once, waiting on its dependencies, ranked by priority and fair use, with a brief editable until launch">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="23.25">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="a-held-dispatch-waits-its-fair-turn">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-queue-holds-the-whole-plan#s2&quot;],&quot;s4&quot;:[&quot;a-queue-holds-the-whole-plan#s3&quot;],&quot;s6&quot;:[&quot;a-queue-holds-the-whole-plan#s2&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <title>A Queue Holds the Whole Plan | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What stalls the work today, measured on 23 October 2026</h2>
+    <section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="standard" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>Five power_convertor coordinator sessions had been running for two days. At 06:30 CEST they held two live runs between them, and one of those had a live process. Lane capacity was not the limit. The lane document published 30 worker slots, 17 live runs across the workstation and nothing waiting (<code>admission.verdict: open</code>). The work was held on the coordinator side, in four ways.</p>
+    <ul>
+      <li><strong>A node can be dispatched only once its upstream has landed.</strong> Each session therefore stays awake to dispatch the next section the moment a peer lands. Each session's last turns were messages to peers about who frees which file and who lands what first. Three sessions waited on one integrated run, and two more on one solver node.</li>
+      <li><strong>One unreadable status held the chain for two hours.</strong> A code review exited at 02:44:46Z with exit 0, having filed a parsed review (82/120, nothing blocking). It left its manifest at <code>status: in-progress</code>. The run read <code>working</code>, its coordinator reported it "still running", and three sessions waited. One <code>crew repair --status complete</code> released it, and the coordinator promoted it within minutes.</li>
+      <li><strong>Review outnumbers implementation.</strong> From 19 to 23 October the project ran 247 code reviews and 98 plan reviews against 143 implementation runs. On 22 October the count was 72 reviews against 17 implementations. Every review is a queue slot and a coordinator turn.</li>
+      <li><strong>Coordinator context is the scarce resource, not lane slots.</strong> Two of the five sessions sat at about 95&nbsp;% of a million-token context, and one had compacted twenty times. A plan whose width is fed one section at a time costs a coordinator turn per section, plus turns spent waiting.</li>
+    </ul>
+    <p>The queue built in <a href="/reckon/plans/a-held-dispatch-waits-its-fair-turn">a-held-dispatch-waits-its-fair-turn</a> cannot absorb a plan's width. Its depth per session is the router's fair share clamped between <code>QUEUED_DISPATCH_CAP_FLOOR = 2</code> and <code>QUEUED_DISPATCH_CAP_CEILING = 8</code> (<code>reckon/crew/runs.py</code>). It admits only nodes that were dispatchable when queued. It orders each session by join time, reviews first (<code>reckon/crew/queue_order.py</code>), and has no priority. A brief dispatch stores a copy of the brief at dispatch (<code>_store_brief</code> in <code>reckon/crew/dispatch.py</code>), so editing the coordinator's source file afterwards changes nothing the worker reads. A plan-section dispatch, by contrast, already reads its section at the launch base. Separately, a lift on a metered lane removes its pace hold but does not make the picker prefer that lane. Every power_convertor session held an uncapped codex lift from 22 October 19:11Z, and the project ran one codex run in four days, because the local lane always had room.</p>
+    <p>The aim: a coordinator loads a plan's whole remaining width, or a sprint's, in one pass. Each request waits on its own dependencies, is ranked by the work's priority and the projects' fair use, and launches when it is both ready and admitted. The coordinator can edit or re-rank any request until it launches. Queues of hundreds of requests that run for a week are the expected case, not an overload.</p>
+
+    <h2 id="s2">§2 — A queued request may wait on its dependencies</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>Dispatch accepts a node whose section waits are unmet. A wait is a <code>plan-section-depends-on</code> ref, a gate, or another queued request named by id. The request is stored in a new <code>waiting</code> state carrying the refs it waits on, and every contract check that does not depend on the upstream's output runs at queue time, so a malformed node is still refused at once. Each admission pass re-reads readiness through the same derivation <code>roadmap</code> uses. A waiting request becomes <code>queued</code> when its last ref lands, and <code>blocked-upstream</code>, surfaced on the owning session's obligations, when a ref is closed as abandoned or failed. Write scopes are checked at launch, not at queue time: two requests may queue on one file, and the earlier-ranked one launches first, as the existing overlap hold already does for queued requests.</p>
+    <p><strong>Done when</strong> a test queues a three-section chain in one call and the sections launch in dependency order as each upstream promotes, with no coordinator call in between. A negative arm marks the middle section's upstream abandoned: the tail must go <code>blocked-upstream</code> and never launch. A malformed node in the same batch must be refused at queue time.</p>
+
+    <h2 id="s3">§3 — Queue depth is bounded by the project, not by a per-session count</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>Retire the 2–8 per-session clamp. A request's place comes from §4's ranking, so depth no longer needs to stand in for fairness. Depth is bounded per project by <code>queue.max_requests</code> in flight configuration, default 500. Requests are deduplicated on (project, plan, section, node id): queuing the same section twice returns the existing request. The review exemption from <a href="/reckon/plans/a-coordinator-can-clear-its-own-duties">a-coordinator-can-clear-its-own-duties</a> is kept. The bound is what protects the crew home, so the queue store is measured at 500 requests for read time under <a href="/reckon/plans/crew-state-stays-bounded">crew-state-stays-bounded</a>'s budget.</p>
+    <p><strong>Done when</strong> one session queues 200 requests without a refusal, a duplicate returns the existing id, the 501st request in a project is refused with the bound named, and the obligations and live views answer inside their deadlines with 500 queued.</p>
+
+    <h2 id="s4">§4 — Admission ranks by priority within a project and by weighted fair use across projects</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>Every request carries a <code>priority</code>. It is set at dispatch, or derived from the roadmap: critical-path membership first, then the plan's ROI and the sprint marked active. It changes while queued with <code>crew queue reprioritise</code>. Every project, and optionally every session, carries a fair-use weight in flight configuration. When a slot frees, admission chooses the project by weighted deficit round robin, so a project's share of launched work over a window tracks its weight, whatever its queue depth. Within the project it chooses the highest-priority ready request, with ageing so a low-priority request still launches within a stated bound. Reviews of delivered runs keep their precedence. The queue view reports each request's effective rank and the reason for it.</p>
+    <p>This moves the split of slots between sessions out of the router. The lane router in imas-ambix then publishes one figure, the lane's worker slots, and stops dividing it by session (<code>admission.sessions</code>, <code>fair_share</code>). Fairness becomes a reckon setting the lead can change, instead of a property of how many sessions happen to be open. The router change is proposed to imas-ambix's owner with this section as its contract, and reckon keeps reading the per-session figures until it lands.</p>
+    <p><strong>Done when</strong> a simulation with two projects weighted 3:1, each with 100 ready requests, launches within ±10&nbsp;% of 3:1 over 80 admissions. A raised priority launches before an older default request in its own project. A lowest-priority request launches within the ageing bound. The negative arm sets equal weights, and the split must move to 1:1.</p>
+
+    <h2 id="s5">§5 — A queued request's brief binds at launch, and is editable until then</h2>
+    <section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>A request names its authority by reference: a plan section, a steering file, or both. The plan section is already read at the launch base. A steering file is a markdown file the coordinator writes under the project's crew state. It is no longer copied at dispatch: admission reads it at launch, contract-checks it, stores the copy in the run directory and records its digest on the run, so the run still records exactly what the worker read. Add <code>crew queue list | show | edit | reprioritise | drop</code> and their MCP <code>crew</code> actions. <code>edit</code> replaces a waiting or queued request's steering text, done-when, write paths or time budget, re-runs the contract checks, and is refused once the request has launched. A steering file that fails its checks at launch leaves the request queued with the failure on it, as a launch failure does today, and never launches a worker on an unchecked brief.</p>
+    <p><strong>Done when</strong> a test queues a request with a steering file, edits the file, and the launched worker's recorded digest matches the edited text. <code>crew queue edit</code> on a launched request is refused. A steering file made invalid while queued keeps the request queued with the failure named.</p>
+
+    <h2 id="s6">§6 — A passing run lands without a coordinator turn</h2>
+    <section data-reckon="section" data-id="s6" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>A week-long queue stalls on the first run that needs a coordinator who has run out of context. A delivered implementation run gets one review, sized to its risk as <a href="/reckon/plans/a-review-is-sized-to-its-risk">a-review-is-sized-to-its-risk</a> set out. When that review scores at or above the floor and records no blocking finding, the run lands mechanically and its follow-on findings are filed against the plan. The landing is what moves §2's waiting requests to <code>queued</code>. The coordinator is woken only for a blocked or failed run, a review below the floor, a scope violation, or a request gone <code>blocked-upstream</code>. A review run that exits 0 after filing a parsed review is complete whatever its manifest word says: the filed record is the delivery, and the word is a convenience that has already held a chain for two hours. A second review of the same head is refused unless the coordinator changed the deliverable.</p>
+    <p><strong>Done when</strong> a delivered run with a passing review lands, and its downstream request launches, with no coordinator process alive. A review exiting 0 with a parsed record and an <code>in-progress</code> manifest classifies as complete. A below-floor review raises an obligation and does not land. A second review of an unchanged head is refused.</p>
+
+    <h2 id="s7">§7 — A lifted lane with room is preferred, so a lift is spent</h2>
+    <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p>The picker reads lift state as an input. A lane with an active lift, in scope for the request's session or project and with window room left, is preferred for requests at or above a stated priority and capability. Ordinary work still stays local while the local lane has room, and a named lane is still authoritative. The picker records the lift that moved a choice. Pace still ends a lift at its stated reset, and §4's ranking decides which requests the lifted lane takes first.</p>
+    <p><strong>Done when</strong> a picker test with a lifted codex lane and an open local lane routes an elevated-risk request to codex and a low-risk one locally, and records the lift on the choice. With the lift cleared, both route locally.</p>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-aqhwp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-23" data-recommends-skill="/reckon-build a-queue-holds-the-whole-plan §2" data-resolved-at="" data-resolved-by="">
+<h3 class="r-fu-title">Let a queued request wait on its dependencies</h3>
+<div class="r-fu-body"><p>§2 is the change that lets a coordinator load a plan's width. §3 and §6 depend on it, and §5 and §7 can run beside it. Unscheduled: the lead decides its sprint.</p></div>
+<pre class="r-fu-prompt">/reckon-build a-queue-holds-the-whole-plan §2</pre>
+</article>
+</section>
+  </main>
+</body>
+</html>
