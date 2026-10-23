@@ -38,6 +38,14 @@ revision with the new test file copied in keeps the old pattern match and failed
 the same 2 cases with <code>EXIT=1</code>, so the check this node adds is red
 exactly where the mutation admits a report on the pattern match.</p>
 
+<p id="a-report-is-admitted-on-what-its-parser-read-importer">The host-review
+importer kept a private copy of the deleted guard and read every delivery
+through it, so the importer raised <code>AttributeError</code> on the removed
+name instead of importing a report. That copy is gone: a delivery reaches
+<code>delivered_report_record</code> and is admitted or refused by its own
+grammar, and a report that is not a review is listed among the refused with the
+reason the builder gave, rather than dropped or raising.</p>
+
 <p id="a-report-is-admitted-on-what-its-parser-read-fixtures">The rule is
 rubric-agnostic, so it also refused three pre-existing fixtures that declared the
 design rubric in their sidecar but emitted only <code>RUBRIC wiring: pass</code>,
