@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="a-seat-held-elsewhere-is-not-restarted">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -105,7 +105,7 @@
     fixture, so no node depends on it.</p>
 
     <h2 id="s2">§2 — A live worker's unreadable in-progress manifest is not unwritten</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>In <code>recovery_classification</code>, the arm that runs when <code>alive is True</code> first
     asks <code>_absence_of_a_verdict_is_transient</code>. That check holds the reading back within
     <code>LAUNCH_WINDOW_SECONDS</code> of dispatch and within <code>MANIFEST_REWRITE_WINDOW_SECONDS</code>
@@ -342,6 +342,9 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261023T151253424574-review-of-a-live-workers-unreadable-manifest-is-not-unwritten-b78ffc1ab560" data-who="reckon-build" data-when="2026-10-23T15:37:56.839Z">
     <div class="r-comment-body"><p>review of run r-20261023T140007685442-a-live-workers-unreadable-manifest-is-not-unwritten, base 7a26aba58fbbd23ffa08d8c6d520ac8ce618bb27 head b78ffc1ab5604f8750d7bb417d83304913cd9168, status parsed, six dimensions scored, added_failure_count 1, three non-blocking findings, no blocking finding</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-23T19:36:00Z">
+    <div class="r-comment-body"><p>§2 closed. The classification landed as <code>db3b6a52f</code>, and the cohort-order test isolation as <code>7e30c516f</code>. With it, the covering tests add no failures against the base: 12 at head against 13 at base in the ordered cohort. <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s2-cohort">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261023T140534758900-a-producer-off-the-fleet-node-gives-up-its-seat" data-who="reckon-build" data-when="2026-10-23T15:33:39.525Z">
     <div class="r-comment-body"><p>A producer whose host is not the fleet record's node now returns release-and-exit from the seat owner's start-up decision, with the unit-disable command composed not run, and holds on the same host, an absent fleet record, or a project with no run on the fleet node; the 6-arm gate passes at the head (negative control holds instead: 2 failed, exit 1).</p></div>
 </div>
@@ -365,6 +368,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261023T140921050545-an-ended-lift-stays-ended" data-who="reckon-build" data-when="2026-10-23T17:18:28Z">
     <div class="r-comment-body"><p>An ended lift stays ended — a lift's end is read from the group's window reading, so a reading flipping across the figure recorded at grant ended and revived the id (eleven granted/ended pairs for codex-sub-1792696262-181762 in twenty-one minutes of the nova stream); the first read that observes the end now stamps it on the record and end_cause reads that stamp ahead of every later reading, so no reading returns the id to force.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261023T190307612193-review-of-a-coordinators-status-repair-prints-no-halted-row-95749c08bd43" data-who="reckon-build" data-when="2026-10-23T19:32:51.854Z">
+    <div class="r-comment-body"><p>review of r-20261023T140402039862-a-coordinators-status-repair-prints-no-halted-row at head 95749c08bd433aacde7bfe0fe7f1035056c89d16 scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 20 (total 114), with 0 added failures against the base arm and 3 non-blocking findings; parsed record stored under the reviewed run&#x27;s review-records/.</p></div>
 </div>
 </section>
 </main>

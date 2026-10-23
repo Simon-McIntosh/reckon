@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/runs.py:2449 (_publish_watch_transitions folds the fleet and appends the stream lines)",
+    "reckon/crew/runs.py:2254 (_stream_transition, the builder the publisher calls, delegating to recovery._watch_transition -- the function the stamp lives in)",
+    "reckon/crew/ticker.py:1601 (RowPolicy.feed filters released rows with stream_carries)",
+    "reckon/crew/ticker.py:1912 (RowPolicy.flush filters released rows with stream_carries)"
+  ],
+  "completed_at": "2026-10-23T19:32:51.854Z",
+  "dispatched_at": "2026-10-23T19:06:16Z",
+  "findings": [
+    {
+      "file": "tests/test_a_status_repair_prints_no_halted_row.py",
+      "line": 200,
+      "text": "the producer check re-derives the event through recovery._watch_transition instead of the production builder runs._stream_transition (reckon/crew/runs.py:2254) that the publisher calls at reckon/crew/runs.py:2449, so severing that one-line delegation would drop the stamp from the stream while this assertion stayed green; assert through the builder the publisher uses"
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": 1213,
+      "text": "the withhold fires on any repair-stamped transition, not only a transition into a halted word, so a repair that lands a run on a carried word such as complete (pane word delivered) also prints nothing; the section's prose scopes the change to a transition into a halted word; recorded as a scope note, since crew view and the needs-you summary are pointer-derived and still carry the run"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T140402039862-a-coordinators-status-repair-prints-no-halted-row/manifest.md",
+      "line": 8,
+      "text": "the manifest tests line is a template carrying unsubstituted <tree> and <20 core test files>; the literal command survives only on the gate logs' own header lines, and promotion fills its gate receipt from this line, so the receipt cannot be re-run from the paragraph the record carries; restate it as the literal command the logs record, as the same record's baseline_suite/after_suite command fields also need"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 3663e71c; fd85f031c is the implementation and 3886412f1, 8ec8c08ae and 95749c08b are the fragment and the recorded gate figures, 362 insertions and 2 deletions, all inside the declared scope",
+    "done_when": "the done_when asks for a row-policy check both ways, a producer check over a fixture status-repair.json, no added failures importing ticker/recovery_watch/runs, and no added ruff findings; tests/test_a_status_repair_prints_no_halted_row.py:62 and :170 are the first two, gate-base-core.log and gate-head-core.log record 352 and 356 passing with nothing failing, and ruff on the staged paths reports 4 findings in recovery_watch.py that are identical at base and head",
+    "goal": "the goal is to stamp a transition caused by crew repair --status and withhold the stamped row from the stream; recovery_watch.py:1973 builds the status_repair stamp and ticker.py:1213 returns False on it",
+    "manifest": "read; it records status complete, the four commits, both arm logs, the negative-control log gate-negctl.log with its two failing ids, and the unattempted importer-set arm pair under follow_ons",
+    "write_paths": "declared reckon/crew/ticker.py, reckon/crew/recovery_watch.py, reckon/crew/runs.py, tests/test_a_status_repair_prints_no_halted_row.py, the plan fragment and a figures directory; git diff --stat over the four commits touches exactly the first four plus the fragment and nothing else"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to stamp a transition caused by crew repair --status and withhold the stamped row from the stream; reckon/crew/recovery_watch.py:1973 builds the status_repair stamp and reckon/crew/ticker.py:1213 returns False on it.\nVERDICT done_when: the done_when asks for a row-policy check both ways, a producer check over a fixture status-repair.json, the base revision printing the stamped event, no added failures among the tests importing ticker/recovery_watch/runs, and no added ruff findings; tests/test_a_status_repair_prints_no_halted_row.py:62 and :170 are the first two, gate-base-core.log and gate-head-core.log record 352 and 356 passing with nothing failing, and ruff on the staged paths reports 4 findings in recovery_watch.py identical at base and head.\nVERDICT write_paths: declared reckon/crew/ticker.py, reckon/crew/recovery_watch.py, reckon/crew/runs.py, tests/test_a_status_repair_prints_no_halted_row.py, the plan fragment and a figures directory; git diff --stat over the four commits touches exactly the first four plus the fragment and nothing else.\nVERDICT manifest: read; it records status complete, the four commits, both arm logs, the negative-control log gate-negctl.log with its two failing ids, and the unattempted importer-set arm pair under follow_ons.\nVERDICT diff: read commit by commit against 3663e71c; fd85f031c is the implementation and 3886412f1, 8ec8c08ae and 95749c08b are the fragment and the recorded gate figures, 362 insertions and 2 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/runs.py:2449, reckon/crew/runs.py:2254, reckon/crew/ticker.py:1601, reckon/crew/ticker.py:1912\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:1973 stamps status_repair on the one transition the repair caused and reckon/crew/ticker.py:1213 withholds it, reachable from the publisher at reckon/crew/runs.py:2449.\nSCORE evidence: 18\nJUSTIFICATION evidence: the tests at tests/test_a_status_repair_prints_no_halted_row.py:62 and :170 assert both the row policy and the producer, and the pair gate-base-core.log (352 passed) / gate-head-core.log (356 passed) records zero added failures, though the negative control was run as a mutation of the head tree rather than literally at the base revision the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four commits touch only reckon/crew/ticker.py, reckon/crew/recovery_watch.py, reckon/crew/runs.py, tests/test_a_status_repair_prints_no_halted_row.py and the plan fragment, every path inside the declared scope.\nSCORE durability: 18\nJUSTIFICATION durability: gate-negctl.log records 2 failed with EXIT=1 for the row-policy check at tests/test_a_status_repair_prints_no_halted_row.py:79 and the producer check at :205 when the stamp clause is removed, so both are load bearing, though both are asserted one hop below the publisher's own builder.\nSCORE fit: 19\nJUSTIFICATION fit: the status_repaired marker at reckon/crew/recovery_watch.py:1793 follows the existing manifest_rewritten marker at :1800 rather than inventing a second mechanism, and no added symbol carries a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: runs.status_repair_record (reckon/crew/runs.py:1729) is the first reader of STATUS_REPAIR_RECORD_NAME and extends the module that writes it at :1725; a search of reckon/ for status-repair.json and STATUS_REPAIR_RECORD_NAME found no other production reader.\nFINDING tests/test_a_status_repair_prints_no_halted_row.py:200 non-blocking: the producer check re-derives the event through recovery._watch_transition instead of the production builder runs._stream_transition (reckon/crew/runs.py:2254) that the publisher calls at reckon/crew/runs.py:2449, so severing that one-line delegation would drop the stamp from the stream while this assertion stayed green; assert through the builder the publisher uses.\nFINDING reckon/crew/ticker.py:1213 non-blocking: the withhold fires on any repair-stamped transition, not only a transition into a halted word, so a repair that lands a run on a carried word such as complete (pane word delivered) also prints nothing, where the section's prose scopes the change to a transition into a halted word; recorded as a scope note, since crew view and the pointer-derived needs-you summary still carry the run.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T140402039862-a-coordinators-status-repair-prints-no-halted-row/manifest.md:8 non-blocking: the tests line is a template carrying unsubstituted <tree> and <20 core test files>; the literal command survives only on the gate logs' own header lines, and promotion fills its gate receipt from this line, so the receipt cannot be re-run from the paragraph the record carries; restate it as the literal command the logs record, as the same record's baseline_suite and after_suite command fields also need.",
+  "review_run_id": "r-20261023T190307612193-review-of-a-coordinators-status-repair-prints-no-halted-row-95749c08bd43",
+  "reviewed_base_sha": "3663e71c8930baab94957c6743e9843fa2b50d6f",
+  "reviewed_head_sha": "95749c08bd433aacde7bfe0fe7f1035056c89d16",
+  "reviewed_run_id": "r-20261023T140402039862-a-coordinators-status-repair-prints-no-halted-row",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T19:34:52.856372+00:00",
+  "total": 114
+}
