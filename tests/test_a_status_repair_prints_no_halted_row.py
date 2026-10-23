@@ -9,14 +9,19 @@ so it carries nothing new to that coordinator and the stream withholds it.
 The producer stamps the event it builds with the repair's ``repaired_at`` and
 reason when the run's ``status-repair.json`` is newer than the previous
 observation, so a single act stamps the single transition it caused and no
-later one. ``ticker.stream_carries`` reads that stamp and withholds the row; it
-stays in ``crew view`` and the pane history.
+later one. ``ticker.stream_carries`` reads that stamp and withholds the row —
+but only where the row is a halt, because the rule removes the row a halt
+produces rather than every row a repair causes.
 
-Two checks bind this: a row-policy check that the stamped halted event prints
-nothing while the same event without the stamp prints the halted row, and a
-producer check that the fold stamps the event the repair caused. The negative
-control drops the stamp check from ``stream_carries``, and the stamped event
-must then print.
+Three checks bind this: a row-policy check that the stamped halted event prints
+nothing while the same event without the stamp prints the halted row, a
+row-policy check that a stamped event landing on the other carried word still
+prints, and a producer check that the fold stamps the event the repair caused.
+The producer check builds its row through ``runs._stream_transition``, the
+builder the publisher funnels every folded transition through, so severing that
+delegation fails the check rather than passing it. The negative controls drop
+the stamp check from ``stream_carries`` and widen it back to every stamped row,
+and the stamped events must then print in each case.
 """
 
 from __future__ import annotations
@@ -88,6 +93,23 @@ def test_a_stamped_halted_row_prints_nothing_and_the_unstamped_one_prints() -> N
     assert ticker._pane_word(printed[0]) == "halted"
 
 
+def test_a_stamped_transition_that_is_not_a_halt_still_prints() -> None:
+    """The rule removes the row a halt produces, not every row a repair causes.
+
+    A repair that lands a run on the other carried word is a delivery, and the
+    row naming it is judged as any other row is: the stamp alone does not
+    silence it.
+    """
+    stamp = {"repaired_at": "2027-01-15T00:00:00Z", "reason": "verdict corrected"}
+    delivered = _event("working", "completed_unpromoted", status_repair=stamp)
+
+    assert ticker._pane_word(delivered) == "delivered"
+    assert ticker.stream_carries(delivered) is True
+    printed = _printed([delivered])
+    assert len(printed) == 1, printed
+    assert ticker._pane_word(printed[0]) == "delivered"
+
+
 def test_an_unstamped_transition_is_untouched_by_the_rule() -> None:
     """The stamp alone is read; a row without it is judged exactly as before."""
     for to_state in ("blocked", "completed_unpromoted"):
@@ -157,9 +179,15 @@ def _snapshot(tmp_path: Path, run_id: str, manifest: Path, *, moment: float) -> 
 
 
 def _emitted(snapshot: dict, previous: str | None, state: str, counts: dict) -> dict:
-    return recovery._watch_transition(
+    """Build a row through the builder the publisher itself calls.
+
+    ``runs._stream_transition`` is what the producer's stream writer funnels
+    every folded transition through, so it is the join a severed delegation
+    would break. Building the row here rather than at the fold's own builder
+    keeps this check on the path the stream actually takes.
+    """
+    return runs._stream_transition(
         PROJECT,
-        kind="transition",
         snapshot=snapshot,
         previous=previous,
         current=state,
