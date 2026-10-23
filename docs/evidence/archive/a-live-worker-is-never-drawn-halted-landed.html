@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted-landed">
+  <meta name="plan-title" content="A Live Worker Is Never Drawn Halted — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Live Worker Is Never Drawn Halted: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Live Worker Is Never Drawn Halted — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Live Worker Is Never Drawn Halted — landed record</h1>
+  <p>Closure synthesis for A Live Worker Is Never Drawn Halted: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — a live worker&#x27;s unreadable manifest keeps its working reading</h2>
+    <p>Run <code>r-20261023T140007685442-a-live-workers-unreadable-manifest-is-not-unwritten</code>, commits <code>c4a21a4d4</code> and <code>b78ffc1ab</code>, merged as <code>db3b6a52f</code>. A new helper, <code>recovery_liveness._manifest_carries_no_verdict_yet</code>, treats orientation-only, refused and template bodies as "no verdict yet". The existing motion predicate <code>_orientation_write_of_a_run_in_motion</code> now takes that wider input, with its live, unknown and gone decision unchanged. The live branch in <code>recovery_classification.classify_pointer</code> now names the parse error in the run's detail.</p><p>Gate: 5 new tests pass at head. Arms a (<code>;</code>-joined list) and b (<code>in-progress-placeholder</code>) fail at base with pane word <code>halted</code>, and the declared mutation reproduces that. Ruff adds no findings on the staged paths (check 3 at base against 1 at head; the one file needing reformatting was already unformatted at base). The review at <code>b78ffc1ab</code> scored durability 19, evidence 15, fit 16, goal fidelity 19, reuse 19, scope 18, with three non-blocking findings. Two remain open: the new helper's docstring says "a status the reader recognises", while the code tests terminal statuses (folded into §3, which writes the same file), and <code>tests/test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git</code> fails in the 73-file cohort at head but not at base, 3/3, while passing alone. That test asserts the opening sweep spawned git. The likely cause is a process-level git cache warmed by an earlier test, and a second §2 node will isolate it.</p>
+  </section>
+
+</main>
+</body>
+</html>
