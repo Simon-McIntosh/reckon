@@ -38,8 +38,27 @@
   <p id="the-crew-page-shows-open-decisions-scope">
     Each row carries the project it belongs to, and the list narrows to the projects the page is
     showing, so the crew page's project filter reaches the decisions exactly as it reaches the runs.
-    A row links to <code>/&lt;project&gt;/#plan/&lt;slug&gt;</code>, the plan page that owns the
-    decision.
+    One filter does that for both lists: <code>crewRunsForVisibleProjects</code> takes the rows and
+    the visible projects, and it is applied to the run list and the decision list alike, because a
+    run and a decision each name the project they belong to. The decision list carried its own copy
+    of that predicate, and the copy is gone.
+  </p>
+
+  <p id="the-crew-page-shows-open-decisions-link">
+    A row links to the decision rather than to the top of the plan: the href is
+    <code>/&lt;project&gt;/plans/&lt;slug&gt;#decisions</code>. The anchor was chosen by reading
+    what the plan page actually renders for a decision. The plan reader draws the section around its
+    decisions with <code>id="decisions"</code>, the authored document carries the same id on
+    <code>&lt;section data-reckon="decisions"&gt;</code>, and neither the decision component nor the
+    plan writer emits an id per decision — the decisions section is the only anchor a decision has.
+    The reader route cannot carry that anchor anyway: <code>parseHash</code> in
+    <code>docs/ui/shell-route.jsx</code> takes the whole fragment as the route, so
+    <code>#plan/&lt;slug&gt;#decisions</code> would be read as the slug
+    <code>&lt;slug&gt;#decisions</code> and name no plan at all. The row therefore addresses the
+    plan document's own canonical route, the form <code>canonical_href</code> in
+    <code>reckon/resources.py</code> publishes, with the decisions anchor on it. The case asserts the
+    href the page renders and then requests the page that href names, requiring that page to carry
+    the anchor.
   </p>
 
   <p id="the-crew-page-shows-open-decisions-cases">
@@ -57,12 +76,20 @@
     <code>tests/test_spa_crew_stylesheet.py</code>, <code>tests/test_spa_crew_burn.py</code> and
     <code>tests/test_crew_view_serves_every_view.py</code> — and the poll contract,
     <code>tests/test_a_poll_waits_for_its_previous_answer.py</code>. At base
-    (<code>3d80d654</code>) 35 passed and at head (<code>12f8524e</code>) 37 passed, both
+    (<code>3d80d654</code>) 35 passed in 73 s and at head (<code>2b31734f</code>) 37 passed in
+    191 s, both
     <code>EXIT=0</code>, so the change adds the two new cases and no failure. No case reported
     <code>SKIPPED</code> in either arm. Each arm's log opens with the revision it ran at and the
     literal command it was handed, and closes with its own <code>EXIT=</code> line. The base arm ran
     over a tree exported with <code>git archive</code> from the base revision, because the shared
     <code>.git</code> is read-only for this run and <code>git worktree add</code> is refused.
+    The filter's own case lives outside this gate — <code>tests/test_spa_project_visibility.py</code>
+    evaluates <code>crewRunsForVisibleProjects</code> by name — so it was run at both revisions as
+    well: 10 passed and 4 failed in each, the same four browser-mode cases
+    (<code>test_topbar_keeps_one_ordered_row_with_tools_flush_right</code> at three viewports and
+    <code>test_first_visit_renders_live_runs_from_every_mounted_project</code>) failing at base as at
+    head, and <code>test_hidden_projects_leave_crew_and_home_aggregates</code>, the case that covers
+    the shared filter, passing at both. The change adds no failure there either.
   </p>
 
   <p id="the-crew-page-shows-open-decisions-control">
