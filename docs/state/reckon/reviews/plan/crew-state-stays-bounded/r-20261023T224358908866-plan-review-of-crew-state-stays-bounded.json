@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:52:02.447Z",
+  "dispatched_at": "2026-10-23T22:45:08Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-1",
+      "reason": "the node needs to settle from the owed entry's own recorded run and host (or name the ledger/caller that does), otherwise the route \u00a78 wires misses exactly the cross-project copies it exists to reclaim.",
+      "text": "the plan says the launch path \"settles the host's owed removals\", but `garbage_collect_scratch` resolves attribution through one checkout's ledger (`_ledgered_run_ids(repo, project)` \u2192 `_gc_projects`, reckon/crew/gc.py:74-81, which enumerates only `<repo>/docs/state/*` when no project is given), so a launch for one project cannot settle a removal owed by a run that another mounted checkout ledgered \u2014 the run classifies as unattributed and falls to the age-based orphan sweep, which \u00a78 says is for directories no run can be attributed to; the done-when's launch arm passes on a fixture whose owed run belongs to the launching project while the production case (a run resumed onto this host from a different project) is left unremoved for two hours",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:170",
+      "id": "reasoning-2",
+      "reason": "the section's goal is that a run's scratch leaves with it on every host, and as written the owed route leaves part of the scratch that the release route removes, so the two routes drift.",
+      "text": "the settlement route does not remove the same set as the release it stands in for: `remove_worker_scratch` also removes direct siblings named for the run's timestamp stem (reckon/crew/dispatch_launch.py:846-871, \"A worker may create siblings named for the timestamp stem instead of placing every temporary file below TMPDIR\"), while `garbage_collect_scratch` classifies only children named by run id (reckon/crew/gc.py:1123-1142), so a resumed attempt's sibling temp trees on the owing host survive the settlement even though the same host's local release would have taken them",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c0a38d9842a4eca8371e45c02fb6d20b4f9e7ceada7b5265caea13fd60c101a8",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T224358908866-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "1b72565b6084208f54b6d6723a788655e774c4fa",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves: `ensure_worker_scratch`/`remove_worker_scratch` (reckon/crew/dispatch_launch.py:782, :829), `garbage_collect_scratch` (reckon/crew/gc.py:1173), the age-based `garbage_collect_orphan_scratch` (reckon/crew/gc.py:1030, SCRATCH_GRACE_SECONDS), `retention_sweep` (reckon/crew/gc.py:1329), and `_release_after_promotion` (reckon/crew/promotion_release.py:476), whose three named callers do call it (promotion.py:1125 and :1752, promotion_records.py:188, reckon/crew_run_commands.py:2590).",
+    "done_when": "pass \u2014 \u00a78's done-when names measurable cases for the same-host release, the other-host release, its settlement by both a launch and a `retention_sweep` pass \"whatever the copy's age\", the two-host run, and the review promotion, and its negative control is the current code's own behaviour, which reports the wrong copy removed and so fails the second case.",
+    "evidence_paths": "pass \u2014 the durable witness named is the committed evidence fragment, which \u00a78 requires to quote each gate's command and summary line, and the gate logs it places under the run directory are transient by design as \u00a73 says.",
+    "naming": "pass \u2014 \u00a78 names existing mechanism symbols and the leak measurement, with no plan labels, stage names, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 the two settlement routes \u00a78 proposes do not reach the copies the release route removes.",
+    "single_goal": "pass \u2014 one goal (a run's scratch leaves with the run on each host); repairing the review-promotion route is a further route to that same goal rather than a second deliverable.",
+    "wiring": "pass \u2014 plan.html:22 records `s8: [\"crew-state-stays-bounded#s7\"]`, and \u00a78 runs after the \u00a77 sweep it extends (`retention_sweep`, reckon/crew/gc.py:1329), which has landed."
+  },
+  "section_digests": {
+    "_document": "7b027ab93025f3f1274af4c8c21f7e58c154d6e99dbdf5e7f4aa8931cbb1f280",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "21b00f5167a8f1873bdde0e7beb34b4094a4c59b5d95c89269845fb871d93afa"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:58:14.153825+00:00"
+}
