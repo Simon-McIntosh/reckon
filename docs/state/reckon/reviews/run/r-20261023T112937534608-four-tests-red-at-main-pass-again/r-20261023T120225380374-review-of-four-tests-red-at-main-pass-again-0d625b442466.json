@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:1493",
+    "reckon/mcp_views.py:3187",
+    "reckon/roadmap.py:2753"
+  ],
+  "completed_at": "2026-10-23T12:25:07.259Z",
+  "dispatched_at": "2026-10-23T12:03:45Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112937534608-four-tests-red-at-main-pass-again/logs/after.suite.log",
+      "line": 5,
+      "severity": "non-blocking",
+      "summary": "the head-arm gate log's `# command:` header is abbreviated (an elided interpreter path `/home/ITER/mcintos/Code/reckon/.venv/bin/... python` and a `tests/test_*.py` glob in place of the literal file list), so the log alone cannot be re-executed as written; the literal command survives in the manifest's `tests:` and `after_suite.command` fields, so this does not hold the node. logs/wip1.suite.log:3 carries the same defect.",
+      "text": "logs/after.suite.log:5 records an abbreviated `# command:` header rather than the literal command the dispatch fence requires; the literal command is preserved only in the manifest, and reckon's own header reader admits it because its ellipsis pattern requires a whitespace-delimited `...`."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against f3149c41e; two commits change five files, all inside the declared scope, and the production change is the removal of project_brief.py's private `_parse_utc` in favour of reckon._timestamps.parse_utc behind a string-type guard.",
+    "done_when": "the done_when names the four-file gate and its two arms; the manifest records baseline_suite 4 failed/57 passed at f3149c41e and after_suite 62 passed/0 failed at df8dc8889, and both logs open with their revision and close with EXIT=.",
+    "goal": "the node's goal is to make the four tests red at main since 2026-10-22 pass again as section 40 specifies; the landed change repairs all four ids, and I re-ran the five named ids at 0d625b442 (5 passed).",
+    "manifest": "read the manifest; it states status complete, the two commits, the 4-file gate, both arms, four negative controls and the rule-versus-format lint comparison.",
+    "write_paths": "read the declared write paths; every path in the diff (tests/test_mcp_views.py, tests/test_sprint_summary_lists_pending.py, reckon/project_brief.py, tests/test_one_brief_an_agent_can_act_on.py, docs/evidence/fragments/the-suite-is-green-at-head/four-tests-red-at-main-pass-again.html) is inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the four tests red at main since 2026-10-22 pass again as section 40 specifies; the landed change repairs all four ids and I re-ran the five named ids at 0d625b442 (5 passed).\nVERDICT done_when: the done_when names the four-file gate and its two arms; the manifest records baseline_suite 4 failed/57 passed at f3149c41e and after_suite 62 passed/0 failed at df8dc8889, both logs opening with their revision and closing with EXIT=.\nVERDICT write_paths: read the declared write paths; every path in the diff is inside them.\nVERDICT manifest: read; it states status complete, the two commits, both arms, four negative controls and its lint comparison.\nVERDICT diff: read commit by commit against f3149c41e; two commits change five files, all inside the declared scope.\nCALL_SITES: reckon/project_maintenance_commands.py:1493, reckon/mcp_views.py:3187, reckon/roadmap.py:2753\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the four ids in docs/plans/the-suite-is-green-at-head.html \u00a740 all pass at 0d625b442, reproduced by re-running the five named ids in the node's worktree.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/base.suite.log and logs/after.suite.log carry their revisions and EXIT= lines, but after.suite.log:5 records an abbreviated command rather than the literal one the fence requires; the gate is also the four files the dispatched measure names, narrower than \u00a740's prose population, which cannot regress because reckon/mcp_views.py is untouched.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (five files) is listed among the node's declared write paths, and no file outside them is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_one_brief_an_agent_can_act_on.py:362 fails when a numeric stamp reaches parse_utc (control log logs/negcontrol.numeric-stamp.log, 1 failed/EXIT=1), and the two run-row cases and the frozen-summary case each redden under their recorded control.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/project_brief.py:570 names its helper `_iso_stamp` by what it does, stays private to the module, and follows the verified-fact docstring idiom at reckon/project_brief.py:485.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/project_brief.py:582 delegates to reckon._timestamps.parse_utc, the shared owner named by tests/test_structural_invariants.py, and removes the duplicate parser rather than adding a second one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T112937534608-four-tests-red-at-main-pass-again/logs/after.suite.log:5 non-blocking: the head-arm log's `# command:` header is abbreviated (`.../venv/bin/... python` and a `tests/test_*.py` glob), so the log alone cannot be re-executed; the literal command is preserved in the manifest's `tests:` and `after_suite.command`.\n",
+  "review_run_id": "r-20261023T120225380374-review-of-four-tests-red-at-main-pass-again-0d625b442466",
+  "reviewed_base_sha": "f3149c41ed2c42d02a716f328e422f64a2ada526",
+  "reviewed_head_sha": "0d625b442466520cc0b1629da3b9962853b062c0",
+  "reviewed_run_id": "r-20261023T112937534608-four-tests-red-at-main-pass-again",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T12:27:44.962599+00:00",
+  "total": 115
+}
