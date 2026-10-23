@@ -1,7 +1,9 @@
 import os
 import shutil
 import time
+from collections.abc import Mapping
 
+from reckon import review_tiers
 from reckon.crew.routing import (
     STREAM_DERIVED_FIELDS,
     UTC,
@@ -206,6 +208,96 @@ def _gc_partial_report(
 # days is well past any live reader's refresh cadence yet far short of the
 # multi-month accumulation this sweep exists to reclaim.
 LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS = 7
+
+
+# A run directory's size is measured while it still exists, because the size is
+# reported at the moment it dies and there is no second chance to measure it.
+# The walk is bounded so a pass on shared storage cannot be made to traverse a
+# whole corpus to size one directory: the figure names the tree a pass
+# reclaimed rather than a total a caller reconciles against.
+RUN_DIRECTORY_SIZE_LIMIT = 200_000
+
+# The window a finished run's directory is kept after the same pass decides
+# nothing can still need it, written in the duration form the node parser
+# already reads — an integer and a unit letter. The ``gc`` namespace is declared
+# on the schema, but the shipped defaults layer carries no ``gc`` block, so a
+# resolved config that never set the key falls back to the constant here.
+RUN_DIRECTORY_GRACE_KEY = "directory_grace"
+DEFAULT_RUN_DIRECTORY_GRACE = "24h"
+
+
+def _live_review_targets() -> set[str]:
+    """Run ids a live review run names as the run it reviews.
+
+    A review of a finished run is a run of its own with its own pointer, so a
+    reviewed run whose own pointer is long gone still needs its directory while
+    that review is in flight. Each live pointer is resolved through the node-id
+    resolver dispatch uses, which names a reviewed run only for a review and
+    returns empty for anything else. A pointer the resolver cannot read is
+    skipped rather than guessed at — an unreadable pointer is no evidence that a
+    review is absent.
+    """
+    from reckon.crew.recovery_review_delivery import _resolved_reviewed_run_id
+
+    targets: set[str] = set()
+    for pointer in list_live():
+        try:
+            reviewed = _resolved_reviewed_run_id(
+                pointer, str(pointer.get("project") or "")
+            )
+        except Exception:  # noqa: BLE001 — an unreadable pointer is not a review
+            reviewed = ""
+        if reviewed:
+            targets.add(reviewed)
+    return targets
+
+
+def _committed_review_exists(project: str, run_id: str, repo: Path) -> bool:
+    """Whether a complete review of one run is on the committed store.
+
+    A review's durable copy is the committed record beside the ledger rather
+    than the staging copy the reviewer wrote into the run's own directory, so a
+    run whose review has landed there no longer needs its directory to keep that
+    review. The committed store is read through the same reader promotion uses
+    to decide whether a round is already filed, so the two agree on what a
+    committed review is: a head carried complete with its revision. A stored
+    record naming only one half of the pair contributes no head and is a partial
+    record rather than a review.
+    """
+    from reckon.crew.promotion_checks import _committed_review_rounds
+
+    _, heads = _committed_review_rounds(project, run_id, repo)
+    return bool(heads)
+
+
+def _run_directory_grace_seconds(project: str | None, repo_root: Path) -> int:
+    """The configured grace window for a finished run's directory, in seconds.
+
+    Read from the resolved flight config's ``gc`` namespace, resolved with the
+    checkout being swept so a project layer's override is read from that
+    checkout rather than from wherever the pass happens to run. A config the
+    resolver cannot read, one declaring no such key, or one holding a value in
+    no duration form all fall back to the shipped default: a malformed window is
+    no reason to remove a directory sooner than the default allows, nor to fail
+    a hand-assembled config's sweep.
+    """
+    from reckon import flight
+    from reckon.crew.node import CrewError, parse_duration
+
+    try:
+        config = flight.resolve(project, checkout_path=repo_root).config
+    except Exception:  # noqa: BLE001 — an unreadable config falls back to default
+        config = None
+    gc_config = (config or {}).get(flight.GC_KEY)
+    value = (
+        gc_config.get(RUN_DIRECTORY_GRACE_KEY, DEFAULT_RUN_DIRECTORY_GRACE)
+        if isinstance(gc_config, Mapping)
+        else DEFAULT_RUN_DIRECTORY_GRACE
+    )
+    try:
+        return parse_duration(str(value))
+    except CrewError:
+        return parse_duration(DEFAULT_RUN_DIRECTORY_GRACE)
 
 
 def _orphan_ledger_indexes(
@@ -552,10 +644,20 @@ def garbage_collect(
                         report["removed"] = True
             pointer_reports.append(report)
 
-        cutoff = (now or datetime.now(tz=timezone.utc)) - timedelta(days=retention_days)
+        # A finished run's directory is retired on the test below rather than on
+        # raw age: it is kept while something can still need it, and once
+        # nothing can it is held for the configured grace window so a reader
+        # holding a path to it does not lose it mid-read. The raw reports, the
+        # locks and the unledgered directories this same pass sweeps keep their
+        # own day-count windows.
+        run_directory_cutoff = (now or datetime.now(tz=timezone.utc)) - timedelta(
+            seconds=_run_directory_grace_seconds(project, repo_root)
+        )
         live_ids = {str(record.get("run_id") or "") for record in list_live()}
+        live_review_targets = _live_review_targets()
         run_reports: list[dict[str, Any]] = []
         run_file_reports: list[dict[str, Any]] = []
+        from reckon.crew.dispatch_launch import tree_size_bytes
         from reckon.crew.fleet_supervisor import bound_run_files, run_file_limit_bytes
 
         run_file_limit = run_file_limit_bytes(repo_root, project)
@@ -565,6 +667,8 @@ def garbage_collect(
             ):
                 if run_id and directory.name != run_id:
                     continue
+                # A live pointer or a queued entry is one run still in flight or
+                # waiting to launch, so its directory is needed outright.
                 if directory.name not in ledgered or directory.name in live_ids:
                     continue
                 record = ledgered_records.get(directory.name, {})
@@ -573,10 +677,46 @@ def garbage_collect(
                         directory, record, limit_bytes=run_file_limit, apply=apply
                     )
                 )
+                # A review in flight is a run of its own that names this run as
+                # its subject; the reviewed run's own pointer is already gone,
+                # so the live-pointer test above cannot see it.
+                if directory.name in live_review_targets:
+                    continue
+                # A review is owed while the run's tier says one is required and
+                # no complete review of it is committed yet. The directory holds
+                # the stream and diff such a review reads, so it is kept until
+                # the review lands.
+                tier = str(record.get("review_tier") or "").strip().lower()
+                if (
+                    tier
+                    and tier != review_tiers.NONE
+                    and not _committed_review_exists(
+                        str(record.get("project") or project or ""),
+                        directory.name,
+                        repo_root,
+                    )
+                ):
+                    run_reports.append(
+                        {
+                            "run_id": directory.name,
+                            "path": str(directory),
+                            "action": "withheld",
+                            "removed": False,
+                            "withheld": "review-owed",
+                            "reason": (
+                                "a review of this run is required and its "
+                                "committed record is not yet stored, so the "
+                                "directory still holds the evidence the review "
+                                "reads; it stays until the review lands"
+                            ),
+                            "review_tier": tier,
+                        }
+                    )
+                    continue
                 modified = datetime.fromtimestamp(
                     directory.stat().st_mtime, tz=timezone.utc
                 )
-                if modified > cutoff:
+                if modified > run_directory_cutoff:
                     continue
                 figure_status = {
                     field: _figure_retention(record, field)
@@ -616,6 +756,7 @@ def garbage_collect(
                     "path": str(directory),
                     "action": "prune",
                     "removed": False,
+                    "bytes": tree_size_bytes(directory, limit=RUN_DIRECTORY_SIZE_LIMIT),
                     "explicitly_absent_figures": list(absent),
                     "figure_status": figure_status,
                 }
@@ -625,6 +766,12 @@ def garbage_collect(
                         for record in list_live()
                     ):
                         continue
+                    # The path and the size are printed before the removal, so
+                    # the operator sees what a pass took even when the report
+                    # that follows is filtered or lost.
+                    print(
+                        f"removing run directory {directory} ({report['bytes']} bytes)"
+                    )
                     shutil.rmtree(directory)
                     report["removed"] = True
                 run_reports.append(report)
