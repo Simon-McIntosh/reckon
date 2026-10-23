@@ -463,9 +463,12 @@ def test_the_sync_installer_wires_the_guard_behind_the_same_opt_in(
     interpreter = guard_script.parents[2] / ".venv" / "bin" / "python"
     assert bash_commands[0] == shlex.join([str(interpreter), str(guard_script)])
     bash_groups = [group for group in opted_groups if group.get("matcher") == "Bash"]
-    assert installer.worker_git_guard_group(guard_script) in bash_groups
-    # The same flag installs the walk guard, on this matcher and on Grep|Glob.
-    assert any(installer.is_worker_walk_guard_group(group) for group in bash_groups)
+    # The flag binds the pair: a run that may not touch a peer's checkout is the
+    # same run that may not walk the crew home, so one opt-in installs both
+    # guards rather than leaving an operator to bind them one at a time.
+    assert len(bash_groups) == 2
+    assert bash_groups[0] == installer.worker_git_guard_group(guard_script)
+    assert installer.is_worker_walk_guard_group(bash_groups[1])
     assert [
         group["matcher"]
         for group in opted_groups
@@ -505,13 +508,10 @@ def test_sync_replaces_an_installed_guard_without_duplicating_it(
 
     groups = json.loads(target.read_text())["hooks"]["PreToolUse"]
     guards = [group for group in groups if group.get("matcher") == "Bash"]
+    assert [
+        group for group in guards if installer.is_worker_git_guard_group(group)
+    ] == [installer.worker_git_guard_group(cli._worker_git_guard_path())]
     assert all(installer._is_crew_guard_group(group) for group in guards)
-    # The already-installed group is not duplicated by the merge: it is still
-    # bound once, beside the walk guard the same opt-in composes.
-    assert (
-        len([group for group in guards if installer.is_worker_git_guard_group(group)])
-        == 1
-    )
     assert len(_pre_tool_use_bash_commands({"hooks": {"PreToolUse": guards}})) == len(
         guards
     )
