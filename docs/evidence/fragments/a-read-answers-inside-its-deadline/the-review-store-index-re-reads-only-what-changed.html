@@ -49,8 +49,8 @@
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>head (this change)</td>
-        <td><code>7446d5a20</code></td>
-        <td><strong>65 passed</strong>, 0 failed, exit 0</td></tr>
+        <td><code>3c1069d22</code></td>
+        <td><strong>65 passed, 0 failed</strong>, exit 0</td></tr>
       <tr><td>base (new test file copied in)</td>
         <td><code>7cb177e8a</code></td>
         <td>57 passed, 0 failed in the seven pre-existing files; 8 setup errors, all in the new file (<code>AttributeError: module 'reckon.crew.review_records' has no attribute '_index_entry'</code>)</td></tr>
@@ -62,7 +62,9 @@
 
   <p>Delta: <strong>zero new failures</strong> in the population that exists at
   base, and the new test errors at base because the behaviour it measures does
-  not exist there.</p>
+  not exist there. The head arm was logged twice — 65 passed at each, the
+  earlier one before the cases below were strengthened to compare a whole
+  result rather than a path.</p>
 
   <h3>What the parse counter reads</h3>
 
@@ -85,9 +87,24 @@
     </tbody>
   </table>
 
-  <p>Every one of those lookups returns what a from-scratch build returns: each
-  case asserts its result against the same lookup made after the in-memory
-  index and the persisted document are both discarded.</p>
+  <p>Each lookup above is made twice — once answered from the updated index and
+  once after both the in-memory index and the persisted document are discarded,
+  which rebuilds from the store — and the two results are asserted equal in
+  full, the record's body included, not only the path they share. The cases
+  carrying that comparison are the addition
+  (<code>test_adding_a_record_parses_only_the_new_file</code>), the rewrite in
+  place (<code>test_rewriting_a_record_parses_only_that_file</code>), the
+  deletion (<code>test_deleting_a_record_drops_its_entry</code>), the two
+  stores under different roots
+  (<code>test_two_stores_under_different_bases_are_indexed_apart</code>), the
+  fresh process
+  (<code>test_a_fresh_process_parses_nothing_when_nothing_changed</code>), the
+  rebuild under another stamp
+  (<code>test_a_persisted_index_under_another_code_stamp_is_rebuilt</code>) and
+  the write between processes
+  (<code>test_a_record_changed_between_processes_is_still_found</code>). A
+  right path answered from a body the index failed to refresh therefore fails
+  its case, which the second control below measures.</p>
 
   <h3>The negative control</h3>
 
@@ -99,4 +116,13 @@
   deletion, the fresh process, the foreign code stamp and the write between
   processes), and the pre-existing seven files stay green — the mutation moves
   only what this node added.</p>
+
+  <p>A second control, for the full-result assertion above, makes the index keep
+  the record it parsed and answer a lookup from that copy while the incremental
+  update carries the old body forward for a file whose stat identity moved: the
+  path and the parse count are right and only the body is stale. One case fails
+  on it — the rewrite in place, reading <code>total: 80</code> where the
+  rebuild reads <code>total: 81</code> — and the other seven pass. Its log is
+  <code>gate-negative-control-stale-body.log</code> beside the first, and its
+  mutation is <code>mutate_stale_body.py</code> in the run directory.</p>
 </section>
