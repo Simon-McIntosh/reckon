@@ -931,11 +931,14 @@ def _forged_plan_structure(body: str) -> str | None:
 
 
 def _deferred_work_term_reason(term: str) -> str:
-    """The refusal a body carrying the deferred-work term earns, naming the rule."""
-    return (
-        f'the term "{term}" in prose; additional work is a plan section or an '
-        "instruction in the dispatching prompt"
-    )
+    """The refusal a body carrying the deferred-work term earns, naming the rule.
+
+    The rule sentence is document-check's, which spells it for the audit warning
+    as well, so a refusal and the warning that follows it cannot drift apart.
+    """
+    from reckon.doccheck import DEFERRED_WORK_RULE
+
+    return f'the term "{term}" in prose; {DEFERRED_WORK_RULE}'
 
 
 def _prose_deferred_work_term(body: str) -> str | None:

@@ -410,6 +410,12 @@ def _prose_text(el) -> str:
 #: reader above is the one that reads it, so a term inside ``<pre>`` or
 #: ``<code>`` — a citation of a symbol, not a bucket — is not reported.
 DEFERRED_WORK_TERM_IN_PROSE = "deferred-work-term-in-prose"
+#: The rule the term breaks, spelled once. The store refuses an authored body
+#: that names it and this audit warns on a plan that already carries it, so both
+#: read this one sentence and neither can drift from the other.
+DEFERRED_WORK_RULE = (
+    "additional work is a plan section or an instruction in the dispatching prompt"
+)
 _DEFERRED_WORK_TERM = re.compile(r"\bfollow-ons?\b", re.IGNORECASE)
 
 
@@ -1725,8 +1731,7 @@ def audit_html(
                 Finding(
                     "warn",
                     DEFERRED_WORK_TERM_IN_PROSE,
-                    f"plan prose carries {term!r}; additional work is a plan "
-                    "section or an instruction in the dispatching prompt",
+                    f"plan prose carries {term!r}; {DEFERRED_WORK_RULE}",
                 )
             )
 
