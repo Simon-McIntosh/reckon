@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:_edit_plan_tool",
+    "reckon/mcp.py:3313"
+  ],
+  "call_sites_emitted": true,
+  "completed_at": "2026-10-23T21:55:46.044Z",
+  "dispatched_at": "2026-10-23T21:41:43Z",
+  "findings": [
+    {
+      "file": "tests/test_a_write_names_what_it_uncovered.py",
+      "line": "269",
+      "severity": "non-blocking",
+      "text": "the create case asserts _units(result['uncovered_by_write']) == owed where owed is read from the same result's review_owed, so the two sides come from one call and move together: a regression that made both lists wrong in the same way (for example returning every section rather than every unit the create wrote) would leave this assertion true, and only the separate assert owed keeps it from passing on an empty pair."
+    },
+    {
+      "file": "tests/test_a_write_names_what_it_uncovered.py",
+      "line": "280",
+      "severity": "non-blocking",
+      "text": "the skill case asserts only that 'review_owed' appears somewhere after the first 'uncovered_by_write' occurrence, which holds for any insertion of the term before a later mention; it does not check the claimed ordering of guidance (act on uncovered_by_write after your own write, review_owed before a build), so it would pass on a skill edit that states the opposite rule."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T203414448007-a-write-names-what-it-uncovered/logs/gate.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the gate log's '# revision:' header names ce20b61bd while the tree it ran in carried the change before it was committed, so no commit sha identifies the tested content and a reader cannot reproduce the run from the log alone; naming the eventual head commit or recording the dirty-tree state would make the receipt reproducible."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against ce20b61bd: 65143e301 adds the field and its tests, and 54535b302 adds only the evidence fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_write_names_what_it_uncovered.py and the regression files, and the manifest's tests line and logs/gate.log record that run and its 2-failed/103-passed result.",
+    "goal": "the node goal is to report the units a plan write uncovered beside the plan's whole review debt; reckon/mcp_deadlines.py:632 adds uncovered_by_write and computes it from the pre-write coverage set.",
+    "manifest": "read; it states complete, names commits 65143e301 and 54535b302, records the gate result and the declared mutation's red log, and records baseline_suite and after_suite as null because this node ran no baseline arm.",
+    "write_paths": "read the manifest's orientation_write_paths (six declared entries including a figures directory); every one of the five changed files in the diff lies inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_write_names_what_it_uncovered.py:187 and :247 assert literal expected sets that a reinstated uncovered_by_write == review_owed mutation reddens (proven by logs/negative-control.log), though :269 and :280 are weaker relationship and substring checks noted in the findings.",
+    "evidence": "logs/gate.log records 2 failed / 103 passed EXIT=1 at tests/test_a_write_names_what_it_uncovered.py plus the named regression files, and an independent base arm at 2991ffb04 shows the same two tests/test_skill_contracts.py failures without this change, so the gate result is recorded and the failures are not this node's.",
+    "fit": "reckon/mcp_edit_plan.py:1893 follows the surrounding underscore-private helper idiom and calls the existing _run_scoped_checkout and _written_path rather than re-resolving paths, and no added name carries a plan, stage or ticket label.",
+    "goal_fidelity": "reckon/mcp_deadlines.py:632 returns uncovered_by_write beside the unchanged review_owed, and reckon/mcp_edit_plan.py:1969 reads the pre-write coverage so the list names only the units this write moved, which is exactly the node goal.",
+    "reuse": "a search of reckon/ for uncovered_before, newly_uncovered and uncovered_by_write found the mechanism only in the changed files; the change extends _review_owed_fields (the owner of review-owed fields) and reuses plan_review.review_coverage rather than duplicating a coverage reader.",
+    "scope_discipline": "the diff ce20b61bd..54535b302 touches exactly the five declared write paths (reckon/mcp_deadlines.py, reckon/mcp_edit_plan.py, skills/reckon-edit/SKILL.md, the new test file and the evidence fragment) with no other file changed."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261023T213903558337-review-of-a-write-names-what-it-uncovered-54535b302f7b",
+  "reviewed_base_sha": "ce20b61bdfecc0c6038e519b4f199ee9698ff530",
+  "reviewed_head_sha": "54535b302f7bccc0d4089098643d440a3b8ae129",
+  "reviewed_run_id": "r-20261023T203414448007-a-write-names-what-it-uncovered",
+  "reviewer": {
+    "backend": "local",
+    "effort": "standard",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261023T213903558337-review-of-a-write-names-what-it-uncovered-54535b302f7b",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T21:58:52.035551+00:00",
+  "total": 110
+}
