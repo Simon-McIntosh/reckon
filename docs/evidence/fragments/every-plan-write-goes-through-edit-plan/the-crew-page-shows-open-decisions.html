@@ -1,0 +1,63 @@
+<!-- Evidence anchor: the-crew-page-shows-open-decisions -->
+
+<section id="the-crew-page-shows-open-decisions-evidence">
+  <h2>The crew page renders the open decisions the payload carries</h2>
+
+  <p id="the-crew-page-shows-open-decisions-derivation">
+    The open decisions reach the browser on the same <code>/crew</code> payload as the run list:
+    <code>_waiting_decision_rows</code> in <code>reckon/serve.py</code> walks each mounted project's
+    plans and answers <code>open_decisions</code> beside <code>runs</code>. The crew view was handed
+    only the runs, so the decisions that derivation produces reached no reader. The payload already
+    carries every field a row shows — the plan slug, the key, the title, the sections the decision
+    holds, the recommendation and its source, and the plan's own <code>plan_modified</code> stamp —
+    so <code>docs/ui/crew.jsx</code> reads that list and formats it, and derives nothing: no status,
+    no count, no age is computed beyond rendering the stamp it was given.
+  </p>
+
+  <p id="the-crew-page-shows-open-decisions-unread">
+    The list starts unread rather than empty. An empty list is a claim that nothing waits, and a page
+    that has not yet been answered cannot make it. <code>CrewOpenDecisions</code> therefore draws
+    nothing until <code>decisions</code> is an array, and the empty line is drawn only in answer to a
+    payload that carried no row. Measured while building this: with the state seeded as
+    <code>[]</code> the empty line rendered on the first paint, before the poll resolved, and the case
+    below read the empty line where the row should have been (<code>polls: []</code>,
+    <code>rowCount: 0</code> at the moment of the assertion). Seeding it as <code>null</code> removed
+    the race and the same probe then answered <code>polls: [1, 1]</code>, <code>rowCount: 1</code>.
+  </p>
+
+  <p id="the-crew-page-shows-open-decisions-scope">
+    Each row carries the project it belongs to, and the list narrows to the projects the page is
+    showing, so the crew page's project filter reaches the decisions exactly as it reaches the runs.
+    A row links to <code>/&lt;project&gt;/#plan/&lt;slug&gt;</code>, the plan page that owns the
+    decision.
+  </p>
+
+  <p id="the-crew-page-shows-open-decisions-cases">
+    <code>tests/test_the_crew_page_shows_open_decisions.py</code> serves a temporary project holding
+    one plan with one open decision, drives a real browser over the served crew page, and asserts the
+    decision key, its title, the plan link and the sections it holds as they appear in the rendered
+    page. The second case locks the decision, waits for the next poll, and asserts the row is gone and
+    the single empty line stands in its place. The case reads the page, not the source: no assertion
+    opens <code>crew.jsx</code> as text.
+  </p>
+
+  <p id="the-crew-page-shows-open-decisions-gate">
+    Both arms ran the new case and the crew page's existing browser cases —
+    <code>tests/test_spa_crew_cards.py</code>, <code>tests/test_spa_crew_geometry.py</code>,
+    <code>tests/test_spa_crew_stylesheet.py</code>, <code>tests/test_spa_crew_burn.py</code> and
+    <code>tests/test_crew_view_serves_every_view.py</code>. At base
+    (<code>3d80d654</code>) 32 passed and at head (<code>b7d94967</code>) 34 passed, both
+    <code>EXIT=0</code>, so the change adds the two new cases and no failure. No case reported
+    <code>SKIPPED</code> in either arm. Each arm's log opens with its revision and closes with its own
+    <code>EXIT=</code> line.
+  </p>
+
+  <p id="the-crew-page-shows-open-decisions-control">
+    The declared control — render the crew page from a <code>/crew</code> payload with
+    <code>waiting_decisions</code> removed, and the new test fails on the missing decision key — was
+    run by making <code>_waiting_decision_rows</code> answer no rows in an exported copy of the head
+    tree, so the page was served an empty list. The case failed on
+    <code>assert '' == 'transport'</code>, the missing key, at <code>EXIT=1</code>, against the same
+    case passing at head. The check is therefore measuring the row rather than the page's shape.
+  </p>
+</section>
