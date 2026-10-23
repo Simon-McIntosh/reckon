@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T13:38:59.299Z",
+  "dispatched_at": "2026-10-23T13:24:21Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:23",
+      "id": "wiring-1",
+      "reason": "the roadmap derives its ready-set from this edge, so as written \u00a76 is withheld until \u00a75 closes, contradicting the dispatch order the plan states and leaving an author to re-litigate which part is authoritative.",
+      "text": "`plan-section-depends-on` declares `\"s6\":[\"the-monitor-reads-each-fact-once#s5\"]`, but the open followup at line 246 states \"\u00a75 and \u00a76 can then start together\" (the resolved followup at line 245 agrees), so the declared graph gates \u00a76 behind \u00a75 while the plan's own narrative says they run concurrently",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:179",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a78 as written either keeps the follower's mid-stream reload (contradicting \u00a77/\u00a78) or drops it and sees the named suite fail, so the node cannot satisfy its own done-when without the plan saying whether that test is rewritten to target the station or the subscriber retains a reload path.",
+      "text": "\u00a78's done-when requires `tests/test_follower_freshness.py` to \"pass against the subscriber\", but that file's defining test `test_running_follower_reloads_without_stream_or_registration_gap` (tests/test_follower_freshness.py:172) rewrites a module mid-run and asserts the running follower reports the changed behaviour (\"fresh:\"), i.e. that it reloads onto new code, while \u00a78 line 174 states the subscriber \"does not reload\" and \u00a77 line 150 says the station \"is the only process that reloads\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7feaf57d1fd0247689bbcd4a7e6d7294086411d02f6ebf224773fcd58017c649",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T132140288548-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "74a9069d146b6e5279e2e4dcc1abdf2ba677dbce",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `/reckon/research/monitor-storage-load-rca` resolves with its \u00a72 and \u00a75 anchors; the superseded `the-monitor-shows-the-work-it-watches` plan, the carried `the-crew-does-its-own-bookkeeping` plan and the evidence anchor `#s4` resolve; all nine cited commits (e.g. `eaff2df10`, `57e274889`, `d85e543c8`) and all six cited test files exist; `_session_host_runtime_root` (dispatch_watch.py:481), `observe_stream` (_backends.py:2851, with production callers), `recovery.classify_pointer` (re-exported from recovery.py:84), `PaneRowPath` (ticker.py:1907), `resumption.sweep` and `dispatch_awaiting_reviews` all resolve; \u00a711's cited 2026-10-22T19:11Z lift pair is present in `~/.config/reckon/crew/watch/reckon-18dc8a86709b.events` (a `codex-sub` credits lift ended and an uncapped grant `codex-sub-1792696292-a93427` was granted on session `s21-nova`).",
+    "done_when": "pass \u2014 each implementable node (\u00a75\u2013\u00a712) states a measure and names a declared negative control (e.g. \u00a75's undated-file store failing the retention test, \u00a77's unlocked double station failing \"each transition once\", \u00a710's per-subscriber reflex failing the exactly-one test).",
+    "evidence_paths": "pass \u2014 cited evidence sits on durable paths (`~/.cache/reckon-pointer-population/`, which exists; the RCA for \u00a712's before/after; `docs/evidence/archive/the-monitor-reads-each-fact-once-landed.html`), none in a session scratchpad or node-local temp.",
+    "naming": "pass \u2014 the new names (`station_store.py`, the `pointers`/`streams`/`events` tables) name mechanisms, and no plan label, stage name, ticket number or version tag reaches code.",
+    "reasoning": "a finding \u2014 \u00a78's mechanism (\"a subscriber does not reload\") cannot produce \u00a78's own done-when, which requires the follower-reload test to pass; the stated root cause and the \u00a76 mechanism are otherwise sound (the plan's cause matches the RCA \u00a71/\u00a73 evidence, and `_backends.observe_stream` has production callers).",
+    "single_goal": "pass \u2014 each node carries one deliverable (store, ingest, station, subscriber, obligations/hooks, reflex, lift row, cutover).",
+    "wiring": "a finding \u2014 the declared `plan-section-depends-on` makes \u00a76 depend on \u00a75, while both open followups state \u00a75 and \u00a76 start together, so the ready-set the roadmap computes disagrees with the plan's own sequencing."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "195727b1bd42108c6a3f05d7625fe86e299c59ea7eea8bd15b5c290da2aad883",
+    "s6": "cd2191c601a518f0d73390144a40c64a92bacc2aed65fe19393acb3d5742e650",
+    "s7": "7b41c4aeba17f9cb3d59318300b55e9eee211e09d022eb061a01b23b73a0fe40",
+    "s8": "86839df24b5b17a282b6e0f16037b7ab5f04d90e241f7d4df0f734d8e338a925",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T13:42:41.041282+00:00"
+}
