@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -175,8 +175,10 @@
     painter. When the station's heartbeat is older than its stale window, the follower prints one line saying
     so and naming the command that restarts it.</p>
     <p>Done when the existing pane tests (<code>tests/test_a_delivered_row_does_not_round_trip.py</code>,
-    <code>tests/test_a_dispatch_is_one_row.py</code>, <code>tests/test_crew_session_delivery.py</code>,
-    <code>tests/test_follower_freshness.py</code>) pass against the subscriber, and new tests show: a row is
+    <code>tests/test_a_dispatch_is_one_row.py</code>, <code>tests/test_crew_session_delivery.py</code>) pass against the subscriber;
+    <code>tests/test_follower_freshness.py</code>'s reload case, <code>test_running_follower_reloads_without_stream_or_registration_gap</code>,
+    is retargeted at the station, the one process that reloads (§7), and asserts that a station reload leaves the
+    subscriber's stream with no gap and its registration in place; and new tests show: a row is
     delivered exactly once across a subscriber restart; a re-armed subscriber continues from its cursor with
     no <code>new →</code> row for a run the pane already drew (old §77); a stale heartbeat prints one line.
     Measure: a 60 s <code>/proc/&lt;pid&gt;/io</code> delta of a running subscriber shows no reads from the
@@ -243,7 +245,7 @@
     </article>
 <article class="r-fu" data-id="f-tmref-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-23 13:25" data-recommends-skill="/reckon-build the-monitor-reads-each-fact-once §5" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Review the plan, then build the station store</h4>
-    <div class="r-fu-body"><p>No content or design review has read §5–§12 yet, so the first build node waits on both. §5 and §6 can then start together; §7 follows §6.</p></div>
+    <div class="r-fu-body"><p>The content review is answered; the design review comes next, then §5. §6 waits on §5, because its ingest writes §5's tables, and §7 follows §6.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §5</pre>
     </article>
 </section>
