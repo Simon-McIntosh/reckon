@@ -78,7 +78,7 @@ def _review(path, *, store=True, version=None, findings=()):
     sidecar = json.loads(Path(fields["sidecar"]).read_text())
     if version is not None:
         sidecar["plan_version"] = version
-    Path(sidecar["report_path"]).write_text("RUBRIC wiring: pass\n")
+    Path(sidecar["report_path"]).write_text("RUBRIC reuse_search: pass\n")
     if store:
         plan_review.store_plan_review(
             {

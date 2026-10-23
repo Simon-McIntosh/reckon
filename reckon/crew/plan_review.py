@@ -59,7 +59,7 @@ import json
 import re
 import shlex
 import subprocess
-from collections.abc import Callable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -2077,44 +2077,6 @@ def _stored_code_review_run_ids(project: str) -> set[str]:
     return ids
 
 
-def _report_line_reader(subject: str) -> Callable[[str], Iterator[str]]:
-    """The line reader the grammar of a ``subject`` report is written against.
-
-    The admission guard reads a report's text through the reader the parser that
-    will consume it reads through, so the two cannot disagree about which line
-    they are looking at. A plan report is Markdown, so its reader strips a
-    leading list marker and ``- FINDING …`` reads as ``FINDING …``; the health
-    grammar, which a ``code`` subject is read under, reads its lines as written.
-    The reader is selected by the same subject that selects the record builder,
-    so no call site can pair one grammar's guard with another's parser.
-    """
-    if str(subject or "").strip() == "code":
-        return _review_store._review_text_lines
-    return _review_store._plan_report_lines
-
-
-def report_carries_review_lines(text: str, *, subject: str = "") -> bool:
-    """Whether a report's text carries a RUBRIC or FINDING line.
-
-    A delivered review's report emits one line per rubric item and one per
-    finding. ``subject`` selects the grammar the text is read under, which is
-    the grammar its record will be built by, so a report is admitted on the
-    lines its own parser will see rather than on the lines some other parser
-    would. A report directory with a report file that carries neither was
-    composed and never delivered — a snapshot and a sidecar with no reviewer
-    output beside them — so it is not a review and is neither imported nor
-    counted. The default is the plan report, the permissive reading, so a caller
-    that does not know the subject admits a report rather than dropping it
-    unread.
-    """
-    reader = _report_line_reader(subject)
-    return any(
-        _review_store._PLAN_RUBRIC_LINE_RE.match(line)
-        or _review_store._PLAN_FINDING_LINE_RE.match(line)
-        for line in reader(text)
-    )
-
-
 def _delivered_status(parsed: Mapping[str, Any], rubric: str) -> str:
     """The status a delivered report's record carries, at the moment it is stored.
 
@@ -2141,19 +2103,25 @@ def _delivered_status(parsed: Mapping[str, Any], rubric: str) -> str:
 def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     """Build the store record a delivered review's sidecar and report describe.
 
-    The sidecar supplies the plan identity, the reviewed blob sha and the
-    content fingerprint; the report named by ``report_path`` supplies the
-    rubric's verdicts and findings through :func:`parse_review_report`. The
-    record carries an empty ``responses``, so its findings arrive unanswered and
-    the gate refuses until each is answered. ``review_run_id`` is the report
+    The sidecar's subject is read here, in one place, and selects the grammar
+    the report is parsed under: a ``code`` subject through
+    :func:`_code_review_record`, every other subject through
+    :func:`parse_review_report`. The sidecar supplies the plan identity, the
+    reviewed blob sha and the content fingerprint; the report named by
+    ``report_path`` supplies the rubric's verdicts and findings. A parse that
+    holds no rubric item and no finding was composed and never delivered — a
+    snapshot and a sidecar with no reviewer output beside them — so it is
+    refused here as not a review rather than stored as an empty one, and the
+    refusal names the grammar it read the report under. The record carries an
+    empty ``responses``, so its findings arrive unanswered and the
+    gate refuses until each is answered. ``review_run_id`` is the report
     directory's name, which is what makes a re-read of the same delivered report
-    idempotent. A report with no ``RUBRIC`` or ``FINDING`` line raises, so a
-    composed-but-undelivered directory is refused here rather than stored as an
-    empty review.
+    idempotent.
     """
-    if str(sidecar.get("subject") or "") == "code":
+    subject = str(sidecar.get("subject") or "").strip()
+    if subject == "code":
         return _code_review_record(sidecar)
-    if str(sidecar.get("subject") or "") == PORTFOLIO_SUBJECT:
+    if subject == PORTFOLIO_SUBJECT:
         return _portfolio_review_record(sidecar)
     report_path = Path(str(sidecar.get("report_path") or ""))
     if not report_path.is_file():
@@ -2162,13 +2130,13 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     if plan_version is None:
         raise ValueError("delivered review sidecar is missing plan_version")
     text = report_path.read_text(encoding="utf-8", errors="replace")
-    if not report_carries_review_lines(text):
-        raise ValueError(
-            f"delivered review report {report_path} carries no RUBRIC or "
-            "FINDING line, so it is not a review"
-        )
     rubric = str(sidecar.get("rubric") or "").strip()
     parsed = parse_review_report(text, rubric=rubric)
+    if not parsed["rubric_items"] and not parsed["findings"]:
+        raise ValueError(
+            f"delivered review report {report_path} carries no RUBRIC or "
+            "FINDING line of the plan grammar, so it is not a review"
+        )
     return {
         "project": str(sidecar.get("project") or "").strip(),
         "plan_slug": str(sidecar.get("plan_slug") or "").strip(),
@@ -2197,10 +2165,12 @@ def _code_review_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     neighbourhood rather than a plan version, so two reviews of one
     neighbourhood land under one key and a changed neighbourhood earns its own;
     ``review_run_id`` is the report directory the delivery was read from, which
-    is what makes a re-read of the same delivered report idempotent. A report
-    with no ``RUBRIC`` or ``FINDING`` line, or one that breaks the rubric's
-    one-treatment rule, raises here rather than being stored as a review nobody
-    made.
+    is what makes a re-read of the same delivered report idempotent. A parse
+    that holds no rubric item and no finding was composed and never delivered,
+    so it is refused here as not a review, and the refusal names the grammar it
+    read the report under; a report that breaks the rubric's one-treatment rule
+    is refused by :func:`reckon.crew.review.parse_health_review` rather than
+    being stored as a review nobody made.
     """
     report_path = Path(str(sidecar.get("report_path") or ""))
     if not report_path.is_file():
@@ -2209,12 +2179,12 @@ def _code_review_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     if not key:
         raise ValueError("delivered code review sidecar is missing neighbourhood_key")
     text = report_path.read_text(encoding="utf-8", errors="replace")
-    if not report_carries_review_lines(text, subject="code"):
+    parsed = _review_store.parse_health_review(text)
+    if not parsed["rubric_items"] and not parsed["findings"]:
         raise ValueError(
             f"delivered code review report {report_path} carries no RUBRIC or "
-            "FINDING line, so it is not a review"
+            "FINDING line of the health grammar, so it is not a review"
         )
-    parsed = _review_store.parse_health_review(text)
     return {
         "subject": "code",
         "project": str(sidecar.get("project") or "").strip(),
