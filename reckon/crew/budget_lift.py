@@ -20,6 +20,16 @@ still reports the reset the lift was granted against. Nothing runs at the
 moment it ends, so a restarted server, a dead producer or an ended session
 cannot leave a lift on.
 
+**An end once observed is final.** A reset-anchored lift's end is read from the
+group's reading at the moment of use, and a reading that flips between two
+figures — two members reporting different ``resets_at``, or a utilisation either
+side of the figure recorded at grant — would end the lift on one read and revive
+it on the next, under the same id. So the first read that observes an end stamps
+it on the record as ``ended_at`` and ``ended_cause``, and :func:`end_cause` reads
+that stamp ahead of any reading: no later reading returns the id to in force. The
+stamp is the record's own account of the end; it is written by whichever of the
+pace path and the producer's sweep first resolves the reading.
+
 **A reset is detected three ways, and any one ends a reset-anchored lift.** The
 provider may roll the window on schedule, so the newest reading's ``resets_at``
 moving past the stamp recorded at grant by at least half the clock's window ends
@@ -69,7 +79,7 @@ import json
 import math
 import os
 import uuid
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from importlib import import_module
@@ -106,6 +116,11 @@ END_CEILING = "ceiling"
 END_AT = "at"
 END_RESET = "reset"
 
+# The causes a recorded end may name, and the cause read from a record whose
+# stamp carries none: the latch exists for the reading-dependent end, so an
+# unreadable cause is reported as the reset it was stamped for.
+END_CAUSES = (END_CLEAR, END_CEILING, END_AT, END_RESET)
+
 DEFAULT_MAX_MULTIPLE = 3.0
 DEFAULT_MAX_HOURS = 168.0
 # The share of a credit cap a fresh dispatch leaves unspent for the workers
@@ -116,6 +131,7 @@ RUN_ID_ENV = "RECKON_RUN_ID"
 
 __all__ = [
     "CLOCKS",
+    "CREDITS",
     "DEFAULT_MAX_HOURS",
     "DEFAULT_MAX_MULTIPLE",
     "DRAIN_BY",
@@ -130,7 +146,6 @@ __all__ = [
     "MULTIPLE",
     "SEVEN_DAY",
     "UNCAPPED",
-    "CREDITS",
     "LiftRefusedError",
     "ceilings",
     "clear",
@@ -142,6 +157,8 @@ __all__ = [
     "list_lifts",
     "published_readings",
     "re_anchor_origin",
+    "record_observed_end",
+    "settled_document",
     "under_pace_hold",
 ]
 
@@ -550,6 +567,72 @@ def list_lifts(
     return rows
 
 
+def record_observed_end(
+    lift: dict[str, Any],
+    *,
+    readings: Sequence[Mapping[str, Any]] | None,
+    now: datetime,
+    bound: LiftCeilings,
+) -> bool:
+    """Stamp a lift's end the first time a read observes it, and no later.
+
+    A lift's end is read at the moment of use, so a reading that flips between
+    two figures ends a reset-anchored lift on one read and revives it on the
+    next. Recording the end the first time it is observed makes it final:
+    :func:`end_cause` reads ``ended_at`` ahead of every reading, so no later
+    reading returns the id to in force, and the producer emits one
+    ``lift-granted`` and one ``lift-ended`` for the id.
+
+    A lift that has not started, or that carries no grant, is never stamped,
+    because neither is an observed end. Returns whether the record changed.
+    """
+    if lift.get("ended_at"):
+        return False
+    if _parse_stamp(lift.get("granted_at")) is None:
+        return False
+    starts = _parse_stamp(lift.get("starts_at"))
+    if starts is not None and _aware(now) < starts:
+        return False
+    cause = end_cause(lift, readings=readings, now=now, bound=bound)
+    if cause is None:
+        return False
+    lift["ended_at"] = _iso(now)
+    lift["ended_cause"] = cause
+    return True
+
+
+def settled_document(
+    *,
+    readings_for: Callable[[str], Sequence[Mapping[str, Any]] | None],
+    now: datetime,
+    bound: LiftCeilings,
+    path: str | Path | None = None,
+) -> dict[str, Any]:
+    """Read the lift document, stamping every end this pass observes.
+
+    ``readings_for`` resolves one lift's group to the window readings the end is
+    judged against, exactly as the pace path and the producer's sweep each hand
+    readings over. Every lift whose end this pass observes is stamped once by
+    :func:`record_observed_end`, and the document is written back only when a
+    stamp was added, so an unchanged document costs no write.
+
+    The producer's sweep reads the document through here rather than through
+    :func:`read_document`, so the flip that would otherwise alternate a lift
+    between in force and ended is settled on the record at the first observation.
+    """
+    document = read_document(path)
+    changed = False
+    for lift in document["lifts"]:
+        readings = readings_for(str(lift.get("group") or ""))
+        changed = (
+            record_observed_end(lift, readings=readings, now=now, bound=bound)
+            or changed
+        )
+    if changed:
+        _write_document(document, path=path)
+    return document
+
+
 def effective_budget(
     config: Mapping[str, Any] | None,
     *,
@@ -601,6 +684,14 @@ def effective_budget(
         readings=readings,
         now=moment,
         path=path,
+    ):
+        stamped = True
+    if _stamp_observed_ends(
+        document,
+        group=str(group),
+        readings=readings,
+        now=moment,
+        bound=ceilings(config),
     ):
         stamped = True
     if stamped:
@@ -912,6 +1003,32 @@ def _stamp_cleared_ends(
     return _stamp_end(lift, reading=reading, lapse=cleared)
 
 
+def _stamp_observed_ends(
+    document: dict[str, Any],
+    *,
+    group: str,
+    readings: Sequence[Mapping[str, Any]] | None,
+    now: datetime,
+    bound: LiftCeilings,
+) -> bool:
+    """Stamp every end of ``group`` this read observes, once.
+
+    The pace path's half of :func:`settled_document`: a read that reaches one
+    group's lifts stamps their observed ends without touching another group's,
+    exactly as :func:`_stamp_lapsed_ends` reaches only its own group's lapse.
+    ``True`` when the document changed.
+    """
+    changed = False
+    for lift in document["lifts"]:
+        if lift.get("group") != str(group):
+            continue
+        changed = (
+            record_observed_end(lift, readings=readings, now=now, bound=bound)
+            or changed
+        )
+    return changed
+
+
 def _lapse_moment(
     lift: Mapping[str, Any],
     *,
@@ -1057,6 +1174,10 @@ def end_cause(
     the early limit reset the stamp would hide. The result is one of
     :data:`END_CLEAR`, :data:`END_CEILING`, :data:`END_AT` or :data:`END_RESET`.
 
+    An end already recorded on the lift is returned ahead of every reading, so a
+    reading that flips between two figures cannot revive the lift under the same
+    id once its end has been observed.
+
     A lift that has not yet started, or that carries no grant, is not in force
     either, but neither is an end: both answer ``None`` here, and the caller
     judging a start or a grant reads those fields directly. :func:`_in_force`
@@ -1065,6 +1186,9 @@ def end_cause(
     stopped — whether it is still in force, or what ended it.
     """
     moment = _aware(now)
+    if lift.get("ended_at"):
+        cause = str(lift.get("ended_cause") or "")
+        return cause if cause in END_CAUSES else END_RESET
     if lift.get("cleared_at"):
         return END_CLEAR
     granted = _parse_stamp(lift.get("granted_at"))
