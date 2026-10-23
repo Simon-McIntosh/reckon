@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:38:24.390Z",
+  "dispatched_at": "2026-10-23T22:26:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "done_when-1",
+      "reason": "the gate can go green while the real watch event still carries only the review run's own `run_id` (recovery_watch.py:1916), leaving the in-review row unreachable in production.",
+      "text": "\u00a714's done-when feeds the row policy a hand-built sequence only (\"a recorded sequence\"), so it never shows that `recovery_watch._watch_transition` emits the reviewed run's id that the in-review row is keyed to; the same applies to the resume clause, which has no arm at all",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:321",
+      "id": "done_when-2",
+      "reason": "a node can ship a `QueueFull`-only reading and its gate passes, yet the `ScopeConflict` case it was added for (a refusal whose text carries the D12 `reckon crew dispatch` remedy) is exactly the one whose measured misreport the section cites.",
+      "text": "\u00a712's mechanism now covers both `QueueFull` and a `ScopeConflict` naming a peer's claim, but its done-when tests only the `QueueFull` pointer and an unregistered-follower pointer, so the newly added `ScopeConflict` reading has no test arm and no base-revision negative control",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-1",
+      "reason": "a node reading the present-tense clause can treat the producer as already correct, change only `ticker.py`, and pass its row-policy gate with a producer that supplies nothing.",
+      "text": "\u00a714 says \"`_watch_transition` writes the snapshot's `run_id`, so the review run's launch event carries the reviewed run's id and node\", but the code writes the review run's own id and node (recovery_watch.py:1916-1917), and the section's own write path then directs `recovery_watch.py` \"for the reviewed run's id\" \u2014 so the plan asserts as fact the change it also assigns",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-2",
+      "reason": "naming the predicate it must change, rather than only its comment, removes the one sentence that could send a node to edit the wrong rule and stop short of the landing row its own done-when requires.",
+      "text": "\u00a714 attributes suppression of landed and dropped rows to `_observer_exception` and prescribes narrowing it \"so a settled row is carried\", but `RowPolicy.feed` filters every released row through `stream_carries` (ticker.py:1606), and a landed or dropped word is neither in `CARRIED_PANE_WORDS` ({delivered, halted}) nor a coordinator kind, so it is dropped there whatever `_observer_exception` returns; the section's only related instruction is to \"name the rule the comment above CARRIED_PANE_WORDS now states\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7ce132fc4c6ae1bd81bf3f94b740ed78dee4d4367afee1c09f1f501d46c0edf7",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 39,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T222515784173-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "1c13ccdda63c7b90ceac8d901d09cd4bc7e7c9b4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_queued_failure_remedy` (recovery_classification.py:124), `_is_lane_hold` (queue_admission.py:502), `_retry_backoff_hold` (:676), `_watch_transition` (recovery_watch.py:1885), `transition_class` (ticker.py:1137), `_observer_exception` (:1514), `_is_own_start` (:1381) and `CARRIED_PANE_WORDS` (:360) all resolve at HEAD.",
+    "done_when": "a finding \u2014 \u00a714's done-when never exercises the producer that must emit the reviewed run's id, and \u00a712's done-when has no arm for the `ScopeConflict` branch it adds.",
+    "evidence_paths": "pass \u2014 both sections put their evidence in tests and a gate log under the run record, not in a node-local or session path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the symbols and paths either section names.",
+    "reasoning": "a finding \u2014 \u00a714 states that a review run's launch event already carries the reviewed run's id while its own write path says the producer must be changed to carry it, and the `_observer_exception` narrowing it prescribes cannot carry a landed row because `feed()` filters every released row through `stream_carries` afterwards.",
+    "single_goal": "pass \u2014 \u00a712 changes one reading of a queued failure, \u00a714 one row policy's carried set; each is closable on one verdict.",
+    "wiring": "pass \u2014 \u00a712's ordering on `recovery_classification.py` and \u00a714's on `ticker.py`/`recovery_watch.py` agree with the followup driver (`f-alwh-002`) and with \u00a75 and \u00a713; every declared dependency names a node that exists."
+  },
+  "section_digests": {
+    "_document": "06b6bffb1430e5d0b3aaec84c099dc6755869214442e32f0b25b108c69b81029",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "e0b5af8363283f49e2bc1e55fb1fb10c228882ad609d60b6a9276a2e05be805b",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "5b5b1cd61644ef4b90bc9445b9a82d0728d086b24b1029fc4cb355da09793bac",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:42:52.582021+00:00"
+}
