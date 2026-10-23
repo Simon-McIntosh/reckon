@@ -571,14 +571,21 @@ def launch_search_path(
     environment: Mapping[str, str] | None = None,
     *,
     facts: Any | None = None,
+    fenced: bool = False,
 ) -> str:
     """Return the effective worker PATH for one launch.
 
-    The git shim is first on every worker's path, inside an allocation or out
-    of one: it refuses a mutating verb aimed at a repository other than the
-    run's worktree, which is a hazard wherever the worker runs. The scheduler
-    shims follow it only inside an allocation, because there is no scheduler
-    out of one to refuse.
+    The git shim is first on an unfenced worker's path, inside an allocation or
+    out of one: it refuses a mutating verb aimed at a repository other than the
+    run's worktree, which is a hazard wherever the worker runs. A fenced worker
+    does not carry it. The fence already seals every checkout under the code
+    root and every other worktree in the pool read-only, and re-opens only the
+    run's own worktree, its git directory and the shared object store, so the
+    kernel refuses the same writes the shim would. The shim starts an
+    interpreter on every git call, about 1,900 file operations on shared
+    storage, and a fenced fleet spent that on a guarantee it already had. The
+    scheduler shims follow only inside an allocation, because there is no
+    scheduler out of one to refuse.
 
     An inherited entry holding a reckon shim for any of those tools is dropped,
     whichever checkout it belongs to. A dispatch from a worktree or a copy of
@@ -591,12 +598,17 @@ def launch_search_path(
     merged = {**os.environ, **(environment or {})}
     inherited = str(merged.get("PATH") or os.defpath)
     placement = _current_host_facts() if facts is None else facts
-    directories = [str(_worker_git_shim_directory())]
+    git_shims = str(_worker_git_shim_directory())
+    directories = [] if fenced else [git_shims]
     if placement.in_allocation:
         directories.append(str(_worker_shim_directory()))
-    resolved = {os.path.realpath(directory) for directory in directories}
+    # An inherited git shim is dropped even when this launch prepends none, so
+    # a fenced worker's git resolves to the real tool rather than to a shim
+    # some other checkout left on the path it inherited.
+    stripped = [git_shims, *directories]
+    resolved = {os.path.realpath(directory) for directory in stripped}
     shimmed = sorted(
-        {name for directory in directories for name in _shim_names(directory)}
+        {name for directory in stripped for name in _shim_names(directory)}
     )
     inherited_entries = [
         entry
@@ -620,6 +632,7 @@ def _persisted_worker_environment(
     environment: Mapping[str, str] | None = None,
     *,
     facts: Any | None = None,
+    fenced: bool = False,
 ) -> dict[str, str]:
     """Return only the launch overlay safe to persist in a run record."""
     persisted = dict(environment or {})
@@ -641,7 +654,7 @@ def _persisted_worker_environment(
         else:
             persisted.pop("ANTHROPIC_CUSTOM_HEADERS", None)
     placement = _current_host_facts() if facts is None else facts
-    persisted["PATH"] = launch_search_path(environment, facts=placement)
+    persisted["PATH"] = launch_search_path(environment, facts=placement, fenced=fenced)
     # The worker shims on that PATH start an interpreter that can import the
     # package. A launch composed out of a composing process that runs out of a
     # reload image or any tree without a ``.venv`` has none to fall back on, so
@@ -2068,7 +2081,9 @@ def _supervisor_spec(
         "plan": {
             "argv": list(plan.argv),
             "cwd": plan.cwd,
-            "environment": _persisted_worker_environment(plan.environment, facts=facts),
+            "environment": _persisted_worker_environment(
+                plan.environment, facts=facts, fenced=fenced
+            ),
             "dialect": plan.dialect,
             "backend": plan.backend,
         },
