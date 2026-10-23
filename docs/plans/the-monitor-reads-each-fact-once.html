@@ -21,10 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
   <main class="plan-doc">
@@ -94,7 +96,7 @@
     <p>Evidence: the reload family reads 169 passed, 0 failed.</p>
 
     <h2 id="s4">§4 — A live pointer is read again only when it changes</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>Written in session on 2026-10-22, commit <code>7caa327ef</code>, not yet merged. A 15 s trace showed
     34.4 of a follower's 34.7 MB read were live pointers, each re-read about every 1.2 s.
     <code>runs._list_live_records</code> and <code>runs.read_pointer</code> now keep each pointer's text per
@@ -229,18 +231,27 @@
     of today's event log replayed through the station. The before and after figures are recorded in the
     RCA. Negative control: the same window measured with the old followers running shows the old figures.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-tmref-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build the-monitor-reads-each-fact-once §4" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Land the pointer read, then build the station store</h4>
-        <div class="r-fu-body"><p>§4 lands when its population run reads zero added failures. §5 and §6 can start at once; §7 follows §6.</p></div>
-        <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §4</pre>
-      </article>
-    </section>
-  </main>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tmref-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build the-monitor-reads-each-fact-once §4" data-resolved-at="2026-10-23T13:20:10+00:00" data-resolved-by="reckon-build">
+    <h4 class="r-fu-title">Land the pointer read, then build the station store</h4>
+    <div class="r-fu-body"><p>§4 lands when its population run reads zero added failures. §5 and §6 can start at once; §7 follows §6.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §4</pre>
+    <p class="r-fu-outcome">§4 landed (merge 57e274889, test repair 99e614314); a follower reads 0.10 MB of pointers in 15 s. The station store §5 is next, after the plan's first content and design reviews.</p>
+    </article>
+<article class="r-fu" data-id="f-tmref-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-23 13:25" data-recommends-skill="/reckon-build the-monitor-reads-each-fact-once §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Review the plan, then build the station store</h4>
+    <div class="r-fu-body"><p>No content or design review has read §5–§12 yet, so the first build node waits on both. §5 and §6 can then start together; §7 follows §6.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §5</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-23T13:20:00Z">
+    <div class="r-comment-body"><p>§4 landed: merge <code>57e274889</code>; one population failure was added and then repaired in <code>99e614314</code>, and it passes at main. A follower read 0.10 MB of pointers in 15 s, against the 1 MB bound (34.4 MB before). <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s4">evidence</a></p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

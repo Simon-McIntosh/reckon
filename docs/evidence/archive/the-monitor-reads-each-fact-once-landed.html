@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once-landed">
+  <meta name="plan-title" content="The Monitor Reads Each Fact Once — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Monitor Reads Each Fact Once: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-verdict" content="qualified">
+  <title>The Monitor Reads Each Fact Once — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Monitor Reads Each Fact Once — landed record</h1>
+  <p>Closure synthesis for The Monitor Reads Each Fact Once: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s4">
+    <h2>§4 — A live pointer is read again only when it changes</h2>
+    <p>The pointer cache (commit <code>7caa327ef</code>) merged in <code>57e274889</code>. Each done-when clause, checked on 2026-10-23:</p><ul><li><strong>Population.</strong> Over the 472 pointer-importing test files (job 1293311, logs under <code>~/.cache/reckon-pointer-population/</code>), base read 49 failed and head 54. Re-running the added ids left one that reproduced, <code>tests/test_crew_live_listing.py::test_live_pointer_removed_between_scan_and_read_is_skipped</code> (<code>added-head.log</code>). Commit <code>99e614314</code> repaired the test: it now clears the kept pointer text before its second listing, because an unchanged pointer is no longer re-read. At main on 2026-10-23 the file reads 1 passed (<code>~/.cache/reckon-storage-rca/live-listing-main.log</code>).</li><li><strong>Merged.</strong> <code>57e274889</code> is reachable from main, and the running follower image carries the cache.</li><li><strong>Measure.</strong> A 15 s <code>strace</code> of follower pid 3672663 (session efd0ee8c, project reckon) at about 13:10Z read 0.10 MB from live pointers, against the 1 MB bound and the 34.4 MB measured before the change.</li></ul>
+  </section>
+
+</main>
+</body>
+</html>
