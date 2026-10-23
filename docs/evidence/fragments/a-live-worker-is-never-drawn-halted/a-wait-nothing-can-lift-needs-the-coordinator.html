@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="A wait nothing can lift says it needs the coordinator">
+  <meta name="plan-summary" content="A declared wait whose worker recorded its own end for the current attempt, and whose condition probe produced no answer at all, is drawn halted and offered a resume instead of the sweep promise no probe will ever satisfy.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s10">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,recovery,wait,classification">
+  <title>A wait nothing can lift says it needs the coordinator — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="a-wait-nothing-can-lift-needs-the-coordinator-note" class="r-note" data-node="a-wait-nothing-can-lift-needs-the-coordinator" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="a-wait-nothing-can-lift-needs-the-coordinator-head">A wait nothing can lift says it needs the coordinator</h2>
+  <p id="a-wait-nothing-can-lift-needs-the-coordinator-rule">The recovery sweep resumes a declared wait only when the condition probe reports a declared terminal state. A probe that cannot answer at all — the command failed, or could not be run — will never report one, so a row that keeps reading <code>waiting</code> with "the recovery sweep will resume run … when the condition test reports a terminal state" sends the coordinator to a mechanism that is not going to act. When the worker has also recorded its own end for the current attempt, the run is classified <code>stalled</code> (pane word <code>halted</code>) and the next action names <code>reckon crew resume</code>. A worker still live, and a probe that answers with a state outside the declaration's terminal list, are unchanged: both are waits the sweep can still carry.</p>
+  <p id="a-wait-nothing-can-lift-needs-the-coordinator-mechanism">In <code>reckon/crew/recovery_classification.py</code> two helpers are added beside <code>classify_pointer</code>. <code>_the_probe_did_not_answer</code> reads the probe reader's own failure details — <code>condition probe could not answer</code> and <code>condition probe did not answer successfully</code>; both normalise to state <code>unknown</code>, which is why the state alone cannot tell a failed probe from a probe that answered a non-terminal state. <code>_exit_record_ends_the_current_attempt</code> accepts the run's exit record only when its stamped attempt is the run's current one, so a record left by the attempt a resume replaced cannot stand for the attempt now running. One <code>elif</code> in the valid-wait arm composes the halted reading, placed after the two met-condition arms so a met condition still offers its resume first.</p>
+  <p id="a-wait-nothing-can-lift-needs-the-coordinator-gate">Head gate: <code>tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py</code>, 3 passed in 2.65&nbsp;s, <code>EXIT=0</code>, with <code>module.__file__</code> naming this worktree's <code>recovery_classification.py</code>. The first fixture carries a declared wait, <code>attempt.json</code> and an <code>exit.json</code> stamped attempt 1, and a probe (<code>test -e &lt;absent path&gt;</code>) that exits non-zero: the row is <code>stalled</code>, the pane word <code>halted</code>, the next action contains <code>reckon crew resume</code> and not <code>the recovery sweep will resume</code>, and the detail says the probe did not answer. The live-worker arm holds a child process as the run's pid and stays <code>waiting</code> with the sweep promise; the non-terminal arm's probe prints <code>RUNNING</code> (exit 0, outside <code>COMPLETED</code>/<code>FAILED</code>) over an ended worker and also stays <code>waiting</code>. A focused suite of 23 wait and recovery test files, 345 tests, passed at head (<code>EXIT=0</code>).</p>
+  <p id="a-wait-nothing-can-lift-needs-the-coordinator-mutation">Negative control, the declared mutation — restore the base wait arm so an unanswering probe keeps the sweep promise: HEAD is extracted with <code>git archive</code> into a scratch tree under <code>$TMPDIR</code>, this node's new test is copied in, and the run exits <code>1</code>. The first fixture fails at <code>assert 'waiting' == 'halted'</code> while the live-worker and non-terminal arms pass, which is the base reading the change is measured against. Log: <code>negative-control-base-arm.log</code> in the run directory.</p>
+  <p id="a-wait-nothing-can-lift-needs-the-coordinator-ruff">Ruff adds no findings on the staged paths: <code>ruff check</code> reports the one pre-existing <code>UP017</code> in <code>recovery_classification.py</code> at both base and head (line 820 at base, 867 at head — the same finding, shifted by the added helpers) and none in the new test; <code>ruff format --check</code> is clean on both.</p>
+</article>
+</body>
+</html>
