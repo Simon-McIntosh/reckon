@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:39:17.105Z",
+  "dispatched_at": "2026-10-23T22:30:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a78 from this sentence builds the cycle graph without the section \u2192 implementing-request edge and ships a silent deadlock instead of a queue-time refusal, so the refusal rule needs that edge named (or an `--after` whose target waits on the section the new request implements refused).",
+      "text": "\u00a78 asserts \"An `--after` ref names only a request that already exists, so it cannot close a cycle; a cycle can only arrive through section refs\", but a section wait is satisfied by a request that is queued for that section, and that request may itself carry `--after` the older one: if request X waits on section `A#s1` and request Y is then dispatched for `A#s1` with `--after X`, X waits for `A#s1` to be declared done (which only Y's landing does) while Y waits for X to land \u2014 a cycle with no `--after`-only edge and no section-ref cycle, so a cycle check built to the stated rule accepts both, and both sit `awaiting-upstream` forever (they are not `queued`, so \u00a714's \"no request sat `queued` for more than an hour without a recorded verdict\" measure does not catch it either",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "87b3b806149e7ea6a740b13efa71848effa96c5c67d64eabd238f4479fb16062",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 29,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T22:40:11.014701+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:40:11.014701+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v29.json",
+  "review_run_id": "r-20261023T222920180890-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "954852b85873b5bf14d19205658ca248b799cd38",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified in the tree: `TERMINAL_MANIFEST_STATUSES`/`MANIFEST_STATUSES` at `reckon/crew/reports.py:126,138` (none of `completed`, `done`, `landed`, `promoted` is a member, so `parse_manifest` refuses them as claimed); `run_ids` at `reckon/ledger.py:1019`; `_promoted_run_ids` at `reckon/crew/recovery_repair_dispatch.py:550` and it does wrap `ledger.run_ids`; `parse_plan_ref` at `reckon/_schema.py:276`; `admit_once` at `reckon/crew/queue_admission.py:1049`; `_dispatch_lane_allowance` and its `lane_document` read at `reckon/crew/dispatch_plan.py:1565,1578`; `reckon/crew_dispatch_commands.py` and `reckon/crew/node.py` exist. Run files beside a project's ledger are written by promotion (`reckon/crew/runs.py:1560` says so in `_promoted_record_project`), so the new \"landed means the run's id is in its project's ledger\" predicate reads delivered-and-landed, not merely dispatched.",
+    "done_when": "pass \u2014 s8 names a negative arm (B#s2 declared done before queuing, so the request goes straight to `queued`), a `blocked` closure arm, a `failed` closure arm and a complete-but-unlanded arm that discriminates landing from delivery; s15's arms fail on today's code (`awaiting-upstream` and the local fallback do not exist) and its negative arm keeps the pre-change path.",
+    "evidence_paths": "pass \u2014 s8's write paths are the named modules and a new test file, and the gate logs it produces sit under the run directory as \u00a72 and \u00a75 state.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach a symbol or a comment in either unit.",
+    "reasoning": "a finding \u2014 s8's new cycle claim (\"an `--after` ref ... cannot close a cycle; a cycle can only arrive through section refs\") is false once a section wait is expanded to the queued request that will deliver that section, so the check it justifies misses a reachable deadlock.",
+    "single_goal": "pass \u2014 s8 is the DAG wait derivation and its queue-time refusal; s15 is routing at enqueue plus the readiness/fallback decision for a routed request, which are two halves of one decision about where a ready request runs.",
+    "wiring": "pass \u2014 s8 declares s2 and s15 declares s4/s7/s8, both correct; \u00a715's use of \u00a75's `crew queue edit` route is covered transitively through s4 \u2192 s5 \u2192 s2, and the build order in `f-aqhwp-001` lands \u00a75 before \u00a715."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "1157276db12e8a7f91f5993e9a9a44f3bc56ab936b9c0b9763c2c8379a73af2a",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:40:00.224784+00:00"
+}
