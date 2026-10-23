@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T19:52:31.531Z",
+  "dispatched_at": "2026-10-23T19:36:57Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-long-lived-crew-process-leaves-nothing-stale.html:37",
+      "id": "reasoning-1",
+      "reason": "the implementer must be told the rule keys on the remedy the refusal publishes (the review-command pattern first, `max` by length), not on whether the text contains any dispatch invocation, or the node builds a rule that fails its own second negative case.",
+      "text": "\u00a72's rule says `_queued_failure_remedy` returns no remedy \"for a refusal that quotes a `reckon crew dispatch` invocation among its remedies\", but the plan-review gate's own refusal text quotes a dispatch invocation as well as the review command: `reckon/crew/refusals.py` D23 renders \"Resolve with `reckon crew review` for the plan, ... then `reckon crew dispatch`; or `reckon crew dispatch --allow-unreviewed-plan` to waive the review\". The section's done-when on line 38 requires that same `PlanReviewMissing` failure to still yield `queued-awaiting-session` with its `reckon crew review` command, and `_remedy_command_stated_by` only returns the review command because `_QUOTED_REVIEW_COMMAND` is tried before `_QUOTED_COMMAND` with `max(..., key=len)`. A literal implementation of the deliverable's wording therefore contradicts the deliverable's own test, and the two halves of the section disagree about which remedy the rule inspects",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-long-lived-crew-process-leaves-nothing-stale.html:43",
+      "id": "wiring-1",
+      "reason": "if the station replaces the producer before \u00a73 lands on it the reap is written into a loop that is deleted, and if \u00a73 lands first the station must be told to carry the call, so the plan needs the dependency declared in the direction it actually runs and \u00a73 needs to name the station tick beside `watch_ticker`",
+      "text": "\u00a73 adds its reap call to `recovery_watch.watch_ticker`, described as \"the producer loop ... on each tick\", but `docs/plans/the-monitor-reads-each-fact-once.html` \u00a77 is titled \"One station per node replaces the per-project producers\" and is declared `implementable`, so the producer that \u00a73 patches is the process another active plan retires; the plan records that relationship as `plan-informs: the-monitor-reads-each-fact-once`, which is the reciprocal of `depends-on` and therefore states that the station plan depends on this one, when the coupling runs the other way \u2014 this plan's \u00a73 call site is owned by the station plan's outcome",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-long-lived-crew-process-leaves-nothing-stale.html:31",
+      "id": "anchors_resolve-1",
+      "reason": "the anchor resolves and the plan states the pids, timestamps and run id in its own prose, so the root cause does not rest on \u00a710; the citation is a provenance pointer that a reader will find empty, not a claim the plan argues from.",
+      "text": "\u00a71 offers `monitor-storage-load-rca \u00a710` as the record in which both findings were made, but \u00a710 (\"A second reading on 2026-10-23: what still loads the node\") contains neither: it holds no zombie, no pid (4098806, 1527007, 464271 all absent), no run id (`135622629487` absent) and no `UnreconciledRuns` refusal, and its own closing line says it \"confirms \u00a73's diagnosis and adds one cause \u00a73 did not name: the workers themselves\", naming only file-syscall readers",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "9f4ce108bcb54093be98db6415e1d79cfff53758d7e0d62de27fc5742bf02b50",
+  "plan_slug": "a-long-lived-crew-process-leaves-nothing-stale",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T192420260856-plan-review-of-a-long-lived-crew-process-leaves-nothing-stale",
+  "reviewed_blob_sha": "979c3e65df95d3c24e284219f1c9a6ef3a15433e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every file, symbol and href the plan cites resolves (`recovery_classification._queued_failure_remedy`, `queue_admission.admit_until_stopped`, `recovery_watch.watch_ticker`, `process_signal.py`, `dispatch_launch._export_launched_workers_for_reexec`, the `follower_reload` module, `/reckon/research/monitor-storage-load-rca#s10` with `.html` appended), but \u00a71's citation of \u00a710 does not carry the two findings it is offered as the record of.",
+    "done_when": "pass \u2014 each section names a test file, a measurable outcome, and an explicit negative control (`\u00a72` \"without the dispatch-remedy rule, the first two cases report `queued-awaiting-session` and fail\"; `\u00a73` \"a helper that records no children leaves the inherited child a zombie\").",
+    "evidence_paths": "pass \u2014 the evidence the plan names is test files under `tests/` in the repository and code paths in `reckon/crew/`; no gate log, scratchpad or node-local path is named.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag appears as or inside a symbol, filename or comment; `reap_inherited_children` and both test filenames are named by mechanism.",
+    "reasoning": "a finding \u2014 \u00a72's rule as written (\"a refusal that quotes a `reckon crew dispatch` invocation among its remedies\") strips the duty from the plan-review gate's refusal, which the same section's done-when requires to keep it.",
+    "single_goal": "pass \u2014 \u00a72 is one change to `_queued_failure_remedy`; \u00a73 is one helper plus its three named call sites; \u00a71 carries no deliverable (`done`), and the followup builds \u00a72 and \u00a73 together.",
+    "wiring": "a finding \u2014 \u00a73 patches `recovery_watch.watch_ticker`, the per-project producer loop that `the-monitor-reads-each-fact-once` \u00a77 (status `implementable`) is planned to replace, and the plan declares that relationship only as `plan-informs`, in the direction that says the station plan depends on this one."
+  },
+  "section_digests": {
+    "_document": "6d0a56a07732aba8db99e59b88fc77180fac34542c9d47c7dab019853970217e",
+    "s1": "bb26a13eebb02bc978c0806e685cbb49dc60b44e2caec6f13c4aa409c017b82a",
+    "s2": "0fbab6d1f3db2b3eee597a546d688589a30214fbcd197879112367eeca14c05e",
+    "s3": "fe48e07b2ca9b8a57fa24e89e63eeb054c011df847eb6628473426bf9fab6634"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T20:02:49.801746+00:00"
+}
