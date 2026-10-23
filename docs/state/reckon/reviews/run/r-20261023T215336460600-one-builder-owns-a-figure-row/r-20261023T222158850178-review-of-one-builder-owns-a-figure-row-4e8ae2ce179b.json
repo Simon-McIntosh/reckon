@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:1671",
+    "reckon/metadata_index.py:920",
+    "reckon/figures.py:221"
+  ],
+  "call_sites_emitted": true,
+  "completed_at": "2026-10-23T22:34:27.840Z",
+  "dispatched_at": "2026-10-23T22:23:16Z",
+  "findings": [
+    {
+      "file": "tests/test_one_builder_owns_a_figure_row.py",
+      "line": "166",
+      "severity": "non-blocking",
+      "text": "the agreement loop asserts index_row[field] == inventory_row[field] for slug, type and href, and both sides come from the same builder call, so the two move together: a builder emitting a wrong href (for example one omitting the project segment) leaves this assertion true. Slot/title are anchored by independent literals elsewhere in the file (the slug set at :157, the capture title at :185-187), but type and href are not; asserting href and type against literals would make this case fail on the regression it exists to catch."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T215336460600-one-builder-owns-a-figure-row/gates/revision-file.log",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "the log's final line is EXIT=0 although the armed arm directly above reports 2 failed / 8 passed; the exit status belongs to the enclosing script rather than to the armed run, so a reader taking the log's last line as the arm's receipt reads the armed fixture as unaffected when it was red. Ending the log with the armed run's exit code would make the receipt answer its own question."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "searched the repository for the builder's callers: reckon/serve.py:1671 renders the figures route from figure_rows, reckon/metadata_index.py:920 maintains the index through _figure_index_row, and reckon/figures.py:221 is the inventory's own call.",
+    "diff": "read commit by commit against 93df13695: 4f15b18ba moves the derivation into figure_row and deletes _figure_row, 472a9ffc9 re-points the revision fixture at metadata_index._figure_revision, and 4e8ae2ce1 adds only the evidence fragment; 431 insertions and 65 deletions over five files.",
+    "done_when": "the done_when names tests/test_one_builder_owns_a_figure_row.py and the re-pointed fixture in tests/test_a_figure_revision_is_fetched_once.py; the manifest's tests line and gates/population.log (39 files, 204 passed, EXIT=0), gates/negative-control.log (four arms, each EXIT=1 with a distinct failing id) and gates/revision-file.log record those runs, though the window check at gates/window-and-builder.log ran the head arm only (8 passed), which the plan explicitly leaves the population's base comparison to the coordinator at merge.",
+    "goal": "the node goal is to make one public builder in reckon/figures.py the only source of every figure row; reckon/figures.py:135 adds figure_row, figure_rows calls it at :221 for each file, reckon/metadata_index.py:1246 builds its row by calling it and adding only the stamps, revision and empty lifecycle fields projected onto ROW_FIELDS, and _figure_row no longer exists in metadata_index at head.",
+    "manifest": "read; it records status complete, commits 4f15b18ba/472a9ffc9/4e8ae2ce1, the population and negative-control results, and the landed builder relationship, while baseline_suite and after_suite are null because the plan reserves the population base arm for the coordinator.",
+    "write_paths": "the manifest declares six paths; the diff 93df13695..4e8ae2ce1 touches exactly five files (reckon/figures.py, reckon/metadata_index.py, tests/test_one_builder_owns_a_figure_row.py, tests/test_a_figure_revision_is_fetched_once.py, docs/evidence/fragments/the-page-paints-from-an-index/one-builder-owns-a-figure-row.html) and every one of them is inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_one_builder_owns_a_figure_row.py:203 asserts the revision against a formula computed in the test, and :157, :168-183 assert literal slugs, dimensions and rendered dims, while the four mutation arms are each red; the agreement loop at :166-167 is weaker for href and type because both sides come from the same builder.",
+    "evidence": "gates/population.log records 204 passed EXIT=0 over the 39 importing files and gates/negative-control.log records four arms each red with distinct ids, but added_failure_count is 0 with no ids only because the reviewed manifest leaves baseline_suite and after_suite null and the plan defers the population's base arm to the coordinator at merge, so no added-failure comparison exists to derive from.",
+    "fit": "reckon/figures.py:135 follows the module's existing public-function idiom and its underscore helpers, time and dimension readers are reused rather than restated, and no added name carries a plan, stage or ticket label.",
+    "goal_fidelity": "reckon/metadata_index.py:1246 now calls figures.figure_row and adds only stamps, revision and the empty status/sprint/archived before projecting onto ROW_FIELDS, and no private figures name remains in metadata_index at head.",
+    "reuse": "a capability search over reckon/ for a single-row figure builder found no other owner: figure_row is the first and only builder, _figure_revision at reckon/metadata_index.py:1215 wraps the existing reckon.file_memo.file_revision rather than restating the revision formula, and the addition extends that owner.",
+    "scope_discipline": "the three commits touch exactly the five files listed in the manifest's declared write paths and nothing else in the tree."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261023T222158850178-review-of-one-builder-owns-a-figure-row-4e8ae2ce179b",
+  "reviewed_base_sha": "93df13695c1ffebe90f5ccba470b860eb12dbd52",
+  "reviewed_head_sha": "4e8ae2ce179bc144a23664f2a1700f76d86b637e",
+  "reviewed_run_id": "r-20261023T215336460600-one-builder-owns-a-figure-row",
+  "reviewer": {
+    "backend": "local",
+    "effort": "standard",
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261023T222158850178-review-of-one-builder-owns-a-figure-row-4e8ae2ce179b",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:36:00.000000+00:00",
+  "total": 109
+}
