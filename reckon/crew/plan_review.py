@@ -2077,27 +2077,18 @@ def _stored_code_review_run_ids(project: str) -> set[str]:
     return ids
 
 
-def _delivered_status(parsed: Mapping[str, Any], rubric: str) -> str:
+def _delivered_status(parsed: Mapping[str, Any]) -> str:
     """The status a delivered report's record carries, at the moment it is stored.
 
-    A content review of the plan is the review the plan owes before it is
-    built, so a report that leaves out one of its brief's items has not
-    answered a check it owed: its record is marked :data:`INCOMPLETE_STATUS`
-    rather than stored as a finished review, and it covers nothing. The mark is
-    decided here, against the rubric the report was delivered under, because
-    that is where the rubric the review was asked for is known.
-
-    A design review is not marked: it is owed once at any version as the plan's
-    search of the codebase for machinery it could reuse, and a partial one is
-    read for what it answered rather than withdrawn — which is how every review
-    stored before this mark is read. A report that answered every item of its
-    rubric stores as :data:`DEFAULT_STATUS`, exactly as before.
+    A report that leaves out one of its brief's items has not answered a check
+    it owed, whatever rubric it was delivered under — content and design alike:
+    its record is marked :data:`INCOMPLETE_STATUS` rather than stored as a
+    finished review, and it covers nothing. A report that answered every item
+    of its rubric stores as :data:`DEFAULT_STATUS`, exactly as before. The mark
+    is decided here, from the parse's absent items, because that is where the
+    rubric's shortfall is known.
     """
-    incomplete = (
-        _review_store.plan_report_rubric_name(rubric) == "plan_review"
-        and parsed["absent_items"]
-    )
-    return INCOMPLETE_STATUS if incomplete else DEFAULT_STATUS
+    return INCOMPLETE_STATUS if parsed["absent_items"] else DEFAULT_STATUS
 
 
 def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
@@ -2147,7 +2138,7 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
         "section_digests": dict(sidecar.get("section_digests") or {}),
         "findings": parsed["findings"],
         "responses": {},
-        "status": _delivered_status(parsed, rubric),
+        "status": _delivered_status(parsed),
         "review_run_id": report_path.parent.name,
         "rubric_items": parsed["rubric_items"],
         "absent_items": parsed["absent_items"],
