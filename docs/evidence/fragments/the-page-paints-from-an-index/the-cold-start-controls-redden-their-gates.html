@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="A page paints from the index, and derived state arrives when ready">
+  <meta name="plan-summary" content="Landing record: both cold-start controls run against a temporary reckon serve, each reddening its own gate.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s7">
+  <meta name="plan-commits" content="ee455c91e">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="serve,cold-start,negative-control,index,discovery">
+  <title>Cold-start controls — landing | reckon">
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-cold-start-controls-redden-their-gates" data-reckon="landed" data-when="2026-10-23">
+  <h2 id="the-cold-start-controls-redden-their-gates-landing">Cold-start controls: both redden their own gate</h2>
+  <p>Node <code>the-cold-start-controls-redden-their-gates</code> landed the two negative controls
+  of &sect;7 as a three-arm run against temporary <code>reckon serve</code> processes started from
+  the worktree's code at <code>ee455c91e</code> on <code>98dci4-clu-2068</code>, under a scratch
+  configuration home holding the operator's mounts file restricted to four projects. The port
+  control (arm B) answers <code>/_projects/mounts.json</code> at 28.68&nbsp;s against the baseline's
+  4.27&nbsp;s, so the 5&nbsp;s port gate fails as declared. The index control (arm C) shows four
+  cold <code>/_index</code> rows at or above the 1&nbsp;s ceiling (45.95, 7.79, 5.02,
+  3.07&nbsp;s), so the index gate fails as declared. Arm A is recorded whatever it is, and the
+  baseline itself is over the index ceiling for <code>reckon</code> in both passes.</p>
+  <p>The full table, the per-request timings and the two listings of the operator's index directory
+  are in <a href="/evidence/fragments/the-page-paints-from-an-index/the-cold-start-controls">the
+  cold-start controls record</a>. Logs, harness and raw timings sit under the run directory
+  <code>.../runs/r-20261023T065110156872-.../s7-controls/</code>.</p>
+</article>
+</body>
+</html>

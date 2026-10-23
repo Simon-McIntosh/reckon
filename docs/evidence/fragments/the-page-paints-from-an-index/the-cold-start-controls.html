@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="A page paints from the index, and derived state arrives when ready">
+  <meta name="plan-summary" content="The two negative controls of the cold-start measure, run against a temporary reckon serve: the port control delays the answer past its ceiling, the index control forces a cold derive in the first pass.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s7">
+  <meta name="plan-commits" content="ee455c91e">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="serve,index,discovery,cold-start,negative-control">
+  <title>The first paint, cold after a restart — controls | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-cold-start-controls-redden-their-gates" data-reckon="landed" data-when="2026-10-23">
+  <h2 id="the-cold-start-controls-redden-their-gates-head">The two cold-start controls each redden their own gate</h2>
+
+  <p>Both negative controls of &sect;7 were run against a temporary <code>reckon serve</code>
+  started from the worktree's own code at <code>ee455c91e</code>, on node
+  <code>98dci4-clu-2068</code>, under a scratch configuration home holding a copy of the
+  operator's mounts file restricted to <code>reckon</code>, <code>nova</code>,
+  <code>imas-codex</code> and <code>imas-efit</code>. Each arm is
+  one start measured cold and again at least 60&nbsp;s later. Every request was served on a free
+  localhost port; nothing was sent to port 8765.</p>
+
+  <h3 id="the-cold-start-controls-redden-their-gates-port-clause">The port clause</h3>
+
+  <p>The port control makes <code>_FleetChangeWatch.start</code> arm every successive tree on the
+  calling thread with a 5&nbsp;s delay per tree, applied to a scratch copy of the worktree's
+  <code>reckon/</code> package. The socket is bound and listening throughout: arm B accepted a TCP
+  connect 2.09&nbsp;s after the start while answering nothing until 28.68&nbsp;s. A TCP connect is
+  not the measure, so it is recorded beside it.</p>
+
+  <table id="the-cold-start-controls-redden-their-gates-port-table">
+    <thead>
+      <tr><th>arm</th><th>code</th><th>TCP connect</th><th>listening line</th><th><code>/_projects/mounts.json</code> 200</th><th>5&nbsp;s port gate</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>A baseline</td><td>worktree</td><td>2.50&nbsp;s</td><td>2.50&nbsp;s</td><td><strong>4.27&nbsp;s</strong></td><td>PASS</td></tr>
+      <tr><td>B port control</td><td>scratch copy + mutation</td><td>2.09&nbsp;s</td><td>28.43&nbsp;s</td><td><strong>28.68&nbsp;s</strong></td><td>FAIL &mdash; the control reddens it</td></tr>
+      <tr><td>C index control</td><td>worktree</td><td>2.70&nbsp;s</td><td>2.70&nbsp;s</td><td><strong>4.07&nbsp;s</strong></td><td>PASS</td></tr>
+    </tbody>
+  </table>
+
+  <p>Arm B answers 24.4&nbsp;s later than arm A, about the declared 5&nbsp;s times the four mounted
+  trees, so the control isolates the arming delay rather than a slower host. The port clause of the
+  served gate fails in arm B as declared.</p>
+
+  <h3 id="the-cold-start-controls-redden-their-gates-index-clause">The index clause</h3>
+
+  <p>A first start served one <code>/_index</code> read per project, writing the scratch home's
+  persisted metadata index for all four (<code>reckon</code> 32.57&nbsp;s, <code>nova</code>
+  11.67&nbsp;s, <code>imas-codex</code> 3.89&nbsp;s, <code>imas-efit</code> 3.68&nbsp;s). Arm A is
+  the next start with that index on disk. Arm C is the same start with the scratch home's four
+  index files removed first. Wall time and status, seconds, requested by project name:</p>
+
+  <table id="the-cold-start-controls-redden-their-gates-index-table">
+    <thead>
+      <tr>
+        <th rowspan="2">arm</th><th rowspan="2">pass</th>
+        <th colspan="4"><code>/_index/&lt;project&gt;</code></th>
+        <th colspan="4"><code>/_discover/&lt;project&gt;</code></th>
+      </tr>
+      <tr>
+        <th>reckon</th><th>nova</th><th>imas-codex</th><th>imas-efit</th>
+        <th>reckon</th><th>nova</th><th>imas-codex</th><th>imas-efit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>A baseline</td><td>cold</td><td>29.36</td><td>3.81</td><td>2.97</td><td>3.93</td><td>1.57</td><td>10.28</td><td>0.06</td><td>0.08</td></tr>
+      <tr><td>A baseline</td><td>warm</td><td>21.84</td><td>0.054</td><td>0.023</td><td>0.007</td><td>1.75</td><td>0.09</td><td>0.03</td><td>0.05</td></tr>
+      <tr><td>B port control</td><td>cold</td><td>33.79</td><td>10.31</td><td>4.45</td><td>2.69</td><td>1.57</td><td>0.08</td><td>0.42</td><td>0.38</td></tr>
+      <tr><td>B port control</td><td>warm</td><td>28.17</td><td>0.031</td><td>0.004</td><td>0.015</td><td>0.33</td><td>0.07</td><td>0.03</td><td>0.05</td></tr>
+      <tr><td>C index control</td><td>cold</td><td><strong>45.95</strong></td><td><strong>7.79</strong></td><td><strong>5.02</strong></td><td><strong>3.07</strong></td><td>2.69</td><td>0.44</td><td>0.05</td><td>0.07</td></tr>
+      <tr><td>C index control</td><td>warm</td><td>30.84</td><td>0.019</td><td>0.006</td><td>3.93</td><td>3.09</td><td>0.08</td><td>0.04</td><td>0.08</td></tr>
+    </tbody>
+  </table>
+
+  <p>Every row answered <code>200</code>. Arm C shows four cold <code>/_index</code> rows at or
+  above the 1&nbsp;s ceiling &mdash; <code>reckon</code> 45.95&nbsp;s against arm A's 29.36&nbsp;s on
+  the same tree &mdash; so the index clause of the served gate fails in arm A and arm C, and the
+  removal of the persisted index is what forces the extra derive. The index control reddens the
+  index gate as declared.</p>
+
+  <h3 id="the-cold-start-controls-redden-their-gates-arm-a">Arm A's own figures, and one finding outside this node's scope</h3>
+
+  <p>Arm A's figures are recorded whatever they are, and they are not clean. With the persisted
+  index on disk the baseline still answers <code>/_index/&lt;project&gt;</code> far above the
+  1&nbsp;s ceiling for three of the four projects cold (3.81, 2.97, 3.93&nbsp;s) and for
+  <code>reckon</code> in both passes (29.36&nbsp;s cold, 21.84&nbsp;s warm), while the other three
+  answers collapse to 20&ndash;50&nbsp;ms warm. The shape says the persisted index is being served
+  for three trees and re-derived on every <code>reckon</code> request: <code>reckon</code>'s own
+  docs tree carries continuously rewritten state files, so its covered-file identities move under
+  the reader and the persisted entry is rejected every time. That is a property of the measured
+  revision and of a live fleet tree, not of this node's harness; it is reported under follow-ons for
+  the section's live pass rather than triaged here.</p>
+
+  <h3 id="the-cold-start-controls-redden-their-gates-operator-index">The operator's index directory</h3>
+
+  <p>Listed by file name, size and modification time before and after all arms
+  (<code>operator-index-before.txt</code>, <code>operator-index-after.txt</code> under the run
+  directory). The two listings are <strong>not</strong> identical: 20 entries differ, all of them
+  rewritten in one burst between 07:28:05Z and 07:28:11Z, and the writes continue after this
+  harness stopped (07:29:37&ndash;07:29:56Z, 90&nbsp;s after its last arm ended), from a process that
+  is not this node's &mdash; no <code>reckon</code> process ran on <code>98dci4-clu-2068</code> at
+  that time and the live service runs on the login node. What is asserted instead is the fact that
+  matters: every write this harness made landed in the scratch home, whose four index files
+  (07:27:26Z&ndash;07:28:02Z) sit under
+  <code>&lt;scratch&gt;/s7/home/cache/metadata-index</code>, and the served processes' own logs name
+  their <code>mounts:</code> and <code>state:</code> under that scratch home. No request reached
+  port 8765.</p>
+
+  <h3 id="the-cold-start-controls-redden-their-gates-logs">Logs</h3>
+
+  <ul>
+    <li><code>arm_prime_serverlog.txt</code>, <code>arm_A_serverlog.txt</code>, <code>arm_B_serverlog.txt</code>, <code>arm_C_serverlog.txt</code> &mdash; the served processes' own output.</li>
+    <li><code>arm_A.log</code>, <code>arm_B.log</code>, <code>arm_C.log</code> &mdash; per-arm logs, each carrying the revision, the tree, the imported <code>module.__file__</code>, the host and load average at each pass, and a final <code>EXIT=</code> line.</li>
+    <li><code>arm_prime.json</code>, <code>arm_A.json</code>, <code>arm_B.json</code>, <code>arm_C.json</code> &mdash; the raw per-request timings.</li>
+    <li><code>s7_controls.py</code>, <code>apply_port_control.py</code> &mdash; the harness and the port mutation, which is applied only to a scratch copy under the run's scratch directory.</li>
+  </ul>
+</article>
+</body>
+</html>
