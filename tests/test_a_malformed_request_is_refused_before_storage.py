@@ -18,6 +18,7 @@ import builtins
 import io
 
 from reckon import mcp, mcp_edit_plan
+from reckon.crew import query
 
 
 class _StorageStub:
@@ -48,6 +49,19 @@ def _stubbed(monkeypatch) -> _StorageStub:
     monkeypatch.setattr(io, "open", stub)
     monkeypatch.setattr(builtins, "open", stub)
     return stub
+
+
+def test_the_refusal_vocabulary_covers_every_live_field() -> None:
+    """The pre-flight set names no fewer fields than the view serves.
+
+    The view builds its own vocabulary from the classification, so a field the
+    classification carries but the pre-flight set omits is refused before
+    storage while the view would have served it. Comparing the two sets is what
+    catches an omission the per-call tests cannot see.
+    """
+    derived = query._live_field_vocabulary([], with_mine=True)
+    declared = set(mcp._LIVE_ROW_FIELDS) | {"mine"}
+    assert derived <= declared, sorted(derived - declared)
 
 
 def test_a_crew_live_read_naming_an_unknown_field_is_refused(monkeypatch) -> None:

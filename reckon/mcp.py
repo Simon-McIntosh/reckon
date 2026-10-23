@@ -85,6 +85,7 @@ from reckon.capability import (
 )
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
 from reckon.crew.query import (
+    COMMON_RUN_FIELDS,
     LIVE_OVERRUN_FIELDS,
     LIVE_PLACEMENT_FIELDS,
     RUN_SCOPES,
@@ -324,6 +325,7 @@ _LIVE_ROW_FIELDS = (
     )
     | LIVE_OVERRUN_FIELDS
     | frozenset(LIVE_PLACEMENT_FIELDS)
+    | frozenset(COMMON_RUN_FIELDS)
 )
 
 
