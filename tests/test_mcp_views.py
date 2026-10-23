@@ -304,6 +304,7 @@ def test_live_runs_are_grouped_by_target_plan_and_project():
         "run_id": "run-a",
         "member": "worker-one",
         "section": "verification",
+        "classification": "running",
         "started_at": "2026-08-12T18:00:00Z",
     }
 
@@ -323,6 +324,7 @@ def test_typed_plan_summary_reports_matching_live_run(setup, monkeypatch):
             "run_id": "run-live",
             "member": "worker-one",
             "section": "delivery",
+            "classification": "running",
             "started_at": "2026-08-12T18:00:00Z",
         }
     ]

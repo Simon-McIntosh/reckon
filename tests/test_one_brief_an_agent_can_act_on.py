@@ -221,6 +221,21 @@ def _blocked_pointer(tmp_path: Path) -> dict[str, Any]:
     )
 
 
+def _payload_run(payload: dict[str, Any], run_id: str) -> dict[str, Any]:
+    """The payload's own run row for one run, whichever list carries it."""
+
+    for section in payload.get("immediate_roadmap") or []:
+        for run in section.get("runs") or []:
+            if run.get("run_id") == run_id:
+                return run
+    for sprint in payload.get("sprints") or []:
+        for key in ("in_flight", "interrupted"):
+            for run in sprint.get(key) or []:
+                if run.get("run_id") == run_id:
+                    return run
+    raise AssertionError(f"{run_id} is absent from the payload")
+
+
 def _roadmap(docs: Path, pointers: list[dict[str, Any]], monkeypatch) -> dict[str, Any]:
     """Build the payload the way the CLI does, from the fixture's docs tree.
 
@@ -316,6 +331,35 @@ def test_the_oldest_blocked_run_is_the_oldest_one_the_brief_can_see(
 
     assert set(brief.row("at_risk")["blocked_runs"]) == {BLOCKED_RUN, "run-blocked-new"}
     assert brief.row("at_risk")["oldest_blocked_run"] == BLOCKED_RUN
+
+
+def test_the_brief_reads_a_non_string_stamp_as_absent_not_as_an_epoch(
+    three_plan_project, monkeypatch, tmp_path
+):
+    """A stamp that is not a string is absent to the brief, not an epoch.
+
+    The shared parser accepts a number as an epoch in seconds, so a numeric
+    ``started_at`` reaching it would place a run at 1970 and the brief would
+    escalate it as blocked for over a day — an age no caller ever recorded.
+    The brief's callers pass ISO strings or nothing at all, so the accepted
+    domain is narrower than the parser's: a value that is not a string reads
+    as absent, exactly as it did before the shared parser took over.
+    """
+
+    from reckon._timestamps import parse_utc
+
+    payload = _roadmap(three_plan_project, [_blocked_pointer(tmp_path)], monkeypatch)
+    row = _payload_run(payload, BLOCKED_RUN)
+    row["started_at"] = 0
+    brief = project_brief(
+        PROJECT, payload=payload, now=datetime(2026, 10, 22, tzinfo=UTC)
+    )
+
+    # The shared parser reads the number as an epoch moment, so this case
+    # discriminates: the brief must not.
+    assert parse_utc(0) == datetime(1970, 1, 1, tzinfo=UTC)
+    assert set(brief.row("at_risk")["blocked_runs"]) == {BLOCKED_RUN}
+    assert brief.row("at_risk")["blocked_over_a_day"] == []
 
 
 def test_one_changed_fixture_edge_moves_the_critical_path_line(
