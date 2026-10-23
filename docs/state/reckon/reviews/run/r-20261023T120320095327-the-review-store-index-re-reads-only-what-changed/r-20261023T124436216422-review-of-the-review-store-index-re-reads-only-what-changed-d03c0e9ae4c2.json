@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T13:02:23.474Z",
+  "dispatched_at": "2026-10-23T12:45:43Z",
+  "findings": [
+    {
+      "file": "tests/test_the_review_store_index_re_reads_only_what_changed.py",
+      "line": 145,
+      "severity": "non-blocking",
+      "text": "non-blocking: on the incremental path the lookup's result is asserted only at index [0], the path, while the record body it returns is never compared against the from-scratch lookup's result nor against an independent source (the same shape recurs at lines 166, 210 and 215). The from-scratch lookup at line 149 is checked against a literal the test constructs, not against the incremental result, so a regression that returned the right path with a stale body -- a wrong head_sha or head_carried reaching _indexed_head_matches -- would leave the case green. The risk is low because the selected file is re-read from disk at reckon/crew/review_records.py:754, which is why this is recorded rather than charged against the node; the parse-count assertions that guard the node's actual deliverable are independent of the value under test."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-review-store-index-re-reads-only-what-changed.html",
+      "line": 70,
+      "severity": "non-blocking",
+      "text": "non-blocking: 'Every one of those lookups returns what a from-scratch build returns: each case asserts its result against the same lookup made after the in-memory index and the persisted document are both discarded' is stronger than the tests carry. Each case asserts that the from-scratch lookup equals an expectation the test built; the incremental lookup's returned record is never compared with the from-scratch lookup's, so the sentence states a two-sided equivalence that no assertion in the file makes."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": 1172,
+      "severity": "non-blocking",
+      "text": "non-blocking: _store_index's docstring still reads 'rebuilt only when the directory moves', which the landed change makes false -- the index is now loaded from the persisted document and updated from one listing, and rebuilt only when no usable persisted index exists (reckon/crew/review_records.py:1159-1162). The sibling docstring of _store_indexes was rewritten to say 'updated only when the directory moves', so a reader comparing the two gets contradictory accounts of the same call, and the phrasing is the one the section exists to retire."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to update the review store index incrementally and persist it per store directory, and reckon/crew/review_records.py:1136 (_store_indexes) does exactly that -- it updates from one listing, parses only files whose name is new or whose stat identity moved, drops entries the listing no longer names, and persists the index per store directory.\nVERDICT done_when: the done_when names tests/test_the_review_store_index_re_reads_only_what_changed.py together with every test file importing reckon.crew.review_records, at base and head by delta; the manifest's after_suite records revision 7446d5a202d3d456630988665649aba0dcb70e6b, completed true, failure_count 0 over gate-head.log ('65 passed in 31.50s', EXIT=0), and baseline_suite records revision 7cb177e8a12067d1a6ac2c9068e925acd3f32ac5, completed true, failure_count 8 over gate-base.log ('57 passed, 8 errors in 26.69s', EXIT=1).\nVERDICT write_paths: the manifest declares four paths (review_records.py, the new test file, the landing fragment and its figures directory); git diff 7cb177e8a12067d1a6ac2c9068e925acd3f32ac5..d03c0e9ae4c28464bdb26f678106b16d7e2ba4f6 touches three -- reckon/crew/review_records.py, tests/test_the_review_store_index_re_reads_only_what_changed.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-review-store-index-re-reads-only-what-changed.html -- every one inside the declared set, and no figure was written, which the done-when does not require.\nVERDICT manifest: read at the current revision; status complete, commits 7446d5a20 and d03c0e9ae matching the worktree log, both suite arms recorded with revision, literal command, log_path, completed and failure_ids, negative_control_log naming a bare path whose log ends EXIT=1 with six failing ids, and every wait field left empty as they should be.\nVERDICT diff: read commit by commit against 7cb177e8a; 7446d5a20 adds the incremental update and the persisted index to reckon/crew/review_records.py (node_local_cache_dir, _index_code_stamp, _index_entry, _update_store_entries, _load_persisted_entries, _persist_store_entries and the reshaped _build_store_indexes) plus the eight-case test file, and d03c0e9ae adds the landing fragment; every definition added sits in the module that already owned the store index.\nCALL_SITES: reckon/crew/recovery_memo.py:374, reckon/crew/review_records.py:651, reckon/crew/review_records.py:696, reckon/crew/review_records.py:1194, reckon/crew/promotion_checks.py:637, reckon/crew/promotion_checks.py:2783, reckon/crew/review_dispositions.py:248, reckon/crew/recovery_review_dispatch.py:1154, reckon/crew/reports.py:1802, reckon/crew_run_commands.py:492\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:1159-1167 updates a persisted-or-held index from one listing, parses only new or stat-changed files, drops gone entries and persists per store directory, which is the section's deliverable in full.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate population in the manifest's tests line is exactly the eight files that import reckon.crew.review_records, and gate-head.log and gate-base.log each open with their revision and literal command and close with EXIT=, though the head arm ran at 7446d5a20 one commit before the reviewed head d03c0e9ae.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three paths in git diff 7cb177e8a12067d1a6ac2c9068e925acd3f32ac5..d03c0e9ae4c28464bdb26f678106b16d7e2ba4f6 are inside the declared write paths, and nothing outside them changed.\nSCORE durability: 17\nJUSTIFICATION durability: the parse-count assertions at tests/test_the_review_store_index_re_reads_only_what_changed.py:146, 167, 182, 217 and 257 count calls to _index_entry -- an instrument the test does not hand the code -- and gate-negative-control.log shows them firing (6 failed, assert 301 == 1, EXIT=1), but the incremental lookup's returned record is never compared against the from-scratch result, so section 55's equivalence item rests on the from-scratch arm alone (tests/test_the_review_store_index_re_reads_only_what_changed.py:145).\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers at reckon/crew/review_records.py:801-1133 follow the module's idiom and carry no plan, stage or ticket identifier, but _store_index's docstring at reckon/crew/review_records.py:1172 still says 'rebuilt only when the directory moves' after the behaviour became a persisted load plus a listing update.\nSCORE reuse: 18\nJUSTIFICATION reuse: the index is extended in place in its existing owner (reckon/crew/review_records.py:1136, _build_store_indexes kept and reshaped) and the write reuses reckon/_store.py:606 write_json_atomically, while the one capability with no prior owner -- a node-local cache directory -- has only near-relative helpers (reckon/crew/fleet_supervisor.py:295 runtime_directory, reckon/_worker_fence.py:1168 node_tmp_runtime_paths), none of which resolves $XDG_RUNTIME_DIR/reckon/<project>, so the addition duplicates nothing but its spelling of the fallback differs from the fleet's.\n",
+  "review_run_id": "r-20261023T124436216422-review-of-the-review-store-index-re-reads-only-what-changed-d03c0e9ae4c2",
+  "reviewed_base_sha": "7cb177e8a12067d1a6ac2c9068e925acd3f32ac5",
+  "reviewed_head_sha": "d03c0e9ae4c28464bdb26f678106b16d7e2ba4f6",
+  "reviewed_run_id": "r-20261023T120320095327-the-review-store-index-re-reads-only-what-changed",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T13:22:00.000000+00:00",
+  "total": 111
+}
