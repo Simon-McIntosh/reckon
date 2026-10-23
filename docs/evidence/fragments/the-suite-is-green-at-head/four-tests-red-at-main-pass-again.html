@@ -1,0 +1,92 @@
+<section id="four-tests-red-at-main-pass-again-landing">
+  <h2>Four tests red at main since 2026-10-22 pass again</h2>
+
+  <p><strong>What changed.</strong> Three expectations were stale against behaviour
+  that was intended, and one product module carried a second ISO-stamp parser.</p>
+
+  <ul>
+    <li><code>tests/test_mcp_views.py</code> — both run-row cases compare a live run row
+    whole, so each now names the <code>classification</code> the row carries
+    (<code>"running"</code> for a pointer the shared classifier does not call
+    interrupted or blocked). <code>reckon/mcp_views.py:_run_row</code> emits the field
+    unconditionally; that is what <code>f99ba9b33</code> (one shared run classification)
+    and <code>ba405e2c4</code> (each section carries its runs, held paths and blocker
+    kinds) set out to do, so the change is intended and the test asserts it.</li>
+    <li><code>tests/test_sprint_summary_lists_pending.py</code> — the no-sprint summary
+    case stays a byte-exact comparison, re-frozen to the bytes the payload now emits. Two
+    intended changes reached the summary: <code>c19a077d5</code> made the critical path's
+    section list always present (<code>"sections": []</code> here, because the fixture's
+    path crosses none) so a reader need not probe for the key, and
+    <code>496fdf6a7</code> attached the open-decision rows and their count to every read
+    surface. The case still pins that a summary read without a sprint adds no
+    <code>pending_plans</code>.</li>
+    <li><code>reckon/project_brief.py</code> — the private <code>_parse_utc</code>, added
+    in <code>4b499ff78</code>, is gone; stamps now go through
+    <code>reckon._timestamps.parse_utc</code>, the one owner the structural invariant
+    names. The brief keeps its own narrower accepted domain by guarding in front of the
+    shared parser: its callers pass <code>started_at</code>, <code>since</code> and
+    <code>closed_at</code> as ISO strings or not at all, so a value that is not a string
+    reads as absent rather than being taken as an epoch. A case asserts that domain in
+    <code>tests/test_one_brief_an_agent_can_act_on.py</code>, asserting the shared
+    parser's own reading of a numeric stamp beside it so the case discriminates rather
+    than merely agreeing.</li>
+    <li><code>tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat</code>
+    is not edited; it passes because the offending parser is gone.</li>
+  </ul>
+
+  <h3>Measure</h3>
+
+  <p>Gate: the four test files that §40 names, run in the fleet allocation with the
+  repository venv at <code>-n 8</code>. Every log's first line names its revision and its
+  literal command; its last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change, committed)</td>
+        <td><code>df8dc8889</code></td>
+        <td><strong>62 passed</strong>, exit 0</td></tr>
+      <tr><td>base (extracted from <code>git archive</code>)</td>
+        <td><code>f3149c41e</code></td>
+        <td>4 failed, 57 passed, exit 1 — the four ids and nothing else</td></tr>
+    </tbody>
+  </table>
+
+  <p>Against the base arm the head adds no failure: the four ids that failed are the four
+  that pass, and the head arm carries one case more than the base
+  (<code>test_the_brief_reads_a_non_string_stamp_as_absent_not_as_an_epoch</code>). Both
+  arms resolved <code>reckon.project_brief</code> from their own tree.</p>
+
+  <h3>Controls</h3>
+
+  <p>Each repair's mutation was applied and the failing run kept. Every control exits
+  non-zero and fails an id the head arm does not fail.</p>
+
+  <table>
+    <thead><tr><th>mutation</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td><code>project_brief.py</code> restored to the base private parser</td>
+        <td><code>test_only_the_shared_parser_calls_fromisoformat</code> names
+        <code>project_brief.py:_parse_utc</code> again — 1 failed, exit 1</td></tr>
+      <tr><td>any stamp handed straight to <code>parse_utc</code></td>
+        <td><code>test_the_brief_reads_a_non_string_stamp_as_absent_not_as_an_epoch</code>
+        fails — 1 failed, exit 1</td></tr>
+      <tr><td><code>_run_row</code>'s <code>classification</code> field dropped</td>
+        <td>both run-row cases fail — 2 failed, exit 1</td></tr>
+      <tr><td>an extra field on the no-sprint summary</td>
+        <td><code>test_summary_without_sprint_is_unchanged</code> fails — 1 failed,
+        5 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>The two <code>mcp_views</code>/summary mutations touch files outside this node's write
+  scope, so they were applied in hand-built trees extracted from the commit under
+  <code>$TMPDIR</code>, never in the worktree.</p>
+
+  <h3>Lint</h3>
+
+  <p><code>ruff check</code> reports the same four findings on the four changed paths as on
+  the base blobs (one import-sort finding and two <code>date.today()</code> findings, all
+  pre-existing in <code>tests/test_mcp_views.py</code>), and <code>ruff format --check</code>
+  names the same single pre-existing file. The change adds no finding to either.</p>
+</section>
