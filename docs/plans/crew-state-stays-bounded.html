@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -200,7 +200,10 @@
     <div class="r-comment-body"><p>An independent review of run r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory at base cee4634d6dfb5b8e7bbd32136e91c66894d311fe / head 1c6b9a79f9dccbad979d054a8ea5aaa13694afe7 is stored parsed: scores goal 18, evidence 16, scope 20, durability 14, fit 17, reuse 20; added failures 0; one non-blocking finding (the gained commit threads checkout_path into flight.resolve at reckon/crew/gc.py:288 to read a project-layer override from the swept checkout, but no added assertion reddens if it is reverted, so that half of the commit is unverified).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261023T121228371537-review-of-only-a-run-something-can-still-need-keeps-its-directory-9f51883adbb2" data-who="reckon-build" data-when="2026-10-23T12:34:26.943Z">
-    <div class="r-comment-body"><p>An independent review of run r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory covering only the two commits it gained since the review at 1c6b9a79f (base 1c6b9a79f9dccbad979d054a8ea5aaa13694afe7, head 9f51883adbb242bf69ff021514ed2b7062be77e2) is stored parsed: scores goal_fidelity 18, evidence 13, scope_discipline 20, durability 19, fit 18, reuse 17; added failures 0; two non-blocking findings (the fragment still reports the file&#x27;s case count as 5 when the gained commit made it 6 at docs/evidence/fragments/crew-state-stays-bounded/only-a-run-something-can-still-need-keeps-its-directory.html:50, and the manifest&#x27;s after_suite names a log that a later killed run overwrote, so the recorded head result is no longer readable at the path it cites).</p></div>
+    <div class="r-comment-body"><p>An independent review of run r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory covering only the two commits it gained since the review at 1c6b9a79f (base 1c6b9a79f9dccbad979d054a8ea5aaa13694afe7, head 9f51883adbb242bf69ff021514ed2b7062be77e2) is stored parsed: scores goal_fidelity 18, evidence 13, scope_discipline 20, durability 19, fit 18, reuse 17; added failures 0; two non-blocking findings (the fragment still reports the file's case count as 5 when the gained commit made it 6 at docs/evidence/fragments/crew-state-stays-bounded/only-a-run-something-can-still-need-keeps-its-directory.html:50, and the manifest's after_suite names a log that a later killed run overwrote, so the recorded head result is no longer readable at the path it cites).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory" data-who="reckon-build" data-when="2026-10-23T12:11:39Z">
+    <div class="r-comment-body"><p>The retention pass now keeps a finished run&#x27;s directory while anything can still need it (a live pointer, a queued entry, no terminal ledger row, a review owed or in flight, stream-derived figures missing from the ledger row) and removes it only once the configured grace window gc.directory_grace (an integer plus an s/m/h unit, one day by default) has passed, printing each removal&#x27;s path and measured size before it happens.</p></div>
 </div>
 </section>
 </main>
