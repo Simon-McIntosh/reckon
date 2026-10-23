@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T10:46:55.575Z",
+  "dispatched_at": "2026-10-23T10:34:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "231",
+      "severity": "blocking",
+      "text": "The filed-record read now accepts any status in RECOGNISED_REVIEW_STATUSES ({\"parsed\", \"unparsed\", \"incomplete\"}), where the base commit accepted only \"parsed\". That set is the store's validation vocabulary, not the set a reader selects on: reckon/crew/review.py:836 states plainly that \"A reader acts on ``parsed`` alone, so a record carrying any other status is one no reader acts on\", and every selecting reader in the tree uses the literal \u2014 promotion_checks.py:1114 (`not (review and review.get(\"status\") == \"parsed\")`) and recovery_review_subject.py:1208 (`review.get(\"status\") != \"parsed\"`). The only other importer of the set, recovery_review_subject.py:460, uses it to format a list of accepted statuses, a validation use. So a review run that exited having filed an `unparsed` record (no SCORE line recognised) or an `incomplete` one (the revision pair could not identify the diff) now classifies promotable \u2014 the fleet row's action reads \"promote the completed review run\" \u2014 while the promotion gate at promotion_checks.py:1114 refuses to let that same record satisfy a review gate. The plan section's own measure names the narrower condition (\"filed a record that parses\"; done-when \"a parsed filed record\"), and the node's goal is worded \"filed a parsed review record\", so this is broader than both. The broadening was introduced by this diff (commit 39a8321c3), is untested \u2014 every fixture writes PARSED_REVIEW \u2014 and reverses the direction of the prior review's finding, which named the literal as drift without asking what the imported set means."
+    },
+    {
+      "file": "tests/test_an_exited_review_with_a_filed_record_reads_complete.py",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "The module docstring was edited from \"the review it files\" to \"the review it serves\", which is not a word that describes this mechanism; the sentence continues \"and the filing survives on the shared home\", so the intended verb is \"files\". A cosmetic slip introduced by commit 39a8321c3."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "193",
+      "severity": "non-blocking",
+      "text": "The docstring sentence re-wrapped mid-clause: line 193 ends \"the attempt the run's\" and line 194 begins \"own marker names\", leaving a dangling fragment that reads as a broken sentence in the module's own description of the attempt key. Introduced by commit 39a8321c3; the text should re-flow into two whole lines."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to classify an exited review run complete when its latest attempt filed a parsed review record; the gained commits fix the third-attempt fixture so the attempt key at reckon/crew/recovery_classification.py:224-233 is genuinely exercised, but the same commits widen the accepted statuses past \"parsed\", so the deliverable now classifies runs the goal does not name as complete.\nVERDICT done_when: the dispatch's evidence fence names tests/test_an_exited_review_with_a_filed_record_reads_complete.py plus the importers and the width test; after-arm.log records that run at `14 failed, 520 passed` EXIT=1 at revision 39a8321c3, base-arm.log reproduces the identical 14 ids, and my own run of the named file at 2c11ee5fc reads `4 passed` \u2014 but no fixture writes a record the store does not parse, so the widened predicate is invisible to the gate.\nVERDICT write_paths: read the source dispatch's FENCE section (prompt.txt) and the manifest; it declares four paths, the diff touches three of them (the classifier, the new test, the evidence fragment) and nothing else.\nVERDICT manifest: read; it states the classifier change, the two declared negative controls at EXIT=1, the 14 pre-existing failures reproduced at base, names after-arm.log and base-arm.log, and sets status complete.\nVERDICT diff: read commit by commit against b3da12602 \u2014 39a8321c3 changes the classifier and its test (64 insertions, 20 deletions across two files), 2c11ee5fc changes only the evidence fragment's prose.\nCALL_SITES: reckon/crew/recovery_classification.py:401, reckon/crew/query.py:348, reckon/crew/query.py:484, reckon/crew/recovery_watch.py:311, reckon/crew/recovery_watch.py:1182, reckon/crew/forgotten_runs.py:94, reckon/serve.py:884, reckon/crew/directory.py:97, reckon/crew/promotion_checks.py:1114, reckon/crew/recovery_review_subject.py:1208\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:232 classifies an exited review run complete for a filed record of any recognised status, where the goal names only a parsed one.\nSCORE evidence: 16\nJUSTIFICATION evidence: after-arm.log records the named gate at `14 failed, 520 passed` EXIT=1 with base-arm.log reproducing the identical 14 ids, but no fixture exercises the widened status change, so the gate does not measure that part of the diff.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's three paths are a subset of the four declared in prompt.txt's FENCE section, with no unrelated edit.\nSCORE durability: 12\nJUSTIFICATION durability: negative-control.log shows the attempt key now genuinely guards test_an_exited_third_attempt_behind_a_second_attempts_record_is_running (red under ignore-attempt), but the status broadening at recovery_classification.py:232 has no failing test at all.\nSCORE fit: 16\nJUSTIFICATION fit: the added helper follows the module's idiom, but recovery_classification.py:193 leaves a dangling docstring fragment and tests/test_an_exited_review_with_a_filed_record_reads_complete.py:10 introduces a typo.\nSCORE reuse: 12\nJUSTIFICATION reuse: the change imports RECOGNISED_REVIEW_STATUSES rather than the predicate the repository actually selects delivered reviews with, restated at reckon/crew/promotion_checks.py:1114 and reckon/crew/recovery_review_subject.py:1208.\nFINDING reckon/crew/recovery_classification.py:231 blocking: the filed-record read accepts any status in RECOGNISED_REVIEW_STATUSES, so an unparsed or incomplete record now reads the run as a completed delivery while promotion_checks.py:1114 refuses it.\nFINDING tests/test_an_exited_review_with_a_filed_record_reads_complete.py:10 non-blocking: the docstring says \"the review it serves\" where the mechanism is the review it files.\nFINDING reckon/crew/recovery_classification.py:193 non-blocking: the docstring sentence is wrapped mid-clause, leaving \"the attempt the run's\" / \"own marker names\" as a dangling fragment.",
+  "review_run_id": "r-20261023T101545616258-review-of-an-exited-review-with-a-filed-record-reads-complete-2c11ee5fcc27",
+  "reviewed_base_sha": "b3da12602bb1b2ff43640d9102de35f97a8f6d60",
+  "reviewed_head_sha": "2c11ee5fcc27b057c73a9aeec6692db0603503b3",
+  "reviewed_run_id": "r-20261023T084704256476-an-exited-review-with-a-filed-record-reads-complete",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 14,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T10:49:51.405309+00:00",
+  "total": 90
+}
