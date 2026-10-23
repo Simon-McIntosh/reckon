@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T09:38:40.109Z",
+  "dispatched_at": "2026-10-23T09:27:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:39",
+      "id": "reasoning-1",
+      "reason": "\u00a71's premise that \"reckon writes that bucket\" is false as written and would be corrected so the plan's own account of today's behaviour matches \u00a73's.",
+      "text": "\u00a71 states \"At promotion, `reckon/crew/reports.py` (near line 2797) turns each entry into a plan followup\", but \u00a73 (plan.html:58) states the same function `followup_ops_from_manifest` \"has no production caller\" and is deleted; `grep -rn followup_ops_from_manifest reckon scripts` returns only its definition (`reckon/crew/reports.py:2790`) and its export name (`reckon/crew.py:193`), with no call on any production path, so promotion does not perform the conversion \u00a71 attributes to it and the two sections contradict each other about the current mechanism",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:68",
+      "id": "reasoning-2",
+      "reason": "\u00a73 must add `reckon/ledger.py` to its write paths (or \u00a76 must be told to update that docstring), otherwise a source occurrence the plan intends to purge is left behind and unreachable by the node that renames the field.",
+      "text": "\u00a73 renames the manifest field `follow_ons` and lists its write paths, but omits `reckon/ledger.py`: `reckon/ledger.py:651`'s docstring (\"Extract the repository paths a manifest's ``follow_ons`` name\") carries that same field name, and \u00a76 \u2014 the section whose write paths do include `reckon/ledger.py` \u2014 explicitly keeps the field's old name (\"The manifest field keeps its old name here\"), so after \u00a73 lands the retired word survives in that docstring with no write path covering it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "cfdaebb786848e0a064de686df3adf53b1397b0e3b0027f538694c5ffcc5919c",
+  "plan_slug": "additional-work-is-a-section",
+  "plan_version": 28,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "\u00a71 is the landed census section; \u00a73 records the mechanism as it stands, a conversion function with no production caller applied by coordinators through two skill references, and the build follows \u00a73",
+      "when": "2026-10-23T09:40:04.558904+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-23T09:40:20.939220+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "\u00a71 is the landed census section; \u00a73 records the mechanism as it stands, a conversion function with no production caller applied by coordinators through two skill references, and the build follows \u00a73",
+      "when": "2026-10-23T09:40:04.558904+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T09:40:20.939220+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-additional-work-is-a-section.v28.json",
+  "review_run_id": "r-20261023T092615775787-plan-review-of-additional-work-is-a-section",
+  "reviewed_blob_sha": "2d903dad925759e2c34d2c5ec0d72ec4ab0b603a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every in-scope citation resolves: `reckon/crew/reports.py:2790` (def) and `reckon/crew.py:193` (export), `skills/reckon-build/references/worker-protocol.md:138` and `coordinator-reference.md:1025`, `reckon/ledger.py:650`, `reckon/run_record.py:397/605`, `reckon/run_store.py:45`, `reckon/crew/promotion.py:1267/1442`, and \u00a77's three sites `recovery_watch.py:201`, `dispatch_peer.py:407`, `scripts/check_snapshot_assertions.py:147` all exist at the cited content; extensionless hrefs (`plan.html:116`) resolve as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a73, \u00a76 and \u00a77 each declare a negative control that flips a named case (restore `followup_ops_from_manifest`; drop the old-key mapping; restore the old word at `recovery_watch.py`), and \u00a76's done-when has been reduced to the two cases that read the row rather than the phantom reader the earlier finding named.",
+    "evidence_paths": "pass \u2014 \u00a73/\u00a76/\u00a77 write their fragments under `docs/evidence/fragments/additional-work-is-a-section/` (directory exists, holding \u00a72's landed fragment), on a durable path, not a scratch or node-local directory.",
+    "naming": "pass \u2014 the new identifiers `outside_scope`, `outside_scope_paths` and `non_blocking` carry no plan label, stage name, ticket number or version tag, and the section prose states mechanism rather than tracker history.",
+    "reasoning": "a finding \u2014 \u00a71 asserts promotion converts manifest entries into plan followups while \u00a73 asserts the function that would do it has no production caller, and a second finding notes \u00a73's write paths omit the one file that still names the field it renames.",
+    "single_goal": "pass \u2014 \u00a73 (manifest field + conversion removal), \u00a76 (ledger key) and \u00a77 (three derived-manifest sites) each carry one rename with one verdict.",
+    "wiring": "pass \u2014 the section graph in `plan-section-depends-on` (plan.html:24) declares s3:[s2,s6], s5:[s2,s3,s4,s6,s7], s7:[s3], each matching the section's own Sequence/Why statement, and the driving followup `f-awias-001` (plan.html:100) now states the same order (\u00a76 first, then \u00a73, then \u00a77, \u00a75 last), so the earlier wiring defect is resolved."
+  },
+  "section_digests": {
+    "_document": "edf7f32827e72affb12cd9e488ed27db272b42b30d40a6095338f58ef1bbe1bd",
+    "s1": "53035db610c769f9fabc12038e7a13898064f071d29b27f9e4b9cfe7e6e9cbfb",
+    "s2": "da6965864ffd2ed27a0442cf22caf15936faa1f5ecfe3c8d4be21504a5d51387",
+    "s3": "ac2943c184863917be20d90cb41e0c41066fd2dd0cf386d57cc73789f89d8187",
+    "s4": "f54fdafb18757876821e9a2c5955d3db854946ef19afb4d56a5e83886375b088",
+    "s5": "a6fa784958eef11b006d0cb4912714d98031c18adf47e32ecc1f84a23d578e4d",
+    "s6": "0f8796c8305cc16163a272e7a32db694def457ce5ed1c506aa8ed5d5e962f591",
+    "s7": "1ecdeaceb1b3f784b90d4daf498932242135e547d357a8d7de35c97ceb81ee88"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T09:39:55.624786+00:00"
+}
