@@ -12,10 +12,14 @@ run, live or committed, inside a staleness window. A run is matched to its plan
 by the row's ``plan`` field, and, where that is null because the run was
 dispatched from a brief, by its ``plan_link``. A run carrying neither is matched
 by the plan its node id names: a plan review's node ``plan-review-of-<slug>``
-names ``<slug>``, and a run review's node ``review-of-<run id>`` names the run
-it reviews, whose own plan the review then carries. A run matched by none of
-these belongs to no plan, and a plan with no matching row is unowned — reported
-as itself, never guessed from a neighbouring row or an older dispatch.
+names ``<slug>``, and a run review's node ``review-of-<source>`` names the run
+it reviews, whose own plan the review then carries. That source is the reviewed
+run's node id in the ordinary case and its run id for a paired arm, so a review
+is resolved by the reviewed-run id its own record carries where there is one,
+then by the node id's source read as a run id, then by the newest row of the
+node the source names. A run matched by none of these belongs to no plan, and a
+plan with no matching row is unowned — reported as itself, never guessed from a
+neighbouring row or an older dispatch.
 
 The window is a configuration value so the caller, never this module, decides
 how long a dispatch still speaks for a plan. A dispatch older than it is
@@ -102,24 +106,92 @@ def _plan_of_run(
             if plan:
                 return plan, field
             continue
-        plan = _plan_from_node(_node_id(row), rows=rows)
+        plan = _plan_from_node(row, rows=rows)
         if plan:
             return plan, field
     return "", ""
 
 
-def _plan_from_node(node_id: str, *, rows: Mapping[str, Mapping[str, Any]]) -> str:
-    """The plan a node id names, or ``""`` for a node that names no plan.
+def _named_reviewed_run_id(row: Mapping[str, Any]) -> str:
+    """The reviewed-run id a review row carries, in either of its two spellings.
 
-    A plan review names its plan directly. A run review names the run it reviews,
-    so its plan is the reviewed run's own, resolved by the same rules — and the
-    review's dispatcher, not the reviewed run's, is the session that answered.
+    A review record names its subject run outright. A live pointer carries it at
+    the top level; a committed row carries the same fact inside its ``review``
+    body. Both are read, because the review's own dispatch names the run it was
+    composed for and no parse of a node id can recover it.
     """
+    direct = str(row.get("reviewed_run_id") or "").strip()
+    if direct:
+        return direct
+    review = row.get("review")
+    if isinstance(review, Mapping):
+        return str(review.get("reviewed_run_id") or "").strip()
+    return ""
+
+
+def _newest_run_of_node(
+    node_id: str, *, rows: Mapping[str, Mapping[str, Any]]
+) -> Mapping[str, Any] | None:
+    """The most recently dispatched row a node id belongs to, or ``None``.
+
+    A node that has been dispatched more than once — a resume, a repair round —
+    shares one id across its rows, so a review that names its subject by node id
+    alone is ambiguous. The newest row is the delivery the review read, since a
+    review is composed for a run that has delivered, and a row with no readable
+    dispatch instant cannot be shown to be it.
+    """
+    best: tuple[datetime, str] | None = None
+    winner: Mapping[str, Any] | None = None
+    for run_id, row in rows.items():
+        if _node_id(row) != node_id:
+            continue
+        instant = _dispatch_instant(row)
+        if instant is None:
+            continue
+        if best is None or (instant, run_id) > best:
+            best = (instant, run_id)
+            winner = row
+    return winner
+
+
+def _reviewed_run(
+    row: Mapping[str, Any], *, rows: Mapping[str, Mapping[str, Any]]
+) -> Mapping[str, Any] | None:
+    """The run a review row reviews, or ``None`` when none of its names resolve.
+
+    Three names can name the subject, and they are tried strongest first. The
+    reviewed-run id the review records is exact. Failing that, the node id's own
+    source: a paired dispatch launches two arms under one node id, so a review of
+    a paired arm is minted from the run id and that row is found directly, while
+    every other review is minted from the reviewed run's node id and is resolved
+    through that node's newest row.
+    """
+    named = _named_reviewed_run_id(row)
+    if named and named in rows:
+        return rows[named]
+    source = round_node_source(_node_id(row), REVIEW_NODE_PREFIX)
+    if not source:
+        return None
+    if source in rows:
+        return rows[source]
+    return _newest_run_of_node(source, rows=rows)
+
+
+def _plan_from_node(
+    row: Mapping[str, Any], *, rows: Mapping[str, Mapping[str, Any]]
+) -> str:
+    """The plan a run's node id names, or ``""`` for one that names no plan.
+
+    A plan review names its plan directly, since its node id embeds the slug it
+    reviews. A run review names the run it reviews — a node id, not a run id —
+    so its plan is that run's own, resolved by the same rules, and the review's
+    dispatcher, never the reviewed run's, is the session that answered.
+    """
+    node_id = _node_id(row)
     if node_id.startswith(PLAN_REVIEW_NODE_PREFIX):
         return round_node_source(node_id, PLAN_REVIEW_NODE_PREFIX)
     if node_id.startswith(REVIEW_NODE_PREFIX):
-        reviewed = round_node_source(node_id, REVIEW_NODE_PREFIX)
-        subject = rows.get(reviewed)
+        subject = _reviewed_run(row, rows=rows)
         return _plan_of_run(subject, rows=rows)[0] if subject else ""
     return ""
 

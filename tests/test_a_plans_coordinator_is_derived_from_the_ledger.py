@@ -23,6 +23,8 @@ import pytest
 
 from reckon import ledger
 from reckon.crew import plan_coordinator, runs
+from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
+from reckon.crew.repair import round_node_id
 
 PROJECT = "power_convertor"
 
@@ -325,28 +327,114 @@ def test_a_later_dispatch_takes_the_plan_over(tmp_path: Path) -> None:
     assert recorded == {"r-a1"}
 
 
+def _review_node_of(node_id: str, head: str = "a1b2c3d4e5f6a7b8") -> str:
+    """A review node id, minted by the writer the fleet's rounds use."""
+    return round_node_id(REVIEW_NODE_PREFIX, node_id, head)
+
+
 def test_a_run_review_resolves_through_the_run_it_reviews(tmp_path: Path) -> None:
+    """The ordinary spelling: the node id names the reviewed run's node."""
     root = tmp_path / "repo"
     (root / "docs").mkdir(parents=True)
     _write_plan(root / "docs", "plan-p", "Simon McIntosh")
+    reviewed_node = "plan-node-a"
+    review_node = _review_node_of(reviewed_node)
     _write_rows(
         root,
         (
-            ("r-a1", "plan-p", "", "node-a", "session-a", "2026-10-20T10:00:00Z"),
-            (
-                "r-b1",
-                "",
-                "",
-                "review-of-r-a1-a1b2c3d4e5f6",
-                "session-b",
-                "2026-10-20T12:00:00Z",
-            ),
+            ("r-a1", "plan-p", "", reviewed_node, "session-a", "2026-10-20T10:00:00Z"),
+            (review_node, "", "", review_node, "session-b", "2026-10-20T12:00:00Z"),
+        ),
+    )
+    row = _resolve(root)["plans"]["plan-p"]
+    # The review's own dispatcher answered: not the reviewed run's session.
+    assert row["coordinator"] == "session-b"
+    assert row["matched_by"] == "node"
+    assert row["run_id"] == review_node
+
+
+def test_a_run_review_of_a_reused_node_takes_the_nodes_newest_row(
+    tmp_path: Path,
+) -> None:
+    """One node id can carry rows of different plans, so the newest decides."""
+    root = tmp_path / "repo"
+    (root / "docs").mkdir(parents=True)
+    _write_plan(root / "docs", "plan-p", "Simon McIntosh")
+    _write_plan(root / "docs", "plan-q", "A Peer")
+    reused_node = "plan-node-reused"
+    review_node = _review_node_of(reused_node)
+    _write_rows(
+        root,
+        (
+            ("r-old", "plan-p", "", reused_node, "session-old", "2026-10-19T10:00:00Z"),
+            ("r-new", "plan-q", "", reused_node, "session-new", "2026-10-21T10:00:00Z"),
+            (review_node, "", "", review_node, "session-b", "2026-10-22T02:00:00Z"),
+        ),
+    )
+    result = _resolve(root, window="168h")
+    assert result["plans"]["plan-q"]["coordinator"] == "session-b"
+    assert result["plans"]["plan-q"]["run_id"] == review_node
+    # The older row still decides its own plan, which the review must not steal.
+    assert result["plans"]["plan-p"]["coordinator"] == "session-old"
+
+
+def test_a_run_review_of_a_paired_arm_resolves_through_its_run_id(
+    tmp_path: Path,
+) -> None:
+    """A paired arm's review is minted from the run id, which is not a node."""
+    root = tmp_path / "repo"
+    (root / "docs").mkdir(parents=True)
+    _write_plan(root / "docs", "plan-p", "Simon McIntosh")
+    review_node = _review_node_of("r-a1")
+    _write_rows(
+        root,
+        (
+            ("r-a1", "plan-p", "", "plan-node-a", "session-a", "2026-10-20T10:00:00Z"),
+            (review_node, "", "", review_node, "session-b", "2026-10-20T12:00:00Z"),
         ),
     )
     row = _resolve(root)["plans"]["plan-p"]
     assert row["coordinator"] == "session-b"
     assert row["matched_by"] == "node"
-    assert row["run_id"] == "r-b1"
+    assert row["run_id"] == review_node
+
+
+def test_a_run_review_names_its_subject_run_where_it_records_one(
+    tmp_path: Path,
+) -> None:
+    """A review that records its subject is resolved by that id, not its node."""
+    root = tmp_path / "repo"
+    (root / "docs").mkdir(parents=True)
+    _write_plan(root / "docs", "plan-p", "Simon McIntosh")
+    _write_plan(root / "docs", "plan-q", "A Peer")
+    # The node id names a node no row carries, so only the recorded subject id
+    # can answer — and that subject belongs to plan-p, not to plan-q.
+    review_node = _review_node_of("plan-node-that-was-never-dispatched")
+    _write_rows(
+        root,
+        (
+            ("r-a1", "plan-p", "", "plan-node-a", "session-a", "2026-10-20T10:00:00Z"),
+            ("r-q1", "plan-q", "", "plan-node-q", "session-q", "2026-10-20T11:00:00Z"),
+        ),
+    )
+    result = _resolve(
+        root,
+        pointers=[
+            {
+                "run_id": review_node,
+                "project": PROJECT,
+                "phase": "launched",
+                "session": "session-b",
+                "node": {"id": review_node},
+                "reviewed_run_id": "r-a1",
+                "dispatched_at": "2026-10-20T12:00:00Z",
+            }
+        ],
+    )
+    assert result["plans"]["plan-p"]["coordinator"] == "session-b"
+    assert result["plans"]["plan-p"]["run_id"] == review_node
+    # plan-q's own row still decides plan-q: the same run answers one plan only.
+    assert result["plans"]["plan-q"]["coordinator"] == "session-q"
 
 
 def test_a_dispatch_outside_the_window_is_history(tmp_path: Path) -> None:
