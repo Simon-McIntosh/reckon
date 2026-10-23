@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T00:17:11.955Z",
+  "dispatched_at": "2026-10-23T00:03:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:265",
+      "id": "done_when-1",
+      "reason": "the case must either carry its own mutation (state that it re-applies a case-(1)-style change before reading) or be reordered ahead of case (4), otherwise the node cannot produce the evidence the plan demands.",
+      "text": "\u00a713's case (5) reads \"After case (1)'s change, `_covered_files_for_project` \u2026 scans exactly the moved directory\", but case (4) of the same list has already established that case (1)'s read re-persists the moved directory's identity (\"A second cold read after case (1)'s change \u2026 scans no directory\"), so at the point case (5) runs every recorded directory matches and the reader scans none; case (5)'s assertion cannot hold in the sequence the list prescribes, and a worker following it literally reaches either a red case it cannot write or a re-mutation the plan never states",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:265",
+      "id": "done_when-2",
+      "reason": "unless the plan states that requirement as part of the deliverable, the control passes on the unfixed-shaped behaviour and case (4) measures nothing, so the persistence the plan leans on is left unguarded.",
+      "text": "\u00a713's case (4) control (\"persist only the scanned directories' identities, and the second read scans again\") does not necessarily produce the observable it claims, because it removes persisted state rather than adding it: a `_reuse_covered` that iterates the recorded stamps, finds each one unchanged and returns the persisted entries (metadata_index.py:397-408). A reader is made to reuse less, not to walk more; only an implementation that separately refuses a persisted entry whose parent directory carries no recorded stamp falls back to the walk",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "449a5f7fcfd23596f839637847af7678e3e81b1c877468f722c811e742bac9c5",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 86,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T000141262210-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "3fc4e493c0e5d5e21c06d9a231f2281b5708b432",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol and path resolves at the review base: `_reuse_covered` (metadata_index.py:383), `build_index` (:468), `_walk_covered` (:629), `_covered_files_for_project` (:716), `_served_index_rows` (serve.py:1189), and `tests/test_every_module_fits_a_worker_window.py` and `tests/test_metadata_index_survives_restart.py` both exist.",
+    "done_when": "a finding \u2014 \u00a713's case (5) asserts a scan count its own case (4) has already made impossible, so the numbered sequence cannot be run as written.",
+    "evidence_paths": "pass \u2014 the gate log lands under the run directory with a revision header and `EXIT=`, and the test is a durable repo path, not a scratchpad or a node-local temporary.",
+    "naming": "pass \u2014 the new test name and the symbols it drives name the mechanism (`test_a_changed_directory_rescans_only_itself.py`), with no plan label, stage name or ticket number.",
+    "reasoning": "pass \u2014 the Why matches the code it cites and the mechanism runs on the named caller path: `/_index/<project>` \u2192 `_served_index_rows` (serve.py:1189) \u2192 `index_rows(revalidate=False)` (metadata_index.py:334), which on a process-cache miss hands `build_index` no covered set (:364-379, :489-491) and so walks the whole tree, while `_reuse_covered` is consulted only on the `revalidate` branch (:366-379) and returns `None` on any single moved directory (:404-405).",
+    "single_goal": "pass \u2014 one deliverable: `_reuse_covered` stops being all-or-nothing and every covered-set reader reaches it, with the five cases gating that one mechanism.",
+    "wiring": "pass \u2014 \u00a713's scheduling edges are present and resolve: `plan-section-depends-on` lists `s14 \u2192 s13` (\u00a714 states it runs after \u00a713, which shares `reckon/metadata_index.py`) and `s7 \u2192 s13`, and \u00a713's write path `reckon/metadata_index.py` names a file \u00a73 already created."
+  },
+  "section_digests": {
+    "_document": "b7ef0ceb5f1db955f317725bf386aa649aa45d027ce9acba466c67a62e636b39",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "eec9d0bf91df650f0f5809ecd3b840710e25564f47cc3ef08bc1a534a5e2637d",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T00:22:46.105723+00:00"
+}
