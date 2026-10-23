@@ -35,13 +35,15 @@ cases fail there.</p>
 <code>tests/test_the_domain_waiver_reaches_every_surface.py</code>,
 <code>tests/test_crew_boundary_waiver.py</code>, <code>tests/test_crew_promotion.py</code>,
 <code>tests/test_record_fields_declare_every_key.py</code> and
-<code>tests/test_every_module_fits_a_worker_window.py</code> — at the revision <code>471552623</code> the
-node's own tests pass and the only red test in the window suite is
-<code>reckon/roadmap.py: 50280 estimated tokens exceeds the 50000 bound</code>. That file is not this
-node's: <code>git diff 3906d386 471552623 -- reckon/roadmap.py</code> is empty, the same
-<code>50280</code> is measured at the base revision, and the concurrent node
-<code>every-surface-lists-open-decisions</code> owns that path, so turning the test green would mean
-allowlisting or splitting another node's module. A reviewer attributed the window failure to
+<code>tests/test_every_module_fits_a_worker_window.py</code> — the node's own tests are green at the committed head
+<code>9d0b33afe</code>: <code>3 passed in 175.10s</code> (<code>EXIT=0</code>). The only red test in the
+window suite is <code>reckon/roadmap.py: 50280 estimated tokens exceeds the 50000 bound</code>, and that
+is pre-existing rather than this node's: the same <code>50280</code> against the unchanged
+<code>50000</code> bound is measured at the base revision <code>3906d386</code>, and
+<code>git diff 3906d386 9d0b33afe -- reckon/roadmap.py</code> is empty, so no commit of this node's
+touches the file. The concurrent node <code>every-surface-lists-open-decisions</code> owns that path, so
+turning the test green would mean allowlisting or splitting another node's module. A reviewer attributed
+the window failure to
 <code>reckon/crew/promotion.py</code>; that does not reproduce — the module measures
 <code>29038</code> estimated tokens after the waiver recording moved to
 <code>reckon/crew/promotion_waivers.py</code>, against a bound of <code>50000</code>.</p>
