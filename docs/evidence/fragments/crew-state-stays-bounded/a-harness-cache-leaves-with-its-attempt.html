@@ -1,0 +1,44 @@
+<!-- Evidence anchor: a-harness-cache-leaves-with-its-attempt -->
+
+<section id="a-harness-cache-leaves-with-its-attempt-evidence">
+  <h2>An exited attempt's harness caches leave with that attempt</h2>
+
+  <p id="a-harness-cache-leaves-with-its-attempt-change">
+    <code>_supervisor_exit_record</code> now removes the harness scratch an attempt built for its own
+    process before it composes the record: the client's plugin catalog and download cache under
+    <code>codex-home/cache/</code> and <code>codex-home/plugins/</code>, and the per-run tool cache
+    under <code>cache/</code>. The paths it removed and the size each held go onto the record under
+    <code>removed_harness_caches</code>, so the attempt's own receipt says what left with it. The
+    removal is bound to the <em>writing</em> of an attempt's exit record rather than to the presence
+    of one, so a later attempt of the same run filling the same paths is never touched by a read of
+    an earlier attempt's record. The client's session tree a resume reads,
+    <code>codex-home/sessions/</code> (named by <code>RUN_HOME_SESSIONS</code>), is deliberately not
+    listed and survives. A removal that fails leaves the path in place rather than raising, because a
+    surviving cache must not cost the run its exit record.
+  </p>
+
+  <p id="a-harness-cache-leaves-with-its-attempt-measure">
+    A fixture run holding <code>codex-home/cache/</code>, <code>codex-home/plugins/</code>,
+    <code>cache/</code> and <code>codex-home/sessions/</code>, put through
+    <code>_supervisor_exit_record</code>, keeps the session tree and loses all three caches, and its
+    record lists each removed path with the bytes it held. A fixture that has not exited keeps
+    everything. A run whose first attempt has exited and whose second is running keeps the second
+    attempt's caches through a later read of the first attempt's exit record.
+  </p>
+
+  <p id="a-harness-cache-leaves-with-its-attempt-negative">
+    <strong>Negative control.</strong> The declared mutation adds <code>codex-home/sessions</code> to
+    the removed set. The resume fixture —
+    <code>test_an_exited_attempt_keeps_its_session_tree_and_loses_its_caches</code> — then fails, as
+    does the path-agreement test; the head arm fails neither. The mutation run finished with
+    <code>EXIT=1</code> and two failing test ids.
+  </p>
+
+  <p id="a-harness-cache-leaves-with-its-attempt-base">
+    <strong>Base arm.</strong> At the base revision
+    <code>6fe36f374eb6fc27cca985e30f9a9791575ece6a</code> the exit path has no removal code
+    (<code>ATTEMPT_HARNESS_CACHES</code> is absent), so all four trees survive
+    <code>_supervisor_exit_record</code> — the caches are not this node's invention going away on
+    their own.
+  </p>
+</section>
