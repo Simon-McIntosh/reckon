@@ -1,0 +1,46 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T08:02:44.459Z",
+  "dispatched_at": "2026-10-23T07:49:21Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-gate-judges-what-it-covers.html:178",
+      "id": "reasoning-1",
+      "reason": "a node dispatched on \u00a78 is fenced to `reckon/mcp_deadlines.py` and cannot obtain the before-state there, so it must either block or substitute a proxy (such as the review's own snapshot) that reports the plan's pre-existing debt as newly uncovered, which is exactly the mislabel \u00a78 exists to remove.",
+      "text": "\u00a78 places `uncovered_by_write` in `_review_owed_fields(project, slug, written_path)` and defines it as \"the units this write moved from covered to uncovered, found by comparing coverage before and after it \u2014 but that function is invoked only after the write (`reckon/mcp_edit_plan.py:1706`) with the plan's post-write path, coverage is a function of the plan content (`plan_review.review_coverage(..., plan=...)`, `reckon/crew/plan_review.py:821`), and the store keeps no prior plan version (the version is incremented in place, `reckon/_store.py:451-457`), so the pre-write content the definition needs is not available to it; that content exists only as `cur_data`/`working` one frame up in `_edit_plan` (`reckon/mcp_edit_plan.py:1415,1448`), a file \u00a78's write paths do not list",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "7356511baa0d81103e87dbdfe725d392aa689b06a3f7c2e4fcf42f37db90280f",
+  "plan_slug": "a-review-gate-judges-what-it-covers",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T074825817091-plan-review-of-a-review-gate-judges-what-it-covers",
+  "reviewed_blob_sha": "f54f5e9d605aef9ddbf6f42a4a82a845dc27b2ca",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `PLAN_METADATA_SCALARS` resolves at `reckon/crew/plan_review.py:90`, `_review_owed_fields` resolves at `reckon/mcp_deadlines.py:568`, and `skills/reckon-edit/SKILL.md` exists, so neither citation points at a renamed or deleted target.",
+    "done_when": "pass \u2014 \u00a78's done-when is measurable on a named fixture (s2 already uncovered; `set sprint` and `close` return s2 in `review_owed` and an empty `uncovered_by_write`; a text edit to s3's done-when returns s2 and s3 in `review_owed` and only s3 in `uncovered_by_write`) and it declares a negative control \u2014 `uncovered_by_write` set equal to `review_owed` must fail the first case.",
+    "evidence_paths": "pass \u2014 \u00a78 places every log under the run directory and its write paths are repository files, not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new field `uncovered_by_write` and the cited `_review_owed_fields` are named by the mechanism they perform; no plan label, section id, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a78's stated root cause matches its evidence (the document digest drops status, sprint, owner, ROI, effort, tags, archived, comments and followups, so a `set sprint` or `close` write cannot move it), and the mechanism produces the done-when's arms, but the before/after comparison \u00a78 pins to `_review_owed_fields` is not reachable from the write path \u00a78 declares.",
+    "single_goal": "pass \u2014 \u00a78 now declares one change (the `uncovered_by_write` field) with the `skills/reckon-edit/SKILL.md` edit in its service; the earlier two-deliverable defect was answered by narrowing the section to the field alone.",
+    "wiring": "pass \u2014 \u00a78 carries its own build followup (`f-argjwic-008`, `/reckon-build a-review-gate-judges-what-it-covers \u00a78`) and declares no `depends-on`, which matches \u00a78's own statement that it \"composes with \u00a72 in either order\"."
+  },
+  "section_digests": {
+    "_document": "225a815e200cd0c1c3312dbdd4368b3acedadc4db09e01460d20ac082ce050cb",
+    "s1": "2f80e3c4526e5da0f46c438dc82b2880b0fa395a71a3807823c00850eb9622b9",
+    "s2": "b003c30eb192f0dfa86d4e6518b4deede24bf6b15c0b15ba5784a6066d3da870",
+    "s3": "7df7d94c9d011998671062ddf1072ba44b1c08d7172f92e43f18961813f1d434",
+    "s4": "491337ffa1e3dbb35aed0b41de9bfb17126787d7b0a08c15bb12879faa1a9b43",
+    "s5": "f21e5477c01ae1e8fb4da7b3d607da52313f50d700b6b7dc3d5a2adb8d9f8956",
+    "s6": "534a6debaffa16edfc0cb75f6488191af897e1ff0b9ad32ecdaaa28148c119ff",
+    "s7": "ce6bf11980ac24dc184e5bd2aa6fd813667fe40e90c0ea97a60a56d649f3fd30",
+    "s8": "687c44b0974882d50363d0080b4a820d55114de413d10401fb0603f4dfa34ce2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T08:09:05.853699+00:00"
+}
