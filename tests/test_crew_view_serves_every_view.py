@@ -265,12 +265,12 @@ def _served_by_the_cli(name: str, arguments: dict) -> dict:
 def _views_the_schema_declares() -> tuple[str, ...]:
     """The views the crew tool's argument model advertises.
 
-    Read from the model's own ``view`` annotation rather than from
-    :data:`reckon.mcp.CREW_TOOL_VIEWS`, which the dispatcher supplies: comparing
-    the tool's surface against the dispatcher through that shared constant
-    compares the dispatcher with itself, so a view the schema fails to advertise
-    is invisible. A control replaces this reader to stand in for editing the
-    Literal, which a test cannot do to committed source.
+    Read from the model's own ``view`` annotation rather than from a name the
+    tool re-exports from the dispatcher: comparing the tool's surface against
+    the dispatcher through such a shared name compares the dispatcher with
+    itself, so a view the schema fails to advertise is invisible. A control
+    replaces this reader to stand in for editing the Literal, which a test
+    cannot do to committed source.
     """
     return get_args(CrewArgs.model_fields["view"].annotation)
 

@@ -36,24 +36,34 @@ _FIXTURE_POINTER = {
 
 
 class _StorageStub:
-    """Any open raises, recording that a request reached storage."""
+    """Every storage access raises, recording that a request reached storage.
+
+    Covers both forms the reads reach storage through: opening a file, and
+    resolving a project's docs dir, which stats the mounts file rather than
+    opening one. A probe that covered only ``open`` would let a read that
+    stats its way to its first answer look untouched by storage.
+    """
 
     def __init__(self) -> None:
         self.reached = False
         self.paths: list[str] = []
 
-    def __call__(self, file: object, *args: object, **kwargs: object) -> object:
+    def _record(self, what: str) -> None:
         self.reached = True
-        self.paths.append(str(file))
-        raise AssertionError(
-            f"a malformed request reached storage before it was refused: {file!r}"
-        )
+        self.paths.append(what)
+        raise AssertionError(f"storage was reached: {what}")
+
+    def __call__(self, file: object, *args: object, **kwargs: object) -> object:
+        self._record(repr(file))
+
+    def docs_dir_for(self, project: str, root: object = None) -> object:
+        self._record(f"the docs dir for {project!r}")
 
 
 def _refuse(stub: _StorageStub, call) -> dict:
     """Run ``call`` under the stub's block, which must never be triggered."""
     result = call()
-    assert not stub.reached, f"storage was opened: {stub.paths}"
+    assert not stub.reached, f"a malformed request reached storage: {stub.paths}"
     assert result.get("ok") is False, result
     return result
 
@@ -62,6 +72,7 @@ def _stubbed(monkeypatch) -> _StorageStub:
     stub = _StorageStub()
     monkeypatch.setattr(io, "open", stub)
     monkeypatch.setattr(builtins, "open", stub)
+    monkeypatch.setattr(mcp, "_docs_dir_for_project", stub.docs_dir_for)
     return stub
 
 
@@ -103,22 +114,33 @@ def test_a_live_read_of_a_served_field_is_not_refused() -> None:
     assert rows and rows[0]["run_id"] == "r-fixture"
 
 
-def test_a_view_named_in_another_case_is_not_refused() -> None:
+def test_a_view_named_in_another_case_reaches_the_read(monkeypatch) -> None:
     """A spelling the read serves is not refused from the argument ahead of it.
 
     The plan and roadmap reads match a view after stripping and lowercasing it,
-    so an uppercased name reaches their own selector and is served; the
-    pre-flight has to judge it the same way or it refuses a request the read
-    would have answered.
+    so an uppercased name is served; the pre-flight has to judge it the same
+    way. The stub is what makes this a served/refused assertion rather than a
+    reading of the answer: the read must reach storage, which is the proof that
+    no argument check turned it back. Without it the call resolves the host's
+    own project registry, so the assertion would depend on the machine the
+    suite runs on.
     """
-    assert (
-        mcp._read_plan_tool(project="fixture", view="RAW").get("error")
-        != "invalid_view"
-    )
-    assert (
-        mcp._roadmap_tool(project="fixture", view="SuMMaRy").get("error")
-        != "invalid_view"
-    )
+    for call in (
+        lambda: mcp._read_plan_tool(project="fixture", view="RAW"),
+        lambda: mcp._roadmap_tool(project="fixture", view="SuMMaRy"),
+    ):
+        stub = _stubbed(monkeypatch)
+        result: dict | None = None
+        raised: str | None = None
+        try:
+            result = call()
+        except AssertionError as error:
+            raised = str(error)
+        if raised is not None:
+            assert "storage was reached" in raised, raised
+        assert stub.reached, "an argument check refused a view the read serves"
+        if result is not None:
+            assert result.get("error") != "invalid_view", result
 
 
 def test_a_crew_live_read_naming_an_unknown_field_is_refused(monkeypatch) -> None:

@@ -93,15 +93,14 @@ from reckon.crew.query import (
     _requested_field_names,
 )
 from reckon.mcp_views import (
-    CREW_VIEWS,
-    VIEW_NAMES,
     ResourceSelector,
     ViewRequestError,
     audit_view,
     authored_plan_text,
-    crew_view_refusal_detail,
+    crew_view_name,
     discovery_view,
     error_response,
+    normalize_roadmap_view,
     normalize_selector,
     normalize_view,
     resource_view,
@@ -243,23 +242,12 @@ from reckon.mcp_edit_plan import (
     _validate_working as _validate_working,
 )
 
-#: The read views the crew tool publishes. It is derived from the single
-#: registry :data:`reckon.mcp_views.CREW_VIEWS` that :func:`serve_crew_view`
-#: serves, so the tool's own surface cannot diverge from the CLI's; a parity
-#: check compares this set against the served set and fails on a view
-#: registered on one surface only.
-CREW_TOOL_VIEWS: tuple[str, ...] = CREW_VIEWS
 
-#: The response shapes the roadmap tool publishes, declared here so a view
-#: outside them is refused from the argument rather than after the scan that
-#: builds the report.
-ROADMAP_TOOL_VIEWS: tuple[str, ...] = ("summary", "detail", "raw")
+def _view_refusal(error: ViewRequestError) -> dict[str, Any]:
+    """The refusal dict for a view the owning read's own validator rejected."""
 
-
-def _named_choices(names: Iterable[str]) -> str:
-    """The accepted names as ``a, b or c``, so a refusal reads as a sentence."""
-    ordered = sorted(names)
-    return ", ".join(ordered[:-1]) + " or " + ordered[-1]
+    detail = f"{error.message} {error.hint}".strip() if error.hint else error.message
+    return {"ok": False, "error": "invalid_view", "detail": detail}
 
 
 def _crew_argument_refusal(
@@ -280,12 +268,10 @@ def _crew_argument_refusal(
     one owner: a field check that restated either could refuse a request the
     view answers, and a caller cannot act on a refusal that is wrong.
     """
-    if view not in CREW_TOOL_VIEWS:
-        return {
-            "ok": False,
-            "error": "invalid_view",
-            "detail": crew_view_refusal_detail(),
-        }
+    try:
+        view = crew_view_name(view)
+    except ViewRequestError as error:
+        return _view_refusal(error)
     requested = _requested_field_names(fields)
     if requested:
         try:
@@ -1135,16 +1121,12 @@ def _read_plan_tool(
     """
 
     selected_view = view
-    # Matched the way the read itself matches a view — stripped and lowercased
-    # as :func:`reckon.mcp_views.normalize_view` does — so a spelling the view
-    # serves is not refused from the argument ahead of it.
-    if view is not None and view.strip().lower() not in VIEW_NAMES:
-        return {
-            "ok": False,
-            "error": "invalid_view",
-            "detail": f"unknown view {view!r}; view must be one of "
-            + _named_choices(VIEW_NAMES),
-        }
+    # The read's own normaliser decides this, so a view the read serves is not
+    # refused from the argument ahead of it and the accepted set is one fact.
+    try:
+        normalize_view(view)
+    except ViewRequestError as error:
+        return _view_refusal(error)
     if view is None and not with_schema and project not in (None, "*"):
         selected_view = "summary"
     return _read_plan(
@@ -2098,13 +2080,12 @@ def _roadmap_tool(
     """
 
     selected_view = view
-    if view is not None and view.strip().lower() not in ROADMAP_TOOL_VIEWS:
-        return {
-            "ok": False,
-            "error": "invalid_view",
-            "detail": f"unknown view {view!r}; roadmap views are "
-            + _named_choices(ROADMAP_TOOL_VIEWS),
-        }
+    # The roadmap read's own validator decides this, before the scan that builds
+    # the report it would otherwise answer with.
+    try:
+        normalize_roadmap_view(view)
+    except ViewRequestError as error:
+        return _view_refusal(error)
     if view is None and project != "*" and not project.startswith("graph:"):
         selected_view = "summary"
     if checkout_path is None:
