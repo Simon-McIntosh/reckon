@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligations.py:_review_duty_item",
+    "reckon/crew/obligations.py:obligations",
+    "reckon/crew/obligation_snapshot.py:_derive_fleet_state",
+    "reckon/crew/queue_admission.py:queued_placements"
+  ],
+  "completed_at": "2026-10-23T22:09:55.578Z",
+  "dispatched_at": "2026-10-23T21:54:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 879,
+      "severity": "non-blocking",
+      "text": "the elif that reports review-missing for a stored record naming another head returns before _queued_review_fields runs, so a review queued for the current head after a repair still reads review-missing and names a dispatch the coordinator already made."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 737,
+      "severity": "non-blocking",
+      "text": "placed_at falls back to now when a queued pointer carries no readable queued_at, so the duty row publishes a queued_at stamp that is the read time while queue_admission.queued_placements withholds that request's position."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites",
+    "diff": "read commit by commit against 9bc0690f5; two source/test commits plus a one-line evidence correction.",
+    "done_when": "tests/test_a_queued_review_is_not_missing.py:150 builds the delivered run and queued record; gate logs record 3 passed at head and review-missing at base.",
+    "goal": "obligations.py:701 adds the queued-review reader and obligations.py:890 consults it, giving review-queued for a queued review pointer.",
+    "manifest": "read; reports complete, the three arms, the focused pair, the unread full head arm and the negative control log.",
+    "write_paths": "the diff touches only paths declared in the manifest's write list."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_review_is_not_missing.py:181 asserts a fixed literal 'review-queued' and the negative control at negative-control.log turns it red, so the guard is independent of the value under test.",
+    "evidence": "the gate names tests/test_a_queued_review_is_not_missing.py and the manifest records 3 passed EXIT=0 in gate-head-unit.log plus a readable base arm in gate-base-focused.log, with the unread full head arm disclosed rather than claimed, though the ruff claim carries no log.",
+    "fit": "obligations.py:701 follows the surrounding helper-and-docstring idiom and adds no plan, ticket or version identifier.",
+    "goal_fidelity": "obligations.py:890 lists the duty as review-queued from a queued review pointer, but obligations.py:879 returns review-missing before consulting that reader when a stored record names another head.",
+    "reuse": "obligations.py:722-731 repeats the live-pointer subject sweep that recovery_review_dispatch.py:491 _review_in_flight already owns, though it reads through that module's own _review_subject, _is_review_run and _review_head_covers helpers.",
+    "scope_discipline": "the diff changes only reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py and the landing fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to read a queued review run targeting a delivered run as a second source of the review-queued duty; reckon/crew/obligations.py:701 adds _queued_review_run_fields and obligations.py:890 consults it from the review duty, which gives review-queued for a queued review pointer.\nVERDICT done_when: the done_when names a test that builds a delivered run plus a queued review record in a temporary crew home; tests/test_a_queued_review_is_not_missing.py:150 does so, the manifest records the run (gate-head-unit.log, 3 passed, EXIT=0) and the base arm (gate-base-focused.log) shows the first arm reading review-missing at base.\nVERDICT write_paths: the declared paths are reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py, the landing fragment and a figures directory; the diff touches the first two and the fragment, all inside, and the figures directory is untouched.\nVERDICT manifest: read; it states status complete, the three arms, the focused head/base pair (37 passed 1 failed vs 35 passed 3 failed), the unread full head arm with its reason, ruff clean, and names negative-control.log.\nVERDICT diff: read commit by commit against 9bc0690f5; dbc3c80c9 is the reader and its three arms, 3e967c832 the landing fragment, 253a4bcd5 a one-line correction recording why the full head arm is unread.\nCALL_SITES: reckon/crew/obligations.py:_review_duty_item, reckon/crew/obligations.py:1502 obligations, reckon/crew/obligation_snapshot.py:_derive_fleet_state, reckon/crew/queue_admission.py:queued_placements\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: obligations.py:890 lists the duty as review-queued from a queued review pointer, but obligations.py:879 returns review-missing before consulting that reader when a stored record names another head.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate names tests/test_a_queued_review_is_not_missing.py and the manifest records 3 passed EXIT=0 in gate-head-unit.log plus a readable base arm in gate-base-focused.log, with the unread full head arm disclosed rather than claimed, though the ruff claim carries no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff changes only reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py and the landing fragment, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_queued_review_is_not_missing.py:181 asserts a fixed literal 'review-queued' and the negative control at negative-control.log turns it red, so the guard is independent of the value under test.\nSCORE fit: 18\nJUSTIFICATION fit: obligations.py:701 follows the surrounding helper-and-docstring idiom and adds no plan, ticket or version identifier.\nSCORE reuse: 12\nJUSTIFICATION reuse: obligations.py:722-731 repeats the live-pointer subject sweep that recovery_review_dispatch.py:491 _review_in_flight already owns, though it reads through that module's own _review_subject, _is_review_run and _review_head_covers helpers.\nFINDING reckon/crew/obligations.py:879 non-blocking: the elif that reports review-missing for a stored record naming another head returns before _queued_review_fields runs, so a review queued for the current head after a repair still reads review-missing and names a dispatch the coordinator already made.\nFINDING reckon/crew/obligations.py:737 non-blocking: placed_at falls back to now when a queued pointer carries no readable queued_at, so the duty row publishes a queued_at stamp that is the read time while queue_admission.queued_placements withholds that request's position.\n",
+  "review_run_id": "r-20261023T215252947451-review-of-a-queued-review-is-not-a-missing-review-253a4bcd579a",
+  "reviewed_at": "2026-10-24T00:20:00Z",
+  "reviewed_base_sha": "9bc0690f5d489639283a54c82a850bc2487c8b27",
+  "reviewed_head_sha": "253a4bcd579a4345cbe8156c3d404e341759efbe",
+  "reviewed_run_id": "r-20261023T191757300205-a-queued-review-is-not-a-missing-review",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:11:14.520236+00:00",
+  "total": 100
+}
