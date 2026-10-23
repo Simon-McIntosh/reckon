@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:14:35.901Z",
+  "dispatched_at": "2026-10-23T23:07:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-1",
+      "reason": "one pronoun change (\"the owed-list pass\") removes the only reading in which the named mechanism deletes unattributed directories on every dispatch.",
+      "text": "\"Today only the gc command calls it, so \u00a78 gives it two callers\" has no determinable antecedent: the sentence it follows declares `garbage_collect_orphan_scratch` \"stays as it is\", yet orphan scratch removes unattributed directories by ctime age and settles no owed removal, so a builder reading \"it\" as orphan scratch wires an age-based delete into every dispatch and into `retention_sweep`, which \u00a77 requires to run \"the run-directory retention alone, not the rest of gc\" \u2014 the harmful reading produces neither the done-when's settlement case nor \u00a77's constraint",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "done_when-1",
+      "reason": "the rule the design exists to enforce has no assertion, so removing another run's or an unattributed directory would be green.",
+      "text": "\u00a78 states \"A directory of the run's name that no attempt recorded is left alone\", which is the exact shape of the measured leak, but the done-when (plan.html:170) asserts only that it is not *reported* removed, so a release that silently deletes it and reports not-removed passes every case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-2",
+      "reason": "naming the fallback when the route lies outside the declared paths (or including the module the plan itself names as a completion path) is the difference between a node that lands the fix and one that halts on discovery.",
+      "text": "\u00a78 makes \"the node first reads the promoted records of the 13 review runs ... and puts that route through the same release\" a deliverable while its write paths cover only `dispatch_launch.py`, `promotion.py`, `promotion_release.py`, `promotion_records.py`, `gc.py` and a new test, on the plan's own statement (plan.html:169) that `reckon/crew_run_commands.py:2590` also calls `_release_after_promotion`, so a route found in a module outside the list stops the node under the \"necessary change exceeds your write scope\" rule instead of landing",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "910df753f847b05ef8434472b7b46780ca04d6cf59951cfe9f718cfc824d39e3",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 23,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T230619317892-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "7ff63fa8cf17f84c466efbfbf91071ab3b7dd745",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited href resolves once `.html` is appended (`/reckon/research/monitor-storage-load-rca`, `/reckon/plans/history-persists-as-detail-washes-out`, `/reckon/plans/the-crew-home-has-a-bound`, `/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s3|#s6|#s7`), and every named symbol exists (`ensure_worker_scratch`/`remove_worker_scratch` dispatch_launch.py:782,829; `_release_after_promotion` promotion_release.py:476; `garbage_collect_scratch` gc.py:1173; `garbage_collect_orphan_scratch` gc.py:1030; `retention_sweep` gc.py:1329; `_ledgered_run_ids` routing.py:920).",
+    "done_when": "a finding \u2014 \u00a78's done-when never asserts the rule it states for a directory of the run's name that no attempt recorded, which is the leak shape the design turns on.",
+    "evidence_paths": "pass \u2014 \u00a78 places its gate logs under the run directory, and the durable record is the committed evidence fragment it names, which is the answer already given to the same point on \u00a76; the fragment is not a scratchpad.",
+    "naming": "pass \u2014 \u00a78's only new symbol-bearing path is `tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py`, which names the mechanism; no plan labels, stage names or ticket numbers reach code or comments.",
+    "reasoning": "a finding \u2014 \u00a78's \"Today only the gc command calls it, so \u00a78 gives it two callers\" leaves \"it\" undetermined between `garbage_collect_orphan_scratch`, which the preceding clause says \"stays as it is\" and which by its own docstring removes unattributed directories by ctime age (gc.py:1173-1193), and `garbage_collect_scratch`, which is where the owed-list pass is actually added; and \u00a78 asks the node to put an unnamed review-promotion route through the release while its declared write paths stop at five modules.",
+    "single_goal": "pass \u2014 \u00a78's four cases (per-attempt host record, owed list, two callers, review promotion reaching the release) all serve one goal, \"a run's scratch leaves with the run, on the host that made it\", and its gate covers each.",
+    "wiring": "pass \u2014 `plan-section-depends-on` records `s8: [crew-state-stays-bounded#s7]`, matching \u00a78's \"runs after \u00a77\", and every other declared edge resolves (s4 \u2192 the-monitor-reads-each-fact-once#s12, s5 \u2192 #s7)."
+  },
+  "section_digests": {
+    "_document": "7b027ab93025f3f1274af4c8c21f7e58c154d6e99dbdf5e7f4aa8931cbb1f280",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "70f400207fe6834363a666faeb003ed353cf121b120f619c8a348d08b02cb3bf"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:18:23.315839+00:00"
+}
