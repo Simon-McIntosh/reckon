@@ -86,6 +86,48 @@
     turns the gate red: <code>test_a_store_write_makes_the_next_read_recompose</code>
     FAILED, 1 failed / 4 passed, EXIT=1, which the head arm passes.
   </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-repair">
+    <strong>Repair of <code>ffcdbb6915e</code>.</strong> The review found the file
+    short of the section's own bullets: four families of case the section names
+    were not held, so the recorded gate did not assert the measure the done-when
+    names. They now are, on top of the five that were there.
+    (a) A fresh process whose first roadmap call answers from a snapshot another
+    process persisted: its warm arm pays <strong>2</strong> covered-file visits
+    while it resolves the mounts — one existence check per mounted project — and
+    none of the <strong>400</strong> covered files, against the cold arm's walk.
+    (b) A plan written through the store in one process, forcing a second
+    process that is already warm to recompose while the revalidation window
+    stands at <strong>3600</strong> s, so no window can explain it, with the
+    written version asserted to have advanced past the first.
+    (c) A live run's exit record taking the next call out of
+    <code>in_flight</code> — the map read <code>[r-live]</code> before and
+    <code>[]</code> after, with a recomposition past the <strong>200</strong>
+    documents the project holds — and the same again with <code>_fresh_liveness</code>
+    patched to turn false.
+    (d) The service clock advanced <strong>3000</strong> s with every file
+    untouched, moving the run's classification and recomposing.
+    Writing these exposed a defect behind clause (c): the key carried only the
+    watcher's <em>state</em>, which is recomputed from the files a run owns, so
+    a worker that died with every file untouched left the key exactly where it
+    was and the read answered from the composition made before the death. The
+    key row now carries the watcher's fresh liveness reading beside the state;
+    it is a signal-0 probe, so the key still touches no covered file. A recompose
+    arm is now asserted as a covered-file count above the fixture's document
+    count, because the key's own path resolution puts <strong>4</strong> visits
+    on that counter and a nonzero assertion cannot tell a served answer from a
+    composed one.
+  </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-repair-measure">
+    <strong>Repair measure.</strong> At <code>e8f1feba7</code> the gate is
+    <strong>48 passed</strong>, EXIT=0, against the 44 recorded above — the four
+    new cases, no failure added and no test id removed. The negative control for
+    the repair reverts the answering commit's code half in a scratch tree built
+    from that head, leaving every test in place: the live-run liveness arm then
+    measures <strong>4</strong> covered-file visits where it asserts more than
+    200 and the gate is <strong>EXIT=1</strong>, while the same arm passes on the
+    unpreverted head. The control for the write counter recorded above is
+    unchanged.
+  </p>
 </article>
 </body>
 </html>
