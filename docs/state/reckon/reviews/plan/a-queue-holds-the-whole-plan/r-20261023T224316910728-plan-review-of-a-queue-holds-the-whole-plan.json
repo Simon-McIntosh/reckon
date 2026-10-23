@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:50:00.126Z",
+  "dispatched_at": "2026-10-23T22:44:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261023T224316910728-plan-review-of-a-queue-holds-the-whole-plan/plan.html:80",
+      "id": "done_when-1",
+      "reason": "this arm exists to replace a cycle test an earlier review found unbuildable, and it is still unbuildable, so the node would either ship no mixed-cycle coverage or silently widen `--after` past the mechanism's stated scope.",
+      "text": "\u00a78's new mixed-cycle arm (\"queues request X waiting on `A#s1`, then dispatches request Y for `A#s1` with `--after` X: Y is refused\") cannot be built as written, because the mechanism paragraph defines `--after <request-id>` only \"for a brief dispatch that has no section\", so a request Y that is *for section A#s1* carries no `--after` wait edge, while a section-less brief dispatch is not \"for A#s1\" and so is never joined to X's wait; either reading leaves no Y->X edge and the asserted cycle cannot arise",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261023T224316910728-plan-review-of-a-queue-holds-the-whole-plan/plan.html:80",
+      "id": "done_when-2",
+      "reason": "without the positive arm the landed-through-`run_ids` path is untested, and the one condition the section was rewritten to get right can be stubbed out while the gate stays green.",
+      "text": "\u00a78 asserts \"Even a `complete` manifest satisfies a wait only once its run has landed\" and makes that the crux of the whole section, but every run-wait arm measures only the negative side (a `blocked`/`failed` closure moves to `blocked-upstream`, a `complete`-but-unlanded run stays `awaiting-upstream`); no arm shows a `complete` run that *has* landed moving its waiter to `queued`, so an implementation whose landed predicate never returns true passes the whole done-when",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "05b4aac1edcdc9c04cee714e6c26e0784764742e1da237ca5f734a21f8f72d39",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 30,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-23T22:50:12.047995+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-2",
+      "reason": "",
+      "when": "2026-10-23T22:50:26.197038+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:50:12.047995+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T22:50:26.197038+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v30.json",
+  "review_run_id": "r-20261023T224316910728-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "e0ff54caf4c29dca1f4ff7423be8d6f215d1ec0d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `TERMINAL_MANIFEST_STATUSES`/`MANIFEST_STATUSES`/`parse_manifest` (`reckon/crew/reports.py:126,138,317`), `run_ids` (`reckon/ledger.py:1019`), `_promoted_run_ids` (`reckon/crew/recovery_repair_dispatch.py:550`, which does call `ledger_module.run_ids`), `parse_plan_ref` (`reckon/_schema.py:276`, regex `[project:]slug[#stage]`, so `B:plan#s2` resolves), `crew dispatch` with `--brief`/`--section` (`reckon/crew_dispatch_commands.py:1084,1088,1098`) and `TaskNode` (`reckon/crew/node.py:724`) all resolve; the one symbol present nowhere in the tree, `RUN_DELIVERED_STATUSES`, is the constant \u00a78 itself attributes to \u00a72's implementation (finding already answered).",
+    "done_when": "a finding \u2014 \u00a78's newly added mixed-cycle arm cannot be built under \u00a78's own definition of `--after`, and the landed predicate has no positive arm.",
+    "evidence_paths": "pass \u2014 \u00a78 names `reckon/crew/queue_admission.py`, `reckon/crew/dispatch_admission.py`, `reckon/crew_dispatch_commands.py`, `reckon/crew/node.py` and a new test file, all durable repository paths, and places no evidence in a scratch or node-local temporary path.",
+    "naming": "pass \u2014 the symbols \u00a78 introduces (`RUN_DELIVERED_STATUSES`, the wait derivation, `--after`) are named by mechanism, with no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "pass \u2014 \u00a78's factual premise checks out: `completed`, `done`, `landed` and `promoted` are all outside `MANIFEST_STATUSES` (`reckon/crew/reports.py:126-140`), so `parse_manifest` refuses them at `reckon/crew/reports.py:735`, and the repair to `complete`-plus-landed is the right one; the mechanism defect is reported under done_when.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, a queue that respects the roadmap's DAG across plans and projects; the delivered-status repair is part of making a run wait resolvable, not a second goal.",
+    "wiring": "pass \u2014 \u00a78's declared edge `s8 -> s2` is the one it needs (`awaiting-upstream`/`blocked-upstream` come from \u00a72), and its consumers `s9` and `s15` both declare `s8`."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "24c18b7b41975c6acbcd0974c57213a230954c48337ab78323259e1457b8d5de",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:50:03.531618+00:00"
+}
