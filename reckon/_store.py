@@ -65,6 +65,7 @@ import json
 import os
 import re
 import secrets
+from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import ExitStack, contextmanager, suppress
 from contextvars import ContextVar
@@ -906,6 +907,11 @@ def _forged_plan_structure(body: str) -> str | None:
     structure: a heading adds a section, a ``section[data-reckon]`` element adds
     structured state, and a ``plan-*`` meta adds plan metadata. One predicate
     keeps the three from drifting apart.
+
+    The deferred-work term is refused here too, in prose only: work found beyond
+    a node is a plan section or an instruction in the dispatching prompt, so a
+    body naming it is refused while a body citing it inside ``<code>`` — a
+    symbol, not a bucket — is not.
     """
     from bs4 import BeautifulSoup
 
@@ -918,14 +924,87 @@ def _forged_plan_structure(body: str) -> str | None:
         return "structured plan state"
     if soup.select_one('meta[name^="plan-"]') is not None:
         return "plan metadata"
+    term = _prose_deferred_work_term(body)
+    if term is not None:
+        return _deferred_work_term_reason(term)
     return None
 
 
-def _refuse_forged_body_structure(body: str, *, subject: str) -> None:
-    """Refuse a body that forges plan structure, naming the ``subject`` it was written for."""
+def _deferred_work_term_reason(term: str) -> str:
+    """The refusal a body carrying the deferred-work term earns, naming the rule.
+
+    The rule sentence is document-check's, which spells it for the audit warning
+    as well, so a refusal and the warning that follows it cannot drift apart.
+    """
+    from reckon.doccheck import DEFERRED_WORK_RULE
+
+    return f'the term "{term}" in prose; {DEFERRED_WORK_RULE}'
+
+
+def _prose_deferred_work_term(body: str) -> str | None:
+    """The deferred-work term an authored HTML fragment carries in prose, or ``None``.
+
+    The reader is document-check's, which already leaves the ``<pre>`` and
+    ``<code>`` subtrees out, so the store and the audit never disagree about
+    what counts as prose.
+    """
+    from bs4 import BeautifulSoup
+
+    from reckon.doccheck import deferred_work_term
+
+    return deferred_work_term(BeautifulSoup(body, "html.parser"))
+
+
+def _deferred_work_term_is_the_reason(body: str, forged: str) -> bool:
+    """True when the term, rather than a heading or forged state, is the reason.
+
+    The predicate reads structure before it reads prose, so a body that forges a
+    heading and also carries the term is refused for the heading. The reason is
+    the term's own only where it matches the refusal the term earns.
+    """
+    term = _prose_deferred_work_term(body)
+    return term is not None and forged == _deferred_work_term_reason(term)
+
+
+def _refuse_forged_body_structure(
+    body: str, *, subject: str, term_hint: str | None = None
+) -> None:
+    """Refuse a body that forges plan structure, naming the ``subject`` it was written for.
+
+    ``term_hint`` appends the route out of the refusal, and only where the
+    refusal's reason is the deferred-work term. Text mode is the route out of
+    that refusal alone, because it compares the fragment an edit adds against
+    the text it replaces; a body refused for a heading is not edited by text
+    mode, and naming it there would answer a refusal the caller did not get.
+    """
     forged = _forged_plan_structure(body)
-    if forged is not None:
-        raise OpError(f"{subject} must not contain {forged}")
+    if forged is None:
+        return
+    message = f"{subject} must not contain {forged}"
+    if term_hint and _deferred_work_term_is_the_reason(body, forged):
+        message = f"{message}; {term_hint}"
+    raise OpError(message)
+
+
+def _deferred_work_term_a_text_edit_adds(old_html: str, new_html: str) -> str | None:
+    """The deferred-work term a text replacement authors, or ``None``.
+
+    Text mode supplies the fragment as it stood and as it will stand, so only
+    the text the edit adds is new: a term the replaced fragment already carried
+    is legacy prose the edit is leaving alone, and a term the new fragment
+    carries and the old did not is one this edit wrote.
+    """
+    from bs4 import BeautifulSoup
+
+    from reckon.doccheck import deferred_work_terms
+
+    before = Counter(deferred_work_terms(BeautifulSoup(old_html, "html.parser")))
+    for term in deferred_work_terms(BeautifulSoup(new_html, "html.parser")):
+        if before[term]:
+            before[term] -= 1
+        else:
+            return term
+    return None
 
 
 def _insert_authored_section(html_text: str, request: dict[str, str]) -> str:
@@ -2047,6 +2126,15 @@ def _replace_plan_text(
             raise ValueError(f"{selector} must be non-empty")
         if old_html == new_html:
             raise ValueError(f"{selector} and new_html are identical")
+        # Only the text this pair adds is new, so a plan whose prose already
+        # carries the term stays editable. ValueError is text mode's refusal
+        # channel, which the MCP handler maps to text_edit_error.
+        added = _deferred_work_term_a_text_edit_adds(old_html, new_html)
+        if added is not None:
+            written = f"replacements[{index}].new_html" if indexed else "new_html"
+            raise ValueError(
+                f"{written} must not contain {_deferred_work_term_reason(added)}"
+            )
         checked.append((old_html, new_html, selector))
 
     docs_dir = _docs_dir_for_project(project, root)

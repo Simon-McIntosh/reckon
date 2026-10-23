@@ -1,0 +1,87 @@
+<section id="a-plan-write-refuses-the-bucket-landing">
+  <h2>A plan write that names the deferred-work term in prose is refused</h2>
+
+  <p id="a-plan-write-refuses-the-bucket-what-changed"><strong>What changed.</strong>
+  The plan store now refuses an authored plan body that names the deferred-work
+  term in prose. The refusal is one more reason the existing forged-body
+  predicate reports (<code>_forged_plan_structure</code> in
+  <code>reckon/_store.py</code>), not a second check: <code>insert_section</code>,
+  an <code>append_evidence</code> body, a created plan's section body — which
+  reaches the same predicate through <code>_queue_authored_section</code> and
+  <code>_insert_authored_section</code> — and a <code>set</code> of
+  <code>sections.&lt;id&gt;.body</code> through
+  <code>reckon/_store_section_ops.py</code>'s <code>_refuse_forged_structure</code>
+  all raise it in the channel they already used, so no caller sees a new error
+  code: an operation error on the state routes and a text-edit error on text
+  mode. The reason the predicate returns is the rule itself with the quoted
+  fragment, as in <code>the term "follow-on" in prose; additional work is a plan
+  section or an instruction in the dispatching prompt</code>.</p>
+
+  <p id="a-plan-write-refuses-the-bucket-design"><strong>Three details carry the
+  design.</strong> The prose is read by the audit's own reader,
+  <code>reckon/doccheck.py</code>'s <code>_prose_text</code>, which already leaves
+  the <code>&lt;pre&gt;</code> and <code>&lt;code&gt;</code> subtrees out, so a
+  section citing the term as a symbol stays writable and the store and the audit
+  cannot disagree about what counts as prose. Text mode
+  (<code>_replace_plan_text</code>) supplies the fragment it replaces beside the
+  fragment it writes, and only the term the edit adds is refused, counted per
+  occurrence, so a plan whose older prose already carries the term stays
+  editable. A <code>sections.&lt;id&gt;.body</code> set has no prior body to
+  compare against, so a legacy body carrying the term is refused there, and that
+  refusal names text mode as the route out.</p>
+
+  <p id="a-plan-write-refuses-the-bucket-audit"><code>reckon audit-doc</code>
+  reports the term in prose as one new warning kind,
+  <code>deferred-work-term-in-prose</code>, on a plan that already carries it, so
+  the corpus is converted without a write-time refusal breaking on history.</p>
+
+  <h3>Measured</h3>
+
+  <p id="a-plan-write-refuses-the-bucket-negative-control">The declared mutation
+  removes the term clause from <code>_forged_plan_structure</code>. Under it four
+  of the eleven cases report acceptance where the test asserts a refusal — the
+  inserted section, the created plan's section body, the
+  <code>sections.&lt;id&gt;.body</code> set and the <code>append_evidence</code>
+  body — so the term clause, and not some other reason, is what refuses them. The
+  run exits non-zero with those four test ids failing. The source is restored in
+  the same command, and the tree carries no mutation (an empty diff against the
+  committed head).</p>
+
+  <table id="a-plan-write-refuses-the-bucket-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>the new test file alone</td>
+        <td>8e7955f88</td>
+        <td>11 cases pass; under the declared mutation 4 fail and 7 pass</td>
+      </tr>
+      <tr>
+        <td>the population of test files that reach the authored-body paths</td>
+        <td>4d75245b4 (base)</td>
+        <td>3 failed, 652 passed</td>
+      </tr>
+      <tr>
+        <td>the same population at the head</td>
+        <td>6d14eefbc</td>
+        <td>the same 3 failed, 663 passed — no failure added</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="a-plan-write-refuses-the-bucket-arms-note"><strong>The change adds no
+  failure.</strong> Both arms are red on the same three ids, so those three were
+  already failing before this work, and this work added none of them. The head
+  arm runs the base population plus the new test file, which is the difference
+  between the two pass counts.</p>
+
+  <ul id="a-plan-write-refuses-the-bucket-pre-existing">
+    <li><code>tests/test_edit_plan_section_writes.py::test_unknown_declaration_value_is_refused_with_the_accepted_values</code></li>
+    <li><code>tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat</code></li>
+    <li><code>tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact</code></li>
+  </ul>
+
+  <p id="a-plan-write-refuses-the-bucket-arms-history">An earlier pair of arms run
+  from this node's own worktree produced no usable result — one closed without
+  the summary that names its failures, and one was handed a list naming a file
+  absent from its tree. Those runs are superseded by the two arms above.</p>
+</section>
