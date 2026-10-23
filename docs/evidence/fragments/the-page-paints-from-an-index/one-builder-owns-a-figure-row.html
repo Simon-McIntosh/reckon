@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="One builder owns a figure row">
+  <meta name="plan-summary" content="reckon/figures.py owns one public builder of a single figure's row; the Figures inventory and the metadata index both read it, and the index adds only its stamps, revision and empty lifecycle fields, projected onto ROW_FIELDS.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s16">
+  <meta name="plan-commits" content="4f15b18ba,472a9ffc9">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="figures,index,refactor,single-source">
+  <title>One builder owns a figure row — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="one-builder-owns-a-figure-row" data-reckon="landed" data-when="2026-10-23">
+  <h2 id="one-builder-owns-a-figure-row-title">One builder owns a figure row</h2>
+
+  <p id="one-builder-owns-a-figure-row-what">Two builders derived one figure's row.
+  <code>_figure_row</code> in <code>reckon/metadata_index.py</code> reached into
+  <code>figures._DIMS_BY_SUFFIX</code>, <code>figures._capture_metadata</code> and
+  <code>figures._titleize</code> to derive a slug, kind, title, dimensions and href, while
+  <code>figures.figure_rows</code> derived the same fields for the Figures inventory, and
+  the copies had already diverged: the inventory row carried <code>for_plan</code>,
+  <code>caption</code> and <code>download</code> where the index row did not. Commit
+  <code>4f15b18ba</code> makes <code>reckon.figures.figure_row</code> the one public
+  builder of a single figure's row from its path. <code>figure_rows</code> calls it for
+  each file and renders its <code>dims</code> string from the builder's numeric
+  <code>width</code> and <code>height</code>, carrying neither number itself, so the
+  inventory row keeps the shape it served before. The index builds each figure row by
+  calling the same builder and adding only what the index alone carries — its
+  <code>width</code> and <code>height</code> come straight from the builder, and its
+  <code>created</code>, <code>edited</code>, <code>revision</code> and the empty
+  <code>status</code>, <code>sprint</code> and <code>archived</code> are added on top —
+  projected onto <code>ROW_FIELDS</code>. <code>_figure_row</code> is gone, and
+  <code>reckon/metadata_index.py</code> defines no such name and reads no private name of
+  <code>reckon/figures.py</code>.</p>
+
+  <p id="one-builder-owns-a-figure-row-revision">The revision-drop seam moved with it. The
+  negative-control fixture in <code>tests/test_a_figure_revision_is_fetched_once.py</code>
+  patched <code>metadata_index._figure_row</code>; it now patches
+  <code>metadata_index._figure_revision</code>, the step that adds the revision to an
+  index row. The file's cases are otherwise unchanged.</p>
+
+  <h3 id="one-builder-owns-a-figure-row-measured">Measured</h3>
+  <ul>
+    <li><strong>The new file, at <code>472a9ffc9</code>:</strong>
+    <code>tests/test_one_builder_owns_a_figure_row.py</code> holds a temporary docs tree
+    with a PNG (320 × 200), a GIF (640 × 480), a captioned PNG (100 × 50) and an SVG whose
+    <code>viewBox</code> is <code>0 0 1400.5 900.25</code>. Its four cases prove that the
+    index row and the inventory row agree on every field both carry and that the index row
+    carries exactly the twelve keys a figure row serves today; that the SVG's fractional
+    <code>width</code> 1400.5 and <code>height</code> equal the reader's values unrounded
+    while the inventory renders <code>1400.5 × 900.25</code>; that the captured figure is
+    titled from its capture name (<code>control layout</code>), not its stem
+    (<code>captured</code>); that every index row's <code>revision</code> equals the
+    stat-derived token; and that patching the public builder to return a marker title moves
+    the title in both the index and the inventory. The run is
+    <strong>4 passed, EXIT=0</strong>.</li>
+    <li><strong>The revision file, at <code>472a9ffc9</code>:</strong> unarmed,
+    <strong>10 passed, EXIT=0</strong>; armed with
+    <code>RECKON_TEST_DROP_FIGURE_REVISION=1</code> it fails exactly the two cases the old
+    seam failed, <code>test_the_index_row_carries_the_revision_the_first_paint_uses</code>
+    and <code>test_an_index_entry_that_predates_the_field_is_refreshed</code>
+    (<strong>2 failed, 8 passed</strong>).</li>
+    <li><strong>The declared mutations, each applied, run and reversed under a trap:</strong>
+    <em>Arm A</em> derives the title differently inside the index's call path only — 3
+    failed, including
+    <code>test_both_readers_agree_on_every_field_they_both_carry</code>.
+    <em>Arm B</em> drops <code>width</code> and <code>height</code> from the index's
+    projection — 1 failed, the same agreement case. <em>Arm C</em> drops the revision — 1
+    failed, <code>test_the_index_row_carries_the_revision_its_first_paint_uses</code>.
+    <em>Arm D</em> builds the index row from a private copy of the derivation — 1 failed,
+    <code>test_one_builder_feeds_both_readers</code>, whose index row keeps the real title
+    while the inventory carries the marker. Every arm exits 1; the log's last line is
+    <code>EXIT=1</code>, and <code>git status --porcelain</code> after the reversal is
+    empty (the worktree's <code>.venv</code> and <code>.env</code> are gitignored links).</li>
+    <li><strong>The population importing either module, at <code>472a9ffc9</code>:</strong>
+    the 39 test files whose imports reach <code>reckon/metadata_index.py</code> or
+    <code>reckon/figures.py</code> run with <code>-n 4</code> and a per-run
+    <code>--basetemp</code>: <strong>204 passed, EXIT=0</strong>.</li>
+    <li><strong>The worker-window gate:</strong>
+    <code>tests/test_every_module_fits_a_worker_window.py</code> passes for both modules,
+    <strong>4 passed</strong>, and the window and builder files together are
+    <strong>8 passed, EXIT=0</strong>.</li>
+    <li><strong>Ruff:</strong> <code>ruff check</code> and <code>ruff format --check</code>
+    are clean on all four staged paths.</li>
+  </ul>
+
+  <p id="one-builder-owns-a-figure-row-scope"><strong>Not done here, by scope.</strong>
+  This gate measures only this node's own change; the merged result is verified by a
+  separately dispatched test node. Share consumption of the index — §15 — reads the same
+  module and runs after this section.</p>
+</article>
+</body>
+</html>

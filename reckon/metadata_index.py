@@ -917,7 +917,7 @@ def _row_for(
     """
 
     if path.suffix in _FIGURE_SUFFIXES:
-        return _figure_row(path, docs_dir, project, signature, stamp), None, None
+        return _figure_index_row(path, docs_dir, project, signature, stamp), None, None
     return _resource_row(path, docs_dir, project, signature, stamp)
 
 
@@ -1212,44 +1212,52 @@ def _unreadable_record(archived: bool) -> dict:
     }
 
 
-def _figure_row(
+def _figure_revision(path: Path) -> str:
+    """Return the token that addresses this figure's bytes, or ``""``.
+
+    The revision lets a page's first paint build a URL the server answers
+    immutable from the row it already holds rather than one it must ask for. An
+    unreadable file carries none, and its URL falls back to revalidation.
+    """
+
+    try:
+        return file_revision(path.stat())
+    except OSError:
+        return ""
+
+
+def _figure_index_row(
     path: Path,
     docs_dir: Path,
     project: str,
     signature: list[int],
     stamp: StampFn,
 ) -> dict | None:
-    try:
-        slug = path.relative_to(docs_dir / _FIGURE_DIR).as_posix()
-    except ValueError:
+    """Return one figure's index row, built by :func:`reckon.figures.figure_row`.
+
+    The builder owns every field a figure row derives from its path, so a
+    title, a kind, a dimension or a href is derived once for both the index and
+    the Figures inventory. This adds only what the index alone carries — the
+    file's ``created`` and ``edited`` stamps, its ``revision``, and the empty
+    ``status``, ``sprint`` and ``archived`` a figure row serves — and projects
+    the result onto :data:`ROW_FIELDS`.
+    """
+
+    row = figures.figure_row(path, docs_dir, project)
+    if row is None:
         return None
-    dims = figures._DIMS_BY_SUFFIX[path.suffix](path)
-    capture, _caption = figures._capture_metadata(path)
     created, edited = stamp(path, signature)
-    # The revision addresses this figure's bytes, so a page's first paint builds
-    # a URL the server answers immutable from the row it already holds rather
-    # than one it must ask for. An unreadable file carries none, and its URL
-    # falls back to revalidation.
-    try:
-        revision = file_revision(path.stat())
-    except OSError:
-        revision = ""
-    return {
-        "slug": slug,
-        "href": f"/{project}/figures/{slug}",
-        "type": "gif" if path.suffix == ".gif" else "figure",
-        "title": figures._titleize(capture)
-        if capture
-        else figures._titleize(path.stem),
-        "status": "",
-        "sprint": None,
-        "archived": "",
-        "created": created,
-        "edited": edited,
-        "width": dims[0] if dims else None,
-        "height": dims[1] if dims else None,
-        "revision": revision,
-    }
+    row.update(
+        {
+            "status": "",
+            "sprint": None,
+            "archived": "",
+            "created": created,
+            "edited": edited,
+            "revision": _figure_revision(path),
+        }
+    )
+    return {field: row[field] for field in ROW_FIELDS if field in row}
 
 
 def _stat_stamps(path: Path, signature: list[int]) -> tuple[int, str]:
