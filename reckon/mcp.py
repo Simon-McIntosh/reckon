@@ -85,11 +85,12 @@ from reckon.capability import (
 )
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
 from reckon.crew.query import (
-    COMMON_RUN_FIELDS,
-    LIVE_OVERRUN_FIELDS,
-    LIVE_PLACEMENT_FIELDS,
     RUN_SCOPES,
     RUN_SOURCES,
+    RunQueryError,
+    _refuse_unknown_fields,
+    _refuse_unknown_live_fields,
+    _requested_field_names,
 )
 from reckon.mcp_views import (
     CREW_VIEWS,
@@ -254,96 +255,11 @@ CREW_TOOL_VIEWS: tuple[str, ...] = CREW_VIEWS
 #: builds the report.
 ROADMAP_TOOL_VIEWS: tuple[str, ...] = ("summary", "detail", "raw")
 
-#: The fields a ``live`` crew row answers. :func:`reckon.crew.query
-#: .live_field_vocabulary` derives the same set from the pointers it read, so a
-#: name no row carries can only be refused after storage. The classification
-#: answers these keys for any record, so the set is record-independent and is
-#: declared here: a request naming a field the view does not answer then depends
-#: on the argument alone and never waits on a read.
-_LIVE_ROW_FIELDS = (
-    frozenset(
-        {
-            "backend",
-            "budget_overrun",
-            "budget_overrun_seconds",
-            "budget_seconds",
-            "classification",
-            "commits_beyond_base",
-            "detail",
-            "effective_phase",
-            "elapsed_seconds",
-            "exit_record",
-            "external_wait",
-            "fleet_verdict",
-            "interruption",
-            "lane",
-            "lane_cause",
-            "lane_ended_at",
-            "lane_event",
-            "lifting_condition",
-            "liveness_proven",
-            "log_age_seconds",
-            "log_fresh",
-            "manifest_commits",
-            "manifest_derived",
-            "manifest_digest",
-            "manifest_error",
-            "manifest_file_present",
-            "manifest_fresh",
-            "manifest_path",
-            "manifest_present",
-            "manifest_reported_status",
-            "manifest_status",
-            "marker",
-            "model_key",
-            "needs_help_complete",
-            "next_action",
-            "node",
-            "phase",
-            "plan",
-            "process_alive",
-            "process_descendant_alive",
-            "project",
-            "recovery",
-            "recovery_classification",
-            "resets_at",
-            "review_error",
-            "review_present",
-            "review_status",
-            "run_id",
-            "session",
-            "stored_phase",
-            "terminal_age_seconds",
-            "terminal_at",
-            "wait_age_seconds",
-            "wait_condition_state",
-            "wait_key_defect",
-            "wait_observed",
-            "wait_overdue",
-            "worktree",
-        }
-    )
-    | LIVE_OVERRUN_FIELDS
-    | frozenset(LIVE_PLACEMENT_FIELDS)
-    | frozenset(COMMON_RUN_FIELDS)
-)
-
 
 def _named_choices(names: Iterable[str]) -> str:
     """The accepted names as ``a, b or c``, so a refusal reads as a sentence."""
     ordered = sorted(names)
     return ", ".join(ordered[:-1]) + " or " + ordered[-1]
-
-
-def _requested_field_names(fields: Iterable[str] | None) -> tuple[str, ...]:
-    """The requested crew field names, normalized and de-duplicated in order."""
-    if fields is None:
-        return ()
-    if isinstance(fields, str):
-        parts = fields.split(",")
-    else:
-        parts = [str(field) for field in fields]
-    return tuple(dict.fromkeys(part.strip() for part in parts if part.strip()))
 
 
 def _crew_argument_refusal(
@@ -359,9 +275,11 @@ def _crew_argument_refusal(
     A view outside the served set, a field no row answers and a scope or source
     outside the declared one each depend on nothing but the argument, so the
     refusal is raised here rather than left to the view, which reaches the same
-    verdict only after it has read the pointers.
+    verdict only after it has read the pointers. The views' own validators are
+    what decide a field, so the accepted set and the wording of its refusal have
+    one owner: a field check that restated either could refuse a request the
+    view answers, and a caller cannot act on a refusal that is wrong.
     """
-
     if view not in CREW_TOOL_VIEWS:
         return {
             "ok": False,
@@ -369,20 +287,16 @@ def _crew_argument_refusal(
             "detail": crew_view_refusal_detail(),
         }
     requested = _requested_field_names(fields)
-    if view == "live" and requested:
-        vocabulary = set(_LIVE_ROW_FIELDS)
-        if session is not None:
-            vocabulary.add("mine")
-        unknown = sorted(set(requested) - vocabulary)
-        if unknown:
-            return {
-                "ok": False,
-                "error": "crew_error",
-                "detail": "unknown live fields "
-                + ", ".join(repr(field) for field in unknown)
-                + "; live fields are "
-                + ", ".join(sorted(vocabulary)),
-            }
+    if requested:
+        try:
+            if view == "live":
+                _refuse_unknown_live_fields(
+                    requested, (), with_mine=session is not None
+                )
+            elif view == "runs":
+                _refuse_unknown_fields(requested)
+        except RunQueryError as error:
+            return {"ok": False, "error": "crew_error", "detail": str(error)}
     if view == "runs":
         if source not in RUN_SOURCES:
             return {
@@ -1221,7 +1135,10 @@ def _read_plan_tool(
     """
 
     selected_view = view
-    if view is not None and view not in VIEW_NAMES:
+    # Matched the way the read itself matches a view — stripped and lowercased
+    # as :func:`reckon.mcp_views.normalize_view` does — so a spelling the view
+    # serves is not refused from the argument ahead of it.
+    if view is not None and view.strip().lower() not in VIEW_NAMES:
         return {
             "ok": False,
             "error": "invalid_view",
@@ -2181,7 +2098,7 @@ def _roadmap_tool(
     """
 
     selected_view = view
-    if view is not None and view not in ROADMAP_TOOL_VIEWS:
+    if view is not None and view.strip().lower() not in ROADMAP_TOOL_VIEWS:
         return {
             "ok": False,
             "error": "invalid_view",

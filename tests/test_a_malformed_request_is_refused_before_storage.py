@@ -3,9 +3,10 @@
 A request whose only defect is an argument — a crew view outside the served
 set, a crew field no row carries, a read_plan or roadmap view outside the
 declared shapes, an op verb outside the edit vocabulary — depends on nothing
-but the argument. Refusing it after the first file read makes the answer wait
-on whatever storage is doing: on 2026-10-23 a ``crew view live`` call naming an
-unknown field waited over 120 s before it was refused.
+but the argument. Deciding it after the first file read makes the answer wait
+on whatever storage is doing, and the wait is unbounded: any timeout the
+storage imposes becomes the caller's timeout, and any deadline the tool sets
+expires while the request is still being judged.
 
 The stub below blocks on any open, so the request reaching storage is the
 failure. On the revision before the argument checks moved ahead of the first
@@ -19,6 +20,19 @@ import io
 
 from reckon import mcp, mcp_edit_plan
 from reckon.crew import query
+from reckon.crew.recovery_classification import classify_pointer
+
+#: A pointer shaped as the fleet writes one, used where a classification is
+#: needed: its keys are what a served live row carries.
+_FIXTURE_POINTER = {
+    "run_id": "r-fixture",
+    "node": {"time_budget": "30m"},
+    "phase": "running",
+    "plan": "a-plan",
+    "section": "01-section",
+    "session": "sess-fixture",
+    "manifest_path": "/nonexistent/manifest.md",
+}
 
 
 class _StorageStub:
@@ -51,17 +65,55 @@ def _stubbed(monkeypatch) -> _StorageStub:
     return stub
 
 
-def test_the_refusal_vocabulary_covers_every_live_field() -> None:
-    """The pre-flight set names no fewer fields than the view serves.
+def test_the_declared_vocabulary_matches_a_classified_pointer() -> None:
+    """The declared set is the one a classification produces, field for field.
 
-    The view builds its own vocabulary from the classification, so a field the
-    classification carries but the pre-flight set omits is refused before
-    storage while the view would have served it. Comparing the two sets is what
-    catches an omission the per-call tests cannot see.
+    The live view and the pre-flight read one declaration
+    (:data:`reckon.crew.query.LIVE_FIELD_VOCABULARY`) and the classification is
+    what a row actually carries, so the declaration is only right while the two
+    agree. Comparing them catches a key the classification gained — which the
+    view would serve and the pre-flight then refuse.
     """
-    derived = query._live_field_vocabulary([], with_mine=True)
-    declared = set(mcp._LIVE_ROW_FIELDS) | {"mine"}
-    assert derived <= declared, sorted(derived - declared)
+    classified = classify_pointer(_FIXTURE_POINTER)
+    derived = query._live_field_vocabulary([classified], with_mine=False)
+    assert derived == set(query.LIVE_FIELD_VOCABULARY)
+
+
+def test_a_live_read_of_a_served_field_is_not_refused() -> None:
+    """The other direction: a well-formed request is served, not refused.
+
+    A check that refused every request would pass every refusal test and be
+    useless, so the accepted path is asserted beside the refused one —
+    including ``section``, a field the row carries rather than one the
+    classification invents.
+    """
+    served = ["run_id", "node", "plan", "section", "manifest_status"]
+    assert (
+        mcp._crew_argument_refusal(
+            "live", fields=served, session=None, source="all", scope="project"
+        )
+        is None
+    )
+    rows = query.project_live_rows([_FIXTURE_POINTER], fields=served)
+    assert rows and rows[0]["run_id"] == "r-fixture"
+
+
+def test_a_view_named_in_another_case_is_not_refused() -> None:
+    """A spelling the read serves is not refused from the argument ahead of it.
+
+    The plan and roadmap reads match a view after stripping and lowercasing it,
+    so an uppercased name reaches their own selector and is served; the
+    pre-flight has to judge it the same way or it refuses a request the read
+    would have answered.
+    """
+    assert (
+        mcp._read_plan_tool(project="fixture", view="RAW").get("error")
+        != "invalid_view"
+    )
+    assert (
+        mcp._roadmap_tool(project="fixture", view="SuMMaRy").get("error")
+        != "invalid_view"
+    )
 
 
 def test_a_crew_live_read_naming_an_unknown_field_is_refused(monkeypatch) -> None:
@@ -76,15 +128,6 @@ def test_a_crew_live_read_naming_an_unknown_field_is_refused(monkeypatch) -> Non
     assert "run_id" in detail
 
 
-def test_a_crew_read_naming_an_unknown_view_is_refused(monkeypatch) -> None:
-    stub = _stubbed(monkeypatch)
-    result = _refuse(stub, lambda: mcp._crew(project="fixture", view="no_such_view"))
-    assert result["error"] == "invalid_view"
-    # The accepted views are named.
-    assert "live" in result["detail"]
-    assert "ledger" in result["detail"]
-
-
 def test_a_crew_read_naming_an_unknown_scope_is_refused(monkeypatch) -> None:
     stub = _stubbed(monkeypatch)
     result = _refuse(
@@ -92,6 +135,25 @@ def test_a_crew_read_naming_an_unknown_scope_is_refused(monkeypatch) -> None:
         lambda: mcp._crew(project="fixture", view="runs", scope="no_such_scope"),
     )
     assert "no_such_scope" in result["detail"]
+
+
+def test_a_crew_read_naming_an_unknown_runs_field_is_refused(monkeypatch) -> None:
+    """The runs view's fields are judged by the runs view's own validator."""
+    stub = _stubbed(monkeypatch)
+    result = _refuse(
+        stub,
+        lambda: mcp._crew(project="fixture", view="runs", fields=["no_such_field"]),
+    )
+    assert "no_such_field" in result["detail"]
+
+
+def test_a_crew_read_naming_an_unknown_view_is_refused(monkeypatch) -> None:
+    stub = _stubbed(monkeypatch)
+    result = _refuse(stub, lambda: mcp._crew(project="fixture", view="no_such_view"))
+    assert result["error"] == "invalid_view"
+    # The accepted views are named.
+    assert "live" in result["detail"]
+    assert "ledger" in result["detail"]
 
 
 def test_an_edit_naming_an_unknown_op_is_refused(monkeypatch) -> None:
