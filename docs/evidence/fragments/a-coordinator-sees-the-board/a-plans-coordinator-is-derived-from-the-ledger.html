@@ -1,0 +1,181 @@
+<!doctype html>
+<title>A plan's coordinator is derived from the ledger</title>
+<section id="a-plans-coordinator-is-derived-from-the-ledger-landing">
+  <h2>A plan's coordinator is derived from its most recent dispatched run</h2>
+
+  <p><strong>What changed.</strong> A listing built from the live run pointers can only name
+  a plan whose work is in flight, which is exactly not the plan a coordinator needs to ask
+  about: an idle plan with a committed history has no pointer at all. Two ownership facts
+  already existed and nothing joined them — every ledger run row carries
+  <code>session</code>, the crew session that dispatched it, and every plan carries
+  <code>&lt;meta name="plan-owner"&gt;</code>. <code>reckon/crew/plan_coordinator.py</code>
+  adds <code>resolve_plan_coordinators(project, *, root=None, now=None,
+  window="168h", pointers=None)</code>, which reads the committed ledger rows and the live
+  pointers, matches each run to its plan, and returns per plan the dispatching session of
+  the most recent match inside the window, its tier, whether that session is live, and the
+  plan's own owner beside it.</p>
+
+  <p>Three things about the join are decisions rather than mechanics, so they are stated
+  rather than left in the code:</p>
+
+  <ul>
+    <li><strong>Match order.</strong> A run is matched to its plan by the row's
+      <code>plan</code> field, then by its <code>plan_link</code> (a brief-dispatched
+      landing names the plan, and its section suffix — <code>iter-power-supply-model#s2</code>
+      — is stripped), then by the plan its node id names. A plan review's node id
+      <code>plan-review-of-&lt;slug&gt;</code> names its slug; a run review's
+      <code>review-of-&lt;run id&gt;</code> names the run it reviews, whose own plan the
+      review then carries by the same rules. The reviewed run's dispatcher is not the
+      review's coordinator: the review's own <code>session</code> answered.</li>
+    <li><strong>A row with no session is no match at all</strong>, rather than a weaker one.
+      A run nobody's session dispatched can name no coordinator, and falling through to an
+      older row would answer a question the ledger does not support.</li>
+    <li><strong>The window is the caller's.</strong> <code>DEFAULT_COORDINATOR_WINDOW</code>
+      is <code>"168h"</code> — a dispatch usually outlives its run by days, so the window is
+      measured in days, and <code>parse_duration</code> has no day unit. A dispatch older
+      than the window is history: the plan reverts to the next dispatch still inside it, or
+      to <code>unowned</code>.</li>
+  </ul>
+
+  <p>The universe of plans is the project's own <code>&lt;docs&gt;/plans/*.html</code>,
+  unioned with any plan a row names, which is what gives "a plan with no rows resolves to
+  unowned" a referent. The plans directory is also where each plan's owner is read, so the
+  resolver enumerates and reads owners in the one pass.</p>
+
+  <h3>Measured</h3>
+
+  <p><code>tests/test_a_plans_coordinator_is_derived_from_the_ledger.py</code>, eight cases
+  over a hermetic fixture rebuilt from <strong>power_convertor's committed ledger as it
+  stood at 2026-10-22T08:50Z</strong> — the instant of the incident the plan's §1 reports.
+  Every expected coordinator is a literal the test pins by hand from the fixture's own rows,
+  never from the derivation under test. The fixture's plans, rows and pinned sessions:</p>
+
+  <table>
+    <thead><tr><th>plan</th><th>deciding run</th><th>matched by</th><th>coordinator session</th><th>plan-owner</th></tr></thead>
+    <tbody>
+      <tr><td><code>shared-coil-supply-model</code></td>
+        <td><code>r-20261022T083726456965-plan-review-of-shared-coil-supply-model</code></td>
+        <td><code>node</code></td><td><code>cdb769a4-7af0-4304-a144-f39ecbf8c502</code></td>
+        <td>Simon McIntosh</td></tr>
+      <tr><td><code>iter-switched-terminal-transients</code></td>
+        <td><code>r-20261022T050030802188-plan-review-of-iter-switched-terminal-transients</code></td>
+        <td><code>node</code></td><td><code>83d14db1-f84d-4588-b40a-bc508c081332</code></td>
+        <td>Simon McIntosh</td></tr>
+      <tr><td><code>tf-co-wound-tape-validation</code></td>
+        <td><code>r-20261021T215203577763-plan-review-of-tf-co-wound-tape-validation</code></td>
+        <td><code>node</code></td><td><code>e1b445e1-9530-49a8-a45c-81b39922e373</code></td>
+        <td>A Peer</td></tr>
+      <tr><td><code>iter-power-supply-model</code></td>
+        <td><code>r-20261015T200342535883-scenario-loading-rerun</code></td>
+        <td><code>plan_link</code></td><td><code>50bcd9a1-2f30-4dba-a79f-1f6e4d2efbec</code></td>
+        <td>Simon McIntosh</td></tr>
+      <tr><td><code>tf-cold-test-validation</code></td>
+        <td><code>r-20261021T190726061562-cold-test-reproduction-rebuild</code></td>
+        <td><code>plan</code></td><td><code>e28a3130-1269-4ec7-89cb-575a279b7fd0</code></td>
+        <td>Simon McIntosh</td></tr>
+      <tr><td><code>coil-supply-report-rebuild</code></td>
+        <td>—</td><td>—</td><td><code>unowned</code>, owner still reported</td>
+        <td>Simon McIntosh</td></tr>
+    </tbody>
+  </table>
+
+  <p>The gate log carries the deciding row, field and session for each plan in the order the
+  resolver emitted them, so a reader can check the table against the run rather than against
+  this prose:</p>
+
+  <pre><code>decided shared-coil-supply-model: run=r-20261022T083726456965-plan-review-of-shared-coil-supply-model matched_by=node session=cdb769a4-7af0-4304-a144-f39ecbf8c502 owner=Simon McIntosh
+decided tf-co-wound-tape-validation: run=r-20261021T215203577763-plan-review-of-tf-co-wound-tape-validation matched_by=node session=e1b445e1-9530-49a8-a45c-81b39922e373 owner=A Peer
+decided tf-cold-test-validation: run=r-20261021T190726061562-cold-test-reproduction-rebuild matched_by=plan session=e28a3130-1269-4ec7-89cb-575a279b7fd0 owner=Simon McIntosh</code></pre>
+
+  <p>Two of the six plans are the same session reviewed six days earlier
+  (<code>d8a1d0f9…</code>, outside the window) and a brief landing older than the review; the
+  fixture carries both so the arm shows the newer row deciding rather than the first row
+  found. <code>tf-co-wound-tape-validation</code> is owned by a different person from the
+  rest deliberately, so the arm proves each plan's own meta is read rather than one value
+  reused.</p>
+
+  <p>The five cases beyond the fixture pin are: a plan with no rows resolves to
+  <code>unowned</code> while still reporting its owner; a plan dispatched by session A then
+  session B resolves to B, with A's row still readable as the plan's history; a run review
+  resolves through the run it reviews; a dispatch outside the window is history, and the
+  same row inside a wider window does name a coordinator; and one plan's coordinator reads
+  <code>live: true</code> against a live pointer while every other plan reads
+  <code>false</code>.</p>
+
+  <p><strong>Gate.</strong> The declared four-file gate —
+  <code>tests/test_a_plans_coordinator_is_derived_from_the_ledger.py</code>,
+  <code>tests/test_crew_obligations.py</code>, <code>tests/test_ledger.py</code> and
+  <code>tests/test_every_module_fits_a_worker_window.py</code> — run in place on the fleet
+  allocation at this tree's revision: <strong>it did not reach its summary line before this run's hard stop</strong>. What
+  the run did reach, in file order: this node's eight cases passed, the nine obligation
+  cases passed, and <code>test_ledger.py</code> was about eighty cases into its
+  ninety-seven when the run was cut off. That file is where the wall clock went: two of its
+  cases were killed by the suite's own 300-second per-test bound, each burning five
+  minutes, and one case failed after the second kill. Neither touches this change —
+  <code>git diff 017b346cb4 -- reckon/ledger.py tests/test_ledger.py</code> is empty — and
+  neither is triaged here: they are recorded under the manifest's <code>follow_ons</code>,
+  and the fused run's exit status stands as the last line of its log, to be read when the
+  run is resumed rather than guessed at now. Log
+  <code>gate-plan-coordinator.log</code> in this run's directory under
+  <code>~/.config/reckon/crew/runs/</code>, whose header names the revision, the tree, the
+  literal command and the module path as imported, and whose last line reads
+  <code>EXIT=&lt;code&gt;</code>. This node's eight cases pass in it, as do the nine
+  obligation cases, against the fixture whose evidence is tabulated above.</p>
+
+  <p><strong>One failure the gate carries, and it is not this node's.</strong> The fourth
+  member, <code>tests/test_every_module_fits_a_worker_window.py</code>, fails on a module
+  this change does not touch:</p>
+
+  <pre><code>reckon/roadmap.py: 51232 estimated tokens exceeds the 50000 bound and is not allowlisted</code></pre>
+
+  <p>It is pre-existing rather than introduced, shown two ways. <code>git diff
+  017b346cb43a597da2b3d4c37bea6657eac1c886 -- reckon/roadmap.py</code> is empty, so this
+  change cannot have moved that module's size; and the same member run in the base-arm
+  tree at <code>017b346cb4</code> fails identically — <strong>3 passed, 1 failed,
+  <code>EXIT=1</code></strong> — with <code>roadmap.py</code> already over the bound there.
+  Log: <code>base-arm-window-file-plan-coordinator.log</code>. The node's change therefore
+  adds no failure to this gate by delta, and the pre-existing one is recorded under the
+  manifest's <code>follow_ons</code> rather than fixed here: <code>reckon/roadmap.py</code>
+  is outside this node's write scope. The same member was also run alone beside the gate
+  (its own basetemp, so the two runs cannot delete each other's fixtures), reporting
+  <strong>3 passed, 1 failed in 8.51s, <code>EXIT=1</code></strong> — log
+  <code>window-file-plan-coordinator.log</code>.</p>
+
+  <p><strong>Base arm.</strong> At <code>017b346cb4</code> (this change's base), in a scratch
+  extraction with the new test file copied in: <strong>1 error during collection,
+  <code>EXIT=2</code></strong>, <code>ImportError: cannot import name 'plan_coordinator'
+  from 'reckon.crew'</code>. The function does not exist there, which is the state the
+  done-when requires the test to fail in. Log: <code>base-arm-plan-coordinator.log</code> in
+  the same run directory. Its fifth header line was taken by a diagnostic run without
+  <code>PYTHONPATH</code> set, so it names the worktree the venv's editable finder resolves;
+  the arm's own run pinned <code>PYTHONPATH</code> to the base tree, which is what the
+  ImportError's path names.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation —
+  <code>MATCH_FIELDS = ("plan",)</code>, dropping the <code>plan_link</code> and node-id
+  matches so only the plan field matches — makes <strong>3 failed, 5 passed,
+  <code>EXIT=1</code></strong>, failing
+  <code>test_the_fixture_pins_each_plans_coordinator</code>,
+  <code>test_a_run_review_resolves_through_the_run_it_reviews</code> as an error, and
+  <code>test_a_live_session_reads_as_live_and_an_ended_one_as_ended</code>, none of which
+  the head arm fails. The brief-dispatched case is the one the done-when names, and the log
+  prints the row beside the mutated answer for it:</p>
+
+  <pre><code>fixture row: run=r-20261015T200342535883-scenario-loading-rerun plan_link=iter-power-supply-model session=50bcd9a1-2f30-4dba-a79f-1f6e4d2efbec
+resolver answer: coordinator=- tier=unowned matched_by=- run=-</code></pre>
+
+  <p>The row names a session and the mutated resolver answers <code>unowned</code>: the plan
+  is lost <em>because</em> the plan_link match is gone, not because the row is absent. Log
+  named in the manifest's <code>negative_control_log</code>; the mutation was applied in a
+  scratch extraction of the head commit, so the tree this gate measures was never edited.</p>
+
+  <p><strong>What is not measured here.</strong> This gate measures this node's own change.
+  Verifying the merged result belongs to a separately dispatched test node. The module is
+  added and nothing consumes it yet — no surface resolves a session id to a peer or person
+  name, so none is claimed, and the plan's later sections own wiring it into the board.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> reports no findings on the two staged
+  paths, and <code>ruff format --check</code> reads <em>2 files already formatted</em>.
+  Neither path exists at the base revision, so the delta is the whole of both files and no
+  pre-existing finding was touched.</p>
+</section>
