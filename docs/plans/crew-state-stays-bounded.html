@@ -19,12 +19,12 @@
   <meta name="plan-sprint" content="S27">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s7&quot;:[&quot;crew-state-stays-bounded#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s7&quot;:[&quot;crew-state-stays-bounded#s3&quot;],&quot;s8&quot;:[&quot;crew-state-stays-bounded#s7&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -158,6 +158,17 @@
     control: a pass that reads only the first project's ledger must leave the second project's run in place and
     fail.</p>
 
+    <h2 id="s8">§8 — A run&#x27;s scratch leaves with the run, on the host that made it</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Measured on clu-2068 on 2026-10-23 at about 14:05Z: 107 run scratch directories under <code>/tmp/reckon-crew-scratch/</code> hold 9.7 GB. 62 of them belong to promoted runs with no live pointer, 1.3 GB, and a peer on imas-ambix counted 16 GB across 104 directories going back to 2026-10-20. Reading each promoted run's release record shows three ways the scratch survives:</p>
+    <ul>
+      <li>29 runs record <code>scratch_removed: true</code> and their directory is still there. <code>r-20261020T202608740663-shc-gap-docs-regen</code> recorded 5,014 bytes removed while the worker's files from 22:55 to 23:11 remain, so the release removed a same-named path somewhere other than the node-local tree the worker wrote.</li>
+      <li>16 runs record <code>scratch_removed: false</code>.</li>
+      <li>13 review and plan-review runs have no release block at all, so a review's promotion never removes its scratch. Two are from today: <code>r-20261023T093727181057</code> and <code>r-20261023T114328877933</code>.</li>
+    </ul>
+    <p><strong>Change.</strong> A run's scratch path is recorded at dispatch together with the host that made it, and <code>remove_worker_scratch</code> in <code>reckon/crew/dispatch_launch.py</code> removes it only on that host. A release that runs elsewhere does not report the scratch removed: it records a removal owed to that host. The §7 sweep, run on that host, settles the debt, and the record says which. Review and plan-review promotions go through the same release step as an implementation run, so their scratch leaves with them.</p>
+    <p>Done when: a fixture release on the host that made the scratch removes it and records <code>scratch_removed: true</code>; a release recorded on another host leaves the scratch, records the removal owed to the scratch's host and never reports it removed, and a sweep pass on that host then removes it and settles the record; and a promoted review run's scratch is removed by its promotion. Negative control: a release that removes the path on its own host, whichever host made the scratch, must fail the second case. Write paths: <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/promotion.py</code>, <code>reckon/crew/gc.py</code> and a new test file. Every log is under the run directory, and the evidence fragment quotes each gate's command and summary line.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-cssb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build crew-state-stays-bounded §2" data-resolved-at="" data-resolved-by="">
@@ -175,6 +186,11 @@
     <h4 class="r-fu-title">Run the retention sweep on its own</h4>
     <div class="r-fu-body"><p>§3 and §6 have landed. §7 runs the §3 sweep hourly across every mounted project; its comment names the existing timer installer and log rotation to reuse.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §7</pre>
+    </article>
+<article class="r-fu" data-id="f-cssb-008" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-23 16:45" data-recommends-skill="/reckon-build crew-state-stays-bounded §8" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Remove a run&#x27;s scratch on the host that made it</h4>
+    <div class="r-fu-body"><p>Measured by a peer on 2026-10-23. §8 runs after §7, whose sweep settles a removal owed to another host. A content review of §8 is owed before dispatch.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §8</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
