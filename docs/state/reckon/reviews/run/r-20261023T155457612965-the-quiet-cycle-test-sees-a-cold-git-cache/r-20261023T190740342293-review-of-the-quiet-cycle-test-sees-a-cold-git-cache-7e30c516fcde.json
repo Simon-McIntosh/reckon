@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T19:31:18.191Z",
+  "dispatched_at": "2026-10-23T19:12:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T155457612965-the-quiet-cycle-test-sees-a-cold-git-cache/manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "the evidence_inputs line asserts the quiet case \"passes after that file alone at the base revision\" (the two-file ordering the done_when names) with no stored log, while the three logs cover only the 73-file cohort order; the claim is unreceipted, though the substantive cohort reproduction is logged in gate-base.log."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261023T190740342293-review-of-the-quiet-cycle-test-sees-a-cold-git-cache-7e30c516fcde",
+  "review_text": "VERDICT goal: the goal is to make test_quiet_cycles_list_nothing_and_spawn_no_git pass whatever test file runs before it in one process; tests/test_a_producer_sweeps_only_on_change.py:119 adds monkeypatch.setattr(checkout_trust, \"_identity_hold\", {}) to the fleet fixture so the case starts on a cold hold and its opening sweep reaches git regardless of what ran earlier.\nVERDICT done_when: the done_when names the ordered 73-file cohort followed by the quiet case; gate-base.log records 13 failed/634 passed/1 skipped EXIT=1 with the case failing assert marks[\"spawn\"][0] >= 1 (0 >= 1) and gate-head.log records 12 failed/635 passed/1 skipped EXIT=1 with the case green in the same cohort order; the done_when's secondary two-file ordering is stated in the manifest but backed by no stored log.\nVERDICT write_paths: the manifest declares tests/test_a_producer_sweeps_only_on_change.py, tests/test_a_live_workers_unreadable_manifest_is_working.py and the fragment/figure paths; the diff touches only the first test file and the evidence fragment, both inside the declared scope.\nVERDICT manifest: read; it names checkout_trust._identity_hold as the shared state, records 13 failed/634 passed/1 skipped at base and 12 failed/635 passed/1 skipped at head with the case green, and cites gate-base.log, gate-head.log and negative-control.log.\nVERDICT diff: read against base ea8031777d048b5999a32a85a1266598b209b5c6; the single commit 7e30c516fcdea82d94c3d47f49b7f0257cc80866 adds the checkout_trust import and the identity-hold isolation to the fleet fixture plus a 45-line evidence fragment, and changes no product module.\nCALL_SITES: reckon/crew/recovery_watch.py:_watch_registration, reckon/crew/runs.py:_project_watch_claim, reckon/crew/follower_registration.py:running_code_stamp, reckon/checkout_trust.py:source_code_identity\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:483 reads _identity_hold.get(str(source_root)), so the emptied hold at tests/test_a_producer_sweeps_only_on_change.py:119 forces the opening sweep to run git, which the head arm shows the quiet case passing.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-base.log and gate-head.log record the same ordered cohort at ea8031777 and 7e30c516f with the case red then green, but the two-file ordering the done_when also names is claimed in manifest.md:19 with no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat ea8031777 7e30c516f lists only tests/test_a_producer_sweeps_only_on_change.py and the evidence fragment, both inside the declared write paths, with no product source touched.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log deletes the added isolation line and the quiet case reddens with assert 0 >= 1, so the guard fails if the change regresses.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_producer_sweeps_only_on_change.py:119 monkeypatches the module-level hold in the same idiom already used at tests/test_the_code_identity_is_read_only_when_head_moves.py:81.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ and tests/ for a reset helper found none, the only owner being the module global checkout_trust._identity_hold, so the addition names and extends the existing mechanism rather than forking a capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T155457612965-the-quiet-cycle-test-sees-a-cold-git-cache/manifest.md:19 non-blocking: the evidence_inputs line asserts the quiet case passes after tests/test_a_live_workers_unreadable_manifest_is_working.py alone at the base revision with no stored log, while the three logs cover only the 73-file cohort order, so that sub-claim is unreceipted though the substantive cohort reproduction is logged.",
+  "reviewed_base_sha": "ea8031777d048b5999a32a85a1266598b209b5c6",
+  "reviewed_head_sha": "7e30c516fcdea82d94c3d47f49b7f0257cc80866",
+  "reviewed_run_id": "r-20261023T155457612965-the-quiet-cycle-test-sees-a-cold-git-cache",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T19:31:21.914562+00:00",
+  "total": 115
+}
