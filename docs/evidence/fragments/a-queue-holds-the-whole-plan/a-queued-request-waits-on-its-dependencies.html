@@ -231,6 +231,16 @@
   not the CLI dispatch path, so it observes the stored phase in either tree
   rather than a launch count.</p>
 
+  <p><strong>That paragraph was wrong about the cause, and the next section
+  measures it.</strong> The dispatch did reach the site. What it reached was a
+  site that <em>reported</em> a hold without writing one: the request the store
+  wrote kept <code>phase: queued</code>, so the pointer read as a request; and
+  the free-lane run never exercised the site that did write one, because the
+  passing arm's lane was held and took the branch that writes the pointer. A
+  store reported as held and a store actually held look the same in the answer
+  and differ in the file, which is the pair this section exists to keep
+  apart.</p>
+
   <p><strong>Which entry point is production, and which is not.</strong>
   <code>queue_requests</code>, the batch entry that stores a plan's whole width
   in one call, has no production caller yet: the queue verbs that would drive
@@ -241,18 +251,71 @@
   itself, so a node a coordinator dispatches is held on its waits without any
   batch entry point existing.</p>
 
+  <h3>Third round: the waits are read before the lane is consulted, and both phases are drawable</h3>
+
+  <p>The hold was sited after the lane-allowance branch, so it answered a
+  dispatch whose lane was already known to be full and never one whose lane had
+  room. It now sits where the lane has just been resolved and before any
+  branch that is taken for a lane's sake, so there is no path to a launch that
+  reaches the lane without having read the node's waits. The two calls the move
+  replaces are gone: the lane-allowance branch and the yield-to-an-older-request
+  branch store a request that waits on the slot it lost and on nothing else,
+  because a node with an unmet wait never reaches either.</p>
+
+  <p><strong>The store, not the answer.</strong> The earlier site reported a
+  hold without writing one. The request it had just stored kept
+  <code>phase: queued</code>, so the pointer read as a request that could
+  launch, and only the answer the command returned named
+  <code>awaiting-upstream</code>. The site now moves the pointer through
+  <code>queue_admission.hold_request_for_upstream</code>, the same writer the
+  admission pass reads back, so the phase and the refs the answer names are the
+  phase and refs the pointer carries; a store the writer cannot move is
+  reported as the phase it really holds. That defect is what made the free-lane
+  arm fail, and it is why the arm is a check on the file rather than on the
+  reply.</p>
+
+  <p><strong>The free-lane arm, and its discriminator.</strong> Two arms now
+  stand where one did. The first configures the session with slots to spare
+  (<code>session_slots: 4</code>) and declares a wait: the node is stored
+  <code>awaiting-upstream</code> carrying its ref, and no process is started.
+  The second runs the same fixture, the same lane and the same route with no
+  wait declared, and the node is not stored in a waiting phase — so the arm
+  measures the wait and not the fixture. Neither assertion can pass by
+  accident: the first reads the pointer's phase and the second reads the same
+  pointer for its absence.</p>
+
+  <p><strong>The watch line learns both names.</strong> A request stored and
+  not launched was previously classified by falling past the queued arm into
+  whatever the rest of the classifier made of a phase it did not know. The
+  classification is now read from the pointer's own phase, the phase-to-verb
+  map carries both names (<code>wait</code> for a wait that time releases,
+  <code>decide</code> for one that nothing will), and the unreleasable phase
+  counts as a duty while the releasable one does not. Two arms in the node's
+  module read the classification of each phase and the map beside it.</p>
+
+  <p><strong>Measured.</strong> The gate ran at <code>0ce92aa7a</code> over the
+  node's own modules, the worker-window module, the 112 modules importing the
+  queue and admission modules and the 39 importing the three widened ones:
+  <strong>1321 passed, 23 failed, 1 skipped, 1 error, <code>EXIT=1</code></strong>.
+  The 23 are pre-existing, measured rather than asserted: run alone at
+  <code>HEAD~1</code>'s sources they fail 23 of 23, and run alone at this
+  revision's sources they fail the same 23 of 23, so this change adds none. They
+  are failures of this allocation's environment — a read-only configuration
+  home, and snapshot derivations over files this sandbox holds read-only. The
+  node's own module is 13 passed, the two free-lane arms among them.</p>
+
   <h3>What is not measured here</h3>
 
   <ul>
-    <li><strong>The obligations view does not yet read the two phases.</strong>
-    The obligations view now lists a request held on its refs, which
-    closed the largest part of this. What is still outside this node's fence is
-    the rest of the vocabulary: <code>reckon/crew/obligations.py</code> resolves
-    placements through <code>queued_placements</code> alone, and the watch
-    stream's classification reads neither new phase, so the stream and the
-    derivation's own phase-to-verb map still do not know the two phases by
-    name. A held request is real, listed on its session's duties view, and
-    released on time; it is the watch line that does not draw it yet. The
-    manifest's <code>follow_ons</code> names that remainder.</li>
+    <li><strong>The watch line now knows the two phases.</strong> The phases
+    are classified from the pointer's own phase rather than falling through to
+    an unreadable reading, the phase-to-verb map carries both names, and the
+    request whose wait can no longer land counts as a duty. What remains
+    outside this node's fence is
+    <code>reckon/crew/obligations.py</code>, which resolves placements through
+    <code>queued_placements</code> alone; a held request is listed on its
+    session's duties view through the snapshot's own pointer read
+    (<code>reckon/crew/obligation_snapshot.py</code>) rather than through that
+    path.</li>
   </ul>
 </section>
