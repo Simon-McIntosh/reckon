@@ -4318,7 +4318,7 @@ baseline_suite: {"revision":"base123","command":"uv run pytest","exit_status":1,
 after_suite: {"revision":"after456","command":"uv run pytest","exit_status":1,"log_path":"","log_digest":"sha256:abc","completed":true,"failure_count":2,"failure_ids":["tests/test_a.py::test_a","tests/test_b.py::test_b"]}
 artifacts: none
 evidence_inputs: 28 new tests, all four fixtures parsed
-follow_ons: the observe command needs a --wait flag, the fixture README needs a diagram
+outside_scope: the observe command needs a --wait flag, the fixture README needs a diagram
 blockers: none
 """
 
@@ -4330,7 +4330,10 @@ def test_a_manifest_parses_into_structured_fields() -> None:
     assert manifest["changed_paths"] == ["reckon/_backends.py"]
     assert manifest["blockers"] == []
     assert manifest["artifacts"] == []
-    assert len(manifest["follow_ons"]) == 2
+    assert manifest["outside_scope"] == [
+        "the observe command needs a --wait flag",
+        "the fixture README needs a diagram",
+    ]
     assert manifest["baseline_suite"]["revision"] == "base123"
     assert manifest["baseline_suite"]["exit_status"] == 1
     assert manifest["baseline_suite"]["completed"] is True
@@ -4440,25 +4443,12 @@ def test_a_manifest_without_one_reports_no_escape_hatch() -> None:
 # ── Continuation, worker altitude ───────────────────────────────────────────
 
 
-def test_a_workers_candidate_follow_on_becomes_a_plan_followup() -> None:
-    """Work a worker was fenced out of otherwise has nowhere to go but prose."""
-    ops = crew.followup_ops_from_manifest(MANIFEST, slug="plan-a", section="§3")
-    assert len(ops) == 2
-    for op in ops:
-        assert op["op"] == "append"
-        assert op["target"] == "followups"
-        assert op["item"]["prompt"] == "/reckon-build plan-a §3"
-        assert op["item"]["status"] == "open"
-        assert op["item"]["title"]
-    assert {op["item"]["id"] for op in ops} == {op["item"]["id"] for op in ops}
-
-
-def test_a_manifest_with_no_follow_ons_produces_no_ops() -> None:
+def test_a_manifest_with_no_outside_scope_produces_no_entries() -> None:
     text = MANIFEST.replace(
-        "follow_ons: the observe command needs a --wait flag, the fixture README needs a diagram",
-        "follow_ons: none",
+        "outside_scope: the observe command needs a --wait flag, the fixture README needs a diagram",
+        "outside_scope: none",
     )
-    assert crew.followup_ops_from_manifest(text, slug="s") == []
+    assert crew.parse_manifest(text)["outside_scope"] == []
 
 
 # ── The summary reflex ──────────────────────────────────────────────────────

@@ -470,7 +470,7 @@ def test_worker_protocol_owns_the_backend_independent_contract() -> None:
         assert field in protocol
     for fence in ("Scope", "Time", "Evidence", "Delivery"):
         assert f"| {fence} |" in protocol
-    assert "follow_ons" in protocol
+    assert "outside_scope" in protocol
     assert "reckon crew resume" in protocol
 
 

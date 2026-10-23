@@ -1509,8 +1509,8 @@ def test_every_reader_of_the_manifest_tolerates_an_unparseable_body(home) -> Non
     # Each production reader of a worker-authored manifest keeps working on a
     # body no reader can judge rather than crashing: the classifier and the
     # external-wait probe return their refusal/absence, the audit reports a
-    # finding, the continuation reader returns no ops, and the promotion-facing
-    # ledger count answers "unknown" through its ValueError arm.
+    # finding, and the promotion-facing ledger count answers "unknown" through
+    # its ValueError arm.
     pointer = _cli_pointer(
         home,
         "r-heading-tolerated",
@@ -1526,12 +1526,6 @@ def test_every_reader_of_the_manifest_tolerates_an_unparseable_body(home) -> Non
     audit = reports.audit_manifest(_MARKDOWN_HEADING_MANIFEST)
     assert audit["ok"] is False
     assert audit["findings"]
-    assert (
-        reports.followup_ops_from_manifest(
-            _MARKDOWN_HEADING_MANIFEST, slug="proj", section=""
-        )
-        == []
-    )
     assert ledger.stated_correction_count(_MARKDOWN_HEADING_MANIFEST) == "unknown"
 
 
@@ -1629,12 +1623,6 @@ def test_every_reader_tolerates_the_widened_raise(home) -> None:
     audit = reports.audit_manifest(_INCIDENTAL_PROSE_MANIFEST)
     assert audit["ok"] is False
     assert audit["findings"]
-    assert (
-        reports.followup_ops_from_manifest(
-            _INCIDENTAL_PROSE_MANIFEST, slug="proj", section=""
-        )
-        == []
-    )
     assert ledger.stated_correction_count(_INCIDENTAL_PROSE_MANIFEST) == "unknown"
 
 
