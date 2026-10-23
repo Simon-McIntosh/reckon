@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T07:06:47.923Z",
+  "dispatched_at": "2026-10-23T06:54:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:57",
+      "id": "wiring-1",
+      "reason": "landing \u00a74 on its declared readiness ships a section naming a verb that does not exist yet, so either the edge or the verb's ownership must move.",
+      "text": "\u00a74 says priority \"changes while queued with `crew queue reprioritise`\", but \u00a75 is the section that adds that verb (\"Add `crew queue list | show | edit | reprioritise | drop`\" \u2014 snapshot line 63), and `plan-section-depends-on` carries no `s4\u2192s5` edge, so \u00a74's own text uses a command no landed section provides",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:73",
+      "id": "wiring-2",
+      "reason": "the picker would read a priority nothing sets, and the followup's claim that \"\u00a75 and \u00a77 can run beside it\" is what let this edge go unconsidered.",
+      "text": "\u00a77's mechanism reads a request's `priority` (\"requests at or above a stated priority and capability\") and defers ordering to \"\u00a74's ranking\", but \u00a77 declares no dependency on \u00a74, so \u00a77 can launch before the field it reads is defined",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:52",
+      "id": "reasoning-1",
+      "reason": "a node reading \"kept\" may preserve an exemption attached to nothing or delete it outright, regressing the landed plan; the section must state that the exemption now attaches to the project bound.",
+      "text": "\u00a73 retires \"the 2\u20138 per-session clamp\" and in the same section says \"The review exemption from a-coordinator-can-clear-its-own-duties is kept\", but in that cited plan the exemption exists only as an exemption from the per-session queue cap (its \u00a72: \"Reviews are exempt from the per-session queue cap\"); with the cap gone the exemption has no referent, while \u00a74 separately carries review precedence (\"Reviews of delivered runs keep their precedence\")",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:68",
+      "id": "reasoning-2",
+      "reason": "the plan's own real-code-path check fails as written, and a node may implement a landing routine nothing calls without the plan contradicting it.",
+      "text": "\u00a76 asserts a delivered run \"lands mechanically\" but names no process that performs the landing: \u00a72 names the driver for its own mechanism (\"Each admission pass re-reads readiness\"), and \u00a76 names none for either the landing or the wake conditions, so the mechanism is specified with no production caller",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:59",
+      "id": "done_when-1",
+      "reason": "the repository already pins a starvation age in `reckon/crew/queue_order.py`, so an implementer will reuse it and the assertion stays falsifiable; naming the constant would tighten the section but not redirect a node.",
+      "text": "\u00a74's done-when asserts \"A lowest-priority request launches within the ageing bound\" and the prose says ageing makes it launch \"within a stated bound\", but no bound is stated anywhere in the plan, so the implementer supplies the number the assertion is then measured against",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "60ab01bd42057d2e7fb80cebf0d2226ec196e40a2190ae2296098fb7ce5fe31b",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T064140438892-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "56394a79225d19b0a8e3053e11a1db75d9c2a27f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all four cited plan hrefs resolve to existing files under `docs/plans/` (`a-held-dispatch-waits-its-fair-turn.html`, `a-coordinator-can-clear-its-own-duties.html`, `crew-state-stays-bounded.html`, `a-review-is-sized-to-its-risk.html`), and each cited code anchor resolves: `QUEUED_DISPATCH_CAP_FLOOR`/`QUEUED_DISPATCH_CAP_CEILING` at `reckon/crew/runs.py:367-368`, `reckon/crew/queue_order.py`, the earlier-overlapping-request hold at `reckon/crew/queue_admission.py:467`, and `admission.sessions`/`fair_share` at `reckon/crew/lane_document.py:121,127`.",
+    "done_when": "a finding \u2014 \u00a74's third assertion measures against an \"ageing bound\" the section never states (snapshot line 59).",
+    "evidence_paths": "pass \u2014 no node names a session scratchpad, node-local temporary directory or other non-durable path; the done-whens are test measures and the only path-like delegation (\u00a73's read-time budget) points at the `crew-state-stays-bounded` plan rather than a temp location.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol; section numbers appear only in plan prose, and no comment or docstring the plan proposes would carry one.",
+    "reasoning": "a finding \u2014 two mechanisms do not run on the real code path: \u00a73 retains a review exemption from the cap it retires, and \u00a76's mechanical landing names no process that performs the landing.",
+    "single_goal": "pass \u2014 each of \u00a72\u2013\u00a77 names one deliverable (wait-on-dependency admission, depth bound, admission ranking, launch-time brief binding, mechanical landing, lift preference); the secondary mechanisms in \u00a73 and \u00a74 are parts of their section's single goal, not separate deliverables.",
+    "wiring": "a finding \u2014 \u00a74 depends on the `crew queue reprioritise` verb that \u00a75 is the section which adds, and neither section declares that edge; \u00a77 likewise rests on \u00a74's `priority` (snapshot line 57)."
+  },
+  "section_digests": {
+    "_document": "0cb36e918ae81611b55c39082f399d0a22a17170330e8fb9cb422e420948b3d0",
+    "s1": "94ebe7ab29137f711118f757977d4db72435e928b58d848c3add84b36c5db9b3",
+    "s2": "c751393333dbd9a5956cfac2afcc53a0b18b3894c1c230bd72de764fa9064bd6",
+    "s3": "13637410fe00a4491298692ddb8d4094d4ae151c21a906fdb02b908d4127cc87",
+    "s4": "d5d155224af2083d576478a3ce13e562936d0145ea05ff263c1277a1d6b51592",
+    "s5": "a35af78ec78a826c5e8078e1c01362b9371e26792f1e3f848d87856e93eec25c",
+    "s6": "e5a7e8c874133ae164a8f1ee735e928838063439ea3b03bf1ee70ba8eaff340b",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T07:15:50.847429+00:00"
+}
