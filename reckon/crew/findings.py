@@ -130,8 +130,8 @@ def _run_findings(record: Mapping[str, Any]) -> list[dict[str, Any]]:
 
     Read through the store's own finding reader so the claim field and the
     minted id are the ones a repair already answers, and never filtered by
-    severity: a follow-on is a finding a reviewer raised, and dropping it here
-    would hide exactly the rows most easily lost. The store spells the path a
+    severity: a non-blocking finding is one a reviewer raised, and dropping it
+    here would hide exactly the rows most easily lost. The store spells the path a
     finding names ``file``; it is surfaced as ``path`` so run and plan findings
     present one spelling to the row builder.
     """

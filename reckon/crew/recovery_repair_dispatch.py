@@ -286,20 +286,23 @@ def _sub_floor_dimensions_named(
     ]
 
 
-def _follow_on_repository_paths(
+def _non_blocking_repository_paths(
     review: Mapping[str, Any], fence: Sequence[str] | None
 ) -> list[str]:
-    """The repository paths the round's follow-on findings cite.
+    """The repository paths the round's non-blocking findings cite.
 
-    A follow-on is recorded rather than repaired, so it carries no round on its
-    own; but a follow-on citing a repository path is work a coordinator may
+    A non-blocking finding is recorded rather than repaired, so it carries no
+    round on its own; but one citing a repository path is work a coordinator may
     dispose by hand, and the decline-only reason names it so the coordinator
     sees what the blocking-only decision left on the table. Run records are
     dropped by the same path rule the scope is composed from, so the reason never
     names a manifest or a gate log as work.
     """
     return _repairable_scope(
-        (str(finding.get("file") or "") for finding in repair_module.follow_on_findings(review)),
+        (
+            str(finding.get("file") or "")
+            for finding in repair_module.non_blocking_findings(review)
+        ),
         fence=fence,
     )
 
@@ -314,14 +317,14 @@ def _decline_only_reason(
 ) -> str:
     """The reason a round whose blocking findings cite no repairable path declines.
 
-    The decision is taken from the blocking findings alone — a follow-on citing
-    source cannot carry a round — so the reason states that decision and names
-    the population it was taken from, rather than the wider claim that no finding
-    at all cited a repository path, which reads as false whenever a follow-on
-    did. What the decision left un-acted is then named: each dimension the
-    review scored under its declared floor, and each repository path a follow-on
-    finding cites, so a coordinator reading the round record knows what to
-    dispose by hand.
+    The decision is taken from the blocking findings alone — a non-blocking
+    finding citing source cannot carry a round — so the reason states that
+    decision and names the population it was taken from, rather than the wider
+    claim that no finding at all cited a repository path, which reads as false
+    whenever a non-blocking finding did. What the decision left un-acted is then
+    named: each dimension the review scored under its declared floor, and each
+    repository path a non-blocking finding cites, so a coordinator reading the
+    round record knows what to dispose by hand.
     """
     count = len(blocking)
     parts = [
@@ -331,9 +334,11 @@ def _decline_only_reason(
     sub_floor = _sub_floor_dimensions_named(review, project, config)
     if sub_floor:
         parts.append("sub-floor dimension(s): " + ", ".join(sub_floor))
-    follow_on = _follow_on_repository_paths(review, fence)
-    if follow_on:
-        parts.append("follow-on finding(s) cite repository path(s): " + ", ".join(follow_on))
+    non_blocking = _non_blocking_repository_paths(review, fence)
+    if non_blocking:
+        parts.append(
+            "non-blocking finding(s) cite repository path(s): " + ", ".join(non_blocking)
+        )
     return "; ".join(parts)
 
 
@@ -860,8 +865,8 @@ def dispatch_repair_for_run(
     if composed is None:
         # The composer returns None for a finding-bearing record in two cases,
         # told apart from the findings already read here so the recorded reason
-        # names the follow-on count rather than one string standing for both. A
-        # round whose findings are all follow-ons has nothing that blocks to
+        # names the non-blocking count rather than one string standing for both.
+        # A round whose findings are all non-blocking has nothing that blocks to
         # answer, so it composes no repair. A finding with no readable severity
         # blocks, so such a round carries no unmarked finding to count; the
         # unmarked list below stays for the record and is empty here, and any it
@@ -871,7 +876,7 @@ def dispatch_repair_for_run(
         # differs from the one selected here, and the round is left for a
         # coordinator rather than dispatched from a stale parse.
         if not repair_module.blocking_findings(review):
-            follow_ons = repair_module.follow_on_findings(review)
+            non_blocking = repair_module.non_blocking_findings(review)
             unmarked = repair_module.unmarked_findings(review)
             disposed = [
                 (index, kind)
@@ -886,7 +891,7 @@ def dispatch_repair_for_run(
             else:
                 reason = (
                     "the review round carried no blocking finding "
-                    f"({len(follow_ons)} follow-on finding(s))"
+                    f"({len(non_blocking)} non-blocking finding(s))"
                 )
             _record_repair_dispatch(
                 run_id,
@@ -914,8 +919,8 @@ def dispatch_repair_for_run(
     blocking = repair_module.blocking_findings(review)
     # The round is decline-only when no *blocking finding cites a repairable
     # path. The decision must read the blocking findings, the same population the
-    # scope is composed from: reading every finding let a follow-on citing a
-    # source path carry a round through whose blocking findings cited only the
+    # scope is composed from: reading every finding let a non-blocking finding
+    # citing a path carry a round through whose blocking findings cited only the
     # fleet's own record, so the scope came out empty. The composed scope below
     # also carries the reviewed run's whole fence, granted so the repair can run
     # the reviewed gate, so a decision read from that scope is never empty for a

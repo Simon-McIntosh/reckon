@@ -30,7 +30,7 @@ Four states, checked in this order, first match wins:
     A blocking finding is unanswered. A plan review's blocking findings are the
     ones the dispatch gate still refuses on, read through
     :func:`reckon.crew.plan_review.unanswered_findings`; a run review's are
-    every finding whose severity is not ``follow-on``.
+    every finding whose severity is not ``non-blocking``.
 ``answered``
     None of the above: every blocking finding has an answer and no later review
     of the subject exists.
@@ -70,8 +70,9 @@ DONE_DECLARATION = "done"
 
 # The one severity that does not block. Every other declared severity, and a
 # finding that declares none, blocks: a run review is asked for a judgement, and
-# an unstated severity is a judgement not yet made rather than a follow-on.
-NON_BLOCKING_SEVERITIES = frozenset({"follow-on"})
+# an unstated severity is a judgement not yet made rather than a non-blocking
+# finding.
+NON_BLOCKING_SEVERITIES = frozenset({"non-blocking"})
 
 # The keys a record's findings may sit under. A record that carries no findings
 # list has nothing to be open about, which is not the same as a blocking finding
@@ -96,6 +97,7 @@ def _blocking(finding: Mapping[str, Any]) -> bool:
     agree about which findings a run review still owes an answer to.
     """
     severity = str(finding.get("severity") or "").strip().lower()
+    severity = _review_store.current_finding_severity(severity)
     return severity not in NON_BLOCKING_SEVERITIES
 
 

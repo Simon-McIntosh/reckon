@@ -131,12 +131,20 @@ FINDING <file>:<line> <severity>: <what is wrong and why it matters>
 declared severities and a colon:
 
 - `blocking` — the defect has to be repaired before this node can land.
-- `follow-on` — the defect is worth recording and does not hold the node.
+- `non-blocking` — the defect is worth recording and does not hold the node.
 
 A finding that opens with neither word carries no severity. It is recorded
 without one rather than defaulted to either, so a judgement you did not make is
 never read as one you did. Use a severity outside these two and the word stays
 in your text as prose, where no gate can read it.
+
+A non-blocking finding is answered one of two ways, in the same closed set of
+dispositions the coordinator records with `crew dispose`:
+
+- `folded` — the work goes into a node, which the finding names. That is also
+  how a non-blocking finding becomes a plan section: the section's node carries
+  it, so no separate bucket holds it.
+- `exempted` — the finding is not acted on, and the disposition states why.
 
 **Every checklist item needs a verdict.** A summary is not a substitute for
 one: an omitted item reads exactly like a checked one, which is how a review
@@ -181,5 +189,5 @@ SCORE fit: 16
 JUSTIFICATION fit: the module follows the surrounding style of reckon/crew/summary.py:11.
 SCORE reuse: 20
 JUSTIFICATION reuse: no owner for a durable review store exists; the search over reckon/crew found none and the store is the first.
-FINDING reckon/crew/query.py:120 follow-on: an out-of-scope helper was added to a file the node was not fenced to write.
+FINDING reckon/crew/query.py:120 non-blocking: an out-of-scope helper was added to a file the node was not fenced to write.
 ```
