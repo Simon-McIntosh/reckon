@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T18:13:44.116Z",
+  "dispatched_at": "2026-10-23T18:03:32Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-page-paints-from-an-index/r-20261023T180006805819-plan-review-of-the-page-paints-from-an-index/plan.html:277 (plan source `docs/plans/the-page-paints-from-an-index.html:277`)",
+      "id": "reasoning-1",
+      "reason": "the plan asserts the row keeps today's fields and its only check compares shared fields, so the row that the page paints from can lose three keys it serves now without any declared check failing; naming them as empty defaults the index supplies, or adding a check that the index row's own fields are unchanged, is a one-clause fix.",
+      "text": "the deliverable has the index build each figure row by calling the shared builder \"and adding only what it alone carries (its `created` and `edited` stamps and its `revision`), projected onto `ROW_FIELDS`\", and claims this means \"the index row keeps the fields it carries today\"; the builder's row (the shape `figure_rows` builds at `reckon/figures.py:187-199`, plus the new `width`/`height`) intersects `ROW_FIELDS` (`reckon/metadata_index.py:62-76`) in only `slug`, `href`, `type`, `title`, `width`, `height`, so the projection also drops `status`, `sprint` and `archived`, which `_figure_row` (`reckon/metadata_index.py:1244-1246`) serves today and which are the only fields of its row no other step supplies; `reckon/serve.py:1262` serves `index_rows` verbatim with no later normalisation, so those three keys leave the `/_index` payload, and the done-when's case (1) (\"the index row and the `figure_rows` row agree on every field both carry\") cannot see it because those fields are carried by the index row alone",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bda6adb0c8bef860693a52f431492d19efe343e468c90d9c9b2b6dce22e6ae8a",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 129,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T180006805819-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "f855d3e4327f45ab78c76c477cbef69dcdb02500",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_figure_row` (`reckon/metadata_index.py:1215`), `figure_rows` (reckon/figures.py:135), `_DIMS_BY_SUFFIX` (:132), the private names it cites, `ROW_FIELDS` (:62), `tests/test_every_module_fits_a_worker_window.py` and the negative-control patch at `tests/test_a_figure_revision_is_fetched_once.py:129-137` all resolve; the cited code review `e50eed172bd8` resolves to a crew run record and its report, whose `duplicate_capability` finding states the same two-builder duplication the Why describes.",
+    "done_when": "pass \u2014 the section is measurable (no `_figure_row`, no private read of `reckon/figures.py`, field agreement, `revision` present) and every case carries a declared control, including the two rewritten ones in `tests/test_a_figure_revision_is_fetched_once.py` and `tests/test_one_builder_owns_a_figure_row.py`.",
+    "evidence_paths": "pass \u2014 gate logs sit under the run directory with a revision header and an `EXIT=` last line, the plan's standing convention, and no path is node-local.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, file name or comment; the review id appears only as an evidence anchor in the plan document.",
+    "reasoning": "a finding \u2014 the projection the deliverable prescribes preserves the dimensions but drops the three empty defaults (`status`, `sprint`, `archived`) the index figure row carries today, and the done-when's only field check compares fields both rows carry, so the loss passes it.",
+    "single_goal": "pass \u2014 one deliverable (one builder owns a figure row); the fixture rewrite in the sibling test is a consequence of deleting `_figure_row`, not a second goal.",
+    "wiring": "pass \u2014 \u00a716's `depends-on` points at \u00a715, which shares `reckon/metadata_index.py`, and both are the only nodes writing it; nothing else declares a dependency on \u00a716."
+  },
+  "section_digests": {
+    "_document": "9641589c0a5677653db645be02ba4f183517fcaa540827048893e3baff8139ff",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "3d4cfa1da9189164bbed1e32561bf56b7c50e4bdf48280de5f2606d2ac87445d",
+    "s16": "3c5e91674b678ddad42f6a90529b8a85b32b8b12d4fcdc3d2c5255584bff97e4",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T18:18:31.733325+00:00"
+}
