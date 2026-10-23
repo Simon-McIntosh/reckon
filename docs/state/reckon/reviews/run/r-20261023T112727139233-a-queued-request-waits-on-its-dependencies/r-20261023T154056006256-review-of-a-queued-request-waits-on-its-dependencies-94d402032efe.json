@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed manifest carries no baseline_suite key; the pair is its test_logs entries: delta-base.log (base arm 43677d0d over the 14 failing ids: 14 failed, EXIT=1) and the manifest's after_suite, gate-round3.log at head 7ad0f0df7 over the named modules (13 failed, 1.105 passed, 1 skipped, 1 error, EXIT=1); the head's 13 ids are a strict subset of the base's 14, so no failure is added.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1724",
+    "reckon/crew/dispatch.py:1671",
+    "reckon/crew/dispatch.py:1803",
+    "reckon/crew/queue_admission.py:1789",
+    "reckon/crew/obligation_snapshot.py:1060"
+  ],
+  "completed_at": "2026-10-23T15:59:54.047Z",
+  "dispatched_at": "2026-10-23T15:45:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1058 non-blocking",
+      "text": "written outside the node's declared fence: the dispatch record's FENCE - SCOPE lists reckon/crew/queue_admission.py, reckon/crew/dispatch_admission.py, reckon/crew/dispatch.py, the new test module, the landing fragment and the figures dir, and names no obligation_snapshot.py, so the 55 added lines that list a held request on its session's duties view (payload_for at :1060) sit outside the grant; the manifest's scope_note discloses this and cites a re-review message as the grant, which is not in the dispatch record a reader can open, so the four lines required for the plan's obligations-view clause were written under a scope the node was not fenced to."
+    },
+    {
+      "file": "tests/test_a_queued_request_waits_on_its_dependencies.py",
+      "line": "407 non-blocking",
+      "text": "both dispatch arms pin hold_tests._configure(..., session_slots=0) at :407 and :425, so only the lane-held path is exercised, and the free-lane case the previous review's first finding is about has no arm at all; the manifest's own follow_ons admits the free-lane arm was written, failed and removed rather than left red, which leaves the claim in the code comment at reckon/crew/dispatch.py:1716 ('whatever the lane state') resting on a reading and not on a gate - the removal is the defect the record itself names, since a red arm that was deleted is indistinguishable from a case that was never covered."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1231 non-blocking",
+      "text": "the node's own commit adds lint findings in a repo whose rule is that a commit adds none: '_request_state' imports COMPLETED_STATUSES and TERMINAL_STATUSES and uses neither, and the new test module carries three E402 and one FURB167 - eight findings across the changed paths, four of them in code this node created."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1542 non-blocking",
+      "text": "queue_requests, the batch entry point plan section 2's 'queue a whole width in one call' needs, still has no production caller - grep over reckon/ and skills/ finds it only in the new test module, and the dispatch path reaches the hold per node - so the batch half is provable but inert until a queue verb lands; the same gap was recorded by the previous review at :1347 and it is unchanged at this head."
+    },
+    {
+      "file": "reckon/crew/recovery_vocabulary.py",
+      "line": "1 non-blocking",
+      "text": "plan section 2 names the watch stream among the readers that must take the phase words from the vocabulary, and it does not: RECOVERY_VERBS and reckon/crew/recovery_vocabulary.py carry neither 'awaiting-upstream' nor 'blocked-upstream', so a held request is drawn on no watch line; the file is outside the node's fence and the manifest records it under follow_ons, so the gap is disclosed and the fence rather than the worker holds it."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {},
+  "node": "review-of-a-queued-request-waits-on-its-dependencies-94d402032efe",
+  "node:reviewed": "a-queued-request-waits-on-its-dependencies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/dispatch holds it at reckon/crew/dispatch.py:1724 through queue_admission.unmet_waits and the request is released by the admission pass at reckon/crew/queue_admission.py:1789.\nVERDICT done_when: the done_when asks for a three-section chain queued in one call launching in dependency order with no coordinator call, a negative arm blocking the tail, and a malformed node refused at queue time; tests/test_a_queued_request_waits_on_its_dependencies.py:317, :349 and :410 carry all three and the manifest records the run.\nVERDICT write_paths: the dispatch record fences six paths and the diff touches five, four of them inside the fence; reckon/crew/obligation_snapshot.py is the fifth and is outside it, disclosed in the manifest's scope_note.\nVERDICT manifest: read; it states status complete, names gate-round3.log as the head arm and seven logs in test_logs, but carries no baseline_suite key and no after_suite JSON, so the base half had to be read from delta-base.log.\nVERDICT diff: read commit by commit from 43677d0d to 94d402032; seven commits over five files, +1521/-4, the bulk in queue_admission.py and the new test module, with the dispatch hold sited ahead of the yield branch at reckon/crew/dispatch.py:1716 after the re-review repair at 7ad0f0df7.\nCALL_SITES: reckon/crew/dispatch.py:1724, reckon/crew/dispatch.py:1671, reckon/crew/dispatch.py:1803, reckon/crew/queue_admission.py:1789, reckon/crew/obligation_snapshot.py:1060\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1282 resolves all three wait kinds and reckon/crew/dispatch.py:1724 holds the dispatch on them before any launch.\nSCORE evidence: 16\nJUSTIFICATION evidence: the done_when's three arms are at tests/test_a_queued_request_waits_on_its_dependencies.py:317 and :349 and the gate result is in gate-round3.log, though the manifest carries no baseline_suite key.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: reckon/crew/obligation_snapshot.py:1058 carries 55 added lines outside the fence listed in the dispatch record.\nSCORE durability: 14\nJUSTIFICATION durability: the negative control at neg-wiring.log is real - removing the two hold_request_for_upstream calls reddens test_a_dispatch_holds_the_request_it_queues_for_upstream - but no arm covers the free-lane path the hold at reckon/crew/dispatch.py:1716 claims.\nSCORE fit: 14\nJUSTIFICATION fit: the lazy import at reckon/crew/dispatch.py:1725 matches the file's own idiom at :370, but reckon/crew/queue_admission.py:1231 adds two unused imports and the new test module adds four findings.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:1074 builds the roadmap's own report through build_roadmap rather than re-deriving readiness, and uses reckon._schema.parse_plan_ref at :1181 instead of a hand-rolled split.\nFINDING reckon/crew/obligation_snapshot.py:1058 non-blocking: 55 added lines sit outside the node's declared fence, whose grant is not in the dispatch record.\nFINDING tests/test_a_queued_request_waits_on_its_dependencies.py:407 non-blocking: both dispatch arms pin session_slots=0, so the free-lane path has no arm and a failed arm was removed rather than repaired.\nFINDING reckon/crew/queue_admission.py:1231 non-blocking: an unused import is added by this node, against the repo's rule that a commit adds no findings.\nFINDING reckon/crew/queue_admission.py:1542 non-blocking: queue_requests has no production caller, so the batch half stays inert.\nFINDING reckon/crew/recovery_vocabulary.py:1 non-blocking: the watch stream does not know the two phases, though plan section 2 names it as a reader of the vocabulary.\n",
+  "review_run_id": "r-20261023T154056006256-review-of-a-queued-request-waits-on-its-dependencies-94d402032efe",
+  "reviewed_base_sha": "43677d0d2697ae3d8841b6d19addcdb77cc572be",
+  "reviewed_head_sha": "94d402032efe13fd45d9ea728391870356cd0119",
+  "reviewed_run_id": "r-20261023T112727139233-a-queued-request-waits-on-its-dependencies",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T15:56:19+00:00",
+  "total": 93
+}
