@@ -1,0 +1,158 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T09:45:21.067Z",
+  "dispatched_at": "2026-10-23T09:34:52Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:793",
+      "id": "done_when-1",
+      "reason": "the sibling \u00a738 required a payload-altering monkeypatch control for exactly this reason, and without one three of four repairs are measured only by a suite that passes on the weakened test.",
+      "text": "s40's done-when measures its first three ids by passage alone: the sole negative control (\"restore `project_brief.py`'s private parser, and the invariant test names it again\") exercises only the `test_structural_invariants` id, so a node that reaches green by deleting the `classification` assertion or the summary field list is not caught",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:793",
+      "id": "reasoning-1",
+      "reason": "the plan claims behavioural equivalence it does not hold, and the done-when would not catch it because no importing test feeds these callers a numeric stamp, so the plan should pin the accepted domain rather than assert sameness.",
+      "text": "the Deliverable asserts \"Nothing else changes\" when `project_brief.py:_parse_utc` is replaced by `reckon._timestamps.parse_utc`, but the two differ on numeric input (measured: `0` -> `None` becomes `1970-01-01 00:00:00+00:...`; `1700000000` -> `None` becomes `2023-11-14 22:13:20+00:00`), and `_parse_utc` is called on `run.get(\"started_at\")`, `since` and `row.get(\"closed_at\")`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:793",
+      "id": "reasoning-2",
+      "reason": "the repair as written defeats the test's stated purpose; the correct mechanism is to re-freeze the expectation to the intended new bytes, which preserves byte-exactness.",
+      "text": "the summary repair tells the node to compare the summary \"by key rather than as one frozen string, so an added field does not redden it\", but `tests/test_sprint_summary_lists_pending.py::test_summary_without_sprint_is_unchanged` exists precisely to pin that the no-sprint summary gains nothing, so a by-key comparison removes the only guard against exactly that regression",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:793",
+      "id": "anchors_resolve-1",
+      "reason": "the citation names a commit that does not carry the change it is cited for, so a builder reading it learns nothing about the parser's provenance and the anchor must be corrected to `4b499ff78`.",
+      "text": "the Why cites \"a private ISO-stamp parser added in `c80675ecb`\", but `git log -S\"_parse_utc\" -- reckon/project_brief.py` resolves to `4b499ff78` (\"feat(roadmap): compose a project brief from the roadmap payload\"); `c80675ecb` touched `project_brief.py` for a constant only and contains no `_parse_utc` line",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "02a90352805d9d0d039415bb41cc1e1a2c46339db28e6b49dfa06a14fbf17f0d",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 494,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-23T09:49:30.369211+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T09:49:48.429423+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-23T09:50:01.384017+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-23T09:50:19.091999+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T09:50:19.091999+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T09:49:30.369211+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T09:49:48.429423+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T09:50:01.384017+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v494.json",
+  "review_run_id": "r-20261023T093326638252-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "0f3bf69a3c57ff8558428d67655e86de50105193",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the `c80675ecb` anchor is cited for adding `_parse_utc`, which that commit did not do.",
+    "done_when": "a finding \u2014 s40 declares one negative control, covering only the `project_brief` parser id; the three field-level repairs have none.",
+    "evidence_paths": "pass \u2014 the section writes to `docs/evidence/fragments/the-suite-is-green-at-head/four-tests-red-at-main-pass-again.html` and the plan-artifacts resolve to the repository's evidence tree, not a scratch path.",
+    "naming": "pass \u2014 new symbols carry no plan labels, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 the Deliverable's \"Nothing else changes\" is false for the stated substitution, and the summary repair weakens the guard it is meant to preserve.",
+    "single_goal": "pass \u2014 the four ids share one goal (make four red tests green at head) and one verifiable verdict.",
+    "wiring": "pass \u2014 s40 is declared `implementable` and carries followup `f-tsigah-040` (`/reckon-build the-suite-is-green-at-head \u00a740`), so the node is reachable; `plan-section-declarations` lists s40 and no node consumes s40, which it needs not."
+  },
+  "section_digests": {
+    "_document": "60121ce57f20c162ba2f9c28db608cfd4f7f5980a8e63dedc81f7287d9c321b8",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s17": "01fe3ab4eb2f9f616654a729cf8bef4dcf5b530d4d0c1be3bdfa73999d0ad263",
+    "s18": "15b626822483dd850c2006c1d4255b8386f22ef780237614005178a5b3c15d70",
+    "s19": "94946283d6a94fe284a3f00a5c60fbfdf125cd16b7f43e5e0abdb96b6305cf3b",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s20": "1eef46ce597367c7d533df3c2bbd6d180313a446b7ad270289b1ed3f26857a8c",
+    "s21": "1ed74dec466eb1b0eee98d9d29bba0029e9ecfc126fc5ee67c90c833f03724dd",
+    "s22": "c3a55e73e65fd250ba61d6c2e9966ce88a3f63d70531153347e865c64bbb779d",
+    "s23": "58c7c8fb57b77f817bf210d5bb02d2c42f9794894e0e82f24746c06eaae9b603",
+    "s24": "bd305a35e661a1e1921c208e88472c7ccf105925bb86ba5650b5eb9312d9a1bd",
+    "s25": "f6fbb1de53e5726883a68cf7037c0179700c8dedb668dbde1317135cc5c4cb92",
+    "s26": "23ea594e91a1c5608efd3fe59772eae122fb954566c852bdaabf65bc0f960438",
+    "s27": "96a3a73ebe2e74d468e6b9a4349507255e4fcc03aca1b366d60fccd64d59c9ce",
+    "s28": "393e72e21850095d6d8138fd4b66a0063d63c4f7fed13b43b6b271248be89c09",
+    "s29": "04a5b9a1ad1dcd2a5dc9f773d7c05fe706424547779b84fe9d4492f6426934c7",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s30": "485a2a89d88d3c3118d1b5df9d249b9a772b9268af6f7c92b8b962f88b723ebc",
+    "s31": "e20b4530d538efa41409c397800a5fcf8c0e96aec73ed10a10b32e8a1155727a",
+    "s32": "ebfbf30b3784c5281dd90726881a6777e799e98ed856a66ba60f98527bdd094e",
+    "s33": "6cc8c0aae70cfd7f6b3f37981fbc894c4cf2ef70018055036631e299d4c089af",
+    "s34": "c73f6f2c90bb56a5094d429dc71320315a469c94083908fcfdfea91dfa3a52c5",
+    "s35": "6a07f7885efe79fd8f56f1615016fb763def91f3dc32eb09d983f3720885e404",
+    "s36": "5afe5c1da3ca9b62dbe09f2a36285011a07552933ab202eb0ada87af5209116a",
+    "s37": "1f60348ce279819e5cac49ab04279a2e560ab31e3161e1a2979f2b682fb58dbf",
+    "s38": "7ca11a2aa868440ce95df44aed2acf1008049792d75b1cca5880cdb76ca9527c",
+    "s39": "1ad1ab07484b64e99182a3f82fa12fe7ef4a8ae1466a713476e0e192da37da13",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s40": "b702d6492599b943e4186cba2dd52103fd33728f41b3ea4c9202e43117ca8039",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "072f7ace5c2d253a6d4972213a2093233d6f768bd4d1394f2b9eaf1471ff4119",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T09:49:18.725214+00:00"
+}
