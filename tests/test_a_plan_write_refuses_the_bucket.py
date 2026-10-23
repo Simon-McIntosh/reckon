@@ -237,6 +237,35 @@ def test_a_section_body_set_naming_the_term_is_refused(checkout: Path) -> None:
     assert path.read_bytes() == before
 
 
+def test_a_section_body_that_also_forges_a_heading_is_refused_for_the_heading(
+    checkout: Path,
+) -> None:
+    """Text mode is the route out of the term refusal, not of every refusal."""
+    path = checkout / "docs" / "plans" / f"{PLAN}.html"
+    before = path.read_bytes()
+
+    result = _edit(
+        checkout,
+        [
+            {
+                "op": "set",
+                "path": "sections.s2.body",
+                "value": (
+                    "<h2>An authored heading</h2>"
+                    f"<p>A remainder parked as {TERM} work.</p>"
+                ),
+            }
+        ],
+    )
+
+    assert result["ok"] is False, result
+    assert result["error"] == "op_error"
+    assert "must not contain another h2" in result["detail"], result
+    assert RULE not in result["detail"], result
+    assert TEXT_MODE_HINT not in result["detail"], result
+    assert path.read_bytes() == before
+
+
 def test_an_evidence_body_naming_the_term_is_refused(checkout: Path) -> None:
     result = _edit(
         checkout,

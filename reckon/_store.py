@@ -955,23 +955,35 @@ def _prose_deferred_work_term(body: str) -> str | None:
     return deferred_work_term(BeautifulSoup(body, "html.parser"))
 
 
+def _deferred_work_term_is_the_reason(body: str, forged: str) -> bool:
+    """True when the term, rather than a heading or forged state, is the reason.
+
+    The predicate reads structure before it reads prose, so a body that forges a
+    heading and also carries the term is refused for the heading. The reason is
+    the term's own only where it matches the refusal the term earns.
+    """
+    term = _prose_deferred_work_term(body)
+    return term is not None and forged == _deferred_work_term_reason(term)
+
+
 def _refuse_forged_body_structure(
-    body: str, *, subject: str, hint: str | None = None
+    body: str, *, subject: str, term_hint: str | None = None
 ) -> None:
     """Refuse a body that forges plan structure, naming the ``subject`` it was written for.
 
-    ``hint`` appends the route out of the refusal, supplied by the one caller
-    whose check is narrow enough to remain usable after it — a section body is
-    written whole, so re-setting a legacy body that already carries the term in
-    prose is refused, and the caller names text mode, which checks only the text
-    an edit adds.
+    ``term_hint`` appends the route out of the refusal, and only where the
+    refusal's reason is the deferred-work term. Text mode is the route out of
+    that refusal alone, because it compares the fragment an edit adds against
+    the text it replaces; a body refused for a heading is not edited by text
+    mode, and naming it there would answer a refusal the caller did not get.
     """
     forged = _forged_plan_structure(body)
-    if forged is not None:
-        message = f"{subject} must not contain {forged}"
-        if hint:
-            message = f"{message}; {hint}"
-        raise OpError(message)
+    if forged is None:
+        return
+    message = f"{subject} must not contain {forged}"
+    if term_hint and _deferred_work_term_is_the_reason(body, forged):
+        message = f"{message}; {term_hint}"
+    raise OpError(message)
 
 
 def _deferred_work_term_a_text_edit_adds(old_html: str, new_html: str) -> str | None:

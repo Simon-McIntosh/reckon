@@ -133,17 +133,20 @@ def _refuse_forged_structure(section_id: str, body: str) -> None:
     legacy section whose prose already carries the deferred-work term is refused
     when it is re-set. The refusal names text mode, the one route whose check is
     narrow enough to edit that section anyway: it compares the fragment an edit
-    adds against the text it replaces.
+    adds against the text it replaces. That hint is offered to the predicate
+    rather than decided here, because only the predicate knows which fragment it
+    refused the body for: a body that forges a heading as well is refused for
+    the heading, and text mode does not edit that.
     """
-    from reckon._store import _prose_deferred_work_term, _refuse_forged_body_structure
+    from reckon._store import _refuse_forged_body_structure
 
-    hint = (
-        "edit this section's body in text mode, which checks only the text an edit adds"
-        if _prose_deferred_work_term(body) is not None
-        else None
-    )
     _refuse_forged_body_structure(
-        body, subject=f"sections.{section_id}.body", hint=hint
+        body,
+        subject=f"sections.{section_id}.body",
+        term_hint=(
+            "edit this section's body in text mode, which checks only the text "
+            "an edit adds"
+        ),
     )
 
 
