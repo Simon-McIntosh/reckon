@@ -114,5 +114,19 @@ def test_no_ledger_docstring_carries_the_retired_spellings() -> None:
     assert [spelling for spelling, _ in found] == []
 
 
+def test_the_ledger_extractor_is_named_for_the_outside_scope_field() -> None:
+    from reckon import ledger
+
+    assert hasattr(ledger, "outside_scope_paths_from_entries")
+    assert not hasattr(ledger, "follow_on_paths")
+
+
+def test_one_reader_maps_the_retired_row_key() -> None:
+    from reckon import run_record
+
+    assert hasattr(run_record, "normalize_outside_scope_paths")
+    assert not hasattr(run_record, "outside_scope_paths")
+
+
 if __name__ == "__main__":  # pragma: no cover
     pytest.main([__file__])

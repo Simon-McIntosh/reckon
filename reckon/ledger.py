@@ -647,7 +647,7 @@ def _path_like_tokens(text: str) -> list[str]:
     return tokens
 
 
-def follow_on_paths(entries: Any) -> list[str]:
+def outside_scope_paths_from_entries(entries: Any) -> list[str]:
     """Extract the repository paths a manifest's ``outside_scope`` names.
 
     A following run touching the paths an earlier manifest already named is the
@@ -3709,7 +3709,6 @@ from reckon.run_record import (  # noqa: E402, F401
     measured_throughput,
     measurement_exclusion_reason,
     normalize_outside_scope_paths,
-    outside_scope_paths,
     per_run_budget,
     promoted_budget_fallback,
     promoted_pace_row,

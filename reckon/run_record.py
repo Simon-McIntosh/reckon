@@ -33,21 +33,6 @@ OUTSIDE_SCOPE_PATHS = "outside_scope_paths"
 RETIRED_OUTSIDE_SCOPE_PATHS = "follow_on_paths"
 
 
-def outside_scope_paths(record: Mapping[str, Any]) -> list[str] | None:
-    """The paths a row names as outside its worker's scope, or ``None``.
-
-    A row promoted before the key was renamed is read through the retired
-    spelling, so both spellings answer identically here. An empty list is a
-    real measurement — the worker reported no such path — and stays distinct
-    from ``None``, which is a row never measured for the field.
-    """
-    for key in (OUTSIDE_SCOPE_PATHS, RETIRED_OUTSIDE_SCOPE_PATHS):
-        if key in record:
-            value = record[key]
-            return [] if value is None else [str(path) for path in value]
-    return None
-
-
 def normalize_outside_scope_paths(record: Mapping[str, Any]) -> dict[str, Any]:
     """A row carrying its outside-scope paths under the current key.
 

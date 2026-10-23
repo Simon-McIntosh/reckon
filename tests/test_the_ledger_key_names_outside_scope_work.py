@@ -172,7 +172,6 @@ def test_the_renamed_key_reads_through_record_store_and_ledger(
     paths = ["reckon/ledger.py", "reckon/crew/promotion.py"]
 
     # ... through run_record, on the row as a mapping.
-    assert run_record.outside_scope_paths({RETIRED_KEY: list(paths)}) == paths
     mapped = run_record.normalize_outside_scope_paths({RETIRED_KEY: list(paths)})
     assert mapped[RENAMED_KEY] == paths
     assert RETIRED_KEY not in mapped
@@ -215,7 +214,6 @@ def test_a_new_row_reads_through_the_same_key(repository: Path) -> None:
     )
     row = _row(repository, run_id)
     assert row[RENAMED_KEY] == ["reckon/run_store.py"]
-    assert run_record.outside_scope_paths(row) == ["reckon/run_store.py"]
     assert run_record.normalize_outside_scope_paths(row)[RENAMED_KEY] == [
         "reckon/run_store.py"
     ]
@@ -227,4 +225,4 @@ def test_a_row_measured_with_no_paths_keeps_an_empty_list(repository: Path) -> N
     _promote_with_manifest(repository, run_id, "status: complete\nfollow_ons: none\n")
     row = _row(repository, run_id)
     assert row[RENAMED_KEY] == []
-    assert run_record.outside_scope_paths(row) == []
+    assert run_record.normalize_outside_scope_paths(row)[RENAMED_KEY] == []
