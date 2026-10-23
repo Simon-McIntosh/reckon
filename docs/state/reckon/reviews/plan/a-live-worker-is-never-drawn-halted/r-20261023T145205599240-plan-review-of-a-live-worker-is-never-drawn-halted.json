@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T15:49:30.994Z",
+  "dispatched_at": "2026-10-23T15:37:48Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:321",
+      "id": "reasoning-1",
+      "reason": "a worker implementing \u00a712 exactly as written changes the admission retry path as a side effect the plan never mentions and its gate cannot see; the plan needs to name that second call site and say how the back-off is to be preserved for a QueueFull pointer (a distinct hold kind read by both call sites, or a guarded widening), and to add a test arm for it.",
+      "text": "\u00a712 fixes the reading by extending `queue_admission._is_lane_hold`, calling it \"the owner of that reading\", but that predicate has a second consumer the plan does not name: `_retry_backoff_hold` (reckon/crew/queue_admission.py:676, calling `_is_lane_hold` at :695) returns \"attempt it\" immediately for anything `_is_lane_hold` accepts. `_stamp_failure` (queue_admission.py:714) writes a `retry_at` (`_retry_delay(attempts)`) and a `failure_guard` on every queued failure, and `_retry_backoff_hold`'s own docstring states its purpose is to stop \"a request that cannot launch \u2026 from cycling through a release, a failed dispatch and a restore on every pass\". Widening `_is_lane_hold` to accept `QueueFull` therefore removes the back-off from a QueueFull pointer, so it is re-attempted on every admission pass while the session is still at its cap, which is exactly the cycling the back-off exists to prevent. \u00a712's done-when covers only the classification reading, so the node's gate passes while that behaviour changes unmeasured.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:327",
+      "id": "wiring-1",
+      "reason": "the driver is what a coordinator dispatches from; a section left out of its ordering can be run in parallel with a section that writes the same file, and \u00a712 was added to the plan without being added to the map that governs how the plan is built.",
+      "text": "the followup body, which is the plan's dispatch driver (`data-recommends-skill=\"/reckon-build a-live-worker-is-never-drawn-halted\"`), enumerates the section ordering as \"\u00a72, \u00a74, \u00a76, \u00a78 and \u00a79 are independent. \u00a73 follows \u00a72, and \u00a75 then \u00a77 follow \u00a74\", leaving \u00a710, \u00a711 and \u00a712 out of the map. The omission is not cosmetic for \u00a710: that section states \"It runs after \u00a73, which writes the same file\", and both \u00a73 and \u00a710 write `reckon/crew/recovery_classification.py`, so a coordinator dispatching from this driver has no place for \u00a710 and may run it concurrently with \u00a73 \u2014 the concurrent-same-file write the fleet rules exist to prevent. \u00a711 (\"once \u00a72\u2013\u00a710 have landed\") and the newly added \u00a712 are likewise unplaced.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a937f1396571e7a926e89fce8e2493ca43e01831e1e59c956557942a07ccfe62",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 6,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T145205599240-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "a629290470c1cff2fa4093a3ca4e4a65f4124477",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery_classification._queued_failure_remedy`, `queue_admission._is_lane_hold`, the queued-run duty kinds `queued-awaiting-session` and `run-queued`, and the `QueueFull` message quoted in \u00a712 all resolve at the reviewed revision, and the cited run pointer exists in the live store.",
+    "done_when": "pass \u2014 \u00a712 declares a measurable done-when with a real negative control (\"the QueueFull pointer at the base revision gives queued-awaiting-session\"), which I confirmed reproduces at HEAD: `_is_lane_hold` (reckon/crew/queue_admission.py:502) matches only the `LaneHeld`/`LanePaused` prefixes, so a `QueueFull: session \u2026` failure falls through to the session-naming branch at recovery_classification.py:151 and yields the `queued-awaiting-session` reading the plan says it does.",
+    "evidence_paths": "pass \u2014 \u00a712 keeps its negative control in the node's gate log, the plan's uniform mechanism; \u00a711 (unchanged) is what commits the census instrument out of the coordinator's scratch.",
+    "naming": "pass \u2014 \u00a712 names mechanisms, not plan labels or ticket ids; no stage names or changelog prose reach the write paths.",
+    "reasoning": "a finding \u2014 \u00a712's root cause matches its evidence, but the mechanism it names changes the behaviour of a second, unnamed consumer of the predicate it extends.",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable (read a `QueueFull` failure as a lane hold rather than a session refusal), with one gate.",
+    "wiring": "a finding \u2014 the followup `f-alwh-001` states the dispatch ordering as \"\u00a72, \u00a74, \u00a76, \u00a78 and \u00a79 are independent. \u00a73 follows \u00a72, and \u00a75 then \u00a77 follow \u00a74\", which omits \u00a710, \u00a711 and \u00a712 entirely, so the plan's own driver hands a coordinator an ordering that has no place for \u00a710 \u2014 a section that says it runs after \u00a73 on the same file."
+  },
+  "section_digests": {
+    "_document": "5cfd59049e08a8a88336f2e869a4e58c547a88c739b2a86fb66806fad70c5aff",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "ba8d6d387c755a6b01de5e239cdc58e1c42438b8f250487f7a01c0a9d6f969df",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "1fbaee6774bb925bffb02f59d8d4442ab2ecbdce493922561ca3818683ca89fe",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T15:58:06.497634+00:00"
+}
