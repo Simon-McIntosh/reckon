@@ -31,14 +31,19 @@ plan report is still admitted, its finding still stored and still answerable
 through <code>crew review --answer</code>.</p>
 
 <p id="a-report-is-admitted-on-what-its-parser-read-measure">Head arm: the
-declared gate ran 85 cases, 82 passed and 3 failed. The three failures are two
-test files outside this node's write scope whose fixtures deliver a report
-carrying only <code>RUBRIC wiring: pass</code> under the design rubric, so the
-new rule refuses them. Negative control: the base revision with the new test file
-copied in failed 2 cases
-(<code>test_a_code_report_outside_the_health_rubric_is_refused</code> and
-<code>test_a_plan_report_naming_an_item_outside_its_rubric_is_refused</code>)
-with <code>EXIT=1</code> — the ids the head arm does not fail.</p>
+declared gate ran 85 cases, all 85 passed, <code>EXIT=0</code>. Base arm: 83
+passed and 2 failed, <code>EXIT=1</code>, the two failures being this node's own
+new refusal cases, which the head arm does not fail. Negative control: the base
+revision with the new test file copied in keeps the old pattern match and failed
+the same 2 cases with <code>EXIT=1</code>, so the check this node adds is red
+exactly where the mutation admits a report on the pattern match.</p>
+
+<p id="a-report-is-admitted-on-what-its-parser-read-fixtures">The rule is
+rubric-agnostic, so it also refused three pre-existing fixtures that declared the
+design rubric in their sidecar but emitted only <code>RUBRIC wiring: pass</code>,
+<code>wiring</code> being a content-rubric item. Those fixtures now emit
+<code>RUBRIC reuse_search: pass</code>, a design item, and the cases go on
+testing what they tested.</p>
 </article>
 </body>
 </html>
