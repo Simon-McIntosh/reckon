@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T13:29:46.014Z",
+  "dispatched_at": "2026-10-23T13:18:26Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/ticker.py:1269",
+      "id": "reuse_search-1",
+      "reason": "\u00a75 must extend the departure hold (or state why the existing round-trip rule cannot cover a wait that recovers after the settle window) instead of adding a parallel same-word test, or the two rules will disagree about a run that both hold.",
+      "text": "\u00a75 proposes \"the stream no longer carries a row whose pane word is the same on both sides and whose wait facts are unchanged\", which is a second same-word suppression rule beside the row policy's existing round-trip memory: `RowPolicy._shown`/`_departures` (ticker.py:1268\u20131272, `_note_shown` :1335) already holds a departure and drops it when the run \"returns to it inside the settle window, so the pane draws neither half\", keyed by run id and seeded across reloads; the plan cites neither the memory nor its window, so the recorded pair (wait-aged 10:47:05Z \u2192 waiting 10:52:33Z, five minutes apart) is exactly the pair that escapes the existing hold and the new rule would be the second mechanism deciding the same question for the same run",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/watch_unit.py:148",
+      "id": "reuse_search-2",
+      "reason": "a release decision taken outside the seat owner can disagree with the readers above about whether a foreign seat is live (they call it live when the lease holder is that host or the stream is fresh), so \u00a79 must name `watch_unit.py`/`runs.py` as the seat owner and the fleet-record reader it extends, or the two judgements will conflict.",
+      "text": "\u00a79 proposes that a producer whose host differs from the fleet record's node \"releases its seat and exits\", re-deriving a question the codebase already answers in three places: `watch_unit.live_foreign_seat`/`live_foreign_seat_host` (:143\u2013148) already returns a live seat's foreign host from the seat record plus host lease plus stream freshness, `watch_unit._record_producer_running` (:97) already decides whether a foreign producer is alive by its stream, and `runs.watch_host_lease` (runs.py:2837)/`_seat_host_is_local` (:2773) already own the lease and the local/foreign comparison; the plan \u00a79 also names the fleet record by path only, while its reader is owned by `dispatch_launch.py:2128` (`base / \"fleet\" / \"record.json\"`) and `fleet_supervisor.RECORD_NAME` (fleet_supervisor.py:108)",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:2222",
+      "id": "duplicate_owner-1",
+      "reason": "a worker sent to \"the module named in the manifest\" re-discovers the owner at implementation time, and the two paths \u00a74 could pick (runs.py publishing vs recovery_watch.py composing) are exactly the fork the item exists to prevent.",
+      "text": "census of deferred owners, each stating that \u00a74 also proposes a stamping rule on the transition producer while leaving the producer unnamed: (1) \u00a74 \"the producer module that composes transition events (named in the manifest)\" \u2014 the composer is `runs._stream_transition` (runs.py:2222) and `runs._publish_watch_transitions` (runs.py:2343), with `recovery_watch.py:1878` composing the transition dict itself; (2) \u00a79 \"the producer seat module named in the manifest\" \u2014 the owner is `reckon/crew/watch_unit.py` (1001 lines; `watch_host_lease` :33, `_record_producer_running` :97, `live_foreign_seat` :148); (3) \u00a710 \"the classification module that composes a wait's next action (named in the manifest)\" \u2014 the text that must change is `recovery_classification.py:1000` (\"the recovery sweep will resume run {run_id} when the condition\u2026\"), and \u00a710's own hedge \"when that module is recovery_classification.py\" shows the owner is knowable; (4) \u00a711 \"committed under `scripts/`\" \u2014 the census instruments already live under `scripts/census/` (`death_census.py`, `carryover_census.py`, `pace_replay.py`), each one subject per module with a co-located test; \u00a711 does not name that home, and its report path (`docs/evidence/fragments/<slug>/census.html`) sits outside the evidence convention the repo states for a landed plan (`docs/evidence/archive/<slug>-landed.html`)",
+      "type": "duplicate_owner",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1466aadfd9aa54fe37ba619742c0e8e085a6bb2265f68516740b35a6ba004dbe",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T131731434500-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "a05a0b4a40eaf174e14704c0654bcbd227fe3bae",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 every section extends one already-deep module (recovery_classification 1866 lines, recovery_liveness 1479, ticker 2604, obligations 1435, budget_lift 1406, lift_watch 414) and no section proposes a new wrapper family over them; the only new file is \u00a711's census instrument plus its own test, one module hiding its own reclassification walk.",
+    "duplicate_owner": "a finding \u2014 four write paths leave the owner unnamed (\"named in the manifest\") although the owner is statically resolvable, and \u00a75 puts a second suppression rule beside the row policy's existing one; the census is on the FINDING line below.",
+    "interface_budget": "pass \u2014 public_definitions 2036, cli_options 402, mcp_views 19, refusal_families 23; no section adds a CLI option, an MCP view or a refusal family, and \u00a78, the one section that could have added surface, states in its own text that no parallel reader and no section adds a second kind, so the added family is nil and nothing needs retiring.",
+    "reuse_search": "a finding \u2014 the plan cites most machinery by name and those files exist, but it omits the two owners its new rules sit directly beside: the row policy already holds a round-trip suppression (`ticker.RowPolicy._shown`/`_departures`, ticker.py:1268\u20131272) that \u00a75's same-word rule duplicates, and the producer side already holds foreign-seat readers (`watch_unit.live_foreign_seat` watch_unit.py:148, `_seat_names_a_foreign_host` :60, `_record_producer_running` :97; `runs.watch_host_lease` runs.py:2837, `_seat_host_is_local` :2773) that \u00a79 does not cite.",
+    "thin_wrapper": "pass \u2014 \u00a72 and \u00a73 say in their own text \"extend that predicate, or the arm beside it / Extend that resolver rather than adding a parallel one\", and \u00a78 says \"No parallel reader and no second kind\" while extending `_queued_review_fields`; \u00a76 names the existing stamping path rather than adding one."
+  },
+  "section_digests": {
+    "_document": "1941c1c8ebd31bdf681794161c167a371b9f346fa53844c7ff32c0863799c095",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "cc52278da493f715624d3ecc54e1e4a3e0e6f14b80d6cc1384ce316e311938cf",
+    "s11": "d553771f78f9180b8fff124c0408dc6caa719f026dbe83153860d1e8c4c5d756",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "916c229456c2aa7ce42703fe54fcb20cf46b81947e5b1c0cec346ef4c2a0bbcd",
+    "s5": "73cf3ed3582c1ef8b8c75ab85af9e0f1752d54d1d85442d6e49480ae93782e45",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "586befbc3bb3525a933001420630af47fad98192968fd35f1f3425dadeaf4278"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T13:31:49.930244+00:00"
+}
