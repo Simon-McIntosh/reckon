@@ -1666,12 +1666,26 @@ def dispatch(
                 ),
                 cap=queued_dispatch_cap(_queued_share_cap(backend)),
             )
+            from reckon.crew import queue_admission
+
+            waits = queue_admission.hold_request_for_upstream(
+                str(queued["run_id"]), node=node, repo_root=repo_root
+            )
             held = LaneHeld(lane_allowance)
             held.queued = {
                 "run_id": queued["run_id"],
                 "position": position,
-                "phase": str(queued.get("phase") or "queued"),
-                "reason": lane_allowance.get("reason"),
+                "phase": str(
+                    queued.get("phase") or queue_admission.QUEUED_PHASE
+                )
+                if not waits
+                else queue_admission.AWAITING_UPSTREAM_PHASE,
+                "waits": list(waits),
+                "reason": (
+                    "waiting on " + ", ".join(waits)
+                    if waits
+                    else lane_allowance.get("reason")
+                ),
             }
             if held_selection is not None:
                 # The hold that offered the local lane is kept in the outcome
@@ -1740,10 +1754,18 @@ def dispatch(
                         "reason": "yielded to this session's older queued request",
                     }
                 )
+                from reckon.crew import queue_admission
+
+                waits = queue_admission.hold_request_for_upstream(
+                    str(queued["run_id"]), node=node, repo_root=repo_root
+                )
                 held.queued = {
                     "run_id": str(queued["run_id"]),
                     "position": position,
-                    "phase": str(queued.get("phase") or "queued"),
+                    "phase": queue_admission.AWAITING_UPSTREAM_PHASE
+                    if waits
+                    else str(queued.get("phase") or queue_admission.QUEUED_PHASE),
+                    "waits": list(waits),
                     "reason": "waiting behind this session's older queued request",
                 }
                 _arrange_dispatch_follower(

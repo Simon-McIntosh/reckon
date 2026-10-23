@@ -21,6 +21,8 @@ import pytest
 
 from reckon.crew import queue_admission, runs
 from reckon.crew.node import CrewError, TaskNode
+from tests import test_a_jev_hold_queues_for_the_local_lane as hold_tests
+from tests import test_dispatch_names_its_backend as backend_tests
 
 PROJECT = "proj"
 SESSION = "coordinator-a"
@@ -249,3 +251,64 @@ def test_a_malformed_node_is_refused_at_queue_time(chain_repo: Path) -> None:
         for pointer in runs.list_live(project=PROJECT)
     }
     assert "s2" not in sections, "the malformed node wrote no request"
+
+
+# ── the production entry point ───────────────────────────────────────────────
+#
+# The arms above queue through ``queue_requests`` directly, which would pass
+# even if no dispatch ever wrote a hold. These arms drive the command a
+# coordinator actually runs and read the pointer it leaves, so the hold is
+# proved reachable rather than merely callable.
+
+
+@pytest.fixture()
+def dispatch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    return backend_tests.dispatch_repo.__wrapped__(tmp_path, monkeypatch)
+
+
+def _declare_section_wait(repository: Path, *, section: str, refs: list[str]) -> None:
+    """Declare on the fixture's plan that one section waits on ``refs``."""
+    path = repository / "docs" / "plans" / f"{PLAN}.html"
+    text = path.read_text(encoding="utf-8")
+    declaration = json.dumps({section: refs}).replace('"', "&quot;")
+    text = text.replace(
+        "</head>",
+        f'<meta name="plan-section-depends-on" content="{declaration}"></head>',
+        1,
+    )
+    path.write_text(text, encoding="utf-8")
+    _run(repository, "add", "--", str(path.relative_to(repository)))
+    _run(repository, "commit", "-q", "-m", "chore: declare the section wait")
+
+
+def test_a_dispatch_holds_the_request_it_queues_for_upstream(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _declare_section_wait(dispatch_repo, section="dispatch", refs=[f"{PLAN}#upstream"])
+    hold_tests._configure(dispatch_repo, monkeypatch, session_slots=0)
+    hold_tests._stub_hold(monkeypatch, offered_local=True)
+
+    result = hold_tests._invoke(dispatch_repo, node="waiting-local")
+    payload = hold_tests._payload(result)
+
+    assert result.exit_code == 0, result.output
+    assert payload["ok"] is True
+    pointers = runs.list_live(project=hold_tests.PROJECT)
+    assert len(pointers) == 1
+    assert pointers[0]["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
+    assert pointers[0]["waits"] == [f"{PLAN}#upstream"]
+    assert payload["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
+
+
+def test_a_dispatch_of_a_section_without_waits_queues_it_plainly(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hold_tests._configure(dispatch_repo, monkeypatch, session_slots=0)
+    hold_tests._stub_hold(monkeypatch, offered_local=True)
+
+    result = hold_tests._invoke(dispatch_repo, node="plain-local")
+    assert result.exit_code == 0, result.output
+    pointers = runs.list_live(project=hold_tests.PROJECT)
+    assert len(pointers) == 1
+    assert pointers[0]["phase"] == queue_admission.QUEUED_PHASE
+    assert not pointers[0].get("waits")

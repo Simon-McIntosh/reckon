@@ -1106,16 +1106,25 @@ def _project_of_docs_dir(docs_dir: str | Path | None) -> str:
     return ""
 
 
-def _parse_section_ref(ref: str) -> tuple[str, str] | None:
-    """The ``(slug, section)`` a section ref names, or ``None``."""
-    if "#" not in ref:
+def _section_ref(ref: str) -> tuple[str, str] | None:
+    """The ``(slug, section)`` a section ref names, or ``None``.
+
+    The spelling is the repository's own. :func:`reckon._schema.parse_plan_ref`
+    already answers ``[project:]slug[#stage]`` for the roadmap, the document
+    check and the ledger, and it is written the way it is because two spellings
+    of one ref have to compare equal; a hand-rolled split answers differently
+    for the forms it does not anticipate, and then two readers of the same plan
+    disagree about which section a wait names.
+
+    A section ref carries a stage and nothing else — ``plan#s1`` — so a ref
+    without one names no section of any plan and is not a wait.
+    """
+    from reckon._schema import parse_plan_ref
+
+    parsed = parse_plan_ref(ref)
+    if parsed is None or not parsed.stage:
         return None
-    slug, _, section = ref.partition("#")
-    slug = slug.split(":")[-1].strip()
-    section = section.strip()
-    if not slug or not section:
-        return None
-    return slug, section
+    return parsed.slug, parsed.stage
 
 
 def _ref_state(
@@ -1136,7 +1145,7 @@ def _ref_state(
     """
     from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
 
-    parsed = _parse_section_ref(ref)
+    parsed = _section_ref(ref)
     if parsed is None or not waiting_section:
         return PENDING
     slug, section = parsed
@@ -1173,7 +1182,7 @@ def _ref_state(
     held = [
         blocker
         for blocker in (entry.get("blockers") or () if entry else ())
-        if str(blocker.get("ref") or "") == ref
+        if _section_ref(str(blocker.get("ref") or "")) == (slug, section)
     ]
     if not held:
         # The roadmap holds no blocker for this ref, so it landed.
@@ -1415,6 +1424,53 @@ def queue_requests(
             "index": index,
         }
     return stored
+
+
+def hold_request_for_upstream(
+    run_id: str, *, node: TaskNode, repo_root: str | Path
+) -> list[str]:
+    """Hold a request a dispatch has just queued while its section waits.
+
+    This is the entry point a dispatch writes through, so a node whose plan
+    declares that its section waits on another section enters
+    ``awaiting-upstream`` instead of queueing as though it could launch now.
+    The refs come from the plan the node names, which is the same declaration
+    the admission pass re-reads later: nothing about the wait is stated twice.
+
+    Returns the refs the request is held on, so a caller can report why it was
+    held. A node whose section declares no refs is left queued and returns an
+    empty list — a request with nothing to wait for is not held, and no pointer
+    is written for it at all.
+    """
+    refs = section_wait_refs(_plan_html(repo_root, node.plan), node.section)
+    if not refs:
+        return []
+    if not _hold_pointer(run_id, refs):
+        return []
+    return refs
+
+
+def _hold_pointer(run_id: str, refs: Sequence[str]) -> bool:
+    """Record a request's refs and its waiting phase in one write.
+
+    The refs and the phase are one fact about a request, so they are written
+    together: a pointer left holding refs in the queued phase would be launched
+    by the pass that never sees it waiting. A pointer that cannot be written
+    stays queued and launches when the lane reaches it, which is the behaviour
+    of a request whose plan declares no wait.
+    """
+
+    def hold(current: dict[str, Any]) -> dict[str, Any]:
+        current["waits"] = list(refs)
+        current["phase"] = AWAITING_UPSTREAM_PHASE
+        current["waits_at"] = _utc_now()
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, hold)
+    except Exception:  # noqa: BLE001 - an unwritable pointer stays where it is
+        return False
+    return True
 
 
 def _move_pointer(run_id: str, phase: str) -> bool:

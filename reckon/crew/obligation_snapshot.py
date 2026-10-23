@@ -995,6 +995,44 @@ def _duty_kind(module, row: Mapping[str, Any]) -> str:
     )
 
 
+def _upstream_hold_item(
+    module,
+    row: Mapping[str, Any],
+    *,
+    pointer: Mapping[str, Any],
+    now: datetime,
+    phase: str,
+) -> dict[str, Any]:
+    """The duty a request held on its section's refs owes its session.
+
+    It is a waiting duty like a queued request's, built through the same helper
+    so the two read alike, and it carries what a queued one cannot: the refs it
+    waits on, and which way it is held. A request that is ``awaiting-upstream``
+    starts by itself when its last ref lands, so it owes nothing but patience
+    and the payload says so. One that is ``blocked-upstream`` will never start
+    by itself — a ref it waits on was closed unfinished — so its session is
+    told which ref it is and what has to change, rather than left reading a
+    waiting row that will not move.
+
+    The refs are read from the pointer the admission pass wrote rather than
+    from the plan: the request is held on the refs it was stored with, and a
+    plan edited since then must not change what a reader is told it waits on.
+    """
+    item = module._queued_item(row, placements={}, now=now)
+    waits = list(module.queue_admission.section_waits_for(pointer))
+    if waits:
+        item["waits"] = waits
+    if phase == module.queue_admission.BLOCKED_UPSTREAM_PHASE:
+        item["next_command"] = (
+            "blocked upstream: a section this request waits on was closed "
+            f"unfinished ({', '.join(waits) or 'no ref recorded'}) — "
+            "redispatch it once that section lands, or abandon this request"
+        )
+    elif waits:
+        item["next_command"] = "waiting upstream: " + ", ".join(waits)
+    return item
+
+
 def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     """One session's obligations payload, sliced from a derived fleet state.
 
@@ -1017,6 +1055,23 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             continue
         run_id = str(row.get("run_id") or "")
         classification = str(row.get("classification") or "")
+        pointer = state.pointers.get(run_id) or {}
+        phase = str(pointer.get("phase") or "")
+        if phase in module.queue_admission.WAITING_UPSTREAM_PHASES:
+            # A request held on its section's refs owes its session a duty, and
+            # the phase is where that is recorded rather than in the
+            # classification: the classification word for a request that is
+            # neither launching nor finished is built from a phase vocabulary
+            # this view does not own, so a phase the vocabulary has not learned
+            # yet would leave the request listed nowhere. Reading the phase
+            # itself is what keeps a held request on the view, and it is read
+            # from the same constants the admission pass moves it by.
+            items.append(
+                _upstream_hold_item(
+                    module, row, pointer=pointer, now=state.now, phase=phase
+                )
+            )
+            continue
         if classification in module.REVIEW_CLASSIFICATION_KINDS:
             if classification == "scoring" and run_id in in_flight:
                 continue
