@@ -107,20 +107,28 @@ decided tf-cold-test-validation: run=r-20261021T190726061562-cold-test-reproduct
   <code>tests/test_crew_obligations.py</code>, <code>tests/test_ledger.py</code> and
   <code>tests/test_every_module_fits_a_worker_window.py</code> — run to completion at the
   repaired head <code>52669c20c</code>: <strong>119 passed, 2 failed in 1,552 s,
-  <code>EXIT=1</code></strong>. Log <code>gate-four-file-final.log</code> in this run's
-  directory under <code>~/.config/reckon/crew/runs/</code>, whose first line names the
-  revision, whose third names the literal command and the module path as imported, and whose
-  last line reads <code>EXIT=1</code>. This node's eleven cases pass in it, as do the nine
+  <code>EXIT=1</code></strong>. That arm ran under storage contention and had the ledger
+  case killed at its per-test bound; the paragraph below carries the measurement that
+  settles what the case does, and the arm re-run after it is the one this record closes on.
+  The log's header names the revision, the tree, the literal command and the module path as
+  imported, and its last line is the exit status. This node's eleven cases pass in it, as do the nine
   obligation cases, against the fixture whose evidence is tabulated above. The two failures
   are named below and neither is this change's; the gate has no third.</p>
 
-  <p><strong>The gate's other failure, and it is environmental.</strong>
+  <p><strong>The ledger case my earlier round called environmental, and it was not.</strong>
   <code>tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact</code>
-  hits the suite's own 300-second per-test bound on this storage. It does not assert and
-  does not fail on content: it is killed, and it is killed the same way at the base
-  revision, where <code>tests/test_ledger.py</code> and <code>reckon/ledger.py</code> are
-  byte-identical to this head. A case this change cannot reach, timed out on the storage
-  it ran on, is recorded as environmental rather than as a regression.</p>
+  runs for about 100 s against its 300 s bound. Two of this node's gate arms had it killed at
+  the bound and I recorded that as a property of the storage — a conclusion drawn from
+  contention rather than from a measurement, and wrong. The coordinator measured it in
+  isolated extractions run in parallel on the fleet node:
+  <code>coordinator-ledger-timing-base1.log</code> and <code>-base2.log</code> at this
+  change's base <code>017b346cb</code> — <strong>98.60 s</strong> each, <code>EXIT=0</code> —
+  and <code>coordinator-ledger-timing-head1.log</code> and <code>-head2.log</code> at the
+  head <code>4fed6ea39</code> — <strong>100.82 s</strong> and <strong>98.61 s</strong>,
+  <code>EXIT=0</code>. The case passes on both sides of this change and always did; the
+  earlier kills were storage contention in the arm that ran it, not a failure this change
+  carries and not an environmental failure at all. The four logs are in this run's directory
+  under <code>~/.config/reckon/crew/runs/</code>.</p>
 
   <p><strong>The one failure the gate carries that would look like this node's.</strong> The fourth
   member, <code>tests/test_every_module_fits_a_worker_window.py</code>, fails on a module
