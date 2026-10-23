@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T11:28:55.293Z",
+  "dispatched_at": "2026-10-23T11:20:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:273",
+      "id": "reasoning-1",
+      "reason": "the guard must be anchored on a pass that has stat-ed the recorded directories (excluding the arming pass) or the section trades \u00a713/\u00a714's re-validation guarantee for its 6.5 s saving, and the four done-when cases would not show it because none exercises a record whose identities were loaded rather than read by stat.",
+      "text": "\u00a715 trusts a detector pass record \"only when the pass that wrote it completed after the tree's most recent invalidation from any source\", but the first `_fast_tree` after a detector arms returns before its stat loop (`reckon/change_streams.py:427-434`: it loads `_load_dir_stamps` and returns), so its record is the persisted index's identities with no stat behind them; a read served between that arming pass and the next fast pass (10 s, `_CROSS_NODE_FAST_S`) satisfies the condition vacuously \u2014 nothing has invalidated the tree in this process yet \u2014 and takes the unverified identities, so a directory that moved while the process was down is treated as unchanged and its rows are served stale, while \u00a715 simultaneously claims \"The first read after a restart is outside this section: no pass has run yet, so it still pays the full sweep\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:273",
+      "id": "anchors_resolve-1",
+      "reason": "a promise of follow-on work that resolves to no section leaves the section's own measured residue unowned, and the coordinator landing \u00a715 would have nothing to record it against.",
+      "text": "\u00a715 says \"removing that cost is left to a later section\" and closes its acceptance on \"the first pass is reported as-is, and its cost belongs to the later section named above\", but \u00a715 is the last section of the section list and no section of the plan's fifteen names that work, so the first-read cost \u00a715's own Why measures at 6.5 s has no owner and \u00a77's hard gate (\"every `/_index` request answers 200 in under 1 s in both passes\") stays failing with nothing carrying the repair",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "32c271217aafde5a767595e95a17839196961b11b394c494f942f4477b7e209e",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 98,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T111902823139-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "3ee3c397f35bf8a7c63c463dc3112690e881ae27",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a715 names its symbols and files correctly (`_fast_tree` and `_invalidate_tree_views` in `reckon/change_streams.py`, `_reuse_covered`, `covered_dir_identity`, `_dir_identity` in `reckon/metadata_index.py` all exist), but it twice defers the cold-read cost to \"a later section\" that the document does not contain.",
+    "done_when": "pass \u2014 each of \u00a715's four cases names its own control, and case (1)'s spy on `_dir_identity` can count a full sweep under its control (\"the stat count equals the recorded directory count\"), so the measure can fail.",
+    "evidence_paths": "pass \u2014 \u00a715's gate logs sit under the run directory with a revision header and a trailing `EXIT=`, and the gate is the node's own test file rather than a session scratchpad.",
+    "naming": "pass \u2014 \u00a715's new artifact is `tests/test_a_read_trusts_the_detector_pass.py` and its prose carries no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a715's trust condition is satisfiable by the detector's arming pass, which stats no directory, so the stated implication (\"only then has the detector stat-ed every recorded directory\") does not hold and the first read after a restart does not pay the sweep the section says it pays.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable (a covered-set read consumes the change detector's last pass record); the post-merge live passes are an acceptance measure, not a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s15: [\"the-page-paints-from-an-index#s14\"]` and \u00a715 states \"This runs after \u00a714, which shares `reckon/metadata_index.py`\"; both modules the section writes are named in its write paths."
+  },
+  "section_digests": {
+    "_document": "710047969c8fa31eaa19b4c4144082b23d3459d38d0eae29b874bca73dd7c892",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "810f5bb9766f8e08935898c038e302da3c101023ce98d4e28e900d0808348c57",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T11:31:30.544860+00:00"
+}
