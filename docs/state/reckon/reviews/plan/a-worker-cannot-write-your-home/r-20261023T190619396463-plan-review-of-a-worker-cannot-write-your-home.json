@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T19:26:32.167Z",
+  "dispatched_at": "2026-10-23T19:10:59Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261023T190619396463-plan-review-of-a-worker-cannot-write-your-home/plan.html:1604",
+      "id": "reasoning-1",
+      "reason": "unnamed, the node's first attempt raises ImportError and its declared control describes an import-time failure the deferred form will not give, so both the deliverable and the control need one clarifying clause.",
+      "text": "\u00a722's deliverable says \"One definition remains, in `reckon/crew/promotion_evidence.py`, and `reports.py` imports it\" but names no import site, and the pair is already an import cycle: `reckon/crew/promotion_evidence.py:22` imports `reckon.crew.reports` at module scope (`_NONE_VALUES`, `parse_manifest`), `reckon/crew/promotion.py:2242` imports `promotion_evidence` at module scope, and `reports.py` defines `parse_manifest` far below its import block, so a top-of-file `from reckon.crew.promotion_evidence import _commit_resolves_in` raises ImportError in both initialization orders; the implementer must instead defer the import to the call site (as `reckon/crew/reports.py:2097` already does for `_resolve_commit`) or place it after reports.py's definitions, and the section should say which, since its negative control (\"the citation tests in both modules fail on import\") presumes the module-level form that the required deferred form will not produce",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ab8fe6a8dd5289b70ff6f9df08e3abb31d055382fdf7c2f7c31a13514b01e8d8",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 237,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T190619396463-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "e92b4aba6b04b57c2b070c01e879c30f6af31cb7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the two cited definitions resolve (`reckon/crew/promotion_evidence.py:383`, `reckon/crew/reports.py:2095`), the cited call sites resolve (`reckon/crew/promotion.py:2075`, `reckon/crew/promotion_evidence.py:742,752,953`, `reckon/crew/reports.py:2160`), the cited run `r-20261023T132718357781-review-code-95e863b57de0` and its report resolve, and commit `513d1cc36` is `refactor(crew): resolve commit citations through one bounded lookup` dated 2026-10-05.",
+    "done_when": "pass \u2014 \u00a722's measure is a grep returning one line plus an identity assertion (`reckon.crew.reports._commit_resolves_in is reckon.crew.promotion_evidence._commit_resolves_in`) that is red on today's tree, since `reckon/crew/reports.py:2095` defines its own copy; the declared mutation control (delete the one definition) is one that can go red.",
+    "evidence_paths": "pass \u2014 \u00a722 names its write paths (`reckon/crew/promotion_evidence.py`, `reckon/crew/reports.py`, `tests/test_one_resolver_answers_every_commit_citation.py`) and cites its evidence on durable paths (`~/.config/reckon/crew/reports/reckon/code-review/95e863b57de0/report.md`, a run directory under `~/.config/reckon/crew/runs/`), none on a scratchpad.",
+    "naming": "pass \u2014 \u00a722's symbols are named by mechanism (`_commit_resolves_in`, `_commit_canonical_id`); the section number in the heading is plan structure, not a symbol.",
+    "reasoning": "a finding \u2014 \u00a722's Why now matches its evidence (both copies delegate to `reckon.crew.recovery._resolve_commit`, so the duplicate predicate agrees and the section correctly calls itself a de-duplication), but its deliverable does not say where in `reports.py` the import goes, and the two modules already form an import cycle that makes the obvious site raise.",
+    "single_goal": "pass \u2014 \u00a722 carries one deliverable (one owner for the commit-citation predicate); the accompanying test file is the measure of that deliverable, not a second one.",
+    "wiring": "pass \u2014 `s22` declares `depends-on a-worker-cannot-write-your-home#s21` and both open followups exist (`f-awcwyh-022` for \u00a721, `f-awcwyh-023` for \u00a722), so the two implementable sections each carry a driving invocation; the `plan-section-declarations` list agrees with the section records (`s6`, `s21`, `s22` implementable, everything else done), and \u00a723 landed with a closing comment."
+  },
+  "section_digests": {
+    "_document": "b70340f34c8650fc6e1d390ae8482e2ac172202b823a5cd83ff0cdf842e268f8",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "2d2d08c8567a83cca3bdd3a30b5cca94fa8e377c6e1552aed6dfb8e1d15db707",
+    "s18": "8f63d2e9144312cbecd9a2f55a3526ba207f322d3d1f237392b076ed1b4abf53",
+    "s19": "19da2176124b0de549bb7c585cc22ee853204ec373eb89082871457fa89862bf",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s20": "0e83d5fb9828cc778802066bff24b452e47586b9a89ef3f93a84aaed1fe3cb99",
+    "s21": "dca32e63251fb5b4cd4bc5d1f524afc97180a85eaba73e88b4b62111045239dd",
+    "s22": "ef5b9c4c529863e2e86cecfa7d84a4924ba83f404bdc9ca035f4819836210b4d",
+    "s23": "ab07a99f68b5d4dbe39f548e45b055fcc2611d7773c1283d19ef18f4840969cf",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T19:35:58.270313+00:00"
+}
