@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T00:34:07.695Z",
+  "dispatched_at": "2026-10-23T00:17:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:71",
+      "id": "reasoning-1",
+      "reason": "as written the claim and the mechanism disagree on one of the four named routes, so a worker implements whole-string refusal and the section's own acceptance promise is false for it, or the section must state that the `set body` route refuses a legacy body and the escape is a text-mode edit.",
+      "text": "\u00a74 states \"Text already in a plan is never refused. Only the fragment a write adds is checked, so editing an old plan stays possible\", but the mechanism it names checks the whole string a path supplies: `_store_section_ops._require_authored_value` passes the new body alone to `_refuse_forged_structure` (`reckon/_store_section_ops.py:143-144`) with no prior body to diff against, and `_insert_authored_section` likewise checks `request[\"body\"]` whole (`reckon/_store.py:941-946`), so a `set` that re-writes a legacy section body whose prose already carries the term is refused even though it adds nothing, while \u00a71 records that legacy plan sections do carry the term in a paragraph \u2014 the claim holds only for the text-mode route, where the write supplies an `old_html`/`new_html` pair and the delta is localisable",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f24fe0e617530363df0e77b45794a6d5d577418104524430f6f44fc573548176",
+  "plan_slug": "additional-work-is-a-section",
+  "plan_version": 12,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T00:36:10.485181+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T00:36:10.485181+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-additional-work-is-a-section.v12.json",
+  "review_run_id": "r-20261023T001500125455-plan-review-of-additional-work-is-a-section",
+  "reviewed_blob_sha": "53a6108c9dacc072f21cfc41465032a86f91cb5f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the predicate at `reckon/_store.py:899` and its refuser at `:924`, `_queue_authored_section` at `:3371`, `insert_section`/`append_evidence` calls at `:946`/`:1074`, `_store_section_ops._refuse_forged_structure` at `:124`, `doccheck._prose_text` at `:385` and `_plan_html.section_prose` at `:474` all resolve as cited, and `_PROSE_SKIP_TAGS` at `:2303` is `{script, style, head}` exactly as the section says.",
+    "done_when": "pass \u2014 \u00a74's eight cases each name an observable refusal or acceptance through a named channel (`op_error`, `text_edit_error`), and the section declares a negative control (remove the check, and the first case is accepted) exercised at base and head against every test file that drives the three routes.",
+    "evidence_paths": "pass \u2014 the gate writes `docs/evidence/fragments/additional-work-is-a-section/a-plan-write-refuses-the-bucket.html` in the repository, not a scratch or node-local path.",
+    "naming": "pass \u2014 no plan label, stage name or ticket number reaches a proposed symbol or file; `tests/test_a_plan_write_refuses_the_bucket.py` names the guard by what it does.",
+    "reasoning": "a finding \u2014 \u00a74's principle that text already in a plan is never refused does not hold for the `set sections.<id>.body` route its own mechanism names.",
+    "single_goal": "pass \u2014 the store refusal and the `audit-doc` warning are one guard read at two surfaces (write time and audit), the section states that explicitly, and a single verdict closes both.",
+    "wiring": "pass \u2014 \u00a74 declares no dependency and needs none: it writes the store, the section-ops module and the doc-check module, none of which \u00a72 or \u00a73 touch, and the plan's own `plan-section-depends-on` (`s5` \u2192 `s2`,`s3`,`s4`) already places \u00a75 after it."
+  },
+  "section_digests": {
+    "_document": "0e1b33dda748890b04794a11496bc9a6a0039acae4b7d3b73b632dfda3e05469",
+    "s1": "53035db610c769f9fabc12038e7a13898064f071d29b27f9e4b9cfe7e6e9cbfb",
+    "s2": "da6965864ffd2ed27a0442cf22caf15936faa1f5ecfe3c8d4be21504a5d51387",
+    "s3": "5e0b4c0b11d5a7d4c468bf9e723c12d087c1219af2cb13c3a1e723138f47b73a",
+    "s4": "431fa571dc655803b8e2df21616173ad6169eaaadea7a99d39d0ccc6a41e6e1e",
+    "s5": "a6fa784958eef11b006d0cb4912714d98031c18adf47e32ecc1f84a23d578e4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T00:35:51.623272+00:00"
+}
