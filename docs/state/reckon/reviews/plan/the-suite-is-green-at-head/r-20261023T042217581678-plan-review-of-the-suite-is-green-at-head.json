@@ -1,0 +1,115 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T04:38:54.946Z",
+  "dispatched_at": "2026-10-23T04:24:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:789",
+      "id": "wiring-1",
+      "reason": "",
+      "text": "\u2014 \u00a739 is declared `implementable` and its sibling \u00a732 (same node shape, `reckon/ledger.py`) was wired into the plan with followup `f-tsigah-032` carrying `/reckon-build the-suite-is-green-at-head \u00a732` (resolved 2026-10-21), while \u00a739's addition in `393f3b01d` added no followup and the followup list still ends at the open `f-tsigah-038` for \u00a738 \u2014 REASON: WOULD_CHANGE_THE_PLAN: yes \u2014 the plan's own chain rule is that pending work is carried by an open followup with its one-line build invocation, and the plan is not closed, so as authored nothing in the chain names \u00a739 as pending.",
+      "type": "wiring",
+      "would_change": null
+    },
+    {
+      "anchor": "docs/plans/the-suite-is-green-at-head.html:789",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 the Deliverable says \"Callers import from the new owner, which are `reckon/mcp.py` and `_build_roadmap`'s own call of `_dependency_endpoints`\", but grep over the head tree shows `_qualified_plan` \u2014 a listed family member moved by this node \u2014 is called at `reckon/roadmap.py:824` and `:825` inside `_judgment_member` (`reckon/roadmap.py:808`), which is not in the moved family and stays in `reckon/roadmap.py`; the same Deliverable's \"any helper only they call\" phrasing is therefore also inconsistent with `_qualified_plan` being in the list \u2014 WOULD_CHANGE_THE_PLAN: yes \u2014 the caller enumeration is stated as exhaustive and is the list the node imports against, so a node that trusts it while relocating `_qualified_plan` leaves `_judgment_member`'s two call sites unresolved; naming `_judgment_member` (or stating that `_qualified_plan` must be re-exported) is what makes the deliverable match the code it describes.",
+      "type": "reasoning",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "dd3a2db991e1ea70b6ae333fe64483c03564aadb13902b07b0b5ce0d03bdd494",
+  "plan_slug": "the-suite-is-green-at-head",
+  "plan_version": 488,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-23T04:42:00.789518+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T04:42:56.622244+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T04:42:56.622244+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T04:42:00.789518+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-suite-is-green-at-head.v488.json",
+  "review_run_id": "r-20261023T042217581678-plan-review-of-the-suite-is-green-at-head",
+  "reviewed_blob_sha": "b609245d501b863172b9f34d59b8c16955c6f108",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `every-plan-write-goes-through-edit-plan` \u00a715 and `a-read-answers-inside-its-deadline` \u00a750 both resolve to existing files carrying those ids, cited commits `cd279cc20` and `30f8a4198` resolve, all 21 `plan-commits` shas resolve, `docs/research/suite-failures-at-head.html` exists, and the cited line 2409 of `reckon/roadmap.py` is where the family begins.",
+    "done_when": "pass \u2014 \u00a739's done-when is measurable (the width test passes at head, both modules' estimated tokens recorded) and names a declared negative control (restore `reckon/roadmap.py` to its base content in a scratch copy, and the width test names it again); that control is live because base content measures 51,232 tokens against the 50,000 bound, confirmed by running the test at head.",
+    "evidence_paths": "pass \u2014 every log is required \"under the run directory\" under the coding and base arms, not a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the new module is to be \"named by what the family does\"; no plan label, ticket number or version tag enters a symbol, filename or comment, and no ticket or changelog prose appears in the section.",
+    "reasoning": "a finding \u2014 \u00a739's Deliverable states the moved names' callers exhaustively as `reckon/mcp.py` and `_build_roadmap`'s call of `_dependency_endpoints`, but `_qualified_plan`, itself a named member of the family, is also called from `reckon/roadmap.py` by `_judgment_member` at lines 824-825, a function that stays behind.",
+    "single_goal": "pass \u2014 \u00a739 carries one deliverable, moving the graph-target family out of `reckon/roadmap.py`, and one verdict closes it.",
+    "wiring": "a finding \u2014 \u00a739 is the only section in this plan that is declared `implementable` with no followup article added beside it, so the plan's followup chain still points only at \u00a738."
+  },
+  "section_digests": {
+    "_document": "5aa0b4f8c37464231f8dc4315d51d7076022afb03580e42a02c148e05a5bd665",
+    "s1": "93d7e8eb3f04bb8d9aad0f5ac7d68a9d009b7fe7feaa6f4932738242154d8d4d",
+    "s10": "9633fb928a6c720c8fae74ed3da0a5f7ed555c4230f29ebf2ee89e5432566bb1",
+    "s11": "3e9c94371cc0b22adeb21c71a08fdd16433d8b4c1a22e73cd63d1171332089ba",
+    "s12": "dd8650523d29d87e6fa41408db7d0440cf17dfbd57f0ab6da0d5fcd223692d95",
+    "s13": "7b00f23667f49ba7de16f8823860c86ad35a562eebddf434fd1a6b9f1f5e9993",
+    "s14": "1469c86b5327d2429ce07b9ddd2fbca586d8831acb94119f8a187e315f48dcf7",
+    "s15": "f84dc4d4bef37307ff05d71bd4f7071e9208e789832e7cb00be82c37bcfde97e",
+    "s16": "4ab9d42bd2e71d070a1cc5393ebea66e1ec71d06dad51f1a82505c91ce309234",
+    "s17": "01fe3ab4eb2f9f616654a729cf8bef4dcf5b530d4d0c1be3bdfa73999d0ad263",
+    "s18": "15b626822483dd850c2006c1d4255b8386f22ef780237614005178a5b3c15d70",
+    "s19": "94946283d6a94fe284a3f00a5c60fbfdf125cd16b7f43e5e0abdb96b6305cf3b",
+    "s2": "d8e1d44eab3d041cfa8f08f045885bcf9a783d27f0cb613fe7de2c0476c13887",
+    "s20": "1eef46ce597367c7d533df3c2bbd6d180313a446b7ad270289b1ed3f26857a8c",
+    "s21": "1ed74dec466eb1b0eee98d9d29bba0029e9ecfc126fc5ee67c90c833f03724dd",
+    "s22": "c3a55e73e65fd250ba61d6c2e9966ce88a3f63d70531153347e865c64bbb779d",
+    "s23": "58c7c8fb57b77f817bf210d5bb02d2c42f9794894e0e82f24746c06eaae9b603",
+    "s24": "bd305a35e661a1e1921c208e88472c7ccf105925bb86ba5650b5eb9312d9a1bd",
+    "s25": "f6fbb1de53e5726883a68cf7037c0179700c8dedb668dbde1317135cc5c4cb92",
+    "s26": "23ea594e91a1c5608efd3fe59772eae122fb954566c852bdaabf65bc0f960438",
+    "s27": "96a3a73ebe2e74d468e6b9a4349507255e4fcc03aca1b366d60fccd64d59c9ce",
+    "s28": "393e72e21850095d6d8138fd4b66a0063d63c4f7fed13b43b6b271248be89c09",
+    "s29": "04a5b9a1ad1dcd2a5dc9f773d7c05fe706424547779b84fe9d4492f6426934c7",
+    "s3": "d6efa514940aeb662c9b7fdee7f663c86e4da2526ec9a01c6977f967e30d886a",
+    "s30": "485a2a89d88d3c3118d1b5df9d249b9a772b9268af6f7c92b8b962f88b723ebc",
+    "s31": "e20b4530d538efa41409c397800a5fcf8c0e96aec73ed10a10b32e8a1155727a",
+    "s32": "ebfbf30b3784c5281dd90726881a6777e799e98ed856a66ba60f98527bdd094e",
+    "s33": "6cc8c0aae70cfd7f6b3f37981fbc894c4cf2ef70018055036631e299d4c089af",
+    "s34": "c73f6f2c90bb56a5094d429dc71320315a469c94083908fcfdfea91dfa3a52c5",
+    "s35": "6a07f7885efe79fd8f56f1615016fb763def91f3dc32eb09d983f3720885e404",
+    "s36": "5afe5c1da3ca9b62dbe09f2a36285011a07552933ab202eb0ada87af5209116a",
+    "s37": "1f60348ce279819e5cac49ab04279a2e560ab31e3161e1a2979f2b682fb58dbf",
+    "s38": "7ca11a2aa868440ce95df44aed2acf1008049792d75b1cca5880cdb76ca9527c",
+    "s39": "742dd77aa118e18abe1c78757a2f7a05d6bde4aec48f85edeaa7ee2391fb7344",
+    "s4": "e7003c1b5457d6229da28b7d90f825f0e3ef67be2a012291c12a2daf14bf2273",
+    "s5": "934ff53a2b41de523672b7760ab4bbe2e8be5d3da6b580c600383ac0217825a2",
+    "s6": "072f7ace5c2d253a6d4972213a2093233d6f768bd4d1394f2b9eaf1471ff4119",
+    "s7": "655ef45aae9c9f31c0c67cb28422cff4a16611cfce488326c298768a23f58efd",
+    "s8": "c78e67e053ac3d61a73df4b965e8209a12ca4d9b745535a102b0b0040cce3adc",
+    "s9": "f4ef4f0dc18779331d3654037d55a7dd1c27d3769bfbfe753867fccbb53f9a28"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T04:41:27.578825+00:00"
+}
