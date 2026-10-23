@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T15:21:43.322Z",
+  "dispatched_at": "2026-10-23T15:04:44Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:139",
+      "id": "reasoning-1",
+      "reason": "the brief is exact, so the node either deviates and reports a blocker or lands a red census; the plan must name the family by its registry key and put the census/partition edit in \u00a75's done-when.",
+      "text": "\u00a75 says the new family `station-store-not-node-local` is \"registered with its remedy in `reckon/crew/refusals.py`\", but that file's registry `DISPATCH_REFUSAL_REMEDIES` is keyed by `D##` codes only and `tests/test_crew_refusal_visibility.py:91` asserts `set(DISPATCH_REFUSAL_REMEDIES) == {D01\u2026D23}` exactly (verified green here: 34 passed in `tests/test_crew_refusal_visibility.py`), so a node following the plan literally turns a currently-passing test red \u2014 adding the slug as a key or as `D24` both fail \u2014 and \u00a75's done-when names no refusal test or census edit at all",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:135",
+      "id": "reasoning-2",
+      "reason": "the node would ship a refusal family advertised as covering the eight shared types that cannot fire for the root the plan tells it to use, and would prove it with a done-when that passes on a path outside those prefixes, so the guard must be applied to the root itself (the root's own type tested against `_SHARED_FILESYSTEMS`, not the union check) and \u00a75's done-when must exercise that root.",
+      "text": "\u00a75 claims the guard \"reads the mount type through `_filesystem_type` against `_SHARED_FILESYSTEMS`, so all eight shared types are refused\", but `host._is_node_local` returns `True` from `_dispatch._path_is_tmpfs` or `_dispatch._is_node_local_path` *before* it ever consults the filesystem argument (`reckon/host.py:190`\u2013`192`), and `_is_node_local_path` matches `/run/user/\u2026` and `$XDG_RUNTIME_DIR/\u2026` by text prefix alone (`reckon/crew/dispatch_admission.py:1646`\u2013`1655`) while `_path_is_tmpfs` reads the real `/proc/self/mountinfo` and cannot be steered by the `_filesystem_type` patch \u00a75's done-when prescribes \u2014 so a store root under `$XDG_RUNTIME_DIR` or `/run/user/<uid>` is accepted even when it sits on a shared filesystem, which is exactly the root `_session_host_runtime_root` returns first and the case \u00a75's WAL argument exists to refuse",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9cc1fcad8f577161c179b4d26dcb4964c548017db2b734883362187dbcb7c59f",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T144325893891-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "065bc7adfc3582eb626cd5cdd728906f0d938c68",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file, symbol and section the in-scope text names resolves at the cited location, with extensionless hrefs resolved as `<path>.html` per the docs surface.",
+    "done_when": "pass \u2014 \u00a75, \u00a76 and \u00a77 each carry a measurable done-when and a declared mutation control (undated event file for the retention test; an ingest that ignores the stored offset and one that drops the fold state; a second station without the node lock); the two refusal clauses \u00a75 newly added are asserted positively and carry no mutation of their own, which is folded into the reasoning finding below.",
+    "evidence_paths": "pass \u2014 no in-scope section sends a gate log or evidence artifact to a session scratchpad; \u00a76's fixture streams live in a test directory built per run, and \u00a75's node-local runtime root governs the station's own runtime database, not evidence.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, file or comment in \u00a75\u2013\u00a77, and no comment in them reads as changelog prose.",
+    "reasoning": "a finding \u2014 \u00a75 instructs the node to register a refusal family under a name the dispatch census pins otherwise, and its node-local guard is short-circuited by the very root resolver \u00a75 names, so the eight-shared-type refusal it claims cannot gate that root.",
+    "single_goal": "pass \u2014 \u00a75 delivers the store and its refusal family, \u00a76 the incremental ingest, \u00a77 the station process; \u00a77's title names the retirement of the producers while its body and \u00a712 explicitly place that retirement in \u00a712, so no section carries two closable deliverables.",
+    "wiring": "pass \u2014 every `depends-on` entry resolves to a section that exists, the declared graph (`s6\u2192s5`, `s7\u2192s6`) now matches the open followup at the end of the plan (\"\u00a76 waits on \u00a75 \u2026 \u00a77 follows \u00a76\"), `plan-blocks crew-state-stays-bounded` is reciprocal with that plan's own `plan-section-depends-on` (`crew-state-stays-bounded#s4 \u2192 this#s12`, `#s5 \u2192 this#s7`), and the only stale wording \u2014 \"\u00a75 and \u00a76 can start at once\" \u2014 survives inside the *resolved* followup's historical body, which is a record of what was said rather than a live claim."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "d5540618aec5ee76ebf31d8a92ac0c8fd22b1491e8bdaab6cc0d6de148b9c32a",
+    "s6": "8dd1a6bcc12434ce1356b84e953eca880aeb7931e264c7f66452ac7aabba09d3",
+    "s7": "eb721508f18a0af02a4cdcf987804de54710b4a956489dc7b65960ab73d73514",
+    "s8": "6c61416a6f6cf0d80aba5516d12a2d5329a34611ee0af8c0cdcc21e5ceaf37c1",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T15:24:15.274717+00:00"
+}
