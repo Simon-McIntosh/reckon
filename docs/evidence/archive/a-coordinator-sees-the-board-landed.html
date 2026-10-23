@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-coordinator-sees-the-board-landed">
+  <meta name="plan-title" content="A Coordinator Sees the Board — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Coordinator Sees the Board: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-coordinator-sees-the-board">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Coordinator Sees the Board — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Coordinator Sees the Board — landed record</h1>
+  <p>Closure synthesis for A Coordinator Sees the Board: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — A plan&#x27;s coordinator is derived from the ledger, beside its recorded owner</h2>
+    <p><code>resolve_plan_coordinators</code> in <code>reckon/crew/plan_coordinator.py</code> reads the committed ledger rows and the live pointers, matches each run to its plan by <code>plan</code>, then <code>plan_link</code>, then the plan its node id names, and reports for each plan the dispatching session of its most recent run inside a staleness window, its tier (coordinator or unowned), whether that session is live, and the plan's <code>plan-owner</code> beside it. A run review resolves to its plan through the reviewed run, using <code>_reviewed_run_id</code> in <code>reckon/crew/dispatch_sessions.py</code> rather than a copy of it.</p><p>Run <code>r-20261023T002639713681-a-plans-coordinator-is-derived-from-the-ledger</code>, head <code>f7db45c8</code>, landed by merge <code>a1f05ac84</code> after three repair rounds. The coordinator re-ran the four-file gate from <code>git archive</code> extractions: 120 passed at the head, with only the <code>reckon/roadmap.py</code> width failure; at the base <code>017b346c</code> the new test file fails at import. The ledger test that had timed out under storage contention passed at both revisions, in 98.6 s at the base and 98.6 s and 100.8 s at the head, against its 300 s bound. Eleven tests were added. The final review scored 109/120.</p>
+  </section>
+
+</main>
+</body>
+</html>
