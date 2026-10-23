@@ -117,9 +117,15 @@ def _git(repo: Path, *arguments: str) -> str:
     ).stdout.strip()
 
 
-def _linked_worktree(repo: Path, path: Path) -> Path:
-    """Add a linked worktree, the checkout shape a dispatched worker writes in."""
-    _git(repo, "worktree", "add", "--detach", "-q", str(path), "HEAD")
+def _own_checkout(path: Path) -> Path:
+    """One claim's own checkout path, the shape a fleet gives each pointer.
+
+    The read caches a checkout's repository identity by the path it probed, so
+    two pointers spelling two paths pay twice whatever those paths hold; a
+    fixture handing every claim one shared path measures a cache hit no fleet
+    produces, and a bound read off it is a bound on nothing.
+    """
+    path.mkdir(parents=True)
     return path
 
 
@@ -245,28 +251,33 @@ def _two_repositories_with_one_overlapping_claim(tmp_path, home):
 
     The twenty are split evenly over two repositories and declare files the
     dispatch does not; each is stopped, so reading its disposition costs a
-    ``git status`` and a reachability query the read must not pay. The
-    twenty-first declares the ``package`` directory that contains the
+    ``git status`` and a reachability query the read must not pay. Each also
+    names its own checkout, the shape a fleet runs in: a pointer's worktree is
+    its own linked worktree, not the repository root its neighbours write from,
+    so nothing about one claim's checkout is shared with another's.
+
+    The twenty-first declares the ``package`` directory that contains the
     dispatch's ``package/target.py`` and holds it uncommitted, so its
     disposition binds.
     """
     first = _repository(tmp_path / "first", ("project-a",))
     second = _repository(tmp_path / "second", ("project-b",))
     _mounts(home, {"project-a": first, "project-b": second})
+    checkouts = tmp_path / "checkouts"
     for index in range(_DISJOINT_PER_REPOSITORY):
         _stopped_claim(
             first,
             project="project-a",
             path=f"package/module_a{index}.py",
             run_id=f"r-disjoint-a{index}",
-            worktree=first,
+            worktree=_own_checkout(checkouts / f"a{index}"),
         )
         _stopped_claim(
             second,
             project="project-b",
             path=f"package/module_b{index}.py",
             run_id=f"r-disjoint-b{index}",
-            worktree=second,
+            worktree=_own_checkout(checkouts / f"b{index}"),
         )
     (first / "package" / "target.py").write_text("value = 2\n", encoding="utf-8")
     overlapping = _stopped_claim(
@@ -282,7 +293,7 @@ def _two_repositories_with_one_overlapping_claim(tmp_path, home):
 def test_the_read_probes_git_only_for_a_claim_that_can_meet_its_own(
     home, tmp_path, monkeypatch
 ):
-    first, _second, overlapping = _two_repositories_with_one_overlapping_claim(
+    first, second, overlapping = _two_repositories_with_one_overlapping_claim(
         tmp_path, home
     )
     candidate = (first / "package" / "target.py").resolve()
@@ -303,9 +314,18 @@ def test_the_read_probes_git_only_for_a_claim_that_can_meet_its_own(
     assert len(spent) == 2, spent
     assert {Path(cwd).resolve() for _command, cwd in spent} == {first.resolve()}
 
-    # The identity probe is paid once per distinct repository, not per pointer.
+    # A claim the read never places is never probed in its checkout. The twenty
+    # disjoint claims name twenty checkouts of their own, and the read reaches
+    # git in none of them: every probe it makes lands on a root it had to place a
+    # claim through, at most one per distinct root rather than one per pointer.
     probes = probe.identity_probes()
-    assert len(probes) <= 2, probes
+    assert probes, probe.calls
+    probed = [Path(cwd).resolve() for _command, cwd in probes]
+    assert set(probed) <= {first.resolve(), second.resolve()}, probes
+    assert len(set(probed)) == len(probed) <= 2, probes
+    assert not [
+        cwd for cwd in probed if (tmp_path / "checkouts") in cwd.parents
+    ], probes
 
 
 def test_a_claim_that_cannot_meet_the_dispatch_is_returned_unread(home, tmp_path):
@@ -402,7 +422,14 @@ def test_the_scopes_view_reports_a_disposition_for_every_claim(home, tmp_path):
     claims = _repository_scope_claims()
 
     assert len({claim.run_id for claim in claims}) == _DISJOINT_PER_REPOSITORY * 2 + 1
-    assert not any(claim.unread for claim in claims)
-    # Every claim carries a verdict: it binds, or it names why it was
-    # disregarded. A claim nobody judged would carry neither.
-    assert all(claim.binding or claim.disposition_reason for claim in claims)
+    # A claim nobody judged is the one state this view may not report, because
+    # the read's own default marks an unjudged claim binding with no reason:
+    # reading `binding or disposition_reason` would pass on a claim carrying a
+    # verdict nobody reached. So the unjudged flag is asserted directly, and
+    # then the reason every judged claim names, which an unjudged claim's
+    # absent reason would fail.
+    unjudged = [claim.run_id for claim in claims if claim.unread]
+    assert not unjudged, unjudged
+    assert all(claim.disposition_reason for claim in claims), [
+        claim.run_id for claim in claims if not claim.disposition_reason
+    ]

@@ -1393,19 +1393,22 @@ def dispatch(
         absolute
         for _repository, _path, absolute, _declared, _derived_from in candidate_scope
     )
+    candidate_repositories = {
+        repository
+        for repository, _path, _absolute, _declared, _derived_from in candidate_scope
+        if repository is not None
+    }
     live_claims = (
         []
         if shadow_lineage
-        else _repository_scope_claims(candidate_paths=candidate_paths)
+        else _repository_scope_claims(
+            candidate_paths=candidate_paths,
+            candidate_repositories=candidate_repositories,
+        )
     )
     if shadow_lineage:
         peer_claims = []
     else:
-        candidate_repositories = {
-            repository
-            for repository, _path, _absolute, _declared, _derived_from in candidate_scope
-            if repository is not None
-        }
         peer_claims = [
             claim for claim in live_claims if claim.repository in candidate_repositories
         ]
@@ -2603,6 +2606,7 @@ def dispatch(
                 claims=_repository_scope_claims(
                     exclude_run_ids=(run_id,),
                     candidate_paths=candidate_paths,
+                    candidate_repositories=candidate_repositories,
                 ),
                 **_directory_claim_acceptance_kwargs(
                     accept_directory_claim, accepted_directory_claims
