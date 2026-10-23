@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:46:02.553Z",
+  "dispatched_at": "2026-10-23T23:40:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-1",
+      "reason": "the node must be told which `to_state` value selects the new word and where it is emitted (a producer field on the reviewed-run view, or a row-policy substitution), otherwise it registers a dead word that no code path can produce.",
+      "text": "the added sentence says `in review` \"becomes a pane word of its own in `PANE_STATES` and a member of the carried words\", but `_display_state` (reckon/crew/ticker.py:783-787) returns a word only when the row's `to_state` is a member of that word's frozenset, and a review run's event carries the review run's own state as `to_state` (`_watch_transition` writes `snapshot.get(\"run_id\")`/`node` and `to_state: current`, recovery_watch.py:1916-1917, 1937). No internal state named `in review` is emitted by any classifier, and `working` is already owned by the earlier `working` entry, so a word appended to `PANE_STATES` can never be returned: the row still draws `delivered \u2192 working` and the done-when's `in review` row fails",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-2",
+      "reason": "the rule needs an own-session condition that `stream_carries` cannot evaluate, so either the carry test must be moved to the path `_is_own_start` already governs or the plan must state the extra condition, or the section's promise that another session's launch stays off the pane is broken by its own prescription.",
+      "text": "the launch bullet says \"for the runs the pane follows (its own session's, as `_is_own_start` already decides; another session's launch stays off this pane)\" and directs the node to extend `stream_carries`, but `stream_carries` (ticker.py:1195) is a module-level, session-agnostic function applied to `_feed`'s released rows (ticker.py:1606), and `_feed` releases a stale arrival opener (`None \u2192 dispatched`) for any run, own or peer, at ticker.py:1714-1718 outside `_is_own_start`; a launch test keyed on the arrival pair therefore prints a peer session's opener",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "13137442653262e4ee488a5fcee957ececf105d1ecaf6d83c72749bbb90a4d47",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 46,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T233917390555-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "2d8818b36abdb33023be822f432f6a19c9754690",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves in the tree: `stream_carries` (ticker.py:1195), `CARRIED_PANE_WORDS` (:360), `PANE_STATES` (:278), `_pane_word` (:1178), `_is_own_start` (:1381), `_observer_exception` (:1514, called from `_feed` at :1820), `_told` (:1295), `transition_class` (:1137), `_watch_transition` (recovery_watch.py:1885).",
+    "done_when": "pass \u2014 the sequence, the discard arm, the resume arm, the producer arm and the flicker/baseline arms are all measurable, and the base-revision negative control is named for every new row.",
+    "evidence_paths": "pass \u2014 no scratchpad or node-local path is named; the negative control is required \"recorded in the gate log\" and the section's write paths are repository files.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the new symbols; `in review` is a display word, not an identifier carrying a plan reference.",
+    "reasoning": "a finding \u2014 the added `in review` sentence names the container but not the state that selects the word, and the launch rule's own-session restriction is claimed from a function that cannot see the session.",
+    "single_goal": "pass \u2014 one deliverable: the pane carries each real state change of a run once.",
+    "wiring": "pass \u2014 \u00a714 declares it runs after \u00a74, before \u00a75 and \u00a77, and after \u00a79's wiring node; \u00a75 (:227) and \u00a77 (:264) state the matching order and followup f-alwh-003 (:347) repeats it."
+  },
+  "section_digests": {
+    "_document": "06b6bffb1430e5d0b3aaec84c099dc6755869214442e32f0b25b108c69b81029",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "a8b69634cab7a5a145c0275139a24a38b415e554b5f2e4cc2a590cf14583f319",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "607c5ed638bb7fd894caef6e6fd6331649e3d6efcc2df2b48c1528c827010ae5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:48:20.086535+00:00"
+}
