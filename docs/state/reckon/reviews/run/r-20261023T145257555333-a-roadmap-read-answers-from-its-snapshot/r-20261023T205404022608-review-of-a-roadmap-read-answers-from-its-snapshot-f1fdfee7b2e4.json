@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T21:22:50.687Z",
+  "dispatched_at": "2026-10-23T21:03:07Z",
+  "findings": [
+    {
+      "file": "runs/r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot/manifest.md",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "after_suite.command drops `-m pytest -p no:cacheprovider` and baseline_suite.command carries an unexpanded `$PY` plus a trailing '(the files that exist at the base)', so neither field is the literal command that ran and neither can be re-run from the record; the cited log headers (repair3-head-gate.log, base-gate.log) are the only re-runnable form of each arm."
+    },
+    {
+      "file": "runs/r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot/repair3-head-gate.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The head gate log's header names its revision as 'WORKTREE (uncommitted at run time; committed as this round's head)' rather than f1fdfee7b, and the reviewed worktree has since gained e5ca59486, so the log can no longer be tied to the revision the manifest cites; section 50 asks each arm's log to name its revision."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is section 50's deliverable, a roadmap read answered from a snapshot keyed on each mounted project's write generation (docs/plans/a-read-answers-inside-its-deadline.html \u00a750); the one commit gained since 7fdebce38 repairs the three findings the prior review recorded and keeps that deliverable green, so it does what the goal states.\nVERDICT done_when: section 50's done-when names tests/test_a_roadmap_read_answers_from_its_snapshot.py holding eight case bullets; the gained commit rewrites the clock bullet to assert the read's own classification at two moments (tests/test_a_roadmap_read_answers_from_its_snapshot.py:700-701) with the revalidation window held at 3600 s, and the run's gate at f1fdfee7b records 49 passed against the base arm's 39 passed.\nVERDICT write_paths: the source dispatch fences reckon/serve.py, reckon/mcp.py, reckon/_store.py, tests/test_a_roadmap_read_answers_from_its_snapshot.py and the evidence fragment; the gained diff touches only reckon/serve.py and the test file.\nVERDICT manifest: read at manifest.md; it records f1fdfee7b, the 49-passed head gate, the base arm, the restored baseline_suite, and two red control arms whose log shows `assert 'waiting' == 'wait-aged'` at the clock case and `'stable' != 'stable'` at the reuse case, both EXIT=1 \u2014 but its after_suite and baseline_suite command strings are transcriptions rather than the commands that ran, and its head gate log names no revision.\nVERDICT diff: read commit by commit against 7fdebce38 \u2014 the single commit f1fdfee7b passes a per-read reduction store into _watch_snapshot (reckon/serve.py:1284,1295), reads the reuse key back from that store instead of recomputing it (:1310-1311), adds the run's wait_overdue reading to the key row (:1324), indexes the reuse column at 6 in the run-record case, and rewrites the clock case to drive mcp._roadmap end to end.\nCALL_SITES: reckon/mcp.py:_roadmap, reckon/mcp.py:_roadmap_snapshot_scope, reckon/serve.py:roadmap_snapshot_key\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/serve.py:1295 passes a reduction store the read owns, so each read reduces at its own moment, which is what section 50's clock bullet requires, and the row carries wait_overdue at :1324.\nSCORE evidence: 17\nJUSTIFICATION evidence: repair3-head-gate.log records 49 passed and base-gate.log 39 passed with a bare EXIT=0, and repair3-negative-control.log shows the clock case failing on `assert 'waiting' == 'wait-aged'`, but the manifest's after_suite.command (manifest.md:24) omits `-m pytest -p no:cacheprovider` and so is not re-runnable as recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 7fdebce38..f1fdfee7b names only reckon/serve.py and tests/test_a_roadmap_read_answers_from_its_snapshot.py, both inside the declared write paths, with the fragment untouched by this commit.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_roadmap_read_answers_from_its_snapshot.py:701 fails if the per-read reduction is removed, because reckon/crew/recovery_watch.py:_refresh_snapshot re-derives only the stall fields and the second read would then serve the pre-horizon snapshot, exactly the red the declared control arm shows.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the surrounding comment idiom of reckon/serve.py:1278-1283 and :1303-1308 and add no name carrying a plan label, ticket id or version token.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it passes a store into recovery_watch's existing cache parameter (reckon/crew/recovery_watch.py:1319) and reads back the key that recovery_watch already stores at :1353, so it extends that owner rather than forking the capability.\nFINDING runs/r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot/manifest.md:24 non-blocking: after_suite.command omits `-m pytest -p no:cacheprovider` and baseline_suite.command carries an unexpanded `$PY` and a trailing parenthetical, so neither is the literal command that ran and a reader re-running either from the record fails.\nFINDING runs/r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot/repair3-head-gate.log:1 non-blocking: the head gate log names its revision as 'WORKTREE' rather than f1fdfee7b and the worktree has since gained e5ca59486, so the log can no longer be tied to the revision the manifest cites.\n",
+  "review_run_id": "r-20261023T205404022608-review-of-a-roadmap-read-answers-from-its-snapshot-f1fdfee7b2e4",
+  "reviewed_base_sha": "7fdebce3887ea06d116fbb2a24bf5c32462565d3",
+  "reviewed_head_sha": "f1fdfee7b2e43011683d6e1ea0ab444113a7fcbc",
+  "reviewed_run_id": "r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T21:31:28.046973+00:00",
+  "total": 113
+}
