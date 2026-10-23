@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T17:02:40.970Z",
+  "dispatched_at": "2026-10-23T16:53:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:203",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a78 literally stores only the integer and then cannot implement the retention-resume done-when (\"a cursor older than retention resumes at the oldest event and prints its one skip line\") or the attach range, so the section's mechanism fails its own measure.",
+      "text": "the cursor is defined as a station-wide event sequence number, but line 205 requires the subscriber to attach the day files \"from its cursor's day through today\" and line 207 requires a cursor older than retention to print \"how many days were skipped\"; choosing which day file to attach and counting the skipped days both need the UTC day of the cursor, which the sequence number does not carry and which cannot be recovered from a day file that retention already unlinked",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:223",
+      "id": "done_when-1",
+      "reason": "the measure cannot fail for the defect it exists to catch, leaving the \"reads nothing on GPFS\" claim resting on an instrument that cannot see a read; \u00a74's own done-when used a path-attributing trace, which is the instrument this measure needs.",
+      "text": "\u00a78's measure, \"a 60 s `/proc/<pid>/io` delta of a running subscriber shows no reads from the crew home\", names an instrument that reports only counters (`rchar`, `read_bytes`) with no path attribution, and whose `read_bytes` is zero for reads served from page cache, so a subscriber that still read the crew home could satisfy it",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0359c064735112a8d4820b740dfb91efa8b5225d353523b2047527f9940c63ce",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T165037869004-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "8b9e82cfe9a38255de37ca12e542bd872f68c43c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_a_delivered_row_does_not_round_trip.py`, `tests/test_a_dispatch_is_one_row.py`, `tests/test_crew_session_delivery.py` and `tests/test_follower_freshness.py::test_running_follower_reloads_without_stream_or_registration_gap` (test_follower_freshness.py:172) all exist, and `ticker.PaneRowPath` resolves (reckon/crew/ticker.py:1907).",
+    "done_when": "a finding \u2014 \u00a78's measure names a `/proc/<pid>/io` delta as the instrument for \"no reads from the crew home\", an instrument that reports no path.",
+    "evidence_paths": "pass \u2014 \u00a78's gate is the in-repo pane, delivery and freshness tests plus the retargeted reload case, all durable files under `tests/`.",
+    "naming": "pass \u2014 \u00a78's new identifiers (`cursors`, `station`, the generation counter) are named by mechanism; \"old \u00a777\" is a plan-internal reference, not a code symbol.",
+    "reasoning": "a finding \u2014 \u00a78 defines the cursor as \"a station-wide event sequence number\", then requires the subscriber to attach \"from its cursor's day\" and to print \"how many days were skipped\", neither of which a bare sequence number can yield.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, the follower becoming a subscriber, with the reload moved to \u00a77 rather than duplicated.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gates s8 behind s7 and s12 behind s8/s9/s10/s11, matching \u00a78's own \"the one process that reloads (\u00a77)\" and \u00a712's cutover of \u00a77's producers."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "8dd1a6bcc12434ce1356b84e953eca880aeb7931e264c7f66452ac7aabba09d3",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "1508e0bb3b7974ff42e1c5eb468f0e15681c9c647c2a6f42dcf7993cb8addfab",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T17:05:29.166282+00:00"
+}
