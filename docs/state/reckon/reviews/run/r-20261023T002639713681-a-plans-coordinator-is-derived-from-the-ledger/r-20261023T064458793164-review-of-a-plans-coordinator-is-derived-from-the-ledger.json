@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact"
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-23T00:30:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_coordinator.py",
+      "line": "122",
+      "severity": "blocking",
+      "text": "blocking: the review branch resolves its subject run by looking up a node id in a map keyed by run id (plan_coordinator.py:152 and :156); a real review node id embeds the reviewed run's node id rather than its run id (reckon/crew/recovery_review_subject.py:820 sets review_node_source to source_node), so round_node_source yields e.g. a-plans-coordinator-is-derived-from-the-ledger and the lookup misses, leaving every non-paired run review matched to no plan and the done-when's a run review through the run it reviews unmet."
+    },
+    {
+      "file": "tests/test_a_plans_coordinator_is_derived_from_the_ledger.py",
+      "line": "340",
+      "severity": "follow-on",
+      "text": "follow-on: the fixture row mints the node id review-of-r-a1-a1b2c3d4e5f6, a run-id spelling the producer never emits (recovery_review_subject.py:820), so this case passes against the fixture rows hand-read by the fixture and not against a real row shape, and it survives the defect at plan_coordinator.py:122."
+    },
+    {
+      "file": "tests/test_a_plans_coordinator_is_derived_from_the_ledger.py",
+      "line": "393",
+      "severity": "follow-on",
+      "text": "follow-on: the two declared negative controls at :393 and :415 build their failing input by mutating the resolved dict rather than running a broken resolver, so they hold the assertion helper's discrimination and not the code path the done-when names."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read both commits against 017b346cb4, 73decd0f4 adding reckon/crew/plan_coordinator.py and its 442-line test and 20030d0d0 adding the 181-line evidence fragment, all inside the declared scope.",
+    "done_when": "the done-when names tests/test_a_plans_coordinator_is_derived_from_the_ledger.py with three sibling files; the gate asserts the fixture pins, and its result is recorded in coordinator-head-arm.log and coordinator-base-arm.log.",
+    "goal": "the goal is to resolve each plan's coordinator session from its most recent dispatched run; reckon/crew/plan_coordinator.py:186 resolve_plan_coordinators returns it for the plan, plan_link and plan-review-node matches, but the run-review match at plan_coordinator.py:122 resolves no plan on real ledger data.",
+    "manifest": "read manifest.md; it names commits 73decd0f4 and 20030d0d0, the literal gate command, both suite arms and four follow-ons, and its after_suite completed flag matches the coordinator's own four-file re-run in coordinator-head-arm.log.",
+    "write_paths": "read the declared write paths, reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py, the landing fragment and a figures directory; the diff against 017b346cb4 touches the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:260 _assert_pinned compares against PINNED literals hand-read from the fixture rows, but the run-review guard at :328 passes only against a run-id node spelling the producer never emits.",
+    "evidence": "the coordinator re-ran the named four-file gate at both revisions into coordinator-head-arm.log and coordinator-base-arm.log, and gate-plan-coordinator.log:16-21 carries the deciding row and matched field per plan the done_when asks for.",
+    "fit": "reckon/crew/plan_coordinator.py:1 follows the surrounding style of reckon/crew/directory.py:1 and adds no plan, sprint or ticket identifier to a symbol, path or comment.",
+    "goal_fidelity": "reckon/crew/plan_coordinator.py:186 resolve_plan_coordinators returns each plan's newest in-window coordinator for the plan, plan_link and plan-review-node matches, but the run-review match at plan_coordinator.py:122 resolves no plan on real ledger data.",
+    "reuse": "reckon/crew/plan_coordinator.py:111 _plan_from_node re-implements the review-node-to-subject-run resolution already owned by reckon/crew/recovery_review_delivery.py:233 reviewed_run_id and reckon/crew/dispatch_sessions.py:494 _reviewed_run_id, extending neither.",
+    "scope_discipline": "every path in the diff against 017b346cb4 is one of the three declared source, test and evidence write paths, and no figure directory was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to resolve each plan's coordinator session from its most recent dispatched run; reckon/crew/plan_coordinator.py:186 resolve_plan_coordinators returns it for the plan, plan_link and plan-review-node matches, but the run-review match at plan_coordinator.py:122 resolves no plan on real ledger data.\nVERDICT done_when: the done-when names tests/test_a_plans_coordinator_is_derived_from_the_ledger.py with three sibling files; the gate asserts the fixture pins, and its result is recorded in coordinator-head-arm.log and coordinator-base-arm.log.\nVERDICT write_paths: read the declared write paths, reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py, the landing fragment and a figures directory; the diff against 017b346cb4 touches the first three and nothing outside them.\nVERDICT manifest: read manifest.md; it names commits 73decd0f4 and 20030d0d0, the literal gate command, both suite arms and four follow-ons, and its after_suite completed flag matches the coordinator's own four-file re-run in coordinator-head-arm.log.\nVERDICT diff: read both commits against 017b346cb4, 73decd0f4 adding reckon/crew/plan_coordinator.py and its 442-line test and 20030d0d0 adding the 181-line evidence fragment, all inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/plan_coordinator.py:186 resolve_plan_coordinators returns each plan's newest in-window coordinator for the plan, plan_link and plan-review-node matches, but the run-review match at plan_coordinator.py:122 resolves no plan on real ledger data.\nSCORE evidence: 16\nJUSTIFICATION evidence: the coordinator re-ran the named four-file gate at both revisions into coordinator-head-arm.log and coordinator-base-arm.log, and gate-plan-coordinator.log:16-21 carries the deciding row and matched field per plan the done_when asks for.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff against 017b346cb4 is one of the three declared source, test and evidence write paths, and no figure directory was written.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:260 _assert_pinned compares against PINNED literals hand-read from the fixture rows, but the run-review guard at :328 passes only against a run-id node spelling the producer never emits.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/plan_coordinator.py:1 follows the surrounding style of reckon/crew/directory.py:1 and adds no plan, sprint or ticket identifier to a symbol, path or comment.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/plan_coordinator.py:111 _plan_from_node re-implements the review-node-to-subject-run resolution already owned by reckon/crew/recovery_review_delivery.py:233 reviewed_run_id and reckon/crew/dispatch_sessions.py:494 _reviewed_run_id, extending neither.\nFINDING reckon/crew/plan_coordinator.py:122 blocking: the review branch resolves its subject run by looking up a node id in a map keyed by run id (plan_coordinator.py:152 and :156); a real review node id embeds the reviewed run's node id rather than its run id (reckon/crew/recovery_review_subject.py:820 sets review_node_source to source_node), so round_node_source yields e.g. a-plans-coordinator-is-derived-from-the-ledger and the lookup misses, leaving every non-paired run review matched to no plan and the done-when's a run review through the run it reviews unmet.\nFINDING tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:340 follow-on: the fixture row mints the node id review-of-r-a1-a1b2c3d4e5f6, a run-id spelling the producer never emits (recovery_review_subject.py:820), so this case passes against the fixture rows hand-read by the fixture and not against a real row shape, and it survives the defect at plan_coordinator.py:122.\nFINDING tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:393 follow-on: the two declared negative controls at :393 and :415 build their failing input by mutating the resolved dict rather than running a broken resolver, so they hold the assertion helper's discrimination and not the code path the done-when names.",
+  "review_run_id": "r-20261023T064458793164-review-of-a-plans-coordinator-is-derived-from-the-ledger",
+  "reviewed_base_sha": "017b346cb43a597da2b3d4c37bea6657eac1c886",
+  "reviewed_head_sha": "20030d0d081a8cbbe50705de9db140dc1835eae2",
+  "reviewed_run_id": "r-20261023T002639713681-a-plans-coordinator-is-derived-from-the-ledger",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T07:25:00+00:00",
+  "total": 86
+}
