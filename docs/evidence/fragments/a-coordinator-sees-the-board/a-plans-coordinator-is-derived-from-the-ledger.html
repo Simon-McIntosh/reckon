@@ -105,22 +105,14 @@ decided tf-cold-test-validation: run=r-20261021T190726061562-cold-test-reproduct
   <p><strong>Gate.</strong> The declared four-file gate —
   <code>tests/test_a_plans_coordinator_is_derived_from_the_ledger.py</code>,
   <code>tests/test_crew_obligations.py</code>, <code>tests/test_ledger.py</code> and
-  <code>tests/test_every_module_fits_a_worker_window.py</code> — run in place on the fleet
-  allocation at this tree's revision: <strong>it did not reach its summary line before this run's hard stop</strong>. What
-  the run did reach, in file order: this node's eight cases passed, the nine obligation
-  cases passed, and <code>test_ledger.py</code> was about eighty cases into its
-  ninety-seven when the run was cut off. That file is where the wall clock went: two of its
-  cases were killed by the suite's own 300-second per-test bound, each burning five
-  minutes, and one case failed after the second kill. Neither touches this change —
-  <code>git diff 017b346cb4 -- reckon/ledger.py tests/test_ledger.py</code> is empty — and
-  neither is triaged here: they are recorded under the manifest's <code>follow_ons</code>,
-  and the fused run's exit status stands as the last line of its log, to be read when the
-  run is resumed rather than guessed at now. Log
-  <code>gate-plan-coordinator.log</code> in this run's directory under
-  <code>~/.config/reckon/crew/runs/</code>, whose header names the revision, the tree, the
-  literal command and the module path as imported, and whose last line reads
-  <code>EXIT=&lt;code&gt;</code>. This node's eight cases pass in it, as do the nine
-  obligation cases, against the fixture whose evidence is tabulated above.</p>
+  <code>tests/test_every_module_fits_a_worker_window.py</code> — run to completion at the
+  repaired head <code>52669c20c</code>: <strong>119 passed, 2 failed in 1,552 s,
+  <code>EXIT=1</code></strong>. Log <code>gate-four-file-final.log</code> in this run's
+  directory under <code>~/.config/reckon/crew/runs/</code>, whose first line names the
+  revision, whose third names the literal command and the module path as imported, and whose
+  last line reads <code>EXIT=1</code>. This node's eleven cases pass in it, as do the nine
+  obligation cases, against the fixture whose evidence is tabulated above. The two failures
+  are named below and neither is this change's; the gate has no third.</p>
 
   <p><strong>One failure the gate carries, and it is not this node's.</strong> The fourth
   member, <code>tests/test_every_module_fits_a_worker_window.py</code>, fails on a module
