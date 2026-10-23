@@ -121,10 +121,12 @@ _INTERVAL_UNIT_SECONDS = {
     "d": 86400.0,
 }
 
-#: The publish service and its timer are rendered from the periodic-pass
-#: templates in :mod:`reckon.service`, which is the one module that writes the
-#: unit sections; only the description, the command and the cadence differ
-#: between this pass and the retention sweep, so both render from one template.
+#: What the publish service waits for before it runs: it reads providers over
+#: the network and serves a document a pre-flight reads, so it follows the
+#: network target. The retention sweep's service passes no ordering directive
+#: because it only touches the local crew home.
+SERVICE_AFTER = "network.target"
+
 OBSERVED = "observed"
 UNKNOWN = "unknown"
 
@@ -1306,6 +1308,7 @@ def render_service_unit(
         exec_start=" ".join(shlex.quote(part) for part in argv),
         working_directory=working_directory,
         environment=forwarded,
+        after=SERVICE_AFTER,
     )
 
 

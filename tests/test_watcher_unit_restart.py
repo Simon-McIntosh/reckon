@@ -34,12 +34,12 @@ ONESHOT_UNITS = ("reckon/crew/paid_lanes.py",)
 
 UNIT_GENERATORS = RESTART_POLICY_UNITS + ONESHOT_UNITS
 
-#: The modules whose own source carries a unit section, which is what the tree
-#: scan below compares against. A generator that renders through another
-#: module's template is inventoried above for the assertions on a rendered
-#: unit without appearing here: paid lanes renders its oneshot from the
-#: periodic-pass templates in reckon/service.py, so reckon/service.py is the
-#: module in the tree that writes those sections.
+# The modules whose own source carries a unit section, which is what the tree
+# scan below compares against. A generator that renders through another
+# module's template is inventoried above for the assertions on a rendered unit
+# without appearing here: paid lanes renders its oneshot from the periodic-pass
+# templates in reckon/service.py, so reckon/service.py is the module in the
+# tree that writes those sections.
 UNIT_SOURCES = RESTART_POLICY_UNITS
 
 # An exited unit is worth a brief pause before the manager brings it back, but
@@ -112,6 +112,26 @@ def test_a_timer_activated_oneshot_unit_carries_no_restart_policy(
     unit = _rendered_units(tmp_path, monkeypatch)[generator]
     assert "Type=oneshot" in unit, unit
     assert "Restart=" not in unit, unit
+
+
+def test_the_publish_service_waits_for_the_network_and_the_sweep_does_not(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """The publish service follows the network target; the sweep renders none.
+
+    The two services share one template, so the ordering directive is the
+    caller's to pass. Dropping it silently dropped the publish service's own
+    dependency: it reads providers over the network and serves a document a
+    pre-flight reads, and a unit that starts before the network is up fails its
+    refresh rather than reporting a reading.
+    """
+    units = _rendered_units(tmp_path, monkeypatch)
+    assert "After=network.target" in units["reckon/crew/paid_lanes.py"]
+    assert "After=" not in service.render_periodic_service_unit(
+        description="retire finished crew run directories",
+        exec_start="/usr/bin/python -m reckon.crew.gc --apply",
+        working_directory=tmp_path,
+    )
 
 
 def test_every_unit_template_in_the_tree_is_covered_here():

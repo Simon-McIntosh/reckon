@@ -56,11 +56,14 @@ WantedBy=default.target
 #: A periodic pass: an activation-triggered unit that runs to completion and a
 #: timer that activates it. Both live here rather than in the module that
 #: describes the pass, so the unit sections a manager parses are written in one
-#: place and a policy repair cannot land on one copy and miss another.
+#: place and a policy repair cannot land on one copy and miss another. The
+#: ordering directive is a caller's to pass: a pass that reads or publishes
+#: over the network waits for it, and one that only touches the local crew home
+#: has nothing to wait for.
 PERIODIC_SERVICE_TEMPLATE = """\
 [Unit]
 Description={description}
-
+{after}\
 [Service]
 Type=oneshot
 WorkingDirectory={working_directory}
@@ -357,14 +360,23 @@ def render_periodic_service_unit(
     exec_start: str,
     working_directory: str | Path,
     environment: Mapping[str, str] | None = None,
+    after: str | None = None,
 ) -> str:
-    """Render the oneshot unit the timer activates."""
+    """Render the oneshot unit the timer activates.
+
+    ``after`` names a unit this pass must follow, such as ``network.target`` for
+    a pass that publishes over the network. A pass with nothing to wait for
+    passes nothing and gets no ordering directive, so the directive is one
+    caller's decision rather than a line every periodic unit inherits.
+    """
     override = "".join(
         f'Environment="{name}={value}"\n'
         for name, value in sorted((environment or {}).items())
     )
+    ordering = f"After={after}\n" if after else ""
     return PERIODIC_SERVICE_TEMPLATE.format(
         description=description,
+        after=ordering,
         working_directory=working_directory,
         environment=override,
         exec_start=exec_start,
