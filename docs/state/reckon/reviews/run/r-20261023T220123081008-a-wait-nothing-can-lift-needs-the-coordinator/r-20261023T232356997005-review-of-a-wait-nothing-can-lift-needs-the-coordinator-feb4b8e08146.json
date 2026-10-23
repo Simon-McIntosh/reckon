@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:311",
+    "reckon/crew/runs.py:1796",
+    "reckon/crew/query.py:422",
+    "reckon/crew/obligations.py:482",
+    "reckon/crew/directory.py:97",
+    "reckon/crew/promotion.py:387",
+    "reckon/serve.py:884"
+  ],
+  "completed_at": "2026-10-23T23:39:03.938Z",
+  "dispatched_at": "2026-10-23T23:24:59Z",
+  "findings": [
+    {
+      "file": "tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py",
+      "line": 185,
+      "severity": "non-blocking",
+      "text": "no arm covers the current-attempt comparison at reckon/crew/recovery_classification.py:363, so replacing `_exit_record_names_attempt(record, attempt)` with `return True` leaves every added assertion green while a superseded attempt's exit record would again be read as this attempt's end."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 324,
+      "severity": "non-blocking",
+      "text": "the discriminator matches prose that reckon/crew/recovery_wait.py:502 and :511 own, so rewording either reader's detail silently disables the halted arm with nothing reddening; a structured field on the observation would not couple the two modules."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 3adce740f; the single commit feb4b8e08 adds 70 lines to reckon/crew/recovery_classification.py (two helpers and one elif), a 249-line test and a 30-line landing fragment, all inside the declared scope.",
+    "done_when": "the measure names the new test and a base arm; logs/head-gate.log records 3 passed with EXIT=0 and logs/negative-control-base-arm.log records the first fixture failing at the base revision with the same failing id, so the gate asserts the measure, while the done-when's wider \"tests importing recovery_classification add no failures against the base\" arm is run only at head (logs/head-focused-suite.log, 345 passed) and left to the coordinator per the dispatch fence.",
+    "goal": "the node's goal is to classify a declared wait whose worker has ended and whose condition probe cannot answer with a halted word and a resume remedy; reckon/crew/recovery_classification.py:1144-1167 adds that arm inside the valid-wait branch, setting classification \"stalled\", whose pane word is halted and whose next action names `reckon crew resume`, so the landed change does what the goal states.",
+    "manifest": "read at the source run directory; it records status complete, commit feb4b8e08, head gate 3 passed, focused suite 345 passed, the base negative control at 1 failed / 2 passed, ruff clean on the staged paths and no retry failures.",
+    "write_paths": "the manifest and prompt.txt:55-58 declare reckon/crew/recovery_classification.py, tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py, the landing fragment and a figures directory; git diff --stat against 3adce740f touches exactly the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:185-201 is red at base and green at head, but no arm exercises the attempt comparison at reckon/crew/recovery_classification.py:363, so dropping the 'current attempt' check leaves the suite green.",
+    "evidence": "logs/head-gate.log records 3 passed and EXIT=0 for tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py and logs/negative-control-base-arm.log reddens the same first fixture at the base revision, though the wider import population the done_when names was run only at head (logs/head-focused-suite.log, 345 passed).",
+    "fit": "the arm follows the existing elif chain at reckon/crew/recovery_classification.py:1132-1180 and both helpers are named by mechanism with no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1144-1167 adds the halted arm inside the valid-wait branch and sets classification 'stalled', which ticker.py:336 lists among the words the pane draws as halted, with the next action at :1162 naming `reckon crew resume`.",
+    "reuse": "both helpers reuse recovery_liveness.py:501 _current_attempt_number and :634 _exit_record_names_attempt, but the failure vocabulary at recovery_classification.py:324 restates prose owned by recovery_wait.py:502 and :511 rather than extending that owner.",
+    "scope_discipline": "git diff --stat 3adce740f59d1738700a47cf15ca57849543a2c7 feb4b8e08146b19817859acaa4ec8655a4498843 lists only the declared recovery_classification.py, the new test and the landing fragment, with no change to the plan or to any other file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to classify a declared wait whose worker has ended and whose condition probe cannot answer with a halted word and a resume remedy; reckon/crew/recovery_classification.py:1144-1167 adds that arm inside the valid-wait branch, setting classification \"stalled\", whose pane word is halted and whose next action names `reckon crew resume`, so the landed change does what the goal states.\nVERDICT done_when: the measure names the new test and a base arm; logs/head-gate.log records 3 passed with EXIT=0 and logs/negative-control-base-arm.log records the first fixture failing at the base revision with the same failing id, so the gate asserts the measure, while the done-when's wider \"tests importing recovery_classification add no failures against the base\" arm is run only at head (logs/head-focused-suite.log, 345 passed) and left to the coordinator per the dispatch fence.\nVERDICT write_paths: the manifest and prompt.txt:55-58 declare reckon/crew/recovery_classification.py, tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py, the landing fragment and a figures directory; git diff --stat against 3adce740f touches exactly the first three and nothing else.\nVERDICT manifest: read at the source run directory; it records status complete, commit feb4b8e08, head gate 3 passed, focused suite 345 passed, the base negative control at 1 failed / 2 passed, ruff clean on the staged paths and no retry failures.\nVERDICT diff: read commit by commit against 3adce740f; the single commit feb4b8e08 adds 70 lines to reckon/crew/recovery_classification.py (two helpers and one elif), a 249-line test and a 30-line landing fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_watch.py:311, reckon/crew/runs.py:1796, reckon/crew/query.py:422, reckon/crew/obligations.py:482, reckon/crew/directory.py:97, reckon/crew/promotion.py:387, reckon/serve.py:884\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1144-1167 adds the halted arm inside the valid-wait branch and sets classification 'stalled', which ticker.py:336 lists among the words the pane draws as halted, with the next action at :1162 naming `reckon crew resume`.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-gate.log records 3 passed and EXIT=0 for tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py and logs/negative-control-base-arm.log reddens the same first fixture at the base revision, though the wider import population the done_when names was run only at head (logs/head-focused-suite.log, 345 passed).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3adce740f59d1738700a47cf15ca57849543a2c7 feb4b8e08146b19817859acaa4ec8655a4498843 lists only the declared recovery_classification.py, the new test and the landing fragment, with no change to the plan or to any other file.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:185-201 is red at base and green at head, but no arm exercises the attempt comparison at reckon/crew/recovery_classification.py:363, so dropping the 'current attempt' check leaves the suite green.\nSCORE fit: 17\nJUSTIFICATION fit: the arm follows the existing elif chain at reckon/crew/recovery_classification.py:1132-1180 and both helpers are named by mechanism with no plan, ticket or version identifier.\nSCORE reuse: 16\nJUSTIFICATION reuse: both helpers reuse recovery_liveness.py:501 _current_attempt_number and :634 _exit_record_names_attempt, but the failure vocabulary at recovery_classification.py:324 restates prose owned by recovery_wait.py:502 and :511 rather than extending that owner.\nFINDING tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:185 non-blocking: no arm covers the current-attempt comparison at reckon/crew/recovery_classification.py:363, so replacing `_exit_record_names_attempt(record, attempt)` with `return True` leaves every added assertion green while a superseded attempt's exit record would again be read as this attempt's end.\nFINDING reckon/crew/recovery_classification.py:324 non-blocking: the discriminator matches prose that reckon/crew/recovery_wait.py:502 and :511 own, so rewording either reader's detail silently disables the halted arm with nothing reddening; a structured field on the observation would not couple the two modules.\n",
+  "review_run_id": "r-20261023T232356997005-review-of-a-wait-nothing-can-lift-needs-the-coordinator-feb4b8e08146",
+  "reviewed_at": "2026-10-23T23:33:39Z",
+  "reviewed_base_sha": "3adce740f59d1738700a47cf15ca57849543a2c7",
+  "reviewed_head_sha": "feb4b8e08146b19817859acaa4ec8655a4498843",
+  "reviewed_run_id": "r-20261023T220123081008-a-wait-nothing-can-lift-needs-the-coordinator",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:40:39.389168+00:00",
+  "total": 103
+}
