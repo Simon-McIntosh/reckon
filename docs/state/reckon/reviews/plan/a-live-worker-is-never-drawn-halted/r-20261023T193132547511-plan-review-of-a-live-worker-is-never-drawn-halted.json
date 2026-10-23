@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T20:01:19.120Z",
+  "dispatched_at": "2026-10-23T19:50:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:325",
+      "id": "reasoning-1",
+      "reason": "the section would change a shared remedy to name one of two causes, so the instruction must be scoped to the case where the new record proves the pointer absent, or dropped in favour of recording what was seen.",
+      "text": "\u00a713 says \"The pane's remedy for this failure names the missing pointer rather than PATH\", but the classification it rewrites (`launch-failed`) is produced by one shared except clause, `except (OSError, ValueError, KeyError, CrewError)` around `reckon/crew/dispatch_launch.py:3536-3546` calling `_supervisor_spawn_worker`, so a pointer missing at `read_pointer` and a backend whose executable cannot be exec'd are indistinguishable at that boundary; on a genuine spawn failure the pane would say the pointer was missing and send the coordinator to the wrong repair",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:325",
+      "id": "reasoning-2",
+      "reason": "the section's justification for instrumenting rather than naming the remover is an absence that cannot be tested as stated, and its diagnosis of the cause is not supported by the records it cites, so the node cannot tell a pointer-removal from a failed spawn and should be told to state the log's coverage window and to treat the cause as unproven until the new record shows it.",
+      "text": "\u00a713 rests \"The remover cannot be named from these records\" partly on \"`admission-verdicts.jsonl` holds no entry for either launch\", but that file is trimmed to 1,048,576 bytes on every append (`reckon/crew/queue_admission.py:60-61,985-987`) and its oldest surviving line reads `\"at\":\"2026-10-23T16:30:09.527323+00:00\"` against cited launches at 07:53Z and 14:53Z, so the log covered neither launch's minute and the absence is rotation loss, not a recording gap; the same \u00a713 also asserts the failure text `worker did not spawn: CrewError: no live run '<run>'` as what the attempt ends at launch with, while the only surviving rows for both runs record `launch-failed` with the composed phrase \"the launch for backend 'clive' ended with no wait status recorded before writing any stream record (the process exited before any turn); no model was reached\" (`_exit_record_end_phrase`, reckon/crew/recovery_liveness.py:1258), which the same code emits for any pre-spawn failure with no wait status",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "257018a138a071213af5d0539510c1ef8474f8410bdf038dea19f67aa20e3fac",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T193132547511-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "dab14714f2fb2d0700c35ba3d0fa00c1b3a37ebe",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `queue_admission._launch_queued`'s unlink is at queue_admission.py:180, dispatch's two `_write_json(pointer_path(run_id), record)` calls are at dispatch.py:2606 and :2617 with `_start_supervisor` at :2667, the supervisor's read is dispatch_launch.py:2485 through runs.read_pointer, and runs.py:734 raises exactly `no live run {run_id!r} (looked in {path})`; both cited run ids exist under ~/.config/reckon/crew/runs/.",
+    "done_when": "pass \u2014 \u00a713's done-when names a test that removes the pointer before the supervisor's first read, asserts the recorded fields, the intact first exit record under its own number and the changed recovery detail, and declares a negative control at the base revision (no record, first exit record overwritten).",
+    "evidence_paths": "pass \u2014 the launch-failure record is written beside the run under the crew run directory, a durable path, and the gate log is named in the done-when.",
+    "naming": "pass \u2014 \u00a713 carries no plan labels, stage names or ticket numbers into code or comments.",
+    "reasoning": "two findings \u2014 the pane-remedy instruction cannot distinguish the two causes it must name, and the cited \"admission-verdicts.jsonl holds no entry for either launch\" is a vacuous absence.",
+    "single_goal": "pass \u2014 instrumentation, attempt-numbering and remedy wording all serve the one measure, \"an admitted launch's failure names its cause in a durable record\".",
+    "wiring": "pass \u2014 \u00a713's write paths (dispatch_launch.py, queue_admission.py, runs.py-if-the-helper-lives-there) genuinely overlap \u00a74's and \u00a79's runs.py, and the plan says so in its own body (\"\u00a713 runs after both have landed\"), which is the ordering the node needs."
+  },
+  "section_digests": {
+    "_document": "77f3c30ac1fae1a90bce2394ee13207c57973da1594d680d7cacc4b40bbe201b",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "928be57771c429d0e8372b33d7a14af3b1fdd4ccf96b21742f9039579d68e340",
+    "s13": "b5403f48e714c8218be6f8d3800efed5dce0703e49db57ac87cc181f870250a6",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "1fbaee6774bb925bffb02f59d8d4442ab2ecbdce493922561ca3818683ca89fe",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T20:04:10.868505+00:00"
+}
