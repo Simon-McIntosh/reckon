@@ -119,13 +119,19 @@ def _write_queued_review(
     reviewed_run_id: str,
     head: str,
     queued_at: datetime | None,
+    phase: str = "queued",
 ) -> dict:
-    """Record one review run the lane accepted into the queue and has not launched."""
+    """Record one review run for ``reviewed_run_id`` at ``head``.
+
+    The default phase is the queue's, which is the wait this reader exists for.
+    A launched review is written the same way under its own phase, so the two
+    can stand for one head and be told apart by nothing but that field.
+    """
     pointer = {
         "run_id": review_run_id,
         "project": PROJECT,
         "session": SESSION,
-        "phase": "queued",
+        "phase": phase,
         "backend": "local",
         "role": "review",
         "node": {
@@ -298,6 +304,88 @@ def test_a_queued_review_without_a_readable_instant_publishes_no_queued_at(
     assert "position" not in duty
     assert "rank" not in duty
     assert "awaiting a lane slot" in duty["next_command"]
+
+
+def test_a_launched_review_beside_a_queued_one_reads_in_flight_not_missing(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A review working on the head is in flight, whatever waits beside it.
+
+    The run owes one review at its head, and two requests stand for it: one the
+    lane has launched and one it queued behind, and the queued request sorts
+    first in the live directory. The launched review is a review in flight,
+    which suppresses the duty; the queued request must not answer for the head
+    in its place merely because it is read first, nor pull the duty back to a
+    waiting reading over work already under way.
+    """
+    run_id = "run-awaiting-review"
+    head = _git(repository, "rev-parse", "HEAD")
+    _write_delivered_run(repository, tmp_path, run_id=run_id, node_id="src", head=head)
+    row = _score_row(repository, run_id)
+    _write_queued_review(
+        review_run_id="r-a-queued-review",
+        reviewed_run_id=run_id,
+        head=head,
+        queued_at=OBSERVED_AT - timedelta(seconds=30),
+    )
+    _write_queued_review(
+        review_run_id="r-b-launched-review",
+        reviewed_run_id=run_id,
+        head=head,
+        queued_at=OBSERVED_AT - timedelta(seconds=90),
+        phase="running",
+    )
+
+    in_flight = _obligations_for_review_duty(monkeypatch, [row])
+
+    assert [item for item in in_flight["obligations"] if "head" in item] == []
+
+    runs.pointer_path("r-b-launched-review").unlink()
+
+    waiting = _review_duty(_obligations_for_review_duty(monkeypatch, [row]))
+    assert waiting["kind"] == "review-queued"
+    assert waiting["position"] == 1
+
+
+def test_a_reader_inside_a_view_reads_the_other_project_s_pointers(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The view's snapshot is keyed by project, so a reader gets its own.
+
+    The view publishes one read of the live pointers for the length of one
+    derivation. A reader inside it that asks about another project must reach
+    that project's pointers, not this derivation's: the two projects' runs are
+    unrelated, and answering with the other's would read another fleet's work
+    as this one's.
+    """
+    other_project = "queued-review-other-fixture"
+    head = _git(repository, "rev-parse", "HEAD")
+    _write_delivered_run(
+        repository, tmp_path, run_id="run-awaiting-review", node_id="src", head=head
+    )
+    row = _score_row(repository, "run-awaiting-review")
+    runs._write_json(
+        runs.pointer_path("other-project-run"),
+        {"run_id": "other-project-run", "project": other_project, "session": SESSION},
+    )
+
+    seen: dict[str, list[str]] = {}
+
+    def rows_for(project: str) -> list[dict]:
+        if project != PROJECT:
+            return []
+        for name, asked in (("this", PROJECT), ("other", other_project)):
+            seen[name] = [
+                str(pointer.get("run_id") or "")
+                for pointer in obligations_module._live_pointers(asked)
+            ]
+        return [row]
+
+    monkeypatch.setattr(obligations_module, "_classified_rows", rows_for)
+    obligations_module.obligations(PROJECT, SESSION)
+
+    assert seen["this"] == ["run-awaiting-review"]
+    assert seen["other"] == ["other-project-run"]
 
 
 def test_one_view_reads_the_live_pointers_once(

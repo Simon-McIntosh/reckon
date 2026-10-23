@@ -363,8 +363,8 @@ def _row_age(row: Mapping[str, Any], *, now: datetime) -> int:
     return 0
 
 
-_VIEW_LIVE_POINTERS: ContextVar[tuple[dict[str, Any], ...] | None] = ContextVar(
-    "reckon_obligations_view_live_pointers", default=None
+_VIEW_LIVE_POINTERS: ContextVar[Mapping[str, tuple[dict[str, Any], ...]] | None] = (
+    ContextVar("reckon_obligations_view_live_pointers", default=None)
 )
 
 
@@ -374,12 +374,16 @@ def _live_pointers(project: str) -> list[dict[str, Any]]:
     Every duty kind here reads the same live pointers, so a view holding three
     of them would otherwise read the directory three times and could report
     three duties from three different snapshots of it. The view publishes its
-    own read for the length of one derivation, and a reader called outside a
-    view reads for itself.
+    own read for the length of one derivation, keyed by project: a reader
+    inside the view that asks about another project gets that project's
+    pointers, read for itself, rather than the ones this derivation happens to
+    hold. A reader called outside a view reads for itself.
     """
     held = _VIEW_LIVE_POINTERS.get()
     if held is not None:
-        return list(held)
+        snapshot = held.get(project)
+        if snapshot is not None:
+            return list(snapshot)
     return runs.list_live(project=project)
 
 
@@ -416,15 +420,21 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     delivered, so a review dispatched before the record moved out of the store
     still suppresses the duty for the head it stands at.
 
-    A review the lane accepted into its queue is not working on the revision
-    yet — it has not launched — so it does not suppress the duty. The run owes
-    a review that is waiting, which the review duty lists as queued.
+    A reviewer the lane accepted into its queue is not working on the revision
+    yet — it has not launched — so it does not suppress the duty, and it is
+    kept out of the recognition below. Excluding it matters when both stand for
+    the same head: a queued request beside a launched review would otherwise be
+    able to answer for the head, and the duty would read missing while a review
+    is working on it.
     """
     if _reflex_review_in_flight(pointer):
         return True
-    review_run_id = recovery._review_in_flight(
-        pointer, pointers=_live_pointers(str(pointer.get("project") or ""))
-    )
+    launched = [
+        candidate
+        for candidate in _live_pointers(str(pointer.get("project") or ""))
+        if str(candidate.get("phase") or "") != queue_admission.QUEUED_PHASE
+    ]
+    review_run_id = recovery._review_in_flight(pointer, pointers=launched)
     if not review_run_id:
         return False
     review_pointer = runs.read_pointer(review_run_id)
@@ -744,8 +754,11 @@ def _queued_review_run_fields(
     reflex itself uses, so a review's subject and head are decided in one place
     and this view cannot recognise a review the reflex does not. That reader is
     handed the view's own pointer snapshot rather than reading the directory
-    again. A review it recognises that has not launched is this wait; one that
-    has launched is in flight, which suppresses the duty upstream.
+    again, narrowed to the pointers still waiting in the queue. The narrowing
+    is what keeps this wait distinct from a review that has launched: that one
+    is in flight and suppresses the duty upstream, and it must not be able to
+    answer here in place of the queued request beside it, nor make the run read
+    as though only the launched review existed.
 
     The place travels from the admission pass's own ordering, for the same
     reason a queued request's does — this view must not be able to disagree
@@ -755,20 +768,23 @@ def _queued_review_run_fields(
     substituting the read time, which would report a dispatch instant that
     never happened.
     """
-    review_run_id = recovery._review_in_flight(pointer, pointers=live_pointers)
+    queued = [
+        candidate
+        for candidate in live_pointers
+        if str(candidate.get("phase") or "") == queue_admission.QUEUED_PHASE
+    ]
+    review_run_id = recovery._review_in_flight(pointer, pointers=queued)
     if not review_run_id:
         return None
     review_pointer = next(
         (
             candidate
-            for candidate in live_pointers
+            for candidate in queued
             if str(candidate.get("run_id") or "") == review_run_id
         ),
         None,
     )
     if review_pointer is None:
-        return None
-    if str(review_pointer.get("phase") or "") != queue_admission.QUEUED_PHASE:
         return None
     fields: dict[str, Any] = {}
     queued_at = parse_utc(review_pointer.get("queued_at"))
@@ -1451,7 +1467,7 @@ def obligations(
     and a run in flight cannot appear in one duty and be absent from another
     read in the same view.
     """
-    token = _VIEW_LIVE_POINTERS.set(tuple(runs.list_live(project=project)))
+    token = _VIEW_LIVE_POINTERS.set({project: tuple(runs.list_live(project=project))})
     try:
         return _obligations_view(project, session, fields=fields)
     finally:
