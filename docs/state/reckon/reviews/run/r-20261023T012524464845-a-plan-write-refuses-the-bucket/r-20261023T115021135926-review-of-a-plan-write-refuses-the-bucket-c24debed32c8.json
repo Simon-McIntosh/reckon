@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T12:05:47.815Z",
+  "dispatched_at": "2026-10-23T11:52:37Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T012524464845-a-plan-write-refuses-the-bucket/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "the manifest records no ruff result, so the done_when's clause that ruff check and ruff format --check find no more on the changed paths than at base is asserted by nothing in the record; a re-read measures 26 ruff findings across the three changed source files at the head against 32 at the base revision, so the clause holds but the record does not show it."
+    },
+    {
+      "file": "reckon/_store_section_ops.py",
+      "line": "140",
+      "severity": "non-blocking",
+      "text": "the text-mode hint is attached whenever the body carries the term, not only when the term is the reason the predicate returned, so a body carrying a forged heading and the term reports \"must not contain a heading; edit this section's body in text mode\" and names a route that does not address the reason given."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read one by one against 4d75245b49697dedd282331b0ceeb0d61884e9c9 \u2014 8e7955f88 adds the guard and the test file, 6d14eefbc the landing record, c471b6e03 moves the rule sentence to a single definition the store imports, and c24debed3 records the measured population result.",
+    "done_when": "the done_when names tests/test_a_plan_write_refuses_the_bucket.py, a base/head population arm and a ruff clause; the manifest records both arms complete (3 failed/652 passed at base 4d75245b4, the same 3 failed/663 passed at head) and the 11-case file green, but records no ruff result.",
+    "goal": "the node's goal is to refuse a plan write that adds the follow-on term to prose through the one authored-body predicate; reckon/_store.py:927 folds that clause into _forged_plan_structure and every structured authoring path reaches it there.",
+    "manifest": "read; it records complete, the base 4d75245b4, both arm blocks with failure_ids in pytest node-id form, the 11-case log, and the negative control whose red log closes EXIT=1 naming four test ids the head does not fail.",
+    "write_paths": "the reviewed node declared 7 write paths; the diff's 5 changed paths \u2014 reckon/_store.py, reckon/_store_section_ops.py, reckon/doccheck.py, tests/test_a_plan_write_refuses_the_bucket.py and docs/evidence/fragments/additional-work-is-a-section/a-plan-write-refuses-the-bucket.html \u2014 are all inside that list."
+  },
+  "justifications": {
+    "durability": "the negative-control log shows the declared mutation reddening four of the eleven cases at reckon/_store.py:927 with EXIT=1; the text-mode guard at reckon/_store.py:2120 and the audit guard at reckon/doccheck.py:1728 are asserted but not falsified by that mutation, and each names its own removal as the change that would redden it.",
+    "evidence": "the gate's substance is recorded and readable in logs/population-base.log and logs/population-head.log (the same three failing ids in both arms) and the review's own re-run of tests/test_a_plan_write_refuses_the_bucket.py at the head gives 11 passed, but no artifact in the reviewed run records the done_when's ruff clause.",
+    "fit": "the additions follow the surrounding local-import and docstring idiom of reckon/_store.py:944 and reckon/doccheck.py:422, and DEFERRED_WORK_TERM_IN_PROSE names the warning kind the audit emits rather than a plan label.",
+    "goal_fidelity": "reckon/_store.py:927 adds the term clause to the one predicate, so insert_section, append_evidence, a created plan's section body and a sections.<id>.body set all refuse it with no new error family, exactly as section 4 specifies.",
+    "reuse": "deferred_work_term and deferred_work_terms extend reckon/doccheck.py's own _prose_text owner (reckon/doccheck.py:383) and the store imports that reader rather than reimplementing it, so the term clause extends the existing _forged_plan_structure predicate and forks no capability.",
+    "scope_discipline": "every path in the diff \u2014 reckon/_store.py, reckon/_store_section_ops.py, reckon/doccheck.py, tests/test_a_plan_write_refuses_the_bucket.py and the landing fragment \u2014 is inside the reviewed node's declared write paths, and nothing the goal does not imply is carried."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse a plan write that adds the follow-on term to prose through the one authored-body predicate; reckon/_store.py:927 folds that clause into _forged_plan_structure and every structured authoring path reaches it there.\nVERDICT done_when: the done_when names tests/test_a_plan_write_refuses_the_bucket.py, a base/head population arm and a ruff clause; the manifest records both arms complete (3 failed/652 passed at base 4d75245b4, the same 3 failed/663 passed at head) and the 11-case file green, but records no ruff result.\nVERDICT write_paths: the reviewed node declared 7 write paths and the diff's 5 changed paths are all inside that list.\nVERDICT manifest: read; it records complete, the base 4d75245b4, both arm blocks with failure_ids in pytest node-id form, the 11-case log, and the negative control whose red log closes EXIT=1 naming four test ids the head does not fail.\nVERDICT diff: read one by one against 4d75245b49697dedd282331b0ceeb0d61884e9c9 \u2014 8e7955f88 adds the guard and the test file, 6d14eefbc the landing record, c471b6e03 moves the rule sentence to a single definition the store imports, and c24debed3 records the measured population result.\nCALL_SITES: reckon/_store.py:1013 (_insert_authored_section), reckon/_store.py:1141 (append_evidence body), reckon/_store_section_ops.py:145 (sections.<id>.body set), reckon/_store.py:2120 (_replace_plan_text text mode), reckon/doccheck.py:1728 (audit_html, reached by reckon audit-doc)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:927 adds the term clause to the one predicate, so insert_section, append_evidence, a created plan's section body and a sections.<id>.body set all refuse it with no new error family, exactly as section 4 specifies.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate's substance is recorded and readable in logs/population-base.log and logs/population-head.log (the same three failing ids in both arms) and the review's own re-run of tests/test_a_plan_write_refuses_the_bucket.py at the head gives 11 passed, but no artifact in the reviewed run records the done_when's ruff clause.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff \u2014 reckon/_store.py, reckon/_store_section_ops.py, reckon/doccheck.py, tests/test_a_plan_write_refuses_the_bucket.py and the landing fragment \u2014 is inside the reviewed node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the negative-control log shows the declared mutation reddening four of the eleven cases at reckon/_store.py:927 with EXIT=1; the text-mode guard at reckon/_store.py:2120 and the audit guard at reckon/doccheck.py:1728 are asserted but not falsified by that mutation, and each names its own removal as the change that would redden it.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the surrounding local-import and docstring idiom of reckon/_store.py:944 and reckon/doccheck.py:422, and DEFERRED_WORK_TERM_IN_PROSE names the warning kind the audit emits rather than a plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: deferred_work_term and deferred_work_terms extend reckon/doccheck.py's own _prose_text owner (reckon/doccheck.py:383) and the store imports that reader rather than reimplementing it, so the term clause extends the existing _forged_plan_structure predicate and forks no capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T012524464845-a-plan-write-refuses-the-bucket/manifest.md:21 non-blocking: the manifest records no ruff result, so the done_when's clause that ruff check and ruff format --check find no more on the changed paths than at base is asserted by nothing in the record; a re-read measures 26 ruff findings across the three changed source files at the head against 32 at the base revision, so the clause holds but the record does not show it.\nFINDING reckon/_store_section_ops.py:140 non-blocking: the text-mode hint is attached whenever the body carries the term, not only when the term is the reason the predicate returned, so a body carrying a forged heading and the term reports \"must not contain a heading; edit this section's body in text mode\" and names a route that does not address the reason given.\n",
+  "review_run_id": "r-20261023T115021135926-review-of-a-plan-write-refuses-the-bucket-c24debed32c8",
+  "reviewed_base_sha": "4d75245b49697dedd282331b0ceeb0d61884e9c9",
+  "reviewed_head_sha": "c24debed32c8d07aa46ce0e6a9533e57f37b57ce",
+  "reviewed_run_id": "r-20261023T012524464845-a-plan-write-refuses-the-bucket",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T12:10:27.714091+00:00",
+  "total": 112
+}
