@@ -250,10 +250,12 @@ def test_the_pass_reads_each_ledger_through_its_index(
 ) -> None:
     """Both ledgers are read through the shared index-backed reader.
 
-    A pass that parsed an aggregate, or carried its own notion of where a run's
-    project is recorded, would read through a different path than the rest of
-    reckon; this pins the read to the indexed ledger reader for every mounted
-    project.
+    The spy sits on the index-backed reader itself rather than on the wrapper
+    that carries the flag, because the pass never passes the flag: a spy on the
+    wrapper records whatever a caller's default happens to be and passes
+    whether or not the index is read at all. A pass that parsed an aggregate
+    would not reach this reader for either project, so an empty or partial
+    record here is the failure this case exists to raise.
     """
     home = tmp_path / "config"
     monkeypatch.setenv("RECKON_HOME", str(home))
@@ -266,20 +268,19 @@ def test_the_pass_reads_each_ledger_through_its_index(
     plant_run(home, roots[PROJECT_A], PROJECT_A, "run-a", now=now)
     plant_run(home, roots[PROJECT_B], PROJECT_B, "run-b", now=now)
 
-    calls: list[tuple[str, bool]] = []
-    real_load = ledger.load
+    indexed: list[str] = []
+    real_indexed_data = ledger._indexed_data
 
-    def spy(project, root=None, *, use_index=True, headers_only=False):
-        calls.append((project, use_index))
-        return real_load(project, root, use_index=use_index, headers_only=headers_only)
+    def spy(project, root=None, **kwargs):
+        indexed.append(project)
+        return real_indexed_data(project, root, **kwargs)
 
-    monkeypatch.setattr(ledger, "load", spy)
+    monkeypatch.setattr(ledger, "_indexed_data", spy)
 
     report = gc_module.retention_sweep(apply=True, now=now)
 
     assert sorted(report["removed"]) == ["run-a", "run-b"]
-    assert {project for project, _ in calls} == {PROJECT_A, PROJECT_B}
-    assert all(use_index for _, use_index in calls), calls
+    assert sorted(set(indexed)) == [PROJECT_A, PROJECT_B], indexed
 
 
 def test_installing_writes_a_service_and_an_hourly_timer_and_reinstalling_writes_nothing(
