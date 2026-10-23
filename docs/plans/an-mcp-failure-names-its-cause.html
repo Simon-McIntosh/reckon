@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="99">
+<meta name="plan-version" content="100">
 <meta name="plan-modified" content="2026-10-23">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -207,7 +207,9 @@
 
     <h2 id="s17">§17 — A malformed request is refused before it touches storage</h2>
 <section data-reckon="section" data-id="s17" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> On 2026-10-23 a power_convertor <code>crew view live</code> call naming an unknown field, <code>dispatched_at</code>, waited over 120 s on storage before it was refused. The refusal depended only on the arguments.</p><p><strong>Change.</strong> Every reckon MCP read and write checks its arguments against their declared vocabularies before it opens any file: field names, view names, op names and enumerated values. A malformed request is refused in milliseconds whatever storage is doing, and the refusal lists the accepted values as it does today.</p><p>Done when: under a storage stub that blocks on any open, a <code>crew view live</code> call with an unknown field, a <code>crew</code> call with an unknown view and an <code>edit_plan</code> call with an unknown op are each refused without the stub being reached. Negative control: validation moved after the first read must reach the stub.</p>
+<p><strong>Why.</strong> On 2026-10-23 a power_convertor <code>crew view live</code> call naming an unknown field, <code>dispatched_at</code>, waited over 120 s on storage before it was refused. The refusal depended only on the arguments.</p>
+    <p><strong>Change.</strong> The argument checks of the four reckon MCP tools run before any file is opened: <code>_crew</code>, <code>_read_plan_tool</code> and <code>_roadmap_tool</code> in <code>reckon/mcp.py</code>, and <code>_edit_plan_tool</code> in <code>reckon/mcp_edit_plan.py</code>. Field names, view names, op names and enumerated values are checked against their declared vocabularies first, so a malformed request is refused in milliseconds whatever storage is doing, and the refusal lists the accepted values as it does today.</p>
+    <p>Done when: under a storage stub that blocks on any open, a <code>crew view live</code> call with an unknown field, a <code>crew</code> call with an unknown view and an <code>edit_plan</code> call with an unknown op are each refused without the stub being reached. Negative control: validation moved after the first read must reach the stub. Write paths: <code>reckon/mcp.py</code>, <code>reckon/mcp_edit_plan.py</code> and a new test file. Every log, the negative control's included, is under the run directory.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -256,6 +258,16 @@
     <h4 class="r-fu-title">A malformed request is refused before it touches storage</h4>
     <div class="r-fu-body"><p>Measured in a power_convertor portfolio review on 2026-10-23 and passed on by its coordinator. A content review of this section is owed before dispatch.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §17</pre>
+    </article>
+<article class="r-fu" data-id="f-amfnic-010" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23 10:00" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §10" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A fenced worker can read the crew live view</h4>
+    <div class="r-fu-body"><p>§10 is implementable and no open followup named it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §10</pre>
+    </article>
+<article class="r-fu" data-id="f-amfnic-011" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23 10:00" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §11" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A project can name its worker MCP servers</h4>
+    <div class="r-fu-body"><p>§11 is implementable and no open followup named it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §11</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

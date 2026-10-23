@@ -19,12 +19,12 @@
   <meta name="plan-sprint" content="S27">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
-  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s7&quot;:[&quot;crew-state-stays-bounded#s3&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -102,8 +102,9 @@
     <code>.events</code> logs, their <code>.followers</code> lease directories, the seat locks and the stale
     registration temporaries are compressed into one dated archive under the crew home and removed. The
     sweep names every path it removes and refuses any whose mtime is within the last hour.</p>
-    <p>Done when the sweep's dry run lists the paths with sizes, the real run removes exactly that list,
-    and <code>crew/watch/</code> holds under 1 MB afterwards. Negative control: a log written within the hour
+    <p>Done when, in a temporary crew home seeded with a copy of those files, the sweep's dry run lists the paths
+    with sizes, the real run removes exactly that list, and the copy's <code>crew/watch/</code> holds under 1 MB
+    afterwards. The live crew home is swept once, after the test passes, with its dry-run listing read first. Negative control: a log written within the hour
     must be refused and left in place.</p>
 
     <h2 id="s5">§5 — Reload images live on node-local storage</h2>
@@ -125,14 +126,18 @@
     <code>codex-home/cache/</code> and <code>codex-home/plugins/</code>, which every codex run downloads afresh. The
     other is the <code>cache/</code> tree a worker's tools fill (matplotlib, xdg, numba). Nothing reads either after
     the process ends.</p>
-    <p><strong>Change.</strong> When a run's exit is recorded, those caches are removed from its directory. The
+    <p><strong>Change.</strong> When an attempt's process exits, the code that writes that attempt's exit record
+    (<code>_supervisor_exit_record</code> in <code>reckon/crew/dispatch_launch.py</code>) removes those caches before it
+    returns. Nothing removes them at any other time, so a running attempt, including a later attempt of the same
+    run, is never touched; a resumed codex attempt downloads the catalog again, as every codex run does today. The
     harness session files a resume needs, <code>codex-home/sessions/</code> (named by <code>RUN_HOME_SESSIONS</code>
-    in <code>reckon/crew/rollout.py</code>), are kept until §3 retires the directory. The removal runs where the exit
-    is recorded, so a run that is still working is never touched.</p>
+    in <code>reckon/crew/rollout.py</code>), are kept until §3 retires the directory.</p>
     <p>Done when: a fixture run whose directory holds both caches and a sessions tree, put through the exit path, keeps
-    the sessions tree and has neither cache; a fixture that has not exited keeps everything; the removed paths and
+    the sessions tree and has neither cache; a fixture that has not exited keeps everything; a run whose first attempt has exited and whose second is
+    running keeps the second attempt's caches through any later read of the first attempt's exit record; the removed paths and
     their sizes are on the exit record. Negative control: a removal that also takes <code>codex-home/sessions/</code>
-    must fail the resume fixture.</p>
+    must fail the resume fixture. Write paths: <code>reckon/crew/dispatch_launch.py</code> and a new test file. Every
+    log is under the run directory.</p>
 
     <h2 id="s7">§7 — The retention sweep runs on its own, across every project</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>

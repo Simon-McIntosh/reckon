@@ -22,7 +22,7 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It collects the crew-command defects the power_convertor fleet reported on 2026-10-22; the monitor&#x27;s own items are filed in the-monitor-shows-the-work-it-watches §81–§88, related duty fixes live in a-coordinator-can-clear-its-own-duties, and no section waits on another plan.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;}">
-  <meta name="plan-version" content="10">
+  <meta name="plan-version" content="11">
   <meta name="plan-modified" content="2026-10-23">
   <title>The Crew Does Its Own Bookkeeping | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -139,6 +139,8 @@
     <h2 id="s22">§22 — An exited review run with a filed record reads complete</h2>
 <section data-reckon="section" data-id="s22" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> Measured on power_convertor on 2026-10-23. Review run <code>r-20261023T020153063813-review-of-integrated-assembly-stability-4faf9863bec6</code> exited 0 at 02:44:46Z (<code>attempt-2-exit.json</code>), and <code>attempt-2-review-filed.json</code> names a parsed record scoring 82/120 with nothing blocking. Its manifest still read <code>status: in-progress</code>, so <code>crew view live</code> showed it working and running, with <code>process_alive</code> false, for about two hours. Its coordinator reported it as still running, and three sessions waited on it until a peer ran <code>crew repair --status complete</code>.</p><p><strong>Change.</strong> <code>classify_pointer</code> in <code>reckon/crew/recovery_classification.py</code> reads a review run's filed-review record, the per-attempt file named by <code>REVIEW_FILED_RECORD_NAME</code> in <code>reckon/crew/dispatch_launch.py</code>. A review run whose process has exited, and whose latest attempt filed a record that parses, classifies complete whatever its manifest's status word says, and the row names the record it read. An exited review run with no filed record keeps today's classification, and implement runs are unchanged.</p><p>Done when: a fixture review run with an exited process, a manifest reading <code>in-progress</code> and a parsed filed record for its latest attempt classifies complete and names that record; the same fixture without the record classifies as it does at the base; and a review run still running its third attempt, with a record filed by its second, still classifies as running. Negative control: a classifier that ignores the filed record must fail the first case.</p>
+    <p>Write paths: <code>reckon/crew/recovery_classification.py</code> and a new test file. Every log is under the run
+    directory.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -253,6 +255,14 @@
     <pre class="r-fu-prompt">/reckon-build the-crew-does-its-own-bookkeeping §22</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-20261023-s3-title" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
+    <div class="r-comment-body"><p>Content review of v10 on 2026-10-23, finding single_goal-2, declined for that wave because §3 was not being built: §3's heading and followup title still promise that a resumed run's brief names its current head, which its deliverable hands to §20. Retitle §3 and its followup before dispatching it.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-20261023-s7-title" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
+    <div class="r-comment-body"><p>Content review of v10 on 2026-10-23, finding single_goal-1, declined for that wave because §7 was not being built: §7's heading and <em>Why</em> still promise that a resume reports its own success, and cite the already-has-a-resume-launching incident, which its deliverable hands to §19. Retitle §7 and its followup before dispatching it.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
