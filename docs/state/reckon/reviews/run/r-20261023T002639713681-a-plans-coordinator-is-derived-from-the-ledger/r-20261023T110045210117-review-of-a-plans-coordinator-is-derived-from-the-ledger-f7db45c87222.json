@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-23T11:22:53.855Z",
+  "dispatched_at": "2026-10-23T11:11:17Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Non-blocking at 109/120 with no added failure. The record's module name is corrected in the landing evidence; the plan listing and the deciding-row output are left for the board's next section to fold, which reads the same plans.",
+      "recorded_at": "2026-10-23T11:34:25.351483+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/plan_coordinator.py",
+      "line": "186",
+      "severity": "non-blocking",
+      "text": "non-blocking: _plans_and_owners re-lists docs/plans/*.html and reads each plan's owner meta, repeating the plan-listing capability reckon/crew/plan_review.py:3115 _plan_paths already owns; it extends that listing only by adding the owner read, so a change to how plans are enumerated must now be made in two places."
+    },
+    {
+      "file": "tests/test_a_plans_coordinator_is_derived_from_the_ledger.py",
+      "line": "287",
+      "severity": "non-blocking",
+      "text": "non-blocking: the print at :287 emits the deciding row and matched field the done_when requires, but the declared four-file gate (gate-four-file-final3.log) runs pytest -q without -s, so that output is captured and the gate log names no deciding row for any plan (grep '^decided ' over it returns 0); only head-arm-review-repair.log, the single-file arm over the same file at the reuse-repair working tree, carries the six deciding lines, so the artefact the done_when points at does not itself contain the evidence it names."
+    },
+    {
+      "file": "docs/evidence/fragments/a-coordinator-sees-the-board/a-plans-coordinator-is-derived-from-the-ledger.html",
+      "line": "204",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing record names reckon/crew/dispatch_sections.py as the owner of _reviewed_run_id, but that function is defined at reckon/crew/dispatch_sessions.py:458 (the module plan_coordinator.py:49 imports), and dispatch_sections.py contains no _reviewed_run_id at all; a reader checking the record's central reuse claim opens the wrong file."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found: grep for resolve_plan_coordinators and plan_coordinator over reckon/ returns only the module's own definition, and nothing outside the node's own test file imports or calls it.",
+    "diff": "read all ten commits against 017b346cb4 in order; 73decd0f4 adds the module and its cases, 7defa912d repairs the run-review subject resolution, 52669c20c deletes the duplicated resolver and calls reckon/crew/dispatch_sessions.py:458 _reviewed_run_id instead, and the remaining commits are the landing fragment.",
+    "done_when": "the done_when names tests/test_a_plans_coordinator_is_derived_from_the_ledger.py beside test_crew_obligations.py, test_ledger.py and test_every_module_fits_a_worker_window.py; the manifest records that four-file run in gate-four-file-final3.log (1 failed, 120 passed, EXIT=1), the one failure being the pre-existing roadmap.py window bound, and the deciding-row evidence the done_when also names lives in head-arm-review-repair.log rather than in that gate log.",
+    "goal": "the goal is to resolve each plan's coordinator session from its most recent dispatched run; reckon/crew/plan_coordinator.py:229 resolve_plan_coordinators does so, matching by plan, then plan_link, then the node id, and returning per plan the session, tier, liveness and plan-owner.",
+    "manifest": "read manifest.md; it names the commit chain 73decd0f4..f7db45c87, the literal four-file gate command, both suite arms with log paths, the declared negative control and its log, and follow-ons for the roadmap.py window bound and the ledger case the sheet was killed on.",
+    "write_paths": "read the four declared write paths; git diff --stat 017b346cb4 f7db45c87 touches only reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py and the landing fragment, all declared, and no figure directory was written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:267 pins each plan against hand-read literals and :492/:497 patch a broken matching step and a broken ordering rule into the real code path, each asserted to redden the fixture check.",
+    "evidence": "gate-four-file-final3.log:1-6 names the revision, tree, temp root, command and module-under-test and its last line reads EXIT=1 with 1 failed / 120 passed, but its `-q` invocation captures the deciding-row print at tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:287 and only head-arm-review-repair.log carries it.",
+    "fit": "reckon/crew/plan_coordinator.py:229 follows the surrounding style of reckon/crew/directory.py and adds no plan, sprint or ticket identifier to a symbol, path or comment.",
+    "goal_fidelity": "reckon/crew/plan_coordinator.py:229 returns each plan's most recent in-window dispatching session with its tier, liveness and plan-owner, which is the plan a-coordinator-sees-the-board \u00a72 deliverable.",
+    "reuse": "plan_coordinator.py:131 calls the fleet's own reckon/crew/dispatch_sessions.py:458 _reviewed_run_id rather than a copy, but plan_coordinator.py:186 _plans_and_owners re-lists docs/plans/*.html, which reckon/crew/plan_review.py:3115 _plan_paths already owns.",
+    "scope_discipline": "git diff --stat 017b346cb4 f7db45c87 lists only reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py and the landing fragment, all declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to resolve each plan's coordinator session from its most recent dispatched run; reckon/crew/plan_coordinator.py:229 resolve_plan_coordinators does exactly that, matching by plan, then plan_link, then the node id, and returning per plan the dispatching session, tier, liveness and plan-owner.\nVERDICT done_when: the done_when names tests/test_a_plans_coordinator_is_derived_from_the_ledger.py beside test_crew_obligations.py, test_ledger.py and test_every_module_fits_a_worker_window.py; the manifest records that four-file run in gate-four-file-final3.log (1 failed, 120 passed, EXIT=1), the single failure the pre-existing reckon/roadmap.py window bound, and the deciding-row evidence the done_when also asks for is carried by head-arm-review-repair.log rather than by that gate log.\nVERDICT write_paths: read the four declared write paths in the manifest; git diff --stat 017b346cb4 f7db45c87 touches only reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py and the landing fragment, all inside the declared scope, and no figure directory was written.\nVERDICT manifest: read manifest.md; it names commits 73decd0f4 through f7db45c87, the literal four-file gate command, the baseline and after suite arms with their log paths, the declared negative control and its log, and follow-ons for the roadmap.py window bound and the ledger case killed on the sheet.\nVERDICT diff: read all ten commits against 017b346cb4 in order; 73decd0f4 adds the module and its cases, 7defa912d repairs the run-review subject resolution, 52669c20c deletes the duplicated resolver and calls reckon/crew/dispatch_sessions.py:458 _reviewed_run_id instead, and the last four commits are the landing fragment only.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_coordinator.py:229 returns each plan's most recent in-window dispatching session with its tier, liveness and plan-owner, which is the plan a-coordinator-sees-the-board \u00a72 deliverable.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-four-file-final3.log:1-6 names the revision, tree, temp root, command and module-under-test and its last line reads EXIT=1 with 1 failed / 120 passed, but its `-q` invocation captures the deciding-row print at tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:287 and only head-arm-review-repair.log carries it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 017b346cb4 f7db45c87 lists only reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py and the landing fragment, all declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:267 pins each plan against hand-read literals and :492/:497 patch a broken matching step and a broken ordering rule into the real code path, each asserted to redden the fixture check.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/plan_coordinator.py:229 follows the surrounding style of reckon/crew/directory.py and adds no plan, sprint or ticket identifier to a symbol, path or comment.\nSCORE reuse: 16\nJUSTIFICATION reuse: plan_coordinator.py:131 calls the fleet's own reckon/crew/dispatch_sessions.py:458 _reviewed_run_id rather than a copy, but plan_coordinator.py:186 _plans_and_owners re-lists docs/plans/*.html, which reckon/crew/plan_review.py:3115 _plan_paths already owns.\nFINDING reckon/crew/plan_coordinator.py:186 non-blocking: _plans_and_owners re-lists docs/plans/*.html and reads each plan's owner meta, repeating the plan-listing capability reckon/crew/plan_review.py:3115 _plan_paths already owns; it extends that listing only by adding the owner read, so a change to how plans are enumerated must now be made in two places.\nFINDING tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:287 non-blocking: the print at :287 emits the deciding row and matched field the done_when requires, but the declared four-file gate (gate-four-file-final3.log) runs pytest -q without -s, so that output is captured and the gate log names no deciding row for any plan (grep '^decided ' over it returns 0); only head-arm-review-repair.log, the single-file arm over the same file at the reuse-repair working tree, carries the six deciding lines, so the artefact the done_when points at does not itself contain the evidence it names.\nFINDING docs/evidence/fragments/a-coordinator-sees-the-board/a-plans-coordinator-is-derived-from-the-ledger.html:204 non-blocking: the landing record names reckon/crew/dispatch_sections.py as the owner of _reviewed_run_id, but that function is defined at reckon/crew/dispatch_sessions.py:458 (the module plan_coordinator.py:49 imports), and dispatch_sections.py contains no _reviewed_run_id at all; a reader checking the record's central reuse claim opens the wrong file.",
+  "review_run_id": "r-20261023T110045210117-review-of-a-plans-coordinator-is-derived-from-the-ledger-f7db45c87222",
+  "reviewed_base_sha": "017b346cb43a597da2b3d4c37bea6657eac1c886",
+  "reviewed_head_sha": "f7db45c8722298d1f767850edd4e19a80ff20cdc",
+  "reviewed_run_id": "r-20261023T002639713681-a-plans-coordinator-is-derived-from-the-ledger",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T11:20:00+00:00",
+  "total": 109
+}
