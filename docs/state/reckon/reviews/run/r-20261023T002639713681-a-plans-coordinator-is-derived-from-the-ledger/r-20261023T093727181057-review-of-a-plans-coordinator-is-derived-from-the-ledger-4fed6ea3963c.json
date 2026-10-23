@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact"
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-23T10:08:47.351Z",
+  "dispatched_at": "2026-10-23T09:40:49Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-coordinator-sees-the-board/a-plans-coordinator-is-derived-from-the-ledger.html",
+      "line": "120",
+      "severity": "blocking",
+      "text": "blocking: the paragraph this delta adds asserts that tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact 'is killed the same way at the base revision', and the manifest's failure_attribution cites coordinator-base-arm.log for the same claim ('the gate's base arm (coordinator-base-arm.log) fails it at 300s'). That log ran the file and reports '1 failed, 109 passed, 1 error in 380.46s' with the failure being the roadmap.py window bound and the error the new test file's collection, so the ledger case passed there; no log in the run directory shows a base-revision kill of it (grep -l -i timeout over the run's *.log matches only the head-side coordinator-head-arm.log, gate-four-file-final.log and gate-plan-coordinator.log). The byte-identity of tests/test_ledger.py and reckon/ledger.py between 017b346cb4 and 4fed6ea, which the same sentence cites and which I confirmed with git diff --stat, does support 'this change cannot reach it' - but it does not support 'killed the same way', and it is the sentence that turns a red gate into an environmental one for a reader deciding whether to promote. Rest the classification on byte-identity and on the serial-versus-parallel difference, or run a serial base arm and cite it."
+    },
+    {
+      "file": "docs/evidence/fragments/a-coordinator-sees-the-board/a-plans-coordinator-is-derived-from-the-ledger.html",
+      "line": "112",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence describing the gate log states the log's 'third [line] names the literal command and the module path as imported'. gate-four-file-final.log carries four header lines - '# revision:', '# tree:', '# command:', '# started:' - and no module-as-imported line at all (grep for '__file__' or 'module:' over it returns nothing), so the claim about the artefact is not true of it; the sibling base arm does emit a '# reckon as used:' line, which the clause reads as if the gate log had too. The clause was carried over from the paragraph this delta replaced, so the wording is not new, but the delta rewrote the sentence and kept the inaccuracy."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites: git grep -n resolve_plan_coordinators over reckon, bin, skills and docs at 4fed6ea finds the definition at reckon/crew/plan_coordinator.py:229 and the call in the node's own test file at tests/test_a_plans_coordinator_is_derived_from_the_ledger.py:258, and nothing else.",
+    "diff": "read both gained commits against 9442fc371 in order: dda0df047 rewrites the gate paragraph to the completed four-file result and 4fed6ea39 adds the environmental paragraph - one file, 18 insertions and 18 deletions, the landing fragment alone, no code and no test touched.",
+    "done_when": "the done_when names the four-file gate; the gained commits replace the fragment's cut-off-run account with the completed run's own summary - '119 passed, 2 failed in 1,552 s, EXIT=1' - which reconciles line for line with gate-four-file-final.log, whose last two lines are '2 failed, 119 passed in 1552.67s (0:25:52)' and 'EXIT=1'.",
+    "goal": "the source node's goal is to resolve each plan's coordinator session from its most recent dispatched run; the two gained commits are documentation-only and the fragment they edit still describes reckon/crew/plan_coordinator.py:229 resolve_plan_coordinators, which is byte-identical across this delta.",
+    "manifest": "read manifest.md; its commits line runs 73decd0f4 through 4fed6ea39, its after_suite names revision 52669c20c, the literal four-file command, exit_status 1 and gate-four-file-final.log, and its failure_attribution names the ledger timeout and the roadmap.py window bound - but the ledger attribution cites coordinator-base-arm.log for a 300-second kill that log does not contain.",
+    "write_paths": "the manifest declares reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py and the landing fragment; git diff --name-status 9442fc371 4fed6ea lists only docs/evidence/fragments/a-coordinator-sees-the-board/a-plans-coordinator-is-derived-from-the-ledger.html, so the delta stays inside the fragment's declared path."
+  },
+  "justifications": {
+    "durability": "neither gained commit adds an assertion to tests/test_a_plans_coordinator_is_derived_from_the_ledger.py, and nothing in the tree reddens when the fragment's evidence paragraph at :117-123 goes wrong, which is how the unsupported base-arm claim survived three earlier reviews.",
+    "evidence": "the gate summary the fragment now carries at :108-115 reconciles exactly with gate-four-file-final.log's own last two lines, but the environmental paragraph added at :117-123 rests on a base-revision kill that coordinator-base-arm.log does not record.",
+    "fit": "the added paragraphs at :108-123 follow the fragment's own idiom - a bold lead-in, code spans and a named log - and introduce no plan, sprint, ticket or version identifier.",
+    "goal_fidelity": "the delta adds no code, and the fragment's account of reckon/crew/plan_coordinator.py:229 resolve_plan_coordinators at :9-13 matches the module at 4fed6ea; the flaw is in the evidence paragraph, scored under evidence.",
+    "reuse": "the delta adds no definition, so there is nothing that could fork a capability; the node's earlier non-blocking reuse finding at reckon/crew/plan_coordinator.py:186 (_plans_and_owners re-listing docs/plans/*.html beside the owner at reckon/crew/plan_review.py:3115 _plan_paths) belongs to commits outside this delta and is unchanged by it.",
+    "scope_discipline": "git diff --name-status 9442fc371 4fed6ea lists only docs/evidence/fragments/a-coordinator-sees-the-board/a-plans-coordinator-is-derived-from-the-ledger.html, one of the three declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'Resolve each plan's coordinator session from its most recent dispatched run'; the two commits gained since the last review are documentation-only, and docs/evidence/fragments/a-coordinator-sees-the-board/a-plans-coordinator-is-derived-from-the-ledger.html:9-13 still describes reckon/crew/plan_coordinator.py:229 resolve_plan_coordinators, which is byte-identical across this delta.\nVERDICT done_when: the done_when names the four-file gate; the gained commits replace the fragment's cut-off-run account with the completed run's own summary - 119 passed, 2 failed in 1,552 s, EXIT=1 - which reconciles line for line with gate-four-file-final.log, whose last two lines read '2 failed, 119 passed in 1552.67s (0:25:52)' and 'EXIT=1'.\nVERDICT write_paths: the manifest declares reckon/crew/plan_coordinator.py, tests/test_a_plans_coordinator_is_derived_from_the_ledger.py and the landing fragment; git diff --name-status 9442fc371 4fed6ea lists only the fragment, so the delta stays inside its declared path and the other two paths are untouched by it.\nVERDICT manifest: read manifest.md; its commits line runs 73decd0f4 through 4fed6ea39, its after_suite names revision 52669c20c, the literal four-file command, exit_status 1 and gate-four-file-final.log, and its failure_attribution names the ledger timeout and the roadmap.py window bound - but the ledger attribution cites coordinator-base-arm.log for a 300-second kill that log does not contain.\nVERDICT diff: read both gained commits against 9442fc371 in order; dda0df047 rewrites the gate paragraph to the completed four-file result and 4fed6ea39 adds the environmental paragraph, one file, 18 insertions and 18 deletions, the landing fragment alone, no code and no test touched.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the delta adds no code, and the fragment's account of reckon/crew/plan_coordinator.py:229 resolve_plan_coordinators at :9-13 matches the module at 4fed6ea.\nSCORE evidence: 13\nJUSTIFICATION evidence: the gate summary the fragment now carries at :108-115 reconciles exactly with gate-four-file-final.log's own last two lines, but the environmental paragraph added at :117-123 rests on a base-revision kill that coordinator-base-arm.log does not record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 9442fc371 4fed6ea lists only docs/evidence/fragments/a-coordinator-sees-the-board/a-plans-coordinator-is-derived-from-the-ledger.html, one of the three declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: neither gained commit adds an assertion to tests/test_a_plans_coordinator_is_derived_from_the_ledger.py, and nothing in the tree reddens when the fragment's evidence paragraph at :117-123 goes wrong.\nSCORE fit: 19\nJUSTIFICATION fit: the added paragraphs at :108-123 follow the fragment's own idiom - a bold lead-in, code spans and a named log - and introduce no plan, sprint, ticket or version identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition, so there is nothing that could fork a capability; the earlier reuse finding at reckon/crew/plan_coordinator.py:186 belongs to commits outside this delta and is unchanged by it.\nFINDING docs/evidence/fragments/a-coordinator-sees-the-board/a-plans-coordinator-is-derived-from-the-ledger.html:120 blocking: the added paragraph asserts the ledger case 'is killed the same way at the base revision', and the manifest's failure_attribution cites coordinator-base-arm.log for the same claim; that log ran the file and reports '1 failed, 109 passed, 1 error in 380.46s' with the failure being the roadmap.py window bound and the error the new test file's collection, so the ledger case passed there and no log under the run directory shows a base-revision kill of it. The byte-identity of tests/test_ledger.py and reckon/ledger.py, which the same sentence cites and which git diff --stat confirms, supports 'this change cannot reach it' but not 'killed the same way', and it is the sentence that classifies a red gate as environmental for a promotion reader. Rest the classification on byte-identity, or run a serial base arm and cite it.\nFINDING docs/evidence/fragments/a-coordinator-sees-the-board/a-plans-coordinator-is-derived-from-the-ledger.html:112 non-blocking: the sentence describing the gate log claims its third line names the literal command and the module path as imported; gate-four-file-final.log carries four header lines (# revision, # tree, # command, # started) and no module-as-imported line, so the claim is not true of the artefact it describes.\n",
+  "review_run_id": "r-20261023T093727181057-review-of-a-plans-coordinator-is-derived-from-the-ledger-4fed6ea3963c",
+  "reviewed_base_sha": "9442fc371bcee1a7bb50f18b1ecbdcd97eb2fb26",
+  "reviewed_head_sha": "4fed6ea3963cab1fa9e98cddee667ce562b8a1aa",
+  "reviewed_run_id": "r-20261023T002639713681-a-plans-coordinator-is-derived-from-the-ledger",
+  "scores": {
+    "durability": 12,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T09:55:00+00:00",
+  "total": 102
+}
