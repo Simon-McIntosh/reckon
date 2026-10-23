@@ -1,0 +1,38 @@
+<section data-reckon="evidence" id="a-producer-off-the-fleet-node-gives-up-its-seat">
+  <h2>A producer off the fleet node gives up its seat</h2>
+  <p id="a-producer-off-the-fleet-node-gives-up-its-seat-what">
+    A producer whose host is not the node the fleet record names cannot probe
+    the worker pids of runs launched on that node, so every liveness reading it
+    publishes for those runs is unknown while it still holds the seat that would
+    let a producer on the fleet node start. The seat owner now takes that
+    decision itself: <code>watch_unit.producer_start_decision</code> reads the
+    fleet record through its existing owner, compares the producer host to the
+    recorded node, and when the project has a live run launched there returns
+    <code>release-and-exit</code> with the unit-disable command composed (never
+    run) so <code>Restart=always</code> cannot bring the same misplaced producer
+    back. The same host, an absent fleet record, and a project with no run
+    launched on the fleet node all hold.
+  </p>
+  <p id="a-producer-off-the-fleet-node-gives-up-its-seat-measure">
+    <strong>Measure.</strong> The start-up decision against a temporary fleet
+    record and seat: foreign host with a run on the fleet node &rarr;
+    <code>release-and-exit</code> with <code>["systemctl","--user","disable","--now",unit]</code>;
+    the same host &rarr; <code>hold</code>; an absent fleet record &rarr;
+    <code>hold</code>; a foreign host whose project has no run on the fleet node
+    &rarr; <code>hold</code>. Gate: 6 passed, exit 0
+    (<code>gate-head.log</code>). Negative control &mdash; make the decision
+    ignore the fleet record &mdash; holds the seat instead: the two foreign-host
+    arms fail, 4 passed, exit 1 (<code>negative-control.log</code>). The base
+    revision holds the seat, having no release decision at all: 6 failed, exit 1
+    (<code>gate-base.log</code>).
+  </p>
+  <p id="a-producer-off-the-fleet-node-gives-up-its-seat-scope">
+    <strong>Scope.</strong> <code>reckon/crew/watch_unit.py</code> and
+    <code>tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py</code>.
+    No test reads or writes the real fleet record or seat. The producer loop's
+    call to this decision at start-up and on each lease renewal is out of this
+    node's exclusive write scope (<code>reckon/crew/recovery_watch.py</code> and
+    <code>reckon/crew/runs.py</code> are held by a concurrent node) and is
+    recorded as a follow-on.
+  </p>
+</section>
