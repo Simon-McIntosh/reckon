@@ -53,6 +53,35 @@ WantedBy=default.target
 """
 
 
+#: A periodic pass: an activation-triggered unit that runs to completion and a
+#: timer that activates it. Both live here rather than in the module that
+#: describes the pass, so the unit sections a manager parses are written in one
+#: place and a policy repair cannot land on one copy and miss another.
+PERIODIC_SERVICE_TEMPLATE = """\
+[Unit]
+Description={description}
+
+[Service]
+Type=oneshot
+WorkingDirectory={working_directory}
+{environment}\
+ExecStart={exec_start}
+"""
+
+PERIODIC_TIMER_TEMPLATE = """\
+[Unit]
+Description={description}
+
+[Timer]
+OnBootSec={boot_delay}
+OnUnitActiveSec={interval}
+Unit={service}
+
+[Install]
+WantedBy=timers.target
+"""
+
+
 class ServiceError(RuntimeError):
     """A systemd operation could not be completed."""
 
@@ -320,6 +349,42 @@ def write_named_unit(
     if not unchanged:
         target.write_text(content, encoding="utf-8")
     return target, not unchanged
+
+
+def render_periodic_service_unit(
+    *,
+    description: str,
+    exec_start: str,
+    working_directory: str | Path,
+    environment: Mapping[str, str] | None = None,
+) -> str:
+    """Render the oneshot unit the timer activates."""
+    override = "".join(
+        f'Environment="{name}={value}"\n'
+        for name, value in sorted((environment or {}).items())
+    )
+    return PERIODIC_SERVICE_TEMPLATE.format(
+        description=description,
+        working_directory=working_directory,
+        environment=override,
+        exec_start=exec_start,
+    )
+
+
+def render_periodic_timer_unit(
+    *,
+    description: str,
+    service: str,
+    interval: str,
+    boot_delay: str,
+) -> str:
+    """Render the timer that activates ``service`` on ``interval``."""
+    return PERIODIC_TIMER_TEMPLATE.format(
+        description=description,
+        service=service,
+        interval=interval,
+        boot_delay=boot_delay,
+    )
 
 
 def install_timer_units(

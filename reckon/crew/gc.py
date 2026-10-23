@@ -1286,29 +1286,6 @@ RETENTION_INTERVAL = "1h"
 RETENTION_LOG_NAME = "retention-sweep.log"
 RETENTION_LOG_MAX_BYTES = 2 * 1024 * 1024
 
-RETENTION_SERVICE_TEMPLATE = """\
-[Unit]
-Description=retire finished crew run directories
-
-[Service]
-Type=oneshot
-WorkingDirectory={working_directory}
-{environment}ExecStart={exec_start}
-"""
-
-RETENTION_TIMER_TEMPLATE = """\
-[Unit]
-Description=run the crew run-directory retention sweep every hour
-
-[Timer]
-OnBootSec={boot_delay}
-OnUnitActiveSec={interval}
-Unit={service}
-
-[Install]
-WantedBy=timers.target
-"""
-
 
 def retention_log_path() -> Path:
     """The file a sweep appends its removals to, under the crew home."""
@@ -1461,6 +1438,8 @@ def render_retention_service_unit(
     """
     import sys
 
+    from reckon import service
+
     interpreter = str(executable or sys.executable)
     working_directory = str(root or Path(__file__).resolve().parents[2])
     argv = [interpreter, "-m", "reckon.crew.gc", "--apply"]
@@ -1468,20 +1447,23 @@ def render_retention_service_unit(
     home = os.environ.get("RECKON_HOME")
     if home:
         forwarded.setdefault("RECKON_HOME", str(Path(home).expanduser().resolve()))
-    override = "".join(
-        f'Environment="{name}={value}"\n' for name, value in sorted(forwarded.items())
-    )
-    return RETENTION_SERVICE_TEMPLATE.format(
-        working_directory=working_directory,
-        environment=override,
+    return service.render_periodic_service_unit(
+        description="retire finished crew run directories",
         exec_start=" ".join(shlex.quote(part) for part in argv),
+        working_directory=working_directory,
+        environment=forwarded,
     )
 
 
 def render_retention_timer_unit(*, service: str = RETENTION_SERVICE_NAME) -> str:
     """Render the timer that activates the retention service hourly."""
-    return RETENTION_TIMER_TEMPLATE.format(
-        boot_delay=RETENTION_BOOT_DELAY, interval=RETENTION_INTERVAL, service=service
+    from reckon import service as service_module
+
+    return service_module.render_periodic_timer_unit(
+        description="run the crew run-directory retention sweep every hour",
+        service=service,
+        interval=RETENTION_INTERVAL,
+        boot_delay=RETENTION_BOOT_DELAY,
     )
 
 
