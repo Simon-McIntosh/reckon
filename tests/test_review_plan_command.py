@@ -83,6 +83,10 @@ def _subject(**kwargs):
     return recovery.plan_review_subject("sample", "fixture", "coordinator", **kwargs)
 
 
+def _complete_design_report() -> str:
+    return "".join(f"RUBRIC {item}: pass\n" for item in review.PLAN_DESIGN_REVIEW_ITEMS)
+
+
 def _stored(path):
     record = {
         "project": "sample",
@@ -208,7 +212,7 @@ def test_gate_accepts_a_stored_or_delivered_review(project, legacy, stored):
         plan_review.store_plan_review({**sidecar, "findings": [], "responses": {}})
     else:
         sidecar_path.write_text(json.dumps(sidecar))
-        Path(sidecar["report_path"]).write_text("RUBRIC reuse_search: pass\n")
+        Path(sidecar["report_path"]).write_text(_complete_design_report())
     assert routing.require_plan_reviewed(**gate) is None
     path.write_text(path.read_text().replace("existing mechanism", "changed design"))
     with pytest.raises(PlanReviewMissingError, match="no stored review"):

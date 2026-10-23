@@ -20,7 +20,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, flight, mcp
-from reckon.crew import plan_review, recovery
+from reckon.crew import plan_review, recovery, review
 
 CONFIG = {
     "default_backend": "worker",
@@ -43,6 +43,14 @@ _REPORT_LINE = (
     "FINDING reuse_search plan#s1 — Name the owner of the composition. "
     "— WOULD_CHANGE_THE_PLAN: yes — REASON: the core already exists"
 )
+
+
+def _complete_design_report() -> str:
+    return (
+        "".join(f"RUBRIC {item}: pass\n" for item in review.PLAN_DESIGN_REVIEW_ITEMS)
+        + _REPORT_LINE
+        + "\n"
+    )
 
 
 def _section(identity: str) -> str:
@@ -106,7 +114,7 @@ def _delivered_report(project) -> Path:
     fields = recovery._review_dispatch_fields(subject)
     directory = Path(fields["sidecar"]).parent
     report = directory / "report.md"
-    report.write_text(_REPORT_LINE + "\n", encoding="utf-8")
+    report.write_text(_complete_design_report(), encoding="utf-8")
     return report
 
 

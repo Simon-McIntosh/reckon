@@ -6,9 +6,13 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, _store, roadmap
-from reckon.crew import plan_review, recovery, routing
+from reckon.crew import plan_review, recovery, review, routing
 from reckon.crew.node import PlanReviewMissingError, TaskNode
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
+
+
+def _complete_design_report() -> str:
+    return "".join(f"RUBRIC {item}: pass\n" for item in review.PLAN_DESIGN_REVIEW_ITEMS)
 
 
 @pytest.fixture
@@ -78,7 +82,7 @@ def _review(path, *, store=True, version=None, findings=()):
     sidecar = json.loads(Path(fields["sidecar"]).read_text())
     if version is not None:
         sidecar["plan_version"] = version
-    Path(sidecar["report_path"]).write_text("RUBRIC reuse_search: pass\n")
+    Path(sidecar["report_path"]).write_text(_complete_design_report())
     if store:
         plan_review.store_plan_review(
             {

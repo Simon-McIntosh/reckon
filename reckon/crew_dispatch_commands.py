@@ -2555,6 +2555,18 @@ def _run_review(
             record = plan_review.read_plan_review(
                 project, plan_slug, plan=plan_path if plan_path is not None else ""
             )
+            design = plan_review.newest_design_review(project, plan_slug)
+            # A review marked incomplete covers nothing, so read_plan_review
+            # skips every one of them and a plan whose only review is a partial
+            # design review has no covering record. Its findings are still owed,
+            # so an answer the design review raised is recorded on that review
+            # rather than reported as a review nobody made.
+            if (
+                record is None
+                and design is not None
+                and answer in plan_review.finding_ids(design)
+            ):
+                record = design
             if record is None:
                 from reckon.mcp import _stale_plan_review
 
@@ -2564,7 +2576,6 @@ def _run_review(
                 )
                 _emit({"error": "crew_error", "detail": detail}, pretty)
                 raise click.exceptions.Exit(1)
-            design = plan_review.newest_design_review(project, plan_slug)
             # A finding of the plan's one design review stays owed after a later
             # content review becomes the newest record, so it is answered on the
             # design review that raised it.

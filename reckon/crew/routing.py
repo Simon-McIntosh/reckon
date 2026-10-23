@@ -2510,9 +2510,12 @@ def require_plan_reviewed(
     when the review is open or answered. A landed review — its reviewed sections
     all declared done, or the plan shipped — or one superseded by a later review
     of the same rubric is the archive, so its unanswered finding no longer
-    blocks a build of content a different review now covers. The design review's
-    presence at any version and in any lifecycle state still satisfies its
-    requirement, and the coverage check is unchanged.
+    blocks a build of content a different review now covers. A design review at
+    any version and in any lifecycle state satisfies its requirement unless it is
+    marked :data:`INCOMPLETE_STATUS` — a delivered design report that left out an
+    item of its own rubric covers nothing, so it is refused here as though no
+    design review existed, naming the design-review command. The coverage check
+    is otherwise unchanged.
 
     ``allow_unreviewed`` is the operational waiver: a broken local review lane
     must not stop every build, so the caller may waive the gate and the waiver
@@ -2552,18 +2555,25 @@ def require_plan_reviewed(
 
     refusals = plan_review.store_delivered_reviews(project, node.plan)
     design = plan_review.newest_design_review(project, node.plan)
-    if design is None:
+    if design is None or plan_review._review_is_incomplete(design):
         # The design review is the plan's one search of the codebase for
         # machinery it could reuse, so it is owed once, at any version; a design
         # review also covers the content it read, so composing it first answers
-        # both requirements for a plan that has neither.
+        # both requirements for a plan that has neither. A design review that
+        # left out an item of its own rubric is marked incomplete and covers
+        # nothing, so it is refused here as though none existed.
         design_invocation = plan_review.review_invocation(
             project, node.plan, rubric=plan_review.DESIGN_RUBRIC
         )
+        if design is None:
+            missing = "carries no stored review under the design rubric"
+        else:
+            missing = (
+                "carries a design review that left out an item of its rubric"
+            )
         return _plan_review_verdict(
             enforce,
-            f"plan {node.plan!r} in project {project!r} carries no stored review "
-            "under the design rubric; "
+            f"plan {node.plan!r} in project {project!r} {missing}; "
             f"{_refused_store_detail(refusals)}"
             "a plan is searched against the codebase for machinery it could reuse "
             "once, before its first implementation node; compose that review with "
