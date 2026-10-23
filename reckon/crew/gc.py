@@ -1436,8 +1436,6 @@ def render_retention_service_unit(
     checkout root, which puts that tree on the module search path even where the
     package is not installed into the interpreter's environment.
     """
-    import sys
-
     from reckon import service
 
     interpreter = str(executable or sys.executable)
