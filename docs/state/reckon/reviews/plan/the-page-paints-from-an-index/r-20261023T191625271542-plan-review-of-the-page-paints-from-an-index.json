@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T19:52:39.946Z",
+  "dispatched_at": "2026-10-23T19:40:10Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:277",
+      "id": "done_when-1",
+      "reason": "the author must state which dimension the builder emits (the parsed value, fractional for SVG) or the node either alters 25 existing rows and the inventory display that `docs/ui/shell-plans.jsx:560` and `docs/ui/shell-titlebar.jsx:80` render, or satisfies the control with a fixture that avoids the case the sentence is about.",
+      "text": "the section requires \"The builder emits the dimensions as integer `width` and `height`\" and its case (1) asserts \"the index row's `width` and `height` are the image's integer dimensions\", but the single dimension reader it keeps in that path, `figures._svg_dims` (`reckon/figures.py:87`), returns `float`, and 25 of the 335 SVGs under `docs/figures/` carry non-integer dimensions (measured: `orchestrator-crew-pattern-studies/nova-churn.svg` \u2192 748.8 \u00d7 532.8; `the-pick-state-render-is-slow-because/read-duration-ecdf.svg` \u2192 1008.0 \u00d7 338.4; `a-window-paces-the-lane/head-vs-base-gate.svg` \u2192 883.008 \u00d7 390.335452) \u2014 a node that honours the word \"integer\" must cast, which silently changes those rows' values and changes the inventory's rendered `dims` string from e.g. \"820.8 \u00d7 424.8\" to \"820 \u00d7 424\", while a node that does not cast writes a fixture whose SVG has integer dimensions and leaves the stated assertion true only of that fixture",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f520806ac2c1cc84d9ca800d4451a15f029b560d1a2a9cbbee97068c4c2cf0c0",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 131,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T191625271542-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "342065aeef795a28fd2084d3e900dbfe6801149e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves. `reckon/metadata_index.py:1215` defines `_figure_row` and `:920` is its only caller; `ROW_FIELDS` at `reckon/metadata_index.py:62` names `width` and `height`; `reckon/figures.py:135` defines `figure_rows`, and `figure_rows` reaches the private `_DIMS_BY_SUFFIX` (`:132`), `_capture_*` metadata (`:102`) and `_titleize` (`:45`) exactly as the Why states; `tests/test_a_figure_revision_is_fetched_once.py:129-137` patches `metadata_index._figure_row` in its autouse negative-control fixture; the cited code review `e50eed172bd8` resolves at `reports/reckon/code-review/e50eed172bd8`.",
+    "done_when": "a finding \u2014 the done-when's assertion that \"the index row's `width` and `height` are the image's integer dimensions\" is false for 25 of the repository's 335 SVG figures, whose parsed dimensions are fractional (measured: `docs/figures/an-orchestrator-cannot-forget-its-obligations/obligations-hook-binds-the-harness.svg` \u2192 width 820.8, height 424.8).",
+    "evidence_paths": "pass \u2014 the measure writes gate logs \"under the run directory with a revision header and ends in EXIT=, and suites run on the fleet allocation, not the login node\"; the changed write paths are `reckon/figures.py`, `reckon/metadata_index.py` and two files under `tests/`.",
+    "naming": "pass \u2014 \u00a716's new test (`tests/test_one_builder_owns_a_figure_row.py`) and every symbol it asks for are named by mechanism; no plan label, stage name, ticket number or version tag reaches the write paths.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (two copies of one row derivation do exist: `reckon/metadata_index.py:1215` against `reckon/figures.py:175-195`, and the inventory copy alone carries `for_plan`, `caption` and `download`), the mechanism produces the done-when (one builder called by both callers, with the index's extras projected onto `ROW_FIELDS` reproduces today's twelve index keys \u2014 slug, href, type, title, created, edited, width, height, revision, status, sprint, archived), and the mechanism runs on the real code path with both callers named: `_row_for` at `reckon/metadata_index.py:920` for the served index and `reckon/serve.py:1671` for the inventory.",
+    "single_goal": "pass \u2014 \u00a716 carries one deliverable (one public builder of a figure's row in `reckon/figures.py`, with `_figure_row` deleted and the index projecting the shared row onto `ROW_FIELDS`); the negative-control rewrite is a precondition of that same change, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a716 declares `data-status=\"implementable\"` and its only relationship (`depends-on` the-page-paints-from-an-index#s15) resolves to \u00a715, which is itself `implementable` and shares `reckon/metadata_index.py`; no node declares \u00a716 as a dependency, so nothing is missing or mispointed."
+  },
+  "section_digests": {
+    "_document": "9641589c0a5677653db645be02ba4f183517fcaa540827048893e3baff8139ff",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "3d4cfa1da9189164bbed1e32561bf56b7c50e4bdf48280de5f2606d2ac87445d",
+    "s16": "2efb55da694153622275d4bd93f82decf8f2eeff87f3bb5fc1c0f2c8525a61c5",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T19:54:54.925030+00:00"
+}
