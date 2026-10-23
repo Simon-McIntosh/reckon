@@ -183,7 +183,7 @@ def test_a_review_naming_a_path_outside_its_declaration_is_still_refused(
     )
 
     assert exit_code != 0
-    assert findings == [f"changed paths outside the write scope: {undeclared}"]
+    assert findings == [f'changed paths outside the write scope: "{undeclared}"']
 
 
 def test_a_non_review_run_is_still_asked_for_the_commit_it_owes(
