@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T07:56:15.468Z",
+  "dispatched_at": "2026-10-23T07:41:58Z",
+  "findings": [
+    {
+      "file": "scripts/import_host_reviews.py",
+      "line": "499",
+      "severity": "follow-on",
+      "text": "the private admission guard is deleted, so a delivered report that is present but whose own grammar yields no item and no finding is now counted and printed as refused where the old guard skipped it, and no test asserts the new count; tests/test_import_host_reviews.py:622 covers only an unknown-rubric refusal."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T052537615485-a-report-is-admitted-on-what-its-parser-read/manifest.md",
+      "line": "12",
+      "severity": "follow-on",
+      "text": "the recorded gate command omits tests/test_import_host_reviews.py, the file the repair commit 5f0f9c2b0 changes, so after_suite's zero added failures is not over the change's population and the repair is covered only by the single check in repair-check-head.log."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:29 asks that a delivered report be admitted on what its own parser read with the pattern-matching guard deleted; reckon/crew/plan_review.py:2117 reads the sidecar subject once and refuses a parse holding no rubric item and no finding, and the guard's third caller at scripts/import_host_reviews.py:499 is repaired so the deletion no longer breaks the importer.\nVERDICT done_when: prompt.txt:102 names the eight-file pytest command; baseline-suite.log opens with rev ecd22bbd and closes \"2 failed, 83 passed\" with EXIT=1, after-suite.log opens with rev 172e804c and closes \"85 passed\" with EXIT=0, and repair-check-head.log records the named import check 1 passed EXIT=0.\nVERDICT write_paths: the run's live pointer node.write_paths names nine paths including scripts/import_host_reviews.py, and all eight paths the diff touches (ecd22bbd to 172e804c) lie inside that set.\nVERDICT manifest: manifest.md:12 records the gate command and its logs, lines 20-21 the two arms, and line 26 a blocker the coordinator has since cleared by widening the live pointer at 2026-10-23T07:34.\nVERDICT diff: read commit by commit against ecd22bbd: 77f21d734 moves the admission decision into the two builders and deletes _report_line_reader and report_carries_review_lines, d97f514b3 lands the landing fragment and clears lint, 588eb0ed3 rewrites three fixtures to name a design-rubric item, e0e72f527 updates the fragment figures, 5f0f9c2b0 deletes the importer's private copy of the guard, and 172e804c records that in the fragment.\nCALL_SITES: reckon/crew/plan_review.py:2220 store_delivered_reviews, reckon/crew/promotion_checks.py:1497, reckon/crew/promotion_checks.py:2556, reckon/crew/routing.py:2553, reckon/crew_dispatch_commands.py:2553, scripts/import_host_reviews.py:499\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2127-2140 reads the subject in one place and refuses a parse holding no item and no finding, and scripts/import_host_reviews.py:499 now calls the builder, so the deleted guard's third caller is repaired.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline-suite.log (rev ecd22bbd, EXIT=1) and after-suite.log (rev 172e804c, 85 passed, EXIT=0) reconcile with manifest.md:20-21, but the gate population omits tests/test_import_host_reviews.py, which the repair's changed file exercises.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (ecd22bbd to 172e804c) is inside the nine write paths the run's live pointer names.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_code_report_is_read_by_its_own_grammar.py:136 fails if the old pattern match is restored (the base arm records DID NOT RAISE), but the importer's changed admission path at scripts/import_host_reviews.py:499 has no test of its own.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/plan_review.py:2103 follows the module's builder idiom and its docstrings state behaviour, and the six commit subjects carry bodies with no plan or sprint identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes a duplicated subject-to-grammar mapping and reads through the existing owners reckon/crew/review.py:1342 parse_plan_review_report and reckon/crew/review.py:1589 parse_health_review rather than forking either.\nFINDING scripts/import_host_reviews.py:499 follow-on: the private admission guard is deleted, so a delivered report that is present but whose own grammar yields no item and no finding is now counted and printed as refused where the old guard skipped it, and no test asserts the new count; tests/test_import_host_reviews.py:622 covers only an unknown-rubric refusal.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T052537615485-a-report-is-admitted-on-what-its-parser-read/manifest.md:12 follow-on: the recorded gate command omits tests/test_import_host_reviews.py, the file the repair commit 5f0f9c2b0 changes, so after_suite's zero added failures is not over the change's population and the repair is covered only by the single check in repair-check-head.log.\n",
+  "review_run_id": "r-20261023T073810794341-review-of-a-report-is-admitted-on-what-its-parser-read-172e804ccb30",
+  "reviewed_base_sha": "ecd22bbd7c4f6e99004da32c07d4d4f0237027b6",
+  "reviewed_head_sha": "172e804ccb3009b177430d72630a9af59fc2afe7",
+  "reviewed_run_id": "r-20261023T052537615485-a-report-is-admitted-on-what-its-parser-read",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T07:58:38.068211+00:00",
+  "total": 105
+}
