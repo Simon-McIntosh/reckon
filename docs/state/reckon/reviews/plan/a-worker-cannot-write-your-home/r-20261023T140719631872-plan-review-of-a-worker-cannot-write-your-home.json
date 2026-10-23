@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T15:02:36.931Z",
+  "dispatched_at": "2026-10-23T14:48:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261023T140719631872-plan-review-of-a-worker-cannot-write-your-home/plan.html:1604",
+      "id": "reasoning-1",
+      "reason": "the section's justification and its test arms rest on a divergence that does not exist at the plan's base, so the node as written would chase a behavioural fault the code no longer has.",
+      "text": "\u00a722 states \"the review records one revision on which they disagree: an all-zero `commits:` value, refused by the audit's copy and accepted by promotion's\", but both `_commit_resolves_in` definitions delegate to the same `reckon.crew.recovery._resolve_commit` (`reckon/crew/reports.py:2082-2086` returns `bool(_resolve_commit(root, revision))`; `reckon/crew/promotion_evidence.py:383-385` returns `_commit_canonical_id(root, revision) is not None`, and `_commit_canonical_id` at `:380` is `_resolve_commit(root, revision) or None`), and measuring both against `/home/ITER/mcintos/Code/reckon` gives `False` for the all-zero hash and `True` for a real commit (head `d9a2bff5a`) \u2014 the two agree, so no revision makes them answer differently and the collapse is a pure de-duplication, the divergence having been eliminated on 2026-10-05 by `513d1cc36` (\"refactor(crew): resolve commit citations through one bounded lookup\"), which repointed the `reports.py` copy at `_resolve_commit`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261023T140719631872-plan-review-of-a-worker-cannot-write-your-home/plan.html:1604",
+      "id": "done_when-1",
+      "reason": "a control that cannot fail leaves the node's gate unable to show its change does anything; the health review's own treatment names a control that can fail (removing the single definition turns the citation tests red) and \u00a722 should adopt that instead.",
+      "text": "\u00a722's declared negative control (\"re-add the `reports.py` copy delegating to `_resolve_commit`, and the test then shows the two readers disagreeing on at least one revision\") cannot go red, because `reckon/crew/reports.py:2082-2086` already delegates to `_resolve_commit`, so the \"re-added\" copy is byte-equivalent to the one it replaces and the three arms (a real commit both accept, an all-zero hash both refuse, an unknown hash both refuse) all pass on the unfixed base",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "80335f0b17e816703f89d8029f45409ea5e85145a24293e349c47c5c119b4662",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 232,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T140719631872-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "f58b0c70efcc00f162ce989e4b829dde2ee186f0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited run directory `~/.config/reckon/crew/runs/r-20261023T132718357781-review-code-95e863b57de0`, the report at `~/.config/reckon/crew/reports/reckon/code-review/95e863b57de0/report.md`, and both `_commit_resolves_in` definitions resolve; extensionless hrefs resolved as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a722's declared negative control cannot fail, because the copy it re-adds is behaviourally identical to the one already present.",
+    "evidence_paths": "pass \u2014 \u00a722 names its write paths (`reckon/crew/promotion_evidence.py`, `reckon/crew/reports.py`) and its test file on durable repository paths, matching \u00a720/\u00a721.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the symbols \u00a722 introduces; the section heading's `\u00a722` is a plan label on the document, not in code.",
+    "reasoning": "a finding \u2014 \u00a722's stated divergence is not present in the code it cites; both copies already delegate to the same resolver and agree.",
+    "single_goal": "pass \u2014 \u00a722 carries one deliverable, collapsing the two `_commit_resolves_in` definitions to one.",
+    "wiring": "pass \u2014 s22's `plan-section-depends-on` entry (`s22\u2192s21`) is declared and correct, since \u00a722 and \u00a721 share `reckon/crew/reports.py` and \u00a722 runs after it; the three new followups f-awcwyh-021/022/023 each carry their section (\u00a720/\u00a721/\u00a722), closing the earlier \"no followup\" finding."
+  },
+  "section_digests": {
+    "_document": "028e73713ec1cb8277fb8f9adc769b840cf13d3ab3a65187595ad552881a4931",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "2d2d08c8567a83cca3bdd3a30b5cca94fa8e377c6e1552aed6dfb8e1d15db707",
+    "s18": "8f63d2e9144312cbecd9a2f55a3526ba207f322d3d1f237392b076ed1b4abf53",
+    "s19": "19da2176124b0de549bb7c585cc22ee853204ec373eb89082871457fa89862bf",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s20": "0e83d5fb9828cc778802066bff24b452e47586b9a89ef3f93a84aaed1fe3cb99",
+    "s21": "dca32e63251fb5b4cd4bc5d1f524afc97180a85eaba73e88b4b62111045239dd",
+    "s22": "07ed956e74cae927c89a49568da049cb9732d2710de5e1a1dc5bfb304c9ce4fa",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T15:05:30.824927+00:00"
+}
