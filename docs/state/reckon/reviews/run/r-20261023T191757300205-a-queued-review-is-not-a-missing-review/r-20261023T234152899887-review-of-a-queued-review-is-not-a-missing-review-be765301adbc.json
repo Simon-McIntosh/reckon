@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_views.py:3960",
+    "reckon/hooks/coordinator_obligations.py:188",
+    "reckon/crew/needs_you.py:164",
+    "reckon/crew/obligation_snapshot.py:954"
+  ],
+  "completed_at": "2026-10-23T23:49:07.265Z",
+  "dispatched_at": "2026-10-23T23:42:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 458,
+      "severity": "non-blocking",
+      "text": "_refused_delivered_review is the third caller of recovery._review_in_flight and is still handed the unfiltered live-pointer snapshot, so in the two-request case this delta exists for (a launched review and a queued one standing for the same head, the queued sorting first) the queued pointer can win the sweep and the refused-delivery reading is skipped. It is latent because a live launched review suppresses the duty upstream, but the commit's own subject says each reader recognises a review by its phase and this one does not."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 776,
+      "severity": "non-blocking",
+      "text": "When two queued reviews stand for one head, recovery._review_in_flight returns whichever entry of the narrowed `queued` list list_live lists first, and the earliest-queued_at tie-break the replaced sweep had is still absent, so the reported position can name the later request. Carried from the previous review, whose phase half this delta fixes."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 211086d79: cfa064767 narrows each review reader to its own phase and keys the ContextVar snapshot by project with two new arms, and be765301a carries the matching fragment text; 133 insertions and 27 deletions across the three declared paths.",
+    "done_when": "The source done_when names a queued arm, a removal arm returning review-missing, the first arm red at base, no added failures across the tests importing obligations, and clean ruff; the manifest records gate-base-focused-view.log (55 passed/8 failed), gate-head-focused-view.log (62 passed/1 failed), gate-head-unit.log (8 passed) and a clean ruff on both staged paths, while the 80-file import set is recorded at base only and unread at head.",
+    "goal": "The node's goal is to read a queued review run targeting a delivered run as a second source of the review-queued duty; this delta keeps that source and splits the recognition by phase (reckon/crew/obligations.py:434-437, :773-776) and keys the view's pointer snapshot by project (reckon/crew/obligations.py:374-386).",
+    "manifest": "Read at the source run directory: status complete, nine commits, the focused head/base pair, gate-prefix-arms.log, the negative control at 5 failed/3 passed EXIT=1, and the full head arm recorded as unread.",
+    "write_paths": "prompt.txt declares reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py, the fragment under docs/evidence/fragments/a-live-worker-is-never-drawn-halted/ and a figures directory; the delta's diff touches the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "gate-prefix-arms.log shows tests/test_a_queued_review_is_not_missing.py::test_a_launched_review_beside_a_queued_one_reads_in_flight_not_missing (:341) and ::test_a_reader_inside_a_view_reads_the_other_project_s_pointers (:388) both failing against the previous obligations.py, so each reddens on the regression it guards.",
+    "evidence": "gate-head-focused-view.log ends 62 passed/1 failed at cfa064767 against gate-base-focused-view.log's 55 passed/8 failed at 9bc0690f5, giving 0 added failures, and gate-prefix-arms.log records both new arms red at the previous revision; the done_when's 80-file import arm is unread at head.",
+    "fit": "The change extends the ContextVar region at reckon/crew/obligations.py:367 and reuses the file's own phase-reading idiom (obligations.py:443) without introducing a plan, ticket or version name.",
+    "goal_fidelity": "reckon/crew/obligations.py:773-776 hands the queued reader only QUEUED_PHASE pointers and :434-437 hands the in-flight reader only launched ones, so the second source survives and neither reader can answer for the other.",
+    "reuse": "Both filters feed the existing owner recovery._review_in_flight (reckon/crew/recovery_review_dispatch.py:491) and read QUEUED_PHASE from reckon/crew/queue_admission.py:46 rather than forking a recognition of their own.",
+    "scope_discipline": "The diff touches only reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py and the landing fragment, exactly the manifest's declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to read a queued review run targeting a delivered run as a second source of the review-queued duty; this delta keeps that source and splits the recognition by phase (reckon/crew/obligations.py:434-437, :773-776) and keys the view's pointer snapshot by project (reckon/crew/obligations.py:374-386).\nVERDICT done_when: The source done_when names a queued arm, a removal arm returning review-missing, the first arm red at base, no added failures across the tests importing obligations, and clean ruff; the manifest records gate-base-focused-view.log (55 passed/8 failed), gate-head-focused-view.log (62 passed/1 failed), gate-head-unit.log (8 passed) and a clean ruff on both staged paths, while the 80-file import set is recorded at base only and unread at head.\nVERDICT write_paths: prompt.txt declares reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py, the fragment under docs/evidence/fragments/a-live-worker-is-never-drawn-halted/ and a figures directory; the delta's diff touches the first three and nothing else.\nVERDICT manifest: Read at the source run directory: status complete, nine commits, the focused head/base pair, gate-prefix-arms.log, the negative control at 5 failed/3 passed EXIT=1, and the full head arm recorded as unread.\nVERDICT diff: Read commit by commit against 211086d79: cfa064767 narrows each review reader to its own phase and keys the ContextVar snapshot by project with two new arms, and be765301a carries the matching fragment text; 133 insertions and 27 deletions across the three declared paths.\nCALL_SITES: reckon/mcp_views.py:3960, reckon/hooks/coordinator_obligations.py:188, reckon/crew/needs_you.py:164, reckon/crew/obligation_snapshot.py:954\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:773-776 hands the queued reader only QUEUED_PHASE pointers and :434-437 hands the in-flight reader only launched ones, so the second source survives and neither reader can answer for the other.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head-focused-view.log ends 62 passed/1 failed at cfa064767 against gate-base-focused-view.log's 55 passed/8 failed at 9bc0690f5, giving 0 added failures, and gate-prefix-arms.log records both new arms red at the previous revision; the done_when's 80-file import arm is unread at head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff touches only reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py and the landing fragment, exactly the manifest's declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: gate-prefix-arms.log shows tests/test_a_queued_review_is_not_missing.py::test_a_launched_review_beside_a_queued_one_reads_in_flight_not_missing (:341) and ::test_a_reader_inside_a_view_reads_the_other_project_s_pointers (:388) both failing against the previous obligations.py, so each reddens on the regression it guards.\nSCORE fit: 19\nJUSTIFICATION fit: The change extends the ContextVar region at reckon/crew/obligations.py:367 and reuses the file's own phase-reading idiom (obligations.py:443) without introducing a plan, ticket or version name.\nSCORE reuse: 19\nJUSTIFICATION reuse: Both filters feed the existing owner recovery._review_in_flight (reckon/crew/recovery_review_dispatch.py:491) and read QUEUED_PHASE from reckon/crew/queue_admission.py:46 rather than forking a recognition of their own.\nFINDING reckon/crew/obligations.py:458 non-blocking: _refused_delivered_review is the third caller of recovery._review_in_flight and is still handed the unfiltered live-pointer snapshot, so in the two-request case this delta exists for (a launched review and a queued one standing for the same head, the queued sorting first) the queued pointer can win the sweep and the refused-delivery reading is skipped. It is latent because a live launched review suppresses the duty upstream, but the commit's own subject says each reader recognises a review by its phase and this one does not.\nFINDING reckon/crew/obligations.py:776 non-blocking: When two queued reviews stand for one head, recovery._review_in_flight returns whichever entry of the narrowed `queued` list list_live lists first, and the earliest-queued_at tie-break the replaced sweep had is still absent, so the reported position can name the later request. Carried from the previous review, whose phase half this delta fixes.\n",
+  "review_run_id": "r-20261023T234152899887-review-of-a-queued-review-is-not-a-missing-review-be765301adbc",
+  "reviewed_at": "2026-10-24T00:00:00Z",
+  "reviewed_base_sha": "211086d79aa480997cf578b2329dae40ccf7aa34",
+  "reviewed_head_sha": "be765301adbcad5cc22f7e60c94f2b9da57b7848",
+  "reviewed_run_id": "r-20261023T191757300205-a-queued-review-is-not-a-missing-review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:50:58.453109+00:00",
+  "total": 112
+}
