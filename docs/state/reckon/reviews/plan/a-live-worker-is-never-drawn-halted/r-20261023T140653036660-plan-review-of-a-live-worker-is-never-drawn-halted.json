@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T14:20:22.166Z",
+  "dispatched_at": "2026-10-23T14:08:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:212",
+      "id": "reasoning-1",
+      "reason": "the section forbids a second same-word rule and names one owner, but that owner cannot see the previous row or its facts, so the node must either invent the memory the plan does not name or move the comparison into the policy, neither of which the brief authorises.",
+      "text": "\u00a75 tells the node to narrow `same_word_row_is_news` so a same-word row is news only when it \"newly sets the overdue flag (`wait_overdue` true where the run's last shown row had it false or absent), or when its wait facts (condition, probe, terminal) differ from that row's\", but that predicate is a pure function of one event (`ticker.py:2140`, returning `_actionable_recovery(event) or declares_a_wait(event)` at `:2157`) and is called at `:1728` and `:2429` with the event alone; nothing in the policy remembers the last shown row's wait facts \u2014 `_shown` holds only the pane word (`ticker.py:1268`, written at `:1331`/`:1346`) and `_reported` only the state word \u2014 and `_hold_departure` returns False for this pair at `:1450`, so no other memory sees it either; the event the predicate would compare carries `wait_condition_state`, `wait_observed`, `expected_horizon_seconds`, `resume_brief` beside `wait_overdue` (`recovery_watch.py:1286-1292`, `:1909-1913`), not the declaration's `condition`/`probe`/`terminal`, which exist only on the wait dict (`recovery_liveness.py:925-927`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:216",
+      "id": "reasoning-2",
+      "reason": "the node's done-when cannot be met by the declared mechanism, and the change that would meet it lands in `recovery_classification.py`, which \u00a75 does not list as a write path while \u00a710 does, so the section is either wrong about existing behaviour or silently carrying a second deliverable.",
+      "text": "\u00a75 asserts \"The aging row is drawn with the word `overdue` in its reason clause\", and its done-when requires the aging row to print \"which names the wait as overdue\", but at HEAD `_display_state(\"wait-aged\")` yields `waiting` (`PANE_STATES[\"waiting\"]` contains `wait-aged`, `ticker.py:291`) and the only text composed for that row is the waiting arm's detail, \"waiting {age}s on {condition}; {observation}; terminal when the probe reports {terminal}\" (`recovery_classification.py:994-998`) \u2014 a grep of `reckon/crew/` finds no rendered `overdue` text in any pane path (only the `wait_overdue` field reads and the separate `condition-overdue` reason slug at `resumption.py:1848`) \u2014 and narrowing a predicate that decides whether a row prints cannot add wording to a clause composed elsewhere",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c46480613417f7820d61d44977022ff7b7def24376f798761cfd8f3b3acd9a6f",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T140653036660-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "b430bdfad70460c90d9a1bdd44730a4c07602926",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a75 symbol resolves: `RowPolicy._shown`/`_departures` (`reckon/crew/ticker.py:1268`, `:1272`), `_hold_departure` (`:1429`), `same_word_row_is_news` (`:2140`), `_actionable_recovery` (`:2126`), `declares_a_wait` (`:2085`), and `_hold_departure`'s same-word early return at `:1450` confirms \u00a75's claim that the departure memory never sees this pair.",
+    "done_when": "pass \u2014 \u00a75's measure names a negative control (the first pair at the base revision prints two rows, recorded in the gate log) and its positive arms are distinguishable.",
+    "evidence_paths": "pass \u2014 \u00a75's gate log and \u00a711's committed instrument plus report sit on durable paths (`docs/evidence/fragments/\u2026`), not a scratch tree.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach \u00a75's symbols or comments; `wait-aged`, `wait_overdue` are the code's own vocabulary.",
+    "reasoning": "two findings \u2014 the mechanism names a comparison target and a set of facts the owner it names cannot see, and the claim that the aging row already carries the word `overdue` in its reason clause is not true at HEAD and is not produced by the mechanism the section describes.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable (narrow the same-word exemption) with one write path pair (`ticker.py` plus the new test).",
+    "wiring": "pass \u2014 \u00a75's ordering (\"It runs after \u00a74\") matches the followup's \u00a74 \u2192 \u00a75 \u2192 \u00a77 chain, and the two prior \u00a75 findings were answered by the current text (the departure memory is now correctly described as never seeing the pair, and the drop rule now separates the two halves by the overdue flag and the wait facts)."
+  },
+  "section_digests": {
+    "_document": "1941c1c8ebd31bdf681794161c167a371b9f346fa53844c7ff32c0863799c095",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "c2c85bb0c0a56fd8a4f063e8d58bbe252ee648db80e6909da52e5801b96d2af6",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T14:24:24.340124+00:00"
+}
