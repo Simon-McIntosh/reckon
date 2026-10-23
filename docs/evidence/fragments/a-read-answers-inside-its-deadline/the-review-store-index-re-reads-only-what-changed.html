@@ -1,0 +1,128 @@
+<section id="the-review-store-index-re-reads-only-what-changed-landing">
+  <h2>The store index re-reads only what changed</h2>
+
+  <p><strong>What changed.</strong> The store index in
+  <code>reckon/crew/review_records.py</code> — the thing that answers a misfiled
+  lookup for a run whose record sits at another record's path, and a delivered
+  review's lookup by the review run that produced it — no longer rebuilds
+  itself from scratch when its directory's stat identity moves. One directory
+  listing now names the files, and a file is parsed only when its name is new
+  to the index or when its stat identity (inode, size, modification time)
+  differs from the entry the index holds for it; every other file keeps the
+  facts already read for it, and an entry whose file the listing no longer
+  names is dropped, so a deleted record stops answering. Each entry now carries
+  that identity beside the path, modification time and selection facts
+  (<code>reviewed_run_id</code>, <code>review_run_id</code>, head) it already
+  carried.</p>
+
+  <p>The updated index is <strong>persisted per store directory</strong>, not
+  per project, in a node-local cache directory every process on the node
+  shares: <code>node_local_cache_dir(project)</code> resolves
+  <code>$XDG_RUNTIME_DIR/reckon/&lt;project&gt;/</code>, or
+  <code>/tmp/&lt;uid&gt;-reckon/&lt;project&gt;/</code> when no runtime
+  directory is set — the helper this section adds, which a project's other
+  node-local caches store through. Within it, each store's index is one file
+  keyed by a digest of the store directory's resolved absolute path, so a
+  worktree's or a scratch tree's store is indexed apart from the main store
+  even when both carry the same project name. The document is stamped with a
+  <em>code stamp</em> — the content identity of the two modules the index's
+  facts and selection rules are defined in — and a document written under
+  another stamp, or naming another store, is ignored and rebuilt rather than
+  trusted. The process-wide code stamp was not used here: measured on this
+  node it costs about 11&nbsp;s on a cold process, which is the cost this
+  section exists to remove; the content stamp costs about 10&nbsp;ms and moves
+  for an uncommitted edit as readily as for a commit.</p>
+
+  <p>The record a lookup selects is still read again from disk, exactly as
+  before, so a rewrite in place is answered current.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_the_review_store_index_re_reads_only_what_changed.py</code>
+  together with every test file that imports <code>reckon.crew.review_records</code>
+  (eight files), run in the fleet allocation with the repository venv at
+  <code>-n 8</code>. Each log's first lines name its revision, its tree, the
+  module under test as imported and the literal command, and its last line is
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change)</td>
+        <td><code>3c1069d22</code></td>
+        <td><strong>65 passed, 0 failed</strong>, exit 0</td></tr>
+      <tr><td>base (new test file copied in)</td>
+        <td><code>7cb177e8a</code></td>
+        <td>57 passed, 0 failed in the seven pre-existing files; 8 setup errors, all in the new file (<code>AttributeError: module 'reckon.crew.review_records' has no attribute '_index_entry'</code>)</td></tr>
+      <tr><td>negative control (rebuild from scratch on an identity change)</td>
+        <td>mutated head</td>
+        <td><strong>6 failed, 2 passed</strong>, exit 1 — the add case reads <code>assert 301 == 1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Delta: <strong>zero new failures</strong> in the population that exists at
+  base, and the new test errors at base because the behaviour it measures does
+  not exist there. The head arm was logged twice — 65 passed at each, the
+  earlier one before the cases below were strengthened to compare a whole
+  result rather than a path.</p>
+
+  <h3>What the parse counter reads</h3>
+
+  <p>A 300-record temporary store, every environment-resolved directory —
+  <code>RECKON_HOME</code> and <code>XDG_RUNTIME_DIR</code> alike — pointed at
+  temporary paths. The counter wraps the index's own parse
+  (<code>_index_entry</code>), so the lookup's re-read of the record it
+  selected sits outside it.</p>
+
+  <table>
+    <thead><tr><th>case</th><th>parses</th></tr></thead>
+    <tbody>
+      <tr><td>first build</td><td>300</td></tr>
+      <tr><td>one record added, looking up again</td><td><strong>1</strong></td></tr>
+      <tr><td>one record rewritten in place with a new modification time</td><td><strong>1</strong></td></tr>
+      <tr><td>one record deleted</td><td><strong>0</strong>, and its entry is gone</td></tr>
+      <tr><td>a fresh process, nothing changed (module cache cleared)</td><td><strong>0</strong>, answered from the persisted index</td></tr>
+      <tr><td>a persisted index written under another code stamp</td><td>300 — ignored and rebuilt</td></tr>
+      <tr><td>a record added since the index was persisted</td><td><strong>1</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p>Each lookup above is made twice — once answered from the updated index and
+  once after both the in-memory index and the persisted document are discarded,
+  which rebuilds from the store — and the two results are asserted equal in
+  full, the record's body included, not only the path they share. The cases
+  carrying that comparison are the addition
+  (<code>test_adding_a_record_parses_only_the_new_file</code>), the rewrite in
+  place (<code>test_rewriting_a_record_parses_only_that_file</code>), the
+  deletion (<code>test_deleting_a_record_drops_its_entry</code>), the two
+  stores under different roots
+  (<code>test_two_stores_under_different_bases_are_indexed_apart</code>), the
+  fresh process
+  (<code>test_a_fresh_process_parses_nothing_when_nothing_changed</code>), the
+  rebuild under another stamp
+  (<code>test_a_persisted_index_under_another_code_stamp_is_rebuilt</code>) and
+  the write between processes
+  (<code>test_a_record_changed_between_processes_is_still_found</code>). A
+  right path answered from a body the index failed to refresh therefore fails
+  its case, which the second control below measures.</p>
+
+  <h3>The negative control</h3>
+
+  <p>The declared mutation restores the replaced behaviour exactly — an
+  identity change answered by a from-scratch build (<code>entries = None</code>
+  in <code>_store_indexes</code>). The add case then reads
+  <code>assert 301 == 1</code>: one new file costs a pass over all 300. Five
+  other cases of the same file fail with it (the in-place rewrite, the
+  deletion, the fresh process, the foreign code stamp and the write between
+  processes), and the pre-existing seven files stay green — the mutation moves
+  only what this node added.</p>
+
+  <p>A second control, for the full-result assertion above, makes the index keep
+  the record it parsed and answer a lookup from that copy while the incremental
+  update carries the old body forward for a file whose stat identity moved: the
+  path and the parse count are right and only the body is stale. One case fails
+  on it — the rewrite in place, reading <code>total: 80</code> where the
+  rebuild reads <code>total: 81</code> — and the other seven pass. Its log is
+  <code>gate-negative-control-stale-body.log</code> beside the first, and its
+  mutation is <code>mutate_stale_body.py</code> in the run directory.</p>
+</section>
