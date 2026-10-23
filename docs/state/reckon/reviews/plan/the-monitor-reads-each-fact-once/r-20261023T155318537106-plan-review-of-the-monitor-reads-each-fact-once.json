@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T16:26:15.288Z",
+  "dispatched_at": "2026-10-23T16:04:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:133",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a78 against \u00a75's partition would ship a change-detector that cannot see its own events, and the fix is a sentence naming the heartbeat as the wake source (or moving the events into the main database), not a re-implementation of the subscriber.",
+      "text": "\u00a75 writes events to one file per UTC day \"attached for reads\", but \u00a78 wakes on `PRAGMA data_version`, and that pragma reports changes only to the main database: measured in this workspace with a positive control, a second connection's commit to the ATTACHED day file left the reader's value at 2 while the same commit to the main file moved it (1\u21922), and the attached row was readable \u2014 so the detector the subscriber is built on is blind to the writes it waits for, and delivery only works because \u00a77's every-tick heartbeat write happens to land in the main database, a dependency the plan never states",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "643888fc5c340ffa4baca2698dafc2a12b7b6a4b6dadc41c85f45ed0f2832901",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T155318537106-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "97a34fecac24edd333d987cd020e98452322de62",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every href in the plan resolves (`docs/research/monitor-storage-load-rca.html`, `docs/plans/the-monitor-shows-the-work-it-watches.html`, `docs/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s4` exists) and each cited symbol resolves as written: `_session_host_runtime_root` (reckon/crew/dispatch_watch.py:481, three candidates in the stated order), `_filesystem_type` and `_SHARED_FILESYSTEMS` (reckon/host.py:157, :51 with eight entries), `reckon/host.py:190`\u2013`192` (the `_is_node_local_path` prefix acceptance that precedes the mount-type return, reckon/host.py:190\u2013192), `file_memo.file_signature` (reckon/file_memo.py:270), and the registry the plan says the store's error does not join (D-keyed `DISPATCH_REFUSAL_REMEDIES`, reckon/crew/refusals.py:18).",
+    "done_when": "pass \u2014 \u00a75's gate names two mutation controls (an undated events file must fail the retention test; a store routed through `host._is_node_local` must fail the shared-type case) and \u00a77's names one (a station without the node lock, started twice, must fail the \"each transition once\" test), so each changed unit names a control that can fail.",
+    "evidence_paths": "pass \u2014 the only node-local paths either changed unit names are the store's own live state under the runtime root, which \u00a79 exports to the crew home by atomic replace; no gate log or evidence file is placed in a scratchpad or a per-run temporary directory.",
+    "naming": "pass \u2014 the changed text carries no plan label, ticket number or version tag, and the rejection of the `station-store-not-node-local` registry entry leaves no stage-labelled symbol behind.",
+    "reasoning": "a finding \u2014 \u00a75 partitions events into per-day attached files while \u00a78 detects new rows with `PRAGMA data_version`, which does not move for a commit made by another connection to an attached database.",
+    "single_goal": "pass \u2014 \u00a75 delivers one module and \u00a77 one verb, with the producer retirement explicitly deferred to \u00a712.",
+    "wiring": "pass \u2014 \u00a75, \u00a76 and \u00a77 form the declared chain (`s6`\u2190`s5`, `s7`\u2190`s6`) and the live open followup agrees with it, so nothing in the changed units needs a relationship the plan does not already declare."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "8dd1a6bcc12434ce1356b84e953eca880aeb7931e264c7f66452ac7aabba09d3",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "6c61416a6f6cf0d80aba5516d12a2d5329a34611ee0af8c0cdcc21e5ceaf37c1",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T16:28:33.604708+00:00"
+}
