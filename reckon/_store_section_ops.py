@@ -128,10 +128,23 @@ def _refuse_forged_structure(section_id: str, body: str) -> None:
     ``insert_section`` and ``append_evidence`` refuse: a heading, a structured
     section element, or a ``plan-*`` meta that ``read_state`` would read back as
     the plan's own metadata.
-    """
-    from reckon._store import _refuse_forged_body_structure
 
-    _refuse_forged_body_structure(body, subject=f"sections.{section_id}.body")
+    A body is written whole, with no prior body to compare it against, so a
+    legacy section whose prose already carries the deferred-work term is refused
+    when it is re-set. The refusal names text mode, the one route whose check is
+    narrow enough to edit that section anyway: it compares the fragment an edit
+    adds against the text it replaces.
+    """
+    from reckon._store import _prose_deferred_work_term, _refuse_forged_body_structure
+
+    hint = (
+        "edit this section's body in text mode, which checks only the text an edit adds"
+        if _prose_deferred_work_term(body) is not None
+        else None
+    )
+    _refuse_forged_body_structure(
+        body, subject=f"sections.{section_id}.body", hint=hint
+    )
 
 
 def _require_authored_value(section_id: str, field: str, value: Any) -> str:

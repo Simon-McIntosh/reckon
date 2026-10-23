@@ -404,6 +404,38 @@ def _prose_text(el) -> str:
     return " ".join(parts)
 
 
+#: The term a plan's prose must not carry. Work found beyond a node is a plan
+#: section or an instruction in the dispatching prompt, so a term naming a
+#: bucket no roadmap reads is reported wherever it was authored. The prose
+#: reader above is the one that reads it, so a term inside ``<pre>`` or
+#: ``<code>`` — a citation of a symbol, not a bucket — is not reported.
+DEFERRED_WORK_TERM_IN_PROSE = "deferred-work-term-in-prose"
+_DEFERRED_WORK_TERM = re.compile(r"\bfollow-ons?\b", re.IGNORECASE)
+
+
+def deferred_work_term(el) -> str | None:
+    """The deferred-work term an element authors in prose, or ``None``.
+
+    Shared with the plan store, which refuses the term in an authored body
+    through the same reader: one copy of the rule, so a write and the audit
+    that follows it never disagree about what counts as prose.
+    """
+
+    terms = deferred_work_terms(el)
+    return terms[0] if terms else None
+
+
+def deferred_work_terms(el) -> list[str]:
+    """Every deferred-work term an element authors in prose, in document order.
+
+    A text-mode edit compares the fragment it replaces against the fragment it
+    writes, so it reads occurrences rather than a presence: one more occurrence
+    than the old text carried is the term that edit authored.
+    """
+
+    return _DEFERRED_WORK_TERM.findall(_prose_text(el))
+
+
 def _load_mounts() -> dict[str, Path]:
     mounts_file = _mounts_path()
     if not mounts_file.exists():
@@ -1681,6 +1713,22 @@ def audit_html(
     out.extend(_section_contract_findings(declared_type, state, soup, html_text))
     out.extend(_section_coverage_findings(declared_type, state, html_text))
     out.extend(_followup_section_findings(declared_type, state))
+
+    # The deferred-work term names work the plan's own unit must carry, so a
+    # plan that writes it in prose is reported; a section or an evidence record
+    # that cites the term rather than carrying it is not a plan and is not held
+    # to this rule.
+    if declared_type == "plan":
+        term = deferred_work_term(soup)
+        if term is not None:
+            out.append(
+                Finding(
+                    "warn",
+                    DEFERRED_WORK_TERM_IN_PROSE,
+                    f"plan prose carries {term!r}; additional work is a plan "
+                    "section or an instruction in the dispatching prompt",
+                )
+            )
 
     # A plan-level ref that one of the plan's own sections already declares is
     # a section-shaped wait wired whole-plan: it holds sections the section ref
