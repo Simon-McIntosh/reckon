@@ -577,7 +577,7 @@ def test_a_store_write_in_one_process_forces_another_process_to_recompute(
     measured = _collect(waiter)
 
     assert measured["first_call_covered"] <= 8, measured
-    assert measured["recomposed"] > 0, measured
+    assert measured["recomposed"] > DOCUMENT_COUNT, measured
 
 
 def test_a_live_runs_exit_record_moves_the_next_read_out_of_flight(
@@ -590,12 +590,12 @@ def test_a_live_runs_exit_record_moves_the_next_read_out_of_flight(
     measured = _run(root, "live_exit", driver)
     assert _listed(measured["in_flight_before"]) == [LIVE_RUN], measured
     assert _listed(measured["in_flight_after"]) == [], measured
-    assert measured["recomposed"] > 0, measured
+    assert measured["recomposed"] > DOCUMENT_COUNT, measured
 
     # The liveness arm: every file untouched, only the process-table reading
     # turns false, so nothing but the reading can have moved the key.
     liveness = _run(root, "liveness", driver)
-    assert liveness["recomposed"] > 0, liveness
+    assert liveness["recomposed"] > DOCUMENT_COUNT, liveness
 
 
 def test_an_advanced_clock_recomputes_a_run_whose_files_did_not_move(
@@ -606,4 +606,4 @@ def test_an_advanced_clock_recomputes_a_run_whose_files_did_not_move(
     measured = _run(root, "clock", _live_driver(tmp_path))
 
     assert measured["state_before"] != measured["state_after"], measured
-    assert measured["recomposed"] > 0, measured
+    assert measured["recomposed"] > DOCUMENT_COUNT, measured
