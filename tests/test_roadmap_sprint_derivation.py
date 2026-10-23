@@ -3,25 +3,10 @@ from pathlib import Path
 
 from reckon.roadmap import build_roadmap
 from tests import spa_module_eval
+from tests.roadmap_fixtures import plan_row
 
 ROOT = Path(__file__).parents[1]
 SOURCE = ROOT / "docs" / "ui" / "sprint.jsx"
-
-
-def _plan(slug: str, *, status: str = "pending", impl: float = 0.0) -> dict:
-    return {
-        "slug": slug,
-        "title": slug,
-        "type": "plan",
-        "status": status,
-        "impl": impl,
-        "depends_on": [],
-        "effort": "S",
-        "roi": "high",
-        "blocking": [],
-        "gates": [],
-        "followups": [],
-    }
 
 
 def _sprint_row(inventory: list[dict], sprint: dict) -> dict:
@@ -43,13 +28,13 @@ def _evaluate_helpers(expression: str, tmp_path: Path):
 def test_roadmap_reports_member_derived_sprint_state_and_stored_drift() -> None:
     shipped = _sprint_row(
         [
-            _plan("first", status="shipped", impl=1.0),
-            _plan("second", status="done", impl=1.0),
+            plan_row("first", status="shipped", impl=1.0),
+            plan_row("second", status="done", impl=1.0),
         ],
         {"id": "finished", "status": "planned", "items": ["first", "second"]},
     )
     agreeing = _sprint_row(
-        [_plan("started", status="active", impl=0.25)],
+        [plan_row("started", status="active", impl=0.25)],
         {"id": "moving", "status": "active", "items": ["started"]},
     )
     empty = _sprint_row(
@@ -57,7 +42,7 @@ def test_roadmap_reports_member_derived_sprint_state_and_stored_drift() -> None:
         {"id": "unfilled", "status": "planned", "items": []},
     )
     started = _sprint_row(
-        [_plan("partial", impl=0.1)],
+        [plan_row("partial", impl=0.1)],
         {"id": "begun", "status": "active", "items": ["partial"]},
     )
 
@@ -72,7 +57,7 @@ def test_roadmap_reports_member_derived_sprint_state_and_stored_drift() -> None:
 def test_sprint_surface_reads_state_and_drift_from_roadmap_payload(
     tmp_path: Path,
 ) -> None:
-    inventory = [_plan("member", status="shipped", impl=1.0)]
+    inventory = [plan_row("member", status="shipped", impl=1.0)]
     row = _sprint_row(
         inventory,
         {"id": "delivery", "status": "planned", "items": ["member"]},

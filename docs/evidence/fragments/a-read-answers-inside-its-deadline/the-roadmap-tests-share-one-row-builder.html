@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s53">
+  <title>The roadmap tests build plan rows through the shared fixture | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-roadmap-tests-share-one-row-builder-landing" data-node="the-roadmap-tests-share-one-row-builder" data-reckon="landed" data-when="2026-10-23">
+  <h2>The three hand-built roadmap rows now come from the one shared builder</h2>
+  <p><code>tests/roadmap_fixtures.py</code> is the single plan-row builder the roadmap readers share. Three test files still rebuilt the same inventory row by hand, each carrying its own copy of the row's field set: <code>tests/test_roadmap_endpoints.py</code>, <code>tests/test_roadmap_names_interrupted_runs.py</code> and <code>tests/test_roadmap_sprint_derivation.py</code>. A renamed field in the inventory row meant one edit to the fixture and three silent drifts — each local copy would have gone on producing the old shape.</p>
+  <p>Each file's private <code>_plan</code> helper is deleted and every call site now calls <code>plan_row</code> from the shared fixture. The builder gained one optional field, <code>decisions</code>, which the endpoint rows need so a plan can carry an open decision; it follows the fixture's existing optional-field pattern and changes nothing for the other callers. No test assertion changed — only where the row comes from.</p>
+  <p>Measured over the six files that consume the shared builder. At the base revision the six files pass 74 test ids; at head the same six files pass the same 74 ids, collected identically and compared as sets. The negative control is what gives that number its meaning: renaming one key inside the builder's row dict (<code>slug</code> to <code>slugx</code>) makes all six files fail together, not three of them — the proof that every one of them builds its rows through this one function.</p>
+  <table>
+    <thead><tr><th>Arm</th><th>Files</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>base (<code>29102c5</code>)</td><td>six consumer files</td><td>74 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>head (this change)</td><td>six consumer files</td><td>74 passed, same 74 ids, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control (one key renamed)</td><td>six consumer files</td><td>fails together across all six, non-zero <code>EXIT=</code></td></tr>
+    </tbody>
+  </table>
+  <p>Changed: <code>tests/roadmap_fixtures.py</code> (adds the <code>decisions</code> field), <code>tests/test_roadmap_endpoints.py</code>, <code>tests/test_roadmap_names_interrupted_runs.py</code> and <code>tests/test_roadmap_sprint_derivation.py</code> (private row builders deleted, call sites onto <code>plan_row</code>). <code>ruff check</code> and <code>ruff format --check</code> add no findings on the changed paths against their base revision.</p>
+</article>
+</body>
+</html>

@@ -26,6 +26,7 @@ def plan_row(
     section_declarations: dict[str, str] | None = None,
     gates: list[dict[str, Any]] | None = None,
     followups: list[dict[str, Any]] | None = None,
+    decisions: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build one inventory row with the fields a roadmap read consumes.
 
@@ -64,4 +65,6 @@ def plan_row(
         plan["effort_calibrated"] = effort_calibrated
     if section_declarations is not None:
         plan["section_declarations"] = section_declarations
+    if decisions is not None:
+        plan["decisions"] = decisions
     return plan

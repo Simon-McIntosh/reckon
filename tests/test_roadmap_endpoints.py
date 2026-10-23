@@ -9,50 +9,27 @@ import pytest
 
 from reckon.roadmap import GraphTargetError, build_roadmap, resolve_graph_target
 from reckon.serve import discover_plans
+from tests.roadmap_fixtures import plan_row
 
 ROOT = Path(__file__).resolve().parents[1]
 GRAPH = ROOT / "docs" / "ui" / "graph.jsx"
 
 
-def _plan(
-    slug: str,
-    *,
-    depends_on: list[str] | None = None,
-    handle: str | None = None,
-    status: str = "active",
-    decisions: list[dict] | None = None,
-) -> dict:
-    return {
-        "project": "sample",
-        "slug": slug,
-        "title": slug.replace("-", " ").title(),
-        "type": "plan",
-        "status": status,
-        "impl": 1.0 if status == "shipped" else 0.0,
-        "depends_on": depends_on or [],
-        "graph_handle": handle,
-        "decisions": decisions or [],
-        "blocking": [],
-        "gates": [],
-        "followups": [],
-    }
-
-
 def _endpoint_fixture() -> list[dict]:
     return [
-        _plan("foundation", status="shipped"),
-        _plan(
+        plan_row("foundation", status="shipped", impl=1.0),
+        plan_row(
             "middle",
             depends_on=["foundation"],
             status="blocked",
             decisions=[{"key": "scope", "choice": ""}],
         ),
-        _plan("named-deep", depends_on=["middle"], handle="deep"),
-        _plan("named-shallow", depends_on=["foundation"], handle="shallow"),
-        _plan("unnamed-deep", depends_on=["middle"]),
-        _plan("unnamed-left", depends_on=["foundation"]),
-        _plan("unnamed-right", depends_on=["foundation"]),
-        _plan("standalone"),
+        plan_row("named-deep", depends_on=["middle"], graph_handle="deep"),
+        plan_row("named-shallow", depends_on=["foundation"], graph_handle="shallow"),
+        plan_row("unnamed-deep", depends_on=["middle"]),
+        plan_row("unnamed-left", depends_on=["foundation"]),
+        plan_row("unnamed-right", depends_on=["foundation"]),
+        plan_row("standalone"),
     ]
 
 
@@ -83,9 +60,9 @@ def test_project_roadmap_enumerates_named_and_unnamed_endpoints() -> None:
 
 def test_unnamed_endpoint_matches_the_authored_handle_read() -> None:
     inventory = [
-        _plan("source", status="shipped"),
-        _plan("middle", depends_on=["source"]),
-        _plan("endpoint", depends_on=["middle"]),
+        plan_row("source", status="shipped", impl=1.0),
+        plan_row("middle", depends_on=["source"]),
+        plan_row("endpoint", depends_on=["middle"]),
     ]
     unnamed = build_roadmap("sample", inventory, [], review={})["endpoints"][0]
 
@@ -105,7 +82,7 @@ def test_unnamed_endpoint_matches_the_authored_handle_read() -> None:
 
 
 def test_project_without_prerequisites_has_no_endpoints() -> None:
-    inventory = [_plan("left"), _plan("right")]
+    inventory = [plan_row("left"), plan_row("right")]
 
     assert build_roadmap("sample", inventory, [], review={})["endpoints"] == []
 

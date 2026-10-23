@@ -18,24 +18,9 @@ from reckon.mcp_views import (
     sprint_state_view,
 )
 from reckon.roadmap import build_roadmap
+from tests.roadmap_fixtures import plan_row
 
 PROJECT = "sample"
-
-
-def _plan(slug: str, status: str = "active", impl: float = 0.3) -> dict:
-    return {
-        "slug": slug,
-        "title": slug,
-        "type": "plan",
-        "status": status,
-        "impl": impl,
-        "depends_on": [],
-        "effort": "S",
-        "roi": "high",
-        "blocking": [],
-        "gates": [],
-        "followups": [],
-    }
 
 
 def _sprint(sprint_id: str, *slugs: str) -> dict:
@@ -113,7 +98,7 @@ def test_roadmap_reports_interrupted_runs_apart_from_runs_in_flight(monkeypatch)
         "reckon.crew.list_live", lambda: [_running_pointer(), _interrupted_pointer()]
     )
 
-    report = build_roadmap(PROJECT, [_plan("alpha")], [_sprint("S1", "alpha")])
+    report = build_roadmap(PROJECT, [plan_row("alpha")], [_sprint("S1", "alpha")])
     sprint_row = report["sprints"][0]
 
     assert [run["run_id"] for run in sprint_row["in_flight"]] == ["run-live"]
@@ -131,7 +116,7 @@ def test_sprint_state_view_carries_the_interrupted_run_with_reason_and_action(
         "reckon.crew.list_live", lambda: [_running_pointer(), _interrupted_pointer()]
     )
 
-    report = build_roadmap(PROJECT, [_plan("alpha")], [_sprint("S1", "alpha")])
+    report = build_roadmap(PROJECT, [plan_row("alpha")], [_sprint("S1", "alpha")])
     view = {row["id"]: row for row in sprint_state_view(report)}
 
     assert [run["run_id"] for run in view["S1"]["in_flight"]] == ["run-live"]
@@ -144,7 +129,7 @@ def test_sprint_state_view_carries_the_interrupted_run_with_reason_and_action(
 def test_a_sprint_with_no_interrupted_runs_reports_an_empty_list(monkeypatch):
     monkeypatch.setattr("reckon.crew.list_live", lambda: [_running_pointer()])
 
-    report = build_roadmap(PROJECT, [_plan("alpha")], [_sprint("S1", "alpha")])
+    report = build_roadmap(PROJECT, [plan_row("alpha")], [_sprint("S1", "alpha")])
     view = {row["id"]: row for row in sprint_state_view(report)}
 
     assert "interrupted" in view["S1"]
@@ -156,7 +141,7 @@ def test_a_sprint_with_no_interrupted_runs_reports_an_empty_list(monkeypatch):
 def test_a_plan_with_no_live_runs_reports_empty_lists_not_missing_keys(monkeypatch):
     monkeypatch.setattr("reckon.crew.list_live", _no_live_runs)
 
-    report = build_roadmap(PROJECT, [_plan("alpha")], [_sprint("S1", "alpha")])
+    report = build_roadmap(PROJECT, [plan_row("alpha")], [_sprint("S1", "alpha")])
 
     assert report["sprints"][0]["in_flight"] == []
     assert report["sprints"][0]["interrupted"] == []
@@ -167,7 +152,7 @@ def test_a_run_from_another_project_never_carries_a_foreign_interruption(monkeyp
     foreign["project"] = "elsewhere"
     monkeypatch.setattr("reckon.crew.list_live", lambda: [foreign])
 
-    report = build_roadmap(PROJECT, [_plan("alpha")], [_sprint("S1", "alpha")])
+    report = build_roadmap(PROJECT, [plan_row("alpha")], [_sprint("S1", "alpha")])
 
     assert report["sprints"][0]["interrupted"] == []
     assert report["sprints"][0]["in_flight"] == []
