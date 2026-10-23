@@ -1211,6 +1211,7 @@ def _compute_watch_snapshot(
     agent_map = (
         pointer.get("agent") if isinstance(pointer.get("agent"), Mapping) else {}
     )
+    repair_at, repair_reason = _status_repair_facts(pointer)
     return {
         "run_id": str(row.get("run_id") or ""),
         "node": str(row.get("node") or row.get("run_id") or "unknown"),
@@ -1296,6 +1297,12 @@ def _compute_watch_snapshot(
         "manifest_status": str(row.get("manifest_status") or ""),
         "manifest_commits": list(row.get("manifest_commits") or []),
         "manifest_digest": row.get("manifest_digest"),
+        # The coordinator's own status repair, when one is recorded for this
+        # run: the instant it was written and the reason it named. Carried so
+        # the fold can tell the transition the repair caused, stamp it, and
+        # let the stream withhold a row that coordinator already made.
+        "status_repair_at": repair_at,
+        "status_repair_reason": repair_reason,
         # The clock-derived inputs, carried so a producer that reuses this
         # snapshot recomputes the silence from the stream's stat alone rather
         # than re-reading or re-listing anything.
@@ -1421,6 +1428,43 @@ def _fleet_counts(
     if waiting:
         counts["waiting"] = waiting
     return counts
+
+
+def _status_repair_facts(
+    record: Mapping[str, Any],
+) -> tuple[str | None, str | None]:
+    """The coordinator's recorded status repair for a run, as (instant, reason).
+
+    A ``crew repair --status`` is a coordinator's own act: it moves a run into a
+    halted word the coordinator just chose, so the transition it causes carries
+    nothing that coordinator does not already know, and the stream withholds the
+    row. The record's instant and reason are read here, onto the snapshot, so
+    the fold can stamp the transition the repair caused. Both are None for a run
+    with no recorded repair — a repair nothing corroborates stamps nothing.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None, None
+    repair = runs.status_repair_record(run_id)
+    if not repair:
+        return None, None
+    stamp = str(repair.get("repaired_at") or "")
+    return stamp or None, str(repair.get("reason") or "")
+
+
+def _status_repaired(previous: Mapping[str, Any], current: Mapping[str, Any]) -> bool:
+    """Whether a status repair was written since the previous observation.
+
+    The stamp rides the one transition the repair caused and no later one: the
+    repaired instant moves from absent to the record's value, or from one
+    repair's instant to the next, and the remembered snapshot then holds the
+    same value, so the comparison is false on every observation after. The
+    signal is the record's own instant rather than the transition's shape,
+    because a repair is a coordinator's act and the fleet cannot otherwise tell
+    its transition from the worker's own stop word.
+    """
+    current_stamp = current.get("status_repair_at")
+    return bool(current_stamp) and current_stamp != previous.get("status_repair_at")
 
 
 def _manifest_rewritten(
@@ -1745,7 +1789,18 @@ def fleet_transitions(
         )
         current_recovery = str(current[run_id].get("recovery_classification") or state)
         if state != previous or current_recovery != previous_recovery:
-            changes.append((current[run_id], previous, state))
+            if _status_repaired(known[run_id], current[run_id]):
+                # The one transition a coordinator's own status repair caused.
+                # The emitted snapshot is marked so the event builder stamps it,
+                # while the run's memory keeps the clean copy: the repair's
+                # instant is on that copy too, so a later observation reads the
+                # repair as already stamped and emits nothing for it.
+                changes.append(
+                    ({**current[run_id], "status_repaired": True}, previous, state)
+                )
+                running[run_id] = dict(current[run_id])
+            else:
+                changes.append((current[run_id], previous, state))
         elif _manifest_rewritten(known[run_id], current[run_id]):
             # The classification word did not move but the report it sits on
             # did. The emitted snapshot is marked so the event builder records
@@ -1775,7 +1830,9 @@ def fleet_transitions(
             # Settled on its terminal ledger row: hold the promoted memory
             # rather than adopting a later pointer reading.
             pass
-        elif not snapshot.get("manifest_rewritten"):
+        elif not snapshot.get("manifest_rewritten") and not snapshot.get(
+            "status_repaired"
+        ):
             running[run_id] = dict(snapshot)
         events.append((dict(snapshot), previous, state, _transition_counts(running)))
     return events, running
@@ -1913,6 +1970,15 @@ def _watch_transition(
         "resume_brief": snapshot.get("resume_brief"),
         "needs_help_complete": snapshot.get("needs_help_complete"),
     }
+    if snapshot.get("status_repaired"):
+        # The transition a coordinator's own ``crew repair --status`` caused.
+        # The stamp names the repair's instant and reason, so the stream can
+        # withhold a row the coordinator already knows it made while ``crew
+        # view`` and the pane history still carry it.
+        event["status_repair"] = {
+            "repaired_at": snapshot.get("status_repair_at"),
+            "reason": str(snapshot.get("status_repair_reason") or ""),
+        }
     if snapshot.get("manifest_rewritten"):
         # A rewrite of the report beneath an unchanged verdict: from_state and
         # to_state are the same word, so the distinct kind is what separates

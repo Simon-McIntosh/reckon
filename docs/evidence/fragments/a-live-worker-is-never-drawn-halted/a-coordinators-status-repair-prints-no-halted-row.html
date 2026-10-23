@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+<title>a-coordinators-status-repair-prints-no-halted-row — landing record</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="a-coordinators-status-repair-prints-no-halted-row">Landing record — a coordinator's own status repair prints no halted row</h2>
+
+<p id="a-coordinators-status-repair-prints-no-halted-row-why">A <code>crew repair --status</code> rewrites a run's manifest verdict because the coordinator read the run and decided what the record should say. The transition it causes into a halted word is therefore a duty that coordinator has just discharged by its own act — the same reading a <code>landed</code> or <code>dropped</code> row from its own merge or discard is given — so it carries nothing new and the stream must not print it. Before this node the transition printed as a halt, which is the alarm row the section exists to remove.</p>
+
+<p id="a-coordinators-status-repair-prints-no-halted-row-how">The producer reads the run's <code>status-repair.json</code> onto the snapshot (<code>status_repair_at</code>, <code>status_repair_reason</code>) and stamps the single transition the repair caused, by comparing that instant against the previous observation (<code>recovery_watch._status_repaired</code>). The event builder carries the stamp as <code>status_repair</code> (<code>recovery_watch._watch_transition</code>, the dict built at what was line 1878). <code>ticker.stream_carries</code> reads the stamp and withholds the row; it stays in <code>crew view</code> and the pane history. The remembered snapshot then holds the same instant, so the comparison is false afterwards and the stamp rides only the single transition the repair caused.</p>
+
+<p id="a-coordinators-status-repair-prints-no-halted-row-scope">The withhold is scoped to the halt. <code>ticker.stream_carries</code> withholds a stamped row only where the destination pane word is <code>halted</code>, so a repair that lands a run on the other carried word — a delivery — is judged as any other row is and prints. Without that clause the stamp alone silenced a delivery row, which is a duty the coordinator has not discharged by repairing a status.</p>
+
+<p id="a-coordinators-status-repair-prints-no-halted-row-checks"><code>tests/test_a_status_repair_prints_no_halted_row.py</code> holds five checks: a row-policy check that a stamped <code>complete → blocked</code> event prints nothing while the same event without the stamp prints the halted row; a row-policy check that a stamped event landing on a delivery still prints; a check that an unstamped transition is judged as before; a producer check that the fold stamps the event emitted after a fixture <code>status-repair.json</code> is written; and a check that a later transition off the repaired word carries no stamp. The producer checks build through <code>runs._stream_transition</code>, the builder the publisher funnels every folded transition through, so severing that delegation fails them rather than leaving them green.</p>
+
+<h3>Gate</h3>
+<p id="a-coordinators-status-repair-prints-no-halted-row-gate">The gate is a head/base arm pair over the test files that reach the changed behaviour, because the importer set the done-when names is effectively the whole suite — 541 files, since nearly every module here imports <code>ticker</code>, <code>recovery_watch</code> or <code>runs</code> — and this node carries 8 CPUs, where a 12-worker arm reached only 21 % in ten minutes and was twice stopped at the background limit. The core pair covers 20 files across ticker, row policy, transition extraction, the recovery fold, the manifest check and the new test: <strong>head 357 passed, <code>EXIT=0</code>, 77.3 s</strong>; <strong>base (the pre-change revision, which lacks the new test module) 352 passed, <code>EXIT=0</code>, 42.2 s</strong>. The five-test difference is exactly the new module's five checks added, and neither arm carried a single failure, so the change adds none (<code>gate-head-core.log</code>, <code>gate-base-core.log</code>). Three negative controls are red as required, one per mechanism and one per round of this node: dropping the stamp check from <code>ticker.stream_carries</code> — 2 failed of 4, <code>EXIT=1</code> (<code>gate-negctl.log</code>); severing the <code>runs._stream_transition</code> delegation so the stamp is dropped on the way out — 2 failed of 5, <code>EXIT=1</code> (<code>gate-negctl-sever.log</code>); and widening the guard back to every stamped row — 1 failed of 5, <code>EXIT=1</code> (<code>gate-negctl-widen.log</code>).</p>
+</main>
+</body>
+</html>
