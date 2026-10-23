@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T11:26:10.230Z",
+  "dispatched_at": "2026-10-23T11:13:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T012524464845-a-plan-write-refuses-the-bucket/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "the tests line is a sentence describing the gate and the baseline_suite/after_suite command fields at lines 18-19 carry <51 files>/<52 files> placeholders, so promotion cannot re-run the gate from the record and the fallback log headers repeat the placeholder."
+    },
+    {
+      "file": "docs/evidence/fragments/additional-work-is-a-section/a-plan-write-refuses-the-bucket.html",
+      "line": "77",
+      "severity": "non-blocking",
+      "text": "the landed record states both population arms are \"the remaining work, not a result\" and that the gate needs a re-run, which now contradicts the run's manifest recording both arms complete with zero added failures, so a reader of the promoted record sees an unresolved gate."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": "936",
+      "severity": "non-blocking",
+      "text": "the rule sentence \"additional work is a plan section or an instruction in the dispatching prompt\" is spelled here and again in the audit finding at reckon/doccheck.py:1728, so the two spellings can drift."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass - read commit by commit against 4d75245b4; 8e7955f88 is the guard and the test file, 6d14eefbc is the evidence fragment.",
+    "done_when": "pass - the gate names tests/test_a_plan_write_refuses_the_bucket.py and the two arm logs; base 3 failed/652 passed and head 3 failed/663 passed over the same three ids, so zero failures were added.",
+    "goal": "pass - the node goal is to refuse a plan write that adds the goal's own language through the one authored-body predicate; reckon/_store.py:927 is that clause and every structured path reaches it.",
+    "manifest": "pass - read; it records complete, the two shas, the 11-case test file passing, the negative control, and both population arms with failure_ids in node-id form.",
+    "write_paths": "pass - the diff touches five of the six declared write paths and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the negative-control log shows the declared mutation reddening four of the eleven cases (insert_section, created-plan section body, sections.<id>.body set, append_evidence) with EXIT=1, so those guards are regression-sensitive; the text-mode guard (reckon/_store.py:2117) and the audit guard (reckon/doccheck.py:1722) are asserted but not falsified by that mutation.",
+    "evidence": "the gate's substance is recorded and readable in logs/population-base.log and logs/population-head.log (identical three failing ids in both arms), but the manifest's tests line at line 12 is a description and the baseline_suite/after_suite command fields carry the placeholders <51 files> and <52 files>, so the gate cannot be re-run from the record.",
+    "fit": "the additions follow the surrounding docstring and local-import idiom of reckon/_store.py:900 and reckon/doccheck.py:384, and DEFERRED_WORK_TERM_IN_PROSE names the warning kind the audit emits.",
+    "goal_fidelity": "reckon/_store.py:927 folds the term check into the one predicate so insert_section, append_evidence, a created plan's section body, a sections.<id>.body set and the text route all refuse it with no new error family, exactly as section 4 specifies.",
+    "reuse": "deferred_work_term and deferred_work_terms extend doccheck.py's own _prose_text owner (reckon/doccheck.py:416,428) and the store imports them rather than reimplementing the reader, though the rule sentence is spelled twice, at reckon/_store.py:936 and reckon/doccheck.py:1728.",
+    "scope_discipline": "the diff's five changed paths all sit inside the six declared write paths and carry nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass - the node goal is to refuse a plan write that adds the goal's own language through the one authored-body predicate; reckon/_store.py:927 is that clause and every structured path reaches it.\nVERDICT done_when: pass - the gate names tests/test_a_plan_write_refuses_the_bucket.py and the two arm logs; base 3 failed/652 passed and head 3 failed/663 passed over the same three ids, so zero failures were added.\nVERDICT write_paths: pass - the diff touches five of the six declared write paths and nothing outside them.\nVERDICT manifest: pass - read; it records complete, the two shas, the 11-case test file passing, the negative control, and both population arms with failure_ids in node-id form.\nVERDICT diff: pass - read commit by commit against 4d75245b4; 8e7955f88 is the guard and the test file, 6d14eefbc is the evidence fragment.\nCALL_SITES: reckon/_store.py:1010, reckon/_store.py:1138, reckon/_store.py:2117, reckon/_store_section_ops.py:157\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store.py:927 folds the term check into the one predicate so insert_section, append_evidence, a created plan's section body, a sections.<id>.body set and the text route all refuse it with no new error family, exactly as section 4 specifies.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate's substance is recorded and readable in logs/population-base.log and logs/population-head.log (identical three failing ids in both arms), but the manifest's tests line at line 12 is a description and the baseline_suite/after_suite command fields carry the placeholders <51 files> and <52 files>, so the gate cannot be re-run from the record.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's five changed paths all sit inside the six declared write paths and carry nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: the negative-control log shows the declared mutation reddening four of the eleven cases (insert_section, created-plan section body, sections.<id>.body set, append_evidence) with EXIT=1, so those guards are regression-sensitive; the text-mode guard (reckon/_store.py:2117) and the audit guard (reckon/doccheck.py:1722) are asserted but not falsified by that mutation.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the surrounding docstring and local-import idiom of reckon/_store.py:900 and reckon/doccheck.py:384, and DEFERRED_WORK_TERM_IN_PROSE names the warning kind the audit emits.\nSCORE reuse: 17\nJUSTIFICATION reuse: deferred_work_term and deferred_work_terms extend doccheck.py's own _prose_text owner (reckon/doccheck.py:416,428) and the store imports them rather than reimplementing the reader, though the rule sentence is spelled twice, at reckon/_store.py:936 and reckon/doccheck.py:1728.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T012524464845-a-plan-write-refuses-the-bucket/manifest.md:12 non-blocking: the tests line is a sentence describing the gate and the baseline_suite/after_suite command fields at lines 18-19 carry <51 files>/<52 files> placeholders, so promotion cannot re-run the gate from the record and the fallback log headers repeat the placeholder.\nFINDING docs/evidence/fragments/additional-work-is-a-section/a-plan-write-refuses-the-bucket.html:77 non-blocking: the landed record states both population arms are \"the remaining work, not a result\" and that the gate needs a re-run, which now contradicts the run's manifest recording both arms complete with zero added failures, so a reader of the promoted record sees an unresolved gate.\nFINDING reckon/_store.py:936 non-blocking: the rule sentence \"additional work is a plan section or an instruction in the dispatching prompt\" is spelled here and again in the audit finding at reckon/doccheck.py:1728, so the two spellings can drift.\n",
+  "review_run_id": "r-20261023T105553943872-review-of-a-plan-write-refuses-the-bucket-6d14eefbc58a",
+  "reviewed_base_sha": "4d75245b49697dedd282331b0ceeb0d61884e9c9",
+  "reviewed_head_sha": "6d14eefbc58a0ee81fdd8d8b15b7155649a7910d",
+  "reviewed_run_id": "r-20261023T012524464845-a-plan-write-refuses-the-bucket",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T11:27:50.445271+00:00",
+  "total": 107
+}
