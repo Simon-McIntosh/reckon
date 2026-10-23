@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T16:53:15.583Z",
+  "dispatched_at": "2026-10-23T16:37:39Z",
+  "findings": [
+    {
+      "file": "tests/test_a_roadmap_read_answers_from_its_snapshot.py",
+      "line": 299,
+      "severity": "blocking",
+      "text": "The done-when's own gate is that tests/test_a_roadmap_read_answers_from_its_snapshot.py passes every case section 50 lists, and the file holds five cases where the section lists at least eight bullets: absent are (a) a fresh process answering its first call from the persisted snapshot within the same bound, (b) a write_plan made in one process forcing a second warm process to recompute with no window waited out, (c) a live run's exit record making the next call recompute and report it out of in_flight, with a patched _fresh_liveness turning false doing the same, and (d) advancing the clock past the stale threshold with every file unchanged reporting the run's new classification. The manifest concedes these under follow_ons (1) and (2), so the recorded gate does not assert the measure the done-when names."
+    },
+    {
+      "file": "tests/test_a_roadmap_read_answers_from_its_snapshot.py",
+      "line": 114,
+      "severity": "non-blocking",
+      "text": "The store-write case advances the generation through reckon._store.advance_write_generation directly rather than through write_plan, so the call in reckon/_store.py write_plan that advances the counter outside _write_plan_at_version (the change's central claim that every plan-state writer is covered) is never exercised: removing that call leaves all five tests green."
+    },
+    {
+      "file": "tests/test_a_roadmap_read_answers_from_its_snapshot.py",
+      "line": 83,
+      "severity": "non-blocking",
+      "text": "The counting_open wrapper rebinds builtins.open, but Path.read_text and Path.open resolve io.open, which rebinding builtins does not touch, so every Path-based read the key makes (.git/HEAD, the ref it names, the write counter and the snapshot file) is uncounted; the bound of at most 8 stat-or-open calls per mounted project therefore measures stats only and would not catch a key that added Path reads."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": 1250,
+      "severity": "non-blocking",
+      "text": "_roadmap_live_readings keys each live run on only the reduced [run_id, state] row, where section 50 specifies the key carry the watcher's _snapshot_reuse_key and its host-gated _fresh_liveness readings. A classification-input change that moves a run's detail while leaving state unchanged keeps the key matching, so the roadmap serves the older run rows until the revalidation window expires."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 50's goal is to answer a warm roadmap read from a snapshot keyed on the project write generation; reckon/mcp.py:1840-1869 loads or stores it and reckon/serve.py:1271-1381 builds the key from the mounted projects' .git/index mtime, HEAD, the store write counter, the held code stamp and this project's live-run reduction.\nVERDICT done_when: the done-when's gate is tests/test_a_roadmap_read_answers_from_its_snapshot.py passing every case section 50 lists; the manifest records head 44 passed / base 39 passed EXIT=0 and a red negative control, but the file covers five of the section's eight case bullets.\nVERDICT write_paths: the manifest declares reckon/serve.py, reckon/mcp.py, reckon/_store.py, the new test file and the evidence fragment; every path in the diff base..head is inside that list, with nothing beyond the fragment added.\nVERDICT manifest: read at the source run's manifest.md; it records status complete, the four commits, head 44 passed / base 39 passed, the negative control, and names under follow_ons the cases it did not cover.\nVERDICT diff: read commit by commit against 04c10e00c; four commits add a per-project write generation in reckon/_store.py, the snapshot key/load/store and mounts memo in reckon/serve.py, the roadmap wiring in reckon/mcp.py, the five-case test and the landing fragment.\nCALL_SITES: reckon/mcp.py:1975, reckon/mcp.py:2096, reckon/project_brief.py:125, reckon/project_maintenance_commands.py:1576, reckon/_store.py:2292\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the core deliverable is present at reckon/mcp.py:1840-1869 and reckon/serve.py:1271-1381, but the plan's clause that the section deletes the caching it makes redundant (reckon/metadata_index.py parse_meta_shared and _META_BY_DIGEST) is absent from the diff and the node was fenced out of that file.\nSCORE evidence: 10\nJUSTIFICATION evidence: the logged gates (head-gate.log 44 passed EXIT=0, base-gate.log 39 passed EXIT=0, negative-control.log 1 failed EXIT=1) are recorded, but they assert five of the section's eight cases, so the gate does not measure the done-when it names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 04c10e00c..bad8b8278 is among the declared write paths, and the only deletions are two lines of reckon/mcp.py rewritten in place.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_a_roadmap_read_answers_from_its_snapshot.py:314-318 is a genuine negative control that reddens when the counter leaves the key, but the write_plan-to-advance_write_generation link (reckon/_store.py) and the four uncovered section cases have no assertion that would fail on a regression.\nSCORE fit: 17\nJUSTIFICATION fit: the additions follow the surrounding style of reckon/serve.py:1131-1381 and the names are capability-descriptive, with no plan label, ticket id or version suffix in any name or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: mounts_for_snapshot wraps the existing reckon/serve.py:610 load_mounts rather than duplicating it, and a search over reckon/ and reckon/crew for an existing per-project write-generation counter or node-local roadmap cache found no owner for either addition.\n",
+  "review_run_id": "r-20261023T155536969267-review-of-a-roadmap-read-answers-from-its-snapshot-bad8b8278761",
+  "reviewed_base_sha": "04c10e00c47fb315463350917f22af46e25d585a",
+  "reviewed_head_sha": "bad8b827876115d38c4556563640662cd8974d8c",
+  "reviewed_run_id": "r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot",
+  "scores": {
+    "durability": 11,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T16:54:32.021451+00:00",
+  "total": 90
+}
