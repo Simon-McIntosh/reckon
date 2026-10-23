@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T05:52:21.077Z",
+  "dispatched_at": "2026-10-23T05:06:19Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-restart-reuses-rows-by-stat-identity-a1c0780f2c73",
+      "recorded_at": "2026-10-23T06:06:44.212341+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_changed_directory_rescans_only_itself.py",
+      "line": "120",
+      "severity": "blocking",
+      "text": "blocking: the landed removal of _reuse_covered's third element leaves this file's own mutation arms unpacking a value that is gone. Its _KEEP_REMOVED arm binds 'covered, dirs, scanned = result' at line 120 and returns a three-tuple at line 131, and its _ALL_OR_NOTHING arm indexes 'result[2]' at line 149; at head _reuse_covered returns two elements, so arming either control raises before the mutation is exercised. Reproduced in this review with RECKON_TEST_RESCAN_KEEP_REMOVED=1 at a1c0780f2: 'ValueError: not enough values to unpack (expected 3, got 2)' at tests/test_a_changed_directory_rescans_only_itself.py:120, 5 failed. The unarmed file passes (it is absent from the failure list of the head population), so the arm's whole signal is the unpack error rather than the case the control is declared for, and the guard that keeps a vanished directory's files out of the covered set can no longer be shown to fire. The repair is a few lines in a file outside this node's fence, so it cannot be made here; nothing else in the diff owns it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T035821323087-a-restart-reuses-rows-by-stat-identity/logs/gate-head.log",
+      "line": "1",
+      "severity": "follow-on",
+      "text": "follow-on: this arm's own header names the revision it ran at as 'e05213f40 + dirty worktree', while the manifest's after_suite (manifest.md line 18) records that same run's revision as '781c01879'. Both describe one gate, and the commit was made from that dirty tree four minutes later, but nothing recorded shows the two trees are identical, so a reader comparing the receipt against the log it cites finds a revision the log does not name. The counts are not in doubt (1 failed, 165 passed in this log, 3 failed, 159 passed in gate-base.log, no added failure id); only the revision the receipt stands on is asserted rather than shown."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to reuse an unchanged file's persisted index row by its stat identity before reading and hashing the file; reckon/metadata_index.py:573-582 takes the file's stat through covered_stat, compares the persisted entry's recorded signature with _same_stat_identity and serves the row through _reuse_entry before _content_digest is reached, which is that sentence exactly.\nVERDICT done_when: the plan's four cases each carry their own control in tests/test_a_restart_reuses_rows_by_stat_identity.py and all four arms were run and recorded red on the case each names (logs/negative-control.log: NO_SIGNATURE 2 failed/2 passed, NO_MTIME 2/2, NO_DIGEST 1/3, WITH_DEVICE 2/2, each EXIT=1, against logs/head.log's 4 passed EXIT=0); the removal clause is executed at reckon/metadata_index.py:379 and :395 with the docstring paragraph gone; the population clause is measured at head and base (logs/gate-head.log 1 failed, 165 passed; logs/gate-base.log 3 failed, 159 passed; coordinator-population head 12 failed/1154 passed against base 12 failed/1150 passed with no added id), with the base arm's two extra failures attributed to its git-archive extraction and not to this change; the plan's clause that tests/test_every_module_fits_a_worker_window.py passes is not met, because that test fails at head and at base on reckon/roadmap.py's 51232-token window, and the dispatch's clause demanding no new failure beyond that one is met.\nVERDICT write_paths: the node is fenced to reckon/metadata_index.py, tests/test_a_restart_reuses_rows_by_stat_identity.py, docs/evidence/fragments/the-page-paints-from-an-index/a-restart-reuses-rows-by-stat-identity.html and a figures directory; git diff e05213f406e36d0a219931d067f583d4a1018163..a1c0780f2c73d302c546e9a132a7175b6e7d0207 changes the first, the second and the fragment, and nothing outside that set.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T035821323087-a-restart-reuses-rows-by-stat-identity/manifest.md; status complete, both suite blocks completed with exit_status, both failure-id sets present, the negative control is one bare path, and its follow_ons correctly names the peer test file this review reproduces as a blocking defect.\nVERDICT diff: read commit by commit against e05213f40 across two commits \u2014 781c01879 adds _same_stat_identity, _reuse_entry and the early signature branch in build_index, drops the third element of _reuse_covered, and adds the 271-line test; a1c0780f2 adds the evidence fragment; no file outside the declared write paths is touched.\nCALL_SITES: reckon/serve.py:1252 (_served_index_rows, reached from :2768, :2806 and :3350), reckon/mcp_views.py:1187, reckon/resources.py:596, reckon/resources.py:798, reckon/metadata_index.py:792 (_covered_files)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:573-582 takes the stat observation first and returns the persisted row through _reuse_entry with no read or hash, matching the goal sentence; only the completeness guard narrows which rows take that path.\nSCORE evidence: 16\nJUSTIFICATION evidence: the run records the gate (4 passed EXIT=0 at logs/head.log), all four armed controls red on their own case (logs/negative-control.log) and the population delta with no added failure id, but the plan's clause that tests/test_every_module_fits_a_worker_window.py passes is unmet, no log records the done-when's git-status clause, and logs/gate-head.log:1 names e05213f40 + dirty worktree where the manifest's after_suite names 781c01879.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff e05213f406e36d0a219931d067f583d4a1018163..a1c0780f2c73d302c546e9a132a7175b6e7d0207 touches only reckon/metadata_index.py, tests/test_a_restart_reuses_rows_by_stat_identity.py and the node's evidence fragment, all inside the fenced set, and the peer test file it breaks is left untouched as the fence requires.\nSCORE durability: 19\nJUSTIFICATION durability: the assertions are independent of the values under test \u2014 tests/test_a_restart_reuses_rows_by_stat_identity.py:219 fails if the digest-first order is restored (six digests where none is expected, reproduced by the NO_SIGNATURE arm), :233 under NO_MTIME, :248 under NO_DIGEST, :270 under WITH_DEVICE, and build.reused at :215 and :269 compares against a freshly walked covered-file count rather than a value the test handed the code.\nSCORE fit: 18\nJUSTIFICATION fit: _same_stat_identity at reckon/metadata_index.py:200 and _reuse_entry at :511 follow the module's predicate-and-docstring idiom and introduce no plan label, version name or plan-stage symbol.\nSCORE reuse: 17\nJUSTIFICATION reuse: the added definitions extend the module's own identity owner, reckon/metadata_index.py:188 _stat_signature (itself file_memo.signature_from_stat), and fork no capability; the same persisted-signature comparison stays inline at reckon/metadata_index.py:1089 in discovery_state, so the rule is now stated twice in one module.\nFINDING tests/test_a_changed_directory_rescans_only_itself.py:120 blocking: removing _reuse_covered's third element breaks both of this file's mutation arms (three-value unpack at :120 returning a three-tuple at :131, and result[2] at :149), so under RECKON_TEST_RESCAN_KEEP_REMOVED=1 the arm now dies with 'ValueError: not enough values to unpack (expected 3, got 2)' at :120 and 5 failed \u2014 reproduced in this review at a1c0780f2 \u2014 and the guard that control exists to show firing can no longer be shown to fire.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T035821323087-a-restart-reuses-rows-by-stat-identity/logs/gate-head.log:1 follow-on: this log's header names the revision it ran at as 'e05213f40 + dirty worktree' while the manifest's after_suite records revision '781c01879' for the same arm, so the receipt names a revision its own cited log does not, and nothing recorded shows the dirty tree and the commit are the same content.\n",
+  "review_run_id": "r-20261023T045901792273-review-of-a-restart-reuses-rows-by-stat-identity-a1c0780f2c73",
+  "reviewed_base_sha": "e05213f406e36d0a219931d067f583d4a1018163",
+  "reviewed_head_sha": "a1c0780f2c73d302c546e9a132a7175b6e7d0207",
+  "reviewed_run_id": "r-20261023T035821323087-a-restart-reuses-rows-by-stat-identity",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T05:53:04.614920+00:00",
+  "total": 109
+}
