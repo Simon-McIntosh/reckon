@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T19:26:20.339Z",
+  "dispatched_at": "2026-10-23T19:04:38Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": 1324,
+      "severity": "non-blocking",
+      "text": "a sprint move whose plan write failed (partial_write at :1728) still records a write receipt at :1744, so a retry carrying the same request_id replays through _replayed_response at :1324 as plain success with no plan_writes: the caller is told the move landed while the plan keeps the sprint it came from, which is the condition this node repairs."
+    },
+    {
+      "file": "tests/test_a_sprint_move_writes_the_plans_sprint.py",
+      "line": 160,
+      "severity": "non-blocking",
+      "text": "the SPRINT_MEMBERSHIP assertion is unreachable in a red state - every arm that would make audit_lifecycle report a mismatch (base, and the negative control that writes only the sprints) fails first at assert plan[\"sprint\"] == \"S2\", so the instrument is never shown reporting a finding over the temporary project; the same holds at :178 and :193."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/mcp.py:3313 registers the edit_plan MCP tool over _edit_plan_tool, reaching the index-batch move path; reckon/mcp.py:229 exposes _move_sprint_item on the MCP namespace, reaching the standalone move path.",
+    "diff": "read commit by commit against 669f3f5f4: 149268764 adds the plan-side write to reckon/mcp_edit_plan.py plus the test file, 14ddfb20a narrows the refusal to a foreign-project ref, d648d0019 adds the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_sprint_move_writes_the_plans_sprint.py with its clauses (plan reads the destination, the two sprints agree, the audit reports no mismatch, the two refusal cases, the batch case); gate.log records 122 passed EXIT=0 and base-arm.log 5 failed.",
+    "goal": "the node's goal is to write a moved plan's sprint in the same edit_plan call as the move; reckon/mcp_edit_plan.py:1728 carries each moved plan's sprint after the index write, and :782 does the same for the standalone mover.",
+    "manifest": "read; it states the seven-file gate command, 122 passed EXIT=0 at 14ddfb20a beside a base arm of 5 failed and a negative control of 3 failed, and its figures reconcile with all three logs.",
+    "write_paths": "the manifest declares reckon/mcp_edit_plan.py, the test file, docs/evidence/fragments/the-portfolio-reads-true/a-sprint-move-writes-the-plans-sprint.html and a figures directory; the three files the diff touches all lie inside that set."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to write a moved plan's sprint in the same edit_plan call as a sprint move; reckon/mcp_edit_plan.py:1728 carries each moved plan's sprint after the index write and :782 does the same for the standalone mover.\nVERDICT done_when: the done_when names tests/test_a_sprint_move_writes_the_plans_sprint.py and the gate log records 122 passed EXIT=0 at 14ddfb20a with the base arm at 5 failed.\nVERDICT write_paths: the manifest declares four paths and the three files the diff touches all lie inside them.\nVERDICT manifest: read; it names the gate command, 122 passed EXIT=0, a base arm of 5 failed and a negative control of 3 failed.\nVERDICT diff: read commit by commit against 669f3f5f4; reckon/mcp_edit_plan.py +181/-13, a new 245-line test file, a 76-line evidence fragment.\nCALL_SITES: reckon/mcp.py:3313, reckon/mcp.py:229\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp_edit_plan.py:1728 writes each moved plan's sprint through its own versioned store write, and :782 does so for the standalone mover, so neither entry point leaves the plan behind.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log (head 122 passed EXIT=0), base-arm.log (5 failed) and negative-control.log (3 failed) are mutually consistent and each ends in a bare EXIT= line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/mcp_edit_plan.py, tests/test_a_sprint_move_writes_the_plans_sprint.py, the landing fragment) is inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_sprint_move_writes_the_plans_sprint.py:158 fails on 669f3f5f4 reading 'S1' where 'S2' is required, and the negative control around reckon/mcp_edit_plan.py:656 reddens three cases.\nSCORE fit: 18\nJUSTIFICATION fit: the added functions follow the module's own docstring idiom and reuse reckon/_store.py:2717 sprint_item_slug in place of the inline slug extraction _move_sprint_item carried before.\nSCORE reuse: 16\nJUSTIFICATION reuse: _plan_for_sprint_move extends reckon/_schema.py:276 parse_plan_ref, but _carry_plan_sprints writes the plan through read_plan/write_plan directly rather than through the owner of 'set a plan field', the set op in reckon/_store.py, so the plan write skips the schema validation _edit_plan applies.\nFINDING reckon/mcp_edit_plan.py:1324 non-blocking: a partial sprint move records a receipt and a same-id retry replays as plain success, hiding the plan write that never landed.\nFINDING tests/test_a_sprint_move_writes_the_plans_sprint.py:160 non-blocking: the SPRINT_MEMBERSHIP assertion is masked by the earlier sprint assertion on every red arm, so the instrument is never shown reporting a mismatch.",
+  "review_run_id": "r-20261023T190134350875-review-of-a-sprint-move-writes-the-plans-sprint-d648d001969f",
+  "reviewed_base_sha": "669f3f5f48f3c19d9a2162a79c995f7d747e1a94",
+  "reviewed_head_sha": "d648d001969fbe7c869e092bb4456bba1eef3f88",
+  "reviewed_run_id": "r-20261023T175236866631-a-sprint-move-writes-the-plans-sprint",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T19:30:22.514091+00:00",
+  "total": 110
+}
