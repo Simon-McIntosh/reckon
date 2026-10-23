@@ -2618,31 +2618,23 @@ ATTEMPT_HARNESS_CACHES: tuple[str, ...] = (
 )
 
 
-def _tree_bytes(path: Path) -> int:
-    """Total size of the files under ``path``, without following a symlink."""
-    if path.is_symlink():
-        return 0
-    total = 0
-    for child in path.rglob("*"):
-        if child.is_symlink() or not child.is_file():
-            continue
-        try:
-            total += child.stat().st_size
-        except OSError:
-            continue
-    return total
-
-
-def _remove_attempt_harness_caches(run_directory: Path) -> list[dict[str, Any]]:
+def _remove_attempt_harness_caches(
+    run_directory: Path, *, attempt: int
+) -> list[dict[str, Any]]:
     """Remove the harness caches an exited attempt left, returning what went.
 
     Bound to the writing of an attempt's exit record rather than to the
     presence of that record, so an attempt that exits removes only the caches
-    it built. A later attempt of the same run filling the same paths is never
-    touched, because nothing removes a cache except its own attempt's exit. A
-    removal that fails leaves the path in place rather than raising, since a
-    surviving cache must not cost the run its exit record.
+    it built. A later attempt of the same run fills the same paths, so the
+    removal runs only while the attempt being recorded is still the run's
+    current one: a record written late, after a newer attempt has started, must
+    leave that newer attempt's caches alone. A run naming no current attempt
+    yields no attempt to remove for, so nothing goes. A removal that fails
+    leaves the path in place rather than raising, since a surviving cache must
+    not cost the run its exit record.
     """
+    if not _attempt_is_current(run_directory, attempt):
+        return []
     removed: list[dict[str, Any]] = []
     for relative in ATTEMPT_HARNESS_CACHES:
         target = run_directory / relative
@@ -2651,7 +2643,7 @@ def _remove_attempt_harness_caches(run_directory: Path) -> list[dict[str, Any]]:
                 size = 0
                 target.unlink()
             elif target.is_dir():
-                size = _tree_bytes(target)
+                size = tree_size_bytes(target)
                 shutil.rmtree(target)
             else:
                 continue
@@ -2677,7 +2669,7 @@ def _supervisor_exit_record(
     and the paths and sizes that went are carried on the record so a reader can
     see what left with the attempt.
     """
-    removed_caches = _remove_attempt_harness_caches(run_directory)
+    removed_caches = _remove_attempt_harness_caches(run_directory, attempt=attempt)
     paths = stream_paths_newest_first(run_directory)
     count, last_type = _stream_record_facts(paths)
     record: dict[str, Any] = {
