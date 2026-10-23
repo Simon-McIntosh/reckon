@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -203,17 +203,23 @@
 <section data-reckon="section" data-id="s5" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
     <p><code>wait-aged</code> and <code>waiting</code> share the pane word <code>waiting</code>. The aging
     row is news, because the wait is overdue. The return to <code>waiting</code> is not, because nothing
-    the coordinator must do has changed, yet it prints as <code>waiting → waiting</code>. The row policy
-    already owns round-trip suppression. <code>RowPolicy._shown</code> and <code>_departures</code>, with
-    <code>_note_shown</code>, hold a departure and drop it when the run returns inside the settle window.
-    The recorded pair is five minutes apart, outside that window. Extend that memory so that a return to a
-    pane word the run was last <em>shown</em> in, with the same wait facts (condition, probe, terminal), is
-    dropped whatever the gap. Add no second same-word rule beside it. The aging row is drawn with the word
+    the coordinator must do has changed, yet it prints as <code>waiting → waiting</code>. The departure
+    memory (<code>RowPolicy._shown</code>, <code>_departures</code>) never sees this pair:
+    <code>_hold_departure</code> records nothing when the destination's pane word equals the shown word. What
+    prints both halves is the same-word exemption <code>same_word_row_is_news</code>
+    (<code>_actionable_recovery(event) or declares_a_wait(event)</code>), and <code>declares_a_wait</code> is
+    true for both rows because each carries the wait declaration. Narrow that exemption, which is the one
+    owner of the question. A same-word row carrying a wait is news when it newly sets the overdue flag
+    (<code>wait_overdue</code> true where the run's last shown row had it false or absent), or when its wait
+    facts (condition, probe, terminal) differ from that row's. A row that only clears the overdue flag with
+    the same facts is not news. Add no second same-word rule beside it. The aging row is drawn with the word
     <code>overdue</code> in its reason clause, so it no longer reads as a repeat.</p>
-    <p>Done when a test feeds the row policy the recorded pair from
-    <code>a-plans-coordinator-is-derived-from-the-ledger</code> (<code>waiting → wait-aged</code>, then
-    <code>wait-aged → waiting</code>, same condition) and the stream prints exactly one row, which names the
-    wait as overdue. A pair whose second row changes the condition prints two rows. Negative control: the
+    <p>Done when a test feeds the row policy three rows in order. First, a <code>working → waiting</code>
+    row declaring the wait, which the policy shows. Then the recorded pair from
+    <code>a-plans-coordinator-is-derived-from-the-ledger</code> (<code>waiting → wait-aged</code> with
+    <code>wait_overdue</code> true, then <code>wait-aged → waiting</code> with it false, same condition). The
+    stream prints the first row and the aging row, which names the wait as overdue, and drops the return. A
+    sequence whose third row changes the condition prints all three. Negative control: the
     first pair at the base revision prints two rows, recorded in the gate log. The tests importing
     <code>ticker</code> add no failures against the base. Ruff adds no findings on the staged paths. Write
     paths: <code>reckon/crew/ticker.py</code> and the new test. It runs after §4, which writes
