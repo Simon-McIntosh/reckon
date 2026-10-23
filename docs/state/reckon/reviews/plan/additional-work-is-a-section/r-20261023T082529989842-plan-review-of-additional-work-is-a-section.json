@@ -1,0 +1,124 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T08:50:44.803Z",
+  "dispatched_at": "2026-10-23T08:36:59Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/additional-work-is-a-section/r-20261023T082529989842-plan-review-of-additional-work-is-a-section/plan.html:88",
+      "id": "done_when-1",
+      "reason": "the node runs to SPEC `exact`, so a worker cannot implement or fail this case and must either invent a reader or stop on a blocker; the case has to be replaced with the actual readers (`run_record`, `run_store`, `ledger`) that case 2 already names.",
+      "text": "\u00a76's third done-when case (\"the readers in `recovery_watch` and `dispatch_peer` read an old row the same as a new one\") names a reading that does not exist: `follow_on_paths` occurs in exactly four production files at HEAD \u2014 `reckon/ledger.py:650`, `reckon/run_record.py:397/605/611/612`, `reckon/run_store.py:45` and `reckon/crew/promotion.py:1267/1268/1442` \u2014 and in neither `reckon/crew/recovery_watch.py` nor `reckon/crew/dispatch_peer.py`, so no ledger row is read there and no old-row behaviour can be asserted",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/additional-work-is-a-section/r-20261023T082529989842-plan-review-of-additional-work-is-a-section/plan.html:88",
+      "id": "reasoning-1",
+      "reason": "the list is the \u00a76 worker's census, and either it tries a field rename \u00a76 forbids or it skips those files and leaves the retired word in a manifest template and a snapshot assertion that no section's done-when covers.",
+      "text": "\u00a76's Why lists `reckon/crew/recovery_watch.py`, `reckon/crew/dispatch_peer.py` and `scripts/check_snapshot_assertions.py` among \"the key's users at `origin/main` that day\", but those three hold only the manifest field `follow_ons` (`recovery_watch.py:201` writes `follow_ons: none` into a derived manifest, `dispatch_peer.py:407` into a NEEDS-HELP report, `check_snapshot_assertions.py:147` into the expected snapshot field set), not the ledger key; the reason the mismatch matters is that \u00a76 scopes its change to \"every file listed above\" while stating \"the rename changes no other field\", and \u00a73's write paths (`reckon/crew/prompts.py`, `reckon/crew/reports.py`, `reckon/crew/promotion.py`, the two comment-only sites) omit all three, so the retired field name in those emitted templates is owned by no section",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/additional-work-is-a-section/r-20261023T082529989842-plan-review-of-additional-work-is-a-section/plan.html:58",
+      "id": "reasoning-2",
+      "reason": "with no caller named, removing the function stops no code path and \u00a73's first case (\"promotes with no plan followup written\", plan.html:62) and its negative control (\"restore the followup conversion, and the first case finds a followup written\") have no arm that can fail, so the node's whole measure rests on a suite that passes on the unmodified store.",
+      "text": "\u00a73 states \"Promotion no longer turns entries into plan followups: `reckon/crew/reports.py`'s conversion (near line 2797) is removed\", but that conversion runs on no production path: `followup_ops_from_manifest` occurs in the tree only at its definition (`reckon/crew/reports.py:2790`), in the public-surface export list (`reckon/crew.py:193`) and in two skill references (`skills/reckon-build/references/worker-protocol.md:138`, `skills/reckon-build/references/coordinator-reference.md:1025`), and `reckon/crew/promotion.py` holds no followup-building code at all, so the caller is the coordinator's writeback and not promotion",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/additional-work-is-a-section/r-20261023T082529989842-plan-review-of-additional-work-is-a-section/plan.html:94",
+      "id": "wiring-1",
+      "reason": "the followup is what a coordinator reads to sequence the build, and it omits the one dependency \u00a73 now waits on while naming a satisfied one, so the ordering text has to be brought in step with the declarations.",
+      "text": "the driving followup `f-awias-001` still reads \"\u00a73 follows \u00a72 and the-suite-is-green-at-head \u00a732\", while `plan-section-depends-on` (plan.html:24) now declares `s3:[#s2, #s6]`: the cross-plan dependency `the-suite-is-green-at-head#s32` was dropped by the same commit that added \u00a76, and \u00a76 \u2014 still `implementable` \u2014 is not mentioned. The dropped plan's \u00a732 is done, so nothing is lost by the removal, but the followup now points \u00a73 at an ordering the plan no longer carries",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "87ea2cf484299dc760f45a44ad8cbed4e501175300cd4d05527ca26136ec19dc",
+  "plan_slug": "additional-work-is-a-section",
+  "plan_version": 20,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-23T08:53:29.962383+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-23T08:53:45.675566+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-23T08:54:08.667292+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-23T08:54:27.005132+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T08:53:29.962383+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T08:53:45.675566+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T08:54:08.667292+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-23T08:54:27.005132+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-additional-work-is-a-section.v20.json",
+  "review_run_id": "r-20261023T082529989842-plan-review-of-additional-work-is-a-section",
+  "reviewed_blob_sha": "1e601c83c6822969e30c62da75ec3322ac2c3e70",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every path cited in the changed units resolves at the reviewed revision (`reckon/crew/prompts.py` 762 and 840, `reckon/crew/reports.py` 2790/2814, `reckon/crew/promotion_release.py` near 131, `reckon/crew/promotion_records.py` near 126 all exist at the cited content), and `the-suite-is-green-at-head \u00a732` resolves to an existing plan whose \u00a732 is done. The \u00a76 file list resolves as files but misstates their content; that is a claim about the code, reported under reasoning.",
+    "done_when": "a finding \u2014 \u00a76's third case requires `recovery_watch` and `dispatch_peer` to read an old ledger row's `follow_on_paths`, and neither module contains that symbol; \u00a73's first case has no arm that can fail it (see the reasoning findings).",
+    "evidence_paths": "pass \u2014 both changed sections write gates and evidence under `docs/evidence/fragments/additional-work-is-a-section/`, a durable in-repo path, and s6 additionally requires each log to name its revision, the literal command and a trailing `EXIT=`.",
+    "naming": "pass \u2014 the changed units name new symbols by mechanism (`outside_scope`, `outside_scope_paths`) and no new symbol, filename or comment carries a stage label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a76's \"key's users\" list is drawn from the manifest field, not the ledger key, and \u00a73 names promotion as the caller of a conversion that has no production caller.",
+    "single_goal": "pass \u2014 s3 carries one deliverable (work outside a worker's fence returns to its coordinator: the field rename, the removal of the followup conversion and the routing of entries to the ledger row are one change), and s6 carries one (the ledger key rename).",
+    "wiring": "a finding \u2014 the declared `plan-section-depends-on` for s3 is now `[#s2, #s6]`, but the plan's own driving followup still names the dependency that was dropped and omits \u00a76."
+  },
+  "section_digests": {
+    "_document": "eb078fa481d8fbfb5388cb50d67c7d1ddbc8844693f57322edd430309c26200f",
+    "s1": "53035db610c769f9fabc12038e7a13898064f071d29b27f9e4b9cfe7e6e9cbfb",
+    "s2": "da6965864ffd2ed27a0442cf22caf15936faa1f5ecfe3c8d4be21504a5d51387",
+    "s3": "e9ab99f6adcae57b200bd37a90b458c50d1bf44aa1b95fb3546b73d8353718cd",
+    "s4": "f54fdafb18757876821e9a2c5955d3db854946ef19afb4d56a5e83886375b088",
+    "s5": "a6fa784958eef11b006d0cb4912714d98031c18adf47e32ecc1f84a23d578e4d",
+    "s6": "503e112d1142ff330e20a9a455ffd047e095a07be49e319a9cb4f0fb6df73035"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T08:53:19.218882+00:00"
+}
