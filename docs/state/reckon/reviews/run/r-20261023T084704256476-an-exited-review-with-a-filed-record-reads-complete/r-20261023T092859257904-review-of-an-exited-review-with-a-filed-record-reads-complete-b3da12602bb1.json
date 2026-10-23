@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T09:46:15.674Z",
+  "dispatched_at": "2026-10-23T09:30:35Z",
+  "findings": [
+    {
+      "file": "tests/test_an_exited_review_with_a_filed_record_reads_complete.py",
+      "line": "221",
+      "severity": "non-blocking",
+      "text": "The third-attempt fixture builds its pointer with pid=os.getpid() and launcher_host=socket.gethostname(), so the run reads alive and _filed_review_record returns at its first guard, `if alive is not False` (reckon/crew/recovery_classification.py:200). The attempt-keying guard it was written to measure \u2014 the receipt filename built from the current attempt number and the payload attempt comparison at reckon/crew/recovery_classification.py:209 and :218 \u2014 is therefore exercised by no test: a regression that dropped the attempt match while keeping the liveness gate would leave the whole file green, so the plan's third done-when condition is met for a reason other than the one it names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T084704256476-an-exited-review-with-a-filed-record-reads-complete/gate.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The after-arm gate log's first line reads `# revision: b809b3aca...`, the base commit, and its mtime is 11:07:56 while the change was committed at 11:24 \u2014 so the change was present uncommitted and the log names the revision it did NOT read, the same sha the base arm's own header carries. A reader comparing the two arms by revision cannot tell which one carried the change; only the base arm's `(base arm: source reverted to base)` annotation does that work. The manifest's evidence_inputs compounds it by claiming the log's `# command:` header `carries the same literal` as the manifest's tests: line, which it does not: the log's command spells absolute paths and lists three modules twice, the manifest's carries $PWD and lists each module once."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "229",
+      "severity": "non-blocking",
+      "text": "The stored record's status is compared against the string literal \"parsed\" rather than against the store's own vocabulary, RECOGNISED_REVIEW_STATUSES (reckon/crew/review.py:840), whose docstring declares it public precisely so `a reader that selects reviews imports it rather than restating the vocabulary and drifting from it`. reckon/crew/recovery_review_subject.py:460 already imports it for the same purpose. A fourth recognised status added to the owner would silently not reach this reader."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to classify an exited review run complete when its latest attempt filed a parsed review record; reckon/crew/recovery_classification.py:743 adds the branch and :397 computes the receipt before the manifest-reading arms, so an exited reviewer reads promotable rather than working.\nVERDICT done_when: the done_when names tests/test_an_exited_review_with_a_filed_record_reads_complete.py plus the importers and the width test; gate.log records that run at `14 failed, 520 passed` with the three fixtures among the passes, and base-arm.log records the same 14 failing ids, which I diffed as identical.\nVERDICT write_paths: read the manifest and the dispatch prompt's FENCE section; the diff touches exactly the three declared paths (the classifier, the new test, the evidence fragment) and nothing else.\nVERDICT manifest: read; it states the classifier change, the 14 pre-existing failures, the negative control at EXIT=1, names gate.log, base-arm.log and negative-control.log, and sets status complete.\nVERDICT diff: read commit by commit against b809b3aca; e0d24b9a5 carries the classifier helper and its arm, b3da12602 the evidence fragment, three files and 324 insertions, no deletions.\nCALL_SITES: reckon/crew/recovery_watch.py:_watch_snapshot, reckon/crew/recovery_watch.py:1182, reckon/crew/query.py:348, reckon/serve.py:884, reckon/crew/forgotten_runs.py:28\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:743-762 classifies an exited review run with a filed parsed record as promotable and names both the receipt and the store record in the row's detail and action.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate.log records the new module plus every importer at `14 failed, 520 passed` EXIT=1 and base-arm.log reproduces the identical 14 ids, but gate.log:1 names the base revision b809b3aca while the change was uncommitted at that run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's three paths are exactly the dispatch's declared write paths, with no file outside them and no unrelated edit.\nSCORE durability: 15\nJUSTIFICATION durability: negative-control.log shows FF.. so tests 1 and 2 fail when the reading is dropped, but tests/test_an_exited_review_with_a_filed_record_reads_complete.py:221 makes the third fixture live, so the attempt-keying guard at recovery_classification.py:218 is never exercised.\nSCORE fit: 18\nJUSTIFICATION fit: the added helper follows the module's idiom \u2014 a private function with a docstring stating the mechanism, reusing _pointer_role, _current_attempt_number, _int_or_none and _run_directory, and a local import explained at recovery_classification.py:204.\nSCORE reuse: 17\nJUSTIFICATION reuse: the search over reckon/crew found the nearest owner recovery_review_delivery._review_delivery_verdict, which answers a stricter question that needs a complete head-keyed record and does not read the supervisor's receipt, so the new reading extends the classifier rather than forking that owner; the restated \"parsed\" literal at recovery_classification.py:229 is the one drift.\nFINDING tests/test_an_exited_review_with_a_filed_record_reads_complete.py:221 non-blocking: the third-attempt fixture is live (pid=os.getpid()), so _filed_review_record returns at its first guard and no test exercises the attempt-keying at recovery_classification.py:218.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T084704256476-an-exited-review-with-a-filed-record-reads-complete/gate.log:1 non-blocking: the after arm's revision line names the base commit b809b3aca while the change was uncommitted, so the two arms carry the same revision string and cannot be told apart by it.\nFINDING reckon/crew/recovery_classification.py:229 non-blocking: the status is compared to the literal \"parsed\" rather than the store's public RECOGNISED_REVIEW_STATUSES at reckon/crew/review.py:840, which its own docstring asks readers to import instead of restating.",
+  "review_run_id": "r-20261023T092859257904-review-of-an-exited-review-with-a-filed-record-reads-complete-b3da12602bb1",
+  "reviewed_base_sha": "b809b3aca0f56665bf445a5056d4f88eb453e26d",
+  "reviewed_head_sha": "b3da12602bb1b2ff43640d9102de35f97a8f6d60",
+  "reviewed_run_id": "r-20261023T084704256476-an-exited-review-with-a-filed-record-reads-complete",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T09:47:11.817227+00:00",
+  "total": 105
+}
