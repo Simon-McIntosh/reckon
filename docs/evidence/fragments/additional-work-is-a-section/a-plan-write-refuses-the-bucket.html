@@ -57,24 +57,31 @@
       </tr>
       <tr>
         <td>the population of test files that reach the authored-body paths</td>
-        <td>8e7955f88 (head)</td>
-        <td>no summary line: the arm closed without one, so it yields no failure
-          ids and no delta</td>
+        <td>4d75245b4 (base)</td>
+        <td>3 failed, 652 passed</td>
       </tr>
       <tr>
-        <td>the same population at the base revision</td>
-        <td>4d75245b4</td>
-        <td>collected nothing, so the arm is void</td>
+        <td>the same population at the head</td>
+        <td>6d14eefbc</td>
+        <td>the same 3 failed, 663 passed — no failure added</td>
       </tr>
     </tbody>
   </table>
 
-  <p id="a-plan-write-refuses-the-bucket-arms-note"><strong>The population arms
-  did not close.</strong> The head arm ran the list and its progress line carries
-  three failure markers, but its log ends without the summary that names them, so
-  nothing here attributes those failures and no delta is claimed. The base arm
-  was handed a list naming the new test file, which does not exist in the
-  extracted base tree, and collected nothing. Both arms are the remaining work,
-  not a result: the population gate needs a re-run at the base revision and at
-  the head with a base list that omits the new test file.</p>
+  <p id="a-plan-write-refuses-the-bucket-arms-note"><strong>The change adds no
+  failure.</strong> Both arms are red on the same three ids, so those three were
+  already failing before this work, and this work added none of them. The head
+  arm runs the base population plus the new test file, which is the difference
+  between the two pass counts.</p>
+
+  <ul id="a-plan-write-refuses-the-bucket-pre-existing">
+    <li><code>tests/test_edit_plan_section_writes.py::test_unknown_declaration_value_is_refused_with_the_accepted_values</code></li>
+    <li><code>tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat</code></li>
+    <li><code>tests/test_ledger.py::test_every_read_view_returns_and_large_defaults_are_compact</code></li>
+  </ul>
+
+  <p id="a-plan-write-refuses-the-bucket-arms-history">An earlier pair of arms run
+  from this node's own worktree produced no usable result — one closed without
+  the summary that names its failures, and one was handed a list naming a file
+  absent from its tree. Those runs are superseded by the two arms above.</p>
 </section>
