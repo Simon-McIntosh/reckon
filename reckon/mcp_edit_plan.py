@@ -566,32 +566,42 @@ def _create_sprint(
         return _conflict_response(e)
 
 
-def _plan_for_sprint_move(
-    project: str, slug: str, root: str | None
-) -> tuple[str, dict[str, Any], int] | None:
-    """The plan a sprint-item ref names here, with its own version.
+def _plan_for_sprint_move(project: str, slug: str, root: str | None) -> tuple[str, Any]:
+    """Classify the plan a moved sprint item names.
 
-    ``None`` when the ref names no plan this project owns: an unparsable ref, or
-    one qualified with another project. A sprint's member list may hold such a
-    ref, and a move of it owes no plan write here. A ref that names this
-    project returns the plan's data as read — empty when no such plan exists,
-    which the caller refuses on before it writes anything.
+    Three outcomes, because a sprint's member list holds more than one kind of
+    ref and only one of them owes a plan write:
+
+    * ``("foreign", ref)`` — the ref is qualified with another project. That
+      plan exists and this call cannot write it, so a move of it is refused
+      rather than half-applied.
+    * ``("plan", (slug, data, version))`` — a plan of this project that exists,
+      with the version its own write is made against.
+    * ``("none", None)`` — no plan write is owed: an unparsable ref, or a ref
+      naming no plan of this project. A member list may name a plan that is not
+      here, and the move still applies to the sprints.
     """
     parsed = parse_plan_ref(slug)
-    if parsed is None or (parsed.project and parsed.project != project):
-        return None
+    if parsed is None:
+        return "none", None
+    if parsed.project and parsed.project != project:
+        return "foreign", slug
     data, version = read_plan(project, parsed.slug, root, artifact_type="plan")
-    return parsed.slug, data, version
+    if not data:
+        return "none", None
+    return "plan", (parsed.slug, data, version)
 
 
 def _unwritable_move_refusal(
     project: str, plan_slug: str, from_sprint: str, to_sprint: str
 ) -> dict[str, Any]:
-    """Refuse a move whose plan cannot be written, naming both sprints.
+    """Refuse a move whose plan this call cannot write, naming both sprints.
 
-    A sprint item and the plan it names each record the membership. Applying
-    the sprint half of a move without the plan half leaves the two disagreeing,
-    so a plan this project cannot write refuses the whole call instead.
+    A sprint item and the plan it names each record the membership. A member
+    list may name a plan another project owns, and that plan's ``plan-sprint``
+    cannot be written from here, so applying the sprint half of the move alone
+    would leave the two ends disagreeing. Refusing names both sprints rather
+    than moving the item and leaving the plan behind it.
     """
     return {
         "ok": False,
@@ -601,8 +611,8 @@ def _unwritable_move_refusal(
         "from_sprint": from_sprint,
         "to_sprint": to_sprint,
         "detail": (
-            f"plan {plan_slug!r} cannot be written, so the move from "
-            f"{from_sprint!r} to {to_sprint!r} is refused and nothing was "
+            f"plan {plan_slug!r} is not this project's to write, so the move "
+            f"from {from_sprint!r} to {to_sprint!r} is refused and nothing was "
             "written; the plan's own sprint is the other half of the "
             "membership this move changes"
         ),
@@ -616,9 +626,9 @@ def _sprint_move_plan_writes(
 
     An index batch is one batch to one document, so the plan half of a sprint
     move cannot ride along with it. Each move is paired here with the plan write
-    that follows the index write, and a move whose plan cannot be read refuses
-    the batch before the index is touched — otherwise the sprint list would
-    change and the plan behind it stay where it was.
+    that follows the index write, and a move naming a plan this call cannot
+    write refuses the batch before the index is touched — otherwise the sprint
+    list would change and the plan behind it stay where it was.
     """
     writes: list[tuple[str, dict[str, Any], int, str]] = []
     seen: set[str] = set()
@@ -626,14 +636,16 @@ def _sprint_move_plan_writes(
         if op.get("op") != "move" or op.get("target") != "sprint_item":
             continue
         to_sprint = str(op.get("to") or "")
-        resolved = _plan_for_sprint_move(project, str(op.get("slug") or ""), root)
-        if resolved is None or not to_sprint:
+        if not to_sprint:
             continue
-        plan_slug, data, version = resolved
-        if not data:
+        kind, payload = _plan_for_sprint_move(project, str(op.get("slug") or ""), root)
+        if kind == "foreign":
             return [], _unwritable_move_refusal(
-                project, plan_slug, str(op.get("from") or ""), to_sprint
+                project, str(payload), str(op.get("from") or ""), to_sprint
             )
+        if kind != "plan":
+            continue
+        plan_slug, data, version = payload
         if plan_slug in seen:
             continue
         seen.add(plan_slug)
@@ -709,9 +721,9 @@ def _move_sprint_item(
     refusal = _run_scoped_write_guard(project, "index")
     if refusal is not None:
         return refusal
-    plan = _plan_for_sprint_move(project, slug, None)
-    if plan is not None and not plan[1]:
-        return _unwritable_move_refusal(project, plan[0], from_sprint, to_sprint)
+    kind, plan = _plan_for_sprint_move(project, slug, None)
+    if kind == "foreign":
+        return _unwritable_move_refusal(project, str(plan), from_sprint, to_sprint)
     cur_data, cur_version = read_plan(project, "index")
     if expected_version != cur_version:
         return _conflict_response(
@@ -766,7 +778,7 @@ def _move_sprint_item(
         "to_sprint": to_sprint,
         "new_version": new_version,
     }
-    if plan is not None:
+    if kind == "plan":
         written, failed = _carry_plan_sprints(
             project, None, [(plan[0], plan[1], plan[2], to_sprint)]
         )
