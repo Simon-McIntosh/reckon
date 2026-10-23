@@ -182,7 +182,7 @@ def build_hook_snippet(
     include_git_guard: bool = False,
     include_walk_guard: bool = False,
     include_core_hooks: bool = True,
-    crew_guard_paths: tuple[Path, Path, Path] | None = None,
+    crew_guard_paths: tuple[Path, Path, Path, Path] | None = None,
 ) -> dict[str, Any]:
     """Return the settings fragment, as it would be merged, for every hook script.
 
@@ -192,8 +192,12 @@ def build_hook_snippet(
     a caller opts in when the guard is to be installed.
 
     ``include_walk_guard`` adds the two PreToolUse entries that bind the worker
-    walk guard, one per matcher. It is a separate opt-in from the git guard so
-    that installing either guard leaves the other's entries alone.
+    walk guard, one per matcher, taking its script path from the fourth entry of
+    ``crew_guard_paths``. The operator path installs the two together — a run
+    that may not touch a peer's checkout is the same run that may not walk the
+    crew home, and ``--include-git-guard`` is the only decision an operator makes
+    about them — while they stay separable here so a caller composing one leaf
+    leaves the other's entries alone.
     """
     script = Path(script_path) if script_path is not None else hook_script_path()
     interpreter = str(interpreter_path())
@@ -208,7 +212,7 @@ def build_hook_snippet(
             _command_group(worker_stop_command),
         ]
     if crew_guard_paths is not None:
-        native, message, _ = crew_guard_paths
+        native, message, _, _ = crew_guard_paths
         entries["PreToolUse"] = [
             _command_group(shlex.join([str(native)])) | {"matcher": "Agent"},
             _command_group(shlex.join([str(message)])) | {"matcher": "SendMessage"},
@@ -217,11 +221,7 @@ def build_hook_snippet(
         git_path = crew_guard_paths[2] if crew_guard_paths is not None else None
         entries.setdefault("PreToolUse", []).append(worker_git_guard_group(git_path))
     if include_walk_guard:
-        walk_path = (
-            crew_guard_paths[2].with_name(WORKER_WALK_GUARD_SCRIPT_NAME)
-            if crew_guard_paths is not None
-            else None
-        )
+        walk_path = crew_guard_paths[3] if crew_guard_paths is not None else None
         entries.setdefault("PreToolUse", []).extend(worker_walk_guard_groups(walk_path))
     return {"hooks": entries}
 
@@ -279,14 +279,14 @@ def configure_crew_guards(
     remove: bool,
     include_git_guard: bool = False,
     include_walk_guard: bool = False,
-    guard_paths: tuple[Path, Path, Path],
+    guard_paths: tuple[Path, Path, Path, Path],
 ) -> bool:
     """Merge or remove sync's guard entries using the installer's settings writer.
 
-    ``include_walk_guard`` binds the worker walk guard beside the others. It is
-    its own opt-in rather than folded into ``include_git_guard`` so a caller can
-    bind either guard without the other, and so the entries the git guard's own
-    install composes stay exactly what they were.
+    ``guard_paths`` names the four crew guards in the order the fragment
+    composes them — native agent, worker message, worker git, worker walk — so
+    the caller resolves each one the way it resolves the rest of the package's
+    scripts, rather than this module reaching for a sibling by name.
     """
     target = _settings_target(settings_path)
     original = _read_bytes(target)

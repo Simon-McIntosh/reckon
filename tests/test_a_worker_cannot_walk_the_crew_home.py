@@ -306,13 +306,14 @@ def test_the_installer_composes_a_bash_and_a_grep_glob_group_for_the_walk_guard(
     assert walk_script.is_file()
 
 
-def test_the_fragment_is_unchanged_without_the_walk_guard_opt_in() -> None:
-    default = installer.build_hook_snippet(include_git_guard=True)
+def test_the_fragment_is_unchanged_when_neither_guard_is_requested() -> None:
+    """Asking for neither guard adds no entry to the fragment."""
+    default = installer.build_hook_snippet()
     opted_in = installer.build_hook_snippet(
         include_git_guard=True, include_walk_guard=True
     )
 
-    assert [g["matcher"] for g in default["hooks"]["PreToolUse"]] == ["Bash"]
+    assert "PreToolUse" not in default["hooks"]
     assert [g["matcher"] for g in opted_in["hooks"]["PreToolUse"]] == [
         "Bash",
         "Bash",
@@ -323,7 +324,8 @@ def test_the_fragment_is_unchanged_without_the_walk_guard_opt_in() -> None:
 def test_the_composed_walk_guard_command_points_into_a_reckon_checkout() -> None:
     """The composed command names a checkout carrying the script and its splitter."""
     commands = _pre_tool_use_commands(
-        installer.build_hook_snippet(include_walk_guard=True), "Grep|Glob"
+        installer.build_hook_snippet(include_git_guard=True, include_walk_guard=True),
+        "Grep|Glob",
     )
     assert len(commands) == 1
 
@@ -340,12 +342,74 @@ def test_the_composed_walk_guard_command_points_into_a_reckon_checkout() -> None
 
 def test_the_walk_guard_groups_are_recognised_for_removal() -> None:
     """Sync removes the walk guard by the same recogniser it removes the rest by."""
-    groups = installer.build_hook_snippet(include_walk_guard=True)["hooks"][
-        "PreToolUse"
+    groups = [
+        group
+        for group in installer.build_hook_snippet(
+            include_git_guard=True, include_walk_guard=True
+        )["hooks"]["PreToolUse"]
+        if installer.is_worker_walk_guard_group(group)
     ]
 
+    assert all(len(group["hooks"]) == 1 for group in groups)
     assert [installer._is_crew_guard_group(group) for group in groups] == [True, True]
-    assert all(installer.is_worker_walk_guard_group(group) for group in groups)
+    assert [group["matcher"] for group in groups] == list(installer.WALK_GUARD_MATCHERS)
+
+
+# ── The operator's sync path installs the walk guard behind the git guard's flag ─
+
+
+def _configured_groups(target: Path) -> list[dict]:
+    from reckon import cli
+
+    cli._configure_crew_guards(target, remove=False, include_git_guard=True)
+    return json.loads(target.read_text())["hooks"]["PreToolUse"]
+
+
+def test_the_sync_installer_binds_the_walk_guard_behind_the_git_guard_flag(
+    tmp_path: Path,
+) -> None:
+    """The operator's install path is what reaches a worker, so it is driven here.
+
+    ``--include-git-guard`` is the only option the operator passes, and the walk
+    guard is installed wherever the git guard is: a run that may not touch a
+    peer's checkout is the same run that may not walk the crew home. Both
+    matchers are asserted, because the guard reads a Bash command's text and the
+    Grep/Glob tools' target, and a wiring that bound only one would leave the
+    other reachable.
+    """
+    target = tmp_path / "settings.json"
+    groups = _configured_groups(target)
+    walk_script = installer.worker_walk_guard_script_path()
+
+    installed = [
+        group for group in groups if installer.is_worker_walk_guard_group(group)
+    ]
+    assert [group["matcher"] for group in installed] == list(
+        installer.WALK_GUARD_MATCHERS
+    )
+    for group in installed:
+        command = group["hooks"][0]["command"]
+        assert Path(shlex.split(command)[0]).name.startswith("python")
+        assert Path(shlex.split(command)[-1]).resolve() == walk_script.resolve()
+    assert any(installer.is_worker_git_guard_group(group) for group in groups), (
+        "the git guard is installed by the same flag"
+    )
+    assert walk_script.is_file()
+
+
+def test_the_sync_installer_removes_the_walk_guard_groups_again(
+    tmp_path: Path,
+) -> None:
+    """Removal takes the walk groups out by the same recogniser, leaving none."""
+    from reckon import cli
+
+    target = tmp_path / "settings.json"
+    _configured_groups(target)
+
+    cli._configure_crew_guards(target, remove=True)
+
+    remaining = json.loads(target.read_text()).get("hooks", {}).get("PreToolUse", [])
+    assert not any(installer.is_worker_walk_guard_group(group) for group in remaining)
 
 
 # ── The guard denies a crew home walk as a real, isolated subprocess ───────

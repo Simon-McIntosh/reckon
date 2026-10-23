@@ -336,19 +336,33 @@ def _worker_git_guard_path() -> Path:
 
 
 
+def _worker_walk_guard_path() -> Path:
+    """Resolve the worker walk guard shipped with the installed package."""
+    return _crew_guard_path("worker_walk_guard.py")
+
+
+
 def _configure_crew_guards(
     settings_path: Path, *, remove: bool, include_git_guard: bool = False
 ) -> bool:
-    """Install or remove sync's guard groups through the hook installer."""
+    """Install or remove sync's guard groups through the hook installer.
+
+    ``include_git_guard`` binds both worker guards: the git guard on the
+    checkouts a run may not touch, and the walk guard on the crew home it may
+    not walk. One operator decision covers the pair, so no second flag exists to
+    leave one installed without the other.
+    """
     try:
         return hook_installer.configure_crew_guards(
             settings_path.expanduser().resolve(),
             remove=remove,
             include_git_guard=include_git_guard,
+            include_walk_guard=include_git_guard,
             guard_paths=(
                 _native_agent_guard_path(),
                 _worker_message_guard_path(),
                 _worker_git_guard_path(),
+                _worker_walk_guard_path(),
             ),
         )
     except hook_installer.HookInstallError as exc:
