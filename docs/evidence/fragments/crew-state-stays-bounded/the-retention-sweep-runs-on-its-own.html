@@ -60,8 +60,18 @@
   <code>reckon-crew-retention.service</code> with <code>ExecStart</code>,
   <code>reckon-crew-retention.timer</code> with <code>OnUnitActiveSec=1h</code> and
   <code>Unit=reckon-crew-retention.service</code>, and issues <code>daemon-reload</code> then
-  <code>enable --now reckon-crew-retention... </code>; a second install reports
-  <code>changed: false</code>, issues no command and leaves both files' mtimes untouched.</p>
+  <code>enable --now reckon-crew-retention.timer</code>; a second install reports
+  <code>changed: false</code>, issues no command and leaves both files' mtimes untouched. The gate
+  reporting those six cases is <strong>131 passed</strong> at revision
+  <code>50d453b98</code> — the six new cases plus every existing module that imports the systemd
+  surface — with <code>ruff check</code> and <code>ruff format --check</code> reporting nothing
+  added on the staged paths.</p>
+  <p>The unit sections live in <code>reckon/service.py</code> rather than in the sweep's own module.
+  A repo-wide case inventories every module whose source carries a systemd section and fails when one
+  appears elsewhere, so that a policy repair cannot land on one copy of a unit and miss another; the
+  retention service and timer therefore render through
+  <code>service.render_periodic_service_unit</code> and
+  <code>service.render_periodic_timer_unit</code>, and only one module writes the sections.</p>
 </section>
 <section id="the-retention-sweep-runs-on-its-own-negative-control">
   <h2>Declared negative control: only the first project's ledger is read</h2>
@@ -69,7 +79,12 @@
   project's ledger is read. The two-project case —
   <code>test_a_pass_retires_the_finished_run_of_every_mounted_project</code> — then fails, because
   the second project's finished run is left in place, which is exactly the failure mode the section
-  exists to remove. The head arm fails no test.</p>
+  exists to remove. The head arm fails no test. The mutation was applied and the case file run
+  against it: <strong>3 failed, 3 passed</strong>, exit 1, the head arm having passed all six. The
+  three failures are the two-project case, the git-shim case (which also needs both projects
+  retired) and the ledger-read spy (which asserts both projects are read), and the three that pass
+  are the cases a single project exercises. The mutated source was restored from a byte-identical
+  backup, and the worktree is clean at that revision afterwards.</p>
 </section>
 </main>
 </body>
