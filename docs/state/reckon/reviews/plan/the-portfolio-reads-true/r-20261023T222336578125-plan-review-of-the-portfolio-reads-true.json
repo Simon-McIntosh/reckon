@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:33:13.574Z",
+  "dispatched_at": "2026-10-23T22:25:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:172",
+      "id": "reasoning-1",
+      "reason": "without a sentence saying the retry applies only the pending plan writes recorded on the receipt and skips the already-landed index move, a node building \u00a79 hits the `not found in sprint` refusal and fails its own done-when, or invents a receipt shape and retry path the plan never specified.",
+      "text": "reproduced at head, a partial move still writes a success receipt: `reckon/mcp_edit_plan.py:1728-1729` sets `ok: false, error: \"partial_write\"` and then `:1744` records `record_write_receipt(..., version=new_version)`, while the retry branch at `:1324` returns `_replayed_response` (`:1207`) as plain success with no `plan_writes` \u2014 but the fix \u00a79 states cannot reach its own second case, because a retry that does not replay re-applies the whole `ops` batch and `_apply_move` raises `OpError(\"<slug> not found in sprint <from>\")` (`reckon/_store.py:3520`) once the index has already moved, before the plan write in `_carry_plan_sprints` runs; and \"names the plan\" on a replay needs the failed slug stored, which `record_write_receipt` does not carry today (only `version` and `digest`)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c9e4368a37ca586aa3c3b06e424dbfb6af0a20723fa9af155e5df89c68491729",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 61,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T222336578125-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "98fb50bd7894201d12556df833579613cc1d1246",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited location was opened at the reviewed head and resolves: `reckon/mcp_edit_plan.py:1728` is the `_carry_plan_sprints` call whose result `:1729` wraps in `_partial_plan_write`, which sets `error: \"partial_write\"` at `:698-702`; the receipt is `record_write_receipt(...)` at `:1744`; the replay is `_replayed_response` returned at `:1324` and defined at `:1207`; and `record_write_receipt` is defined at `reckon/_store.py:285`. The named test file does not exist yet, which is correct for an unbuilt section.",
+    "done_when": "pass \u2014 \u00a79's measure names the test file `tests/test_a_retried_partial_move_is_not_replayed.py`, both cases (a retry after a post-index plan-write failure must report the partial write naming the plan; a retry once the plan is writable must write the plan's sprint), how the failure is induced after \u00a78's pre-read (\"by making the plan's own write raise once the index has been written\"), and a negative control (\"a receipt recorded as success on a partial write must fail the first case\") that states the pre-change behaviour, so the control can go red.",
+    "evidence_paths": "pass \u2014 \u00a79 states \"Every log is under the run directory\", the durable crew run directory a later reader can open; nothing is routed to a node-local temporary path or a session scratchpad.",
+    "naming": "pass \u2014 \u00a79 introduces no symbols, and its prose names mechanisms (`partial_write`, `record_write_receipt`, `_replayed_response`) rather than plan or ticket labels; `\u00a78`/`\u00a79` references sit in plan prose, not in code, symbols or comments.",
+    "reasoning": "a finding \u2014 the defect \u00a79 names reproduces and its root cause matches the cited evidence, but \u00a79's retry clause (\"a retry that finds the plan now writable completes the plan write rather than replaying\") names no mechanism that avoids re-applying the index move that already landed, so the retry reaches the index write before the plan write and is refused there.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable: a retried partial sprint move is reported as partial and can be completed, not replayed as success.",
+    "wiring": "pass \u2014 \u00a79 is sequenced by the open driving followup `f-tprt-009` (`/reckon-build the-portfolio-reads-true \u00a79`), and the section it depends on (\u00a78) is declared `done`, so no relationship is missing and none points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "99c9e3cf9942e999d5740a5fbefff3d49790d2568cd12c6bc07b4892fcca6913",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "c831c83f6c543588912775861b3f6b9cbc4bdf580d1f847c3ed6a3290f2ddde7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:40:28.518021+00:00"
+}
