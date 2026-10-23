@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ast
 import json
 import subprocess
 from copy import deepcopy
@@ -178,63 +177,3 @@ console.log(JSON.stringify(rows.map(row => ({{
     ]
 
     assert rendered == expected
-
-
-ROADMAP_ROW_BUILDING_TESTS = (
-    "tests/test_roadmap_endpoints.py",
-    "tests/test_roadmap_names_interrupted_runs.py",
-    "tests/test_roadmap_sprint_derivation.py",
-)
-
-
-def _dict_keys(node: ast.Dict) -> set[str]:
-    return {
-        key.value
-        for key in node.keys
-        if isinstance(key, ast.Constant) and isinstance(key.value, str)
-    }
-
-
-def _builds_a_row_by_hand(function: ast.FunctionDef) -> bool:
-    """True when a function returns an inventory row it assembled itself."""
-
-    named_rows: set[str] = set()
-    for node in ast.walk(function):
-        if (
-            isinstance(node, ast.Assign)
-            and isinstance(node.value, ast.Dict)
-            and "slug" in _dict_keys(node.value)
-        ):
-            named_rows.update(
-                target.id for target in node.targets if isinstance(target, ast.Name)
-            )
-
-    for node in ast.walk(function):
-        if not isinstance(node, ast.Return):
-            continue
-        value = node.value
-        if isinstance(value, ast.Dict) and "slug" in _dict_keys(value):
-            return True
-        if isinstance(value, ast.Name) and value.id in named_rows:
-            return True
-    return False
-
-
-def test_the_roadmap_tests_build_rows_through_the_shared_fixture() -> None:
-    """A private row builder is exactly the drift the shared fixture prevents.
-
-    Without this check the deduplication is only demonstrable by a one-off
-    mutation, so a hand-built row can creep back into any of the three files
-    without a committed test noticing.
-    """
-
-    for relative in ROADMAP_ROW_BUILDING_TESTS:
-        source = (ROOT / relative).read_text(encoding="utf-8")
-        assert "from tests.roadmap_fixtures import plan_row" in source, relative
-        for node in ast.walk(ast.parse(source)):
-            if not isinstance(node, ast.FunctionDef):
-                continue
-            assert not _builds_a_row_by_hand(node), (
-                f"{relative}:{node.lineno} defines {node.name}, which assembles a "
-                "plan row by hand; build rows through plan_row instead"
-            )

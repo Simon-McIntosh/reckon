@@ -3,8 +3,9 @@
 Most tests here drive the code and assert its effect. A few invariants are
 about the *shape of the source itself* and are invisible to any call: that one
 module owns the timestamp parser, that one module defines the number core and
-every frame composes it, that one helper validates a section identity, and that
-the test fixtures name no plan document or node identity. Those cannot be shown
+every frame composes it, that one helper validates a section identity, that
+the test fixtures name no plan document or node identity, and that the roadmap
+tests build their rows through the one shared fixture. Those cannot be shown
 by running a function, so they are asserted by reading the source through
 ``ast``. This module is the single place in the suite where reading source is
 the point; keeping them together gives each invariant one home rather than a
@@ -323,3 +324,89 @@ def test_the_prescription_fixtures_name_no_node_identity() -> None:
     assert candidates <= set(PRESCRIBED_PROPERTIES), sorted(
         candidates - set(PRESCRIBED_PROPERTIES)
     )
+
+
+#: The roadmap test files whose rows must all come from the one shared
+#: builder, so a renamed inventory field is one edit to the fixture rather
+#: than one per file.
+_ROADMAP_ROW_CONSUMERS = (
+    "test_roadmap_endpoints.py",
+    "test_roadmap_names_interrupted_runs.py",
+    "test_roadmap_sprint_derivation.py",
+)
+
+#: The module that owns the inventory row, and the one function that builds it.
+_ROW_FIXTURE_MODULE = "tests.roadmap_fixtures"
+_ROW_FIXTURE_NAME = "plan_row"
+
+
+def _imports_name(tree: ast.AST, module: str, name: str) -> bool:
+    """Whether ``tree`` imports ``name`` from ``module``, in any form.
+
+    Read from the parsed tree rather than the text, so a parenthesised or
+    multi-name import of the same module and name still counts.
+    """
+
+    return any(
+        isinstance(node, ast.ImportFrom)
+        and node.module == module
+        and any(alias.name == name for alias in node.names)
+        for node in ast.walk(tree)
+    )
+
+
+def _row_dict_keys(node: ast.Dict) -> set[str]:
+    return {
+        key.value
+        for key in node.keys
+        if isinstance(key, ast.Constant) and isinstance(key.value, str)
+    }
+
+
+def _builds_a_row_by_hand(function: ast.AST) -> bool:
+    """True when a function returns an inventory row it assembled itself."""
+
+    named_rows: set[str] = set()
+    for node in ast.walk(function):
+        if (
+            isinstance(node, ast.Assign)
+            and isinstance(node.value, ast.Dict)
+            and "slug" in _row_dict_keys(node.value)
+        ):
+            named_rows.update(
+                target.id for target in node.targets if isinstance(target, ast.Name)
+            )
+
+    for node in ast.walk(function):
+        if not isinstance(node, ast.Return):
+            continue
+        value = node.value
+        if isinstance(value, ast.Dict) and "slug" in _row_dict_keys(value):
+            return True
+        if isinstance(value, ast.Name) and value.id in named_rows:
+            return True
+    return False
+
+
+def test_the_roadmap_tests_build_rows_through_the_shared_fixture() -> None:
+    """A private row builder is exactly the drift the shared fixture prevents.
+
+    Each consumer reads its rows from the one builder, so a renamed inventory
+    field is one edit rather than one per file. The check reads each module's
+    parsed tree, so any import form that brings the builder in counts, and it
+    fails naming the file and function of a row assembled by hand.
+    """
+
+    for name in _ROADMAP_ROW_CONSUMERS:
+        path = _TESTS / name
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        assert _imports_name(tree, _ROW_FIXTURE_MODULE, _ROW_FIXTURE_NAME), (
+            f"{name} does not import {_ROW_FIXTURE_NAME} from {_ROW_FIXTURE_MODULE}"
+        )
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            assert not _builds_a_row_by_hand(node), (
+                f"{name}:{node.lineno} defines {node.name}, which assembles a "
+                f"plan row by hand; build rows through {_ROW_FIXTURE_NAME} instead"
+            )
