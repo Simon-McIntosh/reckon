@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T03:32:56.380Z",
+  "dispatched_at": "2026-10-23T02:59:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/manifest.md",
+      "line": "15",
+      "severity": "blocking",
+      "summary": "the manifest tests line records the gate as `PYTHONPATH=$PWD ... -n 8 <42-file census> + tests/test_a_finding_is_blocking_or_non_blocking.py`, an unsubstituted angle-bracket placeholder instead of the literal file list; promotion fills its gate receipt from this line and reckon/crew/promotion_gate.py:197 (`_require_runnable_gate_command` via `gate_command_prose`) refuses any recorded gate command carrying an angle-bracket placeholder, so the integration re-run cannot execute the recorded command and promotion is refused on shape alone",
+      "text": "the manifest tests line records the gate as `PYTHONPATH=$PWD ... -n 8 <42-file census> + tests/test_a_finding_is_blocking_or_non_blocking.py`, an unsubstituted angle-bracket placeholder instead of the literal file list; promotion fills its gate receipt from this line and reckon/crew/promotion_gate.py:197 refuses any recorded gate command carrying an angle-bracket placeholder, so the integration re-run cannot execute the recorded command and promotion is refused on shape alone. baseline_suite.command and after_suite.command carry the same placeholder (`<the 42 census files, rooted in that tree>`, `<census files 1-12 under that tree>`)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/manifest.md",
+      "line": "20",
+      "severity": "blocking",
+      "summary": "the after_suite arm covers only census files 1-12 (64 passed, 2 failed, head-tranche1.log) while the done_when and plan section 2 require the whole census population at head, and the full head run over the 42 files plus the new test was truncated at about 90 percent with no summary line and no EXIT= line (after-arm.log), so the base-vs-head delta the measure names is not evidenced at head; the recorded after_suite.failure_ids set is therefore not comparable to baseline_suite.failure_ids and the 'adds zero failures at head' claim cannot be reproduced from the record",
+      "text": "the after_suite arm covers only census files 1-12 (64 passed, 2 failed, head-tranche1.log) while the done_when and plan section 2 require the whole census population at head, and the full head run over the 42 files plus the new test was truncated at about 90 percent with no summary line and no EXIT= line (after-arm.log), so the base-vs-head delta the measure names is not evidenced at head; the recorded after_suite.failure_ids set is therefore not comparable to baseline_suite.failure_ids and the 'adds zero failures at head' claim cannot be reproduced from the record. The one failure this change adds, tests/test_severity_predicate_parity.py::test_the_predicate_reads_the_three_disagreeing_inputs_as_no_severity (line 86 asserts declared_severity of the retired word equals the retired word), sits in census file 39 and so appears in neither recorded arm."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/negative-control.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "summary": "the negative-control log header names revision 3d80d6544c00c10a390bb3f557287c6a1d03c572, but the new test file it runs exists only at head, so the log in fact measured the mutated head tree 8a7092c7; the header names the one tree the test cannot have run in, so a reader cannot tell which revision the red log measured",
+      "text": "the negative-control log header names revision 3d80d6544c00c10a390bb3f557287c6a1d03c572, but the new test file it runs exists only at head, so the log in fact measured the mutated head tree 8a7092c7; the header names the one tree the test cannot have run in, so a reader cannot tell which revision the red log measured."
+    },
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "583",
+      "severity": "non-blocking",
+      "summary": "the docstring edits were re-wrapped by hand and leave orphan short lines ('with' alone at repair.py:583, 'for a join,' at reports.py:826, 'the write, while' at reports.py:1723); ruff format --check passes because the lines stay under the limit, but the wrapping is not what the formatter would produce and costs readability",
+      "text": "the docstring edits were re-wrapped by hand and leave orphan short lines ('with' alone at repair.py:583, 'for a join,' at reports.py:826, 'the write, while' at reports.py:1723); ruff format --check passes because the lines stay under the limit, but the wrapping is not what the formatter would produce and costs readability."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to rename the non-blocking finding severity to non-blocking across the review prompts, constants and messages as section 2 specifies; reckon/crew/review.py:155 now holds FINDING_SEVERITIES = (\"blocking\", \"non-blocking\"), reckon/crew/review_lifecycle.py:75 holds NON_BLOCKING_SEVERITIES = {\"non-blocking\"}, both prompts teach the two dispositions, and repair.follow_on_findings is renamed repair.non_blocking_findings (reckon/crew/repair.py:283).\nVERDICT done_when: the done_when names tests/test_a_finding_is_blocking_or_non_blocking.py plus the base-revision census of test files that mention the severity vocabulary, run at base and head with -n 8 and judged by delta; the manifest records baseline_suite over 42 files and after_suite over 12.\nVERDICT write_paths: read the manifest's declared paths; all ten files in the diff (six reckon/crew modules, two prompts, the new test, the landing fragment) lie inside them.\nVERDICT manifest: read; it records the new test at 5 passed with a negative control of 4 failed / EXIT=1, states the head arm was cut to a 12-file tranche, and records its gate command with an unsubstituted placeholder.\nVERDICT diff: read commit by commit against base 3d80d654; it is one commit, 8a7092c7, changing ten files, all inside the declared scope.\nCALL_SITES: reckon/crew/repair.py:210, reckon/crew/repair.py:279, reckon/crew/reports.py:1761, reckon/crew/recovery_review_subject.py:422, reckon/crew/recovery_review_subject.py:426, reckon/crew/recovery_repair_dispatch.py:934, reckon/crew/obligations.py, reckon/crew/recovery_review_delivery.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/routing.py\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:155 and reckon/crew/review_lifecycle.py:75 name the new vocabulary and every emitted message in reckon/crew/reports.py:1936 and reckon/crew/recovery_repair_dispatch.py:337-340 carries the current word.\nSCORE evidence: 10\nJUSTIFICATION evidence: the recorded after_suite at manifest.md:20 covers 12 of the 43 census files while the full head arm at after-arm.log was truncated with no summary or EXIT= line, so the done-when's delta is not evidenced at head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff, from reckon/crew/findings.py to docs/evidence/fragments/additional-work-is-a-section/a-finding-is-blocking-or-non-blocking.html, is inside the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_finding_is_blocking_or_non_blocking.py:112 fails when the retired word is restored to FINDING_SEVERITIES, as negative-control.log records with 4 failed of 5.\nSCORE fit: 17\nJUSTIFICATION fit: the RETIRED_FINDING_SEVERITIES mapping at reckon/crew/review.py:163 follows the LEGACY_* mapping idiom at reckon/_schema.py:118, though the re-wrapped docstrings at reckon/crew/repair.py:583 and reckon/crew/reports.py:1723 leave orphan lines.\nSCORE reuse: 19\nJUSTIFICATION reuse: the mapping lives in the vocabulary owner reckon/crew/review.py, the rename adds no parallel mechanism, and the search over reckon/crew for an existing severity canonicalizer found none beyond declared_severity itself.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/manifest.md:15 blocking: the tests line carries the unsubstituted placeholder <42-file census> where promotion_gate.gate_command_prose refuses an angle-bracket placeholder in the recorded gate command, so promotion is refused on shape alone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/manifest.md:20 blocking: the recorded head arm covers 12 of the 43 census files and the full head run was truncated at about 90 percent with no summary or EXIT= line, so the base-vs-head delta the done_when names is not evidenced at head.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/negative-control.log:1 non-blocking: the log header names revision 3d80d654 while the run measured the mutated head tree 8a7092c7, the only tree in which its test file exists.\nFINDING reckon/crew/repair.py:583 non-blocking: the hand re-wrap leaves orphan short lines in the docstrings it edited.\n",
+  "review_run_id": "r-20261023T025729788701-review-of-a-finding-is-blocking-or-non-blocking-8a7092c73210",
+  "reviewed_base_sha": "3d80d6544c00c10a390bb3f557287c6a1d03c572",
+  "reviewed_head_sha": "8a7092c732107439f15a731208e97f7b7dd876f1",
+  "reviewed_run_id": "r-20261023T011804935213-a-finding-is-blocking-or-non-blocking",
+  "scores": {
+    "durability": 19,
+    "evidence": 10,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T03:45:14.136675+00:00",
+  "total": 104
+}
