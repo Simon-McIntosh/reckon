@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034110168470-the-claude-account-is-read-again/log-way-through-gate.log",
+  "base_log_revision": "f976a31db184c9e8c5868decd1a77b763c6b39f8",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T034110168470-the-claude-account-is-read-again/log-lr2-arm-base.log",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_backends.py:2480",
+    "reckon/budget.py:1274",
+    "reckon/mcp_views.py:447",
+    "reckon/crew/paid_lanes.py:885",
+    "reckon/crew/paid_lanes.py:698",
+    "reckon/crew/promotion_release.py:749"
+  ],
+  "completed_at": "2026-10-23T14:25:45.803Z",
+  "dispatched_at": "2026-10-23T14:02:02Z",
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "849",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_live_account_windows` records the answer's numeric utilisation as used_percent with no sub-1.0 ratio check, where the sibling parser at reckon/_backends.py:1621 refuses a ratio wearing a percentage's name; if the surface ever answered 0.62 the block would carry 0.62 as a percentage and reckon/crew/paid_lanes.py:809 would publish 0.0062, the quiet read-low toward headroom this module refuses everywhere else."
+    }
+  ],
+  "head_log_revision": "2032edd6eaf9018eecce95a890b5bd50fafb3ca8",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the claude account is read again; reckon/_backends.py:791 now points the read at https://api.anthropic.com/api/oauth/usage with the anthropic-beta: oauth-2025-04-20 header and reckon/_backends.py:824 parses the answer's top-level five_hour and seven_day windows into the house budget block.\nVERDICT done_when: The done_when names recorded-answer tests, one live foreground request, a gate by delta, and one leg \u2014 the published document's claude windows observed after one timer pass \u2014 that the source manifest defers to the coordinator under blockers; tests/test_the_claude_account_is_read_again.py covers the recorded-answer legs and log-way-through-gate.log records 141 passed, EXIT=0.\nVERDICT write_paths: Read the source manifest's orientation_write_paths against the 4b43bb5e..7331c13e4 diff; all ten changed paths lie inside the declared set, including the two the follow_ons declare as a fenced expansion.\nVERDICT manifest: Read; it names twelve commits, ten changed paths, baseline_suite at f976a31d (2 failed/68 passed) and after_suite at 2032edd6e (141 passed), the negative-control log, and the live read.\nVERDICT diff: Read commit by commit against 4b43bb5e; the production changes are the endpoint, beta-header and parser move in reckon/_backends.py and the probe-reason tail plus the all-unknown probe clause in reckon/crew/paid_lanes.py, with the rest test migration and one docs-only evidence commit.\nCALL_SITES: reckon/_backends.py:2480, reckon/budget.py:1274, reckon/mcp_views.py:447, reckon/crew/paid_lanes.py:885, reckon/crew/paid_lanes.py:698, reckon/crew/promotion_release.py:749\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py:791-852 reads the live endpoint with its beta marker and both account windows, and reckon/crew/paid_lanes.py:611 raises the probe failure with the child's own stream tail.\nSCORE evidence: 17\nJUSTIFICATION evidence: log-way-through-gate.log records 141 passed and EXIT=0 at 2032edd6e with the base arm of the same population at 6 failed/135 passed, and log-live-read.log records the one live request, but the published-document reading the done-when also asks for is deferred to the coordinator under the source manifest's blockers.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the 4b43bb5e..7331c13e4 diff is inside the source manifest's declared write paths, and the last commit 7331c13e4 touches only the landing fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_claude_account_is_read_again.py:257 reddens when the all-unknown probe clause is removed (log-negative-control-guard.log: 1 failed, 8 passed, EXIT=1), :99 reddens if the endpoint or the beta header is reverted, :124 if the parser reads the old nested shape, and :141 if the percentage-to-fraction conversion at reckon/crew/paid_lanes.py:809 is dropped; the two passthrough assertions at tests/test_claude_account_surface.py:71 are input-derived but still fail on the nested-shape regression they guard.\nSCORE fit: 19\nJUSTIFICATION fit: The new helpers follow the module's own idiom in reckon/_backends.py:824 and reckon/crew/paid_lanes.py:598, all twelve commits carry bodies and conventional subjects, and no plan, sprint or ticket label appears in a name or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: A capability search for a quota-window row builder found only the codex dialect's own at reckon/_backends.py:1578, which parses a different wire shape, so the addition extends the claude dialect rather than forking an owner, but it re-produces that builder's row shape rather than sharing it.\nFINDING reckon/_backends.py:849 non-blocking: `_live_account_windows` records the answer's numeric utilisation as used_percent with no sub-1.0 ratio check, where the sibling parser at reckon/_backends.py:1621 refuses a ratio wearing a percentage's name; if the surface ever answered 0.62 the block would carry 0.62 as a percentage and reckon/crew/paid_lanes.py:809 would publish 0.0062, the quiet read-low toward headroom this module refuses everywhere else.",
+  "review_run_id": "r-20261023T131603714880-review-of-the-claude-account-is-read-again-7331c13e4ab8",
+  "reviewed_base_sha": "4b43bb5ebdb9f06a83fc577f7340be1c777853ee",
+  "reviewed_commits": [
+    "cf0bdb0006fb01ebaa7511aab83d9c962af8b62d",
+    "a7a7b01c80faecb0f0b5b4538ad04ea3ac572a1f",
+    "579b7825872422f1521d347b4c9d2a5795a366ab",
+    "4088c69138c29f409cfe20c54bc3b999d533d5a9",
+    "323baeda305ce22616d31cfd4c86a787260ff653",
+    "24ce8f4d6677e05c4e9fb79f8b8caf9855c7a157",
+    "65f15e692d0f717075cbea911e057d04c14bc30f",
+    "f6e4a7c8cd6d55890e4cb68c9087d5b4db30d46e",
+    "4ea8da09f3e7d3961052f5920b5017a7d2c3f096",
+    "2032edd6eaf9018eecce95a890b5bd50fafb3ca8",
+    "7331c13e4ab8b3309a97efb1106bf851efd0b033"
+  ],
+  "reviewed_head_sha": "7331c13e4ab8b3309a97efb1106bf851efd0b033",
+  "reviewed_run_id": "r-20261022T034110168470-the-claude-account-is-read-again",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T14:29:55.709072+00:00",
+  "total": 112
+}
