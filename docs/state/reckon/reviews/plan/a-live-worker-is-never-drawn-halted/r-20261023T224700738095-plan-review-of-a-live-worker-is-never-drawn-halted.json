@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:59:08.036Z",
+  "dispatched_at": "2026-10-23T22:48:49Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-1",
+      "reason": "the mechanism as written adds a false landing row per settled run and contradicts its own \"once each\", so the node must be told to key the rule on the landing states themselves (`promoted`, `withdrawn`, `discarded`) rather than the pane word, and the done-when needs an arm proving the `complete \u2192 recorded` echo prints nothing.",
+      "text": "\u00a714 says a `landed` row is \"carried once each\" and directs the node to extend `CARRIED_PANE_WORDS`, but `PANE_STATES[\"landed\"]` is `{\"promoted\", \"recorded\", \"lift-ended\"}` (reckon/crew/ticker.py:322), and the producer really does emit `from_state: complete, to_state: recorded` rows \u2014 8,575 lines in `~/.config/reckon/crew/watch/*.events` carry them, e.g. `r-20261012T203017434181-plan-review-of-jt60sa-power-supply-sources` at 2026-10-12T20:38:34Z with `next_action` \"promote the completed review run once its verdict is read\" \u2014 so a word-keyed rule prints a landing row for a run that has not landed, once per completed run; the narrowing of `_observer_exception` is what releases it, since today that echo is held back for a run whose delivery was shown (the code's own note at ticker.py:1096-1099 calls `complete -> recorded` \"the usual one\" among held-back rows).",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "wiring-1",
+      "reason": "as written the schedule is unbuildable in either order \u2014 \u00a79's wiring node is scoped without `recovery_watch.py`, and \u00a714 is dispatched before the node it declares it must follow.",
+      "text": "\u00a714 ends \"It runs after \u00a74, before \u00a75 and \u00a77, and after \u00a79's wiring node, which also writes `recovery_watch.py`\", while \u00a79's own write paths (:305) list only `reckon/crew/watch_unit.py`, `reckon/crew/runs.py` \"if the lease side changes\", and the new test, and \u00a79's own comment (:371) says that second node runs \"after \u00a74 releases `recovery_watch.py` and `runs.py`\"; the producer's start-up and lease renewal that `producer_start_decision` (reckon/crew/watch_unit.py:246) must be called from live in `recovery_watch.py` (it imports `producer_lease_seconds` and `watch_lease_renewed_at` at :39-41), so a node dispatched on \u00a79's reasoning is fenced out of the file the call belongs in, and the open followup f-alwh-002 (:341-342) sends \u00a714 next \u2014 a section that cannot run before that node lands.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ec21fe5ef9196ec97222be8b0694c187f379cc7c9b7f163558b895dc0631e508",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 40,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T224700738095-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "825bd523fd95f8d34b715e81eb4d2786b0c446fc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_queued_failure_remedy` (reckon/crew/recovery_classification.py:124), `_is_lane_hold` (reckon/crew/queue_admission.py:502), `_retry_backoff_hold` (reckon/crew/queue_admission.py:673), `stream_carries` (reckon/crew/ticker.py:1195), the comment above `CARRIED_PANE_WORDS` (reckon/crew/ticker.py:330-359), `RowPolicy._observer_exception` (reckon/crew/ticker.py:1514), `_is_own_start` (reckon/crew/ticker.py:1381) and `_watch_transition`'s own-run keying (reckon/crew/recovery_watch.py:1916-1917) all resolve as cited; the extensionless hrefs in \u00a71 resolve as `<path>.html` by the house convention.",
+    "done_when": "pass \u2014 \u00a712's done-when now carries a base-revision negative control for both the `QueueFull` and the `ScopeConflict` arm, and \u00a714's carries a producer arm for the reviewed run's id plus base-revision controls for the launch, the `in review` row, the landing and the dropped row.",
+    "evidence_paths": "pass \u2014 both changed sections write code and a new test, and their negative controls are recorded in the node's own gate log rather than a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 neither section carries a plan label, stage name or ticket number into a symbol, filename or comment, and \u00a714 states the rule its comment must carry rather than a tracker reference.",
+    "reasoning": "a finding \u2014 \u00a714's mechanism (extend `CARRIED_PANE_WORDS` with the pane word `landed`, plus narrowing `_observer_exception`) also carries the `complete \u2192 recorded` terminal echo, which `PANE_STATES` maps to the word `landed`, so every run that settles as `recorded` would print a false landing row on the real code path; the done-when's fixture has no `complete \u2192 recorded` arm to catch it.",
+    "single_goal": "pass \u2014 \u00a712 changes one reading of one queued-pointer failure set, and \u00a714 carries one row set through one existing row policy, each with a single gate.",
+    "wiring": "a finding \u2014 \u00a714 requires \u00a79's wiring node to run first and says it writes `recovery_watch.py`, but \u00a79's declared write paths (docs/plans/a-live-worker-is-never-drawn-halted.html:305) omit that file and the open followup f-alwh-002 (:339-343) orders \u00a714 next without naming that node."
+  },
+  "section_digests": {
+    "_document": "06b6bffb1430e5d0b3aaec84c099dc6755869214442e32f0b25b108c69b81029",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "23a58706fb144c9e97aff3993d7b39c241a7242fc5effaee432c6ee4b987a0f1",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:02:01.877188+00:00"
+}
