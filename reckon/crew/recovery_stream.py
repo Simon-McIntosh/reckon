@@ -40,6 +40,36 @@ def manifest_status_is_terminal(value: Any) -> bool:
     )
 
 
+# A finished run's completion stamp is asked for on every producer pass, for
+# every live run whose worker has gone, and resolving it parses every stream
+# the run wrote. Those streams have stopped growing, so the answer is kept per
+# process keyed by each stream file's path, inode, size and mtime: an unchanged
+# set of streams is answered without a parse, and any write to any of them
+# moves the key. The store is cleared whole when it reaches its bound.
+_COMPLETION_STAMPS: dict[tuple[Any, ...], str | None] = {}
+_COMPLETION_STAMPS_LIMIT = 4096
+
+
+def _completion_stamp_key(record: Mapping[str, Any]) -> tuple[Any, ...] | None:
+    """The stat identity of every stream a run wrote, or None if one is unreadable."""
+    from reckon.crew import metering
+
+    identities = []
+    for candidate in metering.run_streams(str(record.get("log_path") or "")):
+        try:
+            info = candidate.stat()
+        except OSError:
+            return None
+        identities.append((str(candidate), info.st_ino, info.st_size, info.st_mtime_ns))
+    if not identities:
+        return None
+    return (
+        str(record.get("run_id") or ""),
+        str(record.get("backend") or ""),
+        tuple(identities),
+    )
+
+
 def _stream_completion_stamp(record: Mapping[str, Any]) -> str | None:
     """The run's own finish stamp as its recorded stream dates it, else None.
 
@@ -48,13 +78,22 @@ def _stream_completion_stamp(record: Mapping[str, Any]) -> str | None:
     rather than each keeping its own idea of the finish. None for an in-harness
     run or a stream that was never written; the caller only resolves it once
     liveness says the process is gone, so a still-writing stream is never
-    mistaken for a completion.
+    mistaken for a completion. A run whose streams are unchanged since the last
+    answer is given that answer without parsing them again.
     """
     if record.get("launch") != "cli":
         return None
     from reckon.crew.promotion import _terminal_stream_data
 
-    return _terminal_stream_data(record).completed_at
+    key = _completion_stamp_key(record)
+    if key is not None and key in _COMPLETION_STAMPS:
+        return _COMPLETION_STAMPS[key]
+    stamp = _terminal_stream_data(record).completed_at
+    if key is not None:
+        if len(_COMPLETION_STAMPS) >= _COMPLETION_STAMPS_LIMIT:
+            _COMPLETION_STAMPS.clear()
+        _COMPLETION_STAMPS[key] = stamp
+    return stamp
 
 
 def _declared_token_budget(record: Mapping[str, Any]) -> int | None:
