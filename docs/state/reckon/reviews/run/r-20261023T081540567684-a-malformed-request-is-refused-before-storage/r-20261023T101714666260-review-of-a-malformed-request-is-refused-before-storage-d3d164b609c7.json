@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+  ],
+  "completed_at": "2026-10-23T10:59:51.890Z",
+  "dispatched_at": "2026-10-23T10:38:37Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "338",
+      "severity": "non-blocking",
+      "text": "non-blocking: _requested_field_names at reckon/mcp.py:338 is a verbatim copy of the function the repository already owns at reckon/crew/query.py:104 \u2014 the same four branches and the same comprehension, body for body, with one word of the docstring changed \u2014 so the parsing of one crew request's field list now has two owners that can drift exactly as the vocabulary did. The owner module is already imported by this diff for RUN_SCOPES, RUN_SOURCES, LIVE_OVERRUN_FIELDS and LIVE_PLACEMENT_FIELDS, so importing _requested_field_names from it is the whole repair. The promotion-time clone detector in reckon/clones.py scans for textual copies and may flag this."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "263",
+      "severity": "non-blocking",
+      "text": "non-blocking: _LIVE_ROW_FIELDS (reckon/mcp.py:263-327) re-declares, as a static literal, the live field vocabulary that reckon/crew/query.py:152 _live_field_vocabulary already owns and derives from classify_pointer({}) plus LIVE_OVERRUN_FIELDS, LIVE_PLACEMENT_FIELDS and COMMON_RUN_FIELDS (reckon/crew/query.py:175-181). The addition does not extend the owner, because the owner cannot run without opening storage (classify_pointer reads worker.json/exit.json/attempt.json), which is why the storage-free copy exists; test_the_refusal_vocabulary_covers_every_live_field now detects drift between the two, but the fork remains, and the node's own manifest records this as follow-on (1). Naming the reason here so the exemption is explicit rather than silent."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "1222",
+      "severity": "non-blocking",
+      "text": "non-blocking: the view pre-flight compares the raw argument against VIEW_NAMES, where the view's own validator strips and lowercases first (reckon/mcp_views.py:2090, selected = (view or 'summary').strip().lower()). A request mcp._read_plan_tool(project='fixture', view='RAW') answered before this change \u2014 the base revision passed 'RAW' straight to _read_plan, which normalizes at reckon/mcp.py:1540 \u2014 is now refused with invalid_view, so a well-formed request is refused where a malformed one was meant to be. The same raw comparison sits at reckon/mcp.py:2182 for ROADMAP_TOOL_VIEWS. Narrow (a case or whitespace variant of a documented name, and view is typed str | None so no schema constrains it), hence non-blocking, but it is a behaviour regression on the tool surface."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "372",
+      "severity": "non-blocking",
+      "text": "non-blocking: the field pre-flight is guarded by 'view == \"live\"', so a crew request with view='runs' and an unknown field still reads the pointers and the ledger before query._refuse_unknown_fields refuses it at reckon/crew/query.py:115 (reached through _selected_fields at reckon/crew/query.py:147). The plan's \u00a717 Change requires that 'Field names ... are checked against their declared vocabularies first' for the four tools; the runs view carries its own vocabulary and is not covered, so the requirement is met for one of the two views that take fields. The done_when named only the live case, which is why this is a gap against the plan rather than against the gate."
+    },
+    {
+      "file": "tests/test_a_malformed_request_is_refused_before_storage.py",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert \"dispatched_at\" in detail compares the refusal text against the name the test itself passed in, so the two sides move together and the assertion stays green for a checker that refused every field name. It is not the guard \u2014 _refuse()'s assert not stub.reached is independent and does the work \u2014 but no case in the file asserts the opposite direction, that a valid live field list is still served, which is why the class of false refusal at reckon/mcp.py:1222 passes this gate. Noted here rather than in the durability justification because durability does not rest on this line."
+    },
+    {
+      "file": "tests/test_a_malformed_request_is_refused_before_storage.py",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module docstring carries incident and changelog prose rather than mechanism \u2014 'on 2026-10-23 a crew view live call naming an unknown field waited over 120 s before it was refused' (lines 7-8) \u2014 which the repository's comment rule forbids in source, since the tracker owns the bug-to-code link. The mechanism sentence beside it ('Refusing it after the first file read makes the answer wait on whatever storage is doing') carries the same information without the dated incident."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'Refuse a malformed reckon MCP request before any file is opened'; the landed pre-flight sits at the head of each tool (reckon/mcp.py:349 _crew_argument_refusal, reckon/mcp.py:1222 _read_plan_tool, reckon/mcp.py:2182 _roadmap_tool, reckon/mcp_edit_plan.py:1131 _edit_plan) and the stub gate shows the malformed calls never reach storage, but the same pre-flight refuses a case variant of a served view name (reckon/mcp.py:1222) and leaves the runs field vocabulary unchecked (reckon/mcp.py:372).\nVERDICT done_when: the done_when names three refusals under an open-blocking stub plus a base arm; the run's gate.log records 145 passed and 1 failed at 42a4eb7fc (reckon/roadmap.py: 51232 estimated tokens over its 50000 bound, a module this diff does not touch, declared pre-existing) and base-arm.log records 5 failed and 1 passed for the new file at base 3a985827baf90836c57d16ab069ec38c3cb80e24, so the measure the done_when asserts is the one the gate ran.\nVERDICT write_paths: the manifest declares reckon/mcp.py, reckon/mcp_edit_plan.py, tests/test_a_malformed_request_is_refused_before_storage.py and the fragment under docs/evidence/fragments/an-mcp-failure-names-its-cause/, plus the figure directory there; git diff --stat 3a985827baf90836c57d16ab069ec38c3cb80e24..d3d164b609c761e1b562c072348f8772b800a5cf names four paths, all inside that set, and the figure directory is unused because the done-when names no figure.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081540567684-a-malformed-request-is-refused-before-storage/manifest.md; status complete, tests: is the literal seven-target pytest command the gate.log header repeats, the width failure is disclosed in failure_attribution, negative_control_log is one bare path to a log whose last line is EXIT=1, and the changed line counts it states (+185/-7, +43, +130, +72) match the diff I read.\nVERDICT diff: read commit by commit against base 3a985827baf90836c57d16ab069ec38c3cb80e24 \u2014 eea81d325b5fda4e2f9843ff13c10123700efebb (the pre-flight in _crew_argument_refusal and _refuse_unknown_op_verbs, the moved _crew view check, +396/-7 across four files), 42a4eb7fc8d8c6df31658cf0de952db2fd060ae7 (folds COMMON_RUN_FIELDS into _LIVE_ROW_FIELDS, repairing the prior review's blocking false refusal of 'section') and d3d164b609c761e1b562c072348f8772b800a5cf (the landing fragment); every path is inside the declared scope and reckon/roadmap.py is absent.\nCALL_SITES: reckon/mcp.py:3372, reckon/mcp.py:3383, reckon/mcp.py:3389, reckon/mcp.py:3406\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: every tool refusal now sits before its first read as reckon/mcp.py:349 and reckon/mcp_edit_plan.py:1131 show, but reckon/mcp.py:1222 refuses view='RAW' which the view itself normalizes to 'raw' at reckon/mcp_views.py:2090, and reckon/mcp.py:372 leaves the runs field vocabulary to be checked only after storage is read.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate.log ('1 failed, 145 passed in 87.28s', EXIT=1), base-arm.log ('5 failed, 1 passed', EXIT=1) and negative-control.log are all on disk and reproduce the counts the manifest records, and the single failure is the pre-existing reckon/roadmap.py size the done_when declares.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3a985827baf90836c57d16ab069ec38c3cb80e24..d3d164b609c761e1b562c072348f8772b800a5cf names exactly reckon/mcp.py, reckon/mcp_edit_plan.py, tests/test_a_malformed_request_is_refused_before_storage.py and the landing fragment, every one inside the declared write paths, with no other module touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_malformed_request_is_refused_before_storage.py:64 is an independent guard \u2014 it compares the set reckon/crew/query.py:152 derives against the set reckon/mcp.py:263 declares \u2014 and negative-control.log shows it reddening on the reverted union, while the stub cases at lines 68-130 fail if the pre-flight moves after the read; durability does not rest on the input-echo assertion at line 61, but no case asserts a valid live list is still served, so the false refusal at reckon/mcp.py:1222 passes this gate.\nSCORE fit: 16\nJUSTIFICATION fit: the added helpers at reckon/mcp.py:332-403 and reckon/mcp_edit_plan.py:1656-1697 follow the surrounding style and introduce no forbidden name, though the module docstring at tests/test_a_malformed_request_is_refused_before_storage.py:7 states a dated incident where the repository's comment rule asks for mechanism.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/mcp.py:338 copies reckon/crew/query.py:104 verbatim and reckon/mcp.py:263 re-implements the vocabulary owned at reckon/crew/query.py:152 without extending it, while the scope, source and view vocabularies are correctly imported from CREW_TOOL_VIEWS, VIEW_NAMES, RUN_SCOPES and RUN_SOURCES rather than forked.\nFINDING reckon/mcp.py:338 non-blocking: _requested_field_names is a verbatim copy of the function the repository already owns at reckon/crew/query.py:104, so the parsing of one request's field list has two owners that can drift; the owner module is already imported by this diff.\nFINDING reckon/mcp.py:263 non-blocking: _LIVE_ROW_FIELDS is a static re-declaration of the vocabulary reckon/crew/query.py:152 owns, not an extension of it, held to the owner only by a test; the storage-free requirement is why the copy exists, and the node records the resulting drift risk as follow-on (1).\nFINDING reckon/mcp.py:1222 non-blocking: the view pre-flight compares the raw argument against VIEW_NAMES while the view's owner strips and lowercases at reckon/mcp_views.py:2090, so view='RAW' is refused where it was served before; the same shape is at reckon/mcp.py:2182.\nFINDING reckon/mcp.py:372 non-blocking: the field pre-flight covers only view='live', so a malformed crew view='runs' fields request still reads the pointers and the ledger before reckon/crew/query.py:115 refuses it, leaving the plan's \u00a717 field-name requirement delivered for one of the two field-taking views.\nFINDING tests/test_a_malformed_request_is_refused_before_storage.py:61 non-blocking: the assertion compares the refusal text against the name the test passed in, so it moves with its own input and would pass for a checker that refused every field name; no case asserts a valid live field list is still served.\nFINDING tests/test_a_malformed_request_is_refused_before_storage.py:7 non-blocking: the module docstring states a dated incident where the repository's comment rule asks for mechanism.\n",
+  "review_run_id": "r-20261023T101714666260-review-of-a-malformed-request-is-refused-before-storage-d3d164b609c7",
+  "reviewed_base_sha": "3a985827baf90836c57d16ab069ec38c3cb80e24",
+  "reviewed_head_sha": "d3d164b609c761e1b562c072348f8772b800a5cf",
+  "reviewed_run_id": "r-20261023T081540567684-a-malformed-request-is-refused-before-storage",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T11:01:38.489088+00:00",
+  "total": 89
+}

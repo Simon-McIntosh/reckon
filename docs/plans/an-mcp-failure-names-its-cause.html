@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="102">
+<meta name="plan-version" content="103">
 <meta name="plan-modified" content="2026-10-23">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -386,7 +386,10 @@
     <div class="r-comment-body"><p>Content review of v100 on 2026-10-23: §1's imas-cx rows sum to 2,561 cause hits, not the 2,697 §13 quotes; the difference is the imas-cx half of the read-only row counted under both.</p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261023T093305442687-review-of-a-malformed-request-is-refused-before-storage-eea81d325b5f" data-who="reckon-build" data-when="2026-10-23T09:53:05.399Z">
-    <div class="r-comment-body"><p>independent review of r-20261023T081540567684-a-malformed-request-is-refused-before-storage at base 3a985827baf90836c57d16ab069ec38c3cb80e24 / head eea81d325b5fda4e2f9843ff13c10123700efebb, total 74/120; one blocking finding (the live-field vocabulary copied into reckon/mcp.py:262 omits COMMON_RUN_FIELDS, so a crew view live read naming section is now refused though the view serves it), four non-blocking findings (a verbatim copy of reckon/crew/query.py:104 at reckon/mcp.py:336; the view pre-flight skips normalize_view&#x27;s strip/lower at reckon/mcp.py:1222 and 2182; the runs view&#x27;s field vocabulary is still consulted after the read at reckon/mcp.py:370; and the two test-docstring/assertion findings at tests/test_a_malformed_request_is_refused_before_storage.py:61 and :7), and one added failure (the pre-existing width test, a module this diff does not touch)</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261023T081540567684-a-malformed-request-is-refused-before-storage at base 3a985827baf90836c57d16ab069ec38c3cb80e24 / head eea81d325b5fda4e2f9843ff13c10123700efebb, total 74/120; one blocking finding (the live-field vocabulary copied into reckon/mcp.py:262 omits COMMON_RUN_FIELDS, so a crew view live read naming section is now refused though the view serves it), four non-blocking findings (a verbatim copy of reckon/crew/query.py:104 at reckon/mcp.py:336; the view pre-flight skips normalize_view's strip/lower at reckon/mcp.py:1222 and 2182; the runs view's field vocabulary is still consulted after the read at reckon/mcp.py:370; and the two test-docstring/assertion findings at tests/test_a_malformed_request_is_refused_before_storage.py:61 and :7), and one added failure (the pre-existing width test, a module this diff does not touch)</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261023T101714666260-review-of-a-malformed-request-is-refused-before-storage-d3d164b609c7" data-who="reckon-build" data-when="2026-10-23T10:59:51.890Z">
+    <div class="r-comment-body"><p>§17 independent review of reviewed_head d3d164b609c761e1b562c072348f8772b800a5cf against reviewed_base 3a985827baf90836c57d16ab069ec38c3cb80e24, stored as a parsed record scoring goal_fidelity 15, evidence 18, scope_discipline 20, durability 16, fit 16, reuse 4 (total 89/120), added_failure_count 1, six non-blocking findings and no blocker; the prior review&#x27;s blocking false refusal of &#x27;section&#x27; is repaired by 42a4eb7fc and independently verified fixed by the parity test and the COMMON_RUN_FIELDS union.</p></div>
 </div>
 </section>
 </main>
