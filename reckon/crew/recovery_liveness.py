@@ -149,6 +149,27 @@ def _carries_orientation_write(text: str, data: Mapping[str, Any]) -> bool:
     return not any(line.startswith("status:") for line in text.splitlines())
 
 
+def _manifest_carries_no_verdict_yet(text: str, data: Mapping[str, Any]) -> bool:
+    """Whether a manifest body holds no verdict a reader can act on yet.
+
+    Several bodies read this way. The orientation write is the first — the tree,
+    the base revision and the write paths, before any status exists. A body
+    written loosely enough that the reader refuses it (a list field joined with
+    a separator the parser does not accept, or a status word outside the
+    vocabulary) is the same absence read from a later moment: the worker is
+    mid-turn and the verdict it will write is not there yet. An unsubstituted
+    status template is the same again, for a worker that has not replaced its
+    placeholder. Only a body carrying a status the reader recognises is a
+    written verdict, and this answers false for that.
+    """
+    if _carries_orientation_write(text, data):
+        return True
+    status = str(data.get("status") or "").strip().lower()
+    if status in TERMINAL_MANIFEST_STATUSES:
+        return False
+    return bool(text.strip())
+
+
 def _orientation_write_of_a_run_in_motion(
     record: Mapping[str, Any],
     *,
@@ -157,17 +178,19 @@ def _orientation_write_of_a_run_in_motion(
     manifest_text: str,
     manifest_data: Mapping[str, Any],
 ) -> bool:
-    """Whether a run holding only its orientation write is working right now.
+    """Whether a run in motion holds a manifest with no written verdict yet.
 
     The file alone cannot answer this: a stub and the first minute of a turn are
     the same bytes, and the difference is whether the worker is still writing
-    them. Liveness is that difference where it can be read, and it must be a
-    positive answer — a worker whose process is gone left its stub behind as the
-    missing verdict it may well be, and the word for that stands. Beside
-    liveness the reading wants the evidence the phase derivation uses for the
-    same run, so the two surfaces cannot disagree: a worker record naming a pid,
-    or an assistant turn in the run's newest stream, says the launch got past
-    starting.
+    them. The body's own reading — the orientation write, a body the reader
+    refuses, or an unsubstituted template — says a verdict is missing; only this
+    worker's motion says whether it is still coming. Liveness is that difference
+    where it can be read, and it must be a positive answer — a worker whose
+    process is gone left its stub behind as the missing verdict it may well be,
+    and the word for that stands. Beside liveness the reading wants the evidence
+    the phase derivation uses for the same run, so the two surfaces cannot
+    disagree: a worker record naming a pid, or an assistant turn in the run's
+    newest stream, says the launch got past starting.
 
     Liveness can also be *unknown*, and that is not the same as gone. A run
     launched on another host carries a pid this reader's process table cannot
@@ -182,7 +205,7 @@ def _orientation_write_of_a_run_in_motion(
     """
     if alive is False:
         return False
-    if not _carries_orientation_write(manifest_text, manifest_data):
+    if not _manifest_carries_no_verdict_yet(manifest_text, manifest_data):
         return False
     if alive is True:
         if worker_alive is True:
