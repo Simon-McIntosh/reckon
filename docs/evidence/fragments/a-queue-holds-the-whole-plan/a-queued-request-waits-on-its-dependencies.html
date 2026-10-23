@@ -319,3 +319,47 @@
     path.</li>
   </ul>
 </section>
+
+<section>
+  <h2>Fourth round: the hold reads only what has not launched, and the phase words live in one leaf</h2>
+
+  <p><strong>What was wrong.</strong> Moving the wait read ahead of the
+  existing-run guard made a worse defect than the one it fixed. A re-dispatch
+  of a node whose waits read unmet wrote the waiting phase over whichever
+  pointer carried that node, and the writer did not look at what it was
+  writing over. A run already <em>starting</em> or working is not a stored
+  request at all: it is the record of a launch that happened. Overwriting it
+  took a live run off its lane and re-stored it as a request that nothing was
+  running, and no pass would launch it again.</p>
+
+  <p><strong>What the hold reads now.</strong> The existing run is resolved
+  first, and the waits are read only for a node that has no run at all or whose
+  run is still a stored request. A node whose run is queued, being admitted or
+  working is answered with that run exactly as before, and its pointer is never
+  touched. The writer refuses any pointer whose phase is not the queued one or
+  one of the waiting ones, and it reads that phase inside the mutation that
+  writes, under the pointer's own lock, so a run admitted between the caller's
+  read and the write is refused too. The refusal is not silent: the hold reports
+  that it did not land, and the answer reports the phase the pointer really
+  carries rather than a wait it does not have.</p>
+
+  <p><strong>One leaf for the phase words.</strong> The admission pass writes
+  the waiting phases and the recovery readers draw them, and neither could
+  import the other: naming them through
+  <code>reckon/crew/queue_admission.py</code> from the recovery vocabulary
+  cycles through <code>dispatch_plan</code> and <code>recovery</code> and fails
+  at import, which is why an earlier round restated them as literals. The queued
+  phase and the two waiting phase names now live in
+  <code>reckon/crew/node.py</code>, the leaf both modules already import — the
+  admission module re-exports them, so every existing caller is unchanged, and
+  no reader spells a phase out.</p>
+
+  <p><strong>Measured.</strong> The gate ran at <code>a20ea94a4</code>:
+  <strong>at <code>a20ea94a4</code>: <strong>1322 passed, 23 failed, 1 skipped, 1 error, <code>EXIT=1</code></strong>. The base gate runs the same targets at the run's own base <code>43677d0d26</code> and fails 28 of those ids and the error; every one of the 24 ids failing at the head is in that base list, so the count this change adds is zero. The base log's own list, read from <code>gate-base2.log</code> rather than inferred: <code>conftest::test_temp_config_home</code>, <code>test_a_discarded_request_stays_discarded::test_a_discarded_request_is_reported_nowhere</code>, <code>test_a_discarded_request_stays_discarded::test_a_request_discarded_during_the_pass_is_not_written_back</code>, <code>test_a_dispatch_yields_to_its_sessions_older_request::test_a_dispatch_launches_its_sessions_older_request_and_queues_behind_it</code>, <code>test_a_node_is_queued_once::test_a_different_node_over_a_queued_path_launches</code>, <code>test_a_run_s_overrides_have_one_reader::test_every_reader_resolves_its_config_through_the_owner</code>, <code>test_a_sweep_resolves_review_heads_once::test_snapshot_obligations_match_the_derivation</code>, <code>test_crew_dispatch_arming::test_a_peer_sessions_follower_does_not_admit_this_dispatch</code>, <code>test_crew_dispatch_arming::test_dispatch_refuses_a_session_whose_runs_would_finish_unheard</code>, <code>test_crew_surface_parity::test_the_cli_live_view_matches_the_mcp_classification_surface</code>, <code>test_crew_tool_carries_the_write_verbs::test_the_obligations_view_prints_the_action_form</code>, <code>test_follow_observes_other_sessions::test_a_follower_without_observed_sessions_behaves_exactly_as_today</code>, <code>test_follow_observes_other_sessions::test_an_observed_session_named_identically_to_the_owning_session_adds_no_duplicate</code>, <code>test_follow_observes_other_sessions::test_an_observed_session_row_achieves_the_pane_without_falling_out</code>, <code>test_follow_observes_other_sessions::test_an_observed_session_that_dispatched_nothing_yields_no_rows_and_no_error</code>, <code>test_follow_observes_other_sessions::test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_not</code>, <code>test_follow_observes_other_sessions::test_the_real_configuration_home_gains_no_file</code>, <code>test_git_shim_checks_the_resolved_repo::test_a_repository_under_the_runs_scratch_admits_a_commit</code>, <code>test_obligations_snapshot_is_published::test_a_moved_head_names_the_same_two_heads_in_snapshot_and_derivation</code>, <code>test_obligations_snapshot_is_published::test_a_slice_equals_the_derivation_over_the_same_files</code>, <code>test_obligations_snapshot_is_published::test_the_snapshot_carries_the_derivation_over_unmodified_files</code>, <code>test_one_composer_for_the_domain_block::test_the_per_check_line_has_one_spelling</code>, <code>test_overlapping_queued_requests_launch_in_turn::test_a_new_dispatch_over_a_queued_claim_queues_then_launches</code>, <code>test_queued_work_shows_where_held_work_shows::test_the_published_snapshot_lists_the_queued_run_the_derivation_lists</code>, <code>test_read_verbs_retire_behind_crew_view::test_crew_view_live_gives_the_listings_answer[mine]</code>, <code>test_read_verbs_retire_behind_crew_view::test_crew_view_live_gives_the_listings_answer[phase]</code>, <code>test_read_verbs_retire_behind_crew_view::test_crew_view_live_gives_the_listings_answer[project]</code>, <code>test_read_verbs_retire_behind_crew_view::test_crew_view_live_gives_the_listings_answer[session]</code>, <code>test_unmeasured_horizon_never_refuses::test_redispatch_cli_accepts_estimated_hours</code>. The node's own module is 14 passed, the arm that re-dispatches a launched run among them.</strong>. The negative control for this round neutralises the
+  single <code>hold_request_for_upstream</code> call the check names and fails
+  exactly the two arms that read the phase the hold writes, against the same
+  head unmutated at 14 passed. The base gate runs the same targets at the run's
+  own base <code>43677d0d26</code>, where the node's module does not exist and
+  is named as excluded, so the failures quoted as pre-existing are read from
+  the base rather than from a revision one commit below the head.</p>
+</section>
