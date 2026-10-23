@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="A scope refusal names the paths it parsed">
+  <meta name="plan-summary" content="A changed_paths value whose entries are separated by spaces is reported as one comma-separation finding naming the field and the single item parsed, in place of a scope finding for that item, and each stray path is quoted so one path never reads as several.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s21">
+  <meta name="plan-commits" content="7c614c605">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,manifest,audit,scope">
+  <title>A scope refusal names the paths it parsed — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-scope-refusal-names-the-paths-it-parsed" data-reckon="landed" data-when="2026-10-23">
+  <h2 id="a-scope-refusal-names-the-paths-it-parsed">A scope refusal names the paths it parsed</h2>
+  <p id="a-scope-refusal-names-the-paths-it-parsed-landing">The write-scope audit in <code>reckon/crew/reports.py</code> now separates two readings of a stray <code>changed_paths</code> item. When the item's whitespace-separated parts each lie within the declared write scope, the value is a space-separated list rather than a stray path, and the audit emits one comma-separation finding naming <code>changed_paths</code>, the single item it parsed, and the comma rule. Every remaining stray path is quoted in the scope finding, so a single path can never read as several. The parse is unchanged. Measured: <code>tests/test_a_scope_refusal_names_the_paths_it_parsed.py</code> passes 4 of 4; on the base revision the same file fails 3 of 4 (the space-separated case draws the unquoted scope finding); the declared negative control drops the separation check and restores the unquoted scope finding, and 3 cases go red at <code>EXIT=1</code>.</p>
+  <p id="a-scope-refusal-names-the-paths-it-parsed-gate">Gate: the 29 pre-existing test files that import <code>reckon.crew.reports</code> ran in a scratch checkout of the base revision and in the node's worktree. The head arm reports 1 failed / 561 passed; the base arm reports 1 failed / 561 passed. Both arms fail the same single case, <code>test_one_function_resolves_a_citation.py::test_only_the_shared_resolver_peels_a_revision_to_a_commit</code>, which is a pre-existing red at base, so the change adds no failure. <code>ruff check</code> and <code>ruff format --check</code> report 0 findings on the two changed Python files; a pre-existing nested-<code>if</code> finding in the touched module was folded into one condition to reach that state.</p>
+  <p id="a-scope-refusal-names-the-paths-it-parsed-outside">Quote-always changes the literal wording two existing tests assert: <code>tests/test_manifest_check_command.py</code> and <code>tests/test_a_review_manifest_passes_its_own_check.py</code>. Both are outside this node's write scope and do not import <code>reckon.crew.reports</code> directly, so they are reported for the coordinator rather than edited here.</p>
+</article>
+</body>
+</html>
