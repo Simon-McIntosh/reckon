@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T16:44:38.756Z",
+  "dispatched_at": "2026-10-23T16:33:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:200",
+      "id": "reasoning-1",
+      "reason": "the cursor is the whole mechanism by which delivery is exactly once per pane; leaving its identity undefined across partitions sends the node to a design that either replays rows after a rollover or silently drops them after retention.",
+      "text": "\u00a78 has the subscriber \"select the rows for its session and the broadcast rows after its cursor\", but \u00a75 (line 133) writes events into one file per UTC day and their `id` is per-partition, while \u00a75's retention unlinks a partition older than seven days; nothing defines what a cursor value identifies across partitions, nor what a subscriber does when the partition holding its cursor has been unlinked, so the re-armed-subscriber clause at line 213 (\"continues from its cursor with no `new \u2192` row\" for a pane already drawn) has no defined source of truth, and the subscriber must also `ATTACH` the partitions spanning its cursor and re-attach at the UTC rollover \u2014 a read path \u00a78 never names",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:206",
+      "id": "reasoning-2",
+      "reason": "as written the node's own gate is unpassable, and the plan must either move the subscriber's registration into \u00a75's node-local root or exempt it explicitly from the measure.",
+      "text": "\u00a78 asserts the follower \"computes no snapshot, reads nothing on GPFS\", while the same section's done-when requires the freshness case to assert the subscriber's \"registration in place\" (line 212); the follower's registration is the watch record `crew_home()/watch/<project>-<digest>.lock` read by `_read_watch_record` (reckon/crew/run_paths.py:24, reckon/crew/follower_registration.py:299) and the crew home is the GPFS-backed config home, so the 60 s no-crew-home-reads measure at line 216 and the registration requirement cannot both hold",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9535cd1bbc0d88e79b820c5af492599c85af06c7a648fead2a463a27e6228a4d",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T163057094339-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "8691de75f40a81396b5efc7bb6a82f031a45f193",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_a_delivered_row_does_not_round_trip.py`, `tests/test_a_dispatch_is_one_row.py`, `tests/test_crew_session_delivery.py`, `tests/test_follower_freshness.py` (its `test_running_follower_reloads_without_stream_or_registration_gap` at line 172) and `ticker.PaneRowPath` (reckon/crew/ticker.py:1907) all resolve; `reckon/crew/station_store.py` is declared new by \u00a75, so its absence is expected.",
+    "done_when": "pass \u2014 \u00a78's done-when is measurable in every clause (named existing tests, a retargeted reload case, four enumerated new tests, a 60 s `/proc/<pid>/io` delta) and it declares a negative control (\"a subscriber that does not persist its cursor must fail the restart test\").",
+    "evidence_paths": "pass \u2014 \u00a78's gate is the repository's test suite plus a per-process `/proc/<pid>/io` delta recorded in the run's own gate log; no clause sends evidence to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a78 introduces no symbol, filename, comment or docstring carrying a plan label, stage name, ticket number or version tag; \u00a71's `old \u00a777`/`old \u00a786` are plan-internal cross-references in prose, not code.",
+    "reasoning": "a finding \u2014 \u00a78's subscriber cannot resolve \"the rows \u2026 after its cursor\" against \u00a75's per-day event partitions, and \u00a78's \"reads nothing on GPFS\" is contradicted by its own requirement that the subscriber's registration be in place, where that registration is a crew-home watch record.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, `crew follow` becomes a subscriber; the pane-policy move into the station is the stated precondition for the row it renders and not a second outcome.",
+    "wiring": "pass \u2014 `plan-section-depends-on` is acyclical and each edge matches the narrative: s8 depends on s7 (the subscriber reads the station \u00a77 creates), s9/s10 depend on s7, and s12 depends on s8\u2013s11; the open followup `f-tmref-002` (\"\u00a76 waits on \u00a75 \u2026 and \u00a77 follows \u00a76\") now agrees with the graph."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "8dd1a6bcc12434ce1356b84e953eca880aeb7931e264c7f66452ac7aabba09d3",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "a7f0438f7cb82dd10ecddde501ca94e9a8aa5813d6575e2e8bacdea09f910004",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T16:46:53.281172+00:00"
+}
