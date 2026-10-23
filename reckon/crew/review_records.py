@@ -6,8 +6,9 @@ tree. This module owns that family: reading a run's record from the committed
 tree first and the staging store after, selecting the copy a named head names,
 unioning the disposition and answer fields every copy of one review run holds,
 writing a record and committing that write, and the store index that answers a
-misfiled lookup and a delivered-plan-review lookup from one scan per project
-directory per process.
+misfiled lookup and a delivered-plan-review lookup from one listing per store
+directory, updated in place when a file is added, changed or removed and
+persisted in a node-local cache the node's other processes start from.
 
 The store resolves its directories through :mod:`reckon.crew.review` and shares
 its schema constants and revision helpers with it, so those names are imported
@@ -20,7 +21,10 @@ behaviour changes here; the move leaves the store exactly as it was written.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import os
+import stat
 from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -789,8 +793,80 @@ _STORE_INDEXES: dict[
         tuple[int, ...],
         dict[str, list[dict[str, Any]]],
         dict[str, list[dict[str, Any]]],
+        list[dict[str, Any]],
     ],
 ] = {}
+
+
+def node_local_cache_dir(project: str) -> Path:
+    """Return the node-local directory a project's disposable caches live in.
+
+    A cache every process on the node can share has to sit where this node's
+    processes all see it and no other node does, which is the runtime directory
+    when the session has one and a per-uid directory under ``/tmp`` when it does
+    not. Nothing is created here: a reader that finds no cache directory has no
+    cache, and a writer materialises the path it writes into.
+    """
+    runtime = str(os.environ.get("XDG_RUNTIME_DIR") or "").strip()
+    base = (
+        Path(runtime) / "reckon" if runtime else Path("/tmp") / f"{os.getuid()}-reckon"  # noqa: S108 - node-local
+    )
+    return base / project
+
+
+# A persisted index is meaningful only to the code that would read it: a build
+# written before the reader changed can hold facts a later reader would derive
+# differently, and the selection rules it was written under can differ too. The
+# stamp is the content identity of the two modules those facts and rules are
+# defined in, so it moves for an uncommitted edit as readily as for a commit.
+# The process-wide code stamp is not used here: it costs about eleven seconds on
+# a cold process, reading a whole package and asking git about the tree, which
+# is the cost this module's persisted cache exists to remove.
+# A held stamp is one entry in a list rather than a module scalar so the memo
+# costs no rebinding of a module global on the read path.
+_INDEX_CODE_STAMP: list[str] = []
+
+
+def _index_sources() -> tuple[Path, ...]:
+    """The modules whose content fixes what a persisted index means."""
+    return (Path(__file__).resolve(), Path(_review.__file__).resolve())
+
+
+def _index_code_stamp() -> str:
+    """The stamp a persisted index is filed under and checked against."""
+    if not _INDEX_CODE_STAMP:
+        digest = hashlib.sha256()
+        try:
+            for source in _index_sources():
+                digest.update(source.read_bytes())
+        except OSError:
+            return ""
+        _INDEX_CODE_STAMP.append(digest.hexdigest())
+    return _INDEX_CODE_STAMP[0]
+
+
+def _resolved(directory: Path) -> str:
+    """The store directory's resolved absolute path, or "" when unresolvable."""
+    try:
+        return str(directory.resolve())
+    except OSError:
+        return ""
+
+
+def _index_cache_path(directory: Path) -> Path:
+    """The node-local file one store directory's index is persisted in.
+
+    The store's own directory keys the file, not the project, because a
+    worktree's or a scratch tree's store shares its project name with the main
+    store and the two must never answer from one another's entries.
+    """
+    digest = hashlib.sha256(_resolved(directory).encode("utf-8")).hexdigest()[:32]
+    return node_local_cache_dir(directory.name) / f"store-index-{digest}.json"
+
+
+def _stat_identity(info: os.stat_result) -> tuple[int, int, int]:
+    """The identity of one record file: its inode, its size and its mtime."""
+    return (info.st_ino, info.st_size, info.st_mtime_ns)
 
 
 def _store_directory_identity(directory: Path) -> tuple[int, ...] | None:
@@ -808,56 +884,270 @@ def _store_directory_identity(directory: Path) -> tuple[int, ...] | None:
     return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
 
 
+def _index_entry(path: Path, info: os.stat_result) -> dict[str, Any] | None:
+    """Read one record file once and return the facts the index selects on.
+
+    The facts are the file's name, path, modification time and stat identity,
+    the run its content reviews, the review run that produced it, and the head
+    it carries. Never the whole record: the file the index selects is re-read
+    from disk so a rewrite in place is answered current. A file that does not
+    parse, does not hold a mapping, or is an incomplete partial -- which the
+    store keeps outside current-review selection by design -- yields ``None``
+    and no entry.
+    """
+    if _review._INCOMPLETE_RECORD_MARK in path.name:
+        return None
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(record, Mapping):
+        return None
+    carried_head, head_sha = _review._first_carried_revision(
+        record, _review.HEAD_REVISION_FIELDS
+    )
+    return {
+        "name": path.name,
+        "path": path,
+        "mtime_ns": info.st_mtime_ns,
+        "identity": _stat_identity(info),
+        "reviewed_run_id": str(record.get("reviewed_run_id") or ""),
+        "review_run_id": str(record.get("review_run_id") or "").strip(),
+        "head_carried": bool(carried_head),
+        "head_sha": head_sha,
+    }
+
+
+def _index_maps(
+    entries: Iterable[dict[str, Any]],
+) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
+    """Key one entry per file by the run it reviews and by its reviewer.
+
+    One scan serves both lookups: the misfiled lookup answers for the run a
+    record's content reviews, and the delivered-plan-review lookup answers for
+    the review run that produced the record. Both maps hold the same entry
+    object, so whichever lookup reads one reads one set of facts.
+    """
+    reviewed: dict[str, list[dict[str, Any]]] = {}
+    review_runs: dict[str, list[dict[str, Any]]] = {}
+    for entry in entries:
+        reviewed.setdefault(entry["reviewed_run_id"], []).append(entry)
+        review_run = entry["review_run_id"]
+        if review_run:
+            review_runs.setdefault(review_run, []).append(entry)
+    return reviewed, review_runs
+
+
+def _index_files(
+    reviewed: Mapping[str, list[dict[str, Any]]],
+    review_runs: Mapping[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Recover the per-file entries the two keyed maps were built from."""
+    files: dict[str, dict[str, Any]] = {}
+    for group in (*reviewed.values(), *review_runs.values()):
+        for entry in group:
+            files.setdefault(entry["name"], entry)
+    return list(files.values())
+
+
+def _build_store_entries(directory: Path) -> list[dict[str, Any]]:
+    """Read each record file in the store once, in name order.
+
+    A file the index cannot build an entry from answers no lookup, so it is
+    left out rather than named.
+    """
+    entries: list[dict[str, Any]] = []
+    for path in sorted(directory.glob("*.json")):
+        try:
+            info = path.stat()
+        except OSError:
+            continue
+        if not stat.S_ISREG(info.st_mode):
+            continue
+        entry = _index_entry(path, info)
+        if entry is not None:
+            entries.append(entry)
+    return entries
+
+
 def _build_store_indexes(
     directory: Path,
 ) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
     """Read each record file once, keyed by the run it reviews and by its reviewer.
 
-    One scan serves both lookups: the misfiled lookup answers for the run a
-    record's content reviews, and the delivered-plan-review lookup answers for
-    the review run that produced the record. Each entry carries only the facts
-    its lookup selects on, never the whole record, because the file the index
-    selects is re-read from disk so a rewrite in place is answered current.
+    The from-scratch build: every file the store holds is parsed. A process
+    that finds a persisted index for this store directory starts from that
+    instead and parses only what has changed since, which is what
+    :func:`_update_store_entries` does.
     """
-    reviewed: dict[str, list[dict[str, Any]]] = {}
-    review_runs: dict[str, list[dict[str, Any]]] = {}
-    for path in sorted(directory.glob("*.json")):
-        if not path.is_file() or _review._INCOMPLETE_RECORD_MARK in path.name:
-            continue
+    return _index_maps(_build_store_entries(directory))
+
+
+def _update_store_entries(
+    directory: Path, previous: Iterable[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Update an index from one listing, parsing only the files that changed.
+
+    One directory listing names the files the store holds now. A file is parsed
+    only when its name is new to the index, or when its stat identity -- its
+    inode, its size and its modification time -- differs from the entry the
+    index holds for it; every other file keeps the facts already read for it.
+    An entry whose file the listing no longer names is dropped, so a deleted
+    record stops answering, and a file that became unreadable drops its entry
+    the same way.
+    """
+    held: dict[str, dict[str, Any]] = {entry["name"]: entry for entry in previous}
+    kept: dict[str, dict[str, Any]] = {}
+    try:
+        candidates = sorted(directory.glob("*.json"))
+    except OSError:
+        candidates = []
+    for path in candidates:
         try:
-            record = json.loads(path.read_text(encoding="utf-8"))
-            mtime_ns = path.stat().st_mtime_ns
-        except (OSError, json.JSONDecodeError):
+            info = path.stat()
+        except OSError:
             continue
-        if not isinstance(record, Mapping):
+        if not stat.S_ISREG(info.st_mode):
             continue
-        carried_head, head_sha = _review._first_carried_revision(
-            record, _review.HEAD_REVISION_FIELDS
-        )
-        reviewed.setdefault(str(record.get("reviewed_run_id") or ""), []).append(
+        prior = held.get(path.name)
+        if prior is not None and prior["identity"] == _stat_identity(info):
+            prior["path"] = path
+            prior["mtime_ns"] = info.st_mtime_ns
+            kept[path.name] = prior
+            continue
+        entry = _index_entry(path, info)
+        if entry is not None:
+            kept[path.name] = entry
+    return list(kept.values())
+
+
+def _persisted_index_document(
+    directory: Path, entries: Iterable[dict[str, Any]]
+) -> dict[str, Any]:
+    """The document one store directory's index is persisted as.
+
+    Each entry carries the stat identity a later reader compares against the
+    file it finds, so that reader can tell a file it may reuse from one it must
+    parse, and the facts both lookups select on. The file's path is not stored:
+    the store directory is in the document, and a name inside it resolves
+    there.
+    """
+    return {
+        "code_stamp": _index_code_stamp(),
+        "store": _resolved(directory),
+        "entries": [
             {
-                "path": path,
-                "mtime_ns": mtime_ns,
-                "head_carried": carried_head,
-                "head_sha": head_sha,
+                "name": entry["name"],
+                "identity": list(entry["identity"]),
+                "mtime_ns": entry["mtime_ns"],
+                "reviewed_run_id": entry["reviewed_run_id"],
+                "review_run_id": entry["review_run_id"],
+                "head_carried": bool(entry["head_carried"]),
+                "head_sha": entry["head_sha"],
             }
+            for entry in entries
+        ],
+    }
+
+
+def _persist_store_entries(directory: Path, entries: list[dict[str, Any]]) -> None:
+    """Write the store's index where this node's processes can start from it.
+
+    A disposable cache: an unwritable directory, a full disk or a reader that
+    arrives mid-write costs a later process a from-scratch build rather than
+    the cache, so a write that fails is not an error a lookup reports.
+    """
+    if not _resolved(directory):
+        return
+    document = _persisted_index_document(directory, entries)
+    try:
+        from reckon._store import write_json_atomically
+
+        write_json_atomically(
+            _index_cache_path(directory),
+            document,
+            fsync=False,
+            mode=None,
+            create_parents=True,
         )
-        review_run = str(record.get("review_run_id") or "").strip()
-        if review_run:
-            review_runs.setdefault(review_run, []).append(
-                {"path": path, "mtime_ns": mtime_ns}
-            )
-    return reviewed, review_runs
+    except OSError:
+        return
+
+
+def _entry_from_persisted(directory: Path, raw: Any) -> dict[str, Any] | None:
+    """One persisted entry, bound to the file its name resolves to now."""
+    if not isinstance(raw, Mapping):
+        return None
+    name = str(raw.get("name") or "")
+    identity = raw.get("identity")
+    if not name or not isinstance(identity, list) or len(identity) != 3:
+        return None
+    try:
+        stat_identity = (int(identity[0]), int(identity[1]), int(identity[2]))
+        mtime_ns = int(raw.get("mtime_ns") or 0)
+    except (TypeError, ValueError):
+        return None
+    return {
+        "name": name,
+        "path": directory / name,
+        "mtime_ns": mtime_ns,
+        "identity": stat_identity,
+        "reviewed_run_id": str(raw.get("reviewed_run_id") or ""),
+        "review_run_id": str(raw.get("review_run_id") or ""),
+        "head_carried": bool(raw.get("head_carried")),
+        "head_sha": raw.get("head_sha"),
+    }
+
+
+def _load_persisted_entries(directory: Path) -> list[dict[str, Any]] | None:
+    """The store's index as another process left it, or ``None`` when unusable.
+
+    An index is usable only when this checkout's reader wrote it for this store
+    directory: a document stamped with other code's identity, or naming another
+    store, is ignored rather than trusted, and the caller builds from scratch.
+    A missing, half-written or malformed document gets the same answer, because
+    a cache that cannot be read is not a cache.
+    """
+    store = _resolved(directory)
+    if not store:
+        return None
+    try:
+        document = json.loads(_index_cache_path(directory).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, ValueError):
+        return None
+    if not isinstance(document, Mapping):
+        return None
+    if str(document.get("code_stamp") or "") != _index_code_stamp():
+        return None
+    if str(document.get("store") or "") != store:
+        return None
+    raw_entries = document.get("entries")
+    if not isinstance(raw_entries, list):
+        return None
+    entries: list[dict[str, Any]] = []
+    for raw in raw_entries:
+        entry = _entry_from_persisted(directory, raw)
+        if entry is None:
+            return None
+        entries.append(entry)
+    return entries
 
 
 def _store_indexes(
     directory: Path,
 ) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
-    """Return the store's two indexes, rebuilt only when the directory moves.
+    """Return the store's two indexes, updated only when the directory moves.
 
-    Both indexes are built from one scan and cached under the directory's stat
-    identity, so a lookup by a record's reviewed run and a lookup by the review
-    run that produced it share the store's one pass and its one rebuild trigger.
+    The index is held per store directory and per process and reused while the
+    directory's stat identity is unchanged, which is exactly when its set of
+    entries cannot have moved. When the identity does move the index is updated
+    from one listing rather than rebuilt: the entries this process holds say
+    which files changed, and a process holding none starts from the index
+    another process persisted for this store directory. Every unchanged file
+    keeps the facts already read for it, so a store of thousands of records
+    costs one listing and one parse per changed file rather than a pass over
+    all of them. The updated index is persisted for the next process on the
+    node.
     """
     identity = _store_directory_identity(directory)
     if identity is None:
@@ -866,8 +1156,15 @@ def _store_indexes(
     cached = _STORE_INDEXES.get(directory)
     if cached is not None and cached[0] == identity:
         return cached[1], cached[2]
-    reviewed, review_runs = _build_store_indexes(directory)
-    _STORE_INDEXES[directory] = (identity, reviewed, review_runs)
+    entries = cached[3] if cached is not None else _load_persisted_entries(directory)
+    if entries is None:
+        reviewed, review_runs = _build_store_indexes(directory)
+        entries = _index_files(reviewed, review_runs)
+    else:
+        entries = _update_store_entries(directory, entries)
+        reviewed, review_runs = _index_maps(entries)
+    _STORE_INDEXES[directory] = (identity, reviewed, review_runs, entries)
+    _persist_store_entries(directory, entries)
     return reviewed, review_runs
 
 
