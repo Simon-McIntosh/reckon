@@ -1,0 +1,146 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T08:23:32.774Z",
+  "dispatched_at": "2026-10-23T08:13:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s4",
+      "id": "reuse_search-1",
+      "reason": "\u00a74's deliverable and done-when must be reduced to the merge-side check alone, with the existing dry run cited as the mechanism it reuses.",
+      "text": "\u00a74's Why asserts \"crew complete has no dry run\", but `crew complete --dry-run` exists at main: the option is `reckon/crew_run_commands.py:2202`, its `crew_complete` callback is `reckon/crew_run_commands.py:2222`, the call site is `reckon/crew_run_commands.py:2343`, and the implementation is `reckon/crew/promotion.py:810` (`complete_dry_run`, \"Evaluate a promotion's every guard and report them, writing nothing\"), landed as `0117d3e0b` on 2026-10-19 and an ancestor of HEAD; the tool that should have caught this is `reckon/interface_counts.py:38`, which counts a revision's option decorators \u2014 the section's first half is already built, so the node would either rebuild it or discover mid-flight that its measure is already met",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s5",
+      "id": "reuse_search-2",
+      "reason": "the section must reproduce the skip and name the path that bypasses the shared `plan_dispatch`, or close as already fixed rather than adding a second gate evaluation.",
+      "text": "\u00a75's Why asserts the dry run \"does not evaluate the plan-review gate\", but the dry run calls the same `crew_module.plan_dispatch` the real dispatch calls (`reckon/crew_dispatch_commands.py:1790`) and its exception handler already carries the `PlanReviewMissingError` branch emitting `plan-review-missing` on the dry-run channel (`reckon/crew_dispatch_commands.py:1858`, whose own comment reads \"so an operator diagnosing with --dry-run is pointed at the composed review\"), with the real-dispatch twin at `reckon/crew_dispatch_commands.py:2062`; the defect as written is therefore already covered today, and if the gate is genuinely skipped it is skipped on a path the plan does not name",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s1",
+      "id": "reuse_search-3",
+      "reason": "the section should name `reckon/crew/review.py` as the owner it derives through, so the node does not reimplement a total that is already computed and guarded against a partial-dimension sum.",
+      "text": "\u00a71 proposes that a record \"carrying six dimension scores and no total is complete, with the total computed from the scores\", and that derivation already exists in the module the plan does not name as a write path: `reckon/crew/review.py:955` (`_score_total`) and `reckon/crew/review.py:965` (`_derive_landed_total`, \"Use measured scores for a landed review's total on write, and on read for a record that carries no integer total of its own\"), with the parse-side total at `reckon/crew/review.py:1184`; \u00a71's write paths are `reckon/crew/promotion_checks.py` and `reckon/crew/recovery_review_delivery.py` only",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s11",
+      "id": "reuse_search-4",
+      "reason": "the section must name which write it means and reuse `_retry_backoff` rather than adding a second backoff policy that can drift from the ledger's own.",
+      "text": "\u00a711 proposes \"the index append in `reckon/ledger.py` retries a locked database with a bounded backoff\", and a jittered bounded backoff already lives in that file at `reckon/ledger.py:820` (`_retry_backoff`, \"Yield to competing ledger writers with a small jittered delay\") used by the ledger write loop at `reckon/ledger.py:3411`, while the run index is a separate sqlite file written through `reckon/ledger.py:1112` (`_run_index_path`); the retry the section has in mind is either the existing one or a second one beside it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s1",
+      "id": "deep_module-1",
+      "reason": "name the module each section expects to change and let the hedge be a manifest-reported deviation instead, so the change's surface is fixed before dispatch.",
+      "text": "fourteen of the twenty-two sections (\u00a71\u2013\u00a711, \u00a713, \u00a714, \u00a715, \u00a717, \u00a716 included among them) close their write-path line with the same open clause, \"the module the manifest names if the section's cause lies elsewhere\", so the module boundary the plan commits to is conditional on a diagnosis the worker has not yet made; a plan whose write path is \"wherever the cause turns out to be\" cannot be reviewed for depth, cannot be scoped for a worktree, and its node's fence is unbounded",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s4",
+      "id": "thin_wrapper-1",
+      "reason": "naming `complete_dry_run` as the shared evaluation turns an apparent new subsystem into a two-line extension and fixes which flags merge must accept, so the CLI surface added is known before the node is written.",
+      "text": "\u00a74's second half has `crew merge` \"run that dry run first and refuse, naming the check\", and the machinery it would wrap is `reckon/crew/promotion.py:810` (`complete_dry_run`), so the depth of the merge-side change is one call to an existing function \u2014 which is the honest change \u2014 but the section never says so, nor why the merge path cannot simply invoke the promotion's own precondition evaluation, and it adds `crew merge` pass-through of the promotion's own flags without naming them or their count",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s1",
+      "id": "duplicate_owner-1",
+      "reason": "a second completeness judgement beside the review module's is exactly the duplicate owner this item exists for, and the plan should extend `reckon/crew/review.py` so the two readers cannot disagree.",
+      "text": "the owner of \"is this review record complete, and what is its total\" is `reckon/crew/review.py`: `_score_total` at `reckon/crew/review.py:955`, `_derive_landed_total` at `reckon/crew/review.py:965` and `_has_integer_total` at `reckon/crew/review.py:984`, reached by the existing `crew check --review` command at `reckon/crew_run_commands.py:878`; \u00a71 places the derivation in `reckon/crew/promotion_checks.py` and never names the owner",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s8",
+      "id": "duplicate_owner-2",
+      "reason": "the section should name `reckon/crew/promotion_scope.py` as the file that owns the per-commit union it is replacing, or the fix lands one layer up and the union remains reachable by any other caller.",
+      "text": "the owner of the changed-path scope check is `reckon/crew/promotion_scope.py`, which holds `_repository_scope_paths` at `reckon/crew/promotion_scope.py:374` and `_outside_declared_scope` at `reckon/crew/promotion_scope.py:433` (`promotion_scope` resolves and compares paths against `_merge_revisions` at `reckon/crew/promotion_scope.py:399`), and which `reckon/crew/promotion_checks.py:2857` already imports; \u00a78's only write path is `reckon/crew/promotion_checks.py`, so the head-versus-union change would be made in the consumer of the scope machinery rather than in the machinery that computes the path set",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s4",
+      "id": "interface_budget-1",
+      "reason": "the section must state that the `--dry-run` option already exists and that git is the store for it, and enumerate the flags merge inherits, so the option count the velocity view reports matches what the plan thinks it spends.",
+      "text": "with cli_options 402, \u00a74 adds CLI surface and accounts for none of it: it states it adds a `--dry-run` to `crew complete` (already present at `reckon/crew_run_commands.py:2202`, so the claim is a duplicate surface the plan does not know exists) and it gives `crew merge` the promotion's own flags as an escape hatch without naming them or their number; no retirement or merge is named and no reason is given that none can be",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s16",
+      "id": "interface_budget-2",
+      "reason": "the section must say which existing verdict the new one absorbs or why a new one is unavoidable, or the live-run vocabulary grows one term per incident.",
+      "text": "with mcp_views 19 and refusal_families 23, \u00a716 introduces a new classification, \"a stalled launch, with its own remedy\", on the surface `crew view live` and the MCP read both render: the row vocabulary gains a verdict and a remedy beside the existing ones in `reckon/crew/recovery_classification.py:174` (`classify_pointer`) and `reckon/crew/recovery_liveness.py`; the section names nothing it retires or merges, and the \"in-harness\" wording it corrects is restated rather than retired",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s10",
+      "id": "interface_budget-3",
+      "reason": "the section should name the shape it retires (or state that the writers are already canonical and only readers change), because \"readers accept two shapes\" is an interface widening whose cost is permanent.",
+      "text": "\u00a710 widens two readers to accept on-disk shapes they reject today (\"the reckon readers normalise older shapes of findings and `test_logs` on read\") across `reckon/crew/review.py` and `reckon/crew/reports.py`; it fixes the canonical written shape but does not say which accepted shape stops being written or which reader is retired, and adding shapes is the direction that grows the interface",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html#s7",
+      "id": "interface_budget-4",
+      "reason": "one line stating that the completed-only refusal is retired by this section closes the accounting and tells the node which refusal text to delete.",
+      "text": "\u00a77 widens `--reopen` to accept a halted run and relaxes `--write-path` to optional; the option count is unchanged at 402 but the accepted-input surface and the refusal set both move, and the section names no retirement and no reason that none can be, leaving `--reopen requires a completed run` as a refusal family that is removed without being recorded",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "698086db5df1245dcb4ac965f1731c03706aa619e3956e7438e5e1599726abf9",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T080331821337-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "43616737cb5a3d9d29fa18f81b139feeb5382a0b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 no new module is proposed (every section extends a named existing one), but fourteen sections declare an open-ended write path (\"the module the manifest names if the cause lies elsewhere\"), so the module boundary the plan draws is not a boundary and the depth of the change cannot be judged from the plan.",
+    "duplicate_owner": "a finding \u2014 two sections place machinery in a module that does not own it: \u00a71 puts the review record's completeness-and-total derivation in `promotion_checks.py` when `reckon/crew/review.py` owns it, and \u00a78 puts the changed-path scope check in `promotion_checks.py` when `reckon/crew/promotion_scope.py` owns it.",
+    "interface_budget": "a finding \u2014 public_definitions 2031, cli_options 402, mcp_views 19, refusal_families 23; \u00a74 adds CLI surface it believes is new, \u00a716 adds a classification verdict and remedy, \u00a710 widens two readers, and \u00a77 widens `--reopen`, and none of those four sections names what it retires or merges or why nothing can be.",
+    "reuse_search": "a finding \u2014 four sections propose machinery that already exists at main and do not cite it: `crew complete --dry-run` (\u00a74), the dispatch dry run's plan-review gate (\u00a75), the review-record total derivation (\u00a71) and the ledger's retry backoff (\u00a711), each named below at its file and line.",
+    "thin_wrapper": "a finding \u2014 \u00a74 would add a second evaluation of the promotion checks on the merge path beside the one `complete_dry_run` already runs, and never says why the existing check cannot be extended into it."
+  },
+  "section_digests": {
+    "_document": "a946292d3df0cd2821a701278068d9e2a0f84f1fc57b805f68baaf77c7a6505c",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "528ecce7a53f57e54bcf1efa83ff458958c3437b3432895ddecdd835a0e62505",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "738604ff6516e5303088fb5f37ce17d56c02dc7217d2ebd64cdad839f6fd1eb5",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s3": "ba6dd9a478bc0199ba62cffc2235c6b7735014d677ac51e4789220cffff43d32",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "9450a2aff439a83861b8a100a49b15e67fd864fa1523edeeafd6c9dd9e0ec5c7",
+    "s8": "be2663bedb99a28c51e5004beeaefd28019b60ee0e5a799af90dc3dbdb8e23ea",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T08:38:59.049776+00:00"
+}
