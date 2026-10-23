@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T08:03:27.546Z",
+  "dispatched_at": "2026-10-23T07:54:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:150",
+      "id": "anchors_resolve-1",
+      "reason": "the node's write paths omit the file that holds the function it must change, so the section as written cannot be implemented within its declared scope.",
+      "text": "\u00a711 says \"The key keeps its one reader, `_declared_worker_mcp_servers` in `reckon/_backends.py`\u2026 That reader now refuses a value that is not a list with a message naming the key, where it silently returns no servers today\", and its write paths are `reckon/flight.py`, `reckon/_backends.py` and `tests/test_worker_mcp_servers.py`; but the function is defined at `reckon/_worker_fence.py:275` and `reckon/_backends.py:93` only imports it (used at `_backends.py:2315`). The described change \u2014 refusing a non-list with a message naming the key \u2014 must be made in `reckon/_worker_fence.py`, which no declared write path covers, so a worker implementing \u00a711 as written cannot make the reader refuse and would either leave the opt-in half inert or edit outside its scope.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:145",
+      "id": "anchors_resolve-2",
+      "reason": "the section names the wrong file for the mechanism it must change, so its write paths need `reckon/crew/watch_unit.py` added or the worker will edit the wrong module, exactly the scope defect that stopped \u00a77's predecessor.",
+      "text": "\u00a710 states its write paths are `reckon/crew/runs.py`, \"where `watch_state` and the watch registration open the project's watch lock for the live read\"; `watch_state` is defined at `reckon/crew/watch_unit.py:180` (where `watch_lock_path(project)` is `mkdir`'d, opened `a+b` and `flock`ed `LOCK_EX` \u2014 the exact call that raises `[Errno 30] Read-only file system` under the fence), and `reckon/crew/runs.py` only re-exports it (`runs.py:3672`). `_publish_watch_stream` in runs.py, the live read's own path, takes an in-process `threading` lock, not the file lock. The pointer therefore sends the worker to a re-export and leaves the file-lock code in an unlisted file.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:178",
+      "id": "reasoning-1",
+      "reason": "the section's fix (one cause per failed connection, ordered by `CAUSES`) is unchanged by correcting the count; only the quoted figure moves.",
+      "text": "\u00a713 justifies itself with \"imas-cx shows 2,697 cause hits over 1,635 failed connections\", but \u00a71's own imas-cx rows sum to 2,561 cause hits (1,068 + 751 + 576 + 136 + 30); 2,697 \u2212 2,561 = 136, the imas-cx half of the \"both\" read-only row. The plan's own evidence does not produce the number the section quotes, so the magnitude it rests on is uncertain even though the partition defect it describes is real.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "0363179cc668891789c620a6c990f6b6d6b268360d696c27c166b2bb1ea694be",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 100,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T075033583130-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "25c07ed89fc9004f7eb8273c38089801c38ca11e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a711 and \u00a710 each name a write path that does not hold the code they say it holds.",
+    "done_when": "pass \u2014 each implementable node (\u00a710, \u00a711, \u00a713, \u00a717) states both a measurable outcome and a named negative control that reddens the same test.",
+    "evidence_paths": "pass \u2014 gate and negative-control logs are placed under the run directory in every implementable section, not a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the symbols the plan names (`_declared_worker_mcp_servers`, `watch_state`, `moved_checkout_is_trustworthy`, `_run_under_deadline`) are mechanism names; no plan labels, ticket numbers or version tags are introduced.",
+    "reasoning": "a finding \u2014 \u00a710's mechanism names a caller/path that does not run the lock acquisition it describes; \u00a713's headline count disagrees with the task-triggering numbers. \u00a713's fix is unaffected.",
+    "single_goal": "pass \u2014 \u00a710 (fenced live read), \u00a711 (\u00a713 is the census partition; \u00a711 the flight key), \u00a713 and \u00a717 each name one deliverable.",
+    "wiring": "pass \u2014 the declared depends-on `reckon-reads-answer-in-seconds` exists, and \u00a715's dependency on `the-monitor-shows-the-work-it-watches#s21` resolves to a real section (that node is already done, so no dispatch is pending)."
+  },
+  "section_digests": {
+    "_document": "5b038061946476d901f87ac01828e0fa309ec1e7390f6a6d2bcd67acf07f2c10",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "ba5d0db257057d6dede25c9555898552abc78e291d39b953a7da192229ffbd2f",
+    "s12": "371c3889cd142db38637604c178d996b86294895ad0edc5534d1731f0271fefe",
+    "s13": "79a2b6dff46b0ddd765c409edeb1596fe9bbdf3e4c884875a0e137630010b0db",
+    "s14": "9c62796a08277a796de0c39af58a83a98ae5b16d930532f934636d24dad5d4c5",
+    "s15": "2cc785cc7428c93e41c236ddb2a247143254032421d61d555e7da335bcaf3734",
+    "s16": "144aaa17b20cffc95b3b9ca1166d7efa4069f736dbf892de8f81914afcd8bb31",
+    "s17": "81144ffa35b8763d57edc6f75fe9526743f0644d38d442d3c684e76396ebd7f2",
+    "s2": "3a0632a9c77266389bb16c116a82d809d3c62b98f0ca44f8c9f8eb4ccde7a18e",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "16d91b56539888d5683fc9808616b764742e6c7e93516541ff6dc793aec9fc84",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T08:11:50.659748+00:00"
+}
