@@ -1770,6 +1770,50 @@ _OP_VOCAB = {
 }
 
 
+def _roadmap_snapshot_scope(
+    project: str,
+    checkout_path: str | None,
+    sprint: str | None,
+    max_paths: int,
+    view: Literal["summary", "detail", "raw"] | None,
+    cursor: str | None,
+    limit: int | None,
+) -> tuple[str, dict[str, Path]] | None:
+    """Return the key this call's answer is valid under, or None when it has none.
+
+    A snapshot is keyed to one project's composed result, so a portfolio or
+    graph target — or a read routed at an explicit checkout — has no single
+    project to hold it and is answered as before. The key is what makes a hit
+    safe: it carries the code stamp the process took once at startup, every
+    mounted project's plan-write generation, and this project's live runs.
+    """
+    if (
+        project in {"", "*"}
+        or project.startswith("graph:")
+        or checkout_path is not None
+    ):
+        return None
+    from reckon import serve as serve_module
+
+    try:
+        mounts = dict(serve_module.load_mounts())
+    except OSError:
+        return None
+    key, _live_states = serve_module.roadmap_snapshot_key(
+        project,
+        mounts,
+        _SERVER_CODE_STAMP,
+        shape={
+            "sprint": sprint,
+            "max_paths": max_paths,
+            "view": view,
+            "cursor": cursor,
+            "limit": limit,
+        },
+    )
+    return key, mounts
+
+
 def _roadmap(
     project: str,
     checkout_path: str | None = None,
@@ -1779,10 +1823,29 @@ def _roadmap(
     cursor: str | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
-    """Enter one covered-tree region for the whole read, then answer."""
+    """Answer from the project's snapshot when nothing it composes has moved.
 
+    A warm read is composed of one project's plans and sprint state plus the
+    mounted projects those plans name, and it re-establishes on every call
+    that none of that moved by walking the covered tree. The key below answers
+    that question without a walk, so a read that finds it unchanged returns
+    the composition it made last time. A read that finds it changed recomposes
+    through the existing path and stores what it composed, which is also what
+    a cold process and a process whose stamp has moved past the snapshot do.
+    """
+
+    scoped = _roadmap_snapshot_scope(
+        project, checkout_path, sprint, max_paths, view, cursor, limit
+    )
+    if scoped is not None:
+        from reckon import serve as serve_module
+
+        key, _mounts = scoped
+        served = serve_module.roadmap_snapshot_load(project, key)
+        if served is not None:
+            return served
     with metadata_index.discovery_file_scope():
-        return _roadmap_scoped(
+        result = _roadmap_scoped(
             project,
             checkout_path=checkout_path,
             sprint=sprint,
@@ -1791,6 +1854,18 @@ def _roadmap(
             cursor=cursor,
             limit=limit,
         )
+    if scoped is not None:
+        from reckon import serve as serve_module
+
+        settled = _roadmap_snapshot_scope(
+            project, checkout_path, sprint, max_paths, view, cursor, limit
+        )
+        # The composition is stored only under the key the project is in
+        # *after* the read: a write that landed while it ran would otherwise
+        # be answered from the snapshot for the state before that write.
+        if settled is not None and settled[0] == scoped[0]:
+            serve_module.roadmap_snapshot_store(project, scoped[0], result)
+    return result
 
 
 def _roadmap_scoped(

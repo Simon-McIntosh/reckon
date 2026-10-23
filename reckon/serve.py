@@ -62,6 +62,7 @@ from functools import partial
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
 from urllib.request import urlopen
 
@@ -1128,6 +1129,237 @@ _SIGNATURE_MEMO_LOCK = threading.Lock()
 # The served process opts into the longer window; the library default stays 0
 # so a caller that never starts the fleet watch never reads a stale walk.
 _SERVED_SIGNATURE_TTL_S = 60.0
+
+
+# ── Roadmap snapshots ───────────────────────────────────────────────────────
+# A roadmap read composes a whole project — every mounted project's plans, its
+# sprint state, its wiring — and then re-establishes on the next call that none
+# of it moved, by walking the covered tree again. The walk is the cost, and it
+# is paid to answer a question a much cheaper fact can answer: has anything the
+# composition reads changed since the composition was made? Three such facts
+# are enough for plan state — the staging index git moves on every commit,
+# merge and checkout; the commit HEAD resolves to; and the store's write
+# counter, which moves on every plan write whether or not it committed. A
+# fourth carries a live run's classification, which is a function of files the
+# crew owns and of the clock.
+_ROADMAP_SNAPSHOT_VERSION = 1
+# A read whose key matches recomputes nothing, so a write that neither reckon
+# nor git made — an editor saving a plan in place — would be answered from a
+# stale snapshot until something else moved. A full revalidation at most once
+# per this window bounds how long that can last.
+_ROADMAP_REVALIDATE_DEFAULT_S = 120.0
+_ROADMAP_SNAPSHOT_LOCK = threading.Lock()
+# In-process reuse, so a hit costs no open beyond the snapshot file itself.
+_ROADMAP_SNAPSHOTS: dict[str, tuple[str, dict[str, Any]]] = {}
+
+
+def roadmap_revalidate_window() -> float:
+    """Seconds a snapshot may be served before a full revalidation is forced."""
+    raw = str(os.environ.get("RECKON_ROADMAP_REVALIDATE_S") or "").strip()
+    if raw:
+        try:
+            return max(0.0, float(raw))
+        except ValueError:
+            pass
+    return _ROADMAP_REVALIDATE_DEFAULT_S
+
+
+def _git_dir_for_docs(docs_dir: Path) -> Path | None:
+    """Resolve a docs tree's git directory, following a worktree's pointer file."""
+    git = docs_dir.parent / ".git"
+    try:
+        if git.is_dir():
+            return git
+        text = git.read_text().strip()
+    except OSError:
+        return None
+    if not text.startswith("gitdir:"):
+        return None
+    target = Path(text.split(":", 1)[1].strip())
+    return target if target.is_absolute() else (git.parent / target)
+
+
+def _head_commit_of(git_dir: Path) -> str:
+    """Resolve the commit HEAD names, reading the ref rather than asking git.
+
+    Asking git is a subprocess, and the whole point of the key is that a read
+    that finds nothing changed pays stat and open calls and nothing else.
+    """
+    try:
+        head = (git_dir / "HEAD").read_text().strip()
+    except OSError:
+        return ""
+    if not head.startswith("ref:"):
+        return head
+    ref = head.split(":", 1)[1].strip()
+    try:
+        return (git_dir / ref).read_text().strip()
+    except OSError:
+        pass
+    try:
+        lines = (git_dir / "packed-refs").read_text().splitlines()
+    except OSError:
+        return ""
+    for line in lines:
+        if line.startswith(("#", "^")) or " " not in line:
+            continue
+        sha, name = line.split(" ", 1)
+        if name.strip() == ref:
+            return sha.strip()
+    return ""
+
+
+def roadmap_project_generation(project: str, docs_dir: Path | None) -> list[str]:
+    """Return the three facts one mounted project's plan state is keyed on."""
+    from reckon._store import read_write_generation
+
+    index_identity = "none"
+    head = ""
+    git_dir = _git_dir_for_docs(docs_dir) if docs_dir is not None else None
+    if git_dir is not None:
+        try:
+            index_identity = str((git_dir / "index").stat().st_mtime_ns)
+        except OSError:
+            index_identity = "none"
+        head = _head_commit_of(git_dir)
+    return [index_identity, head, read_write_generation(project)]
+
+
+def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any]]:
+    """Return this project's live-run key rows and the states they were read at.
+
+    Only this project's pointers enter the key: a peer project's run is
+    filtered out of this project's rows by the readers above, so letting it
+    move the key would recompute a composition it cannot change. Each row is
+    the crew watcher's own per-run reduction, which already folds the clock in
+    — the same reduction a ticker consumes, so a run whose stream goes silent
+    past the stale threshold moves this key exactly as it moves the watch.
+    """
+    from reckon.crew import recovery_watch as watch
+    from reckon.crew import runs as crew_runs
+
+    try:
+        pointers = crew_runs.list_live(project=project)
+    except OSError:
+        pointers = []
+    moment = time.time()
+    stall_seconds = watch.parse_duration(watch.DEFAULT_WATCH_STALL_WINDOW)
+    rows: list[list[str]] = []
+    states: dict[str, Any] = {}
+    for pointer in pointers:
+        if not isinstance(pointer, dict) or pointer.get("project") != project:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id:
+            continue
+        try:
+            snapshot = watch._watch_snapshot(
+                pointer, moment=moment, stall_seconds=stall_seconds
+            )
+        except Exception:  # noqa: BLE001 — a key never becomes the read's failure
+            snapshot = {}
+        state = str(snapshot.get("state") or "")
+        rows.append([run_id, state])
+        states[run_id] = snapshot
+    rows.sort()
+    return rows, states
+
+
+def roadmap_snapshot_key(
+    project: str,
+    mounts: Mapping[str, Path],
+    code_stamp: str,
+    *,
+    shape: Mapping[str, Any] | None = None,
+) -> tuple[str, dict[str, Any]]:
+    """Return the key a roadmap answer is valid under, and its live-run states.
+
+    ``shape`` names the request the answer belongs to — the view, the sprint,
+    the path budget, the cursor. Two calls that differ in any of them compose
+    different payloads from the same unchanged project, so an answer is only
+    valid for the request it was composed for.
+    """
+    generations = {
+        name: roadmap_project_generation(name, docs_dir)
+        for name, docs_dir in sorted(mounts.items())
+    }
+    live_rows, live_states = _roadmap_live_readings(project)
+    key = json.dumps(
+        {
+            "version": _ROADMAP_SNAPSHOT_VERSION,
+            "code": code_stamp,
+            "project": project,
+            "shape": dict(shape or {}),
+            "projects": generations,
+            "live": live_rows,
+        },
+        sort_keys=True,
+    )
+    return key, live_states
+
+
+def roadmap_snapshot_path(project: str) -> Path:
+    """Return the node-local file one project's roadmap snapshot lives in."""
+    from reckon.crew.review_records import node_local_cache_dir
+
+    return node_local_cache_dir(project) / "roadmap-snapshot.json"
+
+
+def roadmap_snapshot_load(project: str, key: str) -> dict[str, Any] | None:
+    """Return the stored snapshot when the key matches and it is still fresh.
+
+    The persisted file is read on every call: a fresh process, another
+    session's server and the current-code child all answer a first call from
+    the snapshot one of them computed, which is the whole reason the snapshot
+    is on disk rather than in a module global.
+    """
+    window = roadmap_revalidate_window()
+    moment = time.time()
+    candidates: list[dict[str, Any]] = []
+    with _ROADMAP_SNAPSHOT_LOCK:
+        served = _ROADMAP_SNAPSHOTS.get(project)
+    if served is not None and served[0] == key:
+        candidates.append(served[1])
+    try:
+        raw = roadmap_snapshot_path(project).read_text()
+        persisted = json.loads(raw)
+    except (OSError, ValueError):
+        persisted = None
+    if isinstance(persisted, dict) and persisted.get("key") == key:
+        candidates.append(persisted)
+    for record in candidates:
+        stored_at = record.get("stored_at")
+        if not isinstance(stored_at, (int, float)):
+            continue
+        if window <= 0 or moment - float(stored_at) > window:
+            continue
+        payload = record.get("payload")
+        if isinstance(payload, dict):
+            return payload
+    return None
+
+
+def roadmap_snapshot_store(project: str, key: str, payload: dict[str, Any]) -> None:
+    """Store a snapshot under its key, in process and on node-local disk."""
+    record = {
+        "version": _ROADMAP_SNAPSHOT_VERSION,
+        "key": key,
+        "stored_at": time.time(),
+        "payload": payload,
+    }
+    with _ROADMAP_SNAPSHOT_LOCK:
+        _ROADMAP_SNAPSHOTS[project] = (key, record)
+    path = roadmap_snapshot_path(project)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(record))
+        tmp.replace(path)
+    except (OSError, TypeError, ValueError):
+        # A snapshot that cannot be persisted costs the next process a cold
+        # read, which is the behaviour this section removes rather than a
+        # correctness failure — the answer served is the one just computed.
+        return
 
 
 def _served_code_report() -> dict | None:
