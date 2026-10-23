@@ -1128,6 +1128,9 @@ def _edit_plan(
             "error": "invalid_edit_mode",
             "detail": "mode must be 'state' or 'text'",
         }
+    refusal = _refuse_unknown_op_verbs(ops)
+    if refusal is not None:
+        return refusal
     # A write made from inside a crew run belongs to that run's own worktree.
     # Without an explicit checkout_path a run-scoped write resolves there, and
     # a write to any other project's plan is refused rather than silently
@@ -1648,6 +1651,46 @@ def _edit_plan_prose(
             "slug": slug,
             "detail": str(exc),
         }
+
+
+def _accepted_op_verbs() -> frozenset[str]:
+    """The op verbs the edit vocabulary accepts.
+
+    The grammar :func:`reckon.mcp._read_plan_tool` publishes under ``op_vocab``
+    is the one declaration, so a verb added to it is accepted here without a
+    second edit. ``create`` rides the grammar as a parameter rather than an op
+    key, so it is not a verb.
+    """
+    from reckon.mcp import _OP_VOCAB
+
+    return frozenset(_OP_VOCAB) - {"create"}
+
+
+def _refuse_unknown_op_verbs(ops: Any) -> dict[str, Any] | None:
+    """Refuse an op whose verb the vocabulary does not carry, before any read.
+
+    An op verb is an argument: the store answers the same refusal, but only
+    after it has read the document to apply the batch to. Naming the accepted
+    verbs here lets a malformed request be refused in milliseconds whatever
+    storage is doing. A batch that is not a list, or an entry that is not an
+    object, is left to the store, which names the position it refused.
+    """
+    if not isinstance(ops, list):
+        return None
+    accepted = _accepted_op_verbs()
+    for index, op in enumerate(ops):
+        if not isinstance(op, dict):
+            continue
+        verb = op.get("op")
+        if verb in accepted:
+            continue
+        return {
+            "ok": False,
+            "error": "op_error",
+            "detail": f"op #{index}: unknown verb {verb!r}; accepted verbs are "
+            + ", ".join(sorted(accepted)),
+        }
+    return None
 
 
 def _edit_plan_tool(

@@ -30,7 +30,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from types import UnionType
@@ -84,8 +84,15 @@ from reckon.capability import (
     map_legacy_capabilities,
 )
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
+from reckon.crew.query import (
+    LIVE_OVERRUN_FIELDS,
+    LIVE_PLACEMENT_FIELDS,
+    RUN_SCOPES,
+    RUN_SOURCES,
+)
 from reckon.mcp_views import (
     CREW_VIEWS,
+    VIEW_NAMES,
     ResourceSelector,
     ViewRequestError,
     audit_view,
@@ -240,6 +247,157 @@ from reckon.mcp_edit_plan import (
 #: check compares this set against the served set and fails on a view
 #: registered on one surface only.
 CREW_TOOL_VIEWS: tuple[str, ...] = CREW_VIEWS
+
+#: The response shapes the roadmap tool publishes, declared here so a view
+#: outside them is refused from the argument rather than after the scan that
+#: builds the report.
+ROADMAP_TOOL_VIEWS: tuple[str, ...] = ("summary", "detail", "raw")
+
+#: The fields a ``live`` crew row answers. :func:`reckon.crew.query
+#: .live_field_vocabulary` derives the same set from the pointers it read, so a
+#: name no row carries can only be refused after storage. The classification
+#: answers these keys for any record, so the set is record-independent and is
+#: declared here: a request naming a field the view does not answer then depends
+#: on the argument alone and never waits on a read.
+_LIVE_ROW_FIELDS = (
+    frozenset(
+        {
+            "backend",
+            "budget_overrun",
+            "budget_overrun_seconds",
+            "budget_seconds",
+            "classification",
+            "commits_beyond_base",
+            "detail",
+            "effective_phase",
+            "elapsed_seconds",
+            "exit_record",
+            "external_wait",
+            "fleet_verdict",
+            "interruption",
+            "lane",
+            "lane_cause",
+            "lane_ended_at",
+            "lane_event",
+            "lifting_condition",
+            "liveness_proven",
+            "log_age_seconds",
+            "log_fresh",
+            "manifest_commits",
+            "manifest_derived",
+            "manifest_digest",
+            "manifest_error",
+            "manifest_file_present",
+            "manifest_fresh",
+            "manifest_path",
+            "manifest_present",
+            "manifest_reported_status",
+            "manifest_status",
+            "marker",
+            "model_key",
+            "needs_help_complete",
+            "next_action",
+            "node",
+            "phase",
+            "plan",
+            "process_alive",
+            "process_descendant_alive",
+            "project",
+            "recovery",
+            "recovery_classification",
+            "resets_at",
+            "review_error",
+            "review_present",
+            "review_status",
+            "run_id",
+            "session",
+            "stored_phase",
+            "terminal_age_seconds",
+            "terminal_at",
+            "wait_age_seconds",
+            "wait_condition_state",
+            "wait_key_defect",
+            "wait_observed",
+            "wait_overdue",
+            "worktree",
+        }
+    )
+    | LIVE_OVERRUN_FIELDS
+    | frozenset(LIVE_PLACEMENT_FIELDS)
+)
+
+
+def _named_choices(names: Iterable[str]) -> str:
+    """The accepted names as ``a, b or c``, so a refusal reads as a sentence."""
+    ordered = sorted(names)
+    return ", ".join(ordered[:-1]) + " or " + ordered[-1]
+
+
+def _requested_field_names(fields: Iterable[str] | None) -> tuple[str, ...]:
+    """The requested crew field names, normalized and de-duplicated in order."""
+    if fields is None:
+        return ()
+    if isinstance(fields, str):
+        parts = fields.split(",")
+    else:
+        parts = [str(field) for field in fields]
+    return tuple(dict.fromkeys(part.strip() for part in parts if part.strip()))
+
+
+def _crew_argument_refusal(
+    view: str,
+    *,
+    fields: Iterable[str] | None,
+    session: str | None,
+    source: str,
+    scope: str,
+) -> dict[str, Any] | None:
+    """Refuse a crew request whose only defect is an argument, before any read.
+
+    A view outside the served set, a field no row answers and a scope or source
+    outside the declared one each depend on nothing but the argument, so the
+    refusal is raised here rather than left to the view, which reaches the same
+    verdict only after it has read the pointers.
+    """
+
+    if view not in CREW_TOOL_VIEWS:
+        return {
+            "ok": False,
+            "error": "invalid_view",
+            "detail": crew_view_refusal_detail(),
+        }
+    requested = _requested_field_names(fields)
+    if view == "live" and requested:
+        vocabulary = set(_LIVE_ROW_FIELDS)
+        if session is not None:
+            vocabulary.add("mine")
+        unknown = sorted(set(requested) - vocabulary)
+        if unknown:
+            return {
+                "ok": False,
+                "error": "crew_error",
+                "detail": "unknown live fields "
+                + ", ".join(repr(field) for field in unknown)
+                + "; live fields are "
+                + ", ".join(sorted(vocabulary)),
+            }
+    if view == "runs":
+        if source not in RUN_SOURCES:
+            return {
+                "ok": False,
+                "error": "crew_error",
+                "detail": "runs source must be one of "
+                + ", ".join(sorted(RUN_SOURCES)),
+            }
+        if scope not in RUN_SCOPES:
+            return {
+                "ok": False,
+                "error": "crew_error",
+                "detail": f"unknown runs scope {scope!r}; scope must be one of "
+                + ", ".join(sorted(RUN_SCOPES)),
+            }
+    return None
+
 
 _LOGGER = logging.getLogger("reckon.mcp")
 
@@ -1061,6 +1219,13 @@ def _read_plan_tool(
     """
 
     selected_view = view
+    if view is not None and view not in VIEW_NAMES:
+        return {
+            "ok": False,
+            "error": "invalid_view",
+            "detail": f"unknown view {view!r}; view must be one of "
+            + _named_choices(VIEW_NAMES),
+        }
     if view is None and not with_schema and project not in (None, "*"):
         selected_view = "summary"
     return _read_plan(
@@ -2014,6 +2179,13 @@ def _roadmap_tool(
     """
 
     selected_view = view
+    if view is not None and view not in ROADMAP_TOOL_VIEWS:
+        return {
+            "ok": False,
+            "error": "invalid_view",
+            "detail": f"unknown view {view!r}; roadmap views are "
+            + _named_choices(ROADMAP_TOOL_VIEWS),
+        }
     if view is None and project != "*" and not project.startswith("graph:"):
         selected_view = "summary"
     if checkout_path is None:
@@ -2203,6 +2375,16 @@ def _crew(
     ``read_plan``: with it, the ledger and the routing project layer resolve
     inside that checkout instead of the registered main one.
     """
+    if action is None:
+        refusal = _crew_argument_refusal(
+            view,
+            fields=fields,
+            session=session,
+            source=source,
+            scope=scope,
+        )
+        if refusal is not None:
+            return refusal
     if action in _WRITE_ACTIONS:
         return _crew_write_action(
             action,
@@ -2255,12 +2437,6 @@ def _crew(
             advice=advice,
             dry_run=dry_run,
         )
-    if view not in CREW_TOOL_VIEWS:
-        return {
-            "ok": False,
-            "error": "invalid_view",
-            "detail": crew_view_refusal_detail(),
-        }
     return serve_crew_view(
         view,
         refresh=refresh,

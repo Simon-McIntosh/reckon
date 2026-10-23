@@ -1,0 +1,54 @@
+<section id="a-malformed-request-is-refused-before-storage" class="evidence-fragment">
+  <h2>§17 — A malformed request is refused before it touches storage</h2>
+  <p>
+    A request whose only defect is an argument — a crew view outside the served
+    set, a crew field no row carries, a read_plan or roadmap view outside the
+    declared shapes, an edit op verb outside the edit vocabulary — was answered
+    only after storage had been consulted. Against a stub whose every open
+    raises, the base revision reached the stub: <code>_crew</code> read the
+    live pointers through <code>reckon.crew.list_live</code> and classified an
+    empty pointer before it read the requested field names, and the store read
+    the plan before it dispatched <code>_apply_one_op</code>.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-change">
+    Change. <code>reckon/mcp.py</code> gained
+    <code>_crew_argument_refusal</code>, called at the head of <code>_crew</code>
+    for a read request (no <code>action</code>). It refuses a view outside
+    <code>CREW_TOOL_VIEWS</code>, a <code>live</code> field outside the row's
+    declared vocabulary (<code>_LIVE_ROW_FIELDS</code>: the classification's
+    record-independent keys plus the overrun and placement fields), and a
+    <code>runs</code> scope or source outside
+    <code>RUN_SCOPES</code>/<code>RUN_SOURCES</code>, each naming the accepted
+    values. <code>_read_plan_tool</code> refuses a view outside
+    <code>mcp_views.VIEW_NAMES</code>, and <code>_roadmap_tool</code> a view
+    outside <code>ROADMAP_TOOL_VIEWS</code>. <code>reckon/mcp_edit_plan.py</code>
+    gained <code>_refuse_unknown_op_verbs</code>, called before the run-scoped
+    checkout resolution, which refuses an op whose verb is outside the grammar
+    <code>reckon.mcp._OP_VOCAB</code> publishes — the one declaration, minus
+    <code>create</code>, which is a parameter rather than an op key — naming the
+    op's position and the accepted verbs.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-measure">
+    Measure. The focused gate of this node's seven files reports
+    <strong>144 passed, 1 failed</strong> at the head revision
+    (<code>EXIT=1</code>); the failure is
+    <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
+    <code>reckon/roadmap.py: 51232 estimated tokens exceeds the 50000 bound</code>
+    — a failure the done-when declares pre-existing on main, in a module this
+    node did not write. The new file alone reports <strong>6 passed</strong>.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-base">
+    Base arm. The same test file, run against the base revision extracted with
+    <code>git archive HEAD</code> into a scratch tree, reports
+    <strong>5 failed, 1 passed</strong> (<code>EXIT=1</code>). The one that
+    passes is the unknown-view case, which <code>_crew</code> already refused
+    before it read.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-negative">
+    Negative control. The crew argument check moved after the first read — the
+    classification probe the deep field check performs — reports
+    <strong>3 failed</strong> (<code>EXIT=1</code>): the three crew cases fail
+    with <code>a malformed request reached storage before it was refused:
+    PosixPath('worker.json')</code>, and all three pass at the head arm.
+  </p>
+</section>
