@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T08:44:30.283Z",
+  "dispatched_at": "2026-10-23T08:30:55Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/dispatch_launch.py:1725",
+      "id": "reuse_search-1",
+      "reason": "\u00a72's done-when (\"a grep of `reckon/` finds no read of a moved field except through the accessor\") cannot be met while `argv` has two writers, and the cheaper change is to extend the spec the plan does not mention.",
+      "text": "\u00a72 says \"dispatch-time detail that no live reader consults moves from the pointer into a file in the run's directory, written once at dispatch\" and lists `argv` among the fields it moves, but `SUPERVISOR_SPEC_NAME = \"supervisor.json\"` is already that file: `_supervisor_spec` (`reckon/crew/dispatch_launch.py:2023`) composes it at dispatch, `_launch_supervisor_spec` writes it into the run directory (:2282), it carries `plan.argv`, `cwd`, `environment`, `prompt_path`, `worktree` and `attempt`, and it already has a single reader that answers \"read the spec, else nothing\" \u2014 the move-and-read-through-an-accessor shape \u00a72 describes. `reckon/crew/dispatch.py:2645` and `:2951`/`:3045` already re-export it for other callers, so a second dispatch-time run-directory file beside it means two files carrying the same argv and two readers to keep in step.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:728",
+      "id": "duplicate_owner-1",
+      "reason": "an author who sees the twelve sites and the two existing projections in one pass writes the census into \u00a72 instead of discovering it in the first implementation node.",
+      "text": "\u00a72 places its one accessor here, and the plan names no owner for the fields it moves, so the \"one accessor in `reckon/crew/runs.py`\" has no census. The live-pointer read sites \u00a72 would have to route are `reckon/run_record.py:159` (`promoted_picker_selection`), `reckon/crew/promotion.py:902` and `:1436`, `reckon/crew/queue_admission.py:138`, `:747` and `:1323` (the latter a *write* of `admit_request`), `reckon/crew/recovery_watch.py:1172`, `reckon/serve.py:645` (`argv`), `reckon/crew/dispatch_sessions.py:933`, `reckon/crew/recovery_stream.py:466`, `reckon/crew/picker/snapshot.py:224` and `reckon/crew/picker/outcomes.py:360` \u2014 twelve sites across nine files outside `runs.py`. Worse, `unreconciled_override` and `picker_selection` are already projected by `reckon/run_store.py:21` (`DETAIL_FIELDS`, \"the wide fields a rotation may remove\") and carried on the ledger row by `reckon/ledger.py:189`, so the field \u00a72 moves is under three mechanisms at once and the plan reconciles none of them.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/paid_lanes.py:1334",
+      "id": "duplicate_owner-2",
+      "reason": "naming the owner turns \u00a77's done-when into a call on an existing installer rather than a second one, and the plan's own reuse map then has an entry.",
+      "text": "\u00a77's \"hourly user timer, the same arrangement as `reckon-paid-lanes.timer`\" cites the *instance* and not the owner: `render_timer_unit` (`reckon/crew/paid_lanes.py:1334`) and `install_timer` (`:1341`) are the code that renders and installs a service-plus-timer pair under `service.systemd_user_dir()` via `service.write_named_unit`, with the idempotent \"write only when the definition changed, then daemon-reload and enable --now\" behaviour already implemented. \u00a77's \"the unit files install the timer at an hourly interval\" leaves the owner unnamed, and `reckon/crew/watch_unit.py:315` is a third unit renderer in the same tree.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/watch_unit.py:809",
+      "id": "thin_wrapper-1",
+      "reason": "the section gains a one-line dependency on the existing rotating writer, and its node stops re-deriving a rotation it can lean on.",
+      "text": "\u00a77 says a pass \"appends its removals to one log under the crew home, which rotates at a fixed size\". That writer exists: `WATCH_LOG_MAX_BYTES` (`reckon/crew/watch_unit.py:744`), the rotation class `_WatchLogStream` at `:795` with `_rotate_if_needed` (`:852`), and its docstring already records the two hazards the plan's log would have to solve \u2014 a library holding a descriptor across a rename writes to the rotated-away inode, and the redirection has to survive rotation. `reckon/serve.py:317` is a second precedented rotation. \u00a77 adds a third without saying why neither can be reused.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/fleet_supervisor.py:1006",
+      "id": "duplicate_owner-3",
+      "reason": "the plan's \u00a76 predicate and the existing bound must be reconciled or the exit-path removal silently fights the gc bound over the same paths.",
+      "text": "\u00a76 says of the `cache/` tree \"nothing reads either after the process ends\" and \"Nothing removes them at any other time\", but the directory is already bounded in the same `gc` loop \u00a73 modifies: `bound_run_files` (`reckon/crew/fleet_supervisor.py:1006`, called from `reckon/crew/gc.py:572`) bounds every over-limit file under the run directory against `run_file_limit_bytes` (`fleet_supervisor.py:1108`, `flight.run_file_max_mb`), and `reckon/crew/gc.py:57` (`_HARNESS_SCRATCH_DIRS = {\"codex-home\", \"harness\"}`) already classifies `codex-home` as harness scratch \u2014 the same two trees \u00a76 names. \u00a76 removes them at exit instead, so the run directory has two owners of its size and the plan states neither the interaction nor which one stops.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/gc.py:267",
+      "id": "interface_budget-1",
+      "reason": "naming the flight key and the merge target (\u00a72 into `supervisor.json`) is the accounting the item asks for, and it is a one-line addition per section.",
+      "text": "public_definitions 2030, cli_options 402, mcp_views 19, refusal_families 23. Measured over the section text: \u00a73 accounts for its own surface (it replaces the thirty-day age and drops the dated subdirectories it first proposed) and is the only section that does. \u00a77 adds a new systemd unit pair, a third log format with a fixed-size rotation, and a per-pass removal cap; \u00a72 adds a second kind of run-directory sidecar and an accessor; neither names what it retires or merges, and \u00a77's cap and interval become new tunable surface beside `flight.run_file_max_mb` and `raw_report_retention_days` (`reckon/flight.py:978`). \u00a73's grace window is declared \"in flight config\" without naming the key, so it too adds a public config name the section does not account for.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6cefbd62859e75213fa2b6334628bb32927378e61915e20828d37d0dc6fb8664",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T082939519664-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "7aaec095f52c709f4297deaba4649adae8109cd8",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a73 states one predicate (\"a run's directory is kept while something can still need it\"), extends `gc.py`'s existing pass rather than adding a second sweep, and says so; \u00a72 keeps the split between pointer and sidecar behind one accessor rather than spreading it over callers.",
+    "duplicate_owner": "a finding \u2014 the sections that bound an existing store do not name the owner they extend for three of them: \u00a72 duplicates the dispatch-time sidecar owner, \u00a76 overlaps the run-file bound owned by `fleet_supervisor.bound_run_files`/`flight.run_file_max_mb`, and \u00a77 forks the timer unit owner.",
+    "interface_budget": "a finding \u2014 public_definitions 2030, cli_options 402, mcp_views 19, refusal_families 23; no section names what it retires or merges (the timer unit, the rotation, the new sidecar file format and the flight-config grace key are all additions), and for \u00a72 a merge target exists.",
+    "reuse_search": "a finding \u2014 \u00a72 proposes a new dispatch-time run-directory sidecar with its own accessor without citing the one that already exists (`supervisor.json`, `reckon/crew/dispatch_launch.py:1725`), which is written once at dispatch into the run directory and already carries `plan.argv`.",
+    "thin_wrapper": "a finding \u2014 \u00a77 adds a size-rotating log and the unit-install path for its timer without saying why `reckon/crew/watch_unit.py:795`'s rotating writer and `reckon/crew/paid_lanes.py`'s timer installer cannot be extended."
+  },
+  "section_digests": {
+    "_document": "612e1478ab72d416411926cbb3ef84a93116133be176b322e61e8c1d0dd1f3a0",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T08:53:00.069265+00:00"
+}
