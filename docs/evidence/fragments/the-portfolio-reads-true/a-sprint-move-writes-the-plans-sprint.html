@@ -1,0 +1,76 @@
+<section id="a-sprint-move-writes-the-plans-sprint-landing">
+  <h2>A sprint move writes the plan's sprint in the same call</h2>
+
+  <p><strong>What changed.</strong> A sprint item and the plan it names each record
+  which sprint holds it: the sprint's member list, and the plan's own
+  <code>plan-sprint</code>. A <code>move</code> wrote only the index, so the plan kept
+  naming the sprint it came from while the write reported success — six plans moved
+  between sprints on power_convertor on 2026-10-23 kept their old sprint until six
+  separate <code>set sprint</code> writes were made, and the lifecycle audit then
+  reported the disagreement the write itself had produced.</p>
+
+  <p>The index batch is one batch to one document, so the plan half cannot ride along
+  with it, and it cannot live in <code>_apply_move</code> in <code>reckon/_store.py</code>,
+  which is index-only and never touches disk. The pairing therefore lives in
+  <code>reckon/mcp_edit_plan.py</code>. <code>edit_plan</code> reads each moved plan
+  before it applies the batch (<code>_sprint_move_plan_writes</code>), then writes each
+  moved plan's <code>sprint</code> through that plan's own versioned store write
+  (<code>_carry_plan_sprints</code>), and reports the plan writes beside the index
+  version (<code>plan_writes</code>). <code>_move_sprint_item</code>, the module's second
+  implementer of the move, goes through the same read and the same writer, so neither
+  entry point can move a plan and leave its sprint behind. A plan write that fails after
+  the index move landed is reported as <code>partial_write</code> naming the plan, never
+  as success.</p>
+
+  <p><strong>What is refused, and what is not.</strong> A member list holds refs that owe
+  no plan write: an unparsable ref, or one naming a plan this project has no file for —
+  the sprints still move, which is the behaviour the existing move tests exercise. The
+  refusal is reserved for a ref qualified with another project
+  (<code>_unwritable_move_refusal</code>), whose <code>plan-sprint</code> this call cannot
+  write; refusing names both sprints and leaves the index, the sprints and the foreign
+  plan untouched rather than half-applying the membership change.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the node's test file plus six files covering the edit surface, sprint
+  membership, the slug reader, project-state parity and the module-width bound, run in
+  the fleet allocation against the repository venv. Each arm is a log whose first line
+  names its revision, tree and command and whose last line reads
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change)</td>
+        <td><code>14ddfb20a</code></td>
+        <td><strong>122 passed</strong>, exit 0</td></tr>
+      <tr><td>base (new test file copied in)</td>
+        <td><code>669f3f5f4</code></td>
+        <td><strong>5 failed</strong>, 1 passed, exit 1</td></tr>
+      <tr><td>negative control (a move writes only the sprints)</td>
+        <td>mutated head</td>
+        <td><strong>3 failed</strong>, 3 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The measure at the base revision.</strong> The five cases that assert a
+    plan's sprint moved fail there, the first of them on
+    <code>assert 'S1' == 'S2'</code>: the plan keeps the sprint it came from, which is the
+    defect this node repairs. The sixth case — a member the project has no plan file for
+    — passes on both arms, because moving the sprints alone is correct there.</li>
+    <li><strong>The negative control.</strong> The declared mutation removes the plan-side
+    write from <code>_carry_plan_sprints</code>, so a move writes the sprint resources and
+    nothing else. The first case fails on <code>assert plan["sprint"] == "S2"</code> with
+    <code>'S1'</code> read back, and the two further plan-reading cases fail with it; the
+    two refusal cases and the absent-plan case still pass, having nothing to do with the
+    mutation.</li>
+    <li><strong>The membership check.</strong> After the move,
+    <code>audit_lifecycle</code> over the temporary project reports no
+    <code>SPRINT_MEMBERSHIP</code> row for the moved plan — the sprint that lists it and
+    the sprint it names are one answer.</li>
+    <li><strong>What is not measured here.</strong> The merged result. This gate runs in
+    the node's own worktree; verifying the merged head belongs to a separately dispatched
+    test node.</li>
+  </ul>
+</section>
