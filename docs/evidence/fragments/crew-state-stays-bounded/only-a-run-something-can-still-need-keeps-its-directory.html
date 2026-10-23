@@ -54,6 +54,13 @@
   shipped day, with a run reviewed twenty-five hours ago retired and one reviewed two hours ago
   kept. A value in no duration form written into a real layer is refused by the flight schema
   itself, which is where the typo is caught.</p>
+  <p>A third case covers which checkout the window is read from. A project-layer
+  <code>flight.yaml</code> carries <code>directory_grace: 3h</code> inside a temporary checkout
+  while the process stands in an unrelated directory, and the pass, given that checkout, retires
+  the run reviewed four hours ago and keeps the one reviewed two hours ago — so the short window can
+  only have come from the checkout's own project layer. Reverting the resolve to the project name
+  alone leaves that layer unread and the case fails, <code>86400</code> in place of the configured
+  <code>10800</code>.</p>
   <p>The unpromoted fixture is deliberately <em>younger</em> than thirty days but far older than the
   grace window, so it is the unledgered-directory sweep (a different pass, thirty days, outside this
   node's write scope) that would hold it on age alone and the retention predicate that holds it here.
