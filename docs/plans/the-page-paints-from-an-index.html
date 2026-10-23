@@ -23,7 +23,7 @@
   <title>The Page Paints From An Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="94">
+<meta name="plan-version" content="95">
 <meta name="plan-modified" content="2026-10-23">
 <meta name="plan-impl" content="0.86">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;the-page-paints-from-an-index#s10&quot;],&quot;s7&quot;:[&quot;the-page-paints-from-an-index#s2&quot;,&quot;the-page-paints-from-an-index#s3&quot;,&quot;the-page-paints-from-an-index#s4&quot;,&quot;the-page-paints-from-an-index#s5&quot;,&quot;the-page-paints-from-an-index#s6&quot;,&quot;the-page-paints-from-an-index#s13&quot;,&quot;the-page-paints-from-an-index#s14&quot;],&quot;s12&quot;:[&quot;the-page-paints-from-an-index#s11&quot;],&quot;s14&quot;:[&quot;the-page-paints-from-an-index#s13&quot;]}">
@@ -424,6 +424,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-close-s14" data-who="reckon-build" data-when="2026-10-23T07:00:00Z">
     <div class="r-comment-body"><p>§14 landed at <code>7d6f73ceb</code>: a restart reuses an unchanged file's row by its stat identity instead of reading and hashing it. Population adds no failure. <a href="/reckon/evidence/archive/the-page-paints-from-an-index-landed.html#s14">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261023T065110156872-the-cold-start-controls-redden-their-gates" data-who="reckon-build" data-when="2026-10-23T07:38:42.753Z">
+    <div class="r-comment-body"><p>s7 controls landed: arm B (port control, arm every tree on the calling thread 5 s/tree in a scratch copy) answers /_projects/mounts.json at 28.68 s vs the baseline arm A&#x27;s 4.27 s, so the 5 s port gate fails as declared; arm C (persisted index removed) shows four cold /_index rows at 45.95/7.79/5.02/3.07 s &gt;= the 1 s ceiling, so the index gate fails as declared; arm A is recorded whatever it is and is itself over the ceiling for reckon (29.36 s cold, 21.84 s warm), reported for the section&#x27;s live pass.</p></div>
 </div>
 </section>
 </main>
