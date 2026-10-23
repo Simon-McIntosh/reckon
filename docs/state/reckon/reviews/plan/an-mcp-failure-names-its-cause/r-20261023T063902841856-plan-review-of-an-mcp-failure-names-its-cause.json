@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T07:05:50.145Z",
+  "dispatched_at": "2026-10-23T06:53:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:210",
+      "id": "reasoning-1",
+      "reason": "every other implementable section names its write paths and mechanism (\u00a710:145, \u00a711:165, \u00a713:191, \u00a715:200, \u00a716:206); without them \u00a717's node cannot be dispatched without inventing its own scope, and the sweep across read/write entry points could collide with \u00a710's `reckon/crew/runs.py` and \u00a711's `reckon/flight.py`/`reckon/_backends.py`, both still `implementable`.",
+      "text": "\u00a717 declares its scope as \"Every reckon MCP read and write\" yet names no module, function or write path for the change, so the builder must guess the code path and the coordinator has no exclusive scope to fence",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:244",
+      "id": "wiring-1",
+      "reason": "the only two open followups recommend \u00a713 and \u00a717, and the resolved followups that once named \u00a710/\u00a711 (f-amfc-002, f-amfc-003) closed without either landing, so the same shape that was raised and acted for \u00a716 now stands for \u00a710 and \u00a711.",
+      "text": "\u00a710 and \u00a711 are declared `implementable` (plan.html:24) but neither open followup names them, so a coordinator reading the plan's open-work list dispatches \u00a713 and \u00a717 and leaves two live sections unbuilt",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/an-mcp-failure-names-its-cause.html:210",
+      "id": "evidence_paths-1",
+      "reason": "the plan's own convention already places a node's control log under the run directory, so a builder writes it there without further instruction.",
+      "text": "\u00a717 states a negative control but names no path for its log, where \u00a715 and \u00a716 name the run directory",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "fb56fd9a90fc99e70d61b2eeb57cbf23dc2906b102999a509ee66a9f99f2dd5b",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 99,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T063902841856-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "33e3b33b2e638ab94055d3d9a398559a80e1bbe1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited targets resolve: `docs/plans/reckon-reads-answer-in-seconds.html`, `docs/plans/the-monitor-shows-the-work-it-watches.html` and `docs/evidence/archive/an-mcp-failure-names-its-cause-landed.html` all exist, and \u00a717's behavioural claims check out against `reckon/crew/query.py` (`_refuse_unknown_live_fields`), `reckon/mcp_views.py:3833` and `reckon/mcp_edit_plan.py`'s `op_vocab`, which do refuse with the accepted set named as \u00a717 says.",
+    "done_when": "pass \u2014 \u00a717's done-when (plan.html:210) names three refused calls and an explicit negative control (\"validation moved after the first read must reach the stub\"), so the gate can go red.",
+    "evidence_paths": "a finding \u2014 \u00a717 names no durable path for its negative-control log where \u00a715 (plan.html:200) and \u00a716 (plan.html:206) both state a log location; the gap is small because the run-directory convention already covers it.",
+    "naming": "pass \u2014 \u00a717's prose and the new symbols it implies carry no plan label, stage name, ticket number or version tag, and name the mechanism (argument validation before a file open) rather than its origin.",
+    "reasoning": "a finding \u2014 \u00a717 names no file, function or write path for where argument validation moves, unlike every other implementable section (\u00a710, \u00a711, \u00a713, \u00a715, \u00a716 each name their write paths), and its mechanism (\"Every reckon MCP read and write checks its arguments ... before it opens any file\") names no code path, so the node cannot be scoped and its caller is unnamed.",
+    "single_goal": "pass \u2014 \u00a717 carries one deliverable (refuse malformed requests before any file open), exercised across three call surfaces rather than three goals.",
+    "wiring": "a finding \u2014 \u00a710 and \u00a711 are declared `implementable` (plan.html:24) but no open followup names them; the two open followups point only at \u00a713 (f-amfc-004, plan.html:244) and \u00a717 (f-amfnic-017, plan.html:255), so two live sections are unreachable from the plan's own next-invocation list."
+  },
+  "section_digests": {
+    "_document": "5b038061946476d901f87ac01828e0fa309ec1e7390f6a6d2bcd67acf07f2c10",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "ba5d0db257057d6dede25c9555898552abc78e291d39b953a7da192229ffbd2f",
+    "s12": "371c3889cd142db38637604c178d996b86294895ad0edc5534d1731f0271fefe",
+    "s13": "79a2b6dff46b0ddd765c409edeb1596fe9bbdf3e4c884875a0e137630010b0db",
+    "s14": "9c62796a08277a796de0c39af58a83a98ae5b16d930532f934636d24dad5d4c5",
+    "s15": "2cc785cc7428c93e41c236ddb2a247143254032421d61d555e7da335bcaf3734",
+    "s16": "144aaa17b20cffc95b3b9ca1166d7efa4069f736dbf892de8f81914afcd8bb31",
+    "s17": "972e2a521eb757553e0a3dfe91028deddf0b4ee2445fc642911cca96fe6f7057",
+    "s2": "3a0632a9c77266389bb16c116a82d809d3c62b98f0ca44f8c9f8eb4ccde7a18e",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "16d91b56539888d5683fc9808616b764742e6c7e93516541ff6dc793aec9fc84",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T07:13:44.720346+00:00"
+}
