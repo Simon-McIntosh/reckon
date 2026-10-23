@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_views.py:3960",
+    "reckon/crew/obligation_snapshot.py:941",
+    "reckon/crew/obligation_snapshot.py:1008",
+    "reckon/crew/obligations.py:484"
+  ],
+  "completed_at": "2026-10-23T22:46:51.846Z",
+  "dispatched_at": "2026-10-23T22:40:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 724,
+      "severity": "non-blocking",
+      "text": "_queued_review_run_fields calls runs.list_live(project=project) and queue_admission.queued_placements once per review-duty row, although obligations() already holds live_pointers at obligations.py:1455 and computes placements once at obligations.py:1433-1456; a view with many review-missing rows re-reads every live pointer file and re-orders the queue per row."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 726,
+      "severity": "non-blocking",
+      "text": "the queued-review subject sweep duplicates the one recovery_review_dispatch.py:491 _review_in_flight owns; it reuses that module's _review_subject, _is_review_run and _review_head_covers helpers but not its sweep, so a change to how a review's subject and head are recognised has to be made in two places."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites reaching obligations.obligations and _current_review_in_flight",
+    "diff": "read commit by commit against 9bc0690f5: dbc3c80c9 the reader and three arms, 3e967c832 and 253a4bcd5 the fragment and a correction, 9c424e74f the two repairs and two arms, 178fd3d53 the fragment update.",
+    "done_when": "tests/test_a_queued_review_is_not_missing.py arms satisfy the measure; the base arm records the review-missing assertion passing before the queued assertion fails, and the focused pair adds no failure at head.",
+    "goal": "obligations.py:701 reads a queued review run as a second source of the review-queued duty, carrying position and rank from queue_admission.queued_placements at obligations.py:745.",
+    "manifest": "read; reports complete with five commits, the focused head/base pair, the unread full head arm and the negative control log, and its ruff claim has no log behind it.",
+    "write_paths": "the diff touches only the declared obligations.py, test file and landing fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_review_is_not_missing.py:196 asserts the fixed literal review-queued, and negative-control-repair.log shows four arms red at EXIT=1 with the reader disabled, so the arms fail on the regression they were added for.",
+    "evidence": "tests/test_a_queued_review_is_not_missing.py is the gate the manifest names and the logs record it at both arms (gate-base-focused-repair.log 35 passed/5 failed at 9bc0690f5, gate-head-focused-repair.log 39 passed/1 failed at 9c424e74f, the single head failure identical at base), though the ruff claim in the manifest and fragment carries no log and the full head arm is unread.",
+    "fit": "reckon/crew/obligations.py:701 follows the surrounding private-helper and docstring idiom and introduces no plan, ticket or version identifier, though obligations.py:724 re-reads live pointers inside a per-row loop where obligations.py:1433-1456 reads them once.",
+    "goal_fidelity": "reckon/crew/obligations.py:701 adds _queued_review_run_fields and obligations.py:903-912 turns a matching queued review pointer into REVIEW_QUEUED_DUTY_KIND with its admission place, which is the goal; obligations.py:410 also stops a queued pointer suppressing the duty as in flight.",
+    "reuse": "reckon/crew/obligations.py:726-735 repeats the live-pointer subject sweep that reckon/crew/recovery_review_dispatch.py:491 _review_in_flight already owns, consuming that module's _review_subject, _is_review_run and _review_head_covers helpers but not its sweep, so the recognition rule now lives in two places.",
+    "scope_discipline": "git diff --stat 9bc0690f5..178fd3d53 changes only reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py and docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-queued-review-is-not-a-missing-review.html, all inside the declared write paths; the declared figures directory is untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to read a queued review run targeting a delivered run as a second source of the review-queued duty; reckon/crew/obligations.py:701 adds _queued_review_run_fields and obligations.py:903-912 converts a matching queued pointer into REVIEW_QUEUED_DUTY_KIND with its admission place, and obligations.py:410 stops a queued pointer suppressing the duty as in flight.\nVERDICT done_when: the done_when asks for a delivered run plus a queued review record reading review-queued with the queue position from the obligations view, removal returning review-missing, the first arm reading review-missing at base, no added failures in the tests importing obligations, and clean ruff; tests/test_a_queued_review_is_not_missing.py:196/:217/:283 cover the readings, gate-base-focused-repair.log records the base arm's review-missing assertion passing before the queued assertion fails, and the focused ten-file pair is 35 passed/5 failed at base against 39 passed/1 failed at head.\nVERDICT write_paths: the manifest declares reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py, the landing fragment and a figures directory; git diff --stat 9bc0690f5..178fd3d53 touches the first three only, all inside.\nVERDICT manifest: read at the source run directory's manifest.md; it states complete, names the five commits, the focused head/base pair, the unread full head arm with its reason and the negative control log, and its ruff claim carries no log.\nVERDICT diff: read commit by commit against 9bc0690f5; dbc3c80c9 adds the reader and three arms, 9c424e74f repairs the superseded-record and unreadable-instant findings with two more arms, and 3e967c832, 253a4bcd5 and 178fd3d53 carry the fragment and its corrections.\nCALL_SITES: reckon/mcp_views.py:3960, reckon/crew/obligation_snapshot.py:941, reckon/crew/obligation_snapshot.py:1008, reckon/crew/obligations.py:484\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: obligations.py:701 and obligations.py:903-912 give the queued review pointer its own review-queued reading with position and rank, and obligations.py:410 keeps it from suppressing the duty as in flight.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate names tests/test_a_queued_review_is_not_missing.py and gate-base-focused-repair.log and gate-head-focused-repair.log record both arms, but the manifest's ruff claim has no log behind it and the full head arm is unread.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 9bc0690f5..178fd3d53 changes only the declared obligations.py, test file and landing fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_review_is_not_missing.py:196 asserts the fixed literal review-queued, and negative-control-repair.log turns four arms red at EXIT=1 when the reader is disabled.\nSCORE fit: 18\nJUSTIFICATION fit: obligations.py:701 follows the surrounding helper idiom and adds no plan or ticket identifier, but obligations.py:724 re-reads live pointers inside a per-row loop.\nSCORE reuse: 12\nJUSTIFICATION reuse: obligations.py:726-735 duplicates the live-pointer subject sweep owned by recovery_review_dispatch.py:491 _review_in_flight while reusing its helpers.\nFINDING reckon/crew/obligations.py:724 non-blocking: the queued reader calls runs.list_live and queue_admission.queued_placements once per review-duty row although obligations() already holds live_pointers at obligations.py:1455 and computes placements once, so a view with many review-missing rows re-reads every live pointer file and re-orders the queue per row.\nFINDING reckon/crew/obligations.py:726 non-blocking: the queued-review subject sweep duplicates the recognition sweep owned by recovery_review_dispatch.py:491 _review_in_flight, so a change to how a review's subject and head are recognised must be made in two places.\n",
+  "review_run_id": "r-20261023T223914741258-review-of-a-queued-review-is-not-a-missing-review-178fd3d53f44",
+  "reviewed_at": "2026-10-24T00:52:00Z",
+  "reviewed_base_sha": "9bc0690f5d489639283a54c82a850bc2487c8b27",
+  "reviewed_head_sha": "178fd3d53f4431986516c91a31059263063c39b5",
+  "reviewed_run_id": "r-20261023T191757300205-a-queued-review-is-not-a-missing-review",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:49:26.120057+00:00",
+  "total": 104
+}
