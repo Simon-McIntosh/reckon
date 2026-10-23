@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T13:53:53.997Z",
+  "dispatched_at": "2026-10-23T13:43:00Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:208",
+      "id": "reasoning-1",
+      "reason": "the node would extend a memory that never holds this pair and leave the predicate that prints the noise row in place, so the recorded defect would survive the change.",
+      "text": "\u00a75 says the row policy \"already owns round-trip suppression\" through `RowPolicy._shown`/`_departures`/`_note_shown` and that \"the recorded pair is five minutes apart, outside that window\", but the pair `waiting \u2192 wait-aged` / `wait-aged \u2192 waiting` never enters that memory: `_hold_departure` (`reckon/crew/ticker.py:1449-1461`) returns without recording when the destination's pane word equals the shown word, and `waiting` and `wait-aged` share one pane word (`ticker.py:291`). What actually lets both halves print is the same-word exemption `same_word_row_is_news` = `_actionable_recovery(event) or declares_a_wait(event)` (`ticker.py:2157`), and `declares_a_wait` (`ticker.py:2087`) is true for both rows because each carries the wait declaration",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:216",
+      "id": "done_when-1",
+      "reason": "the rule has to key on the newly set overdue flag, otherwise the node's gate passes while the aging row \u2014 the only news in the pair \u2014 is silenced in production.",
+      "text": "\u00a75's done-when and its own stated drop rule (\"a return to a pane word the run was last shown in, with the same wait facts (condition, probe, terminal)\") each fail to separate the two halves: the aging row (its wait facts unchanged, destination pane word equal to the run's last shown word (both `waiting`) would also satisfy the rule, so a literal implementation drops the one row \u00a75 exists to keep, and the two-event fixture cannot show it because the preceding `waiting` row that makes the return a *return* is absent",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0b2b5c57e73d4a64da957cf8bf13429142aac12b50f2918f845a6d2a1046873c",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T133902003251-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "5304d0656503ded0c3811709d9d08bdd0f222514",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `RowPolicy._shown` (`reckon/crew/ticker.py:1268`), `_departures` (`ticker.py:1272`), `_note_shown` (`ticker.py:1335`) and `SETTLE_WINDOW` (`ticker.py:1102`) all exist as named, and each extensionless href resolves as `<path>.html` (the house convention).",
+    "done_when": "a finding \u2014 \u00a75's gate feeds the row policy only the two recorded events, with no preceding row that showed the run in `waiting`, so it cannot distinguish \"the aging row printed and the return was dropped\" from \"both halves were dropped\".",
+    "evidence_paths": "pass \u2014 \u00a75 requires the base-revision two-row result recorded in the gate log and the new test committed, both durable under the run's own record.",
+    "naming": "pass \u2014 \u00a75 introduces no plan label, stage name or ticket number, and states the mechanism (`wait-aged` and `waiting` share one pane word) rather than a tracker reference.",
+    "reasoning": "a finding \u2014 the memory \u00a75 tells the node to extend never sees this pair, because no departure is recorded when the run's pane word is unchanged across both halves, so the extension leaves the exemption that actually prints the recorded pair untouched.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable (drop the recovered-wait row while keeping the aging row), with `ticker.py` and one new test as write paths.",
+    "wiring": "pass \u2014 \u00a75's ordering (\"runs after \u00a74, which writes `ticker.py`\") matches the file both sections write, and every sibling plan and run the plan cites as a name resolves (`docs/plans/a-seat-held-elsewhere-is-not-restarted.html`, `docs/plans/a-dispatch-returns-without-its-worker.html`, `docs/plans/the-monitor-shows-the-work-it-watches.html`, run `r-20261023T002639713681-a-plans-coordinator-is-derived-from-the-ledger`)."
+  },
+  "section_digests": {
+    "_document": "1941c1c8ebd31bdf681794161c167a371b9f346fa53844c7ff32c0863799c095",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "6e5500cbde966ed1887cb5366dde4ccd8654aa1950ca44bde9160a4998bd38aa",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T13:56:44.441748+00:00"
+}
