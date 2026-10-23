@@ -94,6 +94,7 @@ DUTY_ROW_FIELDS = (
     "reviewed_head",
     "review_tier",
     "refused_at",
+    "queued_at",
     "worker_slots",
     # A sub-floor review dimension's own figures.
     "dimension",
@@ -393,6 +394,10 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     reviewed run and the head that review read wherever the record is
     delivered, so a review dispatched before the record moved out of the store
     still suppresses the duty for the head it stands at.
+
+    A review the lane accepted into its queue is not working on the revision
+    yet — it has not launched — so it does not suppress the duty. The run owes
+    a review that is waiting, which the review duty lists as queued.
     """
     if _reflex_review_in_flight(pointer):
         return True
@@ -401,6 +406,11 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
         return False
     review_pointer = runs.read_pointer(review_run_id)
     if not review_pointer:
+        return False
+    if str(review_pointer.get("phase") or "") == queue_admission.QUEUED_PHASE:
+        # Accepted by the lane and waiting to launch: no review is working on
+        # the revision yet, so the duty is not suppressed as in flight — it is
+        # listed as queued while the run waits for its slot.
         return False
     expected = recovery._review_dispatch_fields(pointer)["write_paths"]
     head_keyed = expected[1:]
@@ -625,6 +635,30 @@ def _published_worker_slots(session: str) -> Any:
 
 
 def _queued_review_fields(
+    pointer: Mapping[str, Any],
+    *,
+    project: str,
+    run_id: str,
+    head: str,
+    now: datetime,
+) -> dict[str, Any] | None:
+    """The queued reading of this run's review, or None.
+
+    Two things mean the review is waiting rather than missing, and both are
+    read here so the duty carries one kind: an attempt the lane refused as
+    paused, which the reflex still owns and retries inside its bound, and a
+    review run the lane accepted into its queue and has not launched yet. The
+    second has no live pointer of its own to read as a review record and no
+    stored record either, so it is the wait the absence of a review would
+    otherwise misreport as work the coordinator skipped.
+    """
+    refused = _refused_review_fields(pointer, head=head, now=now)
+    if refused is not None:
+        return refused
+    return _queued_review_run_fields(project, run_id, head=head, now=now)
+
+
+def _refused_review_fields(
     pointer: Mapping[str, Any], *, head: str, now: datetime
 ) -> dict[str, Any] | None:
     """The queued reading of a review the lane refused, or None.
@@ -662,6 +696,58 @@ def _queued_review_fields(
             f"{REVIEW_QUEUED_BOUND_SECONDS // 60}m"
         ),
     }
+
+
+def _queued_review_run_fields(
+    project: str, run_id: str, *, head: str, now: datetime
+) -> dict[str, Any] | None:
+    """The queued review run waiting to launch for this run, or None.
+
+    A review dispatched into the lane's queue is a live pointer carrying the
+    queue phase and naming the run it was composed for; it has written no
+    record, so nothing in the review store answers for it. It is the same wait
+    a refused attempt describes, so it reads as the same kind rather than as a
+    queued request of its own: the coordinator sees one duty, not two.
+
+    The reviewed run and head are read through the helper the review subject
+    itself uses, so a review of an earlier revision does not speak for the head
+    the run carries now. The place travels from the admission pass's own
+    ordering, for the same reason a queued request's does — this view must not
+    be able to disagree with the lane about which request goes first. The
+    earliest queued review is the one named when more than one is waiting.
+    """
+    live_pointers = runs.list_live(project=project)
+    waiting: list[tuple[datetime, Mapping[str, Any]]] = []
+    for candidate in live_pointers:
+        if str(candidate.get("phase") or "") != queue_admission.QUEUED_PHASE:
+            continue
+        if not recovery._is_review_run(candidate):
+            continue
+        reviewed, reviewed_head = recovery._review_subject(candidate, project)
+        if not reviewed or reviewed != run_id:
+            continue
+        if not recovery._review_head_covers(reviewed_head, head):
+            continue
+        queued_at = parse_utc(candidate.get("queued_at"))
+        waiting.append((queued_at or now, candidate))
+    if not waiting:
+        return None
+    waiting.sort(key=lambda pair: pair[0])
+    placed_at, review_pointer = waiting[0]
+    fields: dict[str, Any] = {"queued_at": placed_at.isoformat()}
+    placement = queue_admission.queued_placements(live_pointers, now=now).get(
+        str(review_pointer.get("run_id") or "")
+    )
+    if placement is not None:
+        fields.update(placement)
+        fields["next_command"] = (
+            f"a review is queued for this run at position {placement['position']} "
+            f"of the queued requests, rank {placement['rank']} among this "
+            "session's"
+        )
+    else:
+        fields["next_command"] = "a review is queued for this run, awaiting a lane slot"
+    return fields
 
 
 def _review_tier_for_duty(row: Mapping[str, Any], pointer: Mapping[str, Any]) -> str:
@@ -801,7 +887,13 @@ def _review_duty_item(
         # review-missing. A refused attempt the reflex still owns is the one
         # exception: within the bound it reads as queued, and the duty does not
         # hold a turn open over a wait the coordinator cannot shorten.
-        queued = _queued_review_fields(pointer, head=head, now=now)
+        queued = _queued_review_fields(
+            pointer,
+            project=project,
+            run_id=str(row.get("run_id") or ""),
+            head=head,
+            now=now,
+        )
         if queued is not None:
             item["kind"] = REVIEW_QUEUED_DUTY_KIND
             item.update(queued)
