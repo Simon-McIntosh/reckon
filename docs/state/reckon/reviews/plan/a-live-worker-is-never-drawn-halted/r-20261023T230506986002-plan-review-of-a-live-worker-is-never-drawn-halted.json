@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:15:39.897Z",
+  "dispatched_at": "2026-10-23T23:06:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:307",
+      "id": "done_when-1",
+      "reason": "without its own measure the wiring node cannot be closed or falsified, and the section's current Done-when will be satisfied by re-running a test that already passes, closing \u00a79 with the producer still off the fleet node.",
+      "text": "\u00a79 declares a second node (\"A second node calls the decision from the producer: its write paths are `reckon/crew/recovery_watch.py` (start-up, in `_watch_registration`), `reckon/crew/runs.py` (lease renewal), `reckon/crew/watch_unit.py` and its test\") but the section's only Done-when at :305 is already satisfied at HEAD: `watch_unit.producer_start_decision` (`watch_unit.py:246`) landed in `552f75681` (2026-10-23 17:27 +0200) with all four arms of that Done-when in `tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py` (release-and-exit, unit-disable composed, same-host hold, absent-record hold, real-record-untouched), and nothing outside that test calls the decision (`grep -rn producer_start_decision` returns only the definition and the test), so the wiring node \u2014 the half that makes the decision run on the real code path \u2014 has neither a measurable done-when nor a declared negative control, and a node dispatched to \u00a79 would find its stated measure green while the reason \u00a79 exists (\u00a71: every live reckon run reads `process_alive: null`) is still unfixed",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-1",
+      "reason": "the inference the figure supports (each run settles once, ~1.01 rows per distinct run, ~93 % `complete \u2192 recorded`) is confirmed by my counts at every window tried \u2014 the number is wrong and should be corrected or given its window, but the deduplication mechanism it argues for is right either way.",
+      "text": "\u00a714 supports \"A settle into `recorded` or `promoted` is one landing row per run\" with \"Measured over the reckon stream: 1,580 `\u2192 recorded` rows across 1,559 runs, 1,452 of them `complete \u2192 recorded`\", and that count does not reproduce from the file it names: over `~/.config/reckon/crew/watch/reckon-18dc8a86709b.events` (98 MB, 2026-09-01T13:52Z to 2026-10-23T23:09Z) I count 3,337 `to_state: recorded` rows across 3,276 distinct runs, 3,120 of them `from_state: complete`, and over \u00a71's own census window (48 h ending 2026-10-23T12:37Z) 390 rows across 388 runs, 354 from `complete` \u2014 no window of that stream yields 1,580, and the all-project population yields 7,174; my instrument does see recorded rows (the positive control), so this is the citation and not the parser",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "341218cb8afd7f474502531cc8c9edd264b04b190340ec4bc563c9379d5900bb",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 42,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T230506986002-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "083432be0d70d71caf5125e6ea3f66fd4fa75759",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol the two units cite resolves at HEAD: `watch_unit.live_foreign_seat` (:148), `live_foreign_seat_host` (:143), `_record_producer_running` (:91), `runs.watch_host_lease` (:2858) and `runs._seat_host_is_local` (:2794), `fleet_supervisor.RECORD_NAME` (`fleet_supervisor.py:108`), `dispatch_launch.py` about line 2128 (the fleet-record reader block at :2118-2135), `recovery_watch._watch_registration` (`recovery_watch.py:343`), and on \u00a714's side `ticker.CARRIED_PANE_WORDS` (:360), `ticker._observer_exception` (:1514, called from `_feed` at :1820, ahead of the `stream_carries` filter in `feed` at :1606, so `_observer_exception` drops a settled row for a `_told` run, so \u00a714's \"changing only one of the two still drops the row\" holds), `ticker._pane_word` (:1178), and `recovery_watch._watch_transition` (`recovery_watch.py:1885`, which writes `snapshot.get(\"run_id\")` and `snapshot.get(\"node\")` at :1916-1917 \u2014 the review run's own, exactly as \u00a714 now states).",
+    "done_when": "a finding \u2014 \u00a79's Done-when at :305 measures only the decision node, which already exists at HEAD, and the wiring node added at :307 (the producer's start-up and its lease renewal) has no measure and no negative control at all.",
+    "evidence_paths": "pass \u2014 \u00a714 and \u00a79 name no scratch or node-local path; both send their evidence to the run's gate log, and \u00a79 sends it to \"recorded in the gate log\", which is the manifest's durable `test_logs` path, not a session scratchpad.",
+    "naming": "pass \u2014 neither unit introduces a plan label, stage name, ticket number or version tag into a symbol, file, or comment; the symbols named are existing ones, and the mechanism prose states mechanism.",
+    "reasoning": "a finding \u2014 the three mechanism checks hold for both units (the stated causes match the cited rows; the mechanisms produce their done-whens, with the draft's \"carried once each\" now correctly resting on both `_observer_exception` AND the `stream_carries` rule, verified to be independent gates; and both name their production callers, `_watch_registration` for \u00a79's start-up and `_watch_transition` for \u00a714's reviewed-run field), but \u00a714's supporting census figure does not reproduce from the stream it names.",
+    "single_goal": "pass \u2014 \u00a79's two nodes each carry one goal (decide the release decision; call it from the producer) on disjoint write paths, and \u00a714 carries one deliverable, the row policy plus the event field it reads.",
+    "wiring": "pass \u2014 \u00a714's order line (\"after \u00a74, before \u00a75 and \u00a77, and after \u00a79's wiring node, which also writes `recovery_watch.py`\") now agrees with \u00a79's own second-node write paths at :307 (`recovery_watch.py`, `runs.py`) and with followup f-alwh-002 at :341, which orders \u00a714 before \u00a75/\u00a77 on `ticker.py` and puts \u00a713 after \u00a79's wiring node so the shared `runs.py` is not written concurrently."
+  },
+  "section_digests": {
+    "_document": "06b6bffb1430e5d0b3aaec84c099dc6755869214442e32f0b25b108c69b81029",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "6140a4b0f637c6869fac8bdb441cb9afbaf12bf304c1af579a57e1247cfe1698",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "64ac34b3e9039a98e6edcef9c828231c2cb648a865d30e4140e392009fecd4d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:18:09.690533+00:00"
+}
