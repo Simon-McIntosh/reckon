@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: gate.log, the readable arm, whose header names revision ad415ded6, reports one failure, tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, and 139 passed with EXIT=1 (gate.log:19); after-suite.log, the log the manifest names as the head arm, is truncated on disk, two lines with no FAILED lines, no summary and no EXIT, so the derivation reads no head arm from it. The complete head-arm result at 026b2c182, 142 passed and that same single failure, is recorded in the reviewed run's own stream, in the tool result for its gate command in resume-2.jsonl. The only failure in either arm is in reckon/roadmap.py, which neither gained commit touches, and the reviewed node's done_when declares it pre-existing on main, so the added set is empty.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1655 (the crew gc handler calling routing.garbage_collect)",
+    "reckon/crew/routing.py:3816 (re-export of gc.garbage_collect)",
+    "reckon/crew/gc.py:654 (the retention pass calling _run_directory_grace_seconds)",
+    "reckon/flight.py:1939 (the config resolve called at gc.py:288)"
+  ],
+  "completed_at": "2026-10-23T12:34:26.943Z",
+  "dispatched_at": "2026-10-23T12:14:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-state-stays-bounded/only-a-run-something-can-still-need-keeps-its-directory.html",
+      "line": "50",
+      "severity": "non-blocking",
+      "text": "non-blocking: the measurement sentence still reads \"Measured: 5 passed, the file carrying two further cases\", and the negative-control section repeats \"brings the file back to 5 passed\" at line 81, but 9f51883ad added a sixth case to that same file, so the fragment understates its own count and its case list and a reader cannot reconcile the fragment with the file it cites."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory/manifest.md",
+      "line": "16",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite names after-suite.log for the 142-passed head result at revision 026b2c182, but that log was overwritten by a later gate run at 9f51883ad that was killed at about 180 s with exit code 137, leaving two lines with no summary and no EXIT, so the named evidence path no longer supports the recorded result."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit against 1c6b9a79f: 026b2c182 adds write_project_flight_config and one test, 41 insertions and no production file; 9f51883ad adds a seven-line paragraph to the fragment.",
+    "done_when": "the done_when names eight gate files and the seven-fixture dry run; the manifest's tests line carries that command and test_logs names gate.log (complete, 1 failed and 139 passed, EXIT=1) plus after-suite.log, whose recorded head result is no longer readable there, which the finding on manifest.md:16 records.",
+    "goal": "the source node's goal is to retire a finished run's directory in gc's retention pass once nothing can still need it; the only commits gained since the review at 1c6b9a79f are 026b2c182 and 9f51883ad, and they add the case pinning which checkout the grace window is read from, exercised end to end against the node's own project layer at tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:252.",
+    "manifest": "read; it reports the head gate as 142 passed and 1 failed at revision 026b2c182 logged to after-suite.log, and the checkout negative control as its own log, whose EXIT=1 and 86400-in-place-of-10800 failure I read directly.",
+    "write_paths": "the node declared seven paths; the range diff from 1c6b9a79f to 9f51883ad lists only tests/test_only_a_run_something_can_still_need_keeps_its_directory.py and docs/evidence/fragments/crew-state-stays-bounded/only-a-run-something-can-still-need-keeps-its-directory.html, both inside the declared set."
+  },
+  "justifications": {
+    "durability": "reverting gc.py:288 to flight.resolve(project) reddens tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:250 with 86400 in place of 10800, and checkout-window-negative-control.log records that failure with EXIT=1.",
+    "evidence": "the head arm the manifest cites at manifest.md:16 names after-suite.log, which now holds a truncated two-line run at 9f51883ad with no summary and no EXIT, so the recorded 142-passed result is not readable at the log it names.",
+    "fit": "write_project_flight_config at tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:218 mirrors its sibling write_flight_config at line 197, and no added name carries a plan label, version or ticket id.",
+    "goal_fidelity": "tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:250-256 pins that the window comes from the swept checkout's own project layer, which is the gap the prior review named.",
+    "reuse": "the gained commits add no production definition, and the one added helper writes the project flight.yaml path that reckon/flight.py:488 project_config_path owns rather than calling it, a test-only path literal rather than a capability fork.",
+    "scope_discipline": "the range diff 1c6b9a79f..9f51883ad lists only the node's test file and its evidence fragment, both in the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "Reviewed run: r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory\nReviewed base: 1c6b9a79f9dccbad979d054a8ea5aaa13694afe7\nReviewed head: 9f51883adbb242bf69ff021514ed2b7062be77e2\n\nVERDICT goal: the source node's goal is to retire a finished run's directory in gc's retention pass once nothing can still need it; the only commits gained since the review at 1c6b9a79f are 026b2c182 and 9f51883ad, and they add the case pinning which checkout the grace window is read from, exercised end to end against the node's own project layer at tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:252.\nVERDICT done_when: the done_when names eight gate files and the seven-fixture dry run; the manifest's tests line carries that command and test_logs names gate.log (complete, 1 failed and 139 passed, EXIT=1) plus after-suite.log, whose recorded head result is no longer readable there, which the finding on manifest.md:16 records.\nVERDICT write_paths: the node declared seven paths; the range diff from 1c6b9a79f to 9f51883ad lists only tests/test_only_a_run_something_can_still_need_keeps_its_directory.py and docs/evidence/fragments/crew-state-stays-bounded/only-a-run-something-can-still-need-keeps-its-directory.html, both inside the declared set.\nVERDICT manifest: read; it reports the head gate as 142 passed and 1 failed at revision 026b2c182 logged to after-suite.log, and the checkout negative control as its own log, whose EXIT=1 and 86400-in-place-of-10800 failure I read directly.\nVERDICT diff: read commit by commit against 1c6b9a79f: 026b2c182 adds write_project_flight_config and one test, 41 insertions and no production file; 9f51883ad adds a seven-line paragraph to the fragment.\nCALL_SITES: reckon/crew_run_commands.py:1655 (the crew gc handler calling routing.garbage_collect), reckon/crew/routing.py:3816 (re-export of gc.garbage_collect), reckon/crew/gc.py:654 (the retention pass calling _run_directory_grace_seconds), reckon/flight.py:1939 (the config resolve called at gc.py:288)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:250-256 pins that the window comes from the swept checkout's own project layer, which is the gap the prior review named.\nSCORE evidence: 13\nJUSTIFICATION evidence: the head arm the manifest cites at manifest.md:16 names after-suite.log, which now holds a truncated two-line run at 9f51883ad with no summary and no EXIT, so the recorded 142-passed result is not readable at the log it names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the range diff 1c6b9a79f..9f51883ad lists only the node's test file and its evidence fragment, both in the node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: reverting gc.py:288 to flight.resolve(project) reddens tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:250 with 86400 in place of 10800, and checkout-window-negative-control.log records that failure with EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: write_project_flight_config at tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:218 mirrors its sibling write_flight_config at line 197, and no added name carries a plan label, version or ticket id.\nSCORE reuse: 17\nJUSTIFICATION reuse: the gained commits add no production definition, and the one added helper writes the project flight.yaml path that reckon/flight.py:488 project_config_path owns rather than calling it, a test-only path literal rather than a capability fork.\nFINDING docs/evidence/fragments/crew-state-stays-bounded/only-a-run-something-can-still-need-keeps-its-directory.html:50 non-blocking: the measurement sentence still reads \"Measured: 5 passed, the file carrying two further cases\", and the negative-control section repeats \"brings the file back to 5 passed\" at line 81, but 9f51883ad added a sixth case to that same file, so the fragment understates its own count and its case list and a reader cannot reconcile the fragment with the file it cites.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory/manifest.md:16 non-blocking: after_suite names after-suite.log for the 142-passed head result at revision 026b2c182, but that log was overwritten by a later gate run at 9f51883ad that was killed at about 180 s with exit code 137, leaving two lines with no summary and no EXIT, so the named evidence path no longer supports the recorded result.",
+  "review_run_id": "r-20261023T121228371537-review-of-only-a-run-something-can-still-need-keeps-its-directory-9f51883adbb2",
+  "reviewed_base_sha": "1c6b9a79f9dccbad979d054a8ea5aaa13694afe7",
+  "reviewed_head_sha": "9f51883adbb242bf69ff021514ed2b7062be77e2",
+  "reviewed_run_id": "r-20261023T090019521065-only-a-run-something-can-still-need-keeps-its-directory",
+  "reviewer": "deepseek-v4.1-flash",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T12:28:12.171050+00:00",
+  "total": 105
+}
