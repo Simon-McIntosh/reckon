@@ -172,6 +172,26 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     return {"detail": detail, "next_command": command}
 
 
+# The one stored review status a reader acts on. The store recognises three
+# (``parsed``, ``unparsed``, ``incomplete``), but only a record that parsed into
+# at least one recognised score is a review anything acts on: an ``unparsed``
+# record recognised none, and an ``incomplete`` one could not identify the diff
+# its revision pair named. The promotion gate selects on this same word, so
+# a run holding either of the other two has satisfied no gate and is not a
+# delivered review however its worker exited.
+PARSED_REVIEW_STATUS = "parsed"
+
+
+def _parsed_review_record(stored: Mapping[str, Any]) -> bool:
+    """Whether a stored record is one a reader acts on.
+
+    The store validates a record's status against three words, but a reader
+    selects on :data:`PARSED_REVIEW_STATUS` alone, so a record carrying either of
+    the other two is not a review anyone acts on.
+    """
+    return str(stored.get("status") or "") == PARSED_REVIEW_STATUS
+
+
 def _filed_review_record(
     record: Mapping[str, Any], *, alive: bool | None
 ) -> tuple[Path, Path] | None:
@@ -189,11 +209,10 @@ def _filed_review_record(
     Read only when the process is observed to have ended and the run is a
     review: a reviewer still in its turn has at most an earlier attempt's filed
     record, and a run of any other role files none. The record named is the
-    first store entry whose status the store recognises as a review, keyed on
-    the attempt the run's
-    own marker names so a record filed by a superseded attempt cannot stand in
-    for the attempt running now. Returns the receipt's path and the store
-    record's path, or None when nothing eligible is filed.
+    first store entry carrying :data:`PARSED_REVIEW_STATUS`, keyed on the
+    attempt the run's own marker names so a record filed by a superseded attempt
+    cannot stand in for the attempt running now. Returns the receipt's path and
+    the store record's path, or None when nothing eligible is filed.
     """
     if alive is not False:
         return None
@@ -204,7 +223,6 @@ def _filed_review_record(
         return None
     # Imported here rather than at module scope: the supervisor's module reaches
     # back into the recovery package, so a top-level import would close the loop.
-    from reckon.crew import review as review_module
     from reckon.crew.dispatch_launch import REVIEW_FILED_RECORD_NAME
 
     filed_path = (
@@ -228,9 +246,7 @@ def _filed_review_record(
             stored = json.loads(stored_path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
-        if isinstance(stored, Mapping) and (
-            str(stored.get("status") or "") in review_module.RECOGNISED_REVIEW_STATUSES
-        ):
+        if isinstance(stored, Mapping) and _parsed_review_record(stored):
             return filed_path, stored_path
     return None
 
@@ -756,8 +772,8 @@ def classify_pointer(
         classification = "promotable"
         detail = (
             f"the {REVIEW_ROLE} run's worker has ended and attempt "
-            f"{_current_attempt_number(record)} filed a review record the store "
-            f"recognises ({stored_path}) at {filed_path}; the run reads "
+            f"{_current_attempt_number(record)} filed a {PARSED_REVIEW_STATUS} "
+            f"review record ({stored_path}) at {filed_path}; the run reads "
             "delivered whatever its manifest's status word says"
         )
         action = (

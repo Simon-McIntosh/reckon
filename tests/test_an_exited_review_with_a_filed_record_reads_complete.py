@@ -93,6 +93,16 @@ def _isolated_crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
             "_current_attempt_number",
             _receipt_attempt,
         )
+    elif NEGATIVE_CONTROL == "wide-status":
+        # Every status the store validates is taken for a review, which is what
+        # the reading did before it selected on the one a reader acts on.
+        monkeypatch.setattr(
+            recovery_classification,
+            "_parsed_review_record",
+            lambda stored: (
+                str(stored.get("status") or "") in ("parsed", "unparsed", "incomplete")
+            ),
+        )
 
 
 def _write_json(path: Path, payload: object) -> None:
@@ -100,10 +110,12 @@ def _write_json(path: Path, payload: object) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def _filed_record(directory: Path, *, attempt: int) -> tuple[Path, Path]:
+def _filed_record(
+    directory: Path, *, attempt: int, status: str = "parsed"
+) -> tuple[Path, Path]:
     """Write the filed store record and the receipt naming it."""
     stored = directory / f"filed-review-{attempt}.json"
-    _write_json(stored, PARSED_REVIEW)
+    _write_json(stored, {**PARSED_REVIEW, "status": status})
     filed = directory / f"attempt-{attempt}-review-filed.json"
     _write_json(
         filed,
@@ -256,6 +268,33 @@ def test_an_exited_third_attempt_behind_a_second_attempts_record_is_running(
     pointer = _pointer(
         tmp_path,
         attempt=3,
+        manifest_body=IN_PROGRESS_BODY,
+        pid=None,
+        launcher_host=OTHER_HOST,
+        exit_record=True,
+    )
+
+    row = _classify(pointer)
+
+    assert row["classification"] == "running"
+    assert row["classification"] != "promotable"
+
+
+@pytest.mark.parametrize("status", ["unparsed", "incomplete"])
+def test_an_exited_review_whose_filed_record_did_not_parse_is_not_delivered(
+    tmp_path: Path,
+    status: str,
+) -> None:
+    # The store validates a record's status against three words, but a reader
+    # acts on "parsed" alone: an "unparsed" record recognised no score, and an
+    # "incomplete" one could not identify the diff its revision pair named. The
+    # promotion gate refuses either, so a run holding one has satisfied no gate
+    # and must keep the base reading rather than reading as a delivery.
+    directory = runs.run_dir(RUN_ID)
+    _filed_record(directory, attempt=2, status=status)
+    pointer = _pointer(
+        tmp_path,
+        attempt=2,
         manifest_body=IN_PROGRESS_BODY,
         pid=None,
         launcher_host=OTHER_HOST,
