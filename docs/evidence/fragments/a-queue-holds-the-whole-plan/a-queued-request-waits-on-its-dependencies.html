@@ -191,6 +191,46 @@
   not re-read is what the second negative control above measures, and it is the
   stronger of the two observations.</p>
 
+  <h3>Re-review round: the hold depends on the waits, and on three kinds of them</h3>
+
+  <p>The hold was written only inside the local lane's held branches, so a node
+  whose section's waits had not landed launched at once whenever its lane had
+  room — the case the hold exists for. A dispatch now asks what the node's
+  waits resolve to before it launches anything
+  (<code>queue_admission.unmet_waits</code>, sited ahead of the launch path in
+  <code>reckon/crew/dispatch.py</code>) and stores the request
+  <code>awaiting-upstream</code> itself, so the waits decide the hold and the
+  lane state does not.</p>
+
+  <p>A wait is now any of the three kinds a section may declare. The kinds are
+  spelled apart rather than guessed from a ref's shape
+  (<code>wait_ref_kind</code>): a bare ref is a section, <code>gate:</code> names
+  a gate, and <code>run:</code> names another queued request by its run id. A
+  gate wait is resolved through the roadmap's own gate edges — the blocker rows
+  that derivation reports on the gated section — rather than by re-parsing the
+  plan's gate records. A request wait is read from that request's own pointer
+  and manifest: one still in flight cannot release the wait behind it, a
+  delivered one can, and a discarded or failed one blocks it.</p>
+
+  <p>The admission pass no longer takes a moment argument its body never read.
+  One arm per wait kind now stands in the node's module: a section ref holds
+  until that section lands, a gate ref holds until the section the gate names
+  lands.</p>
+
+  <p><strong>Not proved, and said plainly.</strong> Two things the re-review
+  asked for are <em>not</em> measured here. The arm with a free lane
+  (<code>session_slots &gt; 0</code>, the node stored and not launched) was
+  written and failed: in the dispatch fixture the request lands
+  <code>queued</code>, and a debug build of the new hold printed nothing at all
+  for that arm — so that dispatch does not reach the launch path the hold is
+  sited on, which means either the hold belongs earlier still, before the
+  lane-allowance branch, or the arm's lane is not in fact free. The arm was
+  removed rather than left red, and the manifest carries it as the first item a
+  resumption must settle. The base arm still does not show the base launching
+  the chain's later sections at once: the ordering probe reaches the store and
+  not the CLI dispatch path, so it observes the stored phase in either tree
+  rather than a launch count.</p>
+
   <h3>What is not measured here</h3>
 
   <ul>
