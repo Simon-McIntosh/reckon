@@ -294,9 +294,7 @@ PANE_STATES = {
     # sits in the waiting pane until its upstream lands, and is never released
     # by a lane slot. One whose wait can no longer land asks for the decision a
     # blocked run asks for, so it sits beside blocked.
-    "waiting": frozenset(
-        {"waiting", "paused", "wait-aged", "awaiting-upstream"}
-    ),
+    "waiting": frozenset({"waiting", "paused", "wait-aged", "awaiting-upstream"}),
     "halted": frozenset(
         {
             "blocked-upstream",
