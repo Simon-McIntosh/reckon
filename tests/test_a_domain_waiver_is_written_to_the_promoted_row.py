@@ -146,7 +146,10 @@ def test_a_waived_domain_check_lands_on_the_promoted_row(
     waiver = row.get("domain_waiver")
     assert waiver is not None, row
     assert waiver["waived_invariants"] == ["convergence"], waiver
-    assert waiver["reason"] == WAIVER_REASON, waiver
+    # The words themselves: a reason compared against the constant the test
+    # handed the tool could agree with what was sent while the row carried
+    # something else.
+    assert waiver["reason"] == "the record predates the convergence fix", waiver
 
 
 def test_a_promotion_without_a_waiver_carries_the_field_empty(
