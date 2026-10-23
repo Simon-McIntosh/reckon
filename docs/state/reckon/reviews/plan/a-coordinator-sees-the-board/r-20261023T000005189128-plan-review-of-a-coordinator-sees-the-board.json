@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T00:20:30.202Z",
+  "dispatched_at": "2026-10-23T00:01:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-coordinator-sees-the-board.html:177",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a76's mechanism is \"extend the lanes view with the session's share through that function\"; a builder following the cited line lands on a different function and cannot implement the one \u00a76 relies on.",
+      "text": "\u00a76 cites `reckon/crew/obligations.py:553` as `_published_worker_slots`, but that function is defined at `reckon/crew/obligations.py:591`, and line 553 falls inside `_live_item` (def at :550), a projection of a recovery row.",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "02038eedb85c647bf94693c6720922662364b607b620419fcb2498eb1cff2929",
+  "plan_slug": "a-coordinator-sees-the-board",
+  "plan_version": 8,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "finding": "anchors_resolve-1",
+      "reason": "\u00a76 is not in this wave; its citation of _published_worker_slots is corrected to reckon/crew/obligations.py:591 when \u00a76 is next edited, before it is dispatched",
+      "when": "2026-10-23T00:26:23.148136+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "reason": "\u00a76 is not in this wave; its citation of _published_worker_slots is corrected to reckon/crew/obligations.py:591 when \u00a76 is next edited, before it is dispatched",
+      "when": "2026-10-23T00:26:23.148136+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-coordinator-sees-the-board.v8.json",
+  "review_run_id": "r-20261023T000005189128-plan-review-of-a-coordinator-sees-the-board",
+  "reviewed_blob_sha": "1297963f8b890b5bc9bd88769da1415b702a62ef",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a76 cites `reckon/crew/obligations.py:553` for `_published_worker_slots`, which is defined at `reckon/crew/obligations.py:591`; line 553 sits inside `_live_item` (def at :550).",
+    "done_when": "pass \u2014 every section states a measurable done-when with a negative control, and \u00a72's control (a resolver that returns unowned for every plan must fail the fixture test; one ignoring dispatch order must fail the A-then-B test) is a real one.",
+    "evidence_paths": "pass \u2014 evidence is the fixture, the gate log and the recorded measurement, all repository-side; nothing in the plan directs a gate log to a scratchpad or a node-local temp path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach any symbol or comment the plan introduces.",
+    "reasoning": "pass \u2014 \u00a72's changed units were checked against the code and found correct: `_live_review_runs` is at obligations.py:467 and does filter by `session` (line 471) keeping only runs with a review in flight (line 474), so \"precedent for the field, not a function to reuse\" is accurate; and no surface resolves a session to a peer name (directory.py coordinator rows carry `session` only, line 198; the run row's `member` is a disposable per-run worker identity, not the dispatcher's name), so the corrected claim is sound.",
+    "single_goal": "pass \u2014 each node names one deliverable; \u00a72 is the resolver alone, and the owner/session facts are inputs it joins rather than a second deliverable.",
+    "wiring": "pass \u2014 the declared map (s3, s4, s5, s7, s8) resolves, and each section that consumes one declares it, including s5's depends-on on a-coordinator-sees-the-board#s3 and s7's on #s3/#s4/#s5/#s6."
+  },
+  "section_digests": {
+    "_document": "179fd781683b8de3429431d31d2da583319fc0fdb80b1db1734a86c481d7f66c",
+    "s1": "4f48bcfe2c71d1397f0eeb277ff928920d1ed0ae7cfb0da777c94e4943eadf87",
+    "s2": "e8a77da3ee95b252c49524e82dbed4c7af59fd2cf8813eca867555771e9c15d5",
+    "s3": "e4cd7ce8696d0d9fb511a9be2379e2561a08418a1d1f759c42a926231bad6e36",
+    "s4": "ba6bafca3a7e3ae7fb186980afd26dd26e183bf99b72272ea15f06fbaeb19e5f",
+    "s5": "c7676f30d627a592319ab4f34cbd8352167ba0b9b92a20d5cbafea4a685b90ae",
+    "s6": "b5875d403856eb185e06155d0c62410ab30a447353779fe729a12b57c2607cf0",
+    "s7": "4428c6858fc7f10400173c2e619ad379aa49779cef060ae4b50d866fde4a59a7",
+    "s8": "f9f58e76a5713eb901b1e780fcb93d48ca773a573fded72ec476738a59629b67"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T00:24:49.790974+00:00"
+}
