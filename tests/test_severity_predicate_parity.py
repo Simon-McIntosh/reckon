@@ -76,14 +76,16 @@ def _reflex_blocks(finding: dict[str, str]) -> bool:
 
 
 def test_the_predicate_reads_the_three_disagreeing_inputs_as_no_severity() -> None:
-    """Every unreadable input is ``None``; every declared one is its own value."""
+    """Every unreadable input is ``None``; every declared one reads its current word."""
     for name, finding in UNREADABLE.items():
         assert review_module.declared_severity(finding) is None, name
     assert (
         review_module.declared_severity(BLOCKING)
         == review_module.BLOCKING_FINDING_SEVERITY
     )
-    assert review_module.declared_severity(FOLLOW_ON) == "follow-on"
+    # The fixture stores the retired spelling, so this asserts the mapping as well
+    # as the predicate: an old record still reads as its current non-blocking value.
+    assert review_module.declared_severity(FOLLOW_ON) == "non-blocking"
 
 
 def test_the_audit_and_the_reflex_agree_on_every_input() -> None:
