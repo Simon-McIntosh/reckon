@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T17:49:42.221Z",
+  "dispatched_at": "2026-10-23T17:36:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html#s13",
+      "id": "done_when-1",
+      "reason": "the node's negative control goes green while the instruction it exists to retire survives in the file a coordinator loads first, so the queue-first pattern is never fully in force.",
+      "text": "\u00a713 asserts \"The mechanism is unused until the skills teach it\" and its done-when requires that \"a grep of the skills finds no remaining instruction to dispatch section by section on every beat\", but the identical instruction also lives outside `skills/`, in the repository's own `AGENTS.md:31` (\"an idle lane with ready work is a defect \u2014 dispatch every ready-idle section each beat\"), which a coordinator reads every session; a grep scoped to the skills passes while the coordinator is still told to dispatch ready-idle sections each beat",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "680fb01227193afb9c681b8056536dbfb8a37e76c53a953ed93d30d293d7d161",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 14,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-23T17:54:07.716342+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-23T17:54:07.716342+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v14.json",
+  "review_run_id": "r-20261023T173453593246-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "ef78d24e17a689d2271f1f710159894342fbd426",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `queue_requests` (\u00a79) exists in the authored batch entry at `reckon/crew/queue_admission.py` in \u00a72's landing commit; `PlanReviewMissingError` is raised in `reckon/crew/routing.py:2450,2547`; `crew stop` at `reckon/crew_run_commands.py:1961`; `crew view drain` at `reckon/crew/runs.py:1789`; `parse_plan_ref` at `reckon/_schema.py:276`; `_priority_key` at `reckon/roadmap_ranking.py:196`; `_store_brief` at `reckon/crew/dispatch_admission.py:2241`; `STARVATION_AGE_SECONDS = 30 * 60` at `reckon/crew/queue_order.py:13`; `ADMISSION_VERDICT_LOG = \"admission-verdicts.jsonl\"` at `reckon/crew/queue_admission.py:60`; the `scopes` view at `reckon/mcp_views.py:3687`; the three skill files exist; every cited plan href resolves (`<slug>.html`).",
+    "done_when": "a finding \u2014 s13's negative control greps \"the skills\" only, so it never sees the same instruction in the repository's own `AGENTS.md:31`.",
+    "evidence_paths": "pass \u2014 \u00a714's evidence is `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html`, a durable in-repo path; \u00a72's logs sit under the run directory; no node writes to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach any symbol the changed sections introduce (`awaiting-upstream`, `blocked-upstream`, `held`, `queue_requests` are mechanism names).",
+    "reasoning": "pass \u2014 \u00a711's mechanism runs on the real gate path: the plan-review gate measures change per unit and carries a `_document` unit (`reckon/crew/plan_review.py:87`, `_uncovered_change_detail` in `reckon/crew/routing.py`), which is exactly the unit set \u00a711 limits the gate to; \u00a78 names `queue_requests` (\u00a72's batch entry, unmerged at this base, as \u00a79 says) and \u00a79 supplies the production caller; \u00a712's verdict detail is recorded per queued request with `run_id` and `verdict` by `_verdict_row` (`reckon/crew/queue_admission.py:864`), so the instrument \u00a712 reads can answer it.",
+    "single_goal": "pass \u2014 each of s8\u2013s14 carries one deliverable (s8 graph waits, s9 batch enqueue, s10 hold/release, s11 edit safety, s12 drain view, s13 skills; s14 is the single dogfood measure).",
+    "wiring": "pass \u2014 the new sections' `plan-section-depends-on` edges are acyclic and each section that reads a state another section defines waits on it (\u00a72 \u2192 \u00a75 \u2192 \u00a74 \u2192 \u00a73 \u2192 \u00a79 \u2192 \u00a713 \u2192 \u00a714; \u00a710 \u2192 \u00a711, \u00a712), and s14's cross-project ref `imas-ambix:local-lane-admission-control#s27` resolves to a real section (\"The router publishes the lane's worker slots, and reckon divides them\")."
+  },
+  "section_digests": {
+    "_document": "8d81f574e53d017ccde39ed6b298e890458eeb11ff4621fb9c88c014ec4bbd4d",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "a2f61bd4291799930eedf1531d1f6e4430d6cf337f092a42ac5f57633a823904",
+    "s14": "911bde065e6d5df03eb57017318a2a6c21bd42781ab8628bdc271490338a2485",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "b7a0762d64ced05735726d2d41427e5e937e91a65c0aa74d141274059060bb7d",
+    "s4": "a646be5c8e42a7c62f722b3f76ee0fac357337c185788483b5e2c8c2f7c359ac",
+    "s5": "c623294fceb1a1488259cec58a98620810a38685cc2f7e945488da75bcda1424",
+    "s6": "9ae70f6311e98644a2302b95d57a8d155d24f82f04018d48389de58589bc5662",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "b9e50935befbaed1b1a228196d5b27cc79eb5703e49f9c4dc14417f2383b62d9",
+    "s9": "9795d7c456f00a36f276c5cee93ef1c6280a61330c9c0cf605279f23dbecefa5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T17:52:51.048624+00:00"
+}
