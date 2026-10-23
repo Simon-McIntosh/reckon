@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 5,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch",
+    "tests/test_crew.py::test_member_session_is_reused_when_the_resolved_model_matches",
+    "tests/test_every_default_read_fits.py::test_every_default_read_fits_its_row",
+    "tests/test_repair_answers_only_blocking_findings.py::test_an_all_follow_on_round_names_its_cause_and_the_follow_on_count",
+    "tests/test_severity_predicate_parity.py::test_the_predicate_reads_the_three_disagreeing_inputs_as_no_severity"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-23T05:21:33Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-finding-is-blocking-or-non-blocking",
+      "recorded_at": "2026-10-23T06:18:10.865526+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-finding-is-blocking-or-non-blocking",
+      "recorded_at": "2026-10-23T06:18:59.498017+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-finding-is-blocking-or-non-blocking",
+      "recorded_at": "2026-10-23T06:19:58.765356+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "a-finding-is-blocking-or-non-blocking",
+      "recorded_at": "2026-10-23T06:20:56.575097+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_repair_answers_only_blocking_findings.py",
+      "line": "339",
+      "severity": "blocking",
+      "summary": "the test asserts the retired word in emitted output, so the rename leaves it red at head; the plan grants the file and requires the update",
+      "text": "the test still asserts the retired word in emitted output (`assert \"1 follow-on\" in report[\"reason\"]`), and reckon/crew/recovery_repair_dispatch.py:891 now emits \"non-blocking finding(s)\", so this test fails at head and is one of the 5 added failures; plan section 2 grants this file from the reported failure id and states \"a test that asserts the old word in emitted output is updated to the new word\", and the worker recorded it under follow_ons instead of updating it, so promotion lands a red test the rename itself caused."
+    },
+    {
+      "file": "tests/test_severity_predicate_parity.py",
+      "line": "86",
+      "severity": "blocking",
+      "summary": "the assertion that declared_severity of the retired word equals the retired word is made false by the new mapping and left unrepaired",
+      "text": "`assert review_module.declared_severity(FOLLOW_ON) == \"follow-on\"` is made false by the retired-word mapping at reckon/crew/review.py:191, so the test fails at head; the manifest attributes it correctly but leaves it unrepaired, and plan section 2 grants the test files the change breaks from the reported failure ids, so the done_when's \"adds zero failures at head\" is unmet on a file the node was allowed to fix."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/manifest.md",
+      "line": "26",
+      "severity": "follow-on",
+      "summary": "the artifacts line names 8a7092c7 as the revision the negative control measured while the log's header names b825046b5",
+      "text": "the artifacts line says the negative control was re-run in an export of head at 8a7092c7, while negative-control.log's own header names b825046b5; the header is authoritative and the prose disagrees with it, so a reader comparing the two sees a revision the red log did not measure."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/manifest.md",
+      "line": "24",
+      "severity": "follow-on",
+      "summary": "after_suite.revision records b825046b5 rather than the reviewed head 9b5014d89",
+      "text": "after_suite.revision records b825046b5 rather than the reviewed head 9b5014d89, so the review's own after arm does not name the revision under review; immaterial here only because 9b5014d89 touches one line of the evidence fragment and no code, but a reader cannot tell that from the record."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to rename the non-blocking finding severity to `non-blocking` across prompts, constants and messages; the diff at reckon/crew/review.py:155-173 carries the new word in FINDING_SEVERITIES and a retired-word mapping, and both prompts teach it.\nVERDICT done_when: the done_when names tests/test_a_finding_is_blocking_or_non_blocking.py plus the census population at both arms with pytest -n 8; the manifest records both arms with node-id failure lists, complete summaries and EXIT= lines in base-arm.log and after-arm.log.\nVERDICT write_paths: read the manifest's eleven declared paths; every path in the base..head diff (reckon/crew/{review,review_lifecycle,repair,findings,reports,recovery_repair_dispatch}.py, reckon/crew/prompts/{review,figure_review}.md, tests/test_a_finding_is_blocking_or_non_blocking.py, docs/evidence/fragments/additional-work-is-a-section/a-finding-is-blocking-or-non-blocking.html) is inside them.\nVERDICT manifest: read; it states status complete, both arms' commands verbatim, baseline_suite and after_suite with failure lists and completed true, negative_control_log written, retries empty.\nVERDICT diff: read through 8a7092c73, b825046b5 and 9b5014d89 against base 3d80d6544c00c10a390bb3f557287c6a1d03c572; 8a7092c73 carries the rename, b825046b5 reflows the touched docstrings, 9b5014d89 touches only the evidence fragment, and 78 deletions against 316 insertions...\nCALL_SITES: reckon/crew/repair.py:_finding_kind, reckon/crew/reports.py:_severity_stated, reckon/crew/reports.py:_unmarked_findings_in_record, reckon/crew/review_lifecycle.py:_blocking, reckon/crew/recovery_repair_dispatch.py:_non_blocking_repository_paths, reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run, reckon/crew/review.py:_stated_severity\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:155 names (\"blocking\",\"non-blocking\"), reckon/crew/review_lifecycle.py:74 names frozenset({\"non-blocking\"}), both prompts teach the new word, and no production caller of repair.follow_on_findings remains.\nSCORE evidence: 11\nJUSTIFICATION evidence: the two arms in base-arm.log and after-arm.log ran the population the done_when names, but the plain diff of their FAILED lines gives 5 head-only ids against the zero the done_when asserts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the base..head diff is one of the eleven declared write paths in the reviewed manifest.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_finding_is_blocking_or_non_blocking.py:124 and :170 assert literal current words independent of the code under test, and negative-control.log shows the declared mutation reddens 4 ids.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/review.py:163 mirrors the module's own alias idiom at reckon/crew/review.py:1260, and the reflow commit b825046b5 clears the orphan short lines the earlier round raised.\nSCORE reuse: 18\nJUSTIFICATION reuse: no shared owner of a retired-vocabulary mapping exists - reckon/crew/review.py:1260 (_PLAN_REPORT_RUBRIC_ALIASES) and reckon/_schema.py:118 (LEGACY_EFFORT_HOURS) are per-domain dicts - so RETIRED_FINDING_SEVERITIES duplicates a pattern rather than an owner.\nFINDING tests/test_repair_answers_only_blocking_findings.py:339 blocking: the test still asserts the retired word in emitted output, and reckon/crew/recovery_repair_dispatch.py:891 now emits \"non-blocking finding(s)\", so it fails at head; plan section 2 grants the file and requires the update, and the worker recorded it under follow_ons instead.\nFINDING tests/test_severity_predicate_parity.py:86 blocking: the assertion that declared_severity of the retired word equals the retired word is made false by the mapping at reckon/crew/review.py:191 and was left unrepaired on a file plan section 2 grants.\nFINDING manifest.md:26 follow-on: the artifacts line names 8a7092c7 while negative-control.log's header names b825046b5.\nFINDING manifest.md:24 follow-on: after_suite.revision records b825046b5 rather than the reviewed head 9b5014d89.",
+  "review_run_id": "r-20261023T051554684505-review-of-a-finding-is-blocking-or-non-blocking-9b5014d8942f",
+  "reviewed_base_sha": "3d80d6544c00c10a390bb3f557287c6a1d03c572",
+  "reviewed_head_sha": "9b5014d8942f2f86382ac33466078b4b6493bf83",
+  "reviewed_run_id": "r-20261023T011804935213-a-finding-is-blocking-or-non-blocking",
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T05:54:22.623399+00:00",
+  "total": 102
+}

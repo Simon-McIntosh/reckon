@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T07:38:44.789Z",
+  "dispatched_at": "2026-10-23T07:24:16Z",
+  "findings": [
+    {
+      "file": "tests/test_severity_predicate_parity.py",
+      "line": "82",
+      "severity": "follow-on",
+      "summary": "the retained expectation compares the predicate's output against the module's own constant, so it moves with the code and cannot catch a rename of the current blocking word",
+      "text": "lines 82-85 assert `review_module.declared_severity(BLOCKING) == review_module.BLOCKING_FINDING_SEVERITY`, the module's own constant on the right, so a rename of the current blocking word leaves the assertion true; the sibling literal at line 88 (`== \"non-blocking\"`) is independent of the code under test and is what guards the mapping this commit exists to assert."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/manifest.md",
+      "line": "33",
+      "severity": "follow-on",
+      "summary": "after_suite.revision names 068624fd while the reviewed head is f9a17719, so the zero-added-failure claim is evidenced one commit before the revision being promoted",
+      "text": "after_suite.revision records 068624fd, the head the after arm ran at, while the run's head is f9a17719; the delta between them is two evidence paragraphs in the landing fragment that no census test reads, so the gap is inert but unverified at the promoted head."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/manifest.md",
+      "line": "3",
+      "severity": "follow-on",
+      "summary": "the declared write paths omit the two test files plan section 2 grants from reported failure ids",
+      "text": "the orientation write-path list, repeated from the dispatch's FENCE scope list, carries eleven paths and not tests/test_repair_answers_only_blocking_findings.py or tests/test_severity_predicate_parity.py, both of which plan section 2 grants grants when the change breaks them and reports the failure ids; scope bookkeeping reading the declared paths alone therefore contradicts the plan the diff follows."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to rename the non-blocking finding severity to `non-blocking` across the review prompts, constants and messages as plan section 2 specifies; the delta gained since the last review carries no runtime rename (that landed at 068624fd's ancestor 8a7092c7) but carries the two test updates section 2 requires \u2014 \"A test that asserts the old word in emitted output is updated to the new word\" \u2014 read at tests/test_repair_answers_only_blocking_findings.py:339 and tests/test_severity_predicate_parity.py:88, plus the final gate record in the evidence fragment.\nVERDICT done_when: the done_when measures tests/test_a_finding_is_blocking_or_non_blocking.py passing plus the census population at both arms with `-n 8`, adding zero failures at head; the manifest's baseline_suite (revision 3d80d654, exit_status 1, completed true) and after_suite (revision 068624fd, exit_status 1, completed true) carry identical two-id failure lists, and base-arm.log and after-arm.log each end in a summary line and a bare EXIT=1, so the gate the worker ran asserts the measure.\nVERDICT write_paths: the manifest declares eleven fenced paths (manifest.md:3); every path in the delta's five-file diff is inside them except tests/test_repair_answers_only_blocking_findings.py and tests/test_severity_predicate_parity.py, which plan section 2 grants explicitly (\"Other test files the change breaks are granted from the failure ids the worker reports\") and which the reviewed run's own repair report names by failure id.\nVERDICT manifest: read; status complete, checkpoint recording the last repair round, both arm commands verbatim over 42 and 43 census files, baseline_suite and after_suite complete with pytest node-id failure lists and log paths, negative_control_log named as a bare path, retry_failures empty, follow_ons naming the four unattributed ids from the earlier arm pair.\nVERDICT diff: read commit by commit from 8a7092c7 to f9a17719 \u2014 b825046b5 rewraps three comment/docstring paragraphs in reckon/crew/repair.py:580 and reckon/crew/reports.py:824,1719 with no word changed, 9b5014d89 and f9a17719 replace and add the evidence fragment's gate and attribution paragraphs, and 068624fd renames one test and updates two assertions to literals; no executable line outside the two test files is touched.\nCALL_SITES: reckon/crew/recovery_repair_dispatch.py:844 (calls repair.compose_repair_for_run, whose wrapper reaches repair.compose_repair_node, the docstring b825046b5 rewrapped), reckon/crew/reports.py:1834 (calls _unmarked_findings_in_record, which calls reports._severity_stated at :1926, the comments b825046b5 rewrapped), reckon/crew/reports.py:1750\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_repair_answers_only_blocking_findings.py:339 now asserts the emitted word and tests/test_severity_predicate_parity.py:88 the mapped one, the two updates plan section 2 requires of the gained commits, while the fixture at tests/test_severity_predicate_parity.py:60 still stores the retired word as section 2 directs.\nSCORE evidence: 17\nJUSTIFICATION evidence: baseline_suite and after_suite in manifest.md:32-33 both ran to their summary line and EXIT= line (base-arm.log, after-arm.log) with identical failure lists, but the after arm's head 068624fd precedes the reviewed head f9a17719 by one docs-only commit.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path is plan-granted, but two of the five lie outside the fenced list the manifest repeats at manifest.md:3, so a reader judging scope by the declared paths alone would call them out of scope.\nSCORE durability: 18\nJUSTIFICATION durability: removing the retired-word mapping at reckon/crew/review.py:191 makes the literal \"non-blocking\" at tests/test_severity_predicate_parity.py:88 unsatisfiable and restoring the retired word in the reflex's message reddens the literal at tests/test_repair_answers_only_blocking_findings.py:339, and negative-control.log shows the declared mutation reddening four ids in the new test file.\nSCORE fit: 18\nJUSTIFICATION fit: the renamed test and the two added comments at tests/test_severity_predicate_parity.py:86-87 read as the surrounding prose does and name no plan, ticket or version, and the fragment's new element ids at docs/evidence/fragments/additional-work-is-a-section/a-finding-is-blocking-or-non-blocking.html:25-26 both begin with the node id.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition at all; the retired-word mapping it exercises is owned by review.declared_severity (reckon/crew/review.py:191) and extended rather than forked, and tests/test_severity_predicate_parity.py exists to hold both readers to that one predicate.\nFINDING tests/test_severity_predicate_parity.py:82 follow-on: the retained expectation at lines 82-85 compares declared_severity(BLOCKING) against review_module.BLOCKING_FINDING_SEVERITY, the module's own constant, so both sides move together and a rename of the current blocking word passes it; only the literal at line 88 is independent of the code under test, so the current word is guarded by that line alone.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/manifest.md:33 follow-on: after_suite.revision names 068624fd while the reviewed head is f9a17719, so the \"adds no failure at head\" claim is measured one commit before the revision being promoted; the head's own delta is two evidence paragraphs no census test reads, so the gap is inert but unverified at the promoted head and only a re-run at f9a17719 closes it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T011804935213-a-finding-is-blocking-or-non-blocking/manifest.md:3 follow-on: the declared write paths, repeated from the dispatch's FENCE scope list, omit tests/test_repair_answers_only_blocking_findings.py and tests/test_severity_predicate_parity.py, which plan section 2 grants from the failure ids the worker reports, so scope bookkeeping that reads the declared paths alone contradicts the plan the diff follows.",
+  "review_run_id": "r-20261023T072317657023-review-of-a-finding-is-blocking-or-non-blocking-f9a17719bec0",
+  "reviewed_base_sha": "8a7092c732107439f15a731208e97f7b7dd876f1",
+  "reviewed_head_sha": "f9a17719bec01bf02503d74187261a24718d76c8",
+  "reviewed_run_id": "r-20261023T011804935213-a-finding-is-blocking-or-non-blocking",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T07:56:41.843772+00:00",
+  "total": 111
+}
