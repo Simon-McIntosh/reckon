@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/obligations.py:754",
+    "reckon/crew/recovery_review_dispatch.py:1258",
+    "reckon/crew/recovery_review_dispatch.py:2377",
+    "reckon/crew/recovery_review_dispatch.py:203"
+  ],
+  "completed_at": "2026-10-23T10:31:31.497Z",
+  "dispatched_at": "2026-10-23T10:17:34Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081419340299-a-resume-that-delivers-at-the-same-head-is-reviewed/negative-control.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "both arms of the negative-control log are labelled revision e913004ef254738439bb70aec72e5396968707c8, but the log's own test session lists seven items and its second arm mutates the generation comparison introduced at 951cc80f3, so the arms were run against the refactored module and the header names a revision they were not taken at; a later reader checking whether the production leg was falsified is pointed at the wrong revision."
+    }
+  ],
+  "node": "review-of-a-resume-that-delivers-at-the-same-head-is-reviewed-c4da8798ed7a",
+  "node:reviewed": "a-resume-that-delivers-at-the-same-head-is-reviewed",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a resumed run which delivers at the head it carried is reviewed at that head, per docs/plans/the-monitor-shows-the-work-it-watches.html s89; the gained commits are the answer to the two prior findings on that deliverable.\nVERDICT done_when: s89's measure is the new test file plus every test file importing reckon.crew.recovery_review_dispatch or naming resume_superseded_head, at base and head, judged by delta; gate-head.log records 2 failed / 200 passed at 951cc80f3 and gate-base.log 2 failed / 193 passed at ada5187d7, both closing with EXIT=1 on the identical two ids, so the worker's gate asserts the stated measure and records zero added failures.\nVERDICT write_paths: the manifest declares reckon/crew/recovery_review_dispatch.py, tests/test_a_resume_that_delivers_at_the_same_head_is_reviewed.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-resume-that-delivers-at-the-same-head-is-reviewed.html; the diffstat over e913004ef..c4da8798e lists exactly those three files.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081419340299-a-resume-that-delivers-at-the-same-head-is-reviewed/manifest.md; status complete, five commits, baseline_suite and after_suite both completed with the same two failure ids, negative_control_log named and its log closing through its own EXIT= line.\nVERDICT diff: read commit by commit against e913004ef; 951cc80f3 replaces the hand-rolled manifest-generation comparison at reckon/crew/recovery_review_dispatch.py:163-175 with a call to runs._manifest_freshness and adds two cases to the test file, and c4da8798e updates only the evidence fragment to name that rule and its new arm counts (111 insertions, 28 deletions, all inside the declared paths).\nCALL_SITES: reckon/crew/obligations.py:754, reckon/crew/recovery_review_dispatch.py:1258, reckon/crew/recovery_review_dispatch.py:2377, reckon/crew/recovery_review_dispatch.py:203\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:203 returns not _resumed_attempt_delivered(record), and the gained change makes that predicate ask runs._manifest_freshness at :175, so a resumed attempt that delivers at the superseded head still settles it and the review duty returns exactly as s89 specifies.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log closes `2 failed, 200 passed ... EXIT=1` at revision 951cc80f3 and gate-base.log fails the same two ids at 193 passed at ada5187d7, so the zero-added-failure claim is read from the logs rather than claimed; the negative-control log's revision header is stale, see FINDING.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diffstat over e913004ef..c4da8798e touches only the three declared write paths, and nothing in the gained commits reaches a file outside reckon/crew/recovery_review_dispatch.py.\nSCORE durability: 19\nJUSTIFICATION durability: the prior untested production leg is now covered \u2014 tests/test_a_resume_that_delivers_at_the_same_head_is_reviewed.py:298 records the generation as the resume door does and places its delivery inside the resume's own whole second, so only the generation comparison installed at reckon/crew/recovery_review_dispatch.py:175 can settle the head, and the negative control's second arm (1 failed / 6 passed, arm-exit=1) reddens exactly that case when the comparison is dropped; the two premise assertions beside it are positive controls on the setup and the score does not rest on them.\nSCORE fit: 19\nJUSTIFICATION fit: the added symbol baseline_known and the rewritten docstring at reckon/crew/recovery_review_dispatch.py:104-135 are mechanism-named with no plan or ticket label, matching the surrounding module idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the prior duplication is removed \u2014 reckon/crew/recovery_review_dispatch.py:175 now calls runs._manifest_freshness (reckon/crew/runs.py:144), the owner read by promotion_checks.py:459, promotion_evidence.py:226, recovery_classification.py:198 and dispatch_sessions.py:249 \u2014 and the search over reckon/crew found no other owner of the freshness rule.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081419340299-a-resume-that-delivers-at-the-same-head-is-reviewed/negative-control.log:2 non-blocking: both arms are labelled revision e913004ef while the log's test session lists seven items and the second arm mutates the generation comparison introduced at 951cc80f3, so the header names a revision the arms were not taken at.",
+  "review_run_id": "r-20261023T100532333877-review-of-a-resume-that-delivers-at-the-same-head-is-reviewed-c4da8798ed7a",
+  "reviewed_base_sha": "e913004ef254738439bb70aec72e5396968707c8",
+  "reviewed_head_sha": "c4da8798ed7aa8c977228d81258bb9c414f202e8",
+  "reviewed_run_id": "r-20261023T081419340299-a-resume-that-delivers-at-the-same-head-is-reviewed",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T10:37:06.534251+00:00",
+  "total": 116
+}
