@@ -24,6 +24,7 @@ from typing import (
     Iterable,
     Iterator,
     Mapping,
+    MutableMapping,
 )
 from reckon import (
     _backends,
@@ -129,6 +130,12 @@ class _RepositoryScopeClaim:
     ``binding`` answers whether the claim still fences its paths. It is judged
     once per pointer rather than once per path, because liveness and
     unintegrated work are properties of the run, not of the file.
+
+    ``unread`` marks a claim whose disposition was never judged: the read named
+    candidate paths and none of this pointer's entries could reach them, so no
+    collision between the two is possible through a path it does not declare.
+    The arbitration passes such a claim over, and never reads the ``binding`` an
+    unread claim carries, which is the default rather than a verdict.
     """
 
     project: str
@@ -140,6 +147,7 @@ class _RepositoryScopeClaim:
     declared_path: str
     derived_from: str | None = None
     binding: bool = True
+    unread: bool = False
     disposition_reason: str = ""
     # When the claim was published, so two dispatches racing for the same paths
     # can be ordered; and whether the run has passed its own admission and
@@ -162,11 +170,24 @@ def _scope_derivation_project(
     project: str,
     repository: Path,
     preferred_projects: Iterable[str] = (),
+    *,
+    mounted_projects: Mapping[Path, tuple[str, ...]] | None = None,
+    identity_cache: MutableMapping[str, Path | None] | None = None,
 ) -> str:
-    """Choose the project resource that owns derivations for a repository."""
-    from reckon.crew.routing import repository_projects
+    """Choose the project resource that owns derivations for a repository.
 
-    mounted = repository_projects(repository)
+    ``mounted_projects`` and ``identity_cache`` let a read that resolves many
+    pointers share both the mount table and the ``git rev-parse`` behind each
+    lookup, so choosing a derivation project costs no subprocess beyond the one
+    each distinct repository already paid.
+    """
+    if mounted_projects is None:
+        from reckon.crew.routing import repository_projects
+
+        mounted = repository_projects(repository)
+    else:
+        identity = repository_identity(repository, cache=identity_cache)
+        mounted = () if identity is None else mounted_projects.get(identity, ())
     if project in mounted:
         return project
     for preferred in preferred_projects:
@@ -182,6 +203,8 @@ def _resolved_scope_entries(
     repositories: Iterable[Path],
     project: str,
     preferred_projects: Iterable[str] = (),
+    mounted_projects: Mapping[Path, tuple[str, ...]] | None = None,
+    identity_cache: MutableMapping[str, Path | None] | None = None,
 ) -> list[tuple[Path | None, str, Path, str, str | None]]:
     """Expand paths within the repository and project resource that own them."""
     roots = tuple(repositories)
@@ -210,6 +233,8 @@ def _resolved_scope_entries(
             project,
             repository,
             preferred_projects,
+            mounted_projects=mounted_projects,
+            identity_cache=identity_cache,
         )
         derivations = _project_derivations(derivation_project, repository)
         for path, normalized_declared, derived_from in _expanded_scope_paths(
@@ -231,6 +256,7 @@ def _pointer_scope_entries(
     pointer: Mapping[str, Any],
     *,
     repository_projects: Mapping[Path, tuple[str, ...]] | None = None,
+    identity_cache: MutableMapping[str, Path | None] | None = None,
 ) -> list[tuple[Path | None, str, Path, str, str | None]]:
     """The write paths one live pointer declares, resolved to their owning scope.
 
@@ -241,6 +267,10 @@ def _pointer_scope_entries(
     project's checkout records a ``repo`` holding none of its declared paths —
     and the paths then resolve into a repository that no other claim on the same
     file can intersect.
+
+    ``identity_cache`` is shared across the pointers of one read, so the
+    ``git rev-parse`` behind :func:`claim_repository` is paid once per distinct
+    checkout rather than once per pointer.
     """
     node = pointer.get("node")
     if not isinstance(node, Mapping):
@@ -251,7 +281,8 @@ def _pointer_scope_entries(
     if repository_projects is None:
         repository_projects = mounted_repository_projects()
     pointer_repo = (
-        claim_repository(pointer) or Path(pointer_repo_value).expanduser().resolve()
+        claim_repository(pointer, cache=identity_cache)
+        or Path(pointer_repo_value).expanduser().resolve()
     )
     authority = pointer.get("authority")
     authority = authority if isinstance(authority, Mapping) else {}
@@ -269,11 +300,15 @@ def _pointer_scope_entries(
         repositories=roots,
         project=str(pointer.get("project") or ""),
         preferred_projects=preferred_projects,
+        mounted_projects=repository_projects,
+        identity_cache=identity_cache,
     )
 
 
 def _repository_scope_claims(
-    *, exclude_run_ids: Iterable[str] = ()
+    *,
+    exclude_run_ids: Iterable[str] = (),
+    candidate_paths: Iterable[str | Path] | None = None,
 ) -> list[_RepositoryScopeClaim]:
     """Read live claims globally and group their paths by repository root.
 
@@ -281,9 +316,30 @@ def _repository_scope_claims(
     published a claim for the run it created reads every other live claim, never
     its own: an arbitration run against a run's own claim would refuse the
     dispatch that had just made it.
+
+    ``candidate_paths`` names the absolute paths the caller could write. Two
+    claims collide only through files they both declare, so a pointer's entries
+    are resolved first and its disposition is read only when one of them reaches
+    a candidate path. Every other pointer is returned with ``unread`` set and no
+    disposition, which the arbitration passes over rather than spending a git
+    probe on: nothing it declares can meet the caller's paths. A caller that
+    names no candidate paths — a re-read of one run's claim, and the scopes view
+    that reports every claim — reads every disposition exactly as before.
     """
     excluded = set(exclude_run_ids)
     repository_projects = mounted_repository_projects()
+    # One identity cache for the whole read, so the ``git rev-parse`` behind
+    # each pointer's repository costs one subprocess per distinct checkout
+    # rather than one per pointer.
+    identity_cache: dict[str, Path | None] = {}
+    candidates = (
+        None
+        if candidate_paths is None
+        else tuple(
+            Path(str(path)).expanduser().resolve().as_posix()
+            for path in candidate_paths
+        )
+    )
     claims: list[_RepositoryScopeClaim] = []
     for pointer in list_live():
         if str(pointer.get("run_id") or "") in excluded:
@@ -291,11 +347,21 @@ def _repository_scope_claims(
         pointer_repo_value = str(pointer.get("repo") or "")
         if not pointer_repo_value:
             continue
-        disposition = claim_disposition(pointer)
-        project = str(pointer.get("project") or "")
         node = pointer.get("node")
         if not isinstance(node, Mapping):
             continue
+        entries = _pointer_scope_entries(
+            pointer,
+            repository_projects=repository_projects,
+            identity_cache=identity_cache,
+        )
+        relevant = candidates is None or any(
+            _scopes_overlap(absolute.as_posix(), candidate)
+            for _repository, _path, absolute, _declared, _derived in entries
+            for candidate in candidates
+        )
+        disposition = claim_disposition(pointer) if relevant else None
+        project = str(pointer.get("project") or "")
         run_id = str(pointer.get("run_id") or "unknown")
         node_id = str(node.get("id") or "unknown")
         for (
@@ -304,7 +370,7 @@ def _repository_scope_claims(
             absolute,
             declared,
             derived_from,
-        ) in _pointer_scope_entries(pointer, repository_projects=repository_projects):
+        ) in entries:
             claims.append(
                 _RepositoryScopeClaim(
                     project=project,
@@ -315,10 +381,15 @@ def _repository_scope_claims(
                     absolute_path=absolute,
                     declared_path=declared,
                     derived_from=derived_from,
-                    binding=disposition.binding,
-                    disposition_reason=disposition.reason,
+                    binding=True if disposition is None else disposition.binding,
+                    unread=disposition is None,
+                    disposition_reason=(
+                        "" if disposition is None else disposition.reason
+                    ),
                     registered_at=str(pointer.get("created_at") or ""),
-                    unintegrated=disposition.unintegrated,
+                    unintegrated=()
+                    if disposition is None
+                    else disposition.unintegrated,
                     worktree=str(pointer.get("worktree") or ""),
                     base_sha=str(pointer.get("base_sha") or ""),
                     # A run that has written the record it launches its worker
@@ -1070,6 +1141,11 @@ def _live_conflict_rows(
     shared_files = _shared_write_paths(project, repo)
     conflicts: list[dict[str, Any]] = []
     for claim in claims:
+        if claim.unread:
+            # Its disposition was never judged because no path it declares can
+            # meet this node's, so there is no collision to report and no
+            # verdict to read.
+            continue
         claim_absolute = claim.absolute_path.resolve()
         if claim_absolute in shared and claim_absolute not in landing:
             # A live claim on a landing file this node does not itself hold is
@@ -1602,12 +1678,18 @@ def _raise_repository_scope_conflict(
         for repository, _candidate, absolute, _declared, _derived_from in candidates
         for claim in claims
         if accept_directory_claim
+        and not claim.unread
         and repository == claim.repository
         and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
         and _directory_claim_overlaps(absolute, claim.absolute_path)
     }
     for _repository, candidate, absolute, _declared, _derived_from in candidates:
         for claim in claims:
+            if claim.unread:
+                # No path this claim declares can meet this node's, so it was
+                # never judged and carries no verdict for the arbitration to
+                # read.
+                continue
             if claim.absolute_path.resolve() in shared:
                 continue
             if _repository != claim.repository or not _scopes_overlap(
@@ -1787,8 +1869,17 @@ def refuse_widen_scope_conflicts(
         section=str(node.get("section") or ""),
         write_paths=list(added_paths),
     )
+    candidate_scope = _candidate_scope_entries(
+        candidate, project=project, repo=repo, authority=authority
+    )
     claims = _repository_scope_claims(
-        exclude_run_ids=(str(pointer.get("run_id") or ""),)
+        exclude_run_ids=(str(pointer.get("run_id") or ""),),
+        # The added paths are the whole question a widening asks, so only the
+        # claims that can meet them need a disposition read.
+        candidate_paths=(
+            absolute
+            for _repository, _path, absolute, _declared, _derived in candidate_scope
+        ),
     )
     # The run doing the widening is the one whose base decides whether a claim it
     # overlaps is one it already carries. A run stacked on a stopped holder has
