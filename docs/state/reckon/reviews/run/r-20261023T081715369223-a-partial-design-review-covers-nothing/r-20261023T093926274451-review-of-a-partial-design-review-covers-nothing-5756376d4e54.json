@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081715369223-a-partial-design-review-covers-nothing/logs/gate-head.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restoring the rubric test in _delivered_status stores the partial design review ready, so record[\"status\"] is not INCOMPLETE_STATUS and the assertion reddens; confirmed by logs/negative-control.log.",
+      "lines": "91-92"
+    },
+    {
+      "failure_condition": "Over-broadening the mark so that a report answering every design item is also marked incomplete makes record[\"status\"] DEFAULT_STATUS fail and _gate return a refusal; the report's lines come from PLAN_DESIGN_REVIEW_ITEMS, so the assertion tests the parse, not the item list.",
+      "lines": "99-102"
+    },
+    {
+      "failure_condition": "_gate(repo) is None reddens if the gate starts refusing a stored review that carries an absent item but no mark; the absent_items comparison takes its two sides from the same literal.",
+      "lines": "121-124"
+    },
+    {
+      "failure_condition": "With the rubric narrowing restored the answer is not recorded on the incomplete design review, so record[\"status\"] defaults to ready and the assertion reddens; confirmed by logs/negative-control.log.",
+      "lines": "153"
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081715369223-a-partial-design-review-covers-nothing/logs/gate-base.log",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:854",
+    "reckon/crew_dispatch_commands.py:2558",
+    "reckon/crew/promotion_checks.py:1497"
+  ],
+  "completed_at": "2026-10-23T09:55:49.383Z",
+  "dispatched_at": "2026-10-23T09:40:42Z",
+  "findings": [
+    {
+      "file": "tests/test_a_partial_design_review_is_incomplete.py",
+      "line": "124",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares record[\"absent_items\"] against the same literal the test passed into store_plan_review at line 116, so it holds whatever the store does with its input; the load-bearing assertion for that case is _gate(repo) is None at line 121."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit; cf9a6172e drops the rubric narrowing in _delivered_status and adds the design refusal in require_plan_reviewed, 8b0d90f5f adds the evidence fragment, and 5756376d4 restores the correct line after a concurrent control mutation was committed inside cf9a6172e.",
+    "done_when": "the done_when is the eight-file pytest population passing every section 42 case at head with zero added failures against the base arm, each log opening with its revision and closing with EXIT=; the manifest records head 96 passed EXIT=0, base 2 failed 94 passed EXIT=1 and the declared negative control, and the run's logs/ directory holds all three.",
+    "goal": "the node's goal is to mark a partial design review incomplete and refuse an implementation dispatch on it; reckon/crew/plan_review.py:2091 returns INCOMPLETE_STATUS whenever the parse leaves any brief item absent, the design rubric included.",
+    "manifest": "read; it names commits cf9a6172e, 8b0d90f5f and 5756376d4, records the head and base arms and the restored-rubric negative control, and attributes its one repeated failure to a 300 s -n 8 timeout in the fixture setup rather than to code under test.",
+    "write_paths": "the declared scope is three production modules, four test files and the evidence fragment; git diff b809b3ac..5756376d4 touches exactly those eight paths and nothing else."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log shows tests/test_a_partial_design_review_is_incomplete.py lines 91 and 153 going red when the rubric test is restored in _delivered_status, which is the regression the change removes.",
+    "evidence": "logs/gate-head.log ends EXIT=0 with 96 passed, gate-base.log EXIT=1 with the two new cases failing and negative-control.log EXIT=1 with the mark restored, but the ruff figures the done_when also measures are carried only as a manifest claim with no log on disk.",
+    "fit": "the change follows the module's existing idiom of reaching plan_review._review_is_incomplete from reckon/crew/routing.py:2558, and no name carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2091 marks any delivered report with an absent brief item incomplete, and reckon/crew/routing.py:2558 refuses the dispatch on such a design review naming the design-review command.",
+    "reuse": "the capability search over reckon/crew found the relevant owners already in place, _review_is_incomplete at reckon/crew/plan_review.py:810 and newest_design_review at reckon/crew/plan_review.py:1206, and the diff extends them rather than adding a second coverage predicate.",
+    "scope_discipline": "git diff b809b3ac..5756376d4 changes only the eight declared paths, and the ruff findings at head are eight pre-existing lines in reckon/crew/routing.py, none on a changed line."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to mark a partial design review incomplete and refuse an implementation dispatch on it; reckon/crew/plan_review.py:2091 returns INCOMPLETE_STATUS whenever the parse leaves any brief item absent, the design rubric included.\nVERDICT done_when: the done_when is the eight-file pytest population passing every section 42 case at head with zero added failures against the base arm, each log opening with its revision and closing with EXIT=; the manifest records head 96 passed EXIT=0, base 2 failed 94 passed EXIT=1 and the declared negative control, and the run's logs/ directory holds all three.\nVERDICT write_paths: the declared scope is three production modules, four test files and the evidence fragment; git diff b809b3ac..5756376d4 touches exactly those eight paths and nothing else.\nVERDICT manifest: read; it names commits cf9a6172e, 8b0d90f5f and 5756376d4, records the head and base arms and the restored-rubric negative control, and attributes its one repeated failure to a 300 s -n 8 timeout in the fixture setup rather than to code under test.\nVERDICT diff: read commit by commit; cf9a6172e drops the rubric narrowing in _delivered_status and adds the design refusal in require_plan_reviewed, 8b0d90f5f adds the evidence fragment, and 5756376d4 restores the correct line after a concurrent control mutation was committed inside cf9a6172e.\nCALL_SITES: reckon/crew/dispatch_plan.py:854, reckon/crew_dispatch_commands.py:2558, reckon/crew/promotion_checks.py:1497\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2091 marks any delivered report with an absent brief item incomplete, and reckon/crew/routing.py:2558 refuses the dispatch on such a design review naming the design-review command.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head.log ends EXIT=0 with 96 passed, gate-base.log EXIT=1 with the two new cases failing and negative-control.log EXIT=1 with the mark restored, but the ruff figures the done_when also measures are carried only as a manifest claim with no log on disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff b809b3ac..5756376d4 changes only the eight declared paths, and the ruff findings at head are eight pre-existing lines in reckon/crew/routing.py, none on a changed line.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control.log shows tests/test_a_partial_design_review_is_incomplete.py lines 91 and 153 going red when the rubric test is restored in _delivered_status, which is the regression the change removes.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's existing idiom of reaching plan_review._review_is_incomplete from reckon/crew/routing.py:2558, and no name carries a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/crew found the relevant owners already in place, _review_is_incomplete at reckon/crew/plan_review.py:810 and newest_design_review at reckon/crew/plan_review.py:1206, and the diff extends them rather than adding a second coverage predicate.\nFINDING tests/test_a_partial_design_review_is_incomplete.py:124 non-blocking: the assertion compares record[\"absent_items\"] against the same literal the test passed into store_plan_review at line 116, so it holds whatever the store does with its input; the load-bearing assertion for that case is _gate(repo) is None at line 121.\n",
+  "review_run_id": "r-20261023T093926274451-review-of-a-partial-design-review-covers-nothing-5756376d4e54",
+  "reviewed_base_sha": "b809b3aca0f56665bf445a5056d4f88eb453e26d",
+  "reviewed_commits": [
+    "cf9a6172e",
+    "8b0d90f5f",
+    "5756376d4"
+  ],
+  "reviewed_head_sha": "5756376d4e54dc6efb134919c995d875c13be229",
+  "reviewed_run_id": "r-20261023T081715369223-a-partial-design-review-covers-nothing",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [
+    "tests/test_a_partial_design_review_is_incomplete.py:124 asserts record[\"absent_items\"] against the literal the test itself passed to store_plan_review at line 116."
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T10:25:38.711938+00:00",
+  "total": 114
+}
