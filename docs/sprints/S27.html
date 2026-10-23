@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="sprint">
+  <meta name="reckon-id" content="S27">
+  <meta name="reckon-version" content="3">
+  <title>The monitor reads each fact once | sprint</title>
+</head>
+<body>
+<main class="reckon-resource" data-type="sprint" data-id="S27">
+  <ol data-reckon="sprint-items">
+  <li data-slug="the-monitor-reads-each-fact-once" data-item="{&quot;done_when&quot;: &quot;§12 cutover measured: crew monitor reads under 20 MB/min, none in D-state&quot;, &quot;slug&quot;: &quot;the-monitor-reads-each-fact-once&quot;, &quot;why_now&quot;: &quot;Monitor processes are the node&#x27;s largest storage load; every session depends on the monitor&quot;}">the-monitor-reads-each-fact-once</li>
+  <li data-slug="crew-state-stays-bounded" data-item="{&quot;done_when&quot;: &quot;pointers under 8 KB, runs dated, crew/watch under 1 MB&quot;, &quot;slug&quot;: &quot;crew-state-stays-bounded&quot;, &quot;why_now&quot;: &quot;Unbounded pointers, run dirs and event logs make every scan cost more&quot;}">crew-state-stays-bounded</li>
+  <li data-slug="a-landing-never-waits-on-a-shared-index" data-item="{&quot;done_when&quot;: &quot;three concurrent promotions each land in under 60 s with no rollback&quot;, &quot;slug&quot;: &quot;a-landing-never-waits-on-a-shared-index&quot;, &quot;why_now&quot;: &quot;Promotions take minutes and roll back on .git/index.lock&quot;}">a-landing-never-waits-on-a-shared-index</li>
+  </ol>
+  <script type="application/json" id="reckon-resource-state">{"description":"Recover the fleet node from the monitor's storage load: one node-local station that reads each fact once, bounded crew stores, and promotions that never queue on a shared git index. RCA: docs/research/monitor-storage-load-rca.html.","ends":"","id":"S27","items":[{"done_when":"§12 cutover measured: crew monitor reads under 20 MB/min, none in D-state","slug":"the-monitor-reads-each-fact-once","why_now":"Monitor processes are the node's largest storage load; every session depends on the monitor"},{"done_when":"pointers under 8 KB, runs dated, crew/watch under 1 MB","slug":"crew-state-stays-bounded","why_now":"Unbounded pointers, run dirs and event logs make every scan cost more"},{"done_when":"three concurrent promotions each land in under 60 s with no rollback","slug":"a-landing-never-waits-on-a-shared-index","why_now":"Promotions take minutes and roll back on .git/index.lock"}],"starts":"","status":"active","summary":"","theme":"The monitor reads each fact once","type":"sprint","version":3}</script>
+</main>
+</body>
+</html>
