@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: manifest.md baseline_suite.failure_ids is [tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat] and after_suite.failure_ids is the same single id, and logs/round3_base_gate.log and logs/round3_head_gate.log each close with '1 failed, 80 passed' and EXIT=1, so no test id fails at head that did not already fail at base.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-23T11:02:46.961Z",
+  "dispatched_at": "2026-10-23T10:47:14Z",
+  "findings": [
+    {
+      "file": "tests/test_structural_invariants.py",
+      "line": 343,
+      "severity": "non-blocking",
+      "text": "non-blocking: _imports_name matches only an ast.ImportFrom whose module is tests.roadmap_fixtures, so a consumer that switches to a bare `import tests.roadmap_fixtures` and calls tests.roadmap_fixtures.plan_row(...) would redden the guard although it still brings the builder in; the fragment states any import form that brings the builder in counts."
+    },
+    {
+      "file": "tests/test_structural_invariants.py",
+      "line": 366,
+      "severity": "non-blocking",
+      "text": "non-blocking: _builds_a_row_by_hand detects only a returned dict literal (or a name bound to one) carrying a slug key, so a hand-built row returned as dict(slug=...) would pass the guard unobserved."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read the two gained commits against the base f87553cc0; tests/test_structural_invariants.py gains the guard and its ast helpers, tests/test_roadmap_endpoints.py loses them, and the fragment records the new home and the seven-file arms.",
+    "done_when": "The done-when requires the three files to pass at head with the same ids as base and none to define a row-building helper; the seven-file arms both read 80 passed with the one pre-existing test_only_the_shared_parser_calls_fromisoformat failure, and the guard at tests/test_structural_invariants.py:403 asserts none of the three defines a builder.",
+    "goal": "The source node's goal is to make the three roadmap test files build plan rows through the shared fixture per section 53; the gained commits keep that end (tests/roadmap_fixtures.py:14 plan_row is the only row builder) and relocate the committed guard to its declared home, tests/test_structural_invariants.py:391.",
+    "manifest": "Read manifest.md; it records status complete, the seven-file gate in test_logs, both suite arms with revision and failure_ids, and the moved-guard negative control in negative_control_note.",
+    "write_paths": "Read the source node's declared write paths and resume-2-advice.txt; every path in the diff is inside them, tests/test_structural_invariants.py having been added by the round-3 scope extension."
+  },
+  "justifications": {
+    "durability": "tests/test_structural_invariants.py:391 fails if a consumer reintroduces a hand-built row, proven by logs/negative_control_moved_guard.log naming test_roadmap_sprint_derivation.py:12 with EXIT=1.",
+    "evidence": "logs/round3_base_gate.log (revision f87553cc0) and logs/round3_head_gate.log (revision 1cb00ba3a) each close EXIT=1 with the identical single pre-existing failure test_only_the_shared_parser_calls_fromisoformat, 80 passed both arms, so the gate ran and its result is recorded.",
+    "fit": "The moved helpers follow the module's existing ast-reading idiom (tests/test_structural_invariants.py:343 _imports_name beside _function_nodes at line 220) and introduce no plan or version label.",
+    "goal_fidelity": "The gained commits move test_the_roadmap_tests_build_rows_through_the_shared_fixture to tests/test_structural_invariants.py:391 and delete it from tests/test_roadmap_endpoints.py, so the three roadmap files still build every row through tests/roadmap_fixtures.plan_row.",
+    "reuse": "The guard is relocated, not duplicated: the single copy in tests/test_structural_invariants.py replaces the deleted one, and a search over tests/ for an existing import-or-row detection helper found none.",
+    "scope_discipline": "The diff f87553cc0..74ff1dd20605 touches exactly tests/test_structural_invariants.py, tests/test_roadmap_endpoints.py and the evidence fragment, and resume-2-advice.txt extends the write scope to tests/test_structural_invariants.py for this round."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to make the three roadmap test files build plan rows through tests/roadmap_fixtures.plan_row per section 53; the gained commits keep that end and move the committed guard to tests/test_structural_invariants.py:391, where the module declares source-reading invariants belong.\nVERDICT done_when: the done-when asks that the three files pass at head with the same ids as base and that none defines a row-building helper; logs/round3_head_gate.log records 80 passed with the one pre-existing test_only_the_shared_parser_calls_fromisoformat failure, and the guard at tests/test_structural_invariants.py:403 asserts none of the three defines a builder.\nVERDICT write_paths: read the source node's declared write paths (prompt.txt:70-75) and resume-2-advice.txt; every path in the diff is inside them, tests/test_structural_invariants.py having been added by the round-3 scope extension.\nVERDICT manifest: read manifest.md; it records status complete, the seven-file gate in test_logs, both suite arms with revision and failure_ids, and the moved-guard negative control in negative_control_note.\nVERDICT diff: read the two gained commits (1cb00ba3a, 74ff1dd20605) against base f87553cc0; tests/test_structural_invariants.py:332-412 gains the guard and its ast helpers, tests/test_roadmap_endpoints.py loses them, and the fragment records the new home and the seven-file arms.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained commits move test_the_roadmap_tests_build_rows_through_the_shared_fixture to tests/test_structural_invariants.py:391 and delete it from tests/test_roadmap_endpoints.py, so the three roadmap files still build every row through tests/roadmap_fixtures.plan_row.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/round3_base_gate.log (f87553cc0) and logs/round3_head_gate.log (1cb00ba3a) each close EXIT=1 with the same single pre-existing failure test_only_the_shared_parser_calls_fromisoformat, 80 passed both arms.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff f87553cc0..74ff1dd20605 touches exactly tests/test_structural_invariants.py, tests/test_roadmap_endpoints.py and the evidence fragment, all in the declared scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_structural_invariants.py:391 fails if a consumer reintroduces a hand-built row, proven by logs/negative_control_moved_guard.log naming test_roadmap_sprint_derivation.py:12 with EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: the moved helpers follow the module's ast-reading idiom, tests/test_structural_invariants.py:343 _imports_name beside _function_nodes at line 220, with no plan or version label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the guard is relocated rather than duplicated - the single copy at tests/test_structural_invariants.py:391 replaces the deleted one, and no other module owns an import-or-row detection helper.\nFINDING tests/test_structural_invariants.py:343 non-blocking: _imports_name matches only an ast.ImportFrom whose module is tests.roadmap_fixtures, so a bare `import tests.roadmap_fixtures` form would redden the guard though it still brings the builder in, where the fragment claims any import form counts.\nFINDING tests/test_structural_invariants.py:366 non-blocking: _builds_a_row_by_hand detects only a returned dict literal carrying a slug key, so a hand-built row returned as dict(slug=...) would pass unobserved.",
+  "review_run_id": "r-20261023T104556834830-review-of-the-roadmap-tests-share-one-row-builder-74ff1dd20605",
+  "reviewed_base_sha": "f87553cc0bc0e29e362d9c1f96f5b249f9ed0c24",
+  "reviewed_head_sha": "74ff1dd20605db394c2957c38e7df182d9e7d897",
+  "reviewed_run_id": "r-20261023T050155447682-the-roadmap-tests-share-one-row-builder",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T11:20:00+00:00",
+  "total": 109
+}
