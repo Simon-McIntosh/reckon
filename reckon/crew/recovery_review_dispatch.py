@@ -65,6 +65,15 @@ FIGURE_REVIEW_DISPATCH_FIELD = "figure_review_dispatch"
 # about a resume a person typed.
 RESUME_SUPERSEDED_HEAD = "resume_superseded_head"
 
+# The margin a manifest write must clear the recorded resume instant by before
+# it reads as the resumed attempt's own delivery. The instant is stored at
+# whole-second resolution, so a write inside the second the resume was stamped
+# in cannot be ordered against it; reading only writes clear of that whole
+# second keeps a manifest the resume itself rewrote from counting as a
+# delivery. A record carrying the manifest generation the resume began from
+# needs no margin, because that comparison uses the write times themselves.
+RESUME_DELIVERY_SECONDS = 1.0
+
 
 def resume_superseded_head(record: Mapping[str, Any]) -> str:
     """The revision a resume of this run replaced, or empty.
@@ -87,6 +96,87 @@ def resume_superseded_at(record: Mapping[str, Any]) -> datetime | None:
     return parse_utc(stamped.get("at"))
 
 
+def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
+    """Whether the attempt a resume started has delivered at the head it carried.
+
+    A resume carries a stopped run forward from the revision it delivered, and
+    it resets a delivered manifest's status while the new attempt runs — see
+    ``resumption._reset_delivered_manifest_status``. So a manifest that reads a
+    delivered status and was written by the resumed attempt is that attempt's
+    own verdict: the run has finished at the revision its resume replaced, and
+    that revision is settled rather than still owed.
+
+    Whether a write belongs to the attempt is decided by
+    ``runs._manifest_freshness``, the one owner of that rule, compared against
+    the manifest generation the resume door recorded before it started the
+    attempt. The recorded resume instant only stands in for a record carrying
+    no generation, and it is stored at whole-second resolution, so a write
+    inside the second the resume was stamped in cannot be ordered against it.
+
+    Every leg fails closed toward withholding — the direction the wait exists
+    for: no resume stamp, no readable manifest, a status outside the delivered
+    pair, or a manifest not written by this attempt all read as an attempt
+    still in flight, and the head stands superseded. The comparison is against
+    the manifest's own write rather than anything a worker states about
+    itself, because the status word alone cannot tell a fresh delivery from the
+    head-reset copy the resume itself left behind.
+    """
+    resumed_at = resume_superseded_at(record)
+    if resumed_at is None:
+        return False
+    from reckon.crew.dispatch import _WORKER_DONE_MANIFEST_STATUSES
+
+    # The resume records the manifest generation it began from, and whether a
+    # write belongs to the attempt that began there is the question
+    # ``runs._manifest_freshness`` already answers for the rest of the system.
+    # The recorded instant is the fallback for a record that carries no
+    # baseline, and it is stored at whole-second resolution, so a write
+    # anywhere inside the second the resume was stamped in cannot be told from
+    # the one the resume itself rewrote: a delivery is read only once the write
+    # is clear of that whole second.
+    baseline_known = record.get("manifest_baseline_mtime_ns") is not None
+    resumed_ns = int((resumed_at.timestamp() + RESUME_DELIVERY_SECONDS) * 1_000_000_000)
+
+    node = record.get("node")
+    candidates: list[Path] = []
+    for raw in (
+        record.get("manifest_path"),
+        node.get("manifest_path") if isinstance(node, Mapping) and node else None,
+    ):
+        text = str(raw or "").strip()
+        if text:
+            candidates.append(Path(text).expanduser())
+    run_id = str(record.get("run_id") or "")
+    if run_id:
+        candidates.append(runs.run_dir(run_id) / runs.DEFAULT_MANIFEST_NAME)
+    for manifest in candidates:
+        try:
+            text = manifest.read_text(encoding="utf-8")
+            written_ns = manifest.stat().st_mtime_ns
+        except OSError:
+            continue
+        try:
+            status = str(
+                parse_manifest(text, path=str(manifest)).get("status") or ""
+            ).strip()
+        except (ManifestParseError, ValueError):
+            return False
+        if status.lower() not in _WORKER_DONE_MANIFEST_STATUSES:
+            return False
+        if baseline_known:
+            # Whether a write belongs to the attempt that began at the
+            # recorded generation is the question runs._manifest_freshness
+            # owns for the rest of the system, so it is asked rather than
+            # answered again here. The owner resolves the manifest from the
+            # record, so the candidate this read resolved is handed to it.
+            present, fresh = runs._manifest_freshness(
+                {**record, "manifest_path": str(manifest)}
+            )
+            return present and fresh
+        return written_ns > resumed_ns
+    return False
+
+
 def supersedes_head(record: Mapping[str, Any], head: str) -> bool:
     """Whether a resume of this run has left ``head`` behind and it still stands.
 
@@ -95,11 +185,22 @@ def supersedes_head(record: Mapping[str, Any], head: str) -> bool:
     the resume replaced them with a head only the run's own resumption can
     settle. A run whose worktree has moved on has delivered the head that
     settles it, so the comparison fails and the duties for the new head stand.
+
+    A run that finishes the resumed attempt without a new commit settles the
+    head just the same. The worker may be resumed only to record an outcome at
+    the revision it already carried, and a delivery at that revision is the
+    run's own last word on it: reading it as still superseded leaves a finished
+    run with no review and no duty — the state this predicate would otherwise
+    hold open indefinitely. So the pair that decides it is the head and whether
+    the resumed attempt has delivered at that head; only a run carrying the
+    superseded revision with no delivery since the resume is withheld.
     """
     superseded = resume_superseded_head(record)
     if not superseded or not head:
         return False
-    return same_revision(superseded, head)
+    if not same_revision(superseded, head):
+        return False
+    return not _resumed_attempt_delivered(record)
 
 
 def _latest_resume_at(record: Mapping[str, Any]) -> datetime | None:
