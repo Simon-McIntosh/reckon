@@ -1,4 +1,3 @@
-import json
 import os
 import shutil
 import time
@@ -219,13 +218,12 @@ LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS = 7
 RUN_DIRECTORY_SIZE_LIMIT = 200_000
 
 # The window a finished run's directory is kept after the same pass decides
-# nothing can still need it, written as an integer and a unit letter, and the
-# unit each suffix is worth in seconds. The ``gc`` namespace is declared on the
-# schema, but the shipped defaults layer carries no ``gc`` block, so a resolved
-# config that never set the key falls back to the constant here.
+# nothing can still need it, written in the duration form the node parser
+# already reads — an integer and a unit letter. The ``gc`` namespace is declared
+# on the schema, but the shipped defaults layer carries no ``gc`` block, so a
+# resolved config that never set the key falls back to the constant here.
 RUN_DIRECTORY_GRACE_KEY = "directory_grace"
 DEFAULT_RUN_DIRECTORY_GRACE = "24h"
-_DIRECTORY_GRACE_UNITS = {"s": 1, "m": 60, "h": 3600}
 
 
 def _live_review_targets() -> set[str]:
@@ -260,60 +258,46 @@ def _committed_review_exists(project: str, run_id: str, repo: Path) -> bool:
     A review's durable copy is the committed record beside the ledger rather
     than the staging copy the reviewer wrote into the run's own directory, so a
     run whose review has landed there no longer needs its directory to keep that
-    review. A stored record naming only one half of the revision pair is a
-    partial record and is not a complete review, which is the same reading
-    promotion uses to decide whether a review is present.
+    review. The committed store is read through the same reader promotion uses
+    to decide whether a round is already filed, so the two agree on what a
+    committed review is: a head carried complete with its revision. A stored
+    record naming only one half of the pair contributes no head and is a partial
+    record rather than a review.
     """
-    from reckon.crew import review as review_module
+    from reckon.crew.promotion_checks import _committed_review_rounds
 
-    root = review_module.committed_review_root(project, root=repo)
-    if root is None:
-        return False
-    directory = Path(root) / review_module.COMMITTED_RUN_DIRNAME / run_id
-    if not directory.is_dir():
-        return False
-    for path in directory.glob("*.json"):
-        try:
-            stored = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            continue
-        if not isinstance(stored, Mapping):
-            continue
-        _, base_sha, _, head_sha = review_module.carried_revision_pair(stored)
-        if base_sha and head_sha:
-            return True
-    return False
+    _, heads = _committed_review_rounds(project, run_id, repo)
+    return bool(heads)
 
 
-def _run_directory_grace_seconds(project: str | None) -> int:
+def _run_directory_grace_seconds(project: str | None, repo_root: Path) -> int:
     """The configured grace window for a finished run's directory, in seconds.
 
-    Read from the resolved flight config's ``gc`` namespace, so a host or
-    project layer retunes the window without a code change. A config the
-    resolver cannot read, one declaring no such key, or one holding a value of
-    the wrong shape all fall back to the shipped default: a malformed window is
+    Read from the resolved flight config's ``gc`` namespace, resolved with the
+    checkout being swept so a project layer's override is read from that
+    checkout rather than from wherever the pass happens to run. A config the
+    resolver cannot read, one declaring no such key, or one holding a value in
+    no duration form all fall back to the shipped default: a malformed window is
     no reason to remove a directory sooner than the default allows, nor to fail
-    the sweep that would otherwise reclaim it.
+    a hand-assembled config's sweep.
     """
     from reckon import flight
+    from reckon.crew.node import CrewError, parse_duration
 
     try:
-        resolved = flight.resolve(project)
+        config = flight.resolve(project, checkout_path=repo_root).config
     except Exception:  # noqa: BLE001 — an unreadable config falls back to default
-        resolved = None
-    gc_config = (getattr(resolved, "config", None) or {}).get(flight.GC_KEY)
+        config = None
+    gc_config = (config or {}).get(flight.GC_KEY)
     value = (
         gc_config.get(RUN_DIRECTORY_GRACE_KEY, DEFAULT_RUN_DIRECTORY_GRACE)
         if isinstance(gc_config, Mapping)
         else DEFAULT_RUN_DIRECTORY_GRACE
     )
-    if (
-        not isinstance(value, str)
-        or value[-1:] not in _DIRECTORY_GRACE_UNITS
-        or not value[:-1].isdigit()
-    ):
-        value = DEFAULT_RUN_DIRECTORY_GRACE
-    return int(value[:-1]) * _DIRECTORY_GRACE_UNITS[value[-1:]]
+    try:
+        return parse_duration(str(value))
+    except CrewError:
+        return parse_duration(DEFAULT_RUN_DIRECTORY_GRACE)
 
 
 def _orphan_ledger_indexes(
@@ -667,7 +651,7 @@ def garbage_collect(
         # locks and the unledgered directories this same pass sweeps keep their
         # own day-count windows.
         run_directory_cutoff = (now or datetime.now(tz=timezone.utc)) - timedelta(
-            seconds=_run_directory_grace_seconds(project)
+            seconds=_run_directory_grace_seconds(project, repo_root)
         )
         live_ids = {str(record.get("run_id") or "") for record in list_live()}
         live_review_targets = _live_review_targets()

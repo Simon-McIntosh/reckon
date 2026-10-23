@@ -28,6 +28,12 @@
   <code>reckon/_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code> by
   <code>scripts/regen_flight_schema.py</code>, never hand-edited. The raw-report, lock and
   unledgered-directory sweeps keep their own thirty-day age and are untouched.</p>
+  <p>The window is read through <code>reckon.crew.node.parse_duration</code> rather than a second
+  units table, and the committed-review test calls
+  <code>promotion_checks._committed_review_rounds</code> and asks whether it returned any reviewed
+  head, so the sweep and promotion agree on what a landed review is. The config is resolved with
+  <code>checkout_path</code> set to the checkout being swept, the same way the run-file bound is
+  resolved in the same pass, so a project layer's override is read from that checkout.</p>
   <p>Each removal prints the directory's path and its measured size before it happens, on the same
   pass that removes it, so the reclaimed set is readable in the command's own output rather than
   inferred from a report afterwards.</p>
@@ -41,7 +47,13 @@
   <code>garbage_collect</code> lists <strong>exactly one</strong> for removal — the reviewed run
   past its window — and the real run removes that one and leaves the other six on disk; the
   withheld rows name <code>review-owed</code> and <code>missing-derived-figure</code> as their
-  reasons. Measured: <strong>3 passed</strong>.</p>
+  reasons. Measured: <strong>5 passed</strong>, the file carrying two further cases: a configured
+  <code>gc.directory_grace</code> of <code>3h</code> resolves so that a run promoted and
+  reviewed four hours ago is retired while one reviewed two hours ago is kept, and a window in no
+  duration form — reachable only through a config the schema never validated — falls back to the
+  shipped day, with a run reviewed twenty-five hours ago retired and one reviewed two hours ago
+  kept. A value in no duration form written into a real layer is refused by the flight schema
+  itself, which is where the typo is caught.</p>
   <p>The unpromoted fixture is deliberately <em>younger</em> than thirty days but far older than the
   grace window, so it is the unledgered-directory sweep (a different pass, thirty days, outside this
   node's write scope) that would hold it on age alone and the retention predicate that holds it here.
@@ -51,9 +63,15 @@
   <h2>Declared negative control: the predicate reduced to age alone</h2>
   <p>Applying the declared mutation — the live-pointer, queued-entry, in-flight-review and
   review-owed tests removed so the directory is judged by age alone — fails all three cases
-  (<strong>3 failed</strong>, EXIT=1): the dry run offers runs that something can still need, and the
-  withheld-reason assertions lose their rows. Restoring the predicate from a byte-identical backup
-  brings the file back to <strong>3 passed</strong>.</p>
+  (<strong>3 failed, 2 passed</strong>, EXIT=1): the dry run offers runs that something can still
+  need, and the withheld-reason assertions lose their rows. The two passing cases are the
+  grace-window cases, which measure the window rather than the predicate and are untouched by the
+  mutation. Each failure names the full prune set, so the fixtures the predicate exists to hold are
+  visible rather than implied:
+  <code>['figures-missing-run', 'live-run', 'queued-run', 'review-owed-run', 'reviewed-old-run',
+  'unpromoted-run']</code> — the older unpromoted run the plan names is listed once the guard that
+  held it is dropped. Restoring the predicate from a byte-identical backup brings the file back to
+  <strong>5 passed</strong>.</p>
 </section>
 </main>
 </body>

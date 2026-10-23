@@ -16,9 +16,11 @@ import os
 import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
-from reckon import ledger
+from reckon import flight, ledger
+from reckon.crew import gc as gc_module
 from reckon.crew import routing
 
 PROJECT = "test"
@@ -192,6 +194,87 @@ def _pruned_ids(report: dict[str, Any]) -> set[str]:
     }
 
 
+def write_flight_config(home: Path, grace: str) -> None:
+    """Write a host flight config declaring one grace window."""
+    home.mkdir(parents=True, exist_ok=True)
+    (home / "flight.yaml").write_text(f"gc:\n  directory_grace: {grace}\n")
+
+
+def _reviewed_run(
+    repo: Path, home: Path, run_id: str, *, now: datetime, age: timedelta
+) -> Path:
+    """A promoted run whose review has landed, so only the window can hold it."""
+    return plant_run(
+        repo,
+        home,
+        run_id,
+        now=now,
+        age=age,
+        review_tier="full",
+        committed_review=True,
+    )
+
+
+def test_the_configured_window_decides_between_two_reviewed_runs(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    write_flight_config(home, "3h")
+    long_ago = _reviewed_run(
+        repo, home, "reviewed-four-hours", now=now, age=timedelta(hours=4)
+    )
+    recent = _reviewed_run(
+        repo, home, "reviewed-two-hours", now=now, age=timedelta(hours=2)
+    )
+
+    assert gc_module._run_directory_grace_seconds(PROJECT, repo) == 3 * 3600
+
+    report = routing.garbage_collect(repo=repo, project=PROJECT, now=now)
+
+    assert _pruned_ids(report) == {"reviewed-four-hours"}, sorted(_pruned_ids(report))
+    assert recent.exists()
+    assert long_ago.exists()
+
+
+def test_a_malformed_window_falls_back_to_the_shipped_default(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    # A window written into a real config layer is checked by the flight schema
+    # where it is written, so a typo is refused there rather than resolving
+    # silently. This exercises the other path: a config assembled without that
+    # check — an in-process caller, or a layer the validator never saw — reaches
+    # the reader carrying the bad value, and the reader falls back to the
+    # shipped day instead of failing the sweep or applying no window at all.
+    monkeypatch.setattr(
+        flight,
+        "resolve",
+        lambda *args, **kwargs: SimpleNamespace(
+            config={"gc": {"directory_grace": "soon"}}
+        ),
+    )
+    beyond_default = _reviewed_run(
+        repo, home, "reviewed-past-a-day", now=now, age=timedelta(hours=25)
+    )
+    inside_default = _reviewed_run(
+        repo, home, "reviewed-inside-a-day", now=now, age=timedelta(hours=2)
+    )
+
+    assert gc_module._run_directory_grace_seconds(PROJECT, repo) == 24 * 3600
+
+    report = routing.garbage_collect(repo=repo, project=PROJECT, now=now)
+
+    assert _pruned_ids(report) == {"reviewed-past-a-day"}, sorted(_pruned_ids(report))
+    assert inside_default.exists()
+    assert beyond_default.exists()
+
+
 def test_a_dry_run_offers_only_the_reviewed_run_past_its_window(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -206,7 +289,7 @@ def test_a_dry_run_offers_only_the_reviewed_run_past_its_window(
     report = routing.garbage_collect(repo=repo, project=PROJECT, now=now)
 
     assert report["dry_run"] is True
-    assert _pruned_ids(report) == {"reviewed-old-run"}
+    assert _pruned_ids(report) == {"reviewed-old-run"}, sorted(_pruned_ids(report))
     # Nothing was touched by the dry run.
     for name, path in dirs.items():
         assert path.exists(), name
@@ -225,7 +308,7 @@ def test_the_real_run_removes_exactly_that_one(
 
     report = routing.garbage_collect(repo=repo, project=PROJECT, now=now, apply=True)
 
-    assert _pruned_ids(report) == {"reviewed-old-run"}
+    assert _pruned_ids(report) == {"reviewed-old-run"}, sorted(_pruned_ids(report))
     assert not dirs["reviewed-old-run"].exists()
     for name in (
         "live-run",
