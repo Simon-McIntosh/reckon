@@ -1375,13 +1375,32 @@ def dispatch(
         )
 
     _workspace_roots(repo_root)
-    live_claims = [] if shadow_lineage else _repository_scope_claims()
+    candidate_scope = (
+        ()
+        if shadow_lineage
+        else _candidate_scope_entries(
+            node, project=project, repo=repo_root, authority=authority
+        )
+    )
+    # The node's own resolved scope is the whole question the claim read asks, so
+    # it is handed over as the read's candidate paths: a live claim can refuse
+    # this dispatch only through a path the two both declare, and every other
+    # claim's disposition is then never read. The predicate the read filters on is
+    # the same repository-and-containment test the arbitration matches on, over
+    # the same entries built by the same expansion, so no claim that could refuse
+    # is dropped.
+    candidate_paths = tuple(
+        absolute
+        for _repository, _path, absolute, _declared, _derived_from in candidate_scope
+    )
+    live_claims = (
+        []
+        if shadow_lineage
+        else _repository_scope_claims(candidate_paths=candidate_paths)
+    )
     if shadow_lineage:
         peer_claims = []
     else:
-        candidate_scope = _candidate_scope_entries(
-            node, project=project, repo=repo_root, authority=authority
-        )
         candidate_repositories = {
             repository
             for repository, _path, _absolute, _declared, _derived_from in candidate_scope
@@ -2581,7 +2600,10 @@ def dispatch(
                 project=project,
                 repo=repo_root,
                 authority=authority,
-                claims=_repository_scope_claims(exclude_run_ids=(run_id,)),
+                claims=_repository_scope_claims(
+                    exclude_run_ids=(run_id,),
+                    candidate_paths=candidate_paths,
+                ),
                 **_directory_claim_acceptance_kwargs(
                     accept_directory_claim, accepted_directory_claims
                 ),

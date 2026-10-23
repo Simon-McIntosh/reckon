@@ -341,6 +341,41 @@ def test_the_overlapping_claim_refuses_the_dispatch_and_names_the_owner(home, tm
     assert overlapping["run_id"] in str(excinfo.value)
 
 
+def test_the_dispatch_itself_probes_git_only_for_a_claim_that_can_meet_its_own(
+    home, tmp_path, monkeypatch
+):
+    """The production call, not the private read, is the path this bounds.
+
+    A dispatch reaches the claim read through its own admission check, and a
+    read that narrows only when a caller names its candidate paths leaves that
+    call site spending a disposition per live pointer. This asserts the bound
+    from the arbitration's own entry: the same fixture as the private read's
+    test, dispatched rather than read directly.
+    """
+    first, _second, overlapping = _two_repositories_with_one_overlapping_claim(
+        tmp_path, home
+    )
+    probe = _GitProbe(node_module.subprocess)
+    monkeypatch.setattr(node_module, "subprocess", probe)
+
+    with pytest.raises(crew.ScopeConflict) as excinfo:
+        crew.dispatch(
+            node=_node("project-a", "package/target.py"),
+            project="project-a",
+            repo=first,
+            config=CONFIG,
+            session="dispatch-reads-only-the-claim-that-can-meet-it",
+            check_budget=False,
+            launcher=lambda *args, **kwargs: pytest.fail("conflict must not launch"),
+        )
+
+    assert excinfo.value.run_id == overlapping["run_id"]
+
+    spent = probe.status_and_reachability()
+    assert len(spent) == 2, spent
+    assert {Path(cwd).resolve() for _command, cwd in spent} == {first.resolve()}
+
+
 def test_the_overlapping_claim_releases_once_its_work_is_integrated(home, tmp_path):
     first, _second, overlapping = _two_repositories_with_one_overlapping_claim(
         tmp_path, home
