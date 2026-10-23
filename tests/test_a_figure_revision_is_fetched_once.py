@@ -126,15 +126,9 @@ def _negative_control_when_armed(monkeypatch):
     if os.environ.get(_NEGATIVE_CONTROL_ENV) != "1":
         return
 
-    original = metadata_index._figure_row
-
-    def without_revision(path, docs_dir, project, signature, stamp):
-        row = original(path, docs_dir, project, signature, stamp)
-        if row is not None:
-            row.pop("revision", None)
-        return row
-
-    monkeypatch.setattr(metadata_index, "_figure_row", without_revision)
+    # The step that adds the revision to an index row, replaced so the row
+    # carries none and the first-paint cases have no token to build a URL from.
+    monkeypatch.setattr(metadata_index, "_figure_revision", lambda path: "")
 
 
 def _figure_row(rows: list[dict]) -> dict:

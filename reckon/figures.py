@@ -132,6 +132,56 @@ def _capture_metadata(path: Path) -> tuple[str | None, str]:
 _DIMS_BY_SUFFIX = {".png": _png_dims, ".svg": _svg_dims, ".gif": _gif_dims}
 
 
+def figure_row(
+    path: Path,
+    docs_dir: Path,
+    project: str,
+    plan_slugs: set[str] | None = None,
+) -> dict | None:
+    """Return one inventory row for a figure file under ``docs_dir/figures``.
+
+    This is the single builder of a figure's row: the Figures inventory and the
+    metadata index both take their fields from here, so a title, a kind or a
+    dimension is derived once. ``width`` and ``height`` are the numbers the
+    format's reader returns, unrounded, and ``width`` is ``None`` when the file
+    cannot be read. ``plan_slugs`` names the plans already discovered in this
+    project; a row's ``for_plan`` is its top-level directory when that directory
+    is itself a plan slug, and empty otherwise. A path outside the figures
+    directory yields no row.
+    """
+
+    try:
+        slug = path.relative_to(docs_dir / "figures").as_posix()
+    except ValueError:
+        return None
+    # Each format has its own reader; a GIF must not fall through to the SVG
+    # reader, which would read a binary file as text and return nothing.
+    dims = _DIMS_BY_SUFFIX[path.suffix](path)
+    capture, caption = _capture_metadata(path)
+    title = _titleize(capture) if capture else _titleize(path.stem)
+    first_segment = slug.split("/", 1)[0]
+    # download names the fetchable file a reader can offer to save, and it
+    # equals href here for every figure and gif row because the inventory is
+    # built by walking this directory, so each row is a file on disk by
+    # construction. It is not therefore redundant: href answers where the
+    # artifact is addressed, download answers whether that address is a file
+    # a reader can save, and the two coincide for these kinds and diverge
+    # for kinds produced elsewhere.
+    href = f"/{project}/figures/{slug}"
+    return {
+        "slug": slug,
+        "type": "gif" if path.suffix == ".gif" else "figure",
+        "title": title,
+        "caption": caption,
+        "for_plan": first_segment if first_segment in (plan_slugs or ()) else "",
+        "href": href,
+        "download": href,
+        "width": dims[0] if dims else None,
+        "height": dims[1] if dims else None,
+        "path": path,
+    }
+
+
 def figure_rows(
     docs_dir: Path,
     project: str,
@@ -168,33 +218,24 @@ def figure_rows(
 
     rows = []
     for path in paths:
-        slug = path.relative_to(figures_dir).as_posix()
-        kind = "gif" if path.suffix == ".gif" else "figure"
-        # Each format has its own reader; a GIF must not fall through to the
-        # SVG reader, which would read a binary file as text and return None.
-        dims = _DIMS_BY_SUFFIX[path.suffix](path)
-        capture, caption = _capture_metadata(path)
-        title = _titleize(capture) if capture else _titleize(path.stem)
-        first_segment = slug.split("/", 1)[0]
-        # download names the fetchable file a reader can offer to save, and it
-        # equals href here for every figure and gif row because the inventory is
-        # built by walking this directory, so each row is a file on disk by
-        # construction. It is not therefore redundant: href answers where the
-        # artifact is addressed, download answers whether that address is a file
-        # a reader can save, and the two coincide for these kinds and diverge
-        # for kinds produced elsewhere.
-        href = f"/{project}/figures/{slug}"
+        row = figure_row(path, docs_dir, project, plan_slugs)
+        if row is None:
+            continue
+        # The inventory renders one dims string from the builder's numeric
+        # width and height, and carries neither number itself, so its row keeps
+        # the shape it served before the builder existed.
+        width, height = row["width"], row["height"]
         rows.append(
             {
-                "slug": slug,
-                "type": kind,
-                "title": title,
-                "caption": caption,
-                "dims": _format_dims(*dims) if dims else "",
-                "for_plan": first_segment if first_segment in plan_slugs else "",
-                "href": href,
-                "download": href,
-                "path": path,
+                "slug": row["slug"],
+                "type": row["type"],
+                "title": row["title"],
+                "caption": row["caption"],
+                "dims": _format_dims(width, height) if width is not None else "",
+                "for_plan": row["for_plan"],
+                "href": row["href"],
+                "download": row["download"],
+                "path": row["path"],
             }
         )
     return rows
