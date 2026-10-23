@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="An ended lift stays ended">
+  <meta name="plan-summary" content="A lift whose end is read from the group's window reading ended and revived on alternating reads under one id — eleven granted/ended swings in twenty-one minutes for a single id. The first read that observes that end now stamps it on the record, and the end cause is read from the stamp ahead of every later reading.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s6">
+  <meta name="plan-recorded-at" content="2026-10-23">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,budget,lift,watch-stream,reset">
+  <title>An ended lift stays ended — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="an-ended-lift-stays-ended-note" class="r-note" data-node="an-ended-lift-stays-ended" data-reckon="landed" data-when="2026-10-23">
+  <h2 id="an-ended-lift-stays-ended-head">An ended lift stays ended</h2>
+
+  <p id="an-ended-lift-stays-ended-rule">A lift ends when its clock's reset is observed, and that end is read from the group's window reading at the moment of use. A reading that flips between two figures therefore ended the lift on one read and revived it on the next, under the same id — the producer announced the same id as in force again and the fleet woke to a lift that had already ended. The change makes the observed end final: the first read that sees one stamps it on the record, and the end cause is read from that stamp ahead of every reading, so no later reading returns the id to in force.</p>
+
+  <p id="an-ended-lift-stays-ended-mechanism">Two functions in <code>reckon/crew/budget_lift.py</code> carry it. <code>record_observed_end</code> resolves the cause and, when it is the reset cause, writes <code>ended_at</code> and <code>ended_cause</code> on the record, returning whether the document changed; <code>settled_document</code> runs it over every lift in the document and writes the document back once if any lift moved. Inside <code>end_cause</code>, the stamp is read before <code>cleared_at</code> and before any reading. <code>effective_budget</code> stamps through <code>_stamp_observed_ends</code> on the group it is resolving, so the pace path and the producer's sweep both latch through one code path. <code>reckon/crew/lift_watch.py</code>'s <code>sweep</code> now reads through <code>settled_document</code>, so the producer is the writer of the stamp when it is the first to observe the end.</p>
+
+  <p id="an-ended-lift-stays-ended-only-reset">The latch is restricted to the reading-dependent cause. A clear, the hard ceiling and a stated instant are all functions of the record and the clock, already monotone in time; stamping one would let a read that judged the ceiling at its own clock make that verdict permanent for a reader resolving the same lift at another. The first attempt latched every cause, and five tests that resolve a lift at an artificial clock against the real one caught it: the transient ceiling verdict became durable on the record and the lift never returned to force for the rest of the test. Only the reset cause — the one that depends on which reading you happen to hold — is written down.</p>
+
+  <h3 id="an-ended-lift-stays-ended-reading-head">The flipping reading, with its recorded rows</h3>
+
+  <p id="an-ended-lift-stays-ended-reading">The reading is the group's freshest published <code>seven_day</code> window figure, alternating across the utilisation recorded on the lift at grant. The lift is session-scoped, form <code>uncapped</code>, clock <code>seven_day</code>, with <code>resets_at</code> 2026-10-27T06:32:42+00:00 and a recorded utilisation of 1.0. On the <code>seven_day</code> clock a reset is judged from three signals; the one that alternates here is the second — the newest utilisation below the figure recorded at grant — because the group's freshest reading for that window arrived from two streams that reported either side of 1.0. Rows below are verbatim from <code>~/.config/reckon/crew/watch/nova-19e05df6b2e5.events</code> (group <code>codex-sub</code>, id <code>codex-sub-1792696262-181762</code>, session <code>901cf201-8ab8-493f-ac1b-d9a7db972bbc</code>), the first ten transitions for that id on 2026-10-22.</p>
+
+  <table id="an-ended-lift-stays-ended-rows">
+    <thead>
+      <tr><th>timestamp</th><th>row kind</th><th>detail</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>2026-10-22T19:11:02Z</td><td>transition</td><td>lift granted: group 'codex-sub', form uncapped, scope session:901cf201-…, id 'codex-sub-1792696262-181762'</td></tr>
+      <tr><td>2026-10-22T20:25:56Z</td><td>transition</td><td>lift ended: cause reset, group 'codex-sub', form uncapped, scope session:901cf201-…, id 'codex-sub-1792696262-181762'</td></tr>
+      <tr><td>2026-10-22T20:26:34Z</td><td>transition</td><td>lift granted: group 'codex-sub', form uncapped, scope session:901cf201-…, id 'codex-sub-1792696262-181762'</td></tr>
+      <tr><td>2026-10-22T20:27:22Z</td><td>transition</td><td>lift ended: cause reset, …</td></tr>
+      <tr><td>2026-10-22T20:29:41Z</td><td>transition</td><td>lift granted: …</td></tr>
+      <tr><td>2026-10-22T20:30:41Z</td><td>transition</td><td>lift ended: cause reset, …</td></tr>
+      <tr><td>2026-10-22T20:33:03Z</td><td>transition</td><td>lift granted: …</td></tr>
+      <tr><td>2026-10-22T20:35:00Z</td><td>transition</td><td>lift ended: cause reset, …</td></tr>
+      <tr><td>2026-10-22T20:36:23Z</td><td>transition</td><td>lift granted: …</td></tr>
+      <tr><td colspan="3">…and on to 2026-10-23T02:14:47Z: 83 rows for this one id, 37 lift-granted and 39 lift-ended across the group's fifteen lift ids in the same window.</td></tr>
+    </tbody>
+  </table>
+
+  <p id="an-ended-lift-stays-ended-reading-close">Eleven granted/ended pairs for one id inside twenty-one minutes. The id is session-scoped and the session is one coordinator's, so each grant released a lane that had just been released, and each end took back a lane the fleet had already been told it held.</p>
+
+  <h3 id="an-ended-lift-stays-ended-gate-head">Gate</h3>
+
+  <p id="an-ended-lift-stays-ended-gate">At the committed revision (0a222bb43 plus 8540b14c7), <code>tests/test_an_ended_lift_stays_ended.py</code> is 3 passed in 2.17&nbsp;s, <code>EXIT=0</code> (<code>logs/head-test.log</code>). The alternating arm drives the producer through five readings that alternate either side of the figure recorded at grant and asserts one <code>lift-granted</code> and one <code>lift-ended</code> for the id, the ended row's detail naming <code>cause reset</code>, <code>ended_at</code> on the record equal to the reading's own fixture clock, and the record's <code>ended_cause</code> the reset cause. The steady arm drives five readings all above the grant figure and asserts the lift is granted once and never ended, and that the pace path still returns the lifted block. The third arm asserts the pace path itself stamps the end it observes, and that a later reading above the figure does not restore the lift.</p>
+
+  <p id="an-ended-lift-stays-ended-base-arm">The base arm is the same alternating test against the pristine base revision (03de30ff9), run from a tree built by <code>git archive</code> with the interpreter's <code>module.__file__</code> and resolved cwd recorded in the log header: 2 failed, 1 passed, <code>EXIT=1</code> (<code>logs/base-arm.log</code>). The alternating arm fails at <code>assert 3 == 1</code> — the base revision grants the id three times on the same sequence, in the order <code>lift-granted, lift-ended, lift-granted, lift-ended, lift-granted, lift-ended</code> — and the pace-path arm fails at <code>KeyError: 'ended_at'</code>, no stamp ever reaching the record. That is this node's declared "more than one lift-granted at the base revision".</p>
+
+  <h3 id="an-ended-lift-stays-ended-mutation-head">Negative control</h3>
+
+  <p id="an-ended-lift-stays-ended-mutation">The mutation this node declared: <em>remove the end latch so the lift's end is re-derived from each reading; the alternating sequence must then re-grant the id.</em> It is applied in a scratch copy of the worktree carrying the same head library, by returning <code>False</code> from <code>record_observed_end</code> before any stamp is written — so the record never carries the end. Same tree, same command, two arms, both recorded in one log: the head arm is 3 passed <code>EXIT=0</code>; the mutant arm is 2 failed, 1 passed, <code>EXIT=1</code>, failing <code>test_an_alternating_reading_grants_and_ends_the_lift_once</code> (which the head arm does not fail) at <code>assert 3 == 1</code> with the states <code>['lift-granted', 'lift-ended', 'lift-granted', 'lift-ended', 'lift-granted', 'lift-ended']</code> counting 3 grants, and <code>test_the_pace_path_stamps_the_end_it_observes</code> at <code>KeyError: 'ended_at'</code>. The mutation diff is in the log header. Log: <code>logs/negative-control.log</code> in the run directory.</p>
+
+  <h3 id="an-ended-lift-stays-ended-commits-head">Commits</h3>
+
+  <p id="an-ended-lift-stays-ended-commits"><code>0a222bb43</code> — the latch, its two readers, and the three tests. <code>8540b14c7</code> — restricts the latch to the reading-dependent cause, after the five failures the first form produced. Ruff check and <code>ruff format --check</code> report no findings on the three paths. Two neighbouring readings are out of this node's scope and are recorded rather than diagnosed here: <code>tests/test_skill_contracts.py::test_review_skill_is_discovered_beside_the_other_reckon_skills</code> fails at base as well (reckon-review's body at 1506 words against a 1500 bound), and <code>tests/test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git</code> is owned by another node — in a like-for-like clone of the worktree it passes on both the base and the head library, and its outcome is decided by the directory the suite runs from, not by this change.</p>
+</article>
+</body>
+</html>
