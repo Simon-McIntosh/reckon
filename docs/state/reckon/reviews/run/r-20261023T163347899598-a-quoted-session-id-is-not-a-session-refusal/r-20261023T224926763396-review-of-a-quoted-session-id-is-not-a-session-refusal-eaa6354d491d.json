@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T23:00:07.502Z",
+  "dispatched_at": "2026-10-23T22:50:42Z",
+  "findings": [
+    {
+      "file": "gate_head.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "summary": "the head gate arm ran at the base revision plus an uncommitted working-tree change, not at the committed reviewed head eaa6354d4; the after_suite revision field says so and the new test was re-run at the committed head, but the log alone cannot show the arm and the promoted sha are the same tree"
+    },
+    {
+      "file": "tests/test_a_quoted_session_id_is_not_a_session_refusal.py",
+      "line": 127,
+      "severity": "non-blocking",
+      "summary": "the UnreconciledRuns fixture names a single run, so the reading of the first named run's action (_UNRECONCILED_RUN_LINE.search in reckon/crew/recovery_classification.py) is indistinguishable from any named run's action; a regression taking the last named run's action would still pass"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read a queued refusal by its stamped exception class so an UnreconciledRuns refusal publishes its run action; reckon/crew/recovery_classification.py:124 _queued_failure_remedy now reads _stamped_refusal_class at line 218 and returns _unreconciled_runs_remedy's action, verified against the stamp site reckon/crew/queue_admission.py:1237 and the renderer reckon/crew/node.py:462.\nVERDICT done_when: section 90 of docs/plans/the-monitor-shows-the-work-it-watches.html names tests/test_a_quoted_session_id_is_not_a_session_refusal.py with three cases; the test file holds those three plus a lane-hold case, and the manifest records 5 passed at the committed head in new_test_at_head.log.\nVERDICT write_paths: the manifest declares reckon/crew/recovery_classification.py, tests/test_a_quoted_session_id_is_not_a_session_refusal.py and the evidence fragment; git diff --stat over 40470cfe9..eaa6354d4 shows exactly those three files, 359 insertions and 7 deletions, and no path outside them.\nVERDICT manifest: read; it records commits f1181e0e5, 969aac8eb and eaa6354d4, both suite arms with pytest node-id failure_ids, the negative control and its pre-fix reproduction, and zero added failures.\nVERDICT diff: read commit by commit; f1181e0e5 carries the classifier change and the test, 969aac8eb changes one trailing newline in the test file, eaa6354d4 adds the landing fragment, so production code is identical between the uncommitted head arm and the committed head.\nCALL_SITES: reckon/crew/recovery_classification.py:classify_pointer, reckon/crew/obligations.py:obligations, reckon/crew/obligation_snapshot.py:payload_for\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:218-255 publishes the first named run's action for a stamped UnreconciledRuns refusal, keeps the follower remedy for _FollowerAdmissionUnmet and WatcherRequired, and leaves the classified row under queued-awaiting-session, which is what section 90 asks for.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate_base.log and gate_head.log both open with the revision, tree and literal command and close with EXIT=1, and diffing their FAILED lines shows the head set is the base set minus the three new-test cases, but the head arm ran an uncommitted tree rather than the committed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff of 40470cfe9..eaa6354d4 is one of the three write paths the node was fenced to, and the unused docs/figures directory was correctly left unwritten.\nSCORE durability: 17\nJUSTIFICATION durability: negative_control.log shows the substring test restored turns tests/test_a_quoted_session_id_is_not_a_session_refusal.py's UnreconciledRuns cases red (3 failed, EXIT=1), so the first-case assertion fails on the exact regression, though the single-run fixture cannot fail a last-run reading.\nSCORE fit: 18\nJUSTIFICATION fit: the new names in reckon/crew/recovery_classification.py:105-128 are mechanism names with no plan, stage or ticket reference, and the comments state why the class and not the text decides whose refusal it is.\nSCORE reuse: 18\nJUSTIFICATION reuse: the search over reckon found no owner for parsing the stamped class; the nearest predecessor is queue_admission.py:509 _is_lane_hold, a two-name startswith that the new _stamped_refusal_class generalises without duplicating, and the addition reuses _failure_text and review_invocation rather than respelling them.\nFINDING gate_head.log:1 non-blocking: the head gate arm ran at the base revision plus an uncommitted working-tree change rather than at the committed reviewed head, so the log's revision line and the promoted sha cannot be shown to be the same tree.\nFINDING tests/test_a_quoted_session_id_is_not_a_session_refusal.py:127 non-blocking: the UnreconciledRuns fixture names one run only, so publishing the first named run's action is indistinguishable from publishing any named run's, and a regression taking the last run's action would pass the test.\n",
+  "review_run_id": "r-20261023T224926763396-review-of-a-quoted-session-id-is-not-a-session-refusal-eaa6354d491d",
+  "reviewed_base_sha": "40470cfe9a1428cf12a49f0930f64e7051b2cc84",
+  "reviewed_head_sha": "eaa6354d491d08eef4120ec6fcbdd6179d9be18b",
+  "reviewed_run_id": "r-20261023T163347899598-a-quoted-session-id-is-not-a-session-refusal",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:01:10.794284+00:00",
+  "total": 108
+}
