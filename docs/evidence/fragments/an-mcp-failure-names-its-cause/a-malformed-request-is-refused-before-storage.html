@@ -16,7 +16,10 @@
     for a read request (no <code>action</code>). It refuses a view outside
     <code>CREW_TOOL_VIEWS</code>, a <code>live</code> field outside the row's
     declared vocabulary (<code>_LIVE_ROW_FIELDS</code>: the classification's
-    record-independent keys plus the overrun and placement fields), and a
+    record-independent keys plus the overrun, placement and common run fields —
+    the same union the query's own
+    <code>_live_field_vocabulary</code> derives, held to it by the parity test
+    below), and a
     <code>runs</code> scope or source outside
     <code>RUN_SCOPES</code>/<code>RUN_SOURCES</code>, each naming the accepted
     values. <code>_read_plan_tool</code> refuses a view outside
@@ -30,12 +33,12 @@
   </p>
   <p id="a-malformed-request-is-refused-before-storage-measure">
     Measure. The focused gate of this node's seven files reports
-    <strong>144 passed, 1 failed</strong> at the head revision
+    <strong>145 passed, 1 failed</strong> at the head revision
     (<code>EXIT=1</code>); the failure is
     <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
     <code>reckon/roadmap.py: 51232 estimated tokens exceeds the 50000 bound</code>
     — a failure the done-when declares pre-existing on main, in a module this
-    node did not write. The new file alone reports <strong>6 passed</strong>.
+    node did not write. The new file alone reports <strong>7 passed</strong>.
   </p>
   <p id="a-malformed-request-is-refused-before-storage-base">
     Base arm. The same test file, run against the base revision extracted with
@@ -44,11 +47,26 @@
     passes is the unknown-view case, which <code>_crew</code> already refused
     before it read.
   </p>
+  <p id="a-malformed-request-is-refused-before-storage-parity">
+    Vocabulary parity. The declared set named one field fewer than the view
+    serves: <code>section</code>, the field a run is dispatched for, is added by
+    <code>project_run_rows</code> from the run's pointer and so is absent from a
+    classification of an empty pointer. A live read naming it was therefore
+    refused while the view would have answered. <code>COMMON_RUN_FIELDS</code>
+    is now unioned into <code>_LIVE_ROW_FIELDS</code>, and
+    <code>test_the_refusal_vocabulary_covers_every_live_field</code> compares
+    the declared set against the set the query derives, so the next omission
+    fails the gate instead of refusing a well-formed request.
+  </p>
   <p id="a-malformed-request-is-refused-before-storage-negative">
     Negative control. The crew argument check moved after the first read — the
     classification probe the deep field check performs — reports
     <strong>3 failed</strong> (<code>EXIT=1</code>): the three crew cases fail
     with <code>a malformed request reached storage before it was refused:
-    PosixPath('worker.json')</code>, and all three pass at the head arm.
+    PosixPath('worker.json')</code>, and all three pass at the head arm. A
+    second arm reverts the vocabulary union with the check kept, and reports
+    <strong>1 failed</strong> (<code>EXIT=1</code>) —
+    <code>Extra items in the left set: 'section'</code> — against 7 passed with
+    the union in place.
   </p>
 </section>
