@@ -215,6 +215,47 @@ def _reviewed_run(
     )
 
 
+def write_project_flight_config(repo: Path, grace: str) -> None:
+    """Write a flight config into one checkout's own project layer."""
+    directory = repo / "docs" / "state" / PROJECT
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "flight.yaml").write_text(f"gc:\n  directory_grace: {grace}\n")
+
+
+def test_the_checkout_being_swept_supplies_the_window(tmp_path, monkeypatch) -> None:
+    """A project layer's window is read from the checkout the pass is sweeping.
+
+    The pass is given the checkout as ``repo`` while the process stands in an
+    unrelated directory, so a window that is applied can only have come from
+    that checkout's own project layer: nothing about the working directory, and
+    no host layer, carries it. Reverting the resolution to the project name
+    alone leaves the layer unread and applies the shipped day instead, under
+    which neither fixture is old enough to retire.
+    """
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    now = datetime(2026, 9, 1, tzinfo=UTC)
+    write_project_flight_config(repo, "3h")
+    long_ago = _reviewed_run(
+        repo, home, "reviewed-four-hours", now=now, age=timedelta(hours=4)
+    )
+    recent = _reviewed_run(
+        repo, home, "reviewed-two-hours", now=now, age=timedelta(hours=2)
+    )
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+
+    assert gc_module._run_directory_grace_seconds(PROJECT, repo) == 3 * 3600
+
+    report = routing.garbage_collect(repo=repo, project=PROJECT, now=now)
+
+    assert _pruned_ids(report) == {"reviewed-four-hours"}, sorted(_pruned_ids(report))
+    assert recent.exists()
+    assert long_ago.exists()
+
+
 def test_the_configured_window_decides_between_two_reviewed_runs(
     tmp_path: Path, monkeypatch
 ) -> None:
