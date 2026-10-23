@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:84",
+    "reckon/crew/recovery_classification.py:52",
+    "reckon/crew/recovery_liveness.py:634"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-10-23T15:48:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative-control paragraph reports \"the four arms fail at pane halted again and the two controls still pass (4 failed, 2 passed, EXIT=1)\", while negative-control.log \u2014 cited in the same sentence \u2014 records 5 failed, 4 passed, with test_arm_v_the_attempts_own_word_is_provisional_while_it_writes among the failures; both the count and the composition are wrong, and the paragraph's claim that only the four arms are disturbed understates what the mutation breaks. Carried over unresolved from the c13b40969 review finding at the same line."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repaired sentence calls _exit_record_names_attempt \"carried unchanged from the base revision\", which is true of the predicate body (present at base 85717297 in recovery_liveness.py:528, zero diff hunks touching it) but not of the stand-down it names: the call at reckon/crew/recovery_classification.py:84 is added by this node (absent at base; the import at :1829 is added beside it). A reader taking the sentence as a statement of novelty reads the end-side guard as pre-existing when it is part of this node's diff; the commit message goes further and states the end-side term is not the change, which the diff contradicts."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate paragraph claims \"9 passed in 5.20 s, EXIT=0\" for the single-file run, but no log in the run directory carries that line \u2014 head-gate.log records only the widened run (70 passed in 62.20s, EXIT=0) at revision d9f264df8, not at the reviewed head; the result is plausible and covered by the widened run, but a reader cannot audit the quoted time or count from any recorded artefact."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "VERDICT diff: read 4fbbd45ef against the previously reviewed head c13b40969 \u2014 one commit, one file, one paragraph, +1/-1: the sentence at line 24 substitutes \"the existing predicate _exit_record_names_attempt in reckon/crew/recovery_liveness.py, carried unchanged from the base revision\" for the invented \"new predicate _attempt_end_recorded\"; no code path changed and every identifier the fragment names in a code span resolves under git grep at the head.",
+    "done_when": "VERDICT done_when: the node's done_when is the four-arm fixture set with no arm drawing halted plus the two negative controls; this commit is prose only and adds or removes no arm, and its own measure is repair-anchor-check.log, which reports c13b40969 missing=1 and 4fbbd45ef missing=0 with EXIT=0 \u2014 a two-population check that could fail and did on the pre-repair revision.",
+    "goal": "VERDICT goal: the node's goal is to read a resumed attempt's liveness through its own claim, worker and exit records; this commit repairs the landing record so the safeguard names the predicate that exists \u2014 docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:24 now cites _exit_record_names_attempt (reckon/crew/recovery_liveness.py:634) instead of the nonexistent _attempt_end_recorded (git grep at 4fbbd45ef returns nothing for that name).",
+    "manifest": "VERDICT manifest: read; status complete, eight commits listed with head_sha 4fbbd45ef, the tests: line is a literal pytest invocation, negative_control_log names the bare path, and baseline_suite (85717297, base-gate-3.log, exit 1, 7 failure ids) and after_suite (d9f264df8, head-gate.log, exit 0, no failure ids) each cite a log whose last line is a bare EXIT= line, which I read.",
+    "write_paths": "VERDICT write_paths: the node's declared scope is reckon/crew/recovery_classification.py, reckon/crew/recovery_liveness.py, tests/test_a_resumed_*_its_own_records.py and the fragment; git show --stat 4fbbd45ef -- changes exactly one path, the fragment at docs/evidence/fragments/a-live-worker-is-never-drawn-halted/, inside that scope."
+  },
+  "justifications": {
+    "durability": "the only guard on the repaired sentence is repair-anchor-check.log, a one-off check kept in the run directory; no test under tests/ asserts that a fragment's code-span identifiers resolve, so the same anchor could rotate back to a nonexistent name and the suite would stay green.",
+    "evidence": "repair-anchor-check.log:9-12 performs the check its finding names and shows it reddening at c13b40969 (MISSING _attempt_end_recorded, missing=1) before passing at 4fbbd45ef (missing=0), though it searches only underscore-prefixed spans and accepts a substring hit anywhere in reckon/ or tests/, but the same file still cites negative-control.log:12 as \"4 failed, 2 passed\" against the log's \"5 failed, 4 passed\" and asserts a 9-passed figure no log in the run directory carries.",
+    "fit": "the replacement text at docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:24 keeps the fragment's sentence idiom and names no plan, sprint or ticket label.",
+    "goal_fidelity": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:24 now names the predicate with the right symbol and the right module, answering the blocking finding of the c13b40969 review.",
+    "reuse": "the commit adds no definition at all: it points its prose at the existing predicate reckon/crew/recovery_liveness.py:634, and the search for an existing anchor-checking owner over tests/ and reckon/ found only the element-id check in tests/test_fragment_ids_are_checked.py, which covers a different finding and is not duplicated here.",
+    "scope_discipline": "git show --stat 4fbbd45ef lists one changed file, the fragment, which is the node's declared landing path; nothing else in the tree moves."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read a resumed attempt's liveness through its own claim, worker and exit records; this commit repairs the landing record so the safeguard names the predicate that exists \u2014 docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:24 now cites _exit_record_names_attempt (reckon/crew/recovery_liveness.py:634) instead of the nonexistent _attempt_end_recorded (git grep at 4fbbd45ef returns nothing for that name).\nVERDICT done_when: the node's done_when is the four-arm fixture set with no arm drawing halted plus the two negative controls; this commit is prose only and adds or removes no arm, and its own measure is repair-anchor-check.log, which reports c13b40969 missing=1 and 4fbbd45ef missing=0 with EXIT=0 \u2014 a two-population check that could fail and did on the pre-repair revision.\nVERDICT write_paths: the node's declared scope is reckon/crew/recovery_classification.py, reckon/crew/recovery_liveness.py, tests/test_a_resumed_attempt_is_read_through_its_own_records.py and the fragment; git show --stat 4fbbd45ef changes exactly one path, the fragment under docs/evidence/fragments/a-live-worker-is-never-drawn-halted/, inside that scope.\nVERDICT manifest: read; status complete, eight commits listed with head_sha 4fbbd45ef, the tests: line is a literal pytest invocation, negative_control_log names the bare path, and baseline_suite (85717297, base-gate-3.log, exit 1, 7 failure ids) and after_suite (d9f264df8, head-gate.log, exit 0, no failure ids) each cite a log whose last line is a bare EXIT= line, which I read.\nVERDICT diff: read 4fbbd45ef against the previously reviewed head c13b40969 \u2014 one commit, one file, one paragraph, +1/-1: the sentence at line 24 substitutes the existing predicate _exit_record_names_attempt for the invented _attempt_end_recorded; no code path changed and every identifier the fragment names in a code span resolves under git grep at the head.\nCALL_SITES: reckon/crew/recovery_classification.py:84, reckon/crew/recovery_classification.py:52, reckon/crew/recovery_liveness.py:634\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:24 now names the predicate with the right symbol and the right module, answering the blocking finding of the c13b40969 review.\nSCORE evidence: 14\nJUSTIFICATION evidence: repair-anchor-check.log:9-12 shows the check reddening at c13b40969 (missing=1) before passing at 4fbbd45ef (missing=0), though it covers only underscore-prefixed spans, but the fragment's negative-control paragraph still contradicts the log it cites.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 4fbbd45ef lists one changed file, the node's declared fragment, and nothing else.\nSCORE durability: 9\nJUSTIFICATION durability: repair-anchor-check.log is a one-off check in the run directory; no test under tests/ reddens if the fragment's anchor is renamed back to a nonexistent symbol.\nSCORE fit: 19\nJUSTIFICATION fit: the replacement sentence at the fragment's line 24 keeps the surrounding prose idiom and carries no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change points at the existing predicate reckon/crew/recovery_liveness.py:634 rather than duplicating it.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:29 non-blocking: the negative-control paragraph reports 4 failed, 2 passed while negative-control.log records 5 failed, 4 passed with arm v among the failures. Carried over unresolved from the c13b40969 review.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:24 non-blocking: \"carried unchanged from the base revision\" is true of the predicate body but the stand-down call at reckon/crew/recovery_classification.py:84 is new in this node, so the record understates what the node adds.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-resumed-attempt-is-read-through-its-own-records.html:26 non-blocking: the quoted \"9 passed in 5.20 s\" appears in no log in the run directory; head-gate.log records only the widened 70-passed run at revision d9f264df8.\n",
+  "review_run_id": "r-20261023T204718768722-review-of-a-resumed-attempt-is-read-through-its-own-records-4fbbd45ef9d5",
+  "reviewed_base_sha": "c13b40969a8e5b8cb16bf212b334914f4fe622f0",
+  "reviewed_head_sha": "4fbbd45ef9d5b4a12f7003fd67da798e3a2d488f",
+  "reviewed_run_id": "r-20261023T154506367282-a-resumed-attempt-is-read-through-its-own-records",
+  "scores": {
+    "durability": 9,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T21:32:55.101514+00:00",
+  "total": 100
+}
