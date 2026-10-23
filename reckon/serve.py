@@ -1236,7 +1236,15 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
     move the key would recompute a composition it cannot change. Each row is
     the crew watcher's own per-run reduction, which already folds the clock in
     — the same reduction a ticker consumes, so a run whose stream goes silent
-    past the stale threshold moves this key exactly as it moves the watch.
+    past the clock threshold moves this key exactly as it moves the watch.
+
+    The row also carries the watcher's fresh liveness reading. Liveness is not
+    a file: a worker can die with every file untouched, and the reduction's
+    state is recomputed from those files, so a run that died silently would
+    leave the state — and with it the key — exactly where it was. The reading
+    is taken here for the same reason the watcher takes it on every poll, and
+    it is a signal-0 probe rather than a storage read, so it costs the key no
+    covered-file visit.
     """
     from reckon.crew import recovery_watch as watch
     from reckon.crew import runs as crew_runs
@@ -1262,7 +1270,11 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
         except Exception:  # noqa: BLE001 — a key never becomes the read's failure
             snapshot = {}
         state = str(snapshot.get("state") or "")
-        rows.append([run_id, state])
+        try:
+            alive, proven, descendant = watch._fresh_liveness(pointer)
+        except Exception:  # noqa: BLE001 — a key never becomes the read's failure
+            alive = proven = descendant = None
+        rows.append([run_id, state, repr(alive), repr(proven), repr(descendant)])
         states[run_id] = snapshot
     rows.sort()
     return rows, states
