@@ -118,15 +118,47 @@
     composed one.
   </p>
   <p id="a-roadmap-read-answers-from-its-snapshot-repair-measure">
-    <strong>Repair measure.</strong> At <code>e8f1feba7</code> the gate is
-    <strong>48 passed</strong>, EXIT=0, against the 44 recorded above — the four
-    new cases, no failure added and no test id removed. The negative control for
-    the repair reverts the answering commit's code half in a scratch tree built
-    from that head, leaving every test in place: the live-run liveness arm then
-    measures <strong>4</strong> covered-file visits where it asserts more than
-    200 and the gate is <strong>EXIT=1</strong>, while the same arm passes on the
-    unpreverted head. The control for the write counter recorded above is
-    unchanged.
+    <strong>Repair measure.</strong> At <code>c22ec0def</code> the gate is
+    <strong>49 passed</strong>, EXIT=0, against the 44 recorded above. The
+    negative control for the repair reverts the answering commit's code half in
+    a scratch tree built from that head, leaving every test in place: the
+    live-run liveness arm then measures <strong>4</strong> covered-file visits
+    where it asserts more than 200 and the gate is <strong>EXIT=1</strong>,
+    while the same arm passes on the unpreverted head. The control for the write
+    counter recorded above is unchanged.
+  </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-repair-open">
+    <strong>Repair of the two open findings.</strong> The bound the section
+    states — at most 8 stat-or-open calls per mounted project — rested on a
+    covered-file counter that patched <code>builtins.open</code> alone, and
+    <code>Path.read_text</code> and <code>Path.open</code> resolve
+    <code>io.open</code>, which is a different name: every read the key made
+    through a <code>Path</code> went uncounted — <code>.git/HEAD</code>, the ref
+    it names, the write counter and the snapshot file — so the bound measured
+    stats only. <code>io.open</code> is patched as well. The bound
+    <strong>still holds, at 4</strong> of the 8: a warm read of one project pays
+    the index stat, <code>HEAD</code>, the ref <code>HEAD</code> names, and the
+    write counter. Five mutation arms over a scratch copy carry the proof: the
+    untouched copy passes; five added <code>Path.read_text</code> calls per
+    project take the measured count from <strong>4 to 9</strong> and turn the
+    bound case red (<code>assert 9 &lt;= 8</code>, EXIT=1); the same five reads
+    with the <code>io.open</code> wrapper removed leave the count at
+    <strong>2</strong> and the case green, which is the defect exactly.
+  </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-repair-reuse">
+    <strong>The run's own composition.</strong> The live-run row carried the
+    watcher's state word and its liveness reading, both coarser than the
+    composition they summarise: a manifest, a worker or attempt record, a
+    stream, a review filed against the run, or the head of the tree the run is
+    reviewed against can each move while the configuration of the two stands
+    still, and the read then answered from the composition taken before the
+    move. The row now carries <code>_snapshot_reuse_key(pointer)</code> — the
+    value the watcher itself compares before it serves a stored snapshot —
+    imported from <code>reckon.crew.recovery_watch</code> and not edited there.
+    The case holds a run record moved with the state and the reading unchanged:
+    both stand still, the key moves, and the read recomposes over the
+    <strong>200</strong> documents. With the reuse value replaced by a constant
+    the row is identical either side and the case is red.
   </p>
 </article>
 </body>
