@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T135314004830-a-worker-cannot-walk-the-crew-home/gate-head.log",
+  "assertion_analysis": [
+    {
+      "failure_condition": "tests/test_a_worker_cannot_walk_the_crew_home.py:103-118 drives the five measured walks against a synthetic crew home and requires each refusal to name the walk's own root; dropping the resolved root from _refusal_message, or judging the wrong token as the root, reddens it because the guard recomputes the root from the tokenised command rather than echoing the test's input.",
+      "lines": "103-118"
+    },
+    {
+      "failure_condition": "The ancestor case reddens when the ancestor branch of _root_is_refused (reckon/hooks/worker_walk_guard.py:139 `root in home.parents`) is removed; negative-control.log shows exactly this case failing at 1 failed/19 passed/EXIT=1.",
+      "lines": "121-129"
+    },
+    {
+      "failure_condition": "A cd tracked by the splitter into the crew home followed by `grep -r x .` reddens if _cd_target tracking or the '.' resolution in _walk_roots is dropped.",
+      "lines": "148-161"
+    },
+    {
+      "failure_condition": "Each of the twelve recursive-walk forms is asserted refused; removing one program from WALK_PROGRAMS or one letter from GREP_WALK_LETTERS/LS_WALK_LETTERS reddens the matching case.",
+      "lines": "164-187"
+    },
+    {
+      "failure_condition": "The sync path is driven through cli._configure_crew_guards with include_git_guard=True and both matcher groups are required present; dropping include_walk_guard=include_git_guard in reckon/cli_entry.py:359 reddens it.",
+      "lines": "377-401"
+    },
+    {
+      "failure_condition": "The fragment assertion rebuilds the bound command with installer.interpreter_path(script), the same helper worker_walk_guard_groups composes it with, so a change to worker_walk_guard_groups that keeps interpreter_path would move both sides together; the assertion still pins the matchers, the script name and the group order.",
+      "lines": "216-234"
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T135314004830-a-worker-cannot-walk-the-crew-home/gate-base.log",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:502",
+    "reckon/cli.py:65"
+  ],
+  "completed_at": "2026-10-23T15:40:28.461Z",
+  "dispatched_at": "2026-10-23T15:28:00Z",
+  "findings": [
+    {
+      "file": "tests/test_worker_git_guard.py",
+      "line": "464",
+      "severity": "blocking",
+      "text": "blocking: the node changed tests/test_worker_git_guard.py, which is not among its declared write paths (worker_walk_guard.py, worker_git_guard.py, install.py, test_a_worker_cannot_walk_the_crew_home.py, the evidence fragment and the figures directory); the fence grants no scope over this file, so the two relaxed assertions at lines 464-474 and 508-518 land unadjudicated."
+    },
+    {
+      "file": "reckon/hooks/worker_walk_guard.py",
+      "line": "131",
+      "severity": "non-blocking",
+      "text": "non-blocking: the walk guard reaches into nine private members of the sibling module it loads by file path (_splitter._config_home at line 131, and _resolve, _tokenize, _segments, _split_assignments, _cd_target, _shell_script, _nested_bodies and MAX_NESTING below), so a rename inside worker_git_guard.py breaks the walk guard at load with no shared declaration of which of those names is public."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites: reckon/project_maintenance_commands.py:502 (the sync command reaching _configure_crew_guards with include_git_guard) and reckon/cli.py:65 (its re-export).",
+    "diff": "Commits 54a8e36a6 adds reckon/hooks/worker_walk_guard.py and the test file, bae306665 drives the test file, 894cf6cc4 lands the evidence fragment, and aafc95889 binds the walk guard beside the git guard in install.py and cli_entry.py; tests/test_worker_git_guard.py is also changed, outside the declared write paths.",
+    "done_when": "The done_when's asserted cases are covered by tests/test_a_worker_cannot_walk_the_crew_home.py: the five measured walks are refused naming their root (lines 103-118), the allowed cases pass (lines 190-208), the cd case is refused (lines 148-161), the installer fragment carries a Bash and a Grep|Glob group (lines 216-234), and gate-head.log records 216 passed/EXIT=0 against gate-base.log's 196 passed/EXIT=0 with zero added failures; the done_when's ruff clauses are not recorded anywhere in the manifest or the logs.",
+    "goal": "The goal is a pre-tool-use refusal of a crew worker's recursive walk as the node reads it in reckon/hooks/worker_walk_guard.py:139-141; the guard applies only under RECKON_RUN_ID (line 253-256) and refuses the crew home, its store roots and its ancestors.",
+    "manifest": "The source manifest.md names four commits and eight changed paths, records a red negative control (1 failed/19 passed/EXIT=1) and readable baseline/after suite arms, but its baseline_suite and after_suite command fields carry angle-bracket placeholders (<base tree>, <the thirteen hook and guard test files>) rather than the literal command the logs record.",
+    "write_paths": "The declared write paths are the six in the dispatch scope (worker_walk_guard.py, worker_git_guard.py, install.py, cli_entry.py, the test file, and the evidence fragment/figures); the diff changes tests/test_worker_git_guard.py, which is not among them."
+  },
+  "justifications": {
+    "durability": "Tests/test_a_worker_cannot_walk_the_crew_home.py:103-234 reddens on removing the ancestor rule (negative-control.log, 1 failed/EXIT=1), on dropping a walk program, and on dropping the install wiring (lines 377-401), but the fragment assertion at lines 216-234 rebuilds the command with the same interpreter_path helper the production code uses.",
+    "evidence": "gate-head.log ends 216 passed/EXIT=0 against gate-base.log's 196 passed/EXIT=0 with no failing ids in either arm, and negative-control.log ends 1 failed/19 passed/EXIT=1 with a failing id the head arm does not fail, but no ruff run is recorded for the done_when's lint clause.",
+    "fit": "reckon/hooks/worker_walk_guard.py:123-141 follows the sibling guards' idiom (stdlib-only, RECKON_RUN_ID scope, deny-by-default on an unreadable rule) with no plan or ticket label in any symbol or comment.",
+    "goal_fidelity": "reckon/hooks/worker_walk_guard.py:139-141 refuses every root the goal names and reckon/cli_entry.py:359 makes it reach a worker through the same flag that reaches the git guard, so the landed change does what the goal states.",
+    "reuse": "The walk guard reuses the git guard's shell splitter by loading reckon/hooks/worker_git_guard.py:61-110 by file path instead of forking a parser, and a capability search over reckon/ for a recursive-walk refusal found no prior owner.",
+    "scope_discipline": "Every diff path is inside the declared scope except tests/test_worker_git_guard.py:464-518, which the node wrote while fenced to other files."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a pre-tool-use refusal of a crew worker's recursive walk, and reckon/hooks/worker_walk_guard.py:139-141 refuses the crew home, its store roots and its ancestors under the RECKON_RUN_ID scope at line 253.\nVERDICT done_when: tests/test_a_worker_cannot_walk_the_crew_home.py:103-234 covers the five measured walks refused naming their root, the allowed cases, the cd case, the installer fragment and both matcher groups, with gate-head.log at 216 passed/EXIT=0 against gate-base.log at 196 passed/EXIT=0; the done_when's ruff clauses are recorded nowhere.\nVERDICT write_paths: the dispatch grants six paths and the diff also changes tests/test_worker_git_guard.py, which is not among them.\nVERDICT manifest: read at the source run's manifest.md; it names four commits and eight changed paths, a red negative control and readable suite arms, but its baseline_suite and after_suite command fields carry angle-bracket placeholders rather than the literal commands its logs record.\nVERDICT diff: read commit by commit against base 7544038ce; 54a8e36a6 adds reckon/hooks/worker_walk_guard.py and the test file, bae306665 drives the test file, 894cf6cc4 lands the evidence fragment, aafc95889 wires install.py and cli_entry.py, and tests/test_worker_git_guard.py is changed outside the declared scope.\nCALL_SITES: reckon/project_maintenance_commands.py:502, reckon/cli.py:65\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/hooks/worker_walk_guard.py:139-141 refuses every root the goal names, and reckon/cli_entry.py:359 binds it to a worker through the git guard's own flag.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log ends 216 passed/EXIT=0 against gate-base.log's 196 passed/EXIT=0 with no failing ids, but no ruff result for the done_when's lint clause appears in the manifest or any log.\nSCORE scope_discipline: 8\nJUSTIFICATION scope_discipline: every diff path is inside the declared scope except tests/test_worker_git_guard.py:464-518, which the node was not fenced to write.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log reddens tests/test_a_worker_cannot_walk_the_crew_home.py:121-129 on removing the ancestor rule, and lines 377-401 redden if the install wiring is dropped.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/hooks/worker_walk_guard.py:123-141 follows the sibling guards' stdlib-only, deny-by-default idiom with no plan or ticket label in any name or comment.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/hooks/worker_walk_guard.py:112-119 loads reckon/hooks/worker_git_guard.py by file path for its shell splitter rather than forking a parser, and a capability search over reckon/ found no prior walk-refusal owner.\nFINDING tests/test_worker_git_guard.py:464 blocking: the node changed a test file outside its declared write paths, so the two relaxed assertions at lines 464-474 and 508-518 land unadjudicated against a fence that grants no scope over it.\nFINDING reckon/hooks/worker_walk_guard.py:131 non-blocking: the walk guard reaches into nine private members of the sibling module it loads by file path, so a rename in worker_git_guard.py breaks it at load with no shared declaration of which names are public.\n",
+  "review_run_id": "r-20261023T151949758150-review-of-a-worker-cannot-walk-the-crew-home-aafc95889f36",
+  "reviewed_base_sha": "7544038ce73b2cdb87623ee1fb38f75fa6ea7a70",
+  "reviewed_commits": [
+    "54a8e36a66f634132ad4b8e0b51ac7c61ff352f9",
+    "bae306665d85795f4f5481df75bb2fb1ae2bb9ee",
+    "894cf6cc48d369f1fa6dc92d75fb278d822a0873",
+    "aafc95889f36e19f94b8fb51d6bd97ffb7001e18"
+  ],
+  "reviewed_head_sha": "aafc95889f36e19f94b8fb51d6bd97ffb7001e18",
+  "reviewed_run_id": "r-20261023T135314004830-a-worker-cannot-walk-the-crew-home",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 8
+  },
+  "self_comparison_assertions": [
+    "tests/test_a_worker_cannot_walk_the_crew_home.py:216-234"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T15:47:08.273475+00:00",
+  "total": 94
+}
