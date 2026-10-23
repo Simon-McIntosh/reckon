@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -211,6 +211,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261023T162630148384-review-of-the-retention-sweep-runs-on-its-own-f82edc7a3e67" data-who="reckon-build" data-when="2026-10-23T17:17:56.587Z">
     <div class="r-comment-body"><p>The review of run r-20261023T124731718173-the-retention-sweep-runs-on-its-own at reviewed_base_sha c4d3ae5b6e6d3d6c48e09e1cd1decb441e1e1a1e and reviewed_head_sha f82edc7a3e67fdb45b85423f075beabad31f7f59 scores goal_fidelity 19, evidence 17, scope_discipline 17, durability 18, fit 18, reuse 19 (111/120), with added_failure_count 0 and no added failure ids; two non-blocking findings, one on the git-shim absence having no positive control on its instrument and one on the landing fragment still claiming reckon/crew/paid_lanes.py is unchanged when the diff changes it by +27/-60. Nothing blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261023T124731718173-the-retention-sweep-runs-on-its-own" data-who="reckon-build" data-when="2026-10-23T16:29:46Z">
+    <div class="r-comment-body"><p>The run-directory retention now runs on its own hourly: `reckon.crew.gc.retention_sweep` judges each run directory against the ledger of the project that dispatched it across every mount, removes at most 500 per pass, and appends removals through the watch log&#x27;s rotating stream, writing nothing when it removed nothing; it starts no git process and shares one predicate with `garbage_collect`. `reckon.service.install_timer_units` is the one generic write-and-enable step, `service.render_periodic_service_unit`/`render_periodic_timer_unit` are the one place the periodic unit sections are written, and `install_retention_timer` installs `reckon-crew-retention.service` plus an hourly `reckon-crew-retention.timer`. The operator surface is `reckon crew retention-sweep` with `--apply` and `--install-timer`.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261023T094244498082-review-of-a-harness-cache-leaves-with-its-attempt-508da957f0a5" data-who="reckon-build" data-when="2026-10-23T10:30:14.666Z">
     <div class="r-comment-body"><p>Independent review of run r-20261023T092448652887-a-harness-cache-leaves-with-its-attempt at 508da957f0a5; parsed record scores goal_fidelity 18, evidence 14, scope_discipline 19, durability 15, fit 18, reuse 4, added_failure_count 0, three non-blocking findings (reuse: _tree_bytes duplicates tree_size_bytes in the same module; durability: one added test invokes no production code and one path-set assertion is self-referential).</p></div>
