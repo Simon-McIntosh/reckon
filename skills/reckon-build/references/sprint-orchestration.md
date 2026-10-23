@@ -826,9 +826,14 @@ Four rules follow.
    `--comment`. Every power_convertor session held a codex lift from 22 October
    19:11Z, yet from 21 October the project ran one codex run against 282 local.
 4. **Review once per delivered head.** A second code review of an unchanged
-   head, or a plan review owed only because sprint or status metadata changed,
-   buys no decision. From 19 to 23 October the project ran 345 reviews against
-   143 implementation runs.
+   head buys no decision. A new head, after a repair round, does need one, and
+   promotion refuses without it. From 19 to 23 October the project ran 345
+   reviews against 143 implementation runs. The `review_owed` list a plan write
+   returns is the plan's whole review debt, not what that write caused. Sprint,
+   status, owner, ROI, effort, tags, comments and followups are kept out of
+   the reviewed digest, so a metadata-only write never adds a review. Clear
+   existing debt when the plan's text changed or a dispatch needs it, not
+   because a metadata write reported it.
 
 Rules 1 and 3 stand until reckon's `a-queue-holds-the-whole-plan` lands. That
 plan lets a request wait on its dependencies in the queue, lands passing runs
