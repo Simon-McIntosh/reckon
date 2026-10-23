@@ -212,6 +212,7 @@ function App() {
   const [fleetRuns, setFleetRuns] = useState([]);
   const [fleetRunsLoaded, setFleetRunsLoaded] = useState(false);
   const [fleetRunsError, setFleetRunsError] = useState("");
+  const [fleetDecisions, setFleetDecisions] = useState(null);
   const [hiddenProjects, setHiddenProjects] = useState(() => {
     try {
       const raw = localStorage.getItem(PROJECT_VISIBILITY_STORAGE);
@@ -308,8 +309,9 @@ function App() {
   const canvasViewRef = useRef(canvasView);
   useEffect(() => { canvasViewRef.current = canvasView; }, [canvasView]);
   useEffect(() => {
-    // The single /crew poll: the shell owns it and hands the live run list to
-    // every surface that needs it, so the crew view does not poll it again.
+    // The single /crew poll: the shell owns it and hands the live run list and
+    // the open decision list to every surface that needs them, so the crew view
+    // does not poll it again.
     // A poll whose runs and phases are unchanged costs no schedule request,
     // and an unchanged view re-anchors once a minute rather than letting its
     // now line drift from the clock.
@@ -317,6 +319,8 @@ function App() {
       "/crew",
       async payload => {
         const runs = Array.isArray(payload?.runs) ? payload.runs : null;
+        const decisions = Array.isArray(payload?.open_decisions) ? payload.open_decisions : null;
+        if (decisions) setFleetDecisions(decisions);
         if (canvasViewRef.current === "crew") {
           const scheduleProject = window.STATE?.project;
           if (scheduleProject && window.scheduleFetchDue?.(runs, scheduleProject)) {
@@ -527,7 +531,7 @@ function App() {
                 {canvasView === "home" && <window.ReckonShell.home.FleetHome projects={shownProjects} fleetRuns={window.ReckonShell.home.homeVisibleRuns(fleetRuns, shownProjects)} mountedProjectCount={projects.length} loaded={Boolean(fleetIndex)} error={fleetIndexError} onRetry={refreshFleetIndex} onConfigureVisibility={() => document.querySelector(".r-project-configure")?.click()} />}
                 {canvasView === "sprint" && <window.Sprint sprintId={route.sprint} onNav={nav} />}
                 {canvasView === "graph" && <window.GraphView onNav={nav} items={items} focal={graphFocal} setFocal={setGraphFocal} />}
-                {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} runs={fleetRuns} loaded={fleetRunsLoaded} error={fleetRunsError} />}
+                {canvasView === "crew" && <window.CrewView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} decisions={fleetDecisions} runs={fleetRuns} loaded={fleetRunsLoaded} error={fleetRunsError} />}
                 {canvasView === "velocity" && <window.VelocityView visibleProjects={shownProjectNames} mountedProjectCount={projects.length} selectedProject={M?.project || null} />}
               </div>
             </div>

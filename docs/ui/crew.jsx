@@ -322,10 +322,13 @@ function CrewRunCard({ run }) {
   );
 }
 
-function crewRunsForVisibleProjects(runs, visibleProjects) {
-  if (!Array.isArray(visibleProjects)) return runs || [];
+// The crew page's project filter. Both row kinds the payload carries name the
+// project they belong to, so one filter narrows the runs and the decisions to
+// the projects the page is showing.
+function crewRunsForVisibleProjects(rows, visibleProjects) {
+  if (!Array.isArray(visibleProjects)) return rows || [];
   const visible = new Set(visibleProjects);
-  return (runs || []).filter(run => visible.has(run.project));
+  return (rows || []).filter(row => visible.has(row.project));
 }
 
 function crewScopedProjects(selectedProject, visibleProjects, allVisible) {
@@ -335,12 +338,78 @@ function crewScopedProjects(selectedProject, visibleProjects, allVisible) {
   return [selectedProject];
 }
 
-function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota, runs = [], loaded = false, error = "" }) {
+// The plan page a decision's row links to, addressed at the decision. The plan
+// page renders one anchor for its decisions — the decisions section — and no
+// anchor per decision, so the row addresses that section. It rides on the plan
+// document's own route rather than the reader route, whose fragment already
+// names the plan by slug and so cannot carry a second one.
+function crewDecisionPlanHref(row) {
+  const project = row?.project || window.STATE?.project || "";
+  if (!row?.plan) return "";
+  return `/${encodeURIComponent(project)}/plans/${encodeURIComponent(row.plan)}#decisions`;
+}
+
+// The scope the served row already carries: the sections it holds, or the whole
+// plan where it names none. The list states this rather than deciding it.
+function crewDecisionScope(row) {
+  const sections = Array.isArray(row?.sections) ? row.sections : [];
+  if (sections.length) return sections.map(section => `§${section}`).join(", ");
+  return row?.holds_whole_plan ? "whole plan" : "";
+}
+
+function CrewOpenDecisions({ decisions, visibleProjects }) {
+  // A payload not yet read is not an empty list: the empty line asserts that
+  // nothing waits, which is a claim about an answer the page does not have
+  // yet, so the list is drawn only once the payload has arrived.
+  if (!Array.isArray(decisions)) return null;
+  const rows = crewRunsForVisibleProjects(decisions, visibleProjects);
+  return (
+    <section className="r-crew-decisions" aria-label="Open decisions holding work">
+      <header className="r-crew-decisions-head">
+        <span className="r-crew-label">Waiting on you</span>
+      </header>
+      {rows.length === 0 ? (
+        <p className="r-crew-decisions-empty">No decision is waiting.</p>
+      ) : (
+        <ul className="r-crew-decision-list">
+          {rows.map(row => (
+            <li
+              key={`${row.project || ""}:${row.plan || ""}:${row.id || ""}`}
+              className="r-crew-decision"
+              data-status={row.status || ""}
+            >
+              <a className="r-crew-decision-plan" href={crewDecisionPlanHref(row)}>
+                {row.project ? <code>{row.project}</code> : null}
+                {row.plan || "—"}
+              </a>
+              <code className="r-crew-decision-key">{row.id || "—"}</code>
+              <span className="r-crew-decision-question">{row.question || row.id || ""}</span>
+              <span className="r-crew-decision-holds">{crewDecisionScope(row)}</span>
+              {row.recommended ? (
+                <span className="r-crew-decision-recommendation">
+                  recommended {row.recommended}
+                  {row.recommended_by ? ` · ${row.recommended_by}` : ""}
+                </span>
+              ) : null}
+              <span className="r-crew-decision-waited">
+                waiting since {crewFormatStamp(row.plan_modified) || "an unrecorded date"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota, decisions = null, runs = [], loaded = false, error = "" }) {
   const [refreshedAt, setRefreshedAt] = useState(null);
   const [allVisible, setAllVisible] = useState(false);
 
-  // The shell owns the single /crew poll and passes its result down, so this
-  // view renders the same run list without polling the same route again.
+  // The shell owns the single /crew poll and passes the whole payload's run list
+  // and decision list down, so this view renders both without polling the route
+  // again. A poll the shell has not answered yet hands down nothing, which is
+  // not the same as an empty answer.
   useEffect(() => {
     if (loaded) setRefreshedAt(new Date());
   }, [runs, loaded]);
@@ -375,6 +444,8 @@ function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota
       </div>
 
       {error && <div role="status" className="r-crew-error">{error}</div>}
+
+      <CrewOpenDecisions decisions={decisions} visibleProjects={scopedProjects} />
 
       <DerivedFlow runs={flowRuns} project={flowProject} />
 
