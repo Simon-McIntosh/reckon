@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window"
+  ],
+  "added_failures_note": "derived from the reviewed manifest's own baseline_suite and after_suite: the after arm (5b1ed1046, after-domain-row-head.log) names one failure the base arm does not, tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window, which is a pre-existing bound failure of the peer-owned reckon/roadmap.py (50280 estimated tokens against 50000) that reproduces at base and which this node's diff does not touch; the base arm's three ids are the node's own tests, red at base by design and green at head.",
+  "base_log_revision": "3906d38636b15efccd93fb3e19f0a96f3ac35747",
+  "completed_at": "2026-10-23T03:20:15.168Z",
+  "dispatched_at": "2026-10-23T02:51:20Z",
+  "findings": [
+    {
+      "file": "tests/test_a_domain_waiver_is_written_to_the_promoted_row.py",
+      "line": 149,
+      "severity": "follow-on",
+      "text": "follow-on: `waiver[\"reason\"] == WAIVER_REASON` compares the row's reason against the constant the test itself hands the tool at :134, so it pins carriage of the input rather than an independent reading of the row; the independent comparisons now exist at :208 (`row[\"domain_waiver\"] == seen[\"product\"]`) and :212-214 (the literal), so this is a comprehension weakness rather than a coverage gap."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-checked-against-its-domain/a-domain-waiver-is-written-to-the-promoted-row.html",
+      "line": 38,
+      "severity": "follow-on",
+      "text": "follow-on: the fragment states the node's tests pass at revision 471552623, but the only gate run recorded at that revision (gate-domain-row-fixed.log) was truncated before its summary line, so the claim rests on an incomplete run; the completed after-domain-row-head.log covers the same source state at 5b1ed1046."
+    }
+  ],
+  "head_log_revision": "5b1ed1046a1630b54123653dd716d72201d817cd",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is \"Record a promotion's waived domain checks and their reason on the promoted ledger row\" (source prompt.txt:30); the two commits gained since the prior review preserve it \u2014 reckon/crew/promotion.py:657 still passes `domain_waiver_record=_domain_checks` into `_complete_locked`, which at reck/crew/promotion.py:1510 calls `promotion_waivers.record_domain_waiver(run, domain_waiver_record)` to write `run[\"domain_waiver\"]`.\nVERDICT done_when: the done_when (source prompt.txt:104) names a six-file gate and requires the test red at base; base-domain-row.log records 3 failed / EXIT=1 at 3906d386 and after-domain-row-head.log records 6 passed, 1 failed / EXIT=1 at 5b1ed1046, but gate-domain-row-fixed.log at the repaired revision 471552623 is two lines with no summary and no EXIT line.\nVERDICT write_paths: the source fence lists six paths (source prompt.txt:69-75) and reckon/crew/promotion_waivers.py was granted (resume-1-advice.txt:1); every path in the diff 9aacc61df..5b1ed1046 is inside that set and the manifest's orientation_write_paths names the granted module.\nVERDICT manifest: read; status complete, commits 854cb5abc, 9aacc61df, 471552623, 5b1ed1046, baseline_suite (3906d386, 3 failures, base-domain-row.log) and after_suite (5b1ed1046, 6 passed/1 failed, after-domain-row-head.log) both completed true, retry_failures stating the six-file gate reached its summary only once and only at 854cb5abc.\nVERDICT diff: read commit by commit against 9aacc61df523e95c2eb0296de876c37144b714c9; 471552623 adds reckon/crew/promotion_waivers.py, renames the `_complete_locked` parameter to `domain_waiver_record`, replaces the inline three-line write with the module call, and adds three test assertions, and 5b1ed1046 edits the landing fragment only \u2014 four files, +54/-19.\nCALL_SITES: reckon/crew/promotion.py:1510, reckon/crew/promotion.py:657, reckon/crew/promotion.py:536, reckon/crew_run_commands.py:2393, reckon/mcp.py:2367\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the refactor is behaviour-preserving \u2014 reckon/crew/promotion_waivers.py:29 repeats the removed `if x is None: return; run[\"domain_waiver\"] = dict(x)` \u2014 and the node's own tests pass at the repaired head (after-domain-row-head.log, 6 passed).\nSCORE evidence: 14\nJUSTIFICATION evidence: the done_when's six-file gate has no completed run at the repaired revision (gate-domain-row-fixed.log is two lines, no summary, no EXIT) and the recorded after_suite is a two-file command, while the base arm's 3906d386 header names a revision at which its command's test file does not exist.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 471552623 and 5b1ed1046 is inside source prompt.txt:69-75 as extended by the granted scope (resume-1-advice.txt:1), and the refactor is exactly what repair item 1 asked for.\nSCORE durability: 17\nJUSTIFICATION durability: reverting reckon/crew/promotion.py:1510 to a no-op reddens tests/test_a_domain_waiver_is_written_to_the_promoted_row.py:146 and :208, deleting the declaration reddens :144, and the new literal at :212-214 reddens on a wrong reason, but :149 still compares the row's reason against the constant handed in at :134.\nSCORE fit: 18\nJUSTIFICATION fit: the new module joins the existing promotion_<concern>.py family (reckon/crew/promotion_checks.py, promotion_records.py, promotion_scope.py) and its docstring at promotion_waivers.py:1-10 states the mechanism with no ticket or stage label.\nSCORE reuse: 17\nJUSTIFICATION reuse: no function owning \"copy a waiver mapping onto the promoted row\" existed \u2014 the siblings write inline at reckon/crew/promotion.py:1507-1533 \u2014 so record_domain_waiver extends the promotion-submodule idiom rather than duplicating one, though boundary/resume/review/live_run waivers remain inline.\nFINDING tests/test_a_domain_waiver_is_written_to_the_promoted_row.py:149 follow-on: `waiver[\"reason\"] == WAIVER_REASON` compares the row's reason against the constant the test itself hands the tool at :134, the same-variable shape repair item 4 addressed only in the guard-product case; the independent reading now exists at :208 and :212-214, so this is a comprehension weakness rather than a coverage gap.\nFINDING docs/evidence/fragments/work-is-checked-against-its-domain/a-domain-waiver-is-written-to-the-promoted-row.html:38 follow-on: the fragment states the node's tests pass at revision 471552623, but no gate run at that revision reached its summary line, so the claim rests on a truncated run; after-domain-row-head.log covers the same source state at 5b1ed1046 and did complete.",
+  "review_run_id": "r-20261023T024905148173-review-of-a-domain-waiver-is-written-to-the-promoted-row-5b1ed1046a16",
+  "reviewed_base_sha": "9aacc61df523e95c2eb0296de876c37144b714c9",
+  "reviewed_head_sha": "5b1ed1046a1630b54123653dd716d72201d817cd",
+  "reviewed_run_id": "r-20261022T234509733071-a-domain-waiver-is-written-to-the-promoted-row",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T03:07:01.000000+00:00",
+  "total": 104
+}
