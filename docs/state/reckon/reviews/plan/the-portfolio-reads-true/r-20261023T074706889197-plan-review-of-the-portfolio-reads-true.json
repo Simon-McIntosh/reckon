@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T08:00:27.792Z",
+  "dispatched_at": "2026-10-23T07:48:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:168",
+      "id": "done_when-1",
+      "reason": "a node can implement the plan write once per call instead of once per move, pass this gate on the single-move fixture, and leave five of the six measured disagreements in place.",
+      "text": "the done-when's fixture performs a single move, while \u00a78's own \"Why\" measures six plans moved in one portfolio operation and its refusal clause is stated batch-wide (\"refuses the whole call and writes nothing\"), so it names neither the batch that motivated the section nor a second move op in the fixture",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:167",
+      "id": "reasoning-1",
+      "reason": "the deliverable is stated generally (\"A sprint move writes the plan's sprint\"), so as written the plan implies a coverage it does not have; it must either name `_move_sprint_item` as in scope or state that it is retired, otherwise the defect persists on a callable path.",
+      "text": "\u00a78 locates the fix in `edit_plan` alone (\"the `move` batch is applied by `edit_plan` in `reckon/mcp_edit_plan.py` \u2026 so the change goes there\"), but the same module holds a second, independent implementer of the same sprint move, `_move_sprint_item` (reckon/mcp_edit_plan.py:566), which writes the index through `write_plan(project, \"index\", \u2026)` and never touches the plan's `sprint`; it is exported onto the MCP namespace (reckon/mcp.py:221) and pinned by tests/test_mcp_tools.py:421/445/464",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "188ea2ca351ea1b42ce040ce7e45cd4b3d4c925ce83f2072bca387774774ebe4",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 56,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T074706889197-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "8b014cea9791d576219ecb57c1a63591fd71bdbc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_apply_move` resolves in `reckon/_store.py` (:3404) and is index-only exactly as claimed; `edit_plan` resolves as the registered tool (reckon/mcp.py:3205) over `_edit_plan` (:1070) and `_edit_plan_tool` (:1653); `tests/test_edit_plan.py` names a file that exists.",
+    "done_when": "a finding \u2014 \u00a78's gate builds its fixture from one move and one refusal, while the measurement the same section cites is a six-plan move (\"six plans moved between sprints\"), so the batch case that motivated the section is not exercised.",
+    "evidence_paths": "pass \u2014 \u00a78's logs sit \"under the run directory\", the per-run crew directory on GPFS that survives the run, not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new test name and the symbols \u00a78 names carry no plan label, stage name, ticket number or version tag, and no comment narrates a prior state of the code.",
+    "reasoning": "a finding \u2014 \u00a78's mechanism names one of two writers of a sprint move in `reckon/mcp_edit_plan.py`, so `_move_sprint_item` keeps the defect \u00a78 states it fixes.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable (a sprint move writes the moved plan's `plan-sprint`); its move, refusal and \u00a74-membership assertions are three faces of that one verdict.",
+    "wiring": "pass \u2014 \u00a76 declares `plan-section-depends-on: {s6: [the-portfolio-reads-true#s8]}` (plan.html:29), the roadmap resolves that mapping into per-section edges (reckon/roadmap.py:452, :4021) so \u00a76's S22 re-sprint is held until \u00a78 lands, and \u00a78 needs no dependency of its own because it writes only `reckon/mcp_edit_plan.py` and its own new test file."
+  },
+  "section_digests": {
+    "_document": "a4fd3a93071e61a2e7a88ce84d76e3c3bf6325bbf8a50402ad7a8fdc3143e6fc",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "b65769fa60f5c567f4b6a02588a36a95395f76dfe323bba5ce964114d7e44eee"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T08:06:34.836977+00:00"
+}
