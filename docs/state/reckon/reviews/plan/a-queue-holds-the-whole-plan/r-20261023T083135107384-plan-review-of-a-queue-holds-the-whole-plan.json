@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T08:41:11.489Z",
+  "dispatched_at": "2026-10-23T08:33:30Z",
+  "findings": [
+    {
+      "anchor": "reckon/roadmap_ranking.py:196",
+      "id": "reuse_search-1",
+      "reason": "naming the owner makes \u00a74's ranking reuse and extend `roadmap_ranking.py` instead of restating its policy in the plan's own words, which is what keeps a coordinator turn saved from becoming a second, disagreeing ordering.",
+      "text": "\u00a74 says priority is \"derived from the roadmap: critical-path membership first, then the plan's ROI and the sprint marked active\", which is the exact key `_priority_key` / `plan_ranking_key` / `section_ranking_key` already build, with a published signal vocabulary (`CRITICAL_PATH_SIGNAL`, `SPRINT_SIGNAL`, `ROI_SIGNAL`, `REACH_SIGNAL`, `STUCK_SIGNAL`, `EFFORT_SIGNAL`) consumed at `reckon/roadmap.py:4134` and `reckon/crew/queue_admission.py:1109`; the plan names none of it, so \u00a74 is free to grow a second priority derivation that drifts from the one the roadmap view reports",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_review_acceptance.py:24",
+      "id": "reuse_search-2",
+      "reason": "\u00a76's measure becomes an assertion on the predicate in that module, which is the difference between an armed test and a re-worded requirement.",
+      "text": "\u00a76 states the landing condition as \"scored at or above the floor and records no blocking finding\", which is already implemented as `REVIEW_ACCEPTANCE_FLOOR` (nine tenths of the schema maximum, derived from `REVIEW_DIMENSIONS`) and `_review_accepts_promotion` (complete, at or above the floor, and no finding of any severity), already consumed at `reckon/crew/recovery_review_acceptance.py:158` and `reckon/crew/recovery_review_dispatch.py:944`; the plan cites neither, so its done-when (\"a below-floor review raises an obligation and does not land\") would be written against a phrase instead of against the existing predicate",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_admission.py:1049",
+      "id": "reuse_search-3",
+      "reason": "the changed behaviour lives in the unnamed module, so the node brief would have to rediscover where the pass is before it can change it, and \u00a72's readiness re-read would most naturally fork the ordering rather than extend `admission_order`.",
+      "text": "\u00a72 and \u00a74 change admission behaviour (\"Each admission pass re-reads readiness\", \"When a slot frees, admission chooses the project by weighted deficit round robin\") without naming `admit_once`, the module that owns the pass, its verdict vocabulary, its overlap hold and its per-session allowance hold; it does name `queue_order.py`, which owns only the ordering, and `reckon/crew/runs.py` for the clamp, which is a constant and not the pass; the plan's own \u00a72 sentence about write scopes (\"as the existing overlap hold already does\") points at code in `queue_admission.py` without naming it",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_plan.py:100",
+      "id": "duplicate_owner-1",
+      "reason": "without it \u00a74's done-when can pass in simulation while production still holds on the older figure, and the transition is exactly the window where the queue is longest.",
+      "text": "\u00a74 relocates the split of slots between sessions from the router's `admission.sessions` / `fair_share` (`reckon/crew/lane_document.py:127`) into reckon, but leaves `_dispatch_lane_allowance` reading the published per-session allowance at launch. During the stated transition (\"reckon keeps reading the per-session figures until it lands\") admission ranks work by project weight while the very next gate still holds the same request on the router's per-session figure, so the two owners disagree about who may launch. The plan must say which figure is authoritative while both exist, or the retirement is a second authority rather than a move",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_admission.py:46",
+      "id": "duplicate_owner-2",
+      "reason": "the census of phase-string readers is what makes \u00a72's new states safe; done without it \u00a72's negative arm can pass while the obligations view silently drops the request it is meant to show.",
+      "text": "\u00a72 adds `waiting` and `blocked-upstream` as request states beside the existing `QUEUED_PHASE` / `LAUNCH_FAILED_PHASE` vocabulary in `queue_admission.py` and the run-phase vocabulary in `reckon/crew/node.py` (`_TERMINAL_RUN_PHASES`), naming no owner for the expanded set; every reader that reports where a request stands \u2014 `queued_placements`, the obligations view, the watch stream \u2014 filters on the phase strings, so a value added in one place and unknown in another makes a waiting request invisible to exactly the surfaces \u00a72 relies on to surface `blocked-upstream`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_admission.py:2241",
+      "id": "duplicate_owner-3",
+      "reason": "a wrong citation costs the node one lookup and changes no decision, though it is the kind of claim this review exists to check by opening the file rather than repeating.",
+      "text": "the plan cites \"`_store_brief` in `reckon/crew/dispatch.py`\" (\u00a71), but `_store_brief` is defined in `reckon/crew/dispatch_admission.py`, and `dispatch.py:1816` only calls it; \u00a75's change is therefore to a module other than the one the plan names",
+      "type": "duplicate_owner",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html#s5",
+      "id": "interface_budget-1",
+      "reason": "\u00a75 is the one section that grows the command surface by five verbs without naming a retirement, so it must either fold its verbs into an existing dispatch verb family or state why nothing can be retired, or the surface budget rule is declared and then not applied where it actually bites.",
+      "text": "\u00a75 adds `crew queue list | show | edit | reprioritise | drop` and \"their MCP `crew` actions\" against `cli_options` 402 and `mcp_views` 19 (the MCP additions extend the existing `crew` view rather than adding one), and names nothing it retires, merges or extends in exchange; \u00a73 by contrast does the accounting the rule asks for, retiring `QUEUED_DISPATCH_CAP_FLOOR`/`QUEUED_DISPATCH_CAP_CEILING` by name in its own text",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ddc99f031ce3c5fe77a7cb86376f0c9251d75bd3abdc91a45d431f27edf7ceba",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T083135107384-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "bef07694cbb7bc8d56702796e148fa4c80a4b28c",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the queued-request lifecycle is spread across a new phase vocabulary, a ranking authority and a five-verb command surface, with no module named as the one place the lifecycle is understood; each piece is shallow on its own.",
+    "duplicate_owner": "a finding \u2014 \u00a74 introduces a second authority for fairness while the existing per-session allowance reader stays in the launch gate, and \u00a72 introduces phase values without naming the module that owns the phase vocabulary.",
+    "interface_budget": "a finding \u2014 public_definitions 2030, cli_options 402, mcp_views 19, refusal_families 23; \u00a75 adds five CLI subcommands and their MCP actions without naming what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan cites several real mechanisms (`queue_order.STARVATION_AGE_SECONDS`, the per-session clamp in `runs.py`, the roadmap's dependency derivation, the `crew land` path) but omits three owners it is about to re-implement: `reckon/roadmap_ranking.py` (the priority key), `reckon/crew/recovery_review_acceptance.py` (the acceptance floor), and `reckon/crew/queue_admission.py` (the admission pass).",
+    "thin_wrapper": "pass \u2014 \u00a72 and \u00a75 do not wrap existing machinery in a thinner layer: \u00a72 extends the existing queued-pointer state machine in place, and \u00a75's `edit` replaces the dispatch-time brief copy with a launch-time read, deleting a copy rather than adding a layer over one."
+  },
+  "section_digests": {
+    "_document": "0cb36e918ae81611b55c39082f399d0a22a17170330e8fb9cb422e420948b3d0",
+    "s1": "94ebe7ab29137f711118f757977d4db72435e928b58d848c3add84b36c5db9b3",
+    "s2": "c751393333dbd9a5956cfac2afcc53a0b18b3894c1c230bd72de764fa9064bd6",
+    "s3": "26619d3a320fb7598c7b62008bf5fa38da755512a259e480d47d223fdb46389f",
+    "s4": "acf965bca65626285acc5bd72945fd2f35a261d4c81d1c8158e865ab71efdfcc",
+    "s5": "a35af78ec78a826c5e8078e1c01362b9371e26792f1e3f848d87856e93eec25c",
+    "s6": "76c80ce7dca2af61fc406a414e94cf3a3445cbad08636fd11b4f4f18bd04404a",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T09:41:48.207087+00:00"
+}
