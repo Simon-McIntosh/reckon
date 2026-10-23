@@ -243,11 +243,44 @@ from reckon.mcp_edit_plan import (
 )
 
 
-def _view_refusal(error: ViewRequestError) -> dict[str, Any]:
-    """The refusal dict for a view the owning read's own validator rejected."""
+def _view_refusal(
+    error: ViewRequestError,
+    selector: ResourceSelector | None = None,
+    operation: str = "read",
+) -> dict[str, Any]:
+    """Refuse a view the owning read's own validator rejected.
 
-    detail = f"{error.message} {error.hint}".strip() if error.hint else error.message
-    return {"ok": False, "error": "invalid_view", "detail": detail}
+    Answered through :func:`reckon.mcp_views.error_response`, the contract a
+    read's own ``ViewRequestError`` handler answers through, so an unknown view
+    gets one response shape — ``error``, ``message``, ``operation`` and ``hint``
+    — whichever path refuses it, and the accepted values stay in the message
+    the validator composed.
+    """
+
+    return error_response(
+        error.code,
+        error.message,
+        selector=selector,
+        operation=operation,
+        hint=error.hint,
+    )
+
+
+def _argument_selector(
+    project: str | None, slug: str | None = None, doc_type: str | None = None
+) -> ResourceSelector | None:
+    """The typed identity a request's own arguments name, without a read.
+
+    ``None`` when the request names no single resource — an unset or wildcard
+    project — because a refusal is not the place to guess an identity that the
+    resource scan has not confirmed.
+    """
+
+    if not project or project == "*":
+        return None
+    return ResourceSelector(
+        project=project, type=canonical_type(doc_type), id=slug or ""
+    )
 
 
 def _crew_argument_refusal(
@@ -1126,7 +1159,7 @@ def _read_plan_tool(
     try:
         normalize_view(view)
     except ViewRequestError as error:
-        return _view_refusal(error)
+        return _view_refusal(error, _argument_selector(project, slug, doc_type))
     if view is None and not with_schema and project not in (None, "*"):
         selected_view = "summary"
     return _read_plan(

@@ -179,8 +179,8 @@ def test_a_crew_read_naming_an_unknown_view_is_refused(monkeypatch) -> None:
     result = _refuse(stub, lambda: mcp._crew(project="fixture", view="no_such_view"))
     assert result["error"] == "invalid_view"
     # The accepted views are named.
-    assert "live" in result["detail"]
-    assert "ledger" in result["detail"]
+    assert "live" in result["message"]
+    assert "ledger" in result["message"]
 
 
 def test_an_edit_naming_an_unknown_op_is_refused(monkeypatch) -> None:
@@ -201,12 +201,33 @@ def test_an_edit_naming_an_unknown_op_is_refused(monkeypatch) -> None:
 
 
 def test_a_plan_read_naming_an_unknown_view_is_refused(monkeypatch) -> None:
+    """An unknown view answers the read's own refusal contract.
+
+    The plan and roadmap reads answer a ``ViewRequestError`` raised inside them
+    through ``error_response``, so the pre-flight refuses through
+    ``error_response`` too rather than a shape of its own: one contract whether
+    the argument check or the read itself turns the request back, which is what
+    lets a caller read one answer shape.
+    """
     stub = _stubbed(monkeypatch)
     result = _refuse(
         stub, lambda: mcp._read_plan_tool(project="fixture", view="no_such_view")
     )
-    assert "no_such_view" in result["detail"]
-    assert "summary" in result["detail"]
+    assert result["error"] == "invalid_view"
+    assert result["operation"] == "read"
+    assert "no_such_view" in result["message"]
+    # The validator's own verdict, kept in its own fields: the message names
+    # what it refused and the hint the values it accepts.
+    assert "summary" in result["hint"]
+    # The shape is the read's own: the same keys an in-read refusal carries.
+    assert set(result) <= {
+        "ok",
+        "error",
+        "message",
+        "operation",
+        "hint",
+        "resource",
+    }
 
 
 def test_a_roadmap_naming_an_unknown_view_is_refused(monkeypatch) -> None:
@@ -215,5 +236,44 @@ def test_a_roadmap_naming_an_unknown_view_is_refused(monkeypatch) -> None:
         stub,
         lambda: mcp._roadmap_tool(project="fixture", view="no_such_view"),
     )
-    assert "no_such_view" in result["detail"]
-    assert "summary" in result["detail"]
+    assert result["error"] == "invalid_view"
+    assert result["operation"] == "read"
+    assert "no_such_view" in result["message"]
+    # The validator's own verdict, kept in its own fields: the message names
+    # what it refused and the hint the values it accepts.
+    assert "summary" in result["hint"]
+
+
+def test_a_plan_batch_pushing_a_plan_is_refused(monkeypatch) -> None:
+    """A verb the plan's own dispatch does not carry is refused from the verb.
+
+    ``push`` marks a sprint active and the store dispatches it for a sprint
+    alone; the grammar ``read_plan`` publishes lists it among the ops a caller
+    may write, so judging the batch from that grammar accepted a push against a
+    plan and let the request through to the store's read.
+    """
+    stub = _stubbed(monkeypatch)
+    result = _refuse(
+        stub,
+        lambda: mcp_edit_plan._edit_plan_tool(
+            project="fixture",
+            slug="a-plan",
+            expected_version=1,
+            ops=[{"op": "push"}],
+        ),
+    )
+    assert result["error"] == "op_error"
+    assert "push" in result["detail"]
+    assert "a plan" in result["detail"]
+    # The verbs a plan does dispatch are named.
+    assert "close" in result["detail"]
+
+
+def test_the_same_verb_is_accepted_for_the_type_that_dispatches_it() -> None:
+    """The other direction: a sprint's own op is not refused for a sprint."""
+
+    assert mcp_edit_plan._refuse_unknown_op_verbs([{"op": "push"}], "sprint") is None
+    assert mcp_edit_plan._refuse_unknown_op_verbs([{"op": "push"}], "plan") is not None
+    # The accepted set is the dispatch, per document type.
+    assert "push" not in mcp_edit_plan._accepted_op_verbs("plan")
+    assert "push" in mcp_edit_plan._accepted_op_verbs("sprint")

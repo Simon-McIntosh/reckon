@@ -52,6 +52,7 @@ from reckon.project_state import (
     LegacyIndexReadOnly,
     ProjectStateConflict,
     ProjectStateError,
+    accepted_op_verbs,
     apply_resource_ops,
     resource_path,
 )
@@ -1128,7 +1129,7 @@ def _edit_plan(
             "error": "invalid_edit_mode",
             "detail": "mode must be 'state' or 'text'",
         }
-    refusal = _refuse_unknown_op_verbs(ops)
+    refusal = _refuse_unknown_op_verbs(ops, _document_type(slug, doc_type))
     if refusal is not None:
         return refusal
     # A write made from inside a crew run belongs to that run's own worktree.
@@ -1653,31 +1654,48 @@ def _edit_plan_prose(
         }
 
 
-def _accepted_op_verbs() -> frozenset[str]:
-    """The op verbs the edit vocabulary accepts.
+def _accepted_op_verbs(resource_type: str) -> frozenset[str]:
+    """The op verbs the store dispatches for one document type.
 
-    The grammar :func:`reckon.mcp._read_plan_tool` publishes under ``op_vocab``
-    is the one declaration, so a verb added to it is accepted here without a
-    second edit. ``create`` rides the grammar as a parameter rather than an op
-    key, so it is not a verb.
+    Read from :func:`reckon.project_state.accepted_op_verbs`, which composes
+    them from the dispatcher itself, so this pre-flight accepts exactly what the
+    store would apply — no more, and nothing it would refuse. The published
+    grammar ``read_plan`` returns under ``op_vocab`` describes every op a caller
+    may write and is not the dispatch: it lists ``push``, which only a sprint
+    accepts.
     """
-    from reckon.mcp import _OP_VOCAB
 
-    return frozenset(_OP_VOCAB) - {"create"}
+    return accepted_op_verbs(resource_type)
 
 
-def _refuse_unknown_op_verbs(ops: Any) -> dict[str, Any] | None:
-    """Refuse an op whose verb the vocabulary does not carry, before any read.
+def _document_type(slug: str | None, doc_type: str | None) -> str:
+    """The document type the request's own arguments name, without a read.
+
+    The index is a project resource reached by its slug, a plan is the untyped
+    default, and every other type is named by ``doc_type``.
+    """
+
+    if slug in ("index", "project") and doc_type is None:
+        return "project"
+    return canonical_type(doc_type)
+
+
+def _refuse_unknown_op_verbs(ops: Any, resource_type: str) -> dict[str, Any] | None:
+    """Refuse an op the named document type does not dispatch, before any read.
 
     An op verb is an argument: the store answers the same refusal, but only
-    after it has read the document to apply the batch to. Naming the accepted
-    verbs here lets a malformed request be refused in milliseconds whatever
-    storage is doing. A batch that is not a list, or an entry that is not an
-    object, is left to the store, which names the position it refused.
+    after it has read the document to apply the batch to. Judging the verb
+    against the dispatch for the request's own document type lets a malformed
+    request be refused in milliseconds whatever storage is doing, and refuses
+    what the store would refuse — ``push`` is spelled in the published grammar
+    and accepted by a sprint alone, so a batch pushing a plan is settled here
+    rather than after the plan has been read. A batch that is not a list, or an
+    entry that is not an object, is left to the store, which names the position
+    it refused.
     """
     if not isinstance(ops, list):
         return None
-    accepted = _accepted_op_verbs()
+    accepted = _accepted_op_verbs(resource_type)
     for index, op in enumerate(ops):
         if not isinstance(op, dict):
             continue
@@ -1687,8 +1705,8 @@ def _refuse_unknown_op_verbs(ops: Any) -> dict[str, Any] | None:
         return {
             "ok": False,
             "error": "op_error",
-            "detail": f"op #{index}: unknown verb {verb!r}; accepted verbs are "
-            + ", ".join(sorted(accepted)),
+            "detail": f"op #{index}: a {resource_type} does not accept the verb "
+            f"{verb!r}; accepted verbs are " + ", ".join(sorted(accepted)),
         }
     return None
 
