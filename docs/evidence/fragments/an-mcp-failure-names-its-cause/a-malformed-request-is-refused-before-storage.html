@@ -46,12 +46,12 @@
   </p>
   <p id="a-malformed-request-is-refused-before-storage-measure">
     Measure. The focused gate of this node's seven files reports
-    <strong>1 failed, 150 passed</strong> at the head revision
+    <strong>1 failed, 151 passed</strong> at the head revision
     (<code>EXIT=1</code>); the failure is
     <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
     <code>reckon/roadmap.py: 51232 estimated tokens exceeds the 50000 bound</code>
     — a failure the done-when declares pre-existing on main, in a module this
-    node did not write. The new file alone reports <strong>12 passed</strong>.
+    node did not write. The new file alone reports <strong>13 passed</strong>.
   </p>
   <p id="a-malformed-request-is-refused-before-storage-base">
     Base arm. The same test file, run against the base revision extracted with
@@ -123,39 +123,51 @@
     way, and the validator's verdict keeps its own fields — the message names the
     view that was refused and the hint the values it accepts. The tests assert the
     shape and the split, not merely the error code, which is what tells the two
-    contracts apart.
+    contracts apart. The crew read carried the same divergence in the other
+    direction: the crew tool's pre-flight and the <code>crew view</code> CLI
+    both answer through <code>serve_crew_view</code>, and the server's own
+    refusal answered a <code>detail</code> shape while the pre-flight answered
+    the contract, so one malformed view read two different things depending on
+    which surface asked. Both go through <code>error_response</code> now, and a
+    test calls both entry points under the storage stub and asserts the two
+    answers carry the same keys — so a refusal added to one surface alone fails
+    it.
   </p>
   <p id="a-malformed-request-is-refused-before-storage-negative">
-    Negative control. Six arms at this head, each log line quoted as printed,
+    Negative control. Seven arms at this head, each log line quoted as printed,
     and the log opens with a head arm at the committed revision with a clean
-    tree — <strong>12 passed in 8.82s</strong> (<code>EXIT=0</code>) — so each
+    tree — <strong>13 passed in 8.51s</strong> (<code>EXIT=0</code>) — so each
     arm that follows is a failure the mutation caused rather than one the tree
     carried. Arm 1 puts a storage read before all three view pre-flights — the
     defect this node repairs, in each tool at once — and reports
-    <strong>6 failed, 6 passed in 9.31s</strong> (<code>EXIT=1</code>): the six
-    refusal cases fail with <code>storage was reached: the docs dir for
-    'fixture'</code>, while the edit-op cases (which route through neither
-    mutated pre-flight) and the positive cases still pass. Arm 2 removes the
-    vocabulary from the narrowed live projection and reports
-    <strong>1 failed, 11 passed in 12.70s</strong> (<code>EXIT=1</code>) —
+    <strong>7 failed, 6 passed in 10.58s</strong> (<code>EXIT=1</code>): the six
+    refusal cases and the both-surfaces case fail with <code>storage was
+    reached: the docs dir for 'fixture'</code>, while the edit-op cases (which
+    route through neither mutated pre-flight) and the positive cases still pass.
+    Arm 2 removes the vocabulary from the narrowed live projection and reports
+    <strong>1 failed, 12 passed in 9.14s</strong> (<code>EXIT=1</code>) —
     <code>test_a_live_read_of_a_served_field_is_not_refused</code>, with
     <code>unknown live fields 'section'</code> raised by the view. Arm 3 drops
     <code>COMMON_RUN_FIELDS</code> from the declaration and reports
-    <strong>2 failed, 10 passed in 10.18s</strong> (<code>EXIT=1</code>) — the
+    <strong>2 failed, 11 passed in 10.31s</strong> (<code>EXIT=1</code>) — the
     parts check and the served-field check, which is why both are there: the
     classification-derived comparison alone let that mutation through, because a
     classification of a pointer carries no <code>section</code> to miss it. Arm
     4 makes the plan pre-flight match a view case-sensitively and reports
-    <strong>1 failed in 9.03s</strong> (<code>EXIT=1</code>) —
+    <strong>1 failed in 10.12s</strong> (<code>EXIT=1</code>) —
     <code>test_a_view_named_in_another_case_reaches_the_read</code>. Arm 5
-    restores the defect of this round — the accepted verbs taken from the
-    published grammar — and reports <strong>2 failed, 10 passed in 9.48s</strong>
+    restores the earlier defect — the accepted verbs taken from the
+    published grammar — and reports <strong>2 failed, 11 passed in 9.08s</strong>
     (<code>EXIT=1</code>): the push case, which now answers <code>plan 'a-plan'
     not found — pass create=True</code> because the batch reached the store's
     lookup, and the per-type assertion that an op accepted for a sprint is
     refused for a plan. Arm 6 makes the pre-flight view refusal answer a
-    <code>detail</code> shape of its own and reports <strong>3 failed, 9 passed
-    in 9.11s</strong> (<code>EXIT=1</code>) — the crew, plan and roadmap unknown-view
-    cases, each on the missing <code>operation</code> key.
+    <code>detail</code> shape of its own and reports <strong>4 failed, 9 passed
+    in 10.70s</strong> (<code>EXIT=1</code>) — the crew, plan and roadmap unknown-view
+    cases plus the both-surfaces case, each on the missing <code>operation</code>
+    key. Arm 7 puts the server's own crew-view refusal back on a
+    <code>detail</code> shape, the defect this round repairs, and reports
+    <strong>1 failed, 12 passed in 11.75s</strong> (<code>EXIT=1</code>) — the
+    both-surfaces case, whose CLI call now answers keys the tool's does not.
   </p>
 </section>
