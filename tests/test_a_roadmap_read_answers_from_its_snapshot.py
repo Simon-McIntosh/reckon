@@ -494,15 +494,45 @@ LIVE_DRIVER = dedent(
         watch._fresh_liveness = lambda ptr: (False, True, None)
         result["recomposed"] = covered()
     elif mode == "clock":
-        put_pointer()
-        call()
-        before = serve._roadmap_live_readings("p1")[0]
+        run_dir = home / "crew" / "runs" / "r-live"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        awaited = root / "awaited-output.txt"
+        newline = chr(10)
+        (run_dir / "manifest.md").write_text(
+            newline.join(
+                [
+                    "status: waiting",
+                    "wait_condition: the job has finished",
+                    "wait_file: " + json.dumps([str(awaited)]),
+                    "resume_brief: read the job's output and continue",
+                ]
+            )
+            + newline
+        )
+        pointer_record = pointer()
+        pointer_record["phase"] = "waiting"
+        pointer_record["manifest_path"] = str(run_dir / "manifest.md")
+        directory = home / "crew" / "live"
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "r-live.json").write_text(json.dumps(pointer_record))
+        (run_dir / "stream.jsonl").write_text("{}" + chr(10))
+
+        def classification_of(report):
+            body = report.get("data") if isinstance(report.get("data"), dict) else report
+            for item in body.get("pending_work") or []:
+                for row in item.get("in_flight") or []:
+                    if row.get("run_id") == "r-live":
+                        return str(row.get("classification") or "")
+            return ""
+
+        result["classification_before"] = classification_of(call())
         moment = time.time() + 3000
         serve.time = types.SimpleNamespace(time=lambda: moment)
-        after = serve._roadmap_live_readings("p1")[0]
-        result["state_before"] = before[0][1] if before else ""
-        result["state_after"] = after[0][1] if after else ""
-        result["recomposed"] = covered()
+        import reckon.crew.recovery_classification as clocked
+        clocked._utc_seconds = lambda: moment
+        counts["covered"] = 0
+        result["classification_after"] = classification_of(call())
+        result["recomposed"] = counts["covered"]
     elif mode == "reuse":
         put_pointer()
         put_worker_record(1)
@@ -514,8 +544,8 @@ LIVE_DRIVER = dedent(
         after = serve._roadmap_live_readings("p1")[0]
         result["state_after"] = after[0][1] if after else ""
         result["liveness_after"] = after[0][2:5] if after else []
-        result["row_before"] = before[0][5] if before else ""
-        result["row_after"] = after[0][5] if after else ""
+        result["row_before"] = before[0][6] if before else ""
+        result["row_after"] = after[0][6] if after else ""
         result["recomposed"] = covered()
     else:
         raise SystemExit("unknown mode: " + mode)
@@ -655,9 +685,18 @@ def test_a_runs_own_record_moves_the_key_with_its_state_unchanged(
 def test_an_advanced_clock_recomputes_a_run_whose_files_did_not_move(
     tmp_path: Path,
 ) -> None:
-    """The classification follows the clock, so the key must follow it too."""
+    """The classification follows the clock, so the key must follow it too.
+
+    The run declares a wait on a file that never appears. Nothing is written
+    and nothing ends: the only thing that moves is the clock, and at a moment
+    past the declared horizon the same run is overdue rather than waiting. The
+    assertion is taken from the read's own result, so a read that matched its
+    key and answered from the composition taken before the horizon is what the
+    case rejects.
+    """
     root = _build(tmp_path)
     measured = _run(root, "clock", _live_driver(tmp_path))
 
-    assert measured["state_before"] != measured["state_after"], measured
+    assert measured["classification_before"] == "waiting", measured
+    assert measured["classification_after"] == "wait-aged", measured
     assert measured["recomposed"] > DOCUMENT_COUNT, measured

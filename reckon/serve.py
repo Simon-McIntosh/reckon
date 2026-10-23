@@ -1257,6 +1257,14 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
     composition no input of which has moved: the reuse path drops it. It is a
     set of stats over the run's own records, none of them inside a covered
     tree.
+
+    The fourth element is the clock's own contribution, the run's declared wait
+    read as overdue or not. Liveness and the composition are both facts about
+    files; a wait ages with nothing on disk moving at all, and the word a
+    reader sees moves with it — a run waiting at one moment is overdue a
+    quarter of an hour later, with no record rewritten. The reduction already
+    reads it at this moment, so the row carries the reading rather than
+    leaving the answer to stand past the horizon it was composed under.
     """
     from reckon.crew import recovery_watch as watch
     from reckon.crew import runs as crew_runs
@@ -1267,6 +1275,13 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
         pointers = []
     moment = time.time()
     stall_seconds = watch.parse_duration(watch.DEFAULT_WATCH_STALL_WINDOW)
+    # The reduction is taken for this read alone: its own store would serve the
+    # snapshot, and a snapshot's silence is refreshed for the moment but not the
+    # rest of what the moment decides — a declared wait that has since passed
+    # its horizon stays waiting until something on disk moves, and the key built
+    # on the served reading matches. A read whose key is taken at the moment it
+    # answers has to reduce at that moment.
+    reduction: dict[str, Any] = {}
     rows: list[list[str]] = []
     states: dict[str, Any] = {}
     for pointer in pointers:
@@ -1277,7 +1292,7 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
             continue
         try:
             snapshot = watch._watch_snapshot(
-                pointer, moment=moment, stall_seconds=stall_seconds
+                pointer, moment=moment, stall_seconds=stall_seconds, cache=reduction
             )
         except Exception:  # noqa: BLE001 — a key never becomes the read's failure
             snapshot = {}
@@ -1286,12 +1301,29 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
             alive, proven, descendant = watch._fresh_liveness(pointer)
         except Exception:  # noqa: BLE001 — a key never becomes the read's failure
             alive = proven = descendant = None
-        try:
-            reuse = watch._snapshot_reuse_key(pointer)
-        except Exception:  # noqa: BLE001 — a key never becomes the read's failure
-            reuse = None
+        # The reduction above takes the same key itself and stores it beside the
+        # snapshot it just built, so taking it a second time here would stat
+        # every file the run's classification reads twice on every read. The
+        # store is the reduction's own, and the entry is always the one this
+        # call wrote or served; a direct computation remains as the fallback for
+        # the one case the store cannot answer, a run the reduction refused.
+        remembered = reduction.get(run_id)
+        reuse = remembered[0] if remembered else None
+        if reuse is None:
+            try:
+                reuse = watch._snapshot_reuse_key(pointer)
+            except Exception:  # noqa: BLE001 — a key never becomes the read's failure
+                reuse = None
         rows.append(
-            [run_id, state, repr(alive), repr(proven), repr(descendant), reuse or ""]
+            [
+                run_id,
+                state,
+                repr(alive),
+                repr(proven),
+                repr(descendant),
+                repr(snapshot.get("wait_overdue")),
+                reuse or "",
+            ]
         )
         states[run_id] = snapshot
     rows.sort()
