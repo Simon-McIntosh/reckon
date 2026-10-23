@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s7&quot;:[&quot;crew-state-stays-bounded#s3&quot;],&quot;s8&quot;:[&quot;crew-state-stays-bounded#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -140,7 +140,7 @@
     log is under the run directory.</p>
 
     <h2 id="s7">§7 — The retention sweep runs on its own, across every project</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §3 says which directories may go, and §1 shows that a rule nobody runs bounds nothing: the
     thirty-day pass has existed while 4,225 directories older than thirty days accumulated.</p>
     <p><strong>Change.</strong> An hourly user timer, the same arrangement as <code>reckon-paid-lanes.timer</code>,
@@ -182,10 +182,11 @@
     <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §3</pre>
     <p class="r-fu-outcome">§3 landed by merge 8cd631bfe and §6 by 61d6f85a6; §7, which runs the §3 sweep on its own, is next.</p>
     </article>
-<article class="r-fu" data-id="f-cssb-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23 14:45" data-recommends-skill="/reckon-build crew-state-stays-bounded §7" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cssb-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23 14:45" data-recommends-skill="/reckon-build crew-state-stays-bounded §7" data-resolved-at="2026-10-23T17:26:54+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Run the retention sweep on its own</h4>
     <div class="r-fu-body"><p>§3 and §6 have landed. §7 runs the §3 sweep hourly across every mounted project; its comment names the existing timer installer and log rotation to reuse.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §7</pre>
+    <p class="r-fu-outcome">§7 landed by merge 91cf7375a; §8, the host-aware scratch release, is next.</p>
     </article>
 <article class="r-fu" data-id="f-cssb-008" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-23 16:45" data-recommends-skill="/reckon-build crew-state-stays-bounded §8" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Remove a run&#x27;s scratch on the host that made it</h4>
@@ -213,7 +214,10 @@
     <div class="r-comment-body"><p>The review of run r-20261023T124731718173-the-retention-sweep-runs-on-its-own at reviewed_base_sha c4d3ae5b6e6d3d6c48e09e1cd1decb441e1e1a1e and reviewed_head_sha f82edc7a3e67fdb45b85423f075beabad31f7f59 scores goal_fidelity 19, evidence 17, scope_discipline 17, durability 18, fit 18, reuse 19 (111/120), with added_failure_count 0 and no added failure ids; two non-blocking findings, one on the git-shim absence having no positive control on its instrument and one on the landing fragment still claiming reckon/crew/paid_lanes.py is unchanged when the diff changes it by +27/-60. Nothing blocking.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261023T124731718173-the-retention-sweep-runs-on-its-own" data-who="reckon-build" data-when="2026-10-23T16:29:46Z">
-    <div class="r-comment-body"><p>The run-directory retention now runs on its own hourly: `reckon.crew.gc.retention_sweep` judges each run directory against the ledger of the project that dispatched it across every mount, removes at most 500 per pass, and appends removals through the watch log&#x27;s rotating stream, writing nothing when it removed nothing; it starts no git process and shares one predicate with `garbage_collect`. `reckon.service.install_timer_units` is the one generic write-and-enable step, `service.render_periodic_service_unit`/`render_periodic_timer_unit` are the one place the periodic unit sections are written, and `install_retention_timer` installs `reckon-crew-retention.service` plus an hourly `reckon-crew-retention.timer`. The operator surface is `reckon crew retention-sweep` with `--apply` and `--install-timer`.</p></div>
+    <div class="r-comment-body"><p>The run-directory retention now runs on its own hourly: `reckon.crew.gc.retention_sweep` judges each run directory against the ledger of the project that dispatched it across every mount, removes at most 500 per pass, and appends removals through the watch log's rotating stream, writing nothing when it removed nothing; it starts no git process and shares one predicate with `garbage_collect`. `reckon.service.install_timer_units` is the one generic write-and-enable step, `service.render_periodic_service_unit`/`render_periodic_timer_unit` are the one place the periodic unit sections are written, and `install_retention_timer` installs `reckon-crew-retention.service` plus an hourly `reckon-crew-retention.timer`. The operator surface is `reckon crew retention-sweep` with `--apply` and `--install-timer`.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
+    <div class="r-comment-body"><p>§7 landed by merge <code>91cf7375a</code>: an hourly timer runs the run-directory retention across every project, through one shared unit installer; 140 passed at head; review 108/120. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s7">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261023T094244498082-review-of-a-harness-cache-leaves-with-its-attempt-508da957f0a5" data-who="reckon-build" data-when="2026-10-23T10:30:14.666Z">
     <div class="r-comment-body"><p>Independent review of run r-20261023T092448652887-a-harness-cache-leaves-with-its-attempt at 508da957f0a5; parsed record scores goal_fidelity 18, evidence 14, scope_discipline 19, durability 15, fit 18, reuse 4, added_failure_count 0, three non-blocking findings (reuse: _tree_bytes duplicates tree_size_bytes in the same module; durability: one added test invokes no production code and one path-set assertion is self-referential).</p></div>
