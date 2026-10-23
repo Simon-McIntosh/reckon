@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T13:12:35.255Z",
+  "dispatched_at": "2026-10-23T12:57:00Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-page-paints-from-an-index.html:273",
+      "id": "reasoning-1",
+      "reason": "naming the handler as the kernel watch's consumer omits the primary one, so the generation the trust guard compares would not advance on the fleet watch's own report and the stale-read this section is built to prevent survives the repair.",
+      "text": "\u00a715 says a new generation starts on \"the kernel project watch where its report is consumed, which is through an open change stream's handler\", and that \"With no stream open, a write is first seen at the detector's next pass\"; in fact the fleet watch's own reader thread consumes the kernel project watch for every tree unconditionally and invalidates on it (`reckon/change_streams.py:514-537`: `_arm_every_tree` registers a `_ProjectChangeWatch` per tree with no subscriber check). Four callers of `_invalidate_tree_views` exist in production \u2014 `change_streams.py:453` (fast pass, enumerated), `:486` (slow pass, enumerated), `:537` (the fleet reader thread, not enumerated) and `serve.py:2805` (stream handler, enumerated) \u2014 so a worker implementing the enumeration literally bumps no generation at `:537`, the record stays trusted after a change it never stat-ed, and the read serves the stale row set the guard exists to prevent.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d02ad480b0598e1640e4fdabd1fa2235118db90631993df754cf9afa2d210c2d",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 103,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T125549231791-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "2b9a0a56bc2e830fb4ff02ad6ef492aa23b51a0a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a715 cites resolves: `_fast_tree` (`reckon/change_streams.py:414`), `_reuse_covered` (`reckon/metadata_index.py:395`), `covered_dir_identity` (`:168`) and `_dir_identity` (`:879`), and the served read path \u00a713 describes (`index_rows` \u2192 `_reuse_covered` \u2192 `_build_and_cache` \u2192 `build_index`) is the one that reaches them.",
+    "done_when": "pass \u2014 each of \u00a715's five cases names a counted observable (spy call counts on `_dir_identity`, a full-walk comparison) and carries its own control that reddens that same case; cases (3) and (4) are the negative controls for the trust guard itself, not just for the reuse.",
+    "evidence_paths": "pass \u2014 \u00a715's logs go under the run directory with a revision header and an `EXIT=` last line, and the live-pass evidence it defers to is \u00a77's record in `docs/evidence/archive/the-page-paints-from-an-index-landed.html` (anchor `s7-live-before-repair`), not a scratch path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol, and the section names only existing production symbols.",
+    "reasoning": "a finding \u2014 \u00a715 enumerates its change-generation sources as the detector's fast pass, the detector's slow pass and \"the kernel project watch where its report is consumed, which is through an open change stream's handler\", but the kernel project watch has a second, always-on consumer that the enumeration omits.",
+    "single_goal": "pass \u2014 one deliverable, \"a read trusts the change detector's last pass\", with the first-read cost explicitly deferred to \u00a77's evidence rather than folded in.",
+    "wiring": "pass \u2014 \u00a715 declares depends-on `the-page-paints-from-an-index#s14`, which exists and is declared done, and its write paths (`reckon/metadata_index.py`, `reckon/change_streams.py`, `reckon/serve.py`) are the modules its predecessors \u00a713/\u00a714 also write, so the ordering the section states is the ordering the declaration carries."
+  },
+  "section_digests": {
+    "_document": "710047969c8fa31eaa19b4c4144082b23d3459d38d0eae29b874bca73dd7c892",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "d17cbd5fe566b014307559cb9b54cbdd72b4f6a5a732ffbec8502b182d7a75c0",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T13:14:17.131254+00:00"
+}
