@@ -34,6 +34,7 @@ WIDE_WINDOW = "3600"
 
 DRIVER = dedent(
     """
+    import io
     import json
     import os
     import subprocess
@@ -92,6 +93,10 @@ DRIVER = dedent(
 
     os.stat = counting_stat
     __import__("builtins").open = counting_open
+    # Path.read_text and Path.open resolve io.open, so a wrapper on builtins
+    # alone leaves every read the key makes through a Path uncounted, and the
+    # bound would then measure stats only.
+    io.open = counting_open
 
     def call():
         return mcp._roadmap("p1", view="raw")
@@ -341,6 +346,7 @@ def _driver(tmp_path: Path) -> Path:
 
 LIVE_DRIVER = dedent(
     """
+    import io
     import json
     import os
     import sys
@@ -386,6 +392,10 @@ LIVE_DRIVER = dedent(
 
     os.stat = counting_stat
     __import__("builtins").open = counting_open
+    # Path.read_text and Path.open reach io.open directly, so a wrapper on
+    # builtins alone leaves every read the key makes through a Path uncounted —
+    # .git/HEAD, the ref it names, the write counter and the snapshot file.
+    io.open = counting_open
 
     def call():
         return mcp._roadmap("p1", view="raw")
@@ -439,6 +449,17 @@ LIVE_DRIVER = dedent(
             )
         )
 
+    def put_worker_record(attempt):
+        # A run-directory record the classification's own key is taken over. It
+        # says nothing the pointer does not already say about the run's state,
+        # so writing it moves the composition a classification is a function of
+        # while leaving the state word and the liveness reading where they were.
+        directory = home / "crew" / "runs" / "r-live"
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "worker.json").write_text(
+            json.dumps({"run_id": "r-live", "attempt": attempt, "pid": 4242})
+        )
+
     result = {"mode": mode}
 
     if mode == "fresh":
@@ -481,6 +502,20 @@ LIVE_DRIVER = dedent(
         after = serve._roadmap_live_readings("p1")[0]
         result["state_before"] = before[0][1] if before else ""
         result["state_after"] = after[0][1] if after else ""
+        result["recomposed"] = covered()
+    elif mode == "reuse":
+        put_pointer()
+        put_worker_record(1)
+        call()
+        before = serve._roadmap_live_readings("p1")[0]
+        result["state_before"] = before[0][1] if before else ""
+        result["liveness_before"] = before[0][2:5] if before else []
+        put_worker_record(2)
+        after = serve._roadmap_live_readings("p1")[0]
+        result["state_after"] = after[0][1] if after else ""
+        result["liveness_after"] = after[0][2:5] if after else []
+        result["row_before"] = before[0][5] if before else ""
+        result["row_after"] = after[0][5] if after else ""
         result["recomposed"] = covered()
     else:
         raise SystemExit("unknown mode: " + mode)
@@ -596,6 +631,25 @@ def test_a_live_runs_exit_record_moves_the_next_read_out_of_flight(
     # turns false, so nothing but the reading can have moved the key.
     liveness = _run(root, "liveness", driver)
     assert liveness["recomposed"] > DOCUMENT_COUNT, liveness
+
+
+def test_a_runs_own_record_moves_the_key_with_its_state_unchanged(
+    tmp_path: Path,
+) -> None:
+    """A run detail that is not its state still moves the next read.
+
+    The state word and the liveness reading are coarser than the composition a
+    classification is a function of. A record in the run's own directory moves
+    while both of them stand still, so a key holding only those two matches and
+    the read answers from a composition one of whose inputs has moved.
+    """
+    root = _build(tmp_path)
+    measured = _run(root, "reuse", _live_driver(tmp_path))
+
+    assert measured["state_before"] == measured["state_after"], measured
+    assert measured["liveness_before"] == measured["liveness_after"], measured
+    assert measured["row_before"] != measured["row_after"], measured
+    assert measured["recomposed"] > DOCUMENT_COUNT, measured
 
 
 def test_an_advanced_clock_recomputes_a_run_whose_files_did_not_move(

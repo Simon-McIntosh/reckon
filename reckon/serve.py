@@ -1245,6 +1245,18 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
     is taken here for the same reason the watcher takes it on every poll, and
     it is a signal-0 probe rather than a storage read, so it costs the key no
     covered-file visit.
+
+    The third element beside them is the watcher's own reuse key: the identity
+    of every file a run's classification is a function of. The state word is a
+    coarser summary than that composition — a manifest, a worker or attempt
+    record, a stream, a review filed against the run, or the head of the tree
+    the run is reviewed against can each move while the state and the liveness
+    reading stay exactly as they were. The reuse key is the same value the
+    watcher itself compares before it serves a stored snapshot, so this key
+    moves whenever a tick would have recomputed, and a read answers from a
+    composition no input of which has moved: the reuse path drops it. It is a
+    set of stats over the run's own records, none of them inside a covered
+    tree.
     """
     from reckon.crew import recovery_watch as watch
     from reckon.crew import runs as crew_runs
@@ -1274,7 +1286,13 @@ def _roadmap_live_readings(project: str) -> tuple[list[list[str]], dict[str, Any
             alive, proven, descendant = watch._fresh_liveness(pointer)
         except Exception:  # noqa: BLE001 — a key never becomes the read's failure
             alive = proven = descendant = None
-        rows.append([run_id, state, repr(alive), repr(proven), repr(descendant)])
+        try:
+            reuse = watch._snapshot_reuse_key(pointer)
+        except Exception:  # noqa: BLE001 — a key never becomes the read's failure
+            reuse = None
+        rows.append(
+            [run_id, state, repr(alive), repr(proven), repr(descendant), reuse or ""]
+        )
         states[run_id] = snapshot
     rows.sort()
     return rows, states
