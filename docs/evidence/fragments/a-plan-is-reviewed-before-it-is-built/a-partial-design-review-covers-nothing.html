@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="a-partial-design-review-covers-nothing">
+<meta name="plan-title" content="A partial design review covers nothing">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s42">
+<meta name="plan-recorded-at" content="2026-10-23">
+<meta name="plan-verdict" content="passed">
+<title>A partial design review covers nothing | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="a-partial-design-review-covers-nothing-verification">
+<h1>A partial design review covers nothing</h1>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead><tbody>
+<tr><td>Partial design review, one item missing</td><td>Stored <code>incomplete</code>; dispatch refused</td><td><code>absent_items</code> is <code>["interface_budget"]</code>, <code>status</code> is <code>incomplete</code>; the refusal names the design-review command and reads <code>left out an item of its rubric</code></td></tr>
+<tr><td>Complete design review</td><td>Stored <code>ready</code>; dispatch admitted</td><td>Every design item answered; <code>absent_items</code> empty and <code>require_plan_reviewed</code> returns <code>None</code></td></tr>
+<tr><td>Stored design review without the mark</td><td>Covers as before</td><td>A record listing an absent item with no mark (status <code>ready</code>) still covers, and the gate admits</td></tr>
+<tr><td>An incomplete design review's finding</td><td>Recorded on that review</td><td><code>crew review --answer reuse_search-1 --acted</code> exits 0 and the incomplete record carries the answer</td></tr>
+<tr><td>Base arm</td><td>2 failed, 94 passed; EXIT=1</td><td>gate-base.log; base production code with the current tests, both failures this node's own new cases</td></tr>
+<tr><td>Head arm</td><td>96 passed; EXIT=0</td><td>gate-head.log; the same population at the commit that carries the change, no failure</td></tr>
+<tr><td>Added failures</td><td>0</td><td>Every base failure is a case the change makes pass</td></tr>
+<tr><td>Declared negative control</td><td>2 failed, 2 passed; EXIT=1</td><td>negative-control.log; the rubric test restored in <code>_delivered_status</code> makes the partial design review store <code>ready</code> and the dispatch admitted, so the two mark cases fail and the complete-review cases pass</td></tr>
+<tr><td>Scoped lint and format</td><td>No findings added</td><td><code>ruff check</code> 8 at base and 8 at head; <code>ruff format --check</code> 2 files at base and 2 at head, on the changed paths</td></tr>
+</tbody></table>
+<h2>What changed</h2>
+<p><code>_delivered_status</code> marks a delivered review <code>incomplete</code> when its parse leaves out any item of the rubric it was delivered under — design included. The rubric test that narrowed the mark to the content rubric is removed, so a design report delivered with an item missing no longer stores <code>ready</code>. <code>review_coverage</code> already skips a record carrying the mark, so such a review covers nothing.</p>
+<p><code>require_plan_reviewed</code> reads the newest design review as before and now refuses an implementation dispatch when that record is marked <code>incomplete</code>, through <code>_review_is_incomplete</code>, naming the design-review command. A review stored without the mark — every design review written before the mark existed, including the ones missing only <code>interface_budget</code> — keeps its coverage.</p>
+<p>The answer verb falls back to <code>newest_design_review</code> for a finding that review raised when no covering record exists, so the findings of an incomplete design review stay answerable rather than reading as a review nobody made.</p>
+<p>The three deliveries that composed a partial design report and expected it to count — in <code>test_a_section_reviewed_as_authored_stays_reviewed.py</code>, <code>test_review_plan_command.py</code> and <code>test_the_surfaces_pass_the_plan.py</code> — now compose a complete one, a <code>RUBRIC</code> line for every item of <code>PLAN_DESIGN_REVIEW_ITEMS</code>, so each goes on testing what it tested.</p>
+<h2>Durable receipts</h2>
+<table><thead><tr><th>Artifact</th><th>Path</th></tr></thead><tbody>
+<tr><td>manifest.md</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081715369223-a-partial-design-review-covers-nothing/manifest.md</td></tr>
+<tr><td>gate-head.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081715369223-a-partial-design-review-covers-nothing/logs/gate-head.log</td></tr>
+<tr><td>gate-base.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081715369223-a-partial-design-review-covers-nothing/logs/gate-base.log</td></tr>
+<tr><td>negative-control.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T081715369223-a-partial-design-review-covers-nothing/logs/negative-control.log</td></tr>
+</tbody></table>
+</section></main></body></html>
