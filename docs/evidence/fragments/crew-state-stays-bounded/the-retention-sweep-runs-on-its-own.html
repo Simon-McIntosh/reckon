@@ -55,18 +55,26 @@
   <strong>700</strong> on disk for the next. A pass whose fixture checkout carries a registered git
   worktree removes both runs while a git shim first on <code>PATH</code> records
   <strong>no invocation</strong> — a measured absence, since the same pass completed its removals. A
-  spy on <code>ledger.load</code> shows every mounted project's ledger read with
-  <code>use_index=True</code>. Installing under a temporary systemd user directory writes
+  spy on the ledger's index-backed reader records <strong>both</strong> mounted projects read
+  through it: the pass reaches that reader once per mounted project, so a pass that parsed an
+  aggregate instead would leave the record empty and the case red. Installing under a temporary
+  systemd user directory writes
   <code>reckon-crew-retention.service</code> with <code>ExecStart</code>,
   <code>reckon-crew-retention.timer</code> with <code>OnUnitActiveSec=1h</code> and
   <code>Unit=reckon-crew-retention.service</code>, and issues <code>daemon-reload</code> then
   <code>enable --now reckon-crew-retention.timer</code>; a second install reports
   <code>changed: false</code>, issues no command and leaves both files' mtimes untouched. The gate
-  reporting those six cases is <strong>131 passed</strong> at revision
-  <code>50d453b98</code> — the six new cases plus every existing module that imports the systemd
-  surface — with <code>ruff check</code> and <code>ruff format --check</code> reporting nothing
-  added on the staged paths.</p>
+  reporting those six cases is <strong>140 passed in 157.86s (0:02:37)</strong> at revision
+  <code>341d6a5be</code> — the six new cases, the paid-lanes timer cases, and every existing module
+  that imports the systemd surface — with <code>ruff check</code> and
+  <code>ruff format --check</code> reporting nothing added on the staged paths.</p>
   <p>The unit sections live in <code>reckon/service.py</code> rather than in the sweep's own module.
+  One thing a periodic pass does not inherit is its ordering: the shared template takes an
+  <code>after</code> argument, the publish service passes <code>network.target</code> because it
+  reads providers over the network, and the sweep passes nothing because it only touches the local
+  crew home. A case renders both and requires the directive on the publish unit and its absence
+  from the sweep's, so dropping the line shows up as a failing test rather than as a timer that
+  starts before the network is up.
   A repo-wide case inventories every module whose source carries a systemd section and fails when one
   appears elsewhere, so that a policy repair cannot land on one copy of a unit and miss another; the
   retention service and timer therefore render through
