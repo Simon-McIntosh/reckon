@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T06:48:29.886Z",
+  "dispatched_at": "2026-10-23T06:38:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-gate-judges-what-it-covers.html:135",
+      "id": "reasoning-1",
+      "reason": "a node dispatched on this premise will hunt a comparison that does not exist, and the refusal it must repair most likely arrives from another check on the same path (`_changed_paths_declare_no_paths` or `_repository_tree_boundary_violations` in `reckon/crew/promotion_scope.py`), so the brief needs the candidate set named or the premise corrected.",
+      "text": "\u00a75 asserts \"the promotion's write-scope check compares the run's own commits against its recorded base\", but the changed-path set is built by `_committed_scope` at `reckon/crew/promotion_evidence.py:88`, which diffs each cited commit against its own first parent (`git diff --numstat <commit>^1 <commit>`) and returns no paths at all for a run citing no commit; a path changed by the base commit is therefore already not charged, and there is no comparison against a recorded base to find",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-gate-judges-what-it-covers.html:144",
+      "id": "done_when-1",
+      "reason": "a negative control that fires on an already-fixed defect measures the wrong thing, and the node would be told a passing test proves \u00a75 when it does not.",
+      "text": "\u00a75's negative control, \"a comparison taken from the base's parent must charge the base's path and fail the test\", is the span diff that `_committed_scope`'s own docstring records as rejected (`reckon/crew/promotion_evidence.py:92-100`: a head that merged the integration branch carries every path that branch changed, so the span charges them to the run), which means the control would fail for a documented reason unrelated to \u00a75's rule and could not distinguish a correct fix from a wrong one",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-gate-judges-what-it-covers.html:90",
+      "id": "done_when-2",
+      "reason": "the node can implement the s2/s3 branch, leave the document-unit branch wrong, and still pass its gate, so the section's hardest rule ships unmeasured.",
+      "text": "\u00a72's deliverable adds a document-unit rule (\"the document unit only when the document-level text that changed is text the node reads as its contract\") but its done-when builds a plan with s2 and s3, edits s3, and asserts only on the s2 and s3 dispatches, so no arm covers the summary/decisions/gates carve-out this section introduces",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-gate-judges-what-it-covers.html:176",
+      "id": "single_goal-1",
+      "reason": "one verdict cannot close two independent mechanisms, and a node that lands the digest exclusion while mis-shaping `uncovered_by_write` has neither half reviewed on its own.",
+      "text": "\u00a78 declares two changes in one node and says so itself (\"Two defects meet here\"): the document unit's digest must exclude the lifecycle and scheduling scalars, and `_review_owed_fields` must gain an `uncovered_by_write` field; its done-when asserts both, and followup `f-argjwic-008` dispatches them as one run",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-gate-judges-what-it-covers.html:74",
+      "id": "anchors_resolve-1",
+      "reason": "the citation is evidence in \u00a71, a closed section, and \u00a76 repairs the behaviour \u00a71 records rather than the line number, so correcting it moves no decision and no mechanism.",
+      "text": "the plan cites `reckon/crew/plan_review.py:2491` for the refusal `plan 'jt60sa-coil-circuit-model' names no implementable section write paths`, but that line sits inside the docstring of an unrelated module-probe helper; the message is raised at `reckon/crew/plan_review.py:2583`, 92 lines away",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-review-gate-judges-what-it-covers.html:182",
+      "id": "wiring-1",
+      "reason": "a coordinator reading the followups alone can dispatch \u00a78 ahead of \u00a72 and have \u00a72's gate read a document unit \u00a78 has already redefined, which is a one-line fix in the followup body.",
+      "text": "the followup that carries this plan's build order, `f-rgjc-001`, enumerates \u00a72 and \u00a73 as buildable together and \u00a74\u2013\u00a76 as independent, and does not mention \u00a78, added five plan versions later on 2026-10-23; \u00a78 changes what the `_document` unit's digest contains, and \u00a72's rule decides whether a node owes a review of the `_document` unit, so the two meet at one value with no stated ordering",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "bef785ad8b42347a2871a7184ddf00f7181d1d26a309f0d240d82106bf56e7ac",
+  "plan_slug": "a-review-gate-judges-what-it-covers",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T063651735501-plan-review-of-a-review-gate-judges-what-it-covers",
+  "reviewed_blob_sha": "255d6ccd8f3464fe737c47c2f4f42ebb4a4576b3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the line citation `reckon/crew/plan_review.py:2491` does not carry the message quoted beside it; every other file, section, commit, plan slug and href resolved when opened.",
+    "done_when": "a finding \u2014 \u00a72's done-when exercises only sections s2 and s3; no arm of it reaches the document-unit branch, and \u00a75's negative control proposes as its falsifier the span comparison the code documents as rejected.",
+    "evidence_paths": "pass \u2014 the plan names no scratchpad or node-local path; \u00a77's landed evidence sits at `docs/evidence/archive/a-review-gate-judges-what-it-covers-landed.html`, which exists and carries the anchor it cites, and every implementable section's evidence follows the repository's default archive destination.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol or comment the plan proposes; the section ids `s2`\u2013`s8`, run ids and commit shas appear only as the plan's own prose and as historical evidence, and `_review_owed_fields` / `review_coverage` / `uncovered_by_write` are named by what they do.",
+    "reasoning": "a finding \u2014 \u00a75's stated root cause is contradicted by the code it points the node at, and \u00a72's mechanism cannot produce the document-unit half of its own deliverable.",
+    "single_goal": "a finding \u2014 \u00a78 states its own content as two defects met in one node, and dispatches as one followup.",
+    "wiring": "a finding \u2014 the plan's only build-order statement, followup `f-rgjc-001`, enumerates \u00a72/\u00a73 together and \u00a74\u2013\u00a76 independent, and does not mention \u00a78, whose change reaches the same `_document` unit \u00a72's gate rule reads (`a-review-gate-judges-what-it-covers`#followups / #s2 / #s8); the declared relationships themselves are present and correct, `plan-after` naming two slugs that both resolve, and the empty `data-links` on every section matches the house convention (1050 of the sections under `docs/plans/` carry none)."
+  },
+  "section_digests": {
+    "_document": "225a815e200cd0c1c3312dbdd4368b3acedadc4db09e01460d20ac082ce050cb",
+    "s1": "2f80e3c4526e5da0f46c438dc82b2880b0fa395a71a3807823c00850eb9622b9",
+    "s2": "b003c30eb192f0dfa86d4e6518b4deede24bf6b15c0b15ba5784a6066d3da870",
+    "s3": "7df7d94c9d011998671062ddf1072ba44b1c08d7172f92e43f18961813f1d434",
+    "s4": "491337ffa1e3dbb35aed0b41de9bfb17126787d7b0a08c15bb12879faa1a9b43",
+    "s5": "f21e5477c01ae1e8fb4da7b3d607da52313f50d700b6b7dc3d5a2adb8d9f8956",
+    "s6": "534a6debaffa16edfc0cb75f6488191af897e1ff0b9ad32ecdaaa28148c119ff",
+    "s7": "ce6bf11980ac24dc184e5bd2aa6fd813667fe40e90c0ea97a60a56d649f3fd30",
+    "s8": "260a7af767dc983ba6b55a92f057f13b1f53b6e4c325e43f77156dc0cd60d822"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T07:01:35.216607+00:00"
+}
