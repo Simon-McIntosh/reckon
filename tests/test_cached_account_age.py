@@ -33,14 +33,15 @@ FIVE_HOURS = 5 * 3600
 
 
 def _account_payload(utilisation: float, *, stamp: object) -> dict:
-    """The account block's shape plus the one key that dates the copy."""
+    """The account block's shape plus the one key that dates the copy.
+
+    ``utilisation`` is the percentage the surface reports, so the block's own
+    figure is that number unchanged.
+    """
     return {
-        "windows": {
-            "weekly": {
-                "utilization": utilisation,
-                "resetsAt": 1789416000,
-                "windowMinutes": 10080,
-            },
+        "seven_day": {
+            "utilization": utilisation,
+            "resets_at": "2026-09-14T20:00:00+00:00",
         },
         "fetch_stamp": stamp,
     }
@@ -103,7 +104,7 @@ def test_the_cache_reader_carries_the_fetch_age_beside_the_figure_it_returns(
     now = datetime(2030, 1, 1, tzinfo=UTC)
     stamp = now - timedelta(seconds=FIVE_HOURS)
     cache = _env_resolved_cache(
-        tmp_path, monkeypatch, _account_payload(0.53, stamp=int(stamp.timestamp()))
+        tmp_path, monkeypatch, _account_payload(53.0, stamp=int(stamp.timestamp()))
     )
 
     block = _backends.cached_account_budget(path=cache, now=now)
@@ -130,7 +131,7 @@ def test_the_probe_entry_point_serves_the_cached_age_and_not_only_the_figure(
     now = datetime(2030, 1, 1, tzinfo=UTC)
     stamp = now - timedelta(seconds=FIVE_HOURS)
     cache = _env_resolved_cache(
-        tmp_path, monkeypatch, _account_payload(0.53, stamp=int(stamp.timestamp()))
+        tmp_path, monkeypatch, _account_payload(53.0, stamp=int(stamp.timestamp()))
     )
 
     def _unavailable(oauth):
@@ -167,7 +168,7 @@ def test_an_unresolvable_fetch_stamp_leaves_the_reading_unknown_with_no_figure(
     """
     now = datetime(2030, 1, 1, 0, 0, 30, tzinfo=UTC)
     cache = _env_resolved_cache(
-        tmp_path, monkeypatch, _account_payload(0.53, stamp=stamp)
+        tmp_path, monkeypatch, _account_payload(53.0, stamp=stamp)
     )
 
     block = _backends.cached_account_budget(path=cache, now=now)
@@ -192,15 +193,12 @@ def test_a_live_reading_is_untouched_by_the_cache_fallback(tmp_path, monkeypatch
     now = datetime(2030, 1, 1, tzinfo=UTC)
     stamp = now - timedelta(seconds=FIVE_HOURS)
     cache = _env_resolved_cache(
-        tmp_path, monkeypatch, _account_payload(0.53, stamp=int(stamp.timestamp()))
+        tmp_path, monkeypatch, _account_payload(53.0, stamp=int(stamp.timestamp()))
     )
     live = {
-        "windows": {
-            "weekly": {
-                "utilization": 0.89,
-                "resetsAt": 1789416000,
-                "windowMinutes": 10080,
-            },
+        "seven_day": {
+            "utilization": 89.0,
+            "resets_at": "2026-09-14T20:00:00+00:00",
         },
     }
 
@@ -242,13 +240,15 @@ def test_the_cache_read_is_confined_to_the_temp_path_leaving_the_real_one_untouc
         / "metered.json"
     )
     real_cache.parent.mkdir(parents=True)
-    sentinel = _account_payload(0.97, stamp="2029-12-31T19:00:00+00:00")
+    sentinel = _account_payload(97.0, stamp="2029-12-31T19:00:00+00:00")
     real_cache.write_text(json.dumps(sentinel))
     before = real_cache.read_bytes()
 
     now = datetime(2030, 1, 1, tzinfo=UTC)
     cache = _env_resolved_cache(
-        tmp_path, monkeypatch, _account_payload(0.53, stamp=int((now - timedelta(hours=5)).timestamp()))
+        tmp_path,
+        monkeypatch,
+        _account_payload(53.0, stamp=int((now - timedelta(hours=5)).timestamp())),
     )
     assert cache != real_cache
 

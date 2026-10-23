@@ -592,6 +592,26 @@ def _previous_probe_candidates(
     return retained
 
 
+_PROBE_TAIL_CHARS = 2000
+
+
+def _probe_stream_tail(completed: subprocess.CompletedProcess[str]) -> str:
+    """The child's own last words, so a probe failure names its reason.
+
+    The exit status alone cannot tell a model the account is not served from a
+    lapsed login from a crashed child, and the stream carrying that reason is
+    otherwise discarded with the process. A bounded tail keeps the published
+    failure readable while still naming the cause the harness reported.
+    """
+    stream = (completed.stdout or "") + (completed.stderr or "")
+    tail = stream.strip()
+    if not tail:
+        return ""
+    if len(tail) > _PROBE_TAIL_CHARS:
+        tail = "…" + tail[-_PROBE_TAIL_CHARS:]
+    return f": {tail}"
+
+
 def _run_reserved_probe(backend: Mapping[str, Any], root: Path) -> str:
     """Make one tool-free, short subscription request and return its stream."""
     if backend.get("launch") != "cli" or not backend.get("command"):
@@ -619,7 +639,10 @@ def _run_reserved_probe(backend: Mapping[str, Any], root: Path) -> str:
         cwd=root,
     )
     if completed.returncode != 0:
-        raise OSError(f"reserved window probe exited {completed.returncode}")
+        raise OSError(
+            f"reserved window probe exited {completed.returncode}"
+            f"{_probe_stream_tail(completed)}"
+        )
     return completed.stdout
 
 
@@ -843,11 +866,26 @@ def publish_document(
                 group = str(settings.get("budget_group") or name)
                 groups.setdefault(group, []).append(name)
         for members in groups.values():
+            member_windows = {
+                name: document["accounts"][name]["windows"] for name in members
+            }
             stale = any(
                 block.get("stale")
-                for name in members
-                for block in document["accounts"][name]["windows"].values()
+                for windows in member_windows.values()
+                for block in windows.values()
             )
+            if not stale:
+                # A window nobody has ever observed cannot go stale, so an
+                # account whose windows all read unknown would never be read
+                # again — it could only leave that state through a read the
+                # gate declines to make. Unknown is therefore itself a reason
+                # to probe. The recent guard below still bounds the retries, so
+                # this cannot become a storm.
+                stale = any(
+                    windows
+                    and all(block.get("state") == UNKNOWN for block in windows.values())
+                    for windows in member_windows.values()
+                )
             attempts = [
                 _parse_stamp(
                     old_entries.get(name, {}).get("probe", {}).get("attempted_at")

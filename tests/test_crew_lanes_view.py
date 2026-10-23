@@ -16,6 +16,7 @@ from reckon import _backends, mcp, mcp_views
 from reckon._mcp_tools import CrewArgs
 from reckon.crew.rollout import Unmeasured
 from reckon.flight import resolve
+from tests.conftest import unguarded_account_surface_read
 
 
 @dataclass(frozen=True)
@@ -578,17 +579,22 @@ def test_dead_spelling_groups_nothing_even_when_the_value_matches() -> None:
 
 CACHE_WEEKLY_MINUTES = 7 * 24 * 60
 CACHE_WEEKLY_RESET = 1_789_416_000
+# The same moment as the surface states it, derived from the epoch above so the
+# two cannot drift into disagreeing about one moment.
+CACHE_WEEKLY_RESET_ISO = datetime.fromtimestamp(CACHE_WEEKLY_RESET, tz=UTC).isoformat()
 
 
 def _cache_payload(*, with_stamp: bool, stamp: object = None) -> dict[str, Any]:
-    """An on-disk copy of the account block, carried on the probe cache path."""
+    """An on-disk copy of the account block, carried on the probe cache path.
+
+    The copy carries the shape the account surface answers in, so its reset
+    moment is the ISO text the surface states rather than an epoch the reader
+    would then have to convert.
+    """
     payload = {
-        "windows": {
-            "weekly": {
-                "utilization": 0.53,
-                "resetsAt": CACHE_WEEKLY_RESET,
-                "windowMinutes": CACHE_WEEKLY_MINUTES,
-            },
+        "seven_day": {
+            "utilization": 53.0,
+            "resets_at": CACHE_WEEKLY_RESET_ISO,
         },
     }
     if with_stamp:
@@ -617,6 +623,7 @@ def _cache_sourced_view(
             "refreshTokenExpiresAt": int((composed + timedelta(days=30)).timestamp()),
         },
     )
+    unguarded_account_surface_read(monkeypatch)
     monkeypatch.setattr(
         _backends,
         "_fetch_claude_account",

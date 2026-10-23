@@ -1,0 +1,134 @@
+<article class="r-evidence" data-node="the-claude-account-is-read-again">
+<h3 id="the-claude-account-is-read-again-what">The account reads again, and a refusal now names its cause</h3>
+<p id="the-claude-account-is-read-again-body">Three defects held the claude account's windows
+at <code>unknown</code>, and each hid the others. The reserved probe ran the harness and kept only
+its exit status, so the <code>model_not_found</code> the child reported reached the operator as a bare
+number. The account read was pointed at a host that refuses it. And the publish gate looked only for a
+window that had gone <em>stale-or-unknown</em>: a window nobody has ever observed can never go stale,
+so an all-unknown account could only leave that state through a read the gate declined to make.</p>
+
+<table id="the-claude-account-is-read-again-repairs">
+  <thead>
+    <tr><th>Defect</th><th>Repair</th><th>Evidence</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td id="the-claude-account-is-read-again-repair-probe">The probe folded its child's stream</td>
+      <td id="the-claude-account-is-read-again-fix-probe">The raise carries the child's own last
+      words beside the exit status</td>
+      <td id="the-claude-account-is-read-again-ev-probe">A child reporting
+      <code>model_not_found</code> and exiting 1 yields
+      <code>reserved window probe exited 1: …model_not_found…</code>; a silent child yields the
+      status alone, unchanged</td>
+    </tr>
+    <tr>
+      <td id="the-claude-account-is-read-again-repair-endpoint">The read asked a host that refuses it</td>
+      <td id="the-claude-account-is-read-again-fix-endpoint">The read calls
+      <code>https://api.anthropic.com/api/oauth/usage</code> with
+      <code>anthropic-beta: oauth-2025-04-20</code>, and parses the top-level
+      <code>five_hour</code> / <code>seven_day</code></td>
+      <td id="the-claude-account-is-read-again-ev-endpoint">The recorded answer — 62.0 % and 74.0 % —
+      parses to <code>0.62</code> and <code>0.74</code> on the document's own clocks, with both
+      <code>resets_at</code> moments kept; one live request confirms it</td>
+    </tr>
+    <tr>
+      <td id="the-claude-account-is-read-again-repair-gate">An all-unknown account was never due</td>
+      <td id="the-claude-account-is-read-again-fix-gate">Unknown is itself a reason to probe, under
+      the same recent guard that bounds the stale case</td>
+      <td id="the-claude-account-is-read-again-ev-gate">An account whose every window is unknown,
+      last attempted outside the guard, is probed; the same account attempted inside it is not</td>
+    </tr>
+  </tbody>
+</table>
+
+<p id="the-claude-account-is-read-again-live">One live request in the foreground was made against the
+real endpoint from this revision. It answered with both windows, and its bearer token is nowhere in
+the log — the credential is read by the module's own loader and only the answer's window keys and the
+parsed block were printed. That the surface answers at all is the fact the base revision could not
+establish, because the base pointed its read elsewhere and reported the refusal as a 403.</p>
+
+<p id="the-claude-account-is-read-again-negative-control">The negative control stated before the work
+was performed as declared: restoring the stale check as the gate's only reason to probe leaves the
+all-unknown case never reaching the probe, and its test fails. Measured:
+<code>1 failed, 7 passed</code>, exit 1, the failure being
+<code>the-claude-account-is-read-again</code>'s all-unknown case alone.</p>
+
+<p id="the-claude-account-is-read-again-open">One item of the stated measure is the coordinator's
+rather than this node's: reading the published document's claude windows after one timer pass. This
+worker runs under a write fence that mounts the publication directory read-only, so a pass from here
+exits 1 on <code>Read-only file system: …/paid-lanes.json.lock</code> and produces no reading to
+cite. The coordinator runs one unfenced publish after merge.</p>
+
+<h3 id="the-claude-account-is-read-again-repair-round">The repair round: one shape, one parser</h3>
+<p id="the-claude-account-is-read-again-repair-body">A review of the first round returned four
+findings, and they were one defect seen from four sides: the change had left two spellings of the
+account answer alive and two parsers for the same rule, so a reader could not tell which was
+canonical. The repairs are:</p>
+<ol id="the-claude-account-is-read-again-repair-list">
+  <li id="the-claude-account-is-read-again-repair-parser">The reset stamp is validated through
+  <code>reckon/_timestamps.parse_iso</code>, the module that owns the Z-suffix and strip handling,
+  rather than a local <code>datetime.fromisoformat</code> call. A repository-wide invariant names
+  that module as the only caller of <code>fromisoformat</code>; it passes at this head.</li>
+  <li id="the-claude-account-is-read-again-repair-shape">The compatibility read for the nested
+  <code>windows</code> spelling is deleted, and the tests that asserted it — three named by the
+  review, and a fourth that went red the moment the read went — are migrated to the top-level
+  windows. One answer shape now crosses the boundary.</li>
+  <li id="the-claude-account-is-read-again-repair-keys">The windows are keyed by their length in
+  minutes, which is the key every other quota map in the module carries. The first round keyed them
+  by name, which the lane view then read as a number and failed on — found by the migration, not by
+  inspection.</li>
+  <li id="the-claude-account-is-read-again-repair-lint">Lint and format are re-run on the changed
+  paths at this head, judged against the base blobs: format clean, and the check's three findings
+  are all present in the base, so the commit adds none.</li>
+</ol>
+<p id="the-claude-account-is-read-again-repair-measure">The measurement is a bounded arm over the
+twelve test files that reach the changed modules plus the structural invariant: base 132 passed,
+head 140 passed, both exit 0, with no identifier failing in one arm alone. The literal importer
+population is 171 files and does not fit the node's window — a run over all of them was bounded
+without reaching its cut — so that run is logged and the bounded arm is what is claimed. The
+negative control was re-applied to the repaired head and still fails exactly the one case it was
+declared to fail.</p>
+
+<h3 id="the-claude-account-is-read-again-probe-runner">Two ids the population added, and why neither test is edited</h3>
+<p id="the-claude-account-is-read-again-probe-runner-body">Merging this work onto main added two
+failing ids in <code>tests/test_budget.py</code>. Both name rules this change keeps — a backend
+that reports nothing and a backend under a reset-bearing hold are not probed, and a lane probe
+is once per backend rather than once per record — so neither test was edited and no assertion was
+changed. What failed was the tests' own instrument: in that file's config the second backend is
+the claude dialect, so the pre-flight reads it through the account surface, and that read ran
+even when the test injected a probe runner, reaching the workstation's own logged-in account.
+At the base revision the read answered <code>HTTP Error 403: Forbidden</code> from a host that
+refuses it, so the backend stayed unknown and both tests passed by accident; correcting the
+endpoint made the same read answer — 73.0 % utilisation, observed from this box — and the backend
+turn known. A positive control settles it: with the outbound read refused, both ids pass at the
+head that fails them.</p>
+<p id="the-claude-account-is-read-again-probe-runner-narrow">The repair is in the suite, not in the
+product code and not in the tests. A first attempt narrowed the reader instead — reading the
+account surface only when the caller supplied no probe runner — and a re-review showed it bends
+production behaviour to fit a test: a cached-only pre-flight passes a probe runner of its own, so
+under the narrowing it would stop reading its account. That attempt is reverted. Whether a probe
+runner is supplied no longer decides whether the account surface is read; an injected runner
+governs the probe step and nothing else.</p>
+<p id="the-claude-account-is-read-again-probe-runner-guard">Isolation now lives in the suite-wide
+guard, in the same autouse fixture that already replaces the provider probe launcher: the claude
+dialect's account-surface read is stubbed there too, so no test anywhere reaches the
+workstation's live account whether or not the box is logged in. An injected <code>fetch</code> is
+still honoured, because a fetch is a transport the test already owns, and a test that patches the
+launcher itself replaces the guard for that test. One assertion holds the guard in place, and it
+asserts the <em>replacement</em> rather than a reading — an unguarded read on a logged-out machine
+answers unknown exactly as the stub does, so a reading-shaped assertion would pass with the guard
+removed and fail only on a machine that happened to be logged in. Both population ids therefore
+pass 5 of 5 alone because the guarded read is deterministic, not because this box's account
+answered or failed. At the guarded head the same arm is 2 failed / 77 passed against the base arm's
+2 failed / 68 passed, with the same two pre-existing CLI failures in both and none added.</p>
+<p id="the-claude-account-is-read-again-probe-runner-way-through">One case had to keep the real read:
+<code>test_an_unreadable_cache_is_an_unknown_reason_not_a_crash</code> exists to show that a live read
+which fails carries its reason through to the detail, so a guard that answers nothing before its
+injected transport is ever reached makes it pass for the wrong reason. The guard therefore carries one
+declared way through. A test whose subject is the read calls it, it reads the guard's own marker
+before lifting the replacement — so it cannot strip a stub some other test installed, and it refuses
+by name when the guard is not in force. Four call sites declare it, and lint is clean on all four
+changed files as before. The guard's own test asserts the marker is read, so the mechanism cannot
+quietly become decorative, and every test that does not declare the read is still held off the
+login's own account exactly as before.</p>
+</article>
