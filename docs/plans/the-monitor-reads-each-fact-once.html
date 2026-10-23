@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -108,7 +108,7 @@
     listed six times).</p>
 
     <h2 id="s5">§5 — The station's node-local store</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>A new module <code>reckon/crew/station_store.py</code> owns one SQLite database in WAL mode under the
     node-local runtime root, never under the crew home. The root is the one
     <code>reckon/crew/dispatch_watch.py</code>'s <code>_session_host_runtime_root</code> returns, made public so
@@ -169,6 +169,7 @@
     detected and refolded. Negative controls: an ingest that ignores the stored offset must fail the bytes
     test; one that drops the carried fold state must fail the equality test on a stream whose rate depends on
     earlier records.</p>
+    <p>This section is the next to edit <code>reckon/crew/station_store.py</code>, so it also takes the four non-blocking findings of §5's review. It deletes <code>store_at_runtime_root</code> and <code>default_store</code>, which have no caller and duplicate <code>StationStore.at_runtime_root</code>. It closes each day-file connection it opens: <code>sqlite3.Connection</code>'s context manager commits but does not close. And it replaces the assertion in <code>tests/test_the_station_store_is_node_local.py</code> that compares two outputs of the store with one against the fixture's three pointer paths. Done when, beside the measures above, <code>git grep -n "def store_at_runtime_root\|def default_store" reckon/</code> returns nothing, and a test counts the store's open file descriptors before and after writing 50 events and finds them equal.</p>
 
     <h2 id="s7">§7 — One station per node replaces the per-project producers</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -200,7 +201,7 @@
     main database, in a commit made after every commit that adds event rows. The subscriber wakes on that. When the
     value moved, it selects the rows for its session and the broadcast rows after its cursor,
     renders them with the existing <code>ticker</code> painter and advances its cursor in the same
-    transaction. A cursor is a station-wide event sequence number, not a per-partition row id. The station assigns
+    transaction. A cursor is the pair of a station-wide event sequence number and the UTC day of the event it names, not a per-partition row id. The station assigns
     each event the next value from a counter in the main database, so one number orders events across every day
     file. The subscriber attaches the day files from its cursor's day through today, and attaches the new file at
     each UTC rollover. A cursor older than the oldest retained day file resumes at that file's first event and
@@ -220,8 +221,8 @@
     every event across the two day files exactly once; a cursor older than retention resumes at the oldest event
     and prints its one skip line; a stale heartbeat prints one line; a subscriber wakes on an event written to an attached day file and
     on nothing else, with the heartbeat write disabled for that test.
-    Measure: a 60 s <code>/proc/&lt;pid&gt;/io</code> delta of a running subscriber shows no reads from the
-    crew home. Negative control: a subscriber that does not persist its cursor must fail the restart test.</p>
+    Measure: a 60 s <code>strace -f -e trace=openat,stat,newfstatat</code> of a running subscriber names no path
+    under the crew home; a <code>/proc/&lt;pid&gt;/io</code> delta cannot attribute reads to paths and misses reads served from cache. Negative control: a subscriber that does not persist its cursor must fail the restart test.</p>
 
     <h2 id="s9">§9 — Obligations and hooks read the station</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
@@ -293,7 +294,10 @@
     <div class="r-comment-body"><p>§4 landed: merge <code>57e274889</code>; one population failure was added and then repaired in <code>99e614314</code>, and it passes at main. A follower read 0.10 MB of pointers in 15 s, against the 1 MB bound (34.4 MB before). <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s4">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261023T170707287094-the-station-store-is-node-local" data-who="reckon-build" data-when="2026-10-23T18:59:58Z">
-    <div class="r-comment-body"><p>station_store adds the node-local SQLite store at the node-local runtime root: pointer and stream identity is file_memo.file_signature&#x27;s, day files hold the events and an out-of-window day file is unlinked with its rows, and a root reached only through TMPDIR or on a shared mount is refused; tests/test_the_station_store_is_node_local.py is 15 passed EXIT=0, and both declared mutations turn their case red (1 failed and 8 failed).</p></div>
+    <div class="r-comment-body"><p>station_store adds the node-local SQLite store at the node-local runtime root: pointer and stream identity is file_memo.file_signature's, day files hold the events and an out-of-window day file is unlinked with its rows, and a root reached only through TMPDIR or on a shared mount is refused; tests/test_the_station_store_is_node_local.py is 15 passed EXIT=0, and both declared mutations turn their case red (1 failed and 8 failed).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-23T19:55:00Z">
+    <div class="r-comment-body"><p>§5 landed: merge <code>06079a8a2</code>, the node-local station store; 8 tests, both controls red as declared, review 110/120. Its four non-blocking findings move into §6. <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s5">evidence</a></p></div>
 </div>
 </section>
 </main>
