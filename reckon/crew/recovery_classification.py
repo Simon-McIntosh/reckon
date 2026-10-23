@@ -5,7 +5,7 @@ import contextlib
 import hashlib
 import re
 import shlex
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -649,7 +649,7 @@ def classify_pointer(
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
-            datetime.fromtimestamp(terminal_seconds, tz=UTC)
+            datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
             .isoformat(timespec="seconds")
             .replace("+00:00", "Z")
         )
