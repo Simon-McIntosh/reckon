@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:55:06.623Z",
+  "dispatched_at": "2026-10-23T23:49:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261023T234910236308-plan-review-of-crew-state-stays-bounded/plan.html:169",
+      "id": "reasoning-1",
+      "reason": "the plan's per-attempt host record and its \"unrecorded directory is left alone\" rule together make this copy permanent, so the host set the change records must include the dispatching/resuming host, or the dispatcher's call must stop creating the directory.",
+      "text": "\u00a78 asserts `ensure_worker_scratch` \"runs in the launch supervisor, on the host that dispatched the attempt\" and that \"one attempt can leave a copy on two hosts\", recording only the supervisor's host and the step's node; but `ensure_worker_scratch` is reached through `_worker_runtime_environment` from three further call sites on the coordinating host \u2014 `reckon/crew/dispatch.py:2563` (the fleet-batch directive's environment, run by the orchestrator session) and `reckon/crew/dispatch_sessions.py:1369` and `:1863` (resume and lane-change planning, via `_worker_runtime_plan`) \u2014 each of which creates `<scratch root>/<run id>` on the host that merely composed the launch; under a batch-step launch that host is the login node and the supervisor's host is the allocation node, so a single attempt can leave a second, unrecorded copy, and because the plan then rules \"A directory of the run's name that no attempt recorded is left alone\", that copy is never removed by the release or by the owed-list route",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261023T234910236308-plan-review-of-crew-state-stays-bounded/plan.html:163",
+      "id": "reasoning-2",
+      "reason": "an unaccounted slice means the root-cause set the repair is aimed at may be incomplete, and the author should either name the fourth route or show why the four are outside the population.",
+      "text": "\u00a78's evidence says 62 of the 107 directories belong to promoted runs with no live pointer, then accounts for the survival with three disjoint records: 29 with `scratch_removed: true`, 16 with `false` and 13 with no release block, which is 58 and leaves 4 of the 62 unexplained; the change is scoped to exactly those three routes, so about 6% of the measured population has a survival route the plan neither names nor repairs",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261023T234910236308-plan-review-of-crew-state-stays-bounded/plan.html:169",
+      "id": "reasoning-3",
+      "reason": "the plan already states the required behaviour (the pass alone, no survey), so an implementer will factor a helper; naming it would sharpen the node but not change what it builds.",
+      "text": "\u00a78 places the owed-list pass inside `garbage_collect_scratch` \"ahead of its own survey\" and then says each of its two new callers runs \"that pass alone\", but `garbage_collect_scratch` is a survey whose signature requires `repo` and which resolves attribution through `_ledgered_run_ids(repo, project)` (reckon/crew/gc.py:1173-1202; reckon/crew/routing.py:920), and \u00a77's `retention_sweep` (gc.py:1329) takes no `repo`; running the pass alone therefore needs an entry point the plan does not name",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "4be832ea0b8b505e90d5227d96ea16521e416e413780399ace3e47423977ed78",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T234910236308-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "363fccef5975f083c1716474a62c13c96483f6ff",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `ensure_worker_scratch`, `remove_worker_scratch` (reckon/crew/dispatch_launch.py:782,829), `_worker_runtime_environment` (:905), `_supervisor_spawn_worker` (:2479), the `attempt-<n>-worker.json` shape (`_attempt_artifact_path`, :1803), `garbage_collect_scratch` (reckon/crew/gc.py:1173), `_ledgered_run_ids` (reckon/crew/routing.py:920), `retention_sweep` (reckon/crew/gc.py:1329) and `_release_after_promotion` (reckon/crew/promotion_release.py) all resolve, as do `promotion.py`, `promotion_records.py`, `crew_run_commands.py` and the named test file.",
+    "done_when": "pass \u2014 \u00a78's done-when (plan.html:170) carries a live negative control: the releasing host holds an unrecorded directory of the run's name, and the mutated release (removing the same-named path on its own host regardless of which host made the scratch) removes it and reports `scratch_removed: true`, which the case's \"still exists\" assertion catches; the same mutation is what the code does today (`remove_worker_scratch` with `recorded_path=record.get(\"scratch\")`, reckon/crew/promotion_release.py:458-464), so the control would indeed redden.",
+    "evidence_paths": "pass \u2014 \u00a78 writes its gate logs under the run directory and additionally requires the evidence fragment to quote each gate's command and summary line (plan.html:170), which is the durable copy of the gate.",
+    "naming": "pass \u2014 \u00a78 introduces no plan labels, stage names or ticket numbers into the symbols it proposes, and its prose states mechanisms rather than change history.",
+    "reasoning": "a finding \u2014 the host enumeration that \u00a78's mechanism rests on is incomplete: `ensure_worker_scratch` also runs in the dispatching/resuming process, on that process's host, so a copy exists that no attempt records.",
+    "single_goal": "pass \u2014 \u00a78's deliverable is one rule, a scratch copy is removed on the host that made it; the review/plan-review release route (plan.html:169) is the same rule reaching routes that skip it, not a second goal.",
+    "wiring": "pass \u2014 `plan-section-depends-on` (plan.html:22) carries s7\u2192s3 and s8\u2192s2\u2026 s8\u2192s7, s7 is declared `done` (plan.html:23), and open followup f-cssb-008 recommends \u00a78; every edge names a section that exists."
+  },
+  "section_digests": {
+    "_document": "7b027ab93025f3f1274af4c8c21f7e58c154d6e99dbdf5e7f4aa8931cbb1f280",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "65f9c698e8eca9691789938a019be4dda469041d0e22098701c0d8e2aa2587ed"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:57:40.025085+00:00"
+}
