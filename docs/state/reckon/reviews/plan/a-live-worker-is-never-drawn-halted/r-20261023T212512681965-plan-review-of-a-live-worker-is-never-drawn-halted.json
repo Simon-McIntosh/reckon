@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T21:42:22.539Z",
+  "dispatched_at": "2026-10-23T21:31:10Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-1",
+      "reason": "the node must also widen the observer release path (or the section must say that landed/dropped leave the observer hold only for a peer-caused row), and as written its gate would fail or the worker would widen the filter blindly.",
+      "text": "\u00a714 says landed and dropped rows \"are now carried once each\", blaming the observer class from `transition_class`, but the effective suppression for the sequence in its own done-when is `_observer_exception` at `reckon/crew/ticker.py:1499-1512`: it returns False for a run that has already been \"told\" (delivery printed, `_told` set at `ticker.py:1482`) whose destination is a settled state (`promoted`, `recorded`, `withdrawn`, `discarded`), and `_feed` drops that row without appending it, so `stream_carries` never sees it; adding landed/dropped to the carried rule alone therefore leaves the implement run's \"then promoted\" row unprinted and the done-when unachievable",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-2",
+      "reason": "the two clauses cannot both hold until the plan names the fact that distinguishes a coordinator-caused landing from a peer's, so a node must either violate one clause or invent an event field the plan does not specify.",
+      "text": "\u00a714 requires landed rows \"carried once each\" while also keeping \"a row the coordinator's own merge or discard caused \u2026 withheld only where the coordinator's own command already printed the outcome\", but the transition event built by `recovery_watch._watch_transition` (reckon/crew/recovery_watch.py:1853-1905) carries no cause or actor field, and the only memory distinguishing the cases is `_told`, which suppresses every post-delivery landing including a peer's",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "done_when-1",
+      "reason": "the node can implement dropped rows wrongly or omit them entirely and still pass its gate, so a shipped defect in half the section's declared scope goes unmeasured.",
+      "text": "the done-when sequence is \"dispatched, starting, working, delivered, the review's dispatched, starting and working, the review's delivered, then promoted\" and expects a landing row, but never feeds a moved-away run (a `withdrawn` or `discarded` transition) even though \u00a714 carries \"landed and dropped\" as two equally weighted new kinds; the dropped half of the declaration has no arm, and the negative control names only the launch and in-review row",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "wiring-1",
+      "reason": "the followup body is the plan's dispatch driver, so a coordinator following it would launch \u00a75 and \u00a77 directly after \u00a74, concurrently with \u00a714 on the same file, instead of sequencing \u00a714 first.",
+      "text": "\u00a714 newly declares \"\u00a75 and \u00a77 run after \u00a714, which writes `ticker.py` before them\", but \u00a75:227 still says \"It runs after \u00a74, which writes `ticker.py`\", and the followup driver at :335 still reads \"\u00a73 follows \u00a72, and \u00a75 then \u00a77 follow \u00a74\" with \u00a714 unnamed; \u00a714 is now a second writer of `ticker.py` standing between \u00a74 and \u00a75",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8fea4b7790391323203ac79ee233b37d5df95d3ac5fe2cfea488c1da999d4d92",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 30,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T212512681965-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "35daf0edba752984920decf2a7a08b75f7868306",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `ticker.CARRIED_PANE_WORDS`, `ticker.transition_class`, `ticker.stream_carries` and `RowPolicy` resolve at HEAD, and the linked evidence file `docs/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html` exists with the cited anchors (#s2, #s2-cohort, #s6, #s9).",
+    "done_when": "a finding \u2014 \u00a714:329 claims both landed and dropped rows are newly carried once each, but its recorded sequence exercises only a promotion and never a dropped (withdrawn/discarded) transition, so half the new behaviour is unmeasured.",
+    "evidence_paths": "pass \u2014 \u00a714's gate is a test recorded in the gate log under the run's own directory; no scratchpad path is named.",
+    "naming": "pass \u2014 \u00a714's additions name states and functions by mechanism; no plan label or ticket number reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a714:329 attributes the withheld landing to `transition_class` observer classification alone, but at HEAD a run whose delivery already printed is held at `ticker.py:1499-1512` (`_observer_exception`) inside `_feed`, before `stream_carries` is ever consulted, so the stated mechanism cannot print the landing its done-when expects.",
+    "single_goal": "pass \u2014 \u00a714 is one deliverable, the extended row policy in `ticker.py`, measured by one sequence.",
+    "wiring": "a finding \u2014 \u00a714:329 now places \u00a75 and \u00a77 after \u00a714 on `ticker.py`, but \u00a75:227 still says it runs after \u00a74, and the followup driver states \"\u00a75 then \u00a77 follow \u00a74\" without \u00a714."
+  },
+  "section_digests": {
+    "_document": "06b6bffb1430e5d0b3aaec84c099dc6755869214442e32f0b25b108c69b81029",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "928be57771c429d0e8372b33d7a14af3b1fdd4ccf96b21742f9039579d68e340",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "7e9728d6a8f405548d7f7c8d02a908ead24427492f1fe16b3f3d694ee0b527b4",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "1fbaee6774bb925bffb02f59d8d4442ab2ecbdce493922561ca3818683ca89fe",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T21:52:07.904212+00:00"
+}
