@@ -88,6 +88,75 @@ LIVE_OVERRUN_FIELDS = frozenset(
 LIVE_PLACEMENT_FIELDS = ("position", "rank")
 
 
+#: The keys :func:`reckon.crew.recovery_classification.classify_pointer`
+#: answers for any record, so a live row carries them whatever pointer produced
+#: it. Declared here rather than read from a classification because a
+#: classification is not free: even an empty pointer sends it to the run's
+#: ``worker.json``, ``exit.json`` and ``attempt.json``, so a caller that only
+#: wants to judge an argument would have to wait on those reads to learn a set
+#: that does not depend on them.
+LIVE_CLASSIFICATION_FIELDS = (
+    "backend",
+    "budget_overrun",
+    "budget_overrun_seconds",
+    "budget_seconds",
+    "classification",
+    "commits_beyond_base",
+    "detail",
+    "effective_phase",
+    "elapsed_seconds",
+    "exit_record",
+    "external_wait",
+    "fleet_verdict",
+    "interruption",
+    "lane",
+    "lane_cause",
+    "lane_ended_at",
+    "lane_event",
+    "lifting_condition",
+    "liveness_proven",
+    "log_age_seconds",
+    "log_fresh",
+    "manifest_commits",
+    "manifest_derived",
+    "manifest_digest",
+    "manifest_error",
+    "manifest_file_present",
+    "manifest_fresh",
+    "manifest_path",
+    "manifest_present",
+    "manifest_reported_status",
+    "manifest_status",
+    "marker",
+    "model_key",
+    "needs_help_complete",
+    "next_action",
+    "node",
+    "phase",
+    "plan",
+    "process_alive",
+    "process_descendant_alive",
+    "project",
+    "recovery",
+    "recovery_classification",
+    "resets_at",
+    "review_error",
+    "review_present",
+    "review_status",
+    "run_id",
+    "session",
+    "stored_phase",
+    "terminal_age_seconds",
+    "terminal_at",
+    "wait_age_seconds",
+    "wait_condition_state",
+    "wait_key_defect",
+    "wait_observed",
+    "wait_overdue",
+    "worktree",
+)
+
+
 class RunQueryError(ValueError):
     """A runs-view request cannot be represented by the compact read model."""
 
@@ -154,24 +223,16 @@ def _live_field_vocabulary(
 ) -> set[str]:
     """Return the field names a live row carries.
 
-    The live view serves whole classifications rather than the compact model,
-    so its accepted set is the keys :func:`classify_pointer` produces — read
-    from the rows in hand, and from a classification of an empty pointer when
-    there are none, because the shape does not depend on the record. ``mine``
-    is a field of the request, not of the classification, so it joins only when
-    a session was supplied.
+    The accepted set is :data:`LIVE_FIELD_VOCABULARY`, the one declaration the
+    live view and the MCP pre-flight share, so neither can answer for a name the
+    other refuses. The rows in hand are unioned in as well, because a caller
+    that reads the vocabulary from a served row must never be told a field the
+    row carries is unknown. ``mine`` is a field of the request, not of the
+    classification, so it joins only when a session was supplied.
     """
-    vocabulary: set[str] = set()
+    vocabulary: set[str] = set(LIVE_FIELD_VOCABULARY)
     for row in classified:
         vocabulary.update(row)
-    if not vocabulary:
-        vocabulary.update(classify_pointer({}))
-    # These appear only once a run passes a budget, and a place in the queue
-    # only while a run is queued, but a live query may ask for either before
-    # such a row exists.
-    vocabulary.update(LIVE_OVERRUN_FIELDS)
-    vocabulary.update(LIVE_PLACEMENT_FIELDS)
-    vocabulary.update(COMMON_RUN_FIELDS)
     if with_mine:
         vocabulary.add("mine")
     return vocabulary
@@ -203,6 +264,19 @@ def _refuse_unknown_live_fields(
 #: :func:`project_run_rows`, which fills ``section`` from the run's pointer and
 #: leaves a field whose value is empty off the row.
 COMMON_RUN_FIELDS: tuple[str, ...] = ("run_id", "node", "plan", "section")
+
+
+#: Every field name a ``live`` row answers, as one declaration the live view,
+#: the runs view and the MCP pre-flight all read. It is the union of the parts
+#: above and not a set of its own, so a name added to one of them reaches every
+#: caller at once: a pre-flight that restated the union could refuse a request
+#: the view answers, which is a refusal the caller cannot act on.
+LIVE_FIELD_VOCABULARY: frozenset[str] = (
+    frozenset(LIVE_CLASSIFICATION_FIELDS)
+    | LIVE_OVERRUN_FIELDS
+    | frozenset(LIVE_PLACEMENT_FIELDS)
+    | frozenset(COMMON_RUN_FIELDS)
+)
 
 
 def _canonical_section(value: Any) -> str:
@@ -382,6 +456,7 @@ def project_live_rows(
         view="live",
         sections=sections,
         identity=(LIVE_ROW_ANCHOR,),
+        vocabulary=_live_field_vocabulary(classified, with_mine=with_mine),
     )
     if with_mine:
         for row in rows:
@@ -697,6 +772,39 @@ def _live_records_for_run(
     return [record]
 
 
+def normalize_runs_source(source: str | None) -> str:
+    """Return the runs view's own source, or raise on one it does not serve.
+
+    Does no I/O, so a caller judging a request's arguments can ask what
+    :func:`runs_view` accepts before the fleet is walked: the view calls this
+    function, so the accepted set and the normalisation that decides it are one
+    fact. A caller comparing the raw argument against :data:`RUN_SOURCES`
+    instead would refuse ``'ALL'``, which the view serves.
+    """
+
+    selected = str(source or "all").strip().lower()
+    if selected not in RUN_SOURCES:
+        raise RunQueryError(
+            f"runs source must be one of {', '.join(sorted(RUN_SOURCES))}"
+        )
+    return selected
+
+
+def normalize_runs_scope(scope: str | None) -> str:
+    """Return the runs view's own scope, or raise on one it does not serve.
+
+    The counterpart of :func:`normalize_runs_source` for the scope argument, and
+    read by the view and its pre-flight for the same reason.
+    """
+
+    selected = str(scope or "project").strip().lower()
+    if selected not in RUN_SCOPES:
+        raise RunQueryError(
+            f"runs scope must be one of {', '.join(sorted(RUN_SCOPES))}"
+        )
+    return selected
+
+
 def runs_view(
     project: str,
     *,
@@ -724,16 +832,8 @@ def runs_view(
     before any compact row is built. The answer is the same rows the identity
     filter would have kept, without paying for the fleet to read one run.
     """
-    selected_source = str(source or "all").strip().lower()
-    if selected_source not in RUN_SOURCES:
-        raise RunQueryError(
-            f"runs source must be one of {', '.join(sorted(RUN_SOURCES))}"
-        )
-    selected_scope = str(scope or "project").strip().lower()
-    if selected_scope not in RUN_SCOPES:
-        raise RunQueryError(
-            f"runs scope must be one of {', '.join(sorted(RUN_SCOPES))}"
-        )
+    selected_source = normalize_runs_source(source)
+    selected_scope = normalize_runs_scope(scope)
     selected_run_id = str(run_id or "").strip()
     if run_id is not None and not selected_run_id:
         raise RunQueryError("runs run_id must be a non-empty run identifier")

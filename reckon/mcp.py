@@ -30,7 +30,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from types import UnionType
@@ -84,15 +84,23 @@ from reckon.capability import (
     map_legacy_capabilities,
 )
 from reckon.doccheck import SEVERITIES, audit_file, audit_lifecycle, audit_links
+from reckon.crew.query import (
+    RunQueryError,
+    _refuse_unknown_fields,
+    _refuse_unknown_live_fields,
+    _requested_field_names,
+    normalize_runs_scope,
+    normalize_runs_source,
+)
 from reckon.mcp_views import (
-    CREW_VIEWS,
     ResourceSelector,
     ViewRequestError,
     audit_view,
     authored_plan_text,
-    crew_view_refusal_detail,
+    crew_view_name,
     discovery_view,
     error_response,
+    normalize_roadmap_view,
     normalize_selector,
     normalize_view,
     resource_view,
@@ -234,12 +242,94 @@ from reckon.mcp_edit_plan import (
     _validate_working as _validate_working,
 )
 
-#: The read views the crew tool publishes. It is derived from the single
-#: registry :data:`reckon.mcp_views.CREW_VIEWS` that :func:`serve_crew_view`
-#: serves, so the tool's own surface cannot diverge from the CLI's; a parity
-#: check compares this set against the served set and fails on a view
-#: registered on one surface only.
-CREW_TOOL_VIEWS: tuple[str, ...] = CREW_VIEWS
+
+def _view_refusal(
+    error: ViewRequestError,
+    selector: ResourceSelector | None = None,
+    operation: str = "read",
+) -> dict[str, Any]:
+    """Refuse a view the owning read's own validator rejected.
+
+    Answered through :func:`reckon.mcp_views.error_response`, the contract a
+    read's own ``ViewRequestError`` handler answers through, so an unknown view
+    gets one response shape — ``error``, ``message``, ``operation`` and ``hint``
+    — whichever path refuses it, and the accepted values stay in the message
+    the validator composed.
+    """
+
+    return error_response(
+        error.code,
+        error.message,
+        selector=selector,
+        operation=operation,
+        hint=error.hint,
+    )
+
+
+def _argument_selector(
+    project: str | None, slug: str | None = None, doc_type: str | None = None
+) -> ResourceSelector | None:
+    """The typed identity a request's own arguments name, without a read.
+
+    ``None`` when the request names no single resource — an unset or wildcard
+    project — because a refusal is not the place to guess an identity that the
+    resource scan has not confirmed.
+    """
+
+    if not project or project == "*":
+        return None
+    return ResourceSelector(
+        project=project, type=canonical_type(doc_type), id=slug or ""
+    )
+
+
+def _crew_argument_refusal(
+    view: str,
+    *,
+    fields: Iterable[str] | None,
+    session: str | None,
+    source: str,
+    scope: str,
+) -> dict[str, Any] | None:
+    """Refuse a crew request whose only defect is an argument, before any read.
+
+    A view outside the served set, a field no row answers and a scope or source
+    outside the declared one each depend on nothing but the argument, so the
+    refusal is raised here rather than left to the view, which reaches the same
+    verdict only after it has read the pointers. The views' own validators are
+    what decide a field, so the accepted set and the wording of its refusal have
+    one owner: a field check that restated either could refuse a request the
+    view answers, and a caller cannot act on a refusal that is wrong.
+    """
+    try:
+        view = crew_view_name(view)
+    except ViewRequestError as error:
+        return _view_refusal(error)
+    requested = _requested_field_names(fields)
+    if requested:
+        try:
+            if view == "live":
+                _refuse_unknown_live_fields(
+                    requested, (), with_mine=session is not None
+                )
+            elif view == "runs":
+                _refuse_unknown_fields(requested)
+        except RunQueryError as error:
+            return {"ok": False, "error": "crew_error", "detail": str(error)}
+    if view == "runs":
+        # Judged by the view's own validators, which normalise before they
+        # compare: a raw membership test here would refuse 'ALL' or 'Project',
+        # both of which the view serves.
+        for normalize, value in (
+            (normalize_runs_source, source),
+            (normalize_runs_scope, scope),
+        ):
+            try:
+                normalize(value)
+            except RunQueryError as error:
+                return {"ok": False, "error": "crew_error", "detail": str(error)}
+    return None
+
 
 _LOGGER = logging.getLogger("reckon.mcp")
 
@@ -1061,6 +1151,12 @@ def _read_plan_tool(
     """
 
     selected_view = view
+    # The read's own normaliser decides this, so a view the read serves is not
+    # refused from the argument ahead of it and the accepted set is one fact.
+    try:
+        normalize_view(view)
+    except ViewRequestError as error:
+        return _view_refusal(error, _argument_selector(project, slug, doc_type))
     if view is None and not with_schema and project not in (None, "*"):
         selected_view = "summary"
     return _read_plan(
@@ -2014,6 +2110,12 @@ def _roadmap_tool(
     """
 
     selected_view = view
+    # The roadmap read's own validator decides this, before the scan that builds
+    # the report it would otherwise answer with.
+    try:
+        normalize_roadmap_view(view)
+    except ViewRequestError as error:
+        return _view_refusal(error)
     if view is None and project != "*" and not project.startswith("graph:"):
         selected_view = "summary"
     if checkout_path is None:
@@ -2203,6 +2305,16 @@ def _crew(
     ``read_plan``: with it, the ledger and the routing project layer resolve
     inside that checkout instead of the registered main one.
     """
+    if action is None:
+        refusal = _crew_argument_refusal(
+            view,
+            fields=fields,
+            session=session,
+            source=source,
+            scope=scope,
+        )
+        if refusal is not None:
+            return refusal
     if action in _WRITE_ACTIONS:
         return _crew_write_action(
             action,
@@ -2255,12 +2367,6 @@ def _crew(
             advice=advice,
             dry_run=dry_run,
         )
-    if view not in CREW_TOOL_VIEWS:
-        return {
-            "ok": False,
-            "error": "invalid_view",
-            "detail": crew_view_refusal_detail(),
-        }
     return serve_crew_view(
         view,
         refresh=refresh,

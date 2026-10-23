@@ -1,0 +1,221 @@
+<section id="a-malformed-request-is-refused-before-storage" class="evidence-fragment">
+  <h2>§17 — A malformed request is refused before it touches storage</h2>
+  <p>
+    A request whose only defect is an argument — a crew view outside the served
+    set, a crew field no row carries, a read_plan or roadmap view outside the
+    declared shapes, an edit op verb outside the edit vocabulary — was answered
+    only after storage had been consulted. Against a stub whose every open
+    raises, the base revision reached the stub: <code>_crew</code> read the
+    live pointers through <code>reckon.crew.list_live</code> and classified an
+    empty pointer before it read the requested field names, and the store read
+    the plan before it dispatched <code>_apply_one_op</code>.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-change">
+    Change. <code>reckon/mcp.py</code> gained
+    <code>_crew_argument_refusal</code>, called at the head of <code>_crew</code>
+    for a read request (no <code>action</code>). It refuses a view the crew read
+    does not serve, a <code>live</code> field outside the vocabulary the live
+    view itself declares — the field checks delegate to the views' own
+    validators, <code>query._refuse_unknown_live_fields</code> and
+    <code>query._refuse_unknown_fields</code>, so the accepted set and the
+    wording of its refusal have one owner — and a <code>runs</code> scope or
+    source outside the set the view serves, each naming the accepted values (that
+    check took its set from the pre-flight's own copy of the view's constants and
+    was later moved onto the view's own validators, below). <code>reckon/mcp_edit_plan.py</code> gained
+    <code>_refuse_unknown_op_verbs</code>, called before the edit tool resolves
+    the run-scoped checkout, which refuses an op whose verb is outside the
+    grammar <code>reckon.mcp._OP_VOCAB</code> publishes — the one declaration,
+    minus <code>create</code>, which is a parameter rather than an op key —
+    naming the op's position and the accepted verbs.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-one-owner">
+    Judged by the read that serves it. Each view pre-flight first declared a set
+    of its own beside the read it was guarding: the crew tool carried an alias of
+    the dispatcher's registry, and the roadmap view tuple was written out in
+    <code>reckon/mcp.py</code>. A copy is a second place a name can be added or
+    renamed, and nothing fails when the two disagree — the pre-flight then
+    refuses a view the read serves, or admits one it does not. The declarations
+    are gone, and each pre-flight calls the owner:
+    <code>mcp_views.crew_view_name</code> for the crew view,
+    <code>mcp_views.normalize_view</code> for the plan read, and a new
+    <code>mcp_views.normalize_roadmap_view</code>, declared beside the roadmap
+    view set, for the roadmap. Both new validators do no I/O, which is what lets
+    them be reached before the scan that builds the report, and each is the same
+    function its own read calls once it does read — so the accepted set is one
+    fact, and a view added to the owner is admitted by the pre-flight with no
+    second edit.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-measure">
+    Measure. The focused gate of this node's seven files reports
+    <strong>1 failed, 153 passed</strong> at the head revision
+    (<code>EXIT=1</code>); the failure is
+    <code>tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window</code>,
+    <code>reckon/roadmap.py: 51232 estimated tokens exceeds the 50000 bound</code>
+    — a failure the done-when declares pre-existing on main, in a module this
+    node did not write. The new file alone reports <strong>15 passed</strong>.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-base">
+    Base arm. The head test file, run against the base revision
+    <code>3a985827b</code> extracted with <code>git archive</code> into a scratch
+    tree, reports <strong>10 failed, 5 passed</strong> (<code>EXIT=1</code>).
+    The five that pass are the cases the base already answered: an unknown
+    <code>runs</code> scope, an unknown <code>runs</code> field, a plan and a
+    roadmap naming an unknown view, and a case-spelled view reaching the
+    plan read. The base carried no argument pre-flight at all, so it reached
+    storage for every one of them — which is the defect this node repairs, and
+    what the ten failures measure against.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-parity">
+    One owner for the vocabulary. The pre-flight first restated the live vocabulary
+    as a literal of its own, and a literal drifts: it named every field a
+    classification carries but none that the view adds, so a live read naming
+    <code>section</code> — the field a run is dispatched for, added by
+    <code>project_run_rows</code> from the run's pointer — was refused from the
+    argument while the view would have answered it. The set is now declared once
+    in <code>reckon/crew/query.py</code> as
+    <code>LIVE_FIELD_VOCABULARY</code>, composed from the same named parts the
+    derivation uses, and the derivation, the view's projection and the MCP
+    pre-flight all read it. The projection also carried no vocabulary on a
+    narrowed request, so it judged the fleet's current rows as though they were
+    the whole accepted set; it now carries the declaration on both paths.
+    Two checks hold the declaration: one compares it against what a classified
+    pointer produces, and one asserts it contains each named part, because a
+    classification alone cannot see a name dropped from
+    <code>COMMON_RUN_FIELDS</code>. A third asserts the served direction —
+    a live read of <code>section</code> and the other common fields returns
+    rows rather than a refusal — so a check that refused everything cannot read
+    as a pass.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-served-case">
+    The served direction is asserted under the same storage stub the refusal
+    cases use. The plan and roadmap reads match a view after stripping and
+    lowercasing it, so <code>view='RAW'</code> and <code>view='SuMMaRy'</code>
+    are served; the test requires the read to reach storage rather than merely
+    to answer with something other than <code>invalid_view</code>, and the stub
+    now covers the project docs resolution as well as <code>open</code>, since
+    that is the first storage access a read makes here and it stats the mounts
+    file rather than opening one. The earlier version of this case read the
+    host's own project registry, so its verdict depended on the machine.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-dispatch">
+    The op pre-flight reads its verbs from the store's own dispatch rather than
+    from the grammar an answer publishes. <code>read_plan</code> returns
+    <code>op_vocab</code> — every op a caller may write, which is the right thing
+    for a caller to read and the wrong thing to judge a batch against, because it
+    lists <code>push</code>. <code>push</code> marks a sprint active and is
+    dispatched for a sprint alone, in <code>apply_resource_ops</code>; it is not
+    in the shared handler table <code>_OP_DISPATCH</code> that answers every other
+    op. Judging the batch from the grammar accepted
+    <code>ops=[{"op": "push"}]</code> against a plan and let the request through
+    to the store, which answered from the resource lookup instead of refusing the
+    verb. The accepted set is now composed from the dispatcher itself and is per
+    document type: <code>accepted_op_verbs</code> in
+    <code>reckon/project_state.py</code> returns the handler table plus the ops
+    that type is dispatched for, and the type comes from the request's own
+    arguments without a read — the index is a project resource reached by its
+    slug, a plan is the untyped default, every other type is named by
+    <code>doc_type</code>. A test asserts one verb both ways: <code>push</code>
+    is accepted for a sprint and refused for a plan, and the refusal names the
+    verbs a plan does dispatch.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-one-contract">
+    A view refusal answers one contract whichever path refused it. The plan and
+    roadmap reads answer a <code>ViewRequestError</code> raised inside them through
+    <code>error_response</code>, which carries <code>error</code>,
+    <code>message</code>, <code>operation</code> and <code>hint</code>; the
+    pre-flight answered a <code>detail</code> shape of its own. The pre-flight now
+    refuses through that same function, so a caller reads one answer shape either
+    way, and the validator's verdict keeps its own fields — the message names the
+    view that was refused and the hint the values it accepts. The tests assert the
+    shape and the split, not merely the error code, which is what tells the two
+    contracts apart. The crew read carried the same divergence in the other
+    direction: the crew tool's pre-flight and the <code>crew view</code> CLI
+    both answer through <code>serve_crew_view</code>, and the server's own
+    refusal answered a <code>detail</code> shape while the pre-flight answered
+    the contract, so one malformed view read two different things depending on
+    which surface asked. Both go through <code>error_response</code> now, and a
+    test calls both entry points under the storage stub and asserts the two
+    answers carry the same keys — so a refusal added to one surface alone fails
+    it.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-normalisation">
+    A pre-flight that compares the raw argument refuses what its owner serves.
+    The <code>runs</code> view strips and lowercases both its source and its
+    scope before comparing them, so <code>source='ALL'</code> and
+    <code>scope=' Project '</code> are served; the pre-flight tested the
+    arguments as written against <code>RUN_SOURCES</code> and
+    <code>RUN_SCOPES</code> and refused both. That refusal is the one a caller
+    cannot act on — the answer names a set the caller's own value belongs to,
+    and the read that would have answered the request never ran. The view's
+    acceptance now lives in two no-I/O validators beside it,
+    <code>normalize_runs_source</code> and <code>normalize_runs_scope</code> in
+    <code>reckon/crew/query.py</code>, which the view calls for its own
+    arguments and the pre-flight calls for the request's, so the accepted set
+    and the normalisation that decides it are one fact.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-inventory">
+    Every check the two pre-flights make, with the owner it routes through:
+    the crew view name through <code>mcp_views.crew_view_name</code>; the
+    <code>live</code> fields through <code>query._refuse_unknown_live_fields</code>
+    and the <code>runs</code> fields through <code>query._refuse_unknown_fields</code>;
+    the <code>runs</code> source and scope through the two validators above; the
+    plan view through <code>mcp_views.normalize_view</code> and the roadmap view
+    through <code>mcp_views.normalize_roadmap_view</code>; the op verbs through
+    <code>project_state.accepted_op_verbs</code>, which composes the dispatcher's
+    own tables. Two more name their owner without restating it: the document type
+    a batch is judged against comes from <code>canonical_type</code> and, for the
+    index slug, from a rule now held in one helper — <code>_is_project_slug</code>
+    — that the pre-flight and the write path both call, and the edit mode is the
+    tool's own write path, which compares the value the pre-flight compared.
+    Those last two are the checks whose owner normalises nothing, so their
+    requirement is agreement rather than a served spelling, and the test asserts
+    it that way: a table names each check and a spelling its owner normalises,
+    and the two non-normalising checks are asserted as agreeing with their owner
+    on a value it refuses.
+  </p>
+  <p id="a-malformed-request-is-refused-before-storage-negative">
+    Negative control. Eight arms at this head, each log line quoted as printed,
+    and the log opens with a head arm at the head revision with a clean
+    tree — <strong>15 passed in 7.60s</strong> (<code>EXIT=0</code>) — so each
+    arm that follows is a failure the mutation caused rather than one the tree
+    carried. Arm 1 puts a storage read before all three view pre-flights — the
+    defect this node repairs, in each tool at once — and reports
+    <strong>7 failed, 8 passed in 11.13s (<code>EXIT=1</code>): the six
+    refusal cases and the both-surfaces case fail with <code>storage was
+    reached: the docs dir for 'fixture'</code>, while the edit-op cases (which
+    route through neither mutated pre-flight) and the positive cases still pass.
+    Arm 2 removes the vocabulary from the narrowed live projection and reports
+    <strong>1 failed, 14 passed in 8.01s</strong> (<code>EXIT=1</code>) —
+    <code>test_a_live_read_of_a_served_field_is_not_refused</code>, with
+    <code>unknown live fields 'section'</code> raised by the view. Arm 3 drops
+    <code>COMMON_RUN_FIELDS</code> from the declaration and reports
+    <strong>2 failed, 13 passed in 8.00s</strong> (<code>EXIT=1</code>) — the
+    parts check and the served-field check, which is why both are there: the
+    classification-derived comparison alone let that mutation through, because a
+    classification of a pointer carries no <code>section</code> to miss it. Arm
+    4 makes the plan pre-flight match a view case-sensitively and reports
+    <strong>1 failed in 10.05s</strong> (<code>EXIT=1</code>) —
+    <code>test_a_view_named_in_another_case_reaches_the_read</code>. Arm 5
+    restores the earlier defect — the accepted verbs taken from the
+    published grammar — and reports <strong>2 failed, 13 passed in 8.90s</strong>
+    (<code>EXIT=1</code>): the push case, which now answers <code>plan 'a-plan'
+    not found — pass create=True</code> because the batch reached the store's
+    lookup, and the per-type assertion that an op accepted for a sprint is
+    refused for a plan. Arm 6 makes the pre-flight view refusal answer a
+    <code>detail</code> shape of its own and reports <strong>4 failed, 11 passed
+    in 13.18s</strong> (<code>EXIT=1</code>) — the crew, plan and roadmap unknown-view
+    cases plus the both-surfaces case, each on the missing <code>operation</code>
+    key. Arm 7 puts the server's own crew-view refusal back on a
+    <code>detail</code> shape and reports
+    <strong>1 failed, 14 passed in 13.51s</strong> (<code>EXIT=1</code>) — the
+    both-surfaces case, whose CLI call now answers keys the tool's does not. Arm
+    8 puts the <code>runs</code> pre-flight back on a raw membership test — the
+    defect this round repairs — and reports <strong>2 failed, 13 passed in
+    12.93s</strong> (<code>EXIT=1</code>):
+    <code>test_the_runs_checks_serve_a_spelling_the_view_normalises</code>, whose
+    answer is no longer <code>ok</code>, and
+    <code>test_every_pre_flight_check_is_judged_by_its_owner</code>, on
+    <code>assert refusal is None, f"{name}: a served spelling was refused"</code>
+    — the row the table exists to catch.
+  </p>
+</section>

@@ -52,6 +52,10 @@ from reckon.project_state import _natural_identifier_key
 VIEW_NAMES = frozenset(
     {"summary", "detail", "history", "version", "raw", "schema", "section"}
 )
+#: The response shapes a roadmap read serves. Declared here, beside the read
+#: that serves them, so a caller judging the argument before the scan reads the
+#: same set the read enforces rather than a copy of it.
+ROADMAP_VIEW_NAMES = ("summary", "detail", "raw")
 RESOURCE_TYPES = frozenset(
     {
         "plan",
@@ -3539,6 +3543,25 @@ def _roadmap_project_summary(raw: dict[str, Any]) -> dict[str, Any]:
     return summary
 
 
+def normalize_roadmap_view(view: str | None) -> str:
+    """Return the roadmap view a request names, or raise on one outside them.
+
+    Does no I/O, so a caller judging a request's arguments can ask what this
+    read accepts without first building the report: the same function is called
+    by :func:`roadmap_view` once it has the raw report in hand, so the accepted
+    set is one fact rather than a declaration beside its own validator.
+    """
+
+    selected = normalize_view(view)
+    if selected not in ROADMAP_VIEW_NAMES:
+        raise ViewRequestError(
+            "invalid_view",
+            "Roadmaps support summary, detail, or raw views.",
+            "Use summary for counts, detail for paginated findings, or raw.",
+        )
+    return selected
+
+
 def roadmap_view(
     raw: dict[str, Any],
     *,
@@ -3548,13 +3571,7 @@ def roadmap_view(
 ) -> dict[str, Any]:
     """Build compact, paginated roadmap views while preserving raw opt-in."""
 
-    selected = normalize_view(view)
-    if selected not in {"summary", "detail", "raw"}:
-        raise ViewRequestError(
-            "invalid_view",
-            "Roadmaps support summary, detail, or raw views.",
-            "Use summary for counts, detail for paginated findings, or raw.",
-        )
+    selected = normalize_roadmap_view(view)
     project = str(raw.get("project") or "")
     if selected == "raw":
         return {"project": project, "view": "raw", "data": raw}
@@ -3730,6 +3747,20 @@ def crew_view_refusal_detail() -> str:
     )
 
 
+def crew_view_name(view: str) -> str:
+    """Return a served crew view, or raise on one outside the registry.
+
+    Does no I/O, so a caller judging a request's arguments refuses from the
+    argument alone. :func:`serve_crew_view` applies the same check before it
+    reads anything, and both call this function, so the registry is the only
+    place the accepted set is written down.
+    """
+
+    if view not in CREW_VIEWS:
+        raise ViewRequestError("invalid_view", crew_view_refusal_detail())
+    return view
+
+
 def serve_crew_view(
     view: str = "summary",
     *,
@@ -3830,12 +3861,14 @@ def serve_crew_view(
             "error": "missing_project",
             "detail": "crew read views need project",
         }
-    if view not in CREW_VIEWS:
-        return {
-            "ok": False,
-            "error": "invalid_view",
-            "detail": crew_view_refusal_detail(),
-        }
+    try:
+        view = crew_view_name(view)
+    except ViewRequestError as error:
+        # The contract the MCP pre-flight answers through as well, so one
+        # malformed view reads the same whichever surface refused it.
+        return error_response(
+            error.code, error.message, operation="read", hint=error.hint
+        )
     if view == "models":
         from reckon.crew.model_catalogue import model_notices
 

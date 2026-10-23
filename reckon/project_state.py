@@ -43,7 +43,12 @@ from reckon._schema import (
     parse_plan_ref,
     resolve_plan_ref,
 )
-from reckon._store import _fsync_directory, write_atomically, write_json_atomically
+from reckon._store import (
+    _OP_DISPATCH,
+    _fsync_directory,
+    write_atomically,
+    write_json_atomically,
+)
 from reckon._timestamps import parse_utc
 from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
 from reckon.sprint_liveness import sprint_liveness
@@ -2346,6 +2351,27 @@ def _close_sprint_with_carry_forward(
         _mark_move_journal_committed(journal)
         _durable_unlink(journal)
     return new_closing, [f"carried {len(incomplete)} item(s) to sprint {advancing_id}"]
+
+
+#: Ops this dispatcher answers that the shared handler table in
+#: :data:`reckon._store._OP_DISPATCH` does not. A table handler applies to every
+#: resource type; an op named here is accepted for the type it names and refused
+#: for every other, which is why the accepted set is per document type.
+_DOCUMENT_TYPE_OPS: dict[str, frozenset[str]] = {
+    "sprint": frozenset({"push"}),
+}
+
+
+def accepted_op_verbs(resource_type: str) -> frozenset[str]:
+    """Every op verb the store accepts for one document type.
+
+    Read from the dispatch itself — the shared handler table plus the ops this
+    module dispatches for a named type — because the published grammar in
+    :data:`reckon.mcp._OP_VOCAB` describes which op a caller may write, and so
+    lists ``push`` for a plan the store refuses it on.
+    """
+
+    return frozenset(_OP_DISPATCH) | _DOCUMENT_TYPE_OPS.get(resource_type, frozenset())
 
 
 def apply_resource_ops(
