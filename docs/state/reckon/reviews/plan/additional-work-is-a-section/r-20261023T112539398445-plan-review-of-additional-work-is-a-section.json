@@ -1,0 +1,36 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T11:35:48.423Z",
+  "dispatched_at": "2026-10-23T11:26:32Z",
+  "findings": [],
+  "plan_fingerprint": "c67547b52b171dacc1588b1091b0f12cb3a9c102ec6e5bdc30929c918586f64f",
+  "plan_slug": "additional-work-is-a-section",
+  "plan_version": 37,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T112539398445-plan-review-of-additional-work-is-a-section",
+  "reviewed_blob_sha": "08bb3295a34043584fbcb54fb90ee4bde09a4f84",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `reckon/crew/recovery_watch.py:201` (`follow_ons: none` in `_derived_manifest_text`), `reckon/crew/dispatch_peer.py:407` (the `_needs_help_for_question` template), `scripts/check_snapshot_assertions.py:147` (inside `CREW_ROW_KEYS` at line 133), and `reckon/ledger.py:651` / `:632` (the extractor and `_path_like_tokens` docstrings at lines 632 and 651).",
+    "done_when": "pass \u2014 \u00a77 declares a negative control (\"restore the old word at `recovery_watch.py`, and the first case fails\") and each of its four cases is falsifiable against the code as it stands (`recovery_watch.py:201`, `dispatch_peer.py:407`, `check_snapshot_assertions.py:147`, the `ledger.py` docstrings at 632/651).",
+    "evidence_paths": "pass \u2014 \u00a77's gate writes to `docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html` and the test file, both durable repository paths.",
+    "naming": "pass \u2014 \u00a77 introduces only code names (`outside_scope`, `test_every_derived_manifest_carries_the_outside_scope_field.py`) and no plan label, ticket number or version tag.",
+    "reasoning": "pass \u2014 the Why's evidence matches the tree (the three composition sites and the two `ledger.py` docstrings carry the retired word exactly as stated), the mechanism (rename the three sites plus the two docstrings) produces all four cases, and both mechanisms run on production callers: `_derive_missing_manifest` is invoked from `recovery_watch.py`'s watch loop (line 3013) and `_needs_help_for_question` from the peer-answer path (`dispatch_peer.py:445`/`448`).",
+    "single_goal": "pass \u2014 \u00a77 carries one deliverable, the retired manifest-field name in the derived manifests, the NEEDS-HELP report and the ledger docstrings.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s7:[#s3]`, and \u00a73 depends on \u00a76, so \u00a77's reliance on the renamed manifest parser (\u00a73) and on \u00a76 having left the ledger docstrings alone is satisfied transitively; the followup f-awias-001 states the same order (\"\u00a77 follows \u00a73\")."
+  },
+  "section_digests": {
+    "_document": "edf7f32827e72affb12cd9e488ed27db272b42b30d40a6095338f58ef1bbe1bd",
+    "s1": "53035db610c769f9fabc12038e7a13898064f071d29b27f9e4b9cfe7e6e9cbfb",
+    "s2": "da6965864ffd2ed27a0442cf22caf15936faa1f5ecfe3c8d4be21504a5d51387",
+    "s3": "ac2943c184863917be20d90cb41e0c41066fd2dd0cf386d57cc73789f89d8187",
+    "s4": "f54fdafb18757876821e9a2c5955d3db854946ef19afb4d56a5e83886375b088",
+    "s5": "a6fa784958eef11b006d0cb4912714d98031c18adf47e32ecc1f84a23d578e4d",
+    "s6": "0f8796c8305cc16163a272e7a32db694def457ce5ed1c506aa8ed5d5e962f591",
+    "s7": "eff42915cc419e1306f40547dd5fc9eaaa0714b5f864f9e44a54d07603e57f2d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T11:39:15.879373+00:00"
+}
