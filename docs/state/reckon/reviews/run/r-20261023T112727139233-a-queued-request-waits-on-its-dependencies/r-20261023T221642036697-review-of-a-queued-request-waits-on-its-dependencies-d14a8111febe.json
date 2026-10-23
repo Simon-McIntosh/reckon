@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_producer_sweeps_only_on_change.py::test_quiet_cycles_list_nothing_and_spawn_no_git"
+  ],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (43677d0d, 16 ids, completed, EXIT=1) and after_suite (f1e56544b, 17 ids, completed, EXIT=1) share all 16 base ids, so the set difference is one added id and none recovered. The manifest records that id passing serially at the same head (gate-round7-headonly-serial3.log, 25 passed, EXIT=0), and it lives in a module the node does not touch, so it reads as load under -n 8 rather than as this change.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3536 crew_admit",
+    "reckon/crew/queue_admission.py:2072 admit_until_stopped",
+    "reckon/crew/dispatch.py:1630",
+    "reckon/crew/obligation_snapshot.py:1060",
+    "reckon/crew/recovery_classification.py:675",
+    "reckon/crew/ticker.py:297"
+  ],
+  "completed_at": "2026-10-23T22:35:13.479Z",
+  "dispatched_at": "2026-10-23T22:17:38Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "217 non-blocking",
+      "severity": "non-blocking",
+      "text": "the pane table is edited outside the node's declared write paths and outside every round-3 grant, so a file this node was never fenced to write now carries two new classifier words; the change is small and repairs a red id the node's own vocabulary created, but no coordinator authorised the path."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17 non-blocking",
+      "severity": "non-blocking",
+      "text": "after_suite.command records '<88 files: the node's own module plus every tests/*.py importing queue_admission, recovery_classification or recovery_vocabulary>' in place of the file list, and gate-round7c.log's own command header repeats the placeholder, so the head arm cannot be re-run and the 88 files it ran are on no receipt."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1429 non-blocking",
+      "severity": "non-blocking",
+      "text": "the declared negative control was 'release an awaiting-upstream request without re-reading readiness; the chain launches out of order', but the mutation actually run (neg-wiring-redispatch.log) neutralises the dispatch wiring, so it proves the hold is reachable, not that the release condition in resolve_waits is guarded; that guard is argued from the test's shape rather than shown red."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1056 non-blocking",
+      "severity": "non-blocking",
+      "text": "_readiness_rows repeats the discover-inventory-build_roadmap assembly that reckon/crew/plan_review.py:3093 _readiness_by_slug already performs; the derivation is imported from its owner, but the plumbing now exists in two places."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit over 19 commits from 43677d0d26 to d14a8111f: 8 files, +2059/-45, of which reckon/crew/queue_admission.py (+728) carries the readiness read, the ref resolution and the admission move, and reckon/crew/dispatch.py (+186) the hold placed ahead of the lane gate.",
+    "done_when": "the measure names a three-section chain launched in dependency order, an abandoned-upstream arm whose tail never launches, and a malformed node refused at queue time; tests/test_a_queued_request_waits_on_its_dependencies.py:198, :223 and :379 assert exactly those, node-module-round7.log records 16 passed at the head, and neg-wiring-redispatch.log shows the two dispatch arms red under the executed mutation.",
+    "goal": "the node's goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/dispatch.py:1630 reads the waits before any lane branch and reckon/crew/queue_admission.py:1475 re-reads them every pass, so both the hold and the release landed, with the one gap the plan assigns to \u00a78: reckon/crew/queue_admission.py:1023 lists completed/done/landed/promoted statuses that parse_manifest cannot return.",
+    "manifest": "read; status complete, both arms as flat JSON (baseline 16 ids at 43677d0d, after 17 ids at f1e56544b, exactly one added id), negative_control_log neg-wiring-redispatch.log with its EXIT=1, and the added id explained by a serial pass - but after_suite.command carries a '<88 files>' placeholder at manifest.md:17.",
+    "write_paths": "the source dispatch fenced six paths and the round-3 resume grant added obligation_snapshot.py, recovery_classification.py and recovery_vocabulary.py; the diff touches those eight except dispatch_admission.py, plus reckon/crew/ticker.py:217, which no grant covers."
+  },
+  "node": "review-of-a-queued-request-waits-on-its-dependencies-d14a8111febe",
+  "node:reviewed": "a-queued-request-waits-on-its-dependencies",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to hold a dispatched node with unmet section waits as an awaiting-upstream request that admission releases as they land; reckon/crew/dispatch.py:1630 reads the waits before any lane branch and reckon/crew/queue_admission.py:1475 re-reads them every pass, so both the hold and the release landed, with the one gap the plan assigns to \u00a78: reckon/crew/queue_admission.py:1023 lists completed/done/landed/promoted statuses that parse_manifest cannot return.\nVERDICT done_when: the measure names a three-section chain launched in dependency order, an abandoned-upstream arm whose tail never launches, and a malformed node refused at queue time; tests/test_a_queued_request_waits_on_its_dependencies.py:198, :223 and :379 assert exactly those, node-module-round7.log records 16 passed at the head, and neg-wiring-redispatch.log shows the two dispatch arms red under the executed mutation.\nVERDICT write_paths: the source dispatch fenced six paths and the round-3 resume grant added obligation_snapshot.py, recovery_classification.py and recovery_vocabulary.py; the diff touches those eight except dispatch_admission.py, plus reckon/crew/ticker.py:217, which no grant covers.\nVERDICT manifest: read; status complete, both arms as flat JSON (baseline 16 ids at 43677d0d, after 17 ids at f1e56544b, exactly one added id), negative_control_log neg-wiring-redispatch.log with its EXIT=1, and the added id explained by a serial pass - but after_suite.command carries a '<88 files>' placeholder at manifest.md:17.\nVERDICT diff: read commit by commit over 19 commits from 43677d0d26 to d14a8111f: 8 files, +2059/-45, of which reckon/crew/queue_admission.py (+728) carries the readiness read, the ref resolution and the admission move, and reckon/crew/dispatch.py (+186) the hold placed ahead of the lane gate.\nCALL_SITES: reckon/crew_run_commands.py:3536 crew_admit, reckon/crew/queue_admission.py:2072 admit_until_stopped, reckon/crew/dispatch.py:1630, reckon/crew/obligation_snapshot.py:1060, reckon/crew/recovery_classification.py:675, reckon/crew/ticker.py:297\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1630 holds a node on its refs ahead of every lane branch and reckon/crew/queue_admission.py:1475 moves it to queued or blocked-upstream with no coordinator turn, which is the behaviour the goal states.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-round7c.log opens with a revision, tree and command and ends EXIT=1 at 840 passed/17 failed, but its command line records '<88 files>' rather than the file set, so the head arm cannot be re-run from its own receipt.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is inside the fence or the round-3 grant except reckon/crew/ticker.py:217, whose two pane words the diff adds without any grant, disclosed in the manifest's scope_note.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_queued_request_waits_on_its_dependencies.py:198 fails if resolve_waits returns queued without reading readiness (three launches where the arm asserts one) and :223 fails if the blocked-upstream move is dropped; no added assertion compares a value against a variable the test itself fed to the code.\nSCORE fit: 17\nJUSTIFICATION fit: the change follows the module's idiom - deferred imports naming the cycle, the phase constants beside QUEUED_PHASE at reckon/crew/queue_admission.py:53, and the literal keys in reckon/crew/recovery_vocabulary.py:75 pinned to those constants by the test at tests/test_a_queued_request_waits_on_its_dependencies.py:610.\nSCORE reuse: 16\nJUSTIFICATION reuse: section refs and readiness are imported from their owners (reckon/_schema.py:276 parse_plan_ref, reckon/_schema.py:430 section_depends_on, reckon/roadmap.py:2660 build_roadmap), but reckon/crew/queue_admission.py:1056 repeats the discover-and-build assembly that reckon/crew/plan_review.py:3093 _readiness_by_slug already performs.\nFINDING reckon/crew/ticker.py:217 non-blocking the pane table is edited outside the node's declared write paths and outside every round-3 grant, so a file this node was never fenced to write now carries two new classifier words; the change is small and repairs a red id the node's own vocabulary created, but no coordinator authorised the path.\nFINDING manifest.md:17 non-blocking after_suite.command records '<88 files: the node's own module plus every tests/*.py importing queue_admission, recovery_classification or recovery_vocabulary>' in place of the file list, and gate-round7c.log's own command header repeats the placeholder, so the head arm cannot be re-run and the 88 files it ran are on no receipt.\nFINDING reckon/crew/queue_admission.py:1429 non-blocking the declared negative control was 'release an awaiting-upstream request without re-reading readiness; the chain launches out of order', but the mutation actually run (neg-wiring-redispatch.log) neutralises the dispatch wiring, so it proves the hold is reachable, not that the release condition in resolve_waits is guarded; that guard is argued from the test's shape rather than shown red.\nFINDING reckon/crew/queue_admission.py:1056 non-blocking _readiness_rows repeats the discover-inventory-build_roadmap assembly that reckon/crew/plan_review.py:3093 _readiness_by_slug already performs; the derivation is imported from its owner, but the plumbing now exists in two places.\n",
+  "review_run_id": "r-20261023T221642036697-review-of-a-queued-request-waits-on-its-dependencies-d14a8111febe",
+  "reviewed_base_sha": "43677d0d2697ae3d8841b6d19addcdb77cc572be",
+  "reviewed_head_sha": "d14a8111febea548ed83e70a5f583446b5990638",
+  "reviewed_run_id": "r-20261023T112727139233-a-queued-request-waits-on-its-dependencies",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T23:30:00+00:00",
+  "total": 101
+}
