@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+<title>a-coordinators-status-repair-prints-no-halted-row — landing record</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="a-coordinators-status-repair-prints-no-halted-row">Landing record — a coordinator's own status repair prints no halted row</h2>
+
+<p id="a-coordinators-status-repair-prints-no-halted-row-why">A <code>crew repair --status</code> rewrites a run's manifest verdict because the coordinator read the run and decided what the record should say. The transition it causes into a halted word is therefore a duty that coordinator has just discharged by its own act — the same reading a <code>landed</code> or <code>dropped</code> row from its own merge or discard is given — so it carries nothing new and the stream must not print it. Before this node the transition printed as a halt, which is the alarm row the section exists to remove.</p>
+
+<p id="a-coordinators-status-repair-prints-no-halted-row-how">The producer reads the run's <code>status-repair.json</code> onto the snapshot (<code>status_repair_at</code>, <code>status_repair_reason</code>) and stamps the single transition the repair caused, by comparing that instant against the previous observation (<code>recovery_watch._status_repaired</code>). The event builder carries the stamp as <code>status_repair</code> (<code>recovery_watch._watch_transition</code>, the dict built at what was line 1878). <code>ticker.stream_carries</code> reads the stamp and withholds the row; it stays in <code>crew view</code> and the pane history. The remembered snapshot then holds the same instant, so the comparison is false afterwards and the stamp rides only the one transition the repair caused.</p>
+
+<p id="a-coordinators-status-repair-prints-no-halted-row-checks"><code>tests/test_a_status_repair_prints_no_halted_row.py</code> holds both directions: a row-policy check that a stamped <code>complete → blocked</code> event prints nothing while the same event without the stamp prints the halted row, and a producer check that the fold stamps the event emitted after a fixture <code>status-repair.json</code> is written, plus that a later transition off the repaired word carries no stamp.</p>
+
+<h3>Gate</h3>
+<p id="a-coordinators-status-repair-prints-no-halted-row-gate">PENDING — arm figures filled when both gate arms complete.</p>
+</main>
+</body>
+</html>
