@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Removing the fleet-record read, or returning a constant node, reddens this arm: the decision would hold instead of releasing. The source run's negative-control.log records exactly that mutation and this arm failing.",
+      "lines": "99-110"
+    },
+    {
+      "failure_condition": "Releasing unconditionally, or reading the unit name from anywhere but the environment, reddens the release/no-unit split: the foreign-host arm at lines 119-130 asserts release-and-exit with unit_disable_command None when the unit env is unset.",
+      "lines": "119-130"
+    },
+    {
+      "failure_condition": "A decision that releases without checking either the same-host arm or the no-run-on-node arm reddens these hold arms; they pass in the recorded negative control because that mutation pushes toward hold.",
+      "lines": "133-166"
+    },
+    {
+      "failure_condition": "A decision that writes the real fleet record or claims the real seat reddens this arm; the before/after mtime, bytes and seat glob are each compared against themselves only as observers of the same path, so the guard is independent of the value the code under test returns.",
+      "lines": "164-184"
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-23T16:04:13.090Z",
+  "dispatched_at": "2026-10-23T15:43:47Z",
+  "findings": [
+    {
+      "file": "reckon/crew/watch_unit.py",
+      "line": "246",
+      "severity": "non-blocking",
+      "text": "non-blocking: producer_start_decision has no production call site anywhere in the tree at cefafb526 (every reference is inside watch_unit.py itself or its test), so no producer releases its seat and the section's stated release-and-exit behaviour is unreachable until the producer loop calls it; the source manifest records that wiring as a follow-on held out of this node's write scope."
+    },
+    {
+      "file": "reckon/crew/watch_unit.py",
+      "line": "183",
+      "severity": "non-blocking",
+      "text": "non-blocking: _hosts_match re-implements the short-hostname normalisation the repository already owns in fleet_supervisor._short_hostname (reckon/crew/fleet_supervisor.py:270) and already duplicates in paste.py:374, making a third copy; it could shorten the local host through that owner rather than spelling the split again."
+    },
+    {
+      "file": "tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py",
+      "line": "178",
+      "severity": "non-blocking",
+      "text": "non-blocking: the real-record assertion dereferences real_fleet.stat() unconditionally while the before-side reading at line 169 guards with .exists(), so on a host with no fleet record this test errors rather than passing, turning a passing guard into an environment-dependent failure."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 0 production call site(s)",
+    "diff": "Read commit by commit against the base: 552f75681 adds _hosts_match, _fleet_node_from_record, fleet_record_node, runs_launched_on, _unit_disable_command and producer_start_decision to reckon/crew/watch_unit.py plus the new test; cefafb526 adds only the evidence fragment.",
+    "done_when": "The source brief's done-when asks for a test of the start-up decision against a temporary fleet record and seat with release for a foreign host, hold for the same host, hold for an absent record, plus ruff on the staged paths; tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py carries those arms, gate-head.log records 6 passed EXIT=0 at cefafb526, negative-control.log records 2 failed EXIT=1, and I re-ran ruff check and ruff format --check on the two staged paths, both clean.",
+    "goal": "The node goal is to release the watch seat and disable its unit when a producer runs on a host other than the fleet record's node; watch_unit.py:246 producer_start_decision returns release-and-exit with the unit-disable command composed, but no production code calls it, so no producer releases anything yet.",
+    "manifest": "The source manifest.md records status complete, commits 552f75681 and cefafb526, the literal pytest gate command, readable baseline_suite (6 failure ids, exit 1) and after_suite (0 failures, exit 0) receipts, and no ruff receipt for the done-when's ruff item, which I verified independently.",
+    "write_paths": "The source prompt's FENCE SCOPE grants reckon/crew/watch_unit.py, tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py and the docs/evidence fragment; the 84c5064d..cefafb526 diff changes exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py:102 reddens when the fleet-record read is removed, which negative-control.log records as the release arms failing 2/6, and lines 133-166 guard against releasing on the same host or with no run on the node.",
+    "evidence": "gate-head.log records 6 passed EXIT=0 at cefafb526, negative-control.log records the two release arms failing 2 failed/4 passed EXIT=1, and gate-base.log records the six arms failing EXIT=1 against the base watch_unit.py.",
+    "fit": "reckon/crew/watch_unit.py:246 sits beside the existing foreign-seat readers and follows the module's describe-the-mechanism docstring style, with no plan label, version or ticket in any added name or comment.",
+    "goal_fidelity": "reckon/crew/watch_unit.py:246-317 returns release-and-exit for a foreign host with runs launched on the fleet node, but nothing in the tree at cefafb526 calls it, so the seat is never actually released.",
+    "reuse": "Capability search over reckon/crew/ found dispatch_launch._read_fleet_record (dispatch_launch.py:2131) and runs.list_live (runs.py:793), both reused rather than re-implemented, while _hosts_match forks the short-hostname normalisation fleet_supervisor owns at fleet_supervisor.py:270.",
+    "scope_discipline": "The 84c5064d..cefafb526 diff touches only reckon/crew/watch_unit.py, tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py and docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-producer-off-the-fleet-node-gives-up-its-seat.html, all inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to release the watch seat and disable its unit when a producer runs on a host other than the fleet record's node; reckon/crew/watch_unit.py:246 producer_start_decision returns release-and-exit with the unit-disable command composed, but no production code calls it, so no producer releases anything yet.\nVERDICT done_when: The source brief's done-when asks for a test of the start-up decision against a temporary fleet record and seat with release for a foreign host, hold for the same host, hold for an absent record, plus ruff on the staged paths; tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py carries those arms, gate-head.log records 6 passed EXIT=0 at cefafb526, negative-control.log records 2 failed EXIT=1, and I re-ran ruff check and ruff format --check on the two staged paths, both clean.\nVERDICT write_paths: The source prompt's FENCE SCOPE grants reckon/crew/watch_unit.py, tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py and the docs/evidence fragment; the 84c5064d..cefafb526 diff changes exactly those three paths and nothing else.\nVERDICT manifest: The source manifest.md records status complete, commits 552f75681 and cefafb526, the literal pytest gate command, readable baseline_suite (6 failure ids, exit 1) and after_suite (0 failures, exit 0) receipts, and no ruff receipt for the done-when's ruff item, which I verified independently.\nVERDICT diff: Read commit by commit against the base: 552f75681 adds _hosts_match, _fleet_node_from_record, fleet_record_node, runs_launched_on, _unit_disable_command and producer_start_decision to reckon/crew/watch_unit.py plus the new test; cefafb526 adds only the evidence fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/watch_unit.py:246-317 returns release-and-exit for a foreign host with runs launched on the fleet node, but nothing in the tree at cefafb526 calls it, so the seat is never actually released.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log records 6 passed EXIT=0 at cefafb526, negative-control.log records the two release arms failing 2 failed/4 passed EXIT=1, and gate-base.log records the six arms failing EXIT=1 against the base watch_unit.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The 84c5064d..cefafb526 diff touches only reckon/crew/watch_unit.py, tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py and docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-producer-off-the-fleet-node-gives-up-its-seat.html, all inside the declared fence.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py:102 reddens when the fleet-record read is removed, which negative-control.log records as the release arms failing 2/6, and lines 133-166 guard against releasing on the same host or with no run on the node.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/watch_unit.py:246 sits beside the existing foreign-seat readers and follows the module's describe-the-mechanism docstring style, with no plan label, version or ticket in any added name or comment.\nSCORE reuse: 15\nJUSTIFICATION reuse: Capability search over reckon/crew/ found dispatch_launch._read_fleet_record (dispatch_launch.py:2131) and runs.list_live (runs.py:793), both reused rather than re-implemented, while _hosts_match forks the short-hostname normalisation fleet_supervisor owns at fleet_supervisor.py:270.\nFINDING reckon/crew/watch_unit.py:246 non-blocking: producer_start_decision has no production call site anywhere in the tree at cefafb526 (every reference is inside watch_unit.py itself or its test), so no producer releases its seat and the section's stated release-and-exit behaviour is unreachable until the producer loop calls it; the source manifest records that wiring as a follow-on held out of this node's write scope.\nFINDING reckon/crew/watch_unit.py:183 non-blocking: _hosts_match re-implements the short-hostname normalisation the repository already owns in fleet_supervisor._short_hostname (reckon/crew/fleet_supervisor.py:270) and already duplicates in paste.py:374, making a third copy; it could shorten the local host through that owner rather than spelling the split again.\nFINDING tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py:178 non-blocking: the real-record assertion dereferences real_fleet.stat() unconditionally while the before-side reading at line 169 guards with .exists(), so on a host with no fleet record this test errors rather than passing, turning a passing guard into an environment-dependent failure.\n",
+  "review_run_id": "r-20261023T153455440861-review-of-a-producer-off-the-fleet-node-gives-up-its-seat-cefafb526232",
+  "reviewed_base_sha": "84c5064df93f878504aef451f017eb2ca21fb753",
+  "reviewed_commits": [
+    "552f75681e290c955df1df2ccd8c2dcaba6c119c",
+    "cefafb526232a0b60a4e450465855175b7e21f5b"
+  ],
+  "reviewed_head_sha": "cefafb526232a0b60a4e450465855175b7e21f5b",
+  "reviewed_run_id": "r-20261023T140534758900-a-producer-off-the-fleet-node-gives-up-its-seat",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T16:09:02.409428+00:00",
+  "total": 103
+}
