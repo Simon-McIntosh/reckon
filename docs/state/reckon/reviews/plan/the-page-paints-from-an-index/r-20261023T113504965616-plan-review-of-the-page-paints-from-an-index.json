@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T11:46:11.307Z",
+  "dispatched_at": "2026-10-23T11:36:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-page-paints-from-an-index/r-20261023T113504965616-plan-review-of-the-page-paints-from-an-index/plan.html:273",
+      "id": "reasoning-1",
+      "reason": "the guard's only discriminator is a timestamp, while the invalidation that follows the change-stream read is caused by a path the kernel watch already knows; the section needs that path carried into the record (or the guard scoped to it) before its mechanism produces the done-when on the read that runs most often.",
+      "text": "\u00a715 trusts the detector's pass record \"only when ... that pass completed after the tree's most recent invalidation from any source\", so the record is discarded for every read served after an invalidation; `reckon/serve.py:2805` calls `_invalidate_tree_views(docs_dir, ...)` and `:2806` reads `_served_index_rows(docs_dir, project)` in the same iteration, and that read is a process-cache miss (`metadata_index.invalidate_tree` drops it) which reaches `index_rows` -> `_reuse_covered` (reckon/metadata_index.py:347-392, :431) and stats every recorded directory \u2014 the ~2,500-stat sweep \u00a715 exists to remove, now paid once per change event delivered on an open stream, which \u00a75 and \u00a711 established is continuous and whose rate \u00a715's Why states as crew commits several times a minute",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f150a08d386fb06af328b5fe260cd5e4d51922383b086254455ebea7c3843bae",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 99,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T113504965616-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "5a2be8335ca09bfb5593ea027f270a4a1e46fa33",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a715 cites resolves in the worktree: `_reuse_covered` (reckon/metadata_index.py:395) calls `covered_dir_identity` (:168) which calls `_dir_identity` (:879), and `_fast_tree` (reckon/change_streams.py:414) calls `_invalidate_tree_views` at :453; \u00a715's cited 6.5 s first read and 11.3 s second read match \u00a77's close comment recorded at 2026-10-23T10:55Z.",
+    "done_when": "pass \u2014 each of \u00a715's four proof cases carries its own control, and each control mutates a distinct piece of the mechanism: ignore the record; drop the moved directory from it; trust an arming-pass record; trust the record regardless of its pass time.",
+    "evidence_paths": "pass \u2014 \u00a715's node logs sit under the run directory with a revision header and an `EXIT=` last line, and its live arm is recorded under \u00a77's anchor in `docs/evidence/archive/the-page-paints-from-an-index-landed.html`, not in a node-local temporary path.",
+    "naming": "pass \u2014 `_reuse_covered`, `_fast_tree` and the new `tests/test_a_read_trusts_the_detector_pass.py` name the mechanism, with no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 the trust guard's ordering clause rejects the detector's record for the read that follows an invalidation, and the change stream's own row read is served immediately after an invalidation by construction, so \u00a715's stated cost survives on \u00a715's own read.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable, reusing the change detector's recorded directory identities on the covered-set read instead of stat-ing every recorded directory.",
+    "wiring": "pass \u2014 \u00a715's only declared dependency is `the-page-paints-from-an-index#s14`, which shares `reckon/metadata_index.py`, and its second write path, `reckon/change_streams.py`, needs no upstream section, so no declared relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "710047969c8fa31eaa19b4c4144082b23d3459d38d0eae29b874bca73dd7c892",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "f2f3cef1fbfd82a53e50108eed7d65b828eb4995f872332fc946c0df2b41d319",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T11:48:42.724144+00:00"
+}
