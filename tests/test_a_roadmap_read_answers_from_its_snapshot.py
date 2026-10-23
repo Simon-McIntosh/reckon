@@ -43,7 +43,7 @@ DRIVER = dedent(
 
     source = Path(os.environ["RECKON_TREE"]).resolve()
     sys.path.insert(0, str(source))
-    from reckon import mcp, serve
+    from reckon import mcp, roadmap_snapshot, serve
 
     root = Path(sys.argv[1]).resolve()
     mode = sys.argv[2]
@@ -53,9 +53,11 @@ DRIVER = dedent(
     if mode == "nocounter":
         # The declared negative control: the write counter is dropped from the
         # key, so a key match survives a plan-write and the call answers with
-        # the composition made before it.
-        real = serve.roadmap_project_generation
-        serve.roadmap_project_generation = (
+        # the composition made before it. The key is built in the snapshot
+        # module, so the name is rebound there, where the builder looks the
+        # name up, rather than on the module that re-exports it.
+        real = roadmap_snapshot.roadmap_project_generation
+        roadmap_snapshot.roadmap_project_generation = (
             lambda project, docs_dir: real(project, docs_dir)[:2] + ["stable"]
         )
 
@@ -357,7 +359,7 @@ LIVE_DRIVER = dedent(
     source = Path(os.environ["RECKON_TREE"]).resolve()
     sys.path.insert(0, str(source))
     sys.path.insert(0, str(source))
-    from reckon import mcp, serve
+    from reckon import mcp, roadmap_snapshot, serve
 
     root = Path(sys.argv[1]).resolve()
     mode = sys.argv[2]
@@ -527,6 +529,10 @@ LIVE_DRIVER = dedent(
 
         result["classification_before"] = classification_of(call())
         moment = time.time() + 3000
+        # The key, the snapshot's own freshness check and the reduction behind
+        # both read the clock from the snapshot module, so the moment is moved
+        # there; serve keeps its own name for the request path around it.
+        roadmap_snapshot.time = types.SimpleNamespace(time=lambda: moment)
         serve.time = types.SimpleNamespace(time=lambda: moment)
         import reckon.crew.recovery_classification as clocked
         clocked._utc_seconds = lambda: moment
