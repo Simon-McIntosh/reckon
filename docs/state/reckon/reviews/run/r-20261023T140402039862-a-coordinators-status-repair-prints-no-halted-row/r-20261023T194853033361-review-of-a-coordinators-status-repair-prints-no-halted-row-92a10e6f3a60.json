@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/runs.py:2453 (_publish_watch_transitions folds the fleet and appends the lines through _stream_transition)",
+    "reckon/crew/runs.py:2243 (_stream_transition, the builder both producer checks now exercise, delegating to recovery._watch_transition)",
+    "reckon/crew/ticker.py:1606 (RowPolicy.feed filters every released row through stream_carries)",
+    "reckon/crew/ticker.py:1917 (RowPolicy.flush applies the same filter to rows a hold released)",
+    "reckon/crew/queue_admission.py:664 (the admission report appends a row built by _stream_transition)"
+  ],
+  "completed_at": "2026-10-23T20:46:26.492Z",
+  "dispatched_at": "2026-10-23T20:30:24Z",
+  "findings": [
+    {
+      "file": "tests/test_a_status_repair_prints_no_halted_row.py",
+      "line": 16,
+      "severity": "non-blocking",
+      "text": "the module docstring says three checks bind this change and lists three, while five test functions in the same file bind it: the docstring omits test_an_unstamped_transition_is_untouched_by_the_rule and test_the_stamp_rides_only_the_transition_the_repair_caused, so a reader of the module's own contract undercounts what the change guards; fold it into a later pass over this module"
+    },
+    {
+      "file": "gate-negctl.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the drop-the-stamp negative control named by the fragment and the manifest carries no revision header, only an arm line and a tree name (/tmp/.../head-mut), and its counts (2 failed, 2 passed) show it ran the four-check module before this round's fifth check; a reader cannot tie it to a commit, unlike gate-negctl-sever.log and gate-negctl-widen.log which both name 2c6d0d138"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 95749c08: 2c6d0d138 narrows the withhold to the halted pane word and moves both producer checks onto runs._stream_transition, and 92a10e6f3 records the scoping repair and its two controls in the fragment",
+    "done_when": "the done_when asks for a row-policy check both ways, a producer check over a fixture status-repair.json written through the production builder, no added failures importing ticker/recovery_watch/runs, and no added ruff findings; tests/test_a_status_repair_prints_no_halted_row.py:67, :96, :198 and :237 are those checks, gate-head-core.log records 357 passed EXIT=0 at 2c6d0d138 against gate-base-core.log 352 passed EXIT=0 at 3663e71c, and the bump's own ruff claims were not re-run by this review",
+    "goal": "the goal is to stamp a transition caused by crew repair --status and withhold the stamped row from the stream; recovery_watch.py:1973 still builds the status_repair stamp on the snapshot and ticker.py:1213 now withholds only where _pane_word(event) is halted",
+    "manifest": "read; it records status complete, the repair round at 95749c08 with its three findings acted on, the head/base arm pair, three negative controls with their failing ids, and the literal tests command",
+    "write_paths": "declared reckon/crew/ticker.py, reckon/crew/recovery_watch.py, reckon/crew/runs.py, tests/test_a_status_repair_prints_no_halted_row.py, the plan fragment and a figures directory; the two gained commits touch only ticker.py, the test module and the fragment"
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261023T194853033361-review-of-a-coordinators-status-repair-prints-no-halted-row-92a10e6f3a60",
+  "reviewed_base_sha": "95749c08bd433aacde7bfe0fe7f1035056c89d16",
+  "reviewed_head_sha": "92a10e6f3a607527f04780af812e37419fc8a6be",
+  "reviewed_run_id": "r-20261023T140402039862-a-coordinators-status-repair-prints-no-halted-row",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T20:50:28.092449+00:00",
+  "total": 115
+}
