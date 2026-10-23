@@ -402,35 +402,17 @@ function CrewOpenDecisions({ decisions, visibleProjects }) {
   );
 }
 
-function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota, runs = [], loaded = false, error = "" }) {
+function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota, decisions = null, runs = [], loaded = false, error = "" }) {
   const [refreshedAt, setRefreshedAt] = useState(null);
   const [allVisible, setAllVisible] = useState(false);
-  // Null until the payload has been read: an empty list is a claim that nothing
-  // waits, and the page cannot make that claim before it has asked.
-  const [openDecisions, setOpenDecisions] = useState(null);
 
-  // The shell owns the single /crew poll and passes its result down, so this
-  // view renders the same run list without polling the same route again.
+  // The shell owns the single /crew poll and passes the whole payload's run list
+  // and decision list down, so this view renders both without polling the route
+  // again. A poll the shell has not answered yet hands down nothing, which is
+  // not the same as an empty answer.
   useEffect(() => {
     if (loaded) setRefreshedAt(new Date());
   }, [runs, loaded]);
-
-  // The open decisions ride the same /crew payload as the run list, and this
-  // view is the surface that draws them. The shell hands down only the runs, so
-  // the page reads the payload's decision list here rather than asking the
-  // shell for a second shape. A page opened without a poll (a component probe)
-  // simply draws the empty line.
-  useEffect(() => {
-    if (!window.startPoll) return undefined;
-    return window.startPoll(
-      "/crew",
-      payload => {
-        if (Array.isArray(payload?.open_decisions)) setOpenDecisions(payload.open_decisions);
-      },
-      CREW_POLL_INTERVAL_MS,
-      () => {},
-    );
-  }, []);
 
   const scopedProjects = crewScopedProjects(selectedProject, visibleProjects, allVisible);
   const visibleRuns = crewRunsForVisibleProjects(runs, scopedProjects);
@@ -463,7 +445,7 @@ function CrewView({ visibleProjects, mountedProjectCount, selectedProject, quota
 
       {error && <div role="status" className="r-crew-error">{error}</div>}
 
-      <CrewOpenDecisions decisions={openDecisions} visibleProjects={scopedProjects} />
+      <CrewOpenDecisions decisions={decisions} visibleProjects={scopedProjects} />
 
       <DerivedFlow runs={flowRuns} project={flowProject} />
 
