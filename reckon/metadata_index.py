@@ -363,10 +363,10 @@ def index_rows(
             return [dict(row) for row in build.rows]
     covered: list[tuple[str, Path]] | None = None
     dirs: dict[str, Path] | None = None
-    if revalidate:
-        reused = _reuse_covered(docs_dir, project)
-        if reused is not None:
-            covered, dirs = reused
+    rescanned = False
+    reused = _reuse_covered(docs_dir, project)
+    if reused is not None:
+        covered, dirs, rescanned = reused
     build = _build_and_cache(
         key,
         docs_dir,
@@ -376,36 +376,59 @@ def index_rows(
         git_last=git_last,
         covered=covered,
         dirs=dirs,
+        rescanned=rescanned,
     )
     return [dict(row) for row in build.rows]
 
 
 def _reuse_covered(
     docs_dir: Path, project: str
-) -> tuple[list[tuple[str, Path]], dict[str, Path]] | None:
-    """Return the persisted file set when the tree's shape is unchanged.
+) -> tuple[list[tuple[str, Path]], dict[str, Path], bool] | None:
+    """Return the persisted file set, scanning only the directories that moved.
 
-    A reader with no change watch checks every covered file to revalidate,
-    and it needs the file set to do that. Rediscovering it walks the tree on
-    every read. The persisted index already lists the files, and the
-    directories' stat identities say whether entry ``*was added or removed``
-    since it was built — so a shape that has not moved is answered without the
-    walk, and any difference (or an absent index) returns ``None`` so the
-    caller walks and rebuilds.
+    A reader with no change watch checks every covered file to revalidate, and
+    it needs the file set to do that. Rediscovering it walks the tree on every
+    read. The persisted index already lists the files, and each recorded
+    directory's stat identity says whether an entry was added to or removed
+    from it since it was built — so a directory that has not moved keeps its
+    persisted files and only the directories whose identity moved are scanned,
+    together with any subdirectory found in one that the tree did not have
+    before. A recorded directory that no longer exists drops its files and its
+    descendants. An absent index returns ``None``, so the caller walks.
+
+    The third element reports whether any directory was scanned. A shape that
+    moved is persisted by the build even when no row changed, so the next read
+    starts from the whole shape rather than scanning the same directory again.
     """
 
     stamps = _load_dir_stamps(docs_dir, project)
     entries = _load_persisted(docs_dir, project)
     if not stamps or not entries:
         return None
+    by_dir: dict[str, list[str]] = {}
+    for relative in entries:
+        by_dir.setdefault(PurePosixPath(relative).parent.as_posix(), []).append(
+            relative
+        )
+    covered: dict[str, Path] = {}
     dirs: dict[str, Path] = {}
+    moved: list[Path] = []
     for relative, identity in stamps.items():
         path = docs_dir / relative
-        if covered_dir_identity(path) != identity:
-            return None
-        dirs[relative] = path
-    covered = [(relative, docs_dir / relative) for relative in sorted(entries)]
-    return covered, dirs
+        observed = covered_dir_identity(path)
+        if observed is None:
+            continue
+        if observed == identity:
+            dirs[relative] = path
+            for file_relative in by_dir.get(relative, ()):
+                covered[file_relative] = docs_dir / file_relative
+            continue
+        moved.append(path)
+    if moved:
+        files, scanned = _walk_covered(docs_dir, moved, frozenset(stamps))
+        covered.update(dict(files))
+        dirs.update(dict(scanned))
+    return sorted(covered.items()), dirs, bool(moved)
 
 
 def plan_derivations(docs_dir: Path, project: str) -> list[dict]:
@@ -450,6 +473,7 @@ def _build_and_cache(
     git_last: Mapping[str, int] | None = None,
     covered: list[tuple[str, Path]] | None = None,
     dirs: dict[str, Path] | None = None,
+    rescanned: bool = False,
 ) -> IndexBuild:
     build = build_index(
         docs_dir,
@@ -459,6 +483,7 @@ def _build_and_cache(
         git_last=git_last,
         covered=covered,
         dirs=dirs,
+        rescanned=rescanned,
     )
     with _LOCK:
         _CACHE[key] = build
@@ -474,13 +499,16 @@ def build_index(
     git_last: Mapping[str, int] | None = None,
     covered: list[tuple[str, Path]] | None = None,
     dirs: dict[str, Path] | None = None,
+    rescanned: bool = False,
 ) -> IndexBuild:
     """Build one project's rows, re-parsing only what its bytes changed.
 
     ``covered`` and ``dirs`` let a caller that has already established the
     tree's shape — by comparing the recorded directory identities — hand the
     file set in instead of walking the tree to rediscover it. With ``covered``
-    absent the walk runs and both are derived from it.
+    absent the walk runs and both are derived from it. ``rescanned`` says that
+    file set came from rescanning directories whose identity moved, so the
+    observed identities are persisted even when no row changed.
     """
 
     docs_dir = Path(docs_dir)
@@ -557,7 +585,7 @@ def build_index(
         entries.append(entry)
 
     build.removed = len(set(known) - seen)
-    if build.changed or not known:
+    if build.changed or not known or rescanned:
         _store_persisted(docs_dir, project, entries, build.dir_stamps)
     return build
 
@@ -628,6 +656,8 @@ def _cache_key(docs_dir: Path, project: str, with_git: bool) -> tuple[str, str, 
 
 def _walk_covered(
     docs_dir: Path,
+    roots: list[Path] | None = None,
+    skip_subtrees: frozenset[str] = frozenset(),
 ) -> tuple[list[tuple[str, Path]], list[tuple[str, Path]]]:
     """Return the covered files and every visited directory, from one walk.
 
@@ -639,12 +669,20 @@ def _walk_covered(
     removed from it, so recording the set lets a later read tell whether the
     tree's shape changed without walking it again. Directory symlinks are not
     followed.
+
+    ``roots`` starts the walk below ``docs_dir`` instead of at it, so a caller
+    that already knows which directories moved reads only those. It is
+    accompanied by ``skip_subtrees``, the docs-relative directories not to
+    descend into: a directory the tree already had keeps its own identity
+    check, so a rescan leaves it to that check rather than reading it twice,
+    while a subdirectory the walk does descend into is one the tree did not
+    have before and is read in full.
     """
 
     figures_root = os.path.join(os.fspath(docs_dir), _FIGURE_DIR)
     found: dict[str, Path] = {}
     directories: dict[str, Path] = {}
-    pending = [os.fspath(docs_dir)]
+    pending = [os.fspath(root) for root in (roots or [docs_dir])]
     while pending:
         directory = pending.pop()
         try:
@@ -660,6 +698,12 @@ def _walk_covered(
             for entry in entries:
                 try:
                     if entry.is_dir(follow_symlinks=False):
+                        try:
+                            child = Path(entry.path).relative_to(docs_dir).as_posix()
+                        except ValueError:
+                            continue
+                        if child in skip_subtrees:
+                            continue
                         pending.append(entry.path)
                         continue
                 except OSError:
