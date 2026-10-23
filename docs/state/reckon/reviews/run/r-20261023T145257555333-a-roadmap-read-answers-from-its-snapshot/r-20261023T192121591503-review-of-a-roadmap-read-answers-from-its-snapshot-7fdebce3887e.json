@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-23T20:02:18.636Z",
+  "dispatched_at": "2026-10-23T19:33:00Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": 1290,
+      "severity": "non-blocking",
+      "text": "reckon/serve.py:1290 computes watch._snapshot_reuse_key(pointer) immediately after calling watch._watch_snapshot(pointer, ...) at :1279, and that function computes the same key itself (reckon/crew/recovery_watch.py:1334). Every live run's whole classification composition is therefore stat'd twice on every roadmap read, doubling the per-run cost of the live-run readings on the read path this section exists to make cheap. Recovery_watch.py is inside section 50's declared write paths, so returning the key _watch_snapshot already took was available."
+    },
+    {
+      "file": "tests/test_a_roadmap_read_answers_from_its_snapshot.py",
+      "line": 663,
+      "severity": "non-blocking",
+      "text": "The clock case asserts measured['recomposed'] > DOCUMENT_COUNT, and its cover rests on the live-run state being carried in the snapshot key (reckon/serve.py:1284 and :1294), because _watch_snapshot re-derives that state at the passed moment. The read path it claims to guard does not refresh clock-derived readings: reckon/serve.py:1366-1397 returns a stored payload on an exact key match with no re-derivation, so section 50's declared negative control for this case, returning the stored snapshot on a key match without the refresh, cannot turn the case red. Any regression in that refresh would be invisible to the case, and the case's first assertion (line 662) is computed through serve._roadmap_live_readings itself, so it does not exercise the roadmap read at all."
+    },
+    {
+      "file": "runs/r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot/manifest.md",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "The final manifest records after_suite (c22ec0def, 0 failures) but carries no baseline_suite, which its own as-delivered attempt-2 manifest did at line 15. A promotion reader is therefore left to pair the repaired head against a base arm it cannot find in the record, and added_failure_count cannot be derived mechanically from the pair; the base arm log itself (base-gate.log, 39 passed, EXIT=0) is still named under test_logs, so the facts survive but the field does not."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is section 50's deliverable \u2014 a roadmap read answered from a snapshot keyed on each mounted project's write generation (docs/plans/a-read-answers-inside-its-deadline.html:318); the five commits gained since bad8b8278 repair that deliverable by completing the case families its done-when names, and read against the source node's goal they do what it states.\nVERDICT done_when: section 50's done-when names tests/test_a_roadmap_read_answers_from_its_snapshot.py holding eight case bullets; the file at 7fdebce38 holds all eight (a second read with no covered-file stat and a key of at most 8 per project at :543, a store write at :551 with its negative control at :558, a sibling commit and an in-place edit at :565, a sibling pointer at :573, a fresh process from the persisted snapshot at :581, a write reaching an already warm process at :598, a live run's exit record and a patched liveness at :618, and the clock advanced past the stale threshold at :655), plus the run's own-composition case at :636.\nVERDICT write_paths: the source manifest declares reckon/serve.py, reckon/mcp.py, reckon/_store.py, tests/test_a_roadmap_read_answers_from_its_snapshot.py and the evidence fragment; the gained diff touches only reckon/serve.py, the test file and the fragment, and every path in it is inside that list.\nVERDICT manifest: read at manifest.md; it records the five gained commits, the 49-passed gate at c22ec0def with its log, the four mutation arms and the measured 4-of-8 bound, and its account of the gained commits reconciles with the logs \u2014 except that the final manifest carries no baseline_suite, which its own attempt-2 manifest did.\nVERDICT diff: read the five commits against bad8b8278 \u2014 0f42fc1c5 carries the watcher's fresh liveness reading in the live-run key row and adds the four missing case families, e8f1feba7 strengthens four recompose assertions from a nonzero count to a walk-sized count, c22ec0def carries the watcher's reuse key in the row and patches io.open so Path reads are counted, and 5f830eb92 and 7fdebce38 record both in the evidence fragment.\nCALL_SITES: reckon/mcp.py:_roadmap, reckon/mcp.py:_roadmap_snapshot_scope, reckon/project_brief.py:125, reckon/project_maintenance_commands.py:1576\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/serve.py:1285-1295 now carries the watcher's fresh liveness reading and its own reuse key per live run beside the state word, which is what the section requires of the key, and the case families the prior review found absent are held at tests/test_a_roadmap_read_answers_from_its_snapshot.py:581-663.\nSCORE evidence: 18\nJUSTIFICATION evidence: the run's own gate logs record 49 passed EXIT=0 at c22ec0def in repair2-head-gate.log against base-gate.log's 39 passed EXIT=0, and the two arms that must redden end EXIT=1 in repair2-negative-control.log while the two that must stay green end EXIT=0 in repair2-control-arms.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat bad8b8278..7fdebce38 names only reckon/serve.py, tests/test_a_roadmap_read_answers_from_its_snapshot.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-roadmap-read-answers-from-its-snapshot.html, all inside the source manifest's declared write paths, and the fragment gained 74 lines with no deletion of an earlier record.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_roadmap_read_answers_from_its_snapshot.py:651 reddens when the reuse key is replaced by a constant (repair2-negative-control.log, EXIT=1) and the liveness arm reddens when the key row reverts to the state word alone (repair-negative-control.log, EXIT=1), but the clock case at :663 cannot fail on the regression section 50 declares for it.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the surrounding idiom of reckon/serve.py:1231-1298 and every added name is capability-descriptive, with no plan label, ticket id or version token in any name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/serve.py:1286 and :1290 call recovery_watch's own _fresh_liveness (reckon/crew/recovery_watch.py:1092) and _snapshot_reuse_key (reckon/crew/recovery_watch.py:1022) rather than forking a second identity of a run's composition, so the addition extends the owner and duplicates no capability.\nFINDING reckon/serve.py:1290 non-blocking: the reuse key is computed a second time per live run per roadmap read, because _watch_snapshot already takes it internally, doubling the cost of the live-run readings on the read path the section exists to make cheap.\nFINDING tests/test_a_roadmap_read_answers_from_its_snapshot.py:663 non-blocking: the clock case's cover rests on the live-run state carried in the snapshot key, and the served path re-derives no clock-derived reading, so section 50's declared negative control for this case cannot turn it red.\nFINDING runs/r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot/manifest.md:20 non-blocking: the final manifest carries after_suite but no baseline_suite, so a promotion reader cannot pair the repaired head with a base arm from the record, though the base log survives under test_logs.\n",
+  "review_run_id": "r-20261023T192121591503-review-of-a-roadmap-read-answers-from-its-snapshot-7fdebce3887e",
+  "reviewed_base_sha": "bad8b827876115d38c4556563640662cd8974d8c",
+  "reviewed_head_sha": "7fdebce3887ea06d116fbb2a24bf5c32462565d3",
+  "reviewed_run_id": "r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T20:05:05.773814+00:00",
+  "total": 110
+}
