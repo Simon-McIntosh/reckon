@@ -7,33 +7,32 @@ The classifier read the manifest alone, so the run showed as still working with
 a dead process for about two hours, its coordinator reported it as running, and
 peers waited on it until someone repaired the run by hand.
 
-The reviewer's deliverable is the review it files, and the filing survives on
+The reviewer's deliverable is the review it serves, and the filing survives on
 the shared home where the pointer's pid does not. These tests drive the
 classifier against three fixtures: a review whose process ended and whose latest
-attempt filed a parsed record, which must read delivered; the same run with no
-filed record, which must keep the base reading; and a review still running its
-third attempt behind a record filed by its second, which must not be taken for a
-delivery. The negative control drops the filed-record reading and the first
-fixture must then fail.
+attempt filed a record the store recognises, which must read delivered; the same
+run with no filed record, which must keep the base reading; and an exited review
+whose third attempt filed nothing while its second attempt's record stands on
+disk, which must not be taken for a delivery. The negative controls drop the
+filed-record reading and the attempt key, one at a time, and each must fail the
+fixture it protects.
 """
 
 from __future__ import annotations
 
 import json
 import os
-import socket
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, runs
+from reckon.crew import recovery, recovery_classification, runs
 
 # The run is classified as if read from another login node, so liveness comes
 # from the run's own exit record rather than from a process table here — the
 # same shape as the measured incident, where the pointer's pid was not this
 # reader's to probe.
-HOST = socket.gethostname()
 OTHER_HOST = "some-other-login-node"
 RUN_ID = "r-20261023T020153063813-review-of-integrated-assembly-stability-4faf"
 PROJECT = "sample"
@@ -54,9 +53,46 @@ PARSED_REVIEW = {
 }
 
 
+# The declared negative controls: drop one guard at a time and the fixture it
+# protects must fail. ``ignore-filed`` removes the whole filed-record read, so
+# an exited review with a filed record reads as it did before the reading
+# existed. ``ignore-attempt`` keeps the read but drops the attempt key, keying
+# the receipt on whichever attempt filed one — so a receipt filed by a
+# superseded attempt would let the running attempt read as a delivery.
+NEGATIVE_CONTROL = os.environ.get("RECKON_FILED_REVIEW_NEGATIVE_CONTROL", "").strip()
+
+
+def _receipt_attempt(record: object) -> int | None:
+    """The attempt of the newest filed receipt in the run directory.
+
+    The mutation ``ignore-attempt`` keys the filed read on this rather than on
+    the attempt the run's own marker names.
+    """
+    directory = recovery_classification._run_directory(record)
+    attempts: list[int] = []
+    for path in directory.glob("attempt-*-review-filed.json"):
+        try:
+            attempts.append(int(path.name.split("-")[1]))
+        except (IndexError, ValueError):
+            continue
+    return max(attempts) if attempts else None
+
+
 @pytest.fixture(autouse=True)
 def _isolated_crew_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    if NEGATIVE_CONTROL == "ignore-filed":
+        monkeypatch.setattr(
+            recovery_classification,
+            "_filed_review_record",
+            lambda record, *, alive: None,
+        )
+    elif NEGATIVE_CONTROL == "ignore-attempt":
+        monkeypatch.setattr(
+            recovery_classification,
+            "_current_attempt_number",
+            _receipt_attempt,
+        )
 
 
 def _write_json(path: Path, payload: object) -> None:
@@ -207,22 +243,26 @@ def test_an_exited_review_with_no_filed_record_keeps_the_base_reading(
     assert row["classification"] != "promotable"
 
 
-def test_a_third_running_attempt_behind_a_second_attempts_record_is_running(
+def test_an_exited_third_attempt_behind_a_second_attempts_record_is_running(
     tmp_path: Path,
 ) -> None:
-    # The record belongs to the attempt that has ended; the attempt now running
-    # has filed nothing. A live reviewer is never read as a delivery.
+    # The run's process has ended and a receipt is on disk, but it belongs to
+    # the attempt before this one; the attempt now on the run filed nothing. The
+    # process having ended must not, on its own, let a superseded attempt's
+    # record stand in — the attempt key is the only thing keeping this run off
+    # the delivered reading, which is what the ``ignore-attempt`` control drops.
     directory = runs.run_dir(RUN_ID)
     _filed_record(directory, attempt=2)
     pointer = _pointer(
         tmp_path,
         attempt=3,
         manifest_body=IN_PROGRESS_BODY,
-        pid=os.getpid(),
-        launcher_host=HOST,
-        exit_record=False,
+        pid=None,
+        launcher_host=OTHER_HOST,
+        exit_record=True,
     )
 
     row = _classify(pointer)
 
     assert row["classification"] == "running"
+    assert row["classification"] != "promotable"
