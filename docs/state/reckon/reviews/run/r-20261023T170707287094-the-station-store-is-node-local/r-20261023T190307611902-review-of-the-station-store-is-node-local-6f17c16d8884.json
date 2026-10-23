@@ -1,0 +1,83 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_arm_lock_is_never_held_by_a_follower.py::test_stubborn_orphan_cannot_hold_arm_lock_past_bound"
+  ],
+  "answered_checks": [
+    "goal",
+    "done_when",
+    "write_paths",
+    "manifest",
+    "diff",
+    "call_sites"
+  ],
+  "completed_at": "2026-10-23T19:47:45Z",
+  "dispatched_at": "2026-10-23T19:08:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station_store.py",
+      "id": "reuse-1",
+      "line": 615,
+      "reason": "dead public surface: nothing calls store_at_runtime_root and neither the goal nor the plan names it.",
+      "severity": "non-blocking",
+      "text": "store_at_runtime_root has no caller anywhere in the tree (git grep finds only its own definition), so the node adds a second public entry point beside StationStore.at_runtime_root that the goal does not imply; it belongs with the section that first calls it.",
+      "would_change": false
+    },
+    {
+      "file": "reckon/crew/station_store.py",
+      "id": "reuse-2",
+      "line": 620,
+      "reason": "dead wrapper that restates the default root order it delegates to.",
+      "severity": "non-blocking",
+      "text": "default_store has no caller anywhere in the tree; it passes environ=os.environ into StationStore.at_runtime_root, which already resolves the process environment and no other root order, so it duplicates the classmethod it wraps rather than extending it.",
+      "would_change": false
+    },
+    {
+      "file": "tests/test_the_station_store_is_node_local.py",
+      "id": "durability-1",
+      "line": 85,
+      "reason": "an assertion whose two sides both come from the code under test.",
+      "severity": "non-blocking",
+      "text": "assert rebuilt.pointer_rows() == incremental.pointer_rows() compares two outputs of the code under test on the same fixture, so it holds whatever the store does with pointer rows, including storing none at all; the row population is only pinned by the independent stream-name set on the next lines and by test_every_pointer_and_stream_is_ingested, so this assertion cannot name a condition under which it alone fails.",
+      "would_change": false
+    },
+    {
+      "file": "reckon/crew/station_store.py",
+      "id": "fit-1",
+      "line": 530,
+      "reason": "a context manager that reads as closing but only commits.",
+      "severity": "non-blocking",
+      "text": "with self._open_day(day) as day_connection commits the insert but never closes the day connection, because sqlite3.Connection's context manager is a transaction manager; the descriptor is released by refcount when the local goes out of scope, so a reader chasing a held day file is sent after the wrong lifetime and a non-refcounting caller would leak one connection per event.",
+      "would_change": false
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch.py:3221 re-exports _session_host_runtime_root; reckon/crew/dispatch_watch.py:571 and :733 call it; reckon/crew/station_store.py:137 calls the new session_host_runtime_candidate, which is the one production call site the diff introduces.",
+    "diff": "read commit by commit against 57c21285bcbfff76a6f1bfad1768a2ffbedd5d0a: 8dd3a03d0 adds the store, the two public root resolvers and 208 lines of tests, 06fac6062 drives the root refusal through the environment a host reads, f11e70388 and db16e0ff3 and 6f17c16d8 record the landing fragment and its population comparison; 4 files, +913/-11, nothing outside the declared write paths.",
+    "done_when": "read the source node's done_when; every clause it names is asserted by tests/test_the_station_store_is_node_local.py (rebuild equals incremental at :75, retention at :108, one refusal per host._SHARED_FILESYSTEMS type at :134, None refused at :147, tmpfs accepted at :158, TMPDIR-only root refused at :168, unchanged signature not re-parsed at :183), and the gate result 15 passed EXIT=0 is recorded in the manifest's tests/test_logs and in the fragment, not merely claimed.",
+    "goal": "read the source node's goal; reckon/crew/station_store.py:205-622 adds exactly it: one SQLite store in WAL mode under the node-local runtime root holding pointers, streams, per-UTC-day events, cursors, obligations and the station table, with the root refused when its mount type is shared or undeterminable and when it is reached only through TMPDIR.",
+    "manifest": "read the source node's manifest.md; it states status complete, the four commits, the literal gate command, the chunk and per-test arm logs, one added failure with its load-sensitivity attribution backed by six isolated alternating runs, and both negative-control logs, and it never claims a clean sweep, and its baseline_suite and after_suite arms derive exactly that one added failure; it records no ruff log for the done-when's ruff clause, which this review verified independently as clean on all three changed Python files.",
+    "write_paths": "read the source node's declared write paths; all four paths in the diff (reckon/crew/station_store.py, reckon/crew/dispatch_watch.py, tests/test_the_station_store_is_node_local.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-store-is-node-local.html) are inside them, and the declared docs/figures path is unused because the done-when names no artifact."
+  },
+  "notes": "added_failure_count and added_failure_ids are derived from the reviewed run's own arms: baseline_suite (rev 57c21285bcbfff76a6f1bfad1768a2ffbedd5d0a, logs/chunk-00-base.log, failure_ids []) against after_suite (rev db16e0ff3, logs/chunk-00-head.log, failure_ids [tests/test_arm_lock_is_never_held_by_a_follower.py::test_stubborn_orphan_cannot_hold_arm_lock_past_bound]); the wider four-chunk population in the same run's logs derives the same single id. The reviewed node attributes it to signal-propagation timing under an eight-process wave and documents six isolated alternating runs at 5 passed each in logs/arm-lock-{1,2,3}-{base,head}.log; this review records the arm-derived figure the contract asks for and does not treat that one id as a blocking defect either way. tests/test_crew.py and its four neighbours (chunk-02) hit their 1200 s bound in both arms with no summary line, so no comparison exists for them.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a node-local SQLite store holding the station's pointers, streams, dated events, cursors, obligations and station tables and refusing a root it cannot prove node-local; reckon/crew/station_store.py:205-243 is that store, and :155-169 is the refusal.\nVERDICT done_when: the done_when names tests/test_the_station_store_is_node_local.py clause by clause; the manifest's tests line and logs/gate-head-final.log record 15 passed EXIT=0, and this review re-ran that single file at the reviewed head for 15 passed EXIT=0.\nVERDICT write_paths: read the declared paths in the source prompt; every path in the diff is inside them and no fifth path is touched.\nVERDICT manifest: read; it states status complete, the four commits, the gate command, one added failure with its propagation-timing attribution and its six isolated runs, and both negative-control logs under logs/negative-undated-events.log and logs/negative-is-node-local-root.log.\nVERDICT diff: read commit by commit against 57c21285bcbfff76a6f1bfad1768a2ffbedd5d0a; 4 files, +913/-11: the store, two public root resolvers in reckon/crew/dispatch_watch.py plus two blank-line fixes that ruff format required of a base tree that was not format-clean, the test module, and the landing fragment.\nCALL_SITES: reckon/crew/station_store.py:137, reckon/crew/dispatch_watch.py:571, reckon/crew/dispatch_watch.py:733, reckon/crew/dispatch.py:3221\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/station_store.py:67-115 declares pointers, streams, cursors, obligations, station and the dated events schema the goal names, and :155-169 and :236-241 are its two refusals.\nSCORE evidence: 17\nJUSTIFICATION evidence: the done-when's clauses are asserted case by case in tests/test_the_station_store_is_node_local.py:75-205 and its result is recorded in the manifest and logs/gate-head-final.log, while the done-when's ruff clause carries no recorded log and had to be verified here.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is inside the declared write paths, but reckon/crew/station_store.py:615 and :620 add two public wrappers nothing calls and neither the goal nor the plan names.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_station_store_is_node_local.py:183-205 fails if a pointer is re-parsed each tick (click.calls would be 6 rather than 3), and the two declared mutations turn :108 and :134 red (1 failed and 8 failed, EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: the module follows the surrounding reckon/crew idiom of a small class over a named step, carries no plan label or version tag, and passes ruff check and ruff format --check; only reckon/crew/station_store.py:530 reads against the grain.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/station_store.py:137 extends the owner reckon/crew/dispatch_watch.py:480 rather than restating the candidate order, and the fold is _backends.observe_stream at reckon/_backends.py:2900 with file_memo.file_signature at reckon/file_memo.py:270; no owner of a node-local station store exists (reckon/run_store.py and reckon/ledger.py index committed records, a different capability).\nFINDING reckon/crew/station_store.py:615 non-blocking: store_at_runtime_root has no caller anywhere in the tree, so it is speculative public surface the goal does not imply; a later section can add it when a caller exists.\nFINDING reckon/crew/station_store.py:620 non-blocking: default_store has no caller anywhere in the tree and restates at_runtime_root's own default root order, so it duplicates the classmethod it wraps without extending it.\nFINDING tests/test_the_station_store_is_node_local.py:85 non-blocking: the assertion compares two outputs of the code under test on one fixture, so it stays true if both the rebuild and the incremental path store nothing; only the independent name set at :87-90 and test_every_pointer_and_stream_is_ingested:99-102 name a condition under which it reddens, and pinning the row count to an independent constant at :85 would make the equivalence carry its own guard.\nFINDING reckon/crew/station_store.py:530 non-blocking: the with-block over the day connection reads as closing it but sqlite3.Connection's context manager only commits or rolls back, so the connection is released to refcount rather than closed, and a reader debugging a held day file is sent after the wrong lifetime.\n",
+  "review_run_id": "r-20261023T190307611902-review-of-the-station-store-is-node-local-6f17c16d8884",
+  "reviewed_base_sha": "57c21285bcbfff76a6f1bfad1768a2ffbedd5d0a",
+  "reviewed_head_sha": "6f17c16d8884c401276d56bd37fc16945c47d42a",
+  "reviewed_run_id": "r-20261023T170707287094-the-station-store-is-node-local",
+  "reviewed_tests": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/6f111d4a-cc31-4417-8974-385d904ca329/the-station-store-is-node-local /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/reckon-crew-scratch/r-20261023T190307611902-review-of-the-station-store-is-node-local-6f17c16d8884/bt-review /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/6f111d4a-cc31-4417-8974-385d904ca329/the-station-store-is-node-local/tests/test_the_station_store_is_node_local.py",
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T19:47:47.876515+00:00",
+  "total": 110
+}
