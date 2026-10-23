@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how reviews, worker manifests, plan writes and the skills name work found beyond a node; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;additional-work-is-a-section#s2&quot;,&quot;the-suite-is-green-at-head#s32&quot;],&quot;s5&quot;:[&quot;additional-work-is-a-section#s2&quot;,&quot;additional-work-is-a-section#s3&quot;,&quot;additional-work-is-a-section#s4&quot;]}">
   <title>Additional Work Is A Section | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-10-23">
 </head>
 <body>
@@ -42,7 +42,7 @@
     <p>A census on 2026-10-22 found the term in 19 production files (78 occurrences), 6 skill files (27) and 45 test files (236). The sections below replace each use with the two routes the rule allows, keep old records readable, and refuse new writes of the term. Older plan text stays as written, because it is history.</p>
 
     <h2 id="s2">§2 — A review finding is blocking or non-blocking</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> A finding's severity is <code>blocking</code> or <code>non-blocking</code>. The review prompts (<code>reckon/crew/prompts/review.md</code>, <code>reckon/crew/prompts/figure_review.md</code>) teach those two words. <code>FINDING_SEVERITIES</code> and <code>NON_BLOCKING_SEVERITIES</code> name them, and so does every refusal or report message that names a severity, in <code>reckon/crew/reports.py</code>, <code>reckon/crew/repair.py</code>, <code>reckon/crew/findings.py</code> and <code>reckon/crew/review_lifecycle.py</code>. <code>repair.follow_on_findings</code> takes a name for what it returns, such as <code>non_blocking_findings</code>.</p>
     <p>The prompts say what a non-blocking finding is for, in the two dispositions <code>crew dispose</code> already records, from the closed set <code>DIMENSION_DISPOSITION_KINDS = ("folded", "exempted")</code> (<code>reckon/crew/review.py</code>, near line 3426). <code>folded</code> names the node that carries the work. That is either the next dispatch, whose prompt the coordinator writes the work into, or the node a new plan section dispatches. <code>exempted</code> states why the finding is not acted on. A new section is answered by folding into its node, so no disposition kind is added and the closed set is unchanged. A stored review that says <code>follow-on</code> still reads as <code>non-blocking</code>. The reader maps the old word on the way in and never writes it back.</p>
     <p><strong>Done when</strong> <code>tests/test_a_finding_is_blocking_or_non_blocking.py</code> holds all of these:</p>
@@ -101,6 +101,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261023T011804935213-a-finding-is-blocking-or-non-blocking" data-who="reckon-build" data-when="2026-10-23T07:22:29Z">
     <div class="r-comment-body"><p>review severities are blocking or non-blocking; FINDING_SEVERITIES/NON_BLOCKING_SEVERITIES, both prompts and every emitted message carry the current word, repair.follow_on_findings is renamed repair.non_blocking_findings, and a record stored under the retired spelling maps to non-blocking on read.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-close-s2" data-who="reckon-build" data-when="2026-10-23T08:05:00Z">
+    <div class="r-comment-body"><p>§2 landed at <code>068624fd3</code> with evidence <code>f9a17719b</code>: findings are <code>blocking</code> or <code>non-blocking</code>, and the retired word reads as non-blocking. Across the full census, head adds no failure against base. <a href="/reckon/evidence/archive/additional-work-is-a-section-landed.html#s2">evidence</a></p></div>
 </div>
 </section>
 </main>
