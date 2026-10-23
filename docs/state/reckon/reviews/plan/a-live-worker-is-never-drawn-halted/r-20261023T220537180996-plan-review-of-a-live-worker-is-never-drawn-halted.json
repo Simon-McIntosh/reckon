@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:18:49.352Z",
+  "dispatched_at": "2026-10-23T22:09:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-1",
+      "reason": "a node that adds only the id field ships a row under the review run's name and the gate's \"the review run named on the reviewed run's row\" assertion either fails or is satisfied by a copy that leaves the reviewed run's row memory stale.",
+      "text": "\u00a714 requires the review's start to be \"drawn on the reviewed run as `delivered \u2192 in review` with the review run named\", and its write path is only \"the producer module that must carry the reviewed run's id on a review run's rows if it does not already\", but at HEAD every watch event is keyed to its own snapshot's run (`_watch_transition` writes `\"run_id\": snapshot.get(\"run_id\")`, reckon/crew/recovery_watch.py:1916), and `RowPolicy` keys its whole memory \u2014 `_shown`, `_reported`, `_told`, `_held` \u2014 on that run id. Carrying the reviewed run's id as an extra field therefore does not produce a row on the reviewed run: the row still belongs to the review run, and the reviewed run's memory is never advanced to `in review`, so the coordinator's next landing row would be judged against `delivered` rather than the word the pane last showed \u2014 exactly the \u00a75 round-trip rule that \u00a714 says stays. The plan does not say whether the producer synthesises a second transition under the reviewed run's id (and from which of that run's states) or the ticker re-keys the review run's launch row; those are different mechanisms on different files and the done-when cannot distinguish them.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-2",
+      "reason": "the node must either narrow the own-session gate in `_resolve_arrival`/`_is_own_start` or state that oversight is own-session only; without one of those, the section's headline claim is false for the peer runs a fleet pane already lists.",
+      "text": "\u00a714 says \"A launch ... [is] withheld (the rule in the comment above `CARRIED_PANE_WORDS`)\" and directs the node to \"extend the existing row policy in `ticker.py` rather than adding a second filter\", but the CARRIED_PANE_WORDS rule (`stream_carries`, reckon/crew/ticker.py:1233-1238) is consulted only on rows `_feed` has already released. A launch from a run outside the pane's own session never reaches it: `_resolve_arrival` returns without appending for a run that is not `_is_own_start`, and `_feed`'s generic observer branch falls through to `_note_printed` and returns nothing for the `dispatched \u2192 working` pair (ticker.py:1590-1592, 1748-1754, 1820-1827). The section's rule is stated without that qualification (\"each real state change of a run\"), yet the done-when's single implement-run fixture never says whether its run belongs to the pane's own session, so a node that adds the start kind to `stream_carries` alone passes the gate and still shows no peer session's launch.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "done_when-1",
+      "reason": "extending the negative control to the landing and the dropped row costs one clause and makes the base arm falsify the section's own premise instead of only its launch behaviour.",
+      "text": "\u00a714 states that landed and dropped rows \"today are withheld as observer rows and are now carried once each\", names `transition_class` and `_observer_exception` as the two rules that hold them, and requires a landing in the first fixture and a dropped row in the second \u2014 but its negative control is \"the same sequence at the base revision prints neither the launch nor the `in review` row\". Neither the landing nor the dropped row is asserted absent at base, so the arm that would prove the two rules still withhold them is missing, and the strongest claim in the section (the one the previous review already had to correct twice) is the only one the base arm does not measure.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b935ee3840754ab4c458f66c34a2e5240c4c28ae74e3f2e79f980297de8f3d15",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 37,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T220537180996-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "1b894fa9577479095ee3b2fc0ff8a497b05e0236",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `CARRIED_PANE_WORDS` (reckon/crew/ticker.py:360), `transition_class` (:1137), `RowPolicy._observer_exception` (:1514, called from `_feed` at :1820) and `_told` (:1295) all resolve at HEAD; no file or line \u00a714 cites is stale.",
+    "done_when": "a finding \u2014 \u00a714's done-when measures the landing and dropped rows as printed at head but its negative control checks only the launch's and the in-review row's absence at base (\u00a714, done-when paragraph).",
+    "evidence_paths": "pass \u2014 the gate log and negative control are recorded with the run, under the run's own durable directory, not a node-local temporary path; nothing in \u00a714 writes evidence to `/tmp`.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the symbols or comments \u00a714 tells the node to write, and no changelog prose.",
+    "reasoning": "two findings \u2014 the reviewed-run \"in review\" row has no stated producer for a transition keyed to the reviewed run, and the plan attributes every withheld launch to `stream_carries` when a non-own session's launch is dropped earlier in `_feed`.",
+    "single_goal": "pass \u2014 one deliverable, the row policy's carried-row set, with the producer field it needs folded into that deliverable rather than treated as a second one.",
+    "wiring": "pass \u2014 \u00a714 now declares the order it holds in (`runs after \u00a74, which writes ticker.py, and before \u00a75 and \u00a77`), \u00a75's own tail reads \"It runs after \u00a714\", \u00a77 chains through \u00a75, and the dispatch driver f-alwh-002 names \"on `ticker.py`, \u00a714 then \u00a75 then \u00a77\", so the ordering the previous review flagged is consistent across all four surfaces."
+  },
+  "section_digests": {
+    "_document": "06b6bffb1430e5d0b3aaec84c099dc6755869214442e32f0b25b108c69b81029",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "928be57771c429d0e8372b33d7a14af3b1fdd4ccf96b21742f9039579d68e340",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "b70daef00ded9018b34cae00b2c9ef29b084f63871998a29cf673204192abcb7",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "5c3001670a292c0e3c97fd032cdc06a5d469d910086004b3df0f4540767159d0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:21:18.684825+00:00"
+}
