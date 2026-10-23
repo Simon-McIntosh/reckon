@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T22:31:54.828Z",
+  "dispatched_at": "2026-10-23T22:23:21Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-1",
+      "reason": "the node builds the owed-removal recording into the wrong function and leaves the one reaper that already attributes a directory to its run untouched, so the done-when's \"settles the record\" lands in a sweep that a private state home also refuses outright (gc.py:1044-1053).",
+      "text": "\"`garbage_collect_orphan_scratch` ... the one scratch reaper\" is wrong about its own code: `reckon/crew/gc.py` holds two scratch reapers, and the orphan sweep at :1030 is the one documented for \"a directory no run can be attributed to\" (gc.py:1188-1192), reaped by ctime age alone after a 2-hour grace; the run-attributed, terminal-record-licensed reaper is `garbage_collect_scratch` at gc.py:1173, which already removes a run's directory when the run has a ledger row and no live pointer and already reports per-run `state` and withheld reasons \u2014 so the change would rebuild run attribution and removal recording inside the unattributable-directory sweep while the function that already does the job goes unextended",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:169",
+      "id": "reasoning-2",
+      "reason": "without a named trigger on the owing host the debt recorded in case 2 is never settled in production, and the node is being sent to build a settlement path with no reachable caller.",
+      "text": "\"settled ... when it runs on the owing host\" names no caller that makes it run there: the only scheduler in the plan is \u00a77's single per-user hourly timer (`install_retention_timer`, gc.py:1468, unit `reckon-crew-retention.timer`), and the release path deliberately records the debt instead of acting, so a scratch directory made on any host without that timer never meets a sweep \u2014 the same shape as the leak \u00a78 measures, where 62 promoted runs' scratch survived on the host that made it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:170",
+      "id": "done_when-1",
+      "reason": "the case either cannot pass or the worker loosens the sweep's grace to make it pass, which changes the mechanism to satisfy the measure.",
+      "text": "case 2 asserts a `retention_sweep` pass removes the owed copy, but `garbage_collect_orphan_scratch` withholds any directory whose ctime is inside `SCRATCH_GRACE_SECONDS` (gc.py:1005, :1081), a little over two hours, with no such at-least-2h ctime anywhere in the case; a fixture built the way the other cases are built will be withheld and the case will fail for a reason that is not the behaviour under test",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e6c1557c5d2118906a745b7b81a0de26f4221efb615b17e0e14cd56b99c25f24",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T222221897510-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "70dfc5910fc31942afc5abcc80cb534b01f33e1b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `ensure_worker_scratch` (dispatch_launch.py:782), `remove_worker_scratch` (:829), `_release_after_promotion` (promotion_release.py:476) with callers at promotion.py:1125/:1752, promotion_records.py:188 and crew_run_commands.py:2590, `garbage_collect_orphan_scratch` (gc.py:1030) and `retention_sweep` (gc.py:1329) all resolve, `attempt-<n>-worker.json` is the real per-attempt name (dispatch_launch.py:1805), and every extensionless href in the snapshot resolves to `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a78's second case (plan.html:170) requires \"a pass of `retention_sweep` on that host then removes it\", but the reaper the change routes it through withholds any directory younger than `SCRATCH_GRACE_SECONDS = 2 * 60 * 60` (reckon/crew/gc.py:1005, :1081), and the case states no fixture age.",
+    "evidence_paths": "pass \u2014 \u00a78 places gate logs under the run directory and names the committed evidence fragment as the durable record, which is the same footing \u00a73 gives every other section and which an earlier review of \u00a76 accepted.",
+    "naming": "pass \u2014 \u00a78 names no plan labels, ticket numbers or version tags; its new test file is named for the mechanism.",
+    "reasoning": "two findings \u2014 the change names the wrong scratch reaper, and the settlement it relies on has no caller on the host that owes the removal.",
+    "single_goal": "pass \u2014 host-recorded scratch removal, the review-promotion route and the settlement pass are one deliverable: a run's scratch leaves with the run.",
+    "wiring": "pass \u2014 `plan-section-depends-on` at plan.html:22 now records the `s8 \u2192 s7` edge, and \u00a77's `retention_sweep` (reckon/crew/gc.py:1329) does run run-directory retention alone, so \u00a78's stated dependency holds."
+  },
+  "section_digests": {
+    "_document": "7b027ab93025f3f1274af4c8c21f7e58c154d6e99dbdf5e7f4aa8931cbb1f280",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "2daffc83a13b153b010bd0d6c198368a7c787474ba910cec3d699042538a258a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:34:42.783641+00:00"
+}
