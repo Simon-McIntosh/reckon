@@ -133,7 +133,7 @@ def _real_record(run_id: str) -> dict:
             "candidate_commit": "aaaa1111",
         },
         "shadow_patch": "--- a/reckon/flag.py\n+++ b/reckon/flag.py\n@@ -1 +1 @@\n",
-        "follow_on_paths": ["docs/plans/other.html", "reckon/flag.py"],
+        "outside_scope_paths": ["docs/plans/other.html", "reckon/flag.py"],
     }
 
 
@@ -303,7 +303,7 @@ def test_the_detail_set_is_exactly_the_measured_wide_fields() -> None:
         "resume_remedy",
         "failure_attribution",
         "shadow_patch",
-        "follow_on_paths",
+        "outside_scope_paths",
     }
 
 

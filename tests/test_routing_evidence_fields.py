@@ -332,7 +332,7 @@ def test_promotion_records_an_empty_follow_on_list_not_a_missing_key(
         "status: complete\nfollow_ons: none\nblockers: none\n",
     )
     row = _row(repository, run_id)
-    assert row["follow_on_paths"] == []
+    assert row["outside_scope_paths"] == []
     assert row["dispute_count"] == 0
 
 
@@ -348,7 +348,7 @@ def test_promotion_records_paths_named_in_follow_ons(
         "reckon/ledger.py\n",
     )
     row = _row(repository, run_id)
-    assert row["follow_on_paths"] == [
+    assert row["outside_scope_paths"] == [
         "reckon/crew/promotion.py",
         "reckon/ledger.py",
     ]
@@ -378,7 +378,7 @@ def test_a_promotion_without_a_manifest_is_never_measured(
         read_manifest=False,
     )
     row = _row(repository, run_id)
-    assert "follow_on_paths" not in row
+    assert "outside_scope_paths" not in row
     assert row["dispute_count"] == "unknown"
 
 
@@ -444,7 +444,7 @@ def test_a_legacy_promoted_row_keeps_every_existing_field_type() -> None:
         commits=["c" * 40],
         session_id="sess-1",
     )
-    for name in ("follow_on_paths", "predecessor_run", "dispute_count"):
+    for name in ("outside_scope_paths", "predecessor_run", "dispute_count"):
         assert name not in legacy
     assert set(ledger.RECORD_FIELDS) <= set(legacy)
     assert legacy["route_mode"] is None
@@ -471,7 +471,7 @@ def test_a_promoted_row_carries_all_three_fields_together(
         base_sha="e" * 40,
     )
     row = _row(repository, run_id)
-    assert row["follow_on_paths"] == ["reckon/ledger.py"]
+    assert row["outside_scope_paths"] == ["reckon/ledger.py"]
     assert row["predecessor_run"] == "r-earlier"
     assert row["dispute_count"] == 1
     # The row is still a complete completed-run record.

@@ -1262,9 +1262,11 @@ def _complete_locked(
     # later measure can separate a followup touch from a defect on the row
     # alone; the run directory survives, pruned only later by crew gc. An
     # unreadable manifest
-    # leaves follow-on paths unmeasured (key absent) and the dispute count
-    # "unknown" — a node never measured is not one that measured zero.
-    follow_on_paths = (
+    # leaves outside-scope paths unmeasured (key absent) and the dispute count
+    # "unknown" — a node never measured is not one that measured zero. The
+    # manifest field keeps its own name here; the committed row takes the
+    # renamed one.
+    outside_scope_paths = (
         None if manifest is None else ledger.follow_on_paths(manifest.get("follow_ons"))
     )
     predecessor = ledger.predecessor_run_id(
@@ -1439,7 +1441,7 @@ def _complete_locked(
         require_gate_check=require_gate_check,
         suite_delta=suite_delta,
         resume_remedy=resume_remedy,
-        follow_on_paths=follow_on_paths,
+        outside_scope_paths=outside_scope_paths,
         predecessor_run=predecessor,
         dispute_count=dispute_count,
         review=reviewed,

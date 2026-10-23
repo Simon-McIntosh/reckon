@@ -21,7 +21,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Self
 
-from reckon import _store
+from reckon import _store, run_record
 
 # The single detail-field declaration. A field on a run record named here is
 # wide detail a later rotation stage may wash out once its derived value
@@ -42,7 +42,7 @@ DETAIL_FIELDS = (
     "resume_remedy",
     "failure_attribution",
     "shadow_patch",
-    "follow_on_paths",
+    "outside_scope_paths",
 )
 
 # The query keys a reader routes through. Each is a real indexed column on the
@@ -129,6 +129,16 @@ def store_path() -> Path:
     return _store._config_home() / "crew" / "run_store.db"
 
 
+def _decoded_record(stored: str) -> dict[str, Any]:
+    """Decode a stored payload, mapping a retired outside-scope key on the way in.
+
+    A row written before the ledger key was renamed carries the old spelling;
+    the store's reader presents it under the current key, so a caller sees one
+    key whichever revision wrote the row.
+    """
+    return run_record.normalize_outside_scope_paths(json.loads(stored))
+
+
 def _legacy_payload(row: Mapping[str, Any]) -> dict[str, Any]:
     """Rebuild a run's durable record from a row an older runs shape wrote.
 
@@ -140,8 +150,10 @@ def _legacy_payload(row: Mapping[str, Any]) -> dict[str, Any]:
     """
     stored = row.get("payload")
     if stored is not None:
-        return json.loads(stored)
-    return {name: value for name, value in row.items() if value is not None}
+        return _decoded_record(stored)
+    return run_record.normalize_outside_scope_paths(
+        {name: value for name, value in row.items() if value is not None}
+    )
 
 
 def _durable_record(project: str, record: Mapping[str, Any]) -> dict[str, Any]:
@@ -364,10 +376,9 @@ class RunStore:
             "LEFT JOIN run_details d ON r.run_id = d.run_id"
         )
         return {
-            str(run_id): {
-                **json.loads(payload),
-                **(json.loads(detail) if detail else {}),
-            }
+            str(run_id): run_record.normalize_outside_scope_paths(
+                {**json.loads(payload), **(json.loads(detail) if detail else {})}
+            )
             for run_id, payload, detail in rows
         }
 
@@ -465,7 +476,7 @@ class RunStore:
         ).fetchone()
         if row is None:
             return None
-        return json.loads(row[0])
+        return _decoded_record(row[0])
 
     def get_detail(self, run_id: str) -> dict[str, Any] | None:
         """Return one run's wide detail as a dict, or None when absent.
@@ -506,7 +517,7 @@ class RunStore:
             'SELECT "run_id", "payload" FROM "runs" WHERE "project" = ?', (project,)
         ).fetchall()
         return {
-            str(run_id): json.loads(payload)
+            str(run_id): _decoded_record(payload)
             for run_id, payload in rows
             if payload is not None
         }
