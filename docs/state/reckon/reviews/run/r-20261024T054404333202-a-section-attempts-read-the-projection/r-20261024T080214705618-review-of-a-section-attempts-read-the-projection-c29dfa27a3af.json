@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-10-24T08:10:37.795Z",
+  "dispatched_at": "2026-10-24T08:03:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html",
+      "line": 72,
+      "severity": "non-blocking",
+      "text": "The gate sentence calls 93b7d7fd \"the head of this record\" while the record's head is c29dfa27, so a reader comparing the record head against its gate revision finds a mismatch the sentence asserts away; naming it as the revision the gate ran at, without the head claim, would keep the record's revisions consistent."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html",
+      "line": 93,
+      "severity": "non-blocking",
+      "text": "The decode figures (4.445 s base, 0.596 s head) carry no revision of their own, and the log the head figure comes from (profile-head.log) records its revision as \"60bbbb17e ... plus the version-named index change (worktree, uncommitted at run time)\"; the 11191c058 label at :88 is therefore a retrospective attribution, and section 45 asks every figure to be reported with its revision."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html",
+      "line": 107,
+      "severity": "non-blocking",
+      "text": "\"the remaining head time is the walk the section excludes\" does not reconcile with the figures printed directly above it: the head aggregate is 4.313 s while the stat walk is 1.297 s, and section_attempts_by_plan \u2014 which holds the decode, the grouping and the refresh \u2014 is 1.824 s, so the walk does not account for the residual and `_indexed_data` inside it does not complete the story either."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Searched the diff and the repository for production code reaching the gained commits: both touch a docs fragment and a test file only, so no runtime path reads them.",
+    "diff": "Read commit by commit from 84596248e to c29dfa27: 93b7d7fd rewrites the fragment's measure and negative-control paragraphs and deletes the fragment-parsing guard and its helper from the test file (54 lines), and c29dfa27 restates the gate sentence (3 insertions, 4 deletions); no production file changes.",
+    "done_when": "Section 45 now passes on the head's projection decode (at most a fifth of base per call) with resident memory within 50 MB of base; the fragment records decode 4.445 s to 0.596 s (0.134) and VmRSS 757,112 to 140,196 kB at :91-97, matching profile-base.log and profile-head.log exactly, and gate-head-restated.log ends EXIT=1 with 1 failed, 177 passed, the same failure id as gate-base.log's 1 failed, 171 passed.",
+    "goal": "The source node's goal is that a section-attempts read decodes only its index projection; the gained commits add nothing to that mechanism and instead bring the evidence record in line with the section's restated measure, raising docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:13 from pass-with-limitation to pass and retiring the whole-call bound at :104-107.",
+    "manifest": "Read at the run directory; it records commits 93b7d7fd and c29dfa27, the restated-measure gate (1 failed, 177 passed, same id), the retired whole-call bound, and status complete.",
+    "write_paths": "Section 45 declares reckon/ledger.py, reckon/mcp_views.py, tests/test_section_attempts_read_the_projection.py and the fragment; the gained diff touches only the test file and the fragment, both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a section-attempts read decodes only the index's projection; the gained commits add nothing to that mechanism and instead bring the evidence record in line with the section's restated measure, raising docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:13 from pass-with-limitation to pass and retiring the whole-call bound at :104-107.\nVERDICT done_when: section 45 now passes on the head's projection decode (at most a fifth of base per call) with resident memory within 50 MB of base; the fragment records decode 4.445 s to 0.596 s (0.134) and VmRSS 757,112 to 140,196 kB at :91-97, which match profile-base.log and profile-head.log exactly, and gate-head-restated.log ends EXIT=1 with 1 failed, 177 passed, the same failure id as gate-base.log's 1 failed, 171 passed.\nVERDICT write_paths: section 45 declares reckon/ledger.py, reckon/mcp_views.py, tests/test_section_attempts_read_the_projection.py and the fragment; the gained diff touches only the test file and the fragment, both inside them.\nVERDICT manifest: read at the run directory; it records commits 93b7d7fd and c29dfa27, the restated-measure gate (1 failed, 177 passed, same id), the retired whole-call bound, and status complete.\nVERDICT diff: read commit by commit from 84596248e to c29dfa27; 93b7d7fd rewrites the fragment's measure and negative-control paragraphs and deletes the fragment-parsing guard and its helper from tests/test_section_attempts_read_the_projection.py (54 lines), and c29dfa27 restates the gate sentence, with no production file changes.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:91-97 measures the quantity section 45 names, the projection decode, at 0.134 of base and reports the index refresh beside it rather than inside the bound.\nSCORE evidence: 16\nJUSTIFICATION evidence: every figure at docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:76-89 reconciles exactly with profile-base.log, profile-head.log and measure-fair-pair.log, but those head logs record an uncommitted worktree while the fragment labels the head 11191c058, and gate-head-restated.log ran at 93b7d7fd while :72 calls that the record's head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff touches only tests/test_section_attempts_read_the_projection.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html, both inside the declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: 93b7d7fd deletes test_the_fragment_verdict_agrees_with_its_measured_figures from tests/test_section_attempts_read_the_projection.py and adds no assertion, so nothing now fails if the fragment's verdict and figures diverge, while the projection guards at :75-217 are untouched.\nSCORE fit: 18\nJUSTIFICATION fit: the new prose keeps the fragment's existing r-measure markup at docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:76 and the two commits carry conventional subjects with bodies.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained diff adds no definition and only removes a private test helper, so no capability is forked; the search over reckon/ and docs/ui for an existing fragment-verdict check found only the guard removed here.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:72 non-blocking: the gate sentence calls 93b7d7fd \"the head of this record\" while the record's head is c29dfa27, so a reader comparing the record head against its gate revision finds a mismatch the sentence asserts away.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:93 non-blocking: the decode figures carry no revision of their own and profile-head.log records its head as \"60bbbb17e ... plus the version-named index change (worktree, uncommitted at run time)\", so the 11191c058 label at :88 is a retrospective attribution rather than a revision the log states, while section 45 asks every figure to be reported with its revision.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:107 non-blocking: \"the remaining head time is the walk the section excludes\" does not reconcile with the figures above it, since the head aggregate is 4.313 s while the stat walk is 1.297 s and section_attempts_by_plan, which contains the decode, grouping and refresh, is 1.824 s.\n",
+  "review_run_id": "r-20261024T080214705618-review-of-a-section-attempts-read-the-projection-c29dfa27a3af",
+  "reviewed_base_sha": "84596248e1f6064204346218e97a6b6c87331b2e",
+  "reviewed_head_sha": "c29dfa27a3af129363bf9a8a750d801236b22b64",
+  "reviewed_run_id": "r-20261024T054404333202-a-section-attempts-read-the-projection",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T08:23:23.770365+00:00",
+  "total": 104
+}
