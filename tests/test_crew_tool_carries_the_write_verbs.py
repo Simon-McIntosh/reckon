@@ -378,7 +378,7 @@ def test_the_obligations_view_prints_the_action_form(
     monkeypatch.setattr(
         obligations_module,
         "obligations",
-        lambda project, session: {
+        lambda project, session, *, fields=None: {
             "project": project,
             "session": session,
             "obligations": [obligations_module._with_action_form(item)],

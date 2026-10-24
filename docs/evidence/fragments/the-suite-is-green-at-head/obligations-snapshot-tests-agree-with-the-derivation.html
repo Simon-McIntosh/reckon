@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The published obligations slice equals the derivation again">
+  <meta name="plan-summary" content="The sweep's slice built duty rows with neither the action form the derivation renders nor the projection that supplies the dispatched section, so the published snapshot disagreed with the derivation on every row. The slice now runs its rows through the derivation's own two owners, and one test stand-in that rejected the crew tool's field list was repaired. All six listed ids pass; the base and head arms add no failure.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s44">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,obligations,snapshot,evidence">
+  <title>The published obligations slice equals the derivation again | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="obligations-snapshot-tests-agree-with-the-derivation" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="obligations-snapshot-tests-agree-with-the-derivation-title">The slice publishes the row the derivation builds</h2>
+
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-repro">All six ids failed at the node base
+  <code>74abbdd99</code>, reproduced from a <code>git archive</code> extraction on node-local disk
+  (<code>gate-base.log</code>: the six failures, and nothing else beyond five pre-existing fixture
+  timeouts that both arms carry). Two causes, both of them a producer that had drifted from the one
+  that owns the row shape.</p>
+
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-slice"><strong>Cause 1, the five parity
+  ids.</strong> The obligations view has two producers, and <code>4b3c82f5a</code> (2026-10-21) made
+  the sweep's slice equal to the derivation field for field. Two later changes reached only the
+  derivation: <code>d87b44154</code> (2026-10-20) renders each duty's printed command as an action
+  form (<code>next_action_form</code>), and <code>eb07961b3</code> (2026-10-22) routes every duty row
+  through <code>project_run_rows</code>, which supplies the <code>section</code> the run was dispatched
+  for and leaves an empty field off the row. The slice's <code>payload_for</code> built its rows and
+  returned them, so its duties carried neither, and the published snapshot disagreed with the
+  derivation on every row. Both changes were intended and their omission from the slice was not: the
+  slice's own docstring states the two producers are equal field for field, and the parity cases are
+  the guard that says so.</p>
+
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-repair"><strong>Repair.</strong>
+  <code>payload_for</code> now runs its rows through the derivation's own two owners &mdash;
+  <code>obligations._with_action_form</code> and <code>obligations.project_run_rows</code> with the
+  derivation's <code>DUTY_ROW_FIELDS</code> vocabulary and its <code>run_section_index</code> over the
+  sweep's pointers &mdash; rather than restating either. The row shape stays in
+  <code>reckon/crew/obligations.py</code>, and a field added there reaches the snapshot with it.
+  Commit <code>93e0b5a52</code>.</p>
+
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-standin"><strong>Cause 2, the
+  obligations-view id.</strong> The crew tool asks the obligations view for a caller's field list, a
+  keyword <code>eb07961b3</code> added and <code>reckon/mcp_views.py</code> passes. The case's
+  stand-in for <code>obligations.obligations</code> accepted only <code>(project, session)</code>, so
+  the tool raised <code>TypeError: ... got an unexpected keyword argument 'fields'</code> before the
+  action form the case pins was built. The stand-in now accepts the keyword. Commit
+  <code>c644b7e6b</code>.</p>
+
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-controls"><strong>Two negative controls,
+  one per repair.</strong> Reverting the stand-in to <code>(project, session)</code> fails its id with
+  that <code>TypeError</code> (<code>negative-control.log</code>, <code>EXIT=1</code>). Changing the
+  slice's projection to supply no section fails all five parity ids
+  (<code>negative-control-projection.log</code>, <code>5 failed</code>, <code>EXIT=1</code>), so the
+  parity cases discriminate on the field they are meant to pin rather than passing for some other
+  reason.</p>
+
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-gate"><strong>Gate, both arms from
+  <code>git archive</code> extractions on node-local disk.</strong> The four section files plus every
+  <code>tests/*.py</code> that imports <code>reckon.crew.obligation_snapshot</code> &mdash; 33 files,
+  run <code>-n 6</code> in the foreground. Base <code>74abbdd99</code>: <code>6 failed, 182 passed,
+  5 errors</code>. Head <code>93e0b5a52</code>: <code>188 passed, 5 errors</code>, no failure. The six
+  base failures are exactly the listed ids, and the five errors are the same module-scoped fixture
+  timing out at 300&nbsp;s in both arms while it builds 15 git worktrees and 500 ledger records under
+  six-way parallelism &mdash; identical in the two arms, so the delta is zero added. Both arms'
+  receipts therefore end <code>EXIT=1</code>: the base on its six failures and five errors, the head
+  on its five errors alone with no test failure, which is why the record's <code>after_suite</code>
+  carries <code>exit_status: 1</code> beside <code>failure_count: 0</code> rather than a green
+  receipt the log does not show. Ruff reports nothing on the changed paths
+  (<code>ruff.log</code>: <code>All checks passed!</code>, <code>2 files already formatted</code>,
+  <code>EXIT=0</code>).</p>
+</article>
+</body>
+</html>
