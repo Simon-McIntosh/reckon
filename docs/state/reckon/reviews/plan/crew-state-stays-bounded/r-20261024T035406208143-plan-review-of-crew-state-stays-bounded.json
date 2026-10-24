@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T04:02:52.753Z",
+  "dispatched_at": "2026-10-24T03:55:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/crew-state-stays-bounded.html:174",
+      "id": "reasoning-1",
+      "reason": "the reason string is the deliverable itself, written into `CREW_VERBS_OUTSIDE_ORCHESTRATION` as that entry's documented justification, so the plan must state the true reason (a hand-run maintenance surface that neither the timer nor an orchestrator invokes) rather than one the code contradicts.",
+      "text": "\u00a79 says \"The verb is run by the per-user timer that `install_retention_timer` installs, never by an orchestrator\", but `render_retention_service_unit` sets `ExecStart` to `<interpreter> -m reckon.crew.gc --apply` (reckon/crew/gc.py:1425-1443), which `install_retention_timer` (gc.py:1468) installs, so the timer runs the module entry point `gc.main`, never the click verb `crew_retention_sweep` (reckon/crew_run_commands.py:1558-1616); the verb is an operator-only surface",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c2eea46df107e686418ee16e2007a4d8e73ac49ad4ef066981a11361f3957378",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 32,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T035406208143-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "9f718e0ddfb2885849dfa91de8d7a9fa9f11e8c5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor \u00a79 names resolves: `tests/test_skill_contracts.py:1465` (the case), `:1107` (the exemption dict), `reckon/crew_run_commands.py:1558` (`crew_retention_sweep`), `reckon/crew/gc.py:1468` (`install_retention_timer`), and commit `81b4ea57e`.",
+    "done_when": "pass \u2014 \u00a79's measure is a delta: `test_every_registered_crew_verb_is_documented_or_exempt` passes at the head and fails at the base, with every other case in `tests/test_skill_contracts.py` held to its base result; I confirmed both arms, the base failing with \"reckon crew retention-sweep is registered and the skill never names it\" and the head arm passing once `(\"crew\", \"retention-sweep\")` is added to `CREW_VERBS_OUTSIDE_ORCHESTRATION`.",
+    "evidence_paths": "pass \u2014 \u00a79 puts every log under the run directory, a durable path in the crew home rather than a scratch tree.",
+    "naming": "pass \u2014 the section names a mechanism, adds no plan label or ticket number to a symbol, and follows the file's existing exemption vocabulary.",
+    "reasoning": "a finding \u2014 the exemption's stated justification is contradicted by the code it cites: the installed timer does not run the `reckon crew retention-sweep` verb, so a worker implementing \u00a79 as written would land a false reason string.",
+    "single_goal": "pass \u2014 \u00a79 has one deliverable, the exemption entry plus its reason in `tests/test_skill_contracts.py`.",
+    "wiring": "pass \u2014 \u00a79 declares no `depends-on` because the sections it rests on have landed (\u00a77 registered the verb at `81b4ea57e`), and the one outstanding dispatch gate \u2014 a peer run holding `tests/test_skill_contracts.py` \u2014 is recorded in followup `f-cssb-009`, which is where a non-plan dependency belongs."
+  },
+  "section_digests": {
+    "_document": "5b58e1c4879035fed62f2c422e652e84c2958a540653109a7ca5f20421d0995f",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc03fa54cdefe8b48312fabda86a4fca8277e025db66430978900e888a969066",
+    "s9": "f059bf00bee6adcee7fedc421eb2f26f8999c48d6c6ede9bdf8e75f45879e563"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:07:12.667051+00:00"
+}
