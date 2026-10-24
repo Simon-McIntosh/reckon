@@ -1,0 +1,91 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from logs/base-arm-gate.log (12 failed) and logs/head-arm-gate.log (3 failed): every head failure is a base failure, so no id was added.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1838 (yield to the session's older queued request)",
+    "reckon/crew/dispatch.py:1359,1702,1809 (record_picker_hold sites)",
+    "reckon/crew/queue_admission.py:1818 admit_once",
+    "reckon/crew/picker/outcomes.py:227 record_picker_hold",
+    "reckon/crew_dispatch_commands.py:466 (dry-run overrides echo)"
+  ],
+  "completed_at": "2026-10-24T15:03:13.566Z",
+  "dispatched_at": "2026-10-24T14:51:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140801732353-queue-admission-tests-read-todays-states/logs/negative-control.log",
+      "line": "3",
+      "text": "blocking: the plan requires one negative control per repaired id, but the single mutation at the log's own revision line only drops the yield and reddens the three yielding ids, leaving test_both_dispatch_holds_are_recorded_without_docs, both test_congested_local_lane_routing cases, both test_a_schema_refused_override_answers_on_the_dry_run_channel cases and test_a_discarded_run_is_not_recreated with no arm showing they fail on the change they pin."
+    },
+    {
+      "file": "tests/test_a_node_is_queued_once.py",
+      "line": "312",
+      "text": "non-blocking: the test name says the different node launches over a queued path while the landed assertions require payload queued true and the older pointer to leave queued, so a reader and a future failure both misreport what the case pins."
+    },
+    {
+      "file": "tests/test_a_pick_names_its_slow_stage.py",
+      "line": "364",
+      "text": "non-blocking: the docstring still says \"Both hold-recording dispatch sites\" while the assertion on line 376 requires three, and the test name retains \"both\"."
+    },
+    {
+      "file": "tests/test_dry_run_shows_each_set_override.py",
+      "line": "302",
+      "text": "non-blocking: the test name and both parametrize ids say \"schema_refused\" while the case now requires the undeclared key to be accepted with exit 0."
+    },
+    {
+      "file": "logs/head-arm-gate.log",
+      "line": "2",
+      "text": "non-blocking: the head arm was measured in the worker's own worktree rather than a git archive extraction as the done_when requires, so the recorded result depends on a tree the log asserts but does not prove equals fa865aaa2."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/queue-admission-tests-read-todays-states.html",
+      "line": "11",
+      "text": "non-blocking: the fragment declares plan-verdict \"passed\" while its own body reports three listed ids still red against the section's done when."
+    },
+    {
+      "file": "tests/test_dispatch_returns_without_worker.py",
+      "line": "1247",
+      "text": "non-blocking: raising stub_sleep from 5 s to 30 s is a timing-only repair; logs/base-arm-gate.log confirms the failing assertion was the test's own live-worker precondition, so the attribution is evidenced, but the case now spends 30 s and the latent race is unchanged."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read the single commit fa865aaa2 against ffa922ba6; it re-freezes six assertions to the new admission contracts, changes the congested-lane cases to exit 0 with queued true, swaps the dry-run schema refusal for an acceptance echo, raises a worker stub sleep from 5 s to 30 s, adds the evidence fragment, and leaves the two blocked test files untouched.",
+    "done_when": "The done_when names the 12 ids and the nine-file gate; logs/head-arm-gate.log records 3 failed, 76 passed, EXIT=1 at fa865aaa2 and logs/base-arm-gate.log records 12 failed, 67 passed, EXIT=1 at ffa922ba6, and the three head failures are exactly the three ids the manifest reports blocked; the \"both arms from git archive extractions\" clause holds for the base arm but not for the head arm, which ran in the worktree (logs/head-arm-gate.log:2).",
+    "goal": "The node goal is to make the 12 section 46 census ids pass by asserting each intended contract or reporting the unintended change; the diff at fa865aaa2 re-freezes seven test files to the contracts 3006d1fd0, 0ce92aa7a and 78bad3aec introduced and the manifest reports the three remaining ids as unintended, so the goal's second arm is met.",
+    "manifest": "Read; it records all 12 ids reproduced at base, 9 repaired with the commit read for each, 3 reported blocked with the production repair named, head 3 failed/76 passed at fa865aaa2, and one negative-control log.",
+    "write_paths": "The manifest declares the nine test files plus the evidence fragment and a figures directory; every path in git diff --name-status ffa922ba..fa865aaa2 (seven tests and the evidence fragment) is inside them, and the two untouched declared tests are the blocked ids."
+  },
+  "justifications": {
+    "durability": "tests/test_a_pick_names_its_slow_stage.py:376 fails if the third record_picker_hold call at reckon/crew/dispatch.py:1809 is dropped, but no arm demonstrates that and tests/test_dispatch_returns_without_worker.py:1247 is a timing-only repair.",
+    "evidence": "logs/head-arm-gate.log ends 3 failed, 76 passed with EXIT=1 at fa865aaa2 and matches the manifest, but logs/negative-control.log exercises only the three yielding ids through one mutation, leaving six of the nine repaired ids without the plan's per-id negative control.",
+    "fit": "tests/test_a_node_is_queued_once.py:312 keeps the name ..._launches while its assertions now require the dispatch to queue, and tests/test_a_pick_names_its_slow_stage.py:364 still says \"Both hold-recording dispatch sites\" beside an assertion of three.",
+    "goal_fidelity": "tests/test_a_dispatch_yields_to_its_sessions_older_request.py:173-175 asserts the older request's pointer exists carrying the launched phase under its own run id, matching reckon/crew/dispatch.py:1838.",
+    "reuse": "git diff ffa922ba..fa865aaa2 -- tests/ adds no def, class or module, so nothing forks an existing owner; the only new file is the evidence page.",
+    "scope_discipline": "git diff --name-status ffa922ba..fa865aaa2 touches only seven declared test files plus the declared evidence fragment."
+  },
+  "node": "review-of-queue-admission-tests-read-todays-states-fa865aaa2dfa",
+  "node:reviewed": "queue-admission-tests-read-todays-states",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make the 12 section 46 census ids pass by asserting each intended contract or reporting the unintended change; the diff at fa865aaa2 re-freezes seven test files to the contracts 3006d1fd0, 0ce92aa7a and 78bad3aec introduced and the manifest reports the three remaining ids as unintended, so the goal's second arm is met.\nVERDICT done_when: The done_when names the 12 ids and the nine-file gate; logs/head-arm-gate.log records 3 failed, 76 passed, EXIT=1 at fa865aaa2 and logs/base-arm-gate.log records 12 failed, 67 passed, EXIT=1 at ffa922ba6, and the three head failures are exactly the three ids the manifest reports blocked; the \"both arms from git archive extractions\" clause holds for the base arm but not for the head arm, which ran in the worktree (logs/head-arm-gate.log:2).\nVERDICT write_paths: The manifest declares the nine test files plus the evidence fragment and a figures directory; every path in git diff --name-status ffa922ba..fa865aaa2 (seven tests and the evidence fragment) is inside them, and the two untouched declared tests are the blocked ids.\nVERDICT manifest: Read; it records all 12 ids reproduced at base, 9 repaired with the commit read for each, 3 reported blocked with the production repair named, head 3 failed/76 passed at fa865aaa2, and one negative-control log.\nVERDICT diff: Read the single commit fa865aaa2 against ffa922ba6; it re-freezes six assertions to the new admission contracts, changes the congested-lane cases to exit 0 with queued true, swaps the dry-run schema refusal for an acceptance echo, raises a worker stub sleep from 5 s to 30 s, adds the evidence fragment, and leaves the two blocked test files untouched.\nCALL_SITES: reckon/crew/dispatch.py:1838 (yield to the session's older queued request), reckon/crew/dispatch.py:1359,1702,1809 (record_picker_hold sites), reckon/crew/queue_admission.py:1818 admit_once, reckon/crew/picker/outcomes.py:227 record_picker_hold, reckon/crew_dispatch_commands.py:466 (dry-run overrides echo)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_dispatch_yields_to_its_sessions_older_request.py:173-175 asserts the older request's pointer exists carrying the launched phase under its own run id, matching reckon/crew/dispatch.py:1838.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/head-arm-gate.log ends 3 failed, 76 passed with EXIT=1 at fa865aaa2 and matches the manifest, but logs/negative-control.log exercises only the three yielding ids through one mutation, leaving six of the nine repaired ids without the plan's per-id negative control.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status ffa922ba..fa865aaa2 touches only seven declared test files plus the declared evidence fragment.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_pick_names_its_slow_stage.py:376 fails if the third record_picker_hold call at reckon/crew/dispatch.py:1809 is dropped, but no arm demonstrates that and tests/test_dispatch_returns_without_worker.py:1247 is a timing-only repair.\nSCORE fit: 14\nJUSTIFICATION fit: tests/test_a_node_is_queued_once.py:312 keeps the name ..._launches while its assertions now require the dispatch to queue, and tests/test_a_pick_names_its_slow_stage.py:364 still says \"Both hold-recording dispatch sites\" beside an assertion of three.\nSCORE reuse: 20\nJUSTIFICATION reuse: git diff ffa922ba..fa865aaa2 -- tests/ adds no def, class or module, so nothing forks an existing owner; the only new file is the evidence page.\nFINDING logs/negative-control.log:3 blocking: the plan requires one negative control per repaired id, but the single mutation at the log's own revision line only drops the yield and reddens the three yielding ids, leaving test_both_dispatch_holds_are_recorded_without_docs, both test_congested_local_lane_routing cases, both test_a_schema_refused_override_answers_on_the_dry_run_channel cases and test_a_discarded_run_is_not_recreated with no arm showing they fail on the change they pin.\nFINDING tests/test_a_node_is_queued_once.py:312 non-blocking: the test name says the different node launches over a queued path while the landed assertions require payload queued true and the older pointer to leave queued, so a reader and a future failure both misreport what the case pins.\nFINDING tests/test_a_pick_names_its_slow_stage.py:364 non-blocking: the docstring still says \"Both hold-recording dispatch sites\" while the assertion on line 376 requires three, and the test name retains \"both\".\nFINDING tests/test_dry_run_shows_each_set_override.py:302 non-blocking: the test name and both parametrize ids say \"schema_refused\" while the case now requires the undeclared key to be accepted with exit 0.\nFINDING logs/head-arm-gate.log:2 non-blocking: the head arm was measured in the worker's own worktree rather than a git archive extraction as the done_when requires, so the recorded result depends on a tree the log asserts but does not prove equals fa865aaa2.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/queue-admission-tests-read-todays-states.html:11 non-blocking: the fragment declares plan-verdict \"passed\" while its own body reports three listed ids still red against the section's done when.\nFINDING tests/test_dispatch_returns_without_worker.py:1247 non-blocking: raising stub_sleep from 5 s to 30 s is a timing-only repair; logs/base-arm-gate.log confirms the failing assertion was the test's own live-worker precondition, so the attribution is evidenced, but the case now spends 30 s and the latent race is unchanged.\n",
+  "review_run_id": "r-20261024T144938554931-review-of-queue-admission-tests-read-todays-states-fa865aaa2dfa",
+  "reviewed_base_sha": "ffa922ba64c449341b1da08d2173b8c7c0b749c8",
+  "reviewed_head_sha": "fa865aaa2dfabe873cc6e3c9ce501859baef3c26",
+  "reviewed_run_id": "r-20261024T140801732353-queue-admission-tests-read-todays-states",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:15:06.773514+00:00",
+  "total": 101
+}
