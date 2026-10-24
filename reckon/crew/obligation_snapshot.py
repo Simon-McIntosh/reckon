@@ -1128,20 +1128,40 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     acknowledged.sort(
         key=lambda item: (str(item["until"]), str(item["run_id"]), str(item["kind"]))
     )
+    # The derivation owns the duty row's shape, so the slice runs its rows
+    # through the same two owners the derivation does rather than restating
+    # either: the action form each printed command renders as, and the
+    # projection that supplies the section a run was dispatched for and leaves
+    # an empty field off the row. A slice that skipped them published duties
+    # without a section or an action form while the derivation carried both.
+    items = [module._with_action_form(item) for item in items]
+    acknowledged = [module._with_action_form(item) for item in acknowledged]
+    sections = module.run_section_index([state.pointers.values()])
+    summary = {
+        "count": len(items),
+        "oldest_age_seconds": max(
+            (int(item["age_seconds"]) for item in items), default=0
+        ),
+        "unreconciled_runs": int(
+            state.unreconciled.get(session, state.unreconciled.get("", 0))
+        ),
+    }
     return {
         "project": state.project,
         "session": session,
-        "obligations": items,
-        "acknowledged": acknowledged,
-        "summary": {
-            "count": len(items),
-            "oldest_age_seconds": max(
-                (int(item["age_seconds"]) for item in items), default=0
-            ),
-            "unreconciled_runs": int(
-                state.unreconciled.get(session, state.unreconciled.get("", 0))
-            ),
-        },
+        "obligations": module.project_run_rows(
+            items,
+            view="obligations",
+            vocabulary=module.DUTY_ROW_FIELDS,
+            sections=sections,
+        ),
+        "acknowledged": module.project_run_rows(
+            acknowledged,
+            view="obligations",
+            vocabulary=module.DUTY_ROW_FIELDS,
+            sections=sections,
+        ),
+        "summary": summary,
     }
 
 
