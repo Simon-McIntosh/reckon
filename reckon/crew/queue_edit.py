@@ -168,6 +168,7 @@ def _contract_findings(
     from reckon.crew.routing import resolved_time_ceiling
 
     options = record.get("dispatch_options") or {}
+    node.manifest_path = str((record.get("node") or {}).get("manifest_path") or "")
     verdict = validate_node(
         node,
         locked_decisions=tuple(options.get("locked_decisions") or ()),
