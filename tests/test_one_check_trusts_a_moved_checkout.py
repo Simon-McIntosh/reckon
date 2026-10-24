@@ -95,12 +95,29 @@ def commit_the_moved_code():
     )
 
 
+async def warm_the_child():
+    """Wait until the guard's persistent child has answered its readiness probe.
+
+    The child is warmed by the probe rather than by a caller's call, so a call
+    made while it is still cold is served by the running image. This case is
+    about the answer once the current code is serving, so it waits for it.
+    """
+    for _ in range(1800):
+        state = reckon_mcp._moved_checkout_state()
+        if state.may_load:
+            server = reckon_mcp._current_code_server()
+            if server.warm(state.disk_stamp) is not None:
+                return
+        await asyncio.sleep(0.1)
+
+
 async def main():
     first = await crew_view()
     move_the_stamp()
     add_a_shipped_default()
     if mode == "clean":
         commit_the_moved_code()
+        await warm_the_child()
     second = await crew_view()
     print(json.dumps({
         "module": reckon_mcp.__file__,

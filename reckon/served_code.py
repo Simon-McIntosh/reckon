@@ -815,11 +815,20 @@ def moved_checkout(*, root: Path, running_stamp: str) -> MovedCheckout:
     the package, and ``root`` the checkout that supplied it. The verdict is the
     trust-checked one, so a caller re-running a call on current code does so only
     onto a tree the followers would themselves load.
+
+    The identity is read the way the running stamp was: ``source_code_identity``
+    identifies a package directory and derives the checkout from the directory
+    above it, so it is handed the package inside ``root``. Handed the checkout
+    itself it would identify the directory above the checkout and never match,
+    which reads every checkout as moved.
     """
 
     from reckon import checkout_trust
 
-    current = checkout_trust.source_code_identity(root)
+    package_dir = Path(root) / "reckon"
+    if not package_dir.is_dir():
+        package_dir = Path(root)
+    current = checkout_trust.source_code_identity(package_dir)
     if current == running_stamp:
         return MovedCheckout(
             moved=False,
