@@ -822,6 +822,14 @@ def _release_launch_claim(run_id: str) -> None:
     Neither removal is an argument about whose claim it is — the path is this
     run's own — so a call for a run that published nothing removes nothing.
     """
+    # A discard issued while this launch was composing recorded its departure
+    # in the run directory, which the removal below takes with it. Copied to
+    # the shared spool first, that departure outlives the refusal that gives
+    # the claim back, so a reader after the rollback still finds it instead of
+    # the same absence a vanished pointer produces.
+    from reckon.crew.promotion import preserve_discard_record
+
+    preserve_discard_record(run_id)
     # Publish and release use the same lock, so a publish already in progress
     # finishes before the removal and cannot write the pointer back afterward.
     with _pointer_lock(run_id):
@@ -829,7 +837,7 @@ def _release_launch_claim(run_id: str) -> None:
     shutil.rmtree(run_dir(run_id), ignore_errors=True)
 
 
-def _refuse_a_discarded_launch(run_id: str) -> None:
+def _refuse_a_discarded_launch(run_id: str, *, started: bool = False) -> None:
     """Refuse a launch whose request was discarded before its worker started.
 
     A discard removes the run's pointer and leaves its own record behind, and
@@ -853,10 +861,12 @@ def _refuse_a_discarded_launch(run_id: str) -> None:
         # outlives the directory exactly as it does for a discard the admission
         # pass preserved before handing the request over.
         preserve_discard_record(run_id)
-        raise CrewError(
-            f"run {run_id!r} was discarded before its worker was started; the "
-            "launch is refused"
+        when = (
+            "while its worker was being started"
+            if started
+            else "before its worker was started"
         )
+        raise CrewError(f"run {run_id!r} was discarded {when}; the launch is refused")
 
 
 @contextlib.contextmanager

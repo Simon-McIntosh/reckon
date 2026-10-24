@@ -2953,7 +2953,16 @@ def dispatch(
                     ]
                 return pointer
 
+            # The pointer now names the running worker, so a discard arriving
+            # after this merge is refused by discard's own liveness test — the
+            # record it reads names a process. A discard that landed inside the
+            # spawn, before this merge, was refused by nothing: the pointer it
+            # read carried no pid yet, so it removed the pointer and left its
+            # own record for the rollback to find. Read once more here, so the
+            # launch refuses in that case too and stops the worker it already
+            # has a pid for.
             record = _mutate_pointer(run_id, attach_launch_identity)
+            _refuse_a_discarded_launch(run_id, started=True)
         else:
             # A delegated launch spawns no process, so there is no supervisor to
             # take the boundary baseline after dispatch's writes. Dispatch takes

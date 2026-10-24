@@ -15,6 +15,7 @@ not it has a run directory, and a request nobody discarded is still restored.
 from __future__ import annotations
 
 import importlib
+import os
 from pathlib import Path
 
 from reckon.crew import promotion, queue_admission, runs
@@ -174,6 +175,57 @@ def test_a_discard_arriving_while_the_launch_composes_is_refused(
         f"a discarded request leaves no live run (launcher calls: {len(launched)})"
     )
     assert launched == [], "a discarded request starts no worker"
+    assert promotion.discard_recorded(run_id), (
+        "the discard record outlives the rollback"
+    )
+    assert run_id in result["failed"]
+
+
+def test_a_discard_landing_after_the_spawn_stops_the_worker(
+    admit_repo: Path, monkeypatch
+) -> None:
+    """A discard inside the spawn leaves neither a running worker nor a lost record.
+
+    The worker's pid reaches the pointer only after the process exists, so a
+    discard landing between the spawn and that merge is refused by nothing: the
+    pointer it reads names no process, it removes the pointer and records the
+    departure in the run directory. The launch then has a worker no pointer
+    names, and the rollback that follows would take the run directory — and the
+    only discard record in it — with it.
+    """
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
+    _, resolve = _config_for()
+    run_id = "r-discarded-after-spawn"
+    _attempted_request(admit_repo, run_id)
+
+    real_start_time = dispatch_module._process_start_time
+
+    def discard_then_read_start_time(pid):
+        # The discard lands after the spawn and before the pid is merged onto
+        # the pointer, which is the span the launch cannot see.
+        promotion.discard(run_id)
+        return real_start_time(pid)
+
+    monkeypatch.setattr(
+        dispatch_module, "_process_start_time", discard_then_read_start_time
+    )
+    stopped: list = []
+
+    def record_stop(pid, start_time, **kwargs):
+        stopped.append(pid)
+        return []
+
+    monkeypatch.setattr(dispatch_module, "_signal_process_group", record_stop)
+    launched: list = []
+
+    result = queue_admission.admit_once(
+        config_for=resolve, launcher=_launcher(launched)
+    )
+
+    assert len(launched) == 1, "the worker was spawned before the discard"
+    assert stopped == [os.getpid()], f"the spawned worker was stopped: {stopped}"
+    assert not runs.pointer_path(run_id).exists(), "no pointer names the worker"
     assert promotion.discard_recorded(run_id), (
         "the discard record outlives the rollback"
     )
