@@ -7,7 +7,10 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import queue_admission, runs
-from reckon.crew.dispatch_claims import refuse_widen_scope_conflicts
+from reckon.crew.dispatch_claims import (
+    _repository_scope_claims,
+    refuse_widen_scope_conflicts,
+)
 from tests import test_a_queued_request_waits_on_its_dependencies as dependency_cases
 from tests import test_overlapping_queued_requests_launch_in_turn as queue_cases
 
@@ -52,6 +55,35 @@ def test_working_run_can_widen_across_a_waiting_claim(
     )
 
     refuse_widen_scope_conflicts(runs.read_pointer("r-working"), [queue_cases.SHARED])
+
+
+@pytest.mark.parametrize("phase", ["queued", "awaiting-upstream", "held"])
+def test_scope_registry_agrees_with_dispatch_for_waiting_requests(
+    dispatch_repo: Path, phase: str
+) -> None:
+    queue_cases._live(
+        dispatch_repo,
+        "r-waiting",
+        phase=phase,
+        write_paths=[queue_cases.SHARED],
+    )
+
+    dispatch_claim = next(
+        claim
+        for claim in _repository_scope_claims(
+            candidate_paths=[dispatch_repo / queue_cases.SHARED],
+            candidate_repositories=[dispatch_repo],
+        )
+        if claim.run_id == "r-waiting"
+    )
+    registry_claim = next(
+        claim
+        for claim in runs.scope_claims(queue_cases.PROJECT, dispatch_repo)
+        if claim["run_id"] == "r-waiting"
+    )
+
+    assert dispatch_claim.binding is False
+    assert registry_claim["binding"] is False
 
 
 def test_working_claim_still_refuses_a_dispatch(
