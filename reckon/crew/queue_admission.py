@@ -37,6 +37,7 @@ from reckon.crew.dispatch_admission import (
 )
 from reckon.crew.dispatch_plan import _dispatch_lane_allowance
 from reckon.crew.node import CrewError, TaskNode
+from reckon.ledger import normalize_section
 
 ADMIT_LOCK_NAME = "admit.lock"
 DEFAULT_ADMIT_INTERVAL_SECONDS = 5.0
@@ -1066,7 +1067,15 @@ def section_wait_refs(plan_html: str, section: str) -> list[str]:
     """
     from reckon._schema import section_depends_on
 
-    refs = (section_depends_on(plan_html) or {}).get(section)
+    requested_section = normalize_section(section)
+    refs = next(
+        (
+            value
+            for key, value in (section_depends_on(plan_html) or {}).items()
+            if normalize_section(key) == requested_section
+        ),
+        None,
+    )
     if isinstance(refs, str):
         refs = [refs]
     if not isinstance(refs, (list, tuple)):
@@ -1167,7 +1176,7 @@ def _section_ref(ref: str) -> tuple[str, str] | None:
     parsed = parse_plan_ref(ref)
     if parsed is None or not parsed.stage:
         return None
-    return parsed.slug, parsed.stage
+    return parsed.slug, normalize_section(parsed.stage)
 
 
 def wait_ref_kind(ref: str) -> str:
@@ -1368,7 +1377,8 @@ def _ref_state(
     from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
 
     parsed = _section_ref(ref)
-    if parsed is None or not waiting_section:
+    requested_section = normalize_section(waiting_section)
+    if parsed is None or not requested_section:
         return PENDING
     slug, section = parsed
     if (slug, section) in dead_sections:
@@ -1397,7 +1407,7 @@ def _ref_state(
         (
             candidate
             for candidate in row.get("section_readiness") or ()
-            if str(candidate.get("section") or "") == waiting_section
+            if normalize_section(candidate.get("section")) == requested_section
         ),
         None,
     )
@@ -1438,7 +1448,7 @@ def _dead_sections(live: Sequence[Mapping[str, Any]]) -> set[tuple[str, str]]:
         if phase in (BLOCKED_UPSTREAM_PHASE, *DEAD_RUN_PHASES) or _discarded(
             str(pointer.get("run_id") or "")
         ):
-            dead.add((plan, section))
+            dead.add((plan, normalize_section(section)))
     return dead
 
 
