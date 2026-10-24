@@ -14,7 +14,7 @@ each event arrives and a hold's window is measured rather than waited out.
 
 from __future__ import annotations
 
-from reckon.crew import recovery_watch
+from reckon.crew import recovery_watch, ticker
 from reckon.crew_follow_commands import follower_row_path
 
 SESSION = "s-own"
@@ -73,17 +73,20 @@ def _baseline(snapshot):
 
 
 def test_the_live_follower_keeps_its_own_start_out_of_the_stream() -> None:
-    """The live follower's own start prints nothing, and keeps its fields.
+    """The live follower's own start prints one launch row, and keeps its fields.
 
     The producer's transition names run, node, lane, model and budget, and the
-    pane's own row path reads it — but a run beginning work asks the
-    coordinator for nothing, so the row it would compose is not carried. The
-    transition still carries every field the view draws the work by.
+    pane's own row path reads it into the launch the pane draws. The transition
+    still carries every field the view draws the work by, and the launch row it
+    is released as carries them too.
     """
     path = follower_row_path(session=SESSION)
     assert path.feed(_baseline(_snapshot("dispatched")), now=0.0) == []
     start = _transition(_snapshot("working"), "dispatched", "working")
-    assert path.feed(start, now=5.0) == []
+    printed = path.feed(start, now=5.0)
+    assert [ticker._pane_word(row) for row in printed] == ["working"], printed
+    assert printed[0].get("run_id") == RUN, printed[0]
+    assert printed[0].get("lane") == "local", printed[0]
     assert path.flush(now=1e9) == []
 
     for field in ("run_id", "node", "lane", "model", "time_budget"):

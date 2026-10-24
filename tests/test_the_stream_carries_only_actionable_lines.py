@@ -55,6 +55,9 @@ def _lines(events) -> list[dict]:
     printed = []
     now = 1_000.0
     for event in events:
+        # The follower polls between the rows it reads, so a hold whose window
+        # closes in the gap releases there rather than at the end.
+        printed.extend(path.flush(now=now))
         printed.extend(path.feed(event, now=now))
         now += 250.0
     printed.extend(path.flush(now=FAR_FUTURE))
@@ -69,7 +72,8 @@ def test_only_the_actionable_kinds_reach_the_stream():
     """One event of every kind; a line for the kinds that ask for the coordinator."""
     printed = _lines(
         [
-            # A launch: the arrival and the start. Neither asks anything.
+            # A launch: the arrival and the start. The arrival resolves into
+            # the launch row the pane draws, and the start opens the attempt.
             _row(RUN, None, "dispatched"),
             _row(RUN, "dispatched", "working"),
             # A move to waiting is an audited coordinator kind: the run needs the
@@ -87,7 +91,9 @@ def test_only_the_actionable_kinds_reach_the_stream():
     )
 
     words = _words(printed)
-    assert words == ["waiting", "delivered"], words
+    # The launch, the waiting row, the delivery, and the landing the coordinator
+    # caused itself after the pane drew the delivery.
+    assert words == ["working", "waiting", "delivered", "landed"], words
 
 
 def test_a_halted_run_reaches_the_stream_and_its_recovery_does_not():
@@ -98,7 +104,7 @@ def test_a_halted_run_reaches_the_stream_and_its_recovery_does_not():
             _row(RUN, "blocked", "working"),
         ]
     )
-    assert _words(printed) == ["halted"], _words(printed)
+    assert _words(printed) == ["halted", "working"], _words(printed)
 
 
 def test_a_delivered_run_prints_its_row_once_and_no_summary_line():
@@ -133,12 +139,20 @@ def test_a_limit_reset_reaches_the_stream_once():
 
 def test_the_rule_names_the_words_the_stream_carries():
     """The policy and the summaries read one rule, stated in ``ticker``."""
-    assert frozenset({"delivered", "halted"}) == ticker.CARRIED_PANE_WORDS
+    assert frozenset({"delivered", "halted", "in review"}) == (
+        ticker.CARRIED_PANE_WORDS
+    )
     assert ticker.stream_carries({"to_state": "completed_unpromoted"})
     assert ticker.stream_carries({"to_state": "blocked"})
     assert ticker.stream_carries({"to_state": ticker.LIMIT_RESET})
     for silent in ("working", "waiting", "promoted", "recorded", "withdrawn"):
+        # A landing is not carried on its word: the row policy marks the one it
+        # judged news, and this rule stays a function of the row alone.
         assert not ticker.stream_carries({"to_state": silent}), silent
+    launched = {"to_state": "working", ticker.LAUNCH_FIELD: True}
+    assert ticker.stream_carries(launched)
+    landing = {"to_state": "recorded", ticker.LANDING_FIELD: True}
+    assert ticker.stream_carries(landing)
 
 
 def test_the_follower_carries_no_rule_of_its_own():

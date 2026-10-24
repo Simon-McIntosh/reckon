@@ -108,19 +108,15 @@ def test_a_return_inside_the_window_leaves_no_halt_on_the_pane() -> None:
     released += pane.feed(_row(*BLOCK, recovery_classification="blocked"), now=4608.0)
     released += pane.flush(now=4909.0)
 
-    assert [(r["from_state"], r["to_state"]) for r, _ in released] == [
-        STOP,
-        BLOCK,
-    ], released
+    kinds = [(r["from_state"], r["to_state"]) for r, _ in released]
+    assert kinds == [START, BLOCK], released
     assert all(text for text in _texts(released)), released
-    assert "halted" in released[0][1], released[0][1]
-    # The launch and the return ask the coordinator for nothing, so the stream
-    # withholds both and only crew view draws them.
+    assert STOP not in kinds, released
+    # The launch opens the attempt and is drawn once; the return inside the
+    # window is the same round trip, so it draws nothing at all.
+    assert kinds.count(START) == 1, released
     assert _view(_row(*START)).strip(), _view(_row(*START))
-    assert _view(_row(*RETURN)).strip(), _view(_row(*RETURN))
-    assert START not in [(r["from_state"], r["to_state"]) for r, _ in released], (
-        released
-    )
+    assert RETURN not in kinds, released
 
 
 def test_a_return_after_the_window_draws_both_halves_as_before() -> None:
@@ -139,16 +135,13 @@ def test_a_return_after_the_window_draws_both_halves_as_before() -> None:
     released += pane.feed(_row(*BLOCK, recovery_classification="blocked"), now=4608.0)
     released += pane.flush(now=4909.0)
 
-    assert [(r["from_state"], r["to_state"]) for r, _ in released] == [
-        STOP,
-        BLOCK,
-    ], released
+    kinds = [(r["from_state"], r["to_state"]) for r, _ in released]
+    assert kinds == [START, STOP, RETURN, BLOCK], released
     assert all(text for text in _texts(released)), released
-    assert "halted" in released[0][1], released[0][1]
-    # The launch and the return ask nothing, so both leave the stream to crew
-    # view while the halt the run left behind is drawn as it was.
-    assert _view(_row(*START)).strip(), _view(_row(*START))
-    assert _view(_row(*RETURN)).strip(), _view(_row(*RETURN))
+    assert "halted" in released[1][1], released[1][1]
+    # The launch and the return each open an attempt, so both are drawn once,
+    # beside the halt the run left behind.
+    assert kinds.count(START) == 1 and kinds.count(RETURN) == 1, released
 
 
 def test_a_move_to_another_live_word_draws_the_halt_at_once() -> None:
@@ -166,10 +159,11 @@ def test_a_move_to_another_live_word_draws_the_halt_at_once() -> None:
     released += pane.feed(_row(*WAIT), now=1020.0)
 
     assert [(r["from_state"], r["to_state"]) for r, _ in released] == [
+        START,
         STOP,
     ], released
     assert all(text for text in _texts(released)), released
-    assert "halted" in released[0][1], released[0][1]
+    assert "halted" in released[1][1], released[1][1]
     # A move to another live word asks nothing unless it also declares a wait, so
     # the stream withholds it and crew view still draws it.
     assert _view(_row(*WAIT)).strip(), _view(_row(*WAIT))
@@ -191,11 +185,11 @@ def test_the_terminal_echo_still_supersedes_nothing() -> None:
     released += pane.feed(_row(*ECHO), now=1012.0)
     released += pane.flush(now=1030.0)
 
-    assert [(r["from_state"], r["to_state"]) for r, _ in released] == [
-        COMPLETE,
-    ], released
+    kinds = [(r["from_state"], r["to_state"]) for r, _ in released]
+    assert kinds == [START, COMPLETE], released
     assert all(text for text in _texts(released)), released
-    # The launch and the echo ask nothing, so the stream withholds both and crew
-    # view still draws them, while the held completion reaches the pane.
-    assert _view(_row(*START)).strip(), _view(_row(*START))
+    # The launch opens the attempt. The echo arrives before the pane has shown
+    # the delivery it follows, so it is not yet a landing and draws nothing,
+    # while the held completion reaches the pane on its own window.
+    assert ECHO not in kinds, released
     assert _view(_row(*ECHO)).strip(), _view(_row(*ECHO))

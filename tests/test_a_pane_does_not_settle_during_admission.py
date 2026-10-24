@@ -278,10 +278,13 @@ def test_a_handover_keeps_the_pane_and_draws_the_admitted_run(home: Path) -> Non
             )
             arming.clock.advance(4.0)
             time.sleep(0.5)
-            # The stream carries no start row: a run that merely began working
-            # asks the coordinator for nothing, and the pulse the pane must not
-            # lose is its own liveness, measured by the settle below.
-            assert arming.rows(RUN_ADMITTED) == [], arming.rows(RUN_ADMITTED)
+            # The admitted run's attempt opens with the launch the pane draws,
+            # once: the pulse the pane must not lose is its own liveness,
+            # measured by the settle below.
+            admitted_rows = arming.rows(RUN_ADMITTED)
+            assert [row.get("to_state") for row in admitted_rows] == ["working"], (
+                admitted_rows
+            )
             assert not arming.settles(), "the pane settled after the admission"
         finally:
             arming.end()

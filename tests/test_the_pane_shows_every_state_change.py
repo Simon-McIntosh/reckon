@@ -54,6 +54,9 @@ def _print(sequence, *, own_session=SESSION):
     path = ticker.PaneRowPath(own_session=own_session)
     printed = []
     for moment, event in sequence:
+        # The follower polls between the rows it reads, so a hold whose window
+        # closes before the next row releases there rather than at the end.
+        printed.extend(path.flush(now=moment))
         printed.extend(path.feed(event, now=moment))
     printed.extend(path.flush(now=1e9))
     return printed

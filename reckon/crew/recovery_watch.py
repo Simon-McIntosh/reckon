@@ -1900,7 +1900,6 @@ def _reviewed_run_facts(project: str, snapshot: Mapping[str, Any]) -> dict[str, 
     source is a plan — carries nothing.
     """
     node_id = str(snapshot.get("node") or "")
-    from reckon.crew.recovery_review_delivery import _resolved_reviewed_run_id
     from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
     from reckon.crew.repair import round_node_source
 
@@ -1909,11 +1908,32 @@ def _reviewed_run_facts(project: str, snapshot: Mapping[str, Any]) -> dict[str, 
     source = round_node_source(node_id, REVIEW_NODE_PREFIX)
     if not source:
         return {}
-    reviewed = _resolved_reviewed_run_id({"node": {"id": node_id}}, project) or source
+    reviewed = _reviewed_run_id(source, project)
     return {
         "reviewed_run_id": reviewed,
         "reviewed_node": _reviewed_run_node(reviewed, source),
     }
+
+
+def _reviewed_run_id(source: str, project: str) -> str:
+    """The run a review node id's source names, or the source itself.
+
+    A source that is already a run id needs no lookup. Otherwise it is matched
+    against the live fleet's node ids. The pointers are read without publishing
+    watcher transitions: this resolution runs inside the transition publisher,
+    so a publishing read would re-enter the very transition it is resolving
+    for, which recursed without end.
+    """
+    if source.startswith("r-"):
+        return source
+    try:
+        records = runs._list_live_records(project=project)
+    except Exception:  # noqa: BLE001 — an unreadable fleet names no other run
+        return source
+    for pointer in records:
+        if str((pointer.get("node") or {}).get("id") or "") == source:
+            return str(pointer.get("run_id") or source)
+    return source
 
 
 def _reviewed_run_node(run_id: str, fallback: str) -> str:

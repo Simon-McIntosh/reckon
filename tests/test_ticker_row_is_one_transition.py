@@ -407,6 +407,7 @@ def test_every_pane_word_is_a_hued_table_key() -> None:
         "delivered",
         "landed",
         "dropped",
+        "in review",
     }
     for theme in ("light", "dark"):
         for word in ticker_module.PANE_STATES:
