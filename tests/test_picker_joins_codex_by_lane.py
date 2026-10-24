@@ -181,10 +181,12 @@ def test_document_backed_reading_carries_its_own_provenance():
         budget_snapshot=_snapshot("recorded"),
         now=NOW,
     )
-    assert document["codex"]["budget_source"] == "document"
-    assert recorded["codex"]["budget_source"] == "ledger"
-    assert document["codex"]["budget_source"] != recorded["codex"]["budget_source"]
-    assert document["codex"]["stale"] is False
+    key = lane_context.option_key(_candidate("codex"))
+    assert key == "codex:m:codex", key
+    assert document[key]["budget_source"] == "document"
+    assert recorded[key]["budget_source"] == "ledger"
+    assert document[key]["budget_source"] != recorded[key]["budget_source"]
+    assert document[key]["stale"] is False
 
 
 # --- The published document joins profiles to an account by declaration ---
