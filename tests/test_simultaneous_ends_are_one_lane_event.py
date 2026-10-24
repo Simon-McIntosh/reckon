@@ -131,8 +131,13 @@ def test_stderr_model_warning_is_not_a_terminal_cause(tmp_path, monkeypatch):
     run_dir = tmp_path / "crew" / "runs" / "r-healthy-warning"
     (run_dir / "stderr.log").write_text("there is an issue with the selected model\n")
     row = query.project_live_rows(list_live(project="fixture-project"))[0]
-    assert row["lane_cause"] is None
+    # Every list view leaves a field whose value is empty off the row, so a
+    # healthy run carries no lane cause at all rather than a null one.
+    assert row.get("lane_cause") is None
+    # The other fields are present, so the absence above is the row's shape
+    # rather than a field the projection dropped from every row.
     assert row["classification"] == "scoring"
+    assert row["recovery"]
 
 
 @pytest.mark.parametrize(

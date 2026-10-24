@@ -25,6 +25,23 @@ from reckon import cli, crew
 from reckon.crew import follow_checkpoint, recovery, runs
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
+# The read window in which a fed row is expected to reach the reader before the
+# follower is stopped. A held row is released on the stop itself, so this is the
+# delivery latency rather than the hold's window.
+RECEIPT_BOUND = 0.5
+
+
+@pytest.fixture(autouse=True)
+def live_producer(monkeypatch):
+    """The follower reads its project's stream as it does under a live producer.
+
+    A follower with no producer seat is a pane reporting a silent fleet; it does
+    not read the stream, so no case here could deliver a row. Standing the seat
+    live is the precondition a live follower runs under, and the stream itself
+    is a plain file this file writes.
+    """
+    monkeypatch.setattr(runs, "producer_live", lambda _project: True)
+
 
 @pytest.fixture()
 def home(tmp_path, monkeypatch):
@@ -66,12 +83,13 @@ def _deliver(home: Path, run_id: str, status: str) -> None:
     manifest.write_text(f"node: n\nstatus: {status}\ncommits: HEAD\nblockers: none\n")
 
 
-def _own_start(run_id: str, *, node: str, session: str) -> dict:
-    """The owning session's launch start, the row its pane delivers.
+def _own_row(run_id: str, *, node: str, session: str) -> dict:
+    """A row of this pane's own session that the Monitor stream carries.
 
-    A bare re-announcement of the current state asks the reader for nothing and
-    is held back as observer context, so a case that wants the own row on the
-    pane feeds the ``dispatched -> working`` start rather than a state word.
+    The stream carries only a row naming something the coordinator can act on,
+    and a run halted is one of those; a launch or a ``working`` change prints
+    nothing however many arrive. The halt is held for its settle window and
+    released when the follower stops, which is the read every case here makes.
     """
     return {
         "project": "proj",
@@ -79,11 +97,35 @@ def _own_start(run_id: str, *, node: str, session: str) -> dict:
         "run_id": run_id,
         "node": node,
         "session": session,
-        "from_state": "dispatched",
-        "to_state": "working",
-        "working": 1,
-        "blocked": 0,
+        "from_state": "working",
+        "to_state": "blocked",
+        "working": 0,
+        "blocked": 1,
         "unpromoted": 0,
+        "observed_at": runs._utc_now(),
+    }
+
+
+def _observed_row(run_id: str, *, node: str, session: str) -> dict:
+    """A carried row of an observed session, delivered without a hold.
+
+    A replayed history row — one with no left side — is observer context, so a
+    pane that was asked to observe its session prints it at once while a pane
+    observing nothing withholds it. Its destination is a carried word, so the
+    carriage rule admits it and the row a case measures is the row the pane
+    would draw.
+    """
+    return {
+        "project": "proj",
+        "event": "transition",
+        "run_id": run_id,
+        "node": node,
+        "session": session,
+        "from_state": None,
+        "to_state": "completed_unpromoted",
+        "working": 0,
+        "blocked": 0,
+        "unpromoted": 1,
         "observed_at": runs._utc_now(),
     }
 
@@ -108,20 +150,20 @@ def _await_arm(project: str, session: str, *, bound: float) -> bool:
 def _deliver_own_start(
     *, run_id: str, node: str, session: str, until, bound: float, stream=None
 ) -> None:
-    """Append the own start until the reader has it, bounded.
+    """Append the own row until the reader has it, bounded.
 
     The stream is read from the place its reader was at when it armed, so a
-    single append can land before the reader is placed and be skipped. Appending
-    until the row arrives is idempotent: a repeated start for a run the pane
-    already shows is suppressed, so the retries add no duplicate row.
+    single append can land before the reader is placed and be skipped. A halt
+    is held for its settle window and released when the follower stops, so the
+    bound here is the read latency rather than the whole hold: the retries add
+    no duplicate row, and a case that measures the flushed row reads it after
+    the stop.
     """
     stream = stream if stream is not None else runs.watch_stream_path("proj")
+    runs._append_watch_lines(stream, [_own_row(run_id, node=node, session=session)])
     deadline = time.monotonic() + bound
-    while not until():
-        if time.monotonic() >= deadline:
-            return
-        runs._append_watch_lines(stream, [_own_start(run_id, node=node, session=session)])
-        time.sleep(0.02)
+    while not until() and time.monotonic() < deadline:
+        time.sleep(0.005)
 
 
 def _any_event(received: list[dict]) -> bool:
@@ -193,15 +235,15 @@ def _follow_own_start(
     until=_any_event,
     bound: float = WATCHER_LOAD_BOUND_SECONDS,
     prepare=None,
+    feed=None,
 ) -> list[dict]:
-    """Collect a follower's rows while feeding the own session's launch start.
+    """Collect a follower's rows while feeding it the rows the stream carries.
 
-    The pane's own session reaches its line on the launch start, so a case that
-    wants the own row read feeds that row while the follower is reading rather
-    than by re-announcing the run's current state. The pane arms first and
-    ``prepare`` — which creates the own run — runs only once the arming has
-    derived its fleet, because a run already standing when the pane arms is
-    inventory the pane rightly holds back, not news.
+    The pane arms first and ``prepare`` — which creates the own run — runs only
+    once the arming has derived its fleet, because a run already standing when
+    the pane arms is inventory the pane rightly holds back, not news. ``feed``
+    then appends any further rows the case feeds, such as an observed
+    session's, while the reader is placed.
     """
     received: list[dict] = []
     stop = threading.Event()
@@ -224,12 +266,14 @@ def _follow_own_start(
         _await_arm(project, session, bound=bound)
         if prepare is not None:
             prepare()
+        if feed is not None:
+            feed()
         _deliver_own_start(
             run_id=run_id,
             node=node,
             session=session,
             until=lambda: until(received),
-            bound=bound,
+            bound=RECEIPT_BOUND,
         )
     finally:
         stop.set()
@@ -318,6 +362,10 @@ def test_an_observed_session_row_achieves_the_pane_without_falling_out(home) -> 
             prepare=lambda: _write_pointer(
                 home, "r-owned", "owned-node", session="mine", phase="dispatched"
             ),
+            feed=lambda: runs._append_watch_lines(
+                runs.watch_stream_path("proj"),
+                [_observed_row("r-late", node="late-node", session="old-a")],
+            ),
             until=lambda rows: (
                 any(e["node"] == "owned-node" for e in rows)
                 and any(e["node"] == "late-node" for e in rows)
@@ -385,9 +433,17 @@ def test_a_follower_without_observed_sessions_behaves_exactly_as_today(home) -> 
         _deliver(home, "r-mine", "complete")
         _deliver(home, "r-peer", "blocked")
         crew.list_live(project="proj")
-        # A negative-continuity read: the assertion below is that the peer's
-        # run does not reach this follower, so the read covers the whole window.
-        events = _follow("proj", session="mine", until=_hold_the_window)
+        events = _follow_own_start(
+            "proj",
+            run_id="r-mine",
+            node="my-node",
+            session="mine",
+            feed=lambda: runs._append_watch_lines(
+                runs.watch_stream_path("proj"),
+                [_observed_row("r-peer", node="peer-node", session="peers")],
+            ),
+            until=_hold_the_window,
+        )
 
     nodes = {event["node"] for event in events}
     assert nodes == {"my-node"}, "a peer session's run must not reach this follower"
@@ -446,6 +502,10 @@ def test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_
             prepare=lambda: _write_pointer(
                 home, "r-mine", "my-node", session="mine", phase="dispatched"
             ),
+            feed=lambda: runs._append_watch_lines(
+                runs.watch_stream_path("proj"),
+                [_observed_row("r-old", node="old-node", session="old-a")],
+            ),
             until=lambda received: len(received) >= 2,
         )
 
@@ -482,14 +542,20 @@ def test_an_observed_session_named_identically_to_the_owning_session_adds_no_dup
     second copy is delivered for the same name. Ownership draws no column, so
     there is no marker to be added or withheld.
     """
-    _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
-
     with runs._project_watch_claim("proj", "1h"):
         crew.list_live(project="proj")
         # A negative-continuity read: the assertion below is that the own row
         # is delivered exactly once, so the read covers the whole window.
-        received = _follow(
-            "proj", session="mine", observed=("mine",), until=_hold_the_window
+        received = _follow_own_start(
+            "proj",
+            run_id="r-mine",
+            node="my-node",
+            session="mine",
+            observed=("mine",),
+            prepare=lambda: _write_pointer(
+                home, "r-mine", "my-node", session="mine", phase="dispatched"
+            ),
+            until=_hold_the_window,
         )
 
     rows = [event for event in received if event["node"] == "my-node"]
@@ -558,6 +624,10 @@ def test_the_real_configuration_home_gains_no_file(home) -> None:
                 observed=("old-a",),
                 prepare=lambda: _write_pointer(
                     home, "r-mine", "my-node", session="mine", phase="dispatched"
+                ),
+                feed=lambda: runs._append_watch_lines(
+                    runs.watch_stream_path("proj"),
+                    [_observed_row("r-old", node="old-node", session="old-a")],
                 ),
                 until=lambda received: len(received) >= 2,
             )

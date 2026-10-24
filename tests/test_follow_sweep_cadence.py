@@ -27,6 +27,7 @@ import pytest
 
 from reckon import cli
 from reckon.crew import recovery, runs
+from reckon.crew_follow_commands import follower_row_path
 
 
 class _Clock:
@@ -46,19 +47,21 @@ Follower_session = "s1"
 
 
 def _line(run_id: str) -> str:
-    """One durable stream line carrying the follower's own run start.
+    """One durable stream line the Monitor stream carries.
 
-    The pane's own session reaches its line on the ``dispatched -> working``
-    start. A bare re-announcement of a state asks the reader for nothing and is
-    held back as observer context, so a case that wants the pane to receive a
-    row feeds the launch's own start rather than a state word alone.
+    The stream carries only a row naming something the coordinator can act on,
+    so a launch or a ``working`` change prints nothing however many of them
+    arrive. A limit reset is one of the carried kinds and reaches the pane as
+    its own row, which is what lets these cases measure a delivery while the
+    sweep runs; what the row says does not matter here, only that the line
+    traffic is real.
     """
     return (
         json.dumps(
             {
                 "run_id": run_id,
-                "from_state": "dispatched",
-                "to_state": "working",
+                "from_state": "working",
+                "to_state": "limit-reset",
                 "session": Follower_session,
                 "node": "n1",
                 "event": "transition",
@@ -74,27 +77,20 @@ def _line(run_id: str) -> str:
 def _expected_emissions(
     lines: list[str], *, session: str | None = None, run_ids: tuple[str, ...] = ()
 ) -> list[dict]:
-    """The follower's own selection and dedup, without a follower.
+    """The pane a follower's own row path draws for a sequence of lines.
 
-    Reuses :func:`reckon.cli._follow_selects` so the expected pane is derived
-    by the same rules the generator applies, rather than by a mirror that can
-    drift.
+    Driven through :func:`reckon.crew_follow_commands.follower_row_path` — the
+    very object the follower feeds — so the expected rows are the pane's own
+    answer, including the carriage rule that decides which lines reach the
+    Monitor stream, rather than a mirror that can drift from it.
     """
-    reported: dict[str, str] = {}
+    path = follower_row_path(session=session, run_ids=run_ids)
     selected: list[dict] = []
     for line in lines:
         event = runs.parse_stream_line(line)
         if event is None:
             continue
-        if not cli._follow_selects(event, session=session, run_ids=run_ids):
-            continue
-        run_id = str(event.get("run_id") or "")
-        state = str(event.get("to_state") or "")
-        if run_id and not event.get("legacy"):
-            if reported.get(run_id) == state:
-                continue
-            reported[run_id] = state
-        selected.append(event)
+        selected.extend(path.feed(event, now=0.0))
     return selected
 
 
