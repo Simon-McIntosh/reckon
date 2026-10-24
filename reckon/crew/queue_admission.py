@@ -133,6 +133,7 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
         goal=str(node.get("goal") or ""),
         plan=str(node.get("plan") or ""),
         section=str(node.get("section") or ""),
+        after=list(node.get("after") or ()),
         brief=str(node.get("brief") or ""),
         brief_sha256=str(node.get("brief_sha256") or ""),
         brief_path=str(node.get("brief_path") or ""),
@@ -1055,7 +1056,7 @@ REQUEST_REF_PREFIX = "run:"
 #: The statuses a run's own manifest records when it delivered, and when it
 #: ended without delivering. They are the run vocabulary and not the plan's: a
 #: plan reads ``shipped`` or ``done``, while a manifest reads ``complete``.
-RUN_DELIVERED_STATUSES = ("complete", "completed", "done", "landed", "promoted")
+RUN_DELIVERED_STATUSES = ("complete",)
 RUN_FAILED_STATUSES = ("failed", "blocked", "abandoned")
 
 
@@ -1096,47 +1097,288 @@ def section_waits_for(pointer: Mapping[str, Any]) -> list[str]:
     return [str(ref).strip() for ref in refs if str(ref).strip()]
 
 
+def _docs_for_project(
+    project: str, *, current_project: str, current_docs: Path
+) -> Path | None:
+    if project == current_project:
+        return current_docs
+    try:
+        from reckon._store import _mounts_path
+
+        mounts = json.loads(_mounts_path().read_text(encoding="utf-8"))
+        mounted = mounts.get(project)
+        return Path(mounted).expanduser().resolve() if mounted else None
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def _section_status(row: Mapping[str, Any], section: str) -> str:
+    declarations = row.get("section_declarations") or {}
+    return next(
+        (
+            str(status).lower()
+            for key, status in declarations.items()
+            if normalize_section(key) == normalize_section(section)
+        ),
+        "",
+    )
+
+
+def derive_wait_refs(node: TaskNode, *, repo_root: str | Path) -> list[str]:
+    """Read section, plan and explicit request waits from the authored node."""
+    from reckon import _plan_html as plan_html_reader
+
+    refs = section_wait_refs(_plan_html(repo_root, node.plan), node.section)
+    if node.plan:
+        state = plan_html_reader.read_state(_plan_html(repo_root, node.plan))
+        refs.extend(str(ref) for ref in state.get("depends_on") or ())
+    refs.extend(f"{REQUEST_REF_PREFIX}{run_id}" for run_id in node.after)
+    return list(dict.fromkeys(refs))
+
+
+def _validated_batch_waits(
+    nodes: Sequence[TaskNode],
+    run_ids: Mapping[str, str],
+    *,
+    project: str,
+    repo_root: str | Path,
+    live: Sequence[Mapping[str, Any]],
+    read_own_verdict: bool = True,
+) -> tuple[dict[str, list[str]], dict[str, dict[str, str]]]:
+    """Resolve all waits and reject absent targets or a combined graph cycle."""
+    from reckon import _plan_html as plan_html_reader
+    from reckon import ledger
+    from reckon._schema import parse_plan_ref
+
+    current_docs = Path(repo_root) / "docs"
+    cache: dict[str, Any] = {}
+    request_nodes = {str(run_ids[node.id]): node for node in nodes}
+    live_requests = {
+        str(pointer.get("run_id") or ""): pointer
+        for pointer in live
+        if pointer.get("run_id")
+    }
+    refs_by_run: dict[str, list[str]] = {}
+    projects_by_run: dict[str, dict[str, str]] = {}
+    edges: dict[str, set[str]] = {}
+
+    def section_key(target_project: str, slug: str, section: str) -> str:
+        identity = normalize_section(section)
+        if identity.startswith("§"):
+            identity = f"s{identity[1:]}"
+        return f"{target_project}:{slug}#{identity}"
+
+    def plan_key(target_project: str, slug: str) -> str:
+        return f"{target_project}:{slug}"
+
+    def target(ref: str, owner_project: str) -> tuple[str, str]:
+        if ref.startswith(REQUEST_REF_PREFIX):
+            run_id = ref[len(REQUEST_REF_PREFIX) :]
+            if run_id not in request_nodes and run_id not in live_requests:
+                known = any(
+                    ledger.run_path(candidate, run_id).is_file()
+                    for candidate in {owner_project, project}
+                    if candidate
+                )
+                if not known:
+                    raise CrewError(f"wait names missing request {run_id}")
+            upstream_project = str(
+                (live_requests.get(run_id) or {}).get("project") or owner_project
+            )
+            return f"run:{run_id}", upstream_project
+        if ref.startswith((GATE_REF_PREFIX, "readiness:")):
+            return ref, owner_project
+        parsed = parse_plan_ref(ref)
+        if parsed is None:
+            raise CrewError(f"wait names malformed plan ref {ref!r}")
+        target_project = parsed.project or owner_project
+        docs = _docs_for_project(
+            target_project, current_project=project, current_docs=current_docs
+        )
+        if docs is None:
+            raise CrewError(f"wait names missing project {target_project!r}: {ref}")
+        html = _plan_html(docs.parent, parsed.slug)
+        if not html:
+            raise CrewError(f"wait names missing plan {target_project}:{parsed.slug}")
+        row = plan_html_reader.read_state(html)
+        if parsed.stage:
+            authored = {
+                normalize_section(identity)
+                for identity, _heading in plan_html_reader.authored_section_headings(
+                    html
+                )
+            }
+            if (
+                not _section_status(row, parsed.stage)
+                and normalize_section(parsed.stage) not in authored
+            ):
+                raise CrewError(f"wait names missing section {ref}")
+            return section_key(
+                target_project, parsed.slug, parsed.stage
+            ), target_project
+        return plan_key(target_project, parsed.slug), target_project
+
+    def section_edges(key: str) -> None:
+        if key in edges:
+            return
+        edges[key] = set()
+        parsed = parse_plan_ref(key)
+        if parsed is None or not parsed.stage:
+            return
+        docs = _docs_for_project(
+            parsed.project or project,
+            current_project=project,
+            current_docs=current_docs,
+        )
+        if docs is None:
+            return
+        html = _plan_html(docs.parent, parsed.slug)
+        for ref in section_wait_refs(html, parsed.stage):
+            child, _ = target(ref, parsed.project or project)
+            edges[key].add(child)
+            if not child.startswith("run:"):
+                section_edges(child)
+        state = plan_html_reader.read_state(html)
+        for ref in state.get("depends_on") or ():
+            child, _ = target(str(ref), parsed.project or project)
+            edges[key].add(child)
+
+    for run_id, node in request_nodes.items():
+        refs = derive_wait_refs(node, repo_root=repo_root)
+        wait_projects: dict[str, str] = {}
+        edge_set: set[str] = set()
+        for ref in refs:
+            child, upstream_project = target(ref, project)
+            edge_set.add(child)
+            if ref.startswith(REQUEST_REF_PREFIX):
+                wait_projects[ref[len(REQUEST_REF_PREFIX) :]] = upstream_project
+            elif not ref.startswith((GATE_REF_PREFIX, "readiness:")):
+                section_edges(child)
+        if read_own_verdict and node.plan and node.section:
+            rows, _ = _readiness_rows(project, current_docs, cache)
+            verdicts = (rows.get(node.plan) or {}).get("sections", {})
+            own = next(
+                (
+                    verdict
+                    for section, verdict in verdicts.items()
+                    if normalize_section(section) == normalize_section(node.section)
+                ),
+                None,
+            )
+            holding_kinds = {
+                blocker.get("kind") for blocker in (own or {}).get("blockers") or ()
+            }
+            explicit_gates = {
+                parsed.stage
+                for ref in refs
+                if ref.startswith(GATE_REF_PREFIX)
+                if (parsed := parse_plan_ref(ref[len(GATE_REF_PREFIX) :])) is not None
+                and parsed.stage
+            }
+            held_gates = {
+                str(blocker.get("id") or blocker.get("gate") or "")
+                for blocker in (own or {}).get("blockers") or ()
+                if blocker.get("kind") == "gate"
+            }
+            if holding_kinds & {"gate", "decision"} and not (
+                held_gates
+                and held_gates <= explicit_gates
+                and "decision" not in holding_kinds
+            ):
+                refs.append(
+                    f"readiness:{section_key(project, node.plan, node.section)}"
+                )
+        refs_by_run[run_id] = list(dict.fromkeys(refs))
+        projects_by_run[run_id] = wait_projects
+        edges[f"run:{run_id}"] = edge_set
+
+    for run_id, pointer in live_requests.items():
+        if run_id in request_nodes:
+            continue
+        if str(pointer.get("phase") or "") in {
+            "failed",
+            "complete",
+            "blocked-upstream",
+            "discarded",
+        }:
+            continue
+        owner = str(pointer.get("project") or project)
+        edges[f"run:{run_id}"] = set()
+        for ref in section_waits_for(pointer):
+            child, _ = target(ref, owner)
+            edges[f"run:{run_id}"].add(child)
+            if not child.startswith("run:"):
+                section_edges(child)
+
+    for run_id, node in request_nodes.items():
+        if node.plan and node.section:
+            key = section_key(project, node.plan, node.section)
+            section_edges(key)
+            edges[key].add(f"run:{run_id}")
+    for run_id, pointer in live_requests.items():
+        node = dict(pointer.get("node") or {})
+        if node.get("plan") and node.get("section") and f"run:{run_id}" in edges:
+            key = section_key(
+                str(pointer.get("project") or project),
+                str(node["plan"]),
+                str(node["section"]),
+            )
+            section_edges(key)
+            edges[key].add(f"run:{run_id}")
+
+    visited: set[str] = set()
+    active: list[str] = []
+
+    def visit(key: str) -> list[str] | None:
+        if key in active:
+            return [*active[active.index(key) :], key]
+        if key in visited:
+            return None
+        active.append(key)
+        for child in sorted(edges.get(key, ())):
+            cycle = visit(child)
+            if cycle:
+                return cycle
+        active.pop()
+        visited.add(key)
+        return None
+
+    for run_id in request_nodes:
+        cycle = visit(f"run:{run_id}")
+        if cycle:
+            raise CrewError("wait cycle: " + " -> ".join(cycle))
+    return refs_by_run, projects_by_run
+
+
 def _readiness_rows(
     project: str, docs_dir: str | Path | None, cache: dict[str, Any]
 ) -> tuple[Mapping[str, Mapping[str, Any]], Mapping[str, Mapping[str, Any]]]:
-    """A checkout's roadmap rows and its inventory, built once per pass.
-
-    The readiness a wait resolves against is the roadmap's own derivation, so
-    it is imported and read rather than re-implemented: a second derivation is
-    how a request comes to be held for a reason the roadmap would not report.
-    ``pending_work`` holds the plans still open; the inventory holds every
-    plan, which is what answers a ref to one the roadmap has already closed.
-    A roadmap that cannot be built for the tree yields empty mappings, so every
-    ref reads pending and no request is launched on an unread readiness.
-    """
-    key = str(docs_dir or "")
+    """Read one project's roadmap section verdicts and inventory per pass."""
+    key = project or str(docs_dir or "")
     cached = cache.get(key)
     if cached is not None:
         return cached
     rows: dict[str, Mapping[str, Any] | Any] = {}
     inventory: dict[str, Mapping[str, Any] | Any] = {}
     try:
+        from reckon import _plan_html as plan_html_reader
+        from reckon.crew.plan_review import project_section_readiness
         from reckon.mcp_discovery import _discover_project, _inventory_row
-        from reckon.roadmap import build_roadmap
 
         if not project:
             cache[key] = ({}, {})
             return cache[key]
         discovered = _discover_project(project, None)
         items = [_inventory_row(item) for item in discovered.get("inventory", [])]
+        for item in items:
+            if item.get("type") != "plan" or not item.get("slug"):
+                continue
+            html = _plan_html(Path(docs_dir).parent, str(item["slug"]))
+            item["section_declarations"] = plan_html_reader.read_state(html).get(
+                "section_declarations", {}
+            )
         inventory = {str(item.get("slug") or ""): item for item in items}
-        report = build_roadmap(
-            project,
-            items,
-            list(discovered.get("sprints", [])),
-            active_sprint_id=discovered.get("active_sprint_id"),
-            docs_dir=docs_dir,
-        )
-        rows = {
-            str(row.get("slug")): row
-            for row in report.get("pending_work") or ()
-            if row.get("slug")
-        }
+        rows = project_section_readiness(project, Path(docs_dir))
     except Exception:  # noqa: BLE001 - an unbuildable roadmap holds every wait
         rows, inventory = {}, {}
     cache[key] = (rows, inventory)
@@ -1234,7 +1476,7 @@ def _gate_state(
         if status in TERMINAL_STATUSES:
             return ABANDONED
         return PENDING
-    for held in row.get("section_readiness") or ():
+    for held in (row.get("sections") or {}).values():
         for blocker in held.get("blockers") or ():
             if str(blocker.get("gate") or "") != gate_id:
                 continue
@@ -1245,18 +1487,14 @@ def _gate_state(
     return SATISFIED
 
 
-def _request_state(ref: str, *, live: Sequence[Mapping[str, Any]]) -> str:
-    """Resolve a wait on another queued request, named by its run id.
-
-    The named request's own pointer is what is read. One still in flight is
-    pending: its queue place is not evidence that it delivered anything, so a
-    request waiting on it is not released by it, only by what it lands. One
-    recorded failed, blocked upstream, or deliberately discarded is abandoned,
-    since nothing in it will deliver. One that has left the queue with its
-    manifest recording a completed run is satisfied, and one that has left with
-    nothing recorded stays pending — an unobserved request is not evidence that
-    its upstream landed.
-    """
+def _request_state(
+    ref: str,
+    *,
+    live: Sequence[Mapping[str, Any]],
+    project: str = "",
+    issues: list[str] | None = None,
+) -> str:
+    """A request lands only when its complete run's revision reaches HEAD."""
     run_id = str(ref[len(REQUEST_REF_PREFIX) :]).strip()
     if not run_id:
         return PENDING
@@ -1266,7 +1504,6 @@ def _request_state(ref: str, *, live: Sequence[Mapping[str, Any]]) -> str:
         phase = str(pointer.get("phase") or "")
         if phase in (BLOCKED_UPSTREAM_PHASE, *DEAD_RUN_PHASES) or _discarded(run_id):
             return ABANDONED
-        return PENDING
     if _discarded(run_id):
         return ABANDONED
     try:
@@ -1284,13 +1521,35 @@ def _request_state(ref: str, *, live: Sequence[Mapping[str, Any]]) -> str:
 
     try:
         status = str(parse_manifest(text, path=str(manifest)).get("status") or "")
-    except ManifestParseError:
+    except ManifestParseError as exc:
+        if issues is not None:
+            issues.append(f"{run_id}: refused manifest status or shape: {exc}")
         return PENDING
-    if status in RUN_DELIVERED_STATUSES:
-        return SATISFIED
     if status in RUN_FAILED_STATUSES:
         return ABANDONED
-    return PENDING
+    if status not in RUN_DELIVERED_STATUSES or not project:
+        return PENDING
+    try:
+        from reckon import ledger
+        from reckon.crew.dispatch_sections import project_mount_repository
+        from reckon.crew.promotion_scope import _revision_is_ancestor
+
+        row = json.loads(ledger.run_path(project, run_id).read_text(encoding="utf-8"))
+        revision = str(row.get("promoted_revision") or "").strip()
+        if not revision:
+            if issues is not None:
+                issues.append(f"{run_id}: promoted_revision absent")
+            return PENDING
+        checkout = project_mount_repository(project)
+        if checkout is None:
+            if issues is not None:
+                issues.append(f"{run_id}: project {project} has no registered checkout")
+            return PENDING
+        return (
+            SATISFIED if _revision_is_ancestor(checkout, revision, "HEAD") else PENDING
+        )
+    except (OSError, ValueError, KeyError):
+        return PENDING
 
 
 def _wait_state(
@@ -1301,52 +1560,201 @@ def _wait_state(
     inventory: Mapping[str, Mapping[str, Any]],
     dead_sections: set[tuple[str, str]],
     live: Sequence[Mapping[str, Any]],
+    project: str = "",
+    docs_dir: Path | None = None,
+    cache: dict[str, Any] | None = None,
+    wait_projects: Mapping[str, str] | None = None,
+    issues: list[str] | None = None,
 ) -> str:
     """Resolve one wait ref of any of the three kinds."""
     kind = wait_ref_kind(ref)
+    if ref.startswith("readiness:"):
+        target = ref[len("readiness:") :]
+        return _section_readiness_state(
+            target,
+            project=project,
+            docs_dir=docs_dir,
+            cache=cache if cache is not None else {},
+        )
     if kind == "gate":
         return _gate_state(ref, rows=rows, inventory=inventory)
     if kind == "request":
-        return _request_state(ref, live=live)
+        run_id = ref[len(REQUEST_REF_PREFIX) :]
+        return _request_state(
+            ref,
+            live=live,
+            project=str((wait_projects or {}).get(run_id) or ""),
+            issues=issues,
+        )
     return _ref_state(
         ref,
         waiting_section=waiting_section,
         rows=rows,
         inventory=inventory,
         dead_sections=dead_sections,
+        project=project,
+        docs_dir=docs_dir,
+        cache=cache,
     )
 
 
-def unmet_waits(
+def _section_readiness_state(
+    ref: str, *, project: str, docs_dir: Path | None, cache: dict[str, Any]
+) -> str:
+    from reckon._schema import parse_plan_ref
+
+    parsed = parse_plan_ref(ref)
+    if parsed is None or not parsed.stage or docs_dir is None:
+        return PENDING
+    target_project = parsed.project or project
+    target_docs = _docs_for_project(
+        target_project, current_project=project, current_docs=docs_dir
+    )
+    if target_docs is None:
+        return PENDING
+    rows, inventory = _readiness_rows(target_project, target_docs, cache)
+    item = inventory.get(parsed.slug)
+    if item is None:
+        return PENDING
+    status = _section_status(item, parsed.stage)
+    if status == "done":
+        return SATISFIED
+    if status in {"descoped", "deferred", "failed", "blocked"}:
+        return ABANDONED
+    verdict = next(
+        (
+            value
+            for section, value in (rows.get(parsed.slug) or {})
+            .get("sections", {})
+            .items()
+            if normalize_section(section) == normalize_section(parsed.stage)
+        ),
+        None,
+    )
+    return SATISFIED if verdict and verdict.get("ready") else PENDING
+
+
+def _dispatch_nonrun_wait_state(ref: str, *, project: str, docs_dir: Path) -> str:
+    """Read authored declarations without a portfolio scope-claim scan."""
+    from reckon import _plan_html as plan_html_reader
+    from reckon._schema import parse_plan_ref
+    from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
+
+    gate_ref = ref.startswith(GATE_REF_PREFIX)
+    parsed = parse_plan_ref(ref[len(GATE_REF_PREFIX) :] if gate_ref else ref)
+    if parsed is None:
+        return PENDING
+    target_project = parsed.project or project
+    target_docs = _docs_for_project(
+        target_project, current_project=project, current_docs=docs_dir
+    )
+    if target_docs is None:
+        return PENDING
+    html = _plan_html(target_docs.parent, parsed.slug)
+    if not html:
+        return PENDING
+    state = plan_html_reader.read_state(html)
+    if gate_ref:
+        gate = next(
+            (
+                item
+                for item in state.get("gates") or ()
+                if str(item.get("id") or "") == parsed.stage
+            ),
+            None,
+        )
+        if gate is None:
+            return PENDING
+        if gate.get("passed"):
+            return SATISFIED
+        source = parse_plan_ref(str(gate.get("gating_plan") or ""))
+        if source is not None and source.stage:
+            source_docs = _docs_for_project(
+                source.project or target_project,
+                current_project=project,
+                current_docs=docs_dir,
+            )
+            if source_docs is not None:
+                source_state = plan_html_reader.read_state(
+                    _plan_html(source_docs.parent, source.slug)
+                )
+                if _section_status(source_state, source.stage) == "done":
+                    return SATISFIED
+        return PENDING
+    if parsed.stage:
+        declaration = _section_status(state, parsed.stage)
+        if declaration == "done":
+            return SATISFIED
+        if declaration in {"descoped", "deferred", "failed", "blocked"}:
+            return ABANDONED
+        return PENDING
+    status = str(state.get("status") or "")
+    if status in COMPLETED_STATUSES:
+        return SATISFIED
+    return ABANDONED if status in TERMINAL_STATUSES else PENDING
+
+
+def _needs_own_section_verdict(node: TaskNode, *, repo_root: str | Path) -> bool:
+    """Ask the roadmap about the node's section when authored holds can apply."""
+    if not node.plan or not node.section:
+        return False
+    from reckon import _plan_html as plan_html_reader
+
+    state = plan_html_reader.read_state(_plan_html(repo_root, node.plan))
+    return bool(state.get("gates") or state.get("decisions"))
+
+
+def dispatch_waits(
     node: TaskNode,
     *,
     repo_root: str | Path,
     project: str = "",
+    run_id: str = "",
     live: Sequence[Mapping[str, Any]] | None = None,
-) -> list[str]:
-    """The refs a node declares that have not landed.
+) -> tuple[list[str], dict[str, str], list[str]]:
+    """Validate a dispatch's graph and return all refs and its unmet refs.
 
-    A dispatch asks this before it launches anything, so a node whose upstream
-    has not landed is stored as a request and held rather than launched on a
-    lane that happens to have room. The answer is the readiness the admission
-    pass re-reads, so a node is held for the reason the pass would hold it, and
-    a node whose refs have all landed returns nothing and launches as usual.
+    The caller uses the same run identity for validation and storage. No queued
+    pointer exists when this raises for a missing target or a graph cycle.
     """
-    refs = section_wait_refs(_plan_html(repo_root, node.plan), node.section)
-    if not refs:
-        return []
+    own_verdict = _needs_own_section_verdict(node, repo_root=repo_root)
+    if not derive_wait_refs(node, repo_root=repo_root) and not own_verdict:
+        return [], {}, []
     docs_dir = Path(str(repo_root)) / "docs"
+    owner_project = project or _project_of_docs_dir(docs_dir)
     if live is None:
         try:
             live = runs.list_live()
         except Exception:  # noqa: BLE001 - an unreadable live set holds no wait
             live = []
-    cache: dict[str, Any] = {}
-    rows, inventory = _readiness_rows(
-        project or _project_of_docs_dir(docs_dir), docs_dir, cache
+    candidate = run_id or f"candidate:{node.id}"
+    refs_by_run, projects_by_run = _validated_batch_waits(
+        [node],
+        {node.id: candidate},
+        project=owner_project,
+        repo_root=repo_root,
+        live=live,
+        read_own_verdict=own_verdict,
     )
+    refs = refs_by_run[candidate]
+    wait_projects = projects_by_run[candidate]
+    if not refs:
+        return [], wait_projects, []
+    if not any(wait_ref_kind(ref) == "request" for ref in refs):
+        unmet = [
+            ref
+            for ref in refs
+            if ref.startswith("readiness:")
+            or _dispatch_nonrun_wait_state(
+                ref, project=owner_project, docs_dir=docs_dir
+            )
+            != SATISFIED
+        ]
+        return refs, wait_projects, unmet
+    cache: dict[str, Any] = {}
+    rows, inventory = _readiness_rows(owner_project, docs_dir, cache)
     dead = _dead_sections(live)
-    return [
+    unmet = [
         ref
         for ref in refs
         if _wait_state(
@@ -1356,9 +1764,25 @@ def unmet_waits(
             inventory=inventory,
             dead_sections=dead,
             live=live,
+            project=owner_project,
+            docs_dir=docs_dir,
+            cache=cache,
+            wait_projects=wait_projects,
         )
         != SATISFIED
     ]
+    return refs, wait_projects, unmet
+
+
+def unmet_waits(
+    node: TaskNode,
+    *,
+    repo_root: str | Path,
+    project: str = "",
+    live: Sequence[Mapping[str, Any]] | None = None,
+) -> list[str]:
+    """Return a node's unmet refs after validating its dependency graph."""
+    return dispatch_waits(node, repo_root=repo_root, project=project, live=live)[2]
 
 
 def _ref_state(
@@ -1368,66 +1792,48 @@ def _ref_state(
     rows: Mapping[str, Mapping[str, Any]],
     inventory: Mapping[str, Mapping[str, Any]],
     dead_sections: set[tuple[str, str]],
+    project: str = "",
+    docs_dir: Path | None = None,
+    cache: dict[str, Any] | None = None,
 ) -> str:
-    """Resolve one wait ref through the roadmap's own section derivation.
-
-    The roadmap already resolves each ref a section waits on into a blocker row
-    when that ref has not landed, so this reads that derivation rather than
-    re-resolving the edge: a ref the roadmap holds no blocker for is satisfied.
-    A target the roadmap has closed reads abandoned, which is the ref closed as
-    abandoned or failed that no admission pass may launch through.
-    """
+    """Resolve a plan or section ref from its project's declared state."""
+    from reckon._schema import parse_plan_ref
     from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
 
-    parsed = _section_ref(ref)
-    requested_section = normalize_section(waiting_section)
-    if parsed is None or not requested_section:
+    parsed = parse_plan_ref(ref)
+    if parsed is None:
         return PENDING
-    slug, section = parsed
-    if (slug, section) in dead_sections:
-        return ABANDONED
-    row = rows.get(slug)
-    if row is None:
-        if slug not in inventory:
-            # No live plan of that name: nothing to observe, so the wait stays.
-            return PENDING
-        status = str(
-            inventory[slug].get("workflow_status")
-            or inventory[slug].get("status")
-            or ""
+    if docs_dir is not None and cache is not None:
+        target_project = parsed.project or project
+        target_docs = _docs_for_project(
+            target_project, current_project=project, current_docs=docs_dir
         )
+        if target_docs is None:
+            return PENDING
+        rows, inventory = _readiness_rows(target_project, target_docs, cache)
+    slug, section = parsed.slug, normalize_section(parsed.stage or "")
+    if section and (slug, section) in dead_sections:
+        return ABANDONED
+    item = inventory.get(slug)
+    if item is None:
+        return PENDING
+    status = str(item.get("workflow_status") or item.get("status") or "")
+    if not section:
         if status in COMPLETED_STATUSES:
             return SATISFIED
         if status in TERMINAL_STATUSES:
             return ABANDONED
         return PENDING
-    status = str(row.get("status") or "")
-    if status in COMPLETED_STATUSES:
+    declaration = _section_status(item, section)
+    if declaration == "done":
         return SATISFIED
+    if declaration in {"descoped", "deferred", "failed", "blocked"}:
+        return ABANDONED
     if status in TERMINAL_STATUSES:
         return ABANDONED
-    entry = next(
-        (
-            candidate
-            for candidate in row.get("section_readiness") or ()
-            if normalize_section(candidate.get("section")) == requested_section
-        ),
-        None,
-    )
-    held = [
-        blocker
-        for blocker in (entry.get("blockers") or () if entry else ())
-        if _section_ref(str(blocker.get("ref") or "")) == (slug, section)
-    ]
-    if not held:
-        # The roadmap holds no blocker for this ref, so it landed.
-        return SATISFIED
-    for blocker in held:
-        blocker_status = str(blocker.get("status") or "")
-        if blocker_status in TERMINAL_STATUSES and blocker_status not in (
-            COMPLETED_STATUSES
-        ):
-            return ABANDONED
+    verdicts = (rows.get(slug) or {}).get("sections", {})
+    if not any(normalize_section(key) == section for key in verdicts):
+        return PENDING
     return PENDING
 
 
@@ -1494,6 +1900,8 @@ def resolve_waits(
         docs_dir,
         cache,
     )
+    issues: list[str] = []
+    owner_project = str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir)
     states = [
         _wait_state(
             ref,
@@ -1506,9 +1914,16 @@ def resolve_waits(
             inventory=inventory,
             dead_sections=dead_sections,
             live=live,
+            project=owner_project,
+            docs_dir=Path(docs_dir) if docs_dir is not None else None,
+            cache=cache,
+            wait_projects=dict(pointer.get("wait_projects") or {}),
+            issues=issues,
         )
         for ref in refs
     ]
+    if isinstance(pointer, dict):
+        pointer["upstream_obligations"] = list(dict.fromkeys(issues))
     if ABANDONED in states:
         return BLOCKED_UPSTREAM_PHASE
     if all(state == SATISFIED for state in states):
@@ -1531,10 +1946,11 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
         if str(pointer.get("phase") or "") in WAITING_UPSTREAM_PHASES
     ]
     if not waiting:
-        return {"promoted": [], "blocked": []}
+        return {"promoted": [], "blocked": [], "obligations": []}
     cache: dict[str, Any] = {}
     promoted: list[str] = []
     blocked: list[str] = []
+    obligations: dict[str, str] = {}
     for _round in range(len(waiting) + 1):
         dead = _dead_sections(live)
         changed = False
@@ -1543,6 +1959,7 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
             if phase not in WAITING_UPSTREAM_PHASES:
                 continue
             docs_dir = Path(str(pointer.get("repo") or "") or ".") / "docs"
+            previous_issues = list(pointer.get("upstream_obligations") or ())
             target = resolve_waits(
                 pointer,
                 live=live,
@@ -1550,9 +1967,21 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
                 cache=cache,
                 dead_sections=dead,
             )
+            run_id = str(pointer.get("run_id") or "")
+            issues = list(pointer.get("upstream_obligations") or ())
+            if issues:
+                obligations[run_id] = issues[0]
+            if issues != previous_issues:
+
+                def record_issues(
+                    current: dict[str, Any], recorded: list[str] = issues
+                ) -> dict[str, Any]:
+                    current["upstream_obligations"] = recorded
+                    return current
+
+                runs._mutate_pointer(run_id, record_issues)
             if target == phase:
                 continue
-            run_id = str(pointer.get("run_id") or "")
             if not _move_pointer(run_id, target):
                 continue
             pointer["phase"] = target
@@ -1563,7 +1992,14 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
                 blocked.append(run_id)
         if not changed:
             break
-    return {"promoted": promoted, "blocked": blocked}
+    return {
+        "promoted": promoted,
+        "blocked": blocked,
+        "obligations": [
+            {"run_id": run_id, "detail": detail}
+            for run_id, detail in obligations.items()
+        ],
+    }
 
 
 def _plan_html(repo_root: str | Path, plan: str) -> str:
@@ -1590,98 +2026,20 @@ def queue_requests(
     run_ids: Mapping[str, str] | None = None,
     cap: int | None = None,
 ) -> dict[str, Any]:
-    """Queue a batch of nodes in one call, each waiting on its section's refs.
+    """Keep the batch entry while dispatch owns validation and queue writes."""
+    from reckon.crew.dispatch import queue_requests as dispatch_queue_requests
 
-    A coordinator loads a plan's whole width here rather than one section at a
-    time: every node is contract-checked before it is stored, so a malformed
-    node in the batch is refused at once and nothing of the batch is stored
-    for it, and every node whose section declares refs is stored
-    ``awaiting-upstream`` carrying those refs. Nothing in the batch launches
-    here — the admission pass launches each one as its refs land, so no
-    coordinator turn sits between an upstream landing and its downstream
-    starting.
-    """
-    from reckon.crew.dispatch import _queued_request_record
-    from reckon.crew.dispatch_admission import (
-        admission_domain_findings,
-        admission_refusals_and_warnings,
+    return dispatch_queue_requests(
+        nodes,
+        project=project,
+        session=session,
+        repo_root=repo_root,
+        config=config,
+        backend_name=backend_name,
+        launch_kind=launch_kind,
+        run_ids=run_ids,
+        cap=cap,
     )
-
-    lane = str(backend_name or "").strip() or str(
-        config.get("local_backend") or config.get("default_backend") or ""
-    )
-    if not lane:
-        raise CrewError("queueing a request names no backend to queue it for")
-    stored: dict[str, Any] = {}
-    for index, node in enumerate(nodes):
-        findings = admission_domain_findings(
-            node, project=project, repository=repo_root
-        )
-        refusals, _warnings = admission_refusals_and_warnings(findings)
-        if refusals:
-            raise CrewError(
-                f"node {node.id!r} is refused at queue time: "
-                + "; ".join(str(finding.get("detail") or "") for finding in refusals)
-            )
-        run_id = str((run_ids or {}).get(node.id) or runs.new_run_id(node.id))
-        record = _queued_request_record(
-            run_id=run_id,
-            project=project,
-            node=node,
-            repo_root=Path(str(repo_root)),
-            session=session,
-            backend_name=lane,
-            launch_kind=launch_kind,
-            lane_allowance={},
-            dispatch_options={"project": project, "session": session, "no_watch": True},
-            queued_at=_utc_now(),
-        )
-        refs = section_wait_refs(_plan_html(repo_root, node.plan), node.section)
-        # The request is stored queued and moved to its waiting phase in the
-        # next write: the queue position is read from the queued order, and a
-        # request that a slot is not yet in reach for stands nowhere in it.
-        record["waits"] = refs
-        queued, position = runs.queue_dispatch(record, cap=cap)
-        phase = str(queued.get("phase") or QUEUED_PHASE)
-        if refs and phase == QUEUED_PHASE:
-            phase = (
-                AWAITING_UPSTREAM_PHASE
-                if _move_pointer(str(queued["run_id"]), AWAITING_UPSTREAM_PHASE)
-                else QUEUED_PHASE
-            )
-        stored[str(queued["run_id"])] = {
-            "node": node.id,
-            "section": node.section,
-            "phase": phase,
-            "waits": list(queued.get("waits") or ()),
-            "position": position,
-            "index": index,
-        }
-    return stored
-
-
-def hold_request_for_upstream(
-    run_id: str, *, node: TaskNode, repo_root: str | Path
-) -> list[str]:
-    """Hold a request a dispatch has just queued while its section waits.
-
-    This is the entry point a dispatch writes through, so a node whose plan
-    declares that its section waits on another section enters
-    ``awaiting-upstream`` instead of queueing as though it could launch now.
-    The refs come from the plan the node names, which is the same declaration
-    the admission pass re-reads later: nothing about the wait is stated twice.
-
-    Returns the refs the request is held on, so a caller can report why it was
-    held. A node whose section declares no refs is left queued and returns an
-    empty list — a request with nothing to wait for is not held, and no pointer
-    is written for it at all.
-    """
-    refs = section_wait_refs(_plan_html(repo_root, node.plan), node.section)
-    if not refs:
-        return []
-    if not _hold_pointer(run_id, refs):
-        return []
-    return refs
 
 
 class _PointerNotHoldableError(Exception):
@@ -1697,7 +2055,9 @@ class _PointerNotHoldableError(Exception):
     """
 
 
-def _hold_pointer(run_id: str, refs: Sequence[str]) -> bool:
+def _hold_pointer(
+    run_id: str, refs: Sequence[str], *, wait_projects: Mapping[str, str] | None = None
+) -> bool:
     """Record a request's refs and its waiting phase in one write.
 
     The refs and the phase are one fact about a request, so they are written
@@ -1720,6 +2080,7 @@ def _hold_pointer(run_id: str, refs: Sequence[str]) -> bool:
         ):
             raise _PointerNotHoldableError(run_id)
         current["waits"] = list(refs)
+        current["wait_projects"] = dict(wait_projects or {})
         current["phase"] = AWAITING_UPSTREAM_PHASE
         current["waits_at"] = _utc_now()
         return current
@@ -1861,6 +2222,7 @@ def admit_once(
         upstream = advance_waiting_requests(live)
         result["promoted_upstream"] = upstream["promoted"]
         result["blocked_upstream"] = upstream["blocked"]
+        result["upstream_obligations"] = upstream["obligations"]
         runs.sweep_handovers(str(pointer.get("run_id") or "") for pointer in live)
         queued = [pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE]
         if lane:

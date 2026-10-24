@@ -319,16 +319,21 @@ def test_a_gate_ref_holds_and_releases_as_the_gate_verdict_moves(
 def test_a_wait_on_another_request_reads_that_requests_own_record(
     chain_repo: Path,
 ) -> None:
-    """A request named by id is read where its own record lives.
+    """A request wait needs an existing run and a landed revision."""
+    from reckon import ledger
 
-    A request still in the queue is pending, so the wait holds. One that has
-    left the queue with its manifest recording a completed run is satisfied, so
-    the wait releases without any coordinator call.
-    """
     _declare_wait_refs(chain_repo, section="s2", refs=["run:r-n2"])
-    assert _unmet(chain_repo, section="s2") == ["run:r-n2"]
+    with pytest.raises(CrewError, match="missing request r-n2"):
+        queue_admission.queue_requests(
+            [_node("n-wait", "s2")],
+            project=PROJECT,
+            session=SESSION,
+            repo_root=chain_repo,
+            config=CONFIG,
+            run_ids={"n-wait": "r-waiter"},
+        )
+    assert runs.list_live(project=PROJECT) == []
 
-    # The request exists and is still in the queue: the wait holds.
     queued, _position = runs.queue_dispatch(
         {
             "run_id": "r-n2",
@@ -340,40 +345,115 @@ def test_a_wait_on_another_request_reads_that_requests_own_record(
         }
     )
     assert queued["run_id"] == "r-n2"
-    assert _unmet(chain_repo, section="s2") == ["run:r-n2"]
-
-    def queued_pointer(pointer: dict) -> dict:
-        pointer["phase"] = queue_admission.QUEUED_PHASE
-        return pointer
-
-    runs._mutate_pointer("r-n2", queued_pointer)
+    stored = queue_admission.queue_requests(
+        [_node("n-wait", "s2")],
+        project=PROJECT,
+        session=SESSION,
+        repo_root=chain_repo,
+        config=CONFIG,
+        run_ids={"n-wait": "r-waiter"},
+    )
+    assert stored["r-waiter"]["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
 
     manifest = runs.run_dir("r-n2") / runs.DEFAULT_MANIFEST_NAME
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text("status: complete\n", encoding="utf-8")
     runs.pointer_path("r-n2").unlink()
-    assert _unmet(chain_repo, section="s2") == [], (
-        "a delivered request releases the wait"
+    queue_admission.advance_waiting_requests(runs.list_live())
+    assert runs.read_pointer("r-waiter")["phase"] == (
+        queue_admission.AWAITING_UPSTREAM_PHASE
     )
+
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=chain_repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    promoted = subprocess.run(
+        ["git", "commit-tree", f"{base}^{{tree}}", "-p", base, "-m", "upstream result"],
+        cwd=chain_repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    row = ledger.run_path(PROJECT, "r-n2")
+    row.parent.mkdir(parents=True, exist_ok=True)
+    row.write_text(
+        json.dumps({"run_id": "r-n2", "promoted_revision": promoted}),
+        encoding="utf-8",
+    )
+    queue_admission.advance_waiting_requests(runs.list_live())
+    assert runs.read_pointer("r-waiter")["phase"] == (
+        queue_admission.AWAITING_UPSTREAM_PHASE
+    )
+
+    _run(chain_repo, "merge", "--ff-only", promoted)
+    queue_admission.advance_waiting_requests(runs.list_live())
+    assert runs.read_pointer("r-waiter")["phase"] == queue_admission.QUEUED_PHASE
 
 
 def test_a_json_manifest_upstream_releases_the_wait(chain_repo: Path) -> None:
-    """A delivered run is read by the reader that owns the manifest format.
+    """A JSON manifest still needs a landed revision to release its waiter."""
+    from reckon import ledger
 
-    A worker may write its manifest as a JSON document. A reader that looks only
-    for a ``status:`` line answers empty for that body, so the request waiting on
-    a run that delivered would wait forever with nothing left to release it.
-    """
     _declare_wait_refs(chain_repo, section="s2", refs=["run:r-n3"])
-    assert _unmet(chain_repo, section="s2") == ["run:r-n3"]
+    with pytest.raises(CrewError, match="missing request r-n3"):
+        queue_admission.queue_requests(
+            [_node("n-wait", "s2")],
+            project=PROJECT,
+            session=SESSION,
+            repo_root=chain_repo,
+            config=CONFIG,
+            run_ids={"n-wait": "r-waiter"},
+        )
+    assert runs.list_live(project=PROJECT) == []
+
+    runs.queue_dispatch(
+        {
+            "run_id": "r-n3",
+            "project": PROJECT,
+            "phase": queue_admission.QUEUED_PHASE,
+            "session": SESSION,
+            "queued_at": queue_admission._utc_now(),
+            "node": {"id": "n3", "plan": PLAN, "section": "s3"},
+        }
+    )
+    stored = queue_admission.queue_requests(
+        [_node("n-wait", "s2")],
+        project=PROJECT,
+        session=SESSION,
+        repo_root=chain_repo,
+        config=CONFIG,
+        run_ids={"n-wait": "r-waiter"},
+    )
+    assert stored["r-waiter"]["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
 
     manifest = runs.run_dir("r-n3") / runs.DEFAULT_MANIFEST_NAME
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text('{"status": "complete", "node": "n3"}', encoding="utf-8")
-
-    assert _unmet(chain_repo, section="s2") == [], (
-        "a delivered request written as JSON releases the wait"
+    runs.pointer_path("r-n3").unlink()
+    queue_admission.advance_waiting_requests(runs.list_live())
+    assert runs.read_pointer("r-waiter")["phase"] == (
+        queue_admission.AWAITING_UPSTREAM_PHASE
     )
+
+    revision = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=chain_repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    row = ledger.run_path(PROJECT, "r-n3")
+    row.parent.mkdir(parents=True, exist_ok=True)
+    row.write_text(
+        json.dumps({"run_id": "r-n3", "promoted_revision": revision}),
+        encoding="utf-8",
+    )
+    queue_admission.advance_waiting_requests(runs.list_live())
+    assert runs.read_pointer("r-waiter")["phase"] == queue_admission.QUEUED_PHASE
 
 
 def test_a_malformed_node_is_refused_at_queue_time(chain_repo: Path) -> None:
@@ -476,6 +556,51 @@ def test_a_dispatch_holds_on_waits_though_its_lane_has_room(
     # Stored and not launched: no worker was started for this node.
     assert not payload.get("pid")
     assert not pointers[0].get("pid")
+
+
+@pytest.mark.parametrize("upstream", ["missing", "dispatch"])
+def test_dispatch_refuses_invalid_wait_before_storing(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch, upstream: str
+) -> None:
+    _declare_section_wait(
+        dispatch_repo, section="dispatch", refs=[f"{PLAN}#{upstream}"]
+    )
+    hold_tests._configure(dispatch_repo, monkeypatch, session_slots=0)
+    hold_tests._stub_hold(monkeypatch, offered_local=True)
+
+    result = hold_tests._invoke(dispatch_repo, node="invalid-wait")
+
+    assert result.exit_code != 0
+    assert not runs.list_live(project=hold_tests.PROJECT)
+
+
+def test_dispatch_holds_its_own_gated_section(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = dispatch_repo / "docs" / "plans" / f"{PLAN}.html"
+    text = path.read_text(encoding="utf-8")
+    gate = (
+        '<section data-reckon="gates"><div class="r-gate" data-id="approval" '
+        'data-status="open" data-verdict="" data-gated-sections="dispatch">'
+        '<h4 class="r-gate-measure">approve</h4></div></section>'
+    )
+    text = text.replace(
+        "</head>",
+        '<meta name="plan-section-declarations" '
+        'content="{&quot;dispatch&quot;:&quot;implementable&quot;}"></head>',
+    )
+    path.write_text(text.replace("</body>", f"{gate}</body>"), encoding="utf-8")
+    _run(dispatch_repo, "add", "--", str(path.relative_to(dispatch_repo)))
+    _run(dispatch_repo, "commit", "-q", "-m", "chore: gate section")
+    hold_tests._configure(dispatch_repo, monkeypatch, session_slots=0)
+    hold_tests._stub_hold(monkeypatch, offered_local=True)
+
+    result = hold_tests._invoke(dispatch_repo, node="gated-work")
+
+    assert result.exit_code == 0, result.output
+    pointers = runs.list_live(project=hold_tests.PROJECT)
+    assert len(pointers) == 1
+    assert pointers[0]["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
 
 
 def test_a_dispatch_of_a_section_without_waits_launches_on_a_free_lane(

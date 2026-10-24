@@ -1,0 +1,31 @@
+<section id="queue-waits-on-the-dag-landing">
+  <h2>Queue waits follow section and request dependencies</h2>
+  <p>Dispatch accepts repeated <code>--after</code> request IDs. Queue validation
+  checks section, plan and request targets before storing a batch, and rejects
+  cycles across sections and requests. Each admission pass reads the roadmap's
+  per-section verdict once per project. A complete upstream request releases
+  its waiter only after the ledger's promoted revision is an ancestor of HEAD
+  in the registered checkout. Unreadable status and missing revision each
+  produce one upstream obligation.</p>
+  <p>The new test file covers cross-project release, direct queueing after a
+  completed section, both cycle shapes, missing targets, blocked and failed
+  upstreams, promoted but unmerged work, a no-commit promotion, rejected
+  manifest status, scoped holds and both gate shapes. Dispatch preflight reads
+  authored section and gate declarations without scanning unrelated scope
+  claims, and the landing fixture records a promoted revision already in its
+  checkout's HEAD. The declared mutation that drops cross-project refs fails
+  the cross-project arm; the focused four-file gate passes 51 tests.</p>
+  <p>Ordinary dispatch now validates the dependency graph before storing a
+  waiting request. A missing section or a cycle refuses with no pointer left,
+  and an open gate on the request's own section holds it upstream. The focused
+  repair gate passes 57 tests; reversing the repair while retaining its tests
+  fails all three new refusal and gate cases. Batch queueing now delegates to the production dispatch writer. The new
+  shared-writer check fails when that owner commit is reversed, and the
+  six-file focused gate passes 72 tests.</p>
+  <p>The paired importer measure selected the same 353 test files at each
+  revision with four workers and a 120-second per-test bound. Base completed
+  with 38 failures, 3,411 passes and two skips; head completed with 37
+  failures, 3,415 passes and two skips. No failure ID was added. The only
+  difference was the stop-before-spawn case, which failed at base and passed
+  at head.</p>
+</section>

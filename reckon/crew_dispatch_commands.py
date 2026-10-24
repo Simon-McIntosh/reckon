@@ -1096,6 +1096,13 @@ def _budget_check_report(
     ),
 )
 @click.option("--section", default="", help="Plan section the node implements.")
+@click.option(
+    "--after",
+    "after_requests",
+    multiple=True,
+    metavar="REQUEST-ID",
+    help="Wait for a queued request to land; repeat for each request.",
+)
 @click.option("--role", default="implement", show_default=True, help="Routing role.")
 @click.option(
     "--backend",
@@ -1362,6 +1369,7 @@ def crew_dispatch(
     plan_slug,
     brief_path,
     section,
+    after_requests,
     role,
     backend,
     model_name,
@@ -1518,6 +1526,7 @@ def crew_dispatch(
         goal=goal,
         plan=plan_slug,
         section=section,
+        after=list(after_requests),
         brief=str(brief_path) if brief_path else "",
         role=role,
         spec_level=spec_level or "",

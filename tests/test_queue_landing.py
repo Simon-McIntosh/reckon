@@ -12,6 +12,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import ledger
 from reckon.crew import obligations, queue_admission, queue_landing, runs
 from reckon.crew import review as review_module
 from reckon.crew.recovery_review_dispatch import _dispatch_text_review_for_run
@@ -158,6 +159,7 @@ def test_accepted_delivery_lands_before_its_downstream_is_admitted(
             "repo": str(delivery["repo"]),
             "phase": queue_admission.AWAITING_UPSTREAM_PHASE,
             "waits": [f"run:{RUN}"],
+            "wait_projects": {RUN: PROJECT},
             "backend": "local",
             "queued_at": datetime.now(UTC).isoformat(),
             "node": {
@@ -178,6 +180,14 @@ def test_accepted_delivery_lands_before_its_downstream_is_admitted(
     def land(run_id: str) -> tuple[bool, str]:
         assert run_id == RUN
         events.append("land")
+        revision = str(delivery["head"])
+        _git(Path(delivery["repo"]), "merge-base", "--is-ancestor", revision, "HEAD")
+        row = ledger.run_path(PROJECT, run_id)
+        row.parent.mkdir(parents=True, exist_ok=True)
+        row.write_text(
+            json.dumps({"run_id": run_id, "promoted_revision": revision}),
+            encoding="utf-8",
+        )
         runs.pointer_path(run_id).unlink()
         return True, ""
 
