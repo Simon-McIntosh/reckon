@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Parsed FAILED rows in logs/base.log and logs/head.log: base has seven ids including the target, head has six ids all shared with base; the base target is a positive control for the parser.",
+  "assertion_analysis": {
+    "added_assertions": "none; the diff has no test changes",
+    "existing_guard": "tests/test_a_resume_never_launches_beside_another_node.py:311 can only read launched after the call succeeds, so reinstating the old refusal raises first and fails the test, as mutation-gate.log:160 shows; its expected success is independent of the production return value"
+  },
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1308 resume launch -> _observed_end_refusal",
+    "reckon/crew/dispatch_sessions.py:1915 lift launch -> _observed_end_refusal",
+    "reckon/crew/resumption.py:1028 dry-run -> _stream_reading_refusal",
+    "reckon/crew/resumption.py:1142 _observed_end_refusal -> _stream_reading_refusal",
+    "reckon/crew/resumption.py:1149 _observed_end_refusal -> _newest_stream_ended",
+    "reckon/crew/resumption.py:1892,1977 sweep reads -> _observed_end_refusal",
+    "reckon/crew/recovery_classification.py:801,1657 retain attempt-bounded _newest_stream_in_motion"
+  ],
+  "completed_at": "2026-10-24T21:51:07Z",
+  "dispatched_at": "2026-10-24T21:44:33Z",
+  "findings": [
+    {
+      "disposition": "exempted",
+      "disposition_reason": "Behavior is independently evidenced by the gate, population comparison and mutation receipt; the missing lint receipt does not change the functional verdict.",
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T201437083115-a-stream-past-its-window-lets-a-resume-launch/manifest.md",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "The done-when requires ruff check and ruff format --check on staged paths, but the manifest lists only pytest and four pytest logs, leaving that check without a recorded receipt; exempted because the focused behavior gate, population delta and red control establish the repair and this omission adds no known failure."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "production calls in dispatch_sessions.py:1308,1915, resumption.py:1028,1142,1149,1892,1977 and recovery_classification.py:801,1657 were checked against the reviewed head",
+    "diff": "b3ca6cdcb10687646840d351c372f3fc2d54e806 changes the two production modules, and d6ee413e2ca92449d4ab34b6af934662bcb0e10d adds the 74-line evidence fragment; no test assertion was added.",
+    "done_when": "docs/plans/the-suite-is-green-at-head.html:872 requires a green target, base/head importer arms, red control and clean ruff checks; logs/gate-head.log:7, base.log:389, head.log:236 and mutation-gate.log:161 support the first three, while the source manifest records no ruff check.",
+    "goal": "prompt.txt:30 requires the one failing resume id to pass after its mechanism is reproduced; reckon/crew/resumption.py:1048,1104 makes both end readings use stream silence, and the evidence fragment:31 records the base refusal.",
+    "manifest": "manifest.md:5-18 reports complete, two commits, a passing gate, a failing base, six unchanged population failures at head and a red mutation; its tests and test_logs fields omit ruff.",
+    "write_paths": "prompt.txt:69-75 grants the two production modules, the test, the evidence fragment and figures; the diff changes only the two modules and the granted evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resume_never_launches_beside_another_node.py:296-311 predates this diff but fails when the stale stream again triggers a refusal before launched exists, as mutation-gate.log:160 shows; this diff adds no assertion.",
+    "evidence": "logs/base.log:382-390 and head.log:230-237 yield seven versus six failures and zero added ids, gate-head.log:7-8 is green and mutation-gate.log:160-162 is red, but manifest.md:11-12 has no ruff receipt.",
+    "fit": "reckon/crew/recovery_liveness.py:233 adds a keyword-only choice to the existing motion reader and resumption.py:1048,1104 uses it without introducing plan-labelled source names.",
+    "goal_fidelity": "reckon/crew/resumption.py:1048,1104 asks whether the predecessor stream is moving on its own clock, while recovery_classification.py:801 retains the launch-bound reading for current-attempt status.",
+    "reuse": "reckon/crew/recovery_liveness.py:217 adds uncapped silence beside the existing _run_stream_quiet_seconds at :773 and reuses _record_newest_stream at :460, the owner of stream lookup rather than a separate reader.",
+    "scope_discipline": "git diff 3c79a6d38194817ee768ab0328e968395238fd07..d6ee413e2ca92449d4ab34b6af934662bcb0e10d names only reckon/crew/resumption.py, reckon/crew/recovery_liveness.py and the granted evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 requires the one failing resume id to pass after its mechanism is reproduced; reckon/crew/resumption.py:1048,1104 makes both end readings use stream silence, and the evidence fragment:31 records the base refusal.\nVERDICT done_when: docs/plans/the-suite-is-green-at-head.html:872 requires a green target, base/head importer arms, red control and clean ruff checks; logs/gate-head.log:7, base.log:389, head.log:236 and mutation-gate.log:161 support the first three, while the source manifest records no ruff check.\nVERDICT write_paths: prompt.txt:69-75 grants the two production modules, the test, the evidence fragment and figures; the diff changes only the two modules and the granted evidence fragment.\nVERDICT manifest: manifest.md:5-18 reports complete, two commits, a passing gate, a failing base, six unchanged population failures at head and a red mutation; its tests and test_logs fields omit ruff.\nVERDICT diff: b3ca6cdcb10687646840d351c372f3fc2d54e806 changes the two production modules, and d6ee413e2ca92449d4ab34b6af934662bcb0e10d adds the 74-line evidence fragment; no test assertion was added.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1308 resume launch -> _observed_end_refusal, reckon/crew/dispatch_sessions.py:1915 lift launch -> _observed_end_refusal, reckon/crew/resumption.py:1028 dry-run -> _stream_reading_refusal, reckon/crew/resumption.py:1142 _observed_end_refusal -> _stream_reading_refusal, reckon/crew/resumption.py:1149 _observed_end_refusal -> _newest_stream_ended, reckon/crew/resumption.py:1892,1977 sweep reads -> _observed_end_refusal, reckon/crew/recovery_classification.py:801,1657 retain attempt-bounded _newest_stream_in_motion\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1048,1104 asks whether the predecessor stream is moving on its own clock, while recovery_classification.py:801 retains the launch-bound reading for current-attempt status.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base.log:382-390 and head.log:230-237 yield seven versus six failures and zero added ids, gate-head.log:7-8 is green and mutation-gate.log:160-162 is red, but manifest.md:11-12 has no ruff receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 3c79a6d38194817ee768ab0328e968395238fd07..d6ee413e2ca92449d4ab34b6af934662bcb0e10d names only reckon/crew/resumption.py, reckon/crew/recovery_liveness.py and the granted evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_resume_never_launches_beside_another_node.py:296-311 predates this diff but fails when the stale stream again triggers a refusal before launched exists, as mutation-gate.log:160 shows; this diff adds no assertion.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_liveness.py:233 adds a keyword-only choice to the existing motion reader and resumption.py:1048,1104 uses it without introducing plan-labelled source names.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/recovery_liveness.py:217 adds uncapped silence beside the existing _run_stream_quiet_seconds at :773 and reuses _record_newest_stream at :460, the owner of stream lookup rather than a separate reader.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T201437083115-a-stream-past-its-window-lets-a-resume-launch/manifest.md:11 non-blocking: The done-when requires ruff check and ruff format --check on staged paths, but the manifest lists only pytest and four pytest logs, leaving that check without a recorded receipt; exempted because the focused behavior gate, population delta and red control establish the repair and this omission adds no known failure.\n",
+  "review_run_id": "r-20261024T214207355407-review-of-a-stream-past-its-window-lets-a-resume-launch-d6ee413e2ca9",
+  "reviewed_base_sha": "3c79a6d38194817ee768ab0328e968395238fd07",
+  "reviewed_head_sha": "d6ee413e2ca92449d4ab34b6af934662bcb0e10d",
+  "reviewed_run_id": "r-20261024T201437083115-a-stream-past-its-window-lets-a-resume-launch",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T21:56:23.685443+00:00",
+  "total": 111
+}
