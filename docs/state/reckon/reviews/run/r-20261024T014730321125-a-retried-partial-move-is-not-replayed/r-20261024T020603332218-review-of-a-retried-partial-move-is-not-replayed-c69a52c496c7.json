@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp.py:3313 _deadline_tool dispatches _edit_plan_tool, the runtime entry point the changed receipt and replay logic sits behind",
+    "reckon/mcp_edit_plan.py:1311 read_write_receipts is read on every request_id write to decide replay, which is the receipt shape this change widens"
+  ],
+  "completed_at": "2026-10-24T02:15:59.437Z",
+  "dispatched_at": "2026-10-24T02:07:45Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Outcome is correct: a resolved entry re-evaluates to the same written, settled or superseded result and success is still recorded once nothing is pending; narrowing the stored list only quiets the report, which is below the bar.",
+      "recorded_at": "2026-10-24T02:24:39.570900+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Superseded by the coordinator's base, head and merge arms, run from git-archive extractions whose logs name each revision tested.",
+      "recorded_at": "2026-10-24T02:24:56.728672+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": "829",
+      "severity": "non-blocking",
+      "text": "non-blocking: the still-pending branch returns without rewriting the receipt's pending list, so entries already resolved as written/settled/superseded are re-evaluated and re-reported on every later retry; narrow the stored list to still_pending so the receipt states what is actually still owed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T014730321125-a-retried-partial-move-is-not-replayed/gate-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate log's revision line names the base commit 0409dcbe4 rather than the tree that carried c69a52c49's change (the gate ran pre-commit in the worktree), so the log cannot be tied to the reviewed head by its own header; the separate head probe at c69a52c49 is what pins the repaired behaviour."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T014730321125-a-retried-partial-move-is-not-replayed/gate-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T014730321125-a-retried-partial-move-is-not-replayed/gate-base.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read the single commit 0409dcbe4..c69a52c49: reckon/_store.py:289-308 adds an optional pending list to record_write_receipt and stores it per request id; reckon/mcp_edit_plan.py:707-857 adds _index_sprint_membership, _finish_pending_plan_writes and _resume_partial_plan_writes, routes a receipt carrying pending to the resume path at :1476-1489, and passes the failed plan writes as pending at :1910-1918; the test file and landing fragment are the remainder.",
+    "done_when": "The source done_when names the new test file plus eight existing files; gate-head.log runs exactly those nine and ends 135 passed / 1 failed, gate-base.log runs the new file against 0409dcbe4 and ends 6 failed, and negative-control.log drops 5 of 6.",
+    "goal": "The node goal is to make a retried partial sprint move report and finish its pending plan writes; reckon/mcp_edit_plan.py:1476-1489 answers a retry from the receipt's pending entries instead of replaying, and the head probe records 'plan sprint after retry: S2' where the base probe records 'S1'.",
+    "manifest": "The source manifest records commit c69a52c49, status complete, the 135/1 gate with the one failure named under retry_failures and outside_scope, the 6/6 base arm, the 5/6 negative control, and five on-disk logs whose tails match those figures.",
+    "write_paths": "The manifest declares five paths; git diff 0409dcbe4..c69a52c49 changes four of them - the fragment under docs/evidence/fragments/the-portfolio-reads-true/, reckon/_store.py, reckon/mcp_edit_plan.py and the new test file - and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_retried_partial_move_is_not_replayed.py:205-237 asserts the finished retry's plan_writes against a plan_version read independently from the store and then asserts the index version is unchanged, so restoring the old replay-as-success branch reddens it; the base arm is 6/6 red at 0409dcbe4 and the receipt-recorded-as-success mutation drops 5/6.",
+    "evidence": "gate-head.log ends '1 failed, 135 passed' over the nine done_when files and gate-base.log ends '6 failed' for the new file at 0409dcbe4; the single head failure is tests/test_a_refused_write_names_the_next_step.py::test_batch_reports_every_refused_op, whose 'refused_ops' path the diff does not touch, so it is pre-existing rather than added.",
+    "fit": "reckon/mcp_edit_plan.py:725-800 mirrors the sibling _carry_plan_sprints at :656-685 in naming, per-entry outcome dicts and the caught (VersionConflict, OpError, OSError, ValueError) set, and no name carries a plan, stage or ticket identifier.",
+    "goal_fidelity": "reckon/mcp_edit_plan.py:829-851 finishes, settles or supersedes each pending entry against the index and clears the receipt only when nothing remains, which is the plan's \u00a79 change and its done-when cases one by one.",
+    "reuse": "the capability search over reckon/ found doccheck.py:619 sprint_membership_index (an audit-wide slug-to-sprints map over composed project state, no root override) and crew/plan_review.py:3175 _sprint_member_slugs (sprint to slugs); neither is a point lookup of one plan's sprint with a checkout root, so reckon/mcp_edit_plan.py:707 adds the narrower reader rather than forking an owned one.",
+    "scope_discipline": "git diff 0409dcbe4..c69a52c49 touches only four of the five declared paths, with no plan HTML edit and no figure written although the fragment path always permits one."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make a retried partial sprint move report and finish its pending plan writes; reckon/mcp_edit_plan.py:1476-1489 answers a retry from the receipt's pending entries instead of replaying, and the head probe records 'plan sprint after retry: S2' where the base probe records 'S1'.\nVERDICT done_when: The source done_when names the new test file plus eight existing files; gate-head.log runs exactly those nine and ends 135 passed / 1 failed, gate-base.log runs the new file against 0409dcbe4 and ends 6 failed, and negative-control.log drops 5 of 6.\nVERDICT write_paths: The manifest declares five paths; git diff 0409dcbe4..c69a52c49 changes four of them - the fragment under docs/evidence/fragments/the-portfolio-reads-true/, reckon/_store.py, reckon/mcp_edit_plan.py and the new test file - and nothing outside them.\nVERDICT manifest: The source manifest records commit c69a52c49, status complete, the 135/1 gate with the one failure named under retry_failures and outside_scope, the 6/6 base arm, the 5/6 negative control, and five on-disk logs whose tails match those figures.\nVERDICT diff: Read the single commit 0409dcbe4..c69a52c49: reckon/_store.py:289-308 adds an optional pending list to record_write_receipt and stores it per request id; reckon/mcp_edit_plan.py:707-857 adds _index_sprint_membership, _finish_pending_plan_writes and _resume_partial_plan_writes, routes a receipt carrying pending to the resume path at :1476-1489, and passes the failed plan writes as pending at :1910-1918; the test file and landing fragment are the remainder.\nCALL_SITES: reckon/mcp.py:3313 _deadline_tool dispatches _edit_plan_tool, the runtime entry point the changed receipt and replay logic sits behind, reckon/mcp_edit_plan.py:1311 read_write_receipts is read on every request_id write to decide replay, which is the receipt shape this change widens\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_edit_plan.py:829-851 finishes, settles or supersedes each pending entry against the index and clears the receipt only when nothing remains, which is the plan's \u00a79 change and its done-when cases one by one.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log ends '1 failed, 135 passed' over the nine done_when files and gate-base.log ends '6 failed' for the new file at 0409dcbe4; the single head failure is tests/test_a_refused_write_names_the_next_step.py::test_batch_reports_every_refused_op, whose 'refused_ops' path the diff does not touch, so it is pre-existing rather than added.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0409dcbe4..c69a52c49 touches only four of the five declared paths, with no plan HTML edit and no figure written although the fragment path always permits one.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_retried_partial_move_is_not_replayed.py:205-237 asserts the finished retry's plan_writes against a plan_version read independently from the store and then asserts the index version is unchanged, so restoring the old replay-as-success branch reddens it; the base arm is 6/6 red at 0409dcbe4 and the receipt-recorded-as-success mutation drops 5/6.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp_edit_plan.py:725-800 mirrors the sibling _carry_plan_sprints at :656-685 in naming, per-entry outcome dicts and the caught (VersionConflict, OpError, OSError, ValueError) set, and no name carries a plan, stage or ticket identifier.\nSCORE reuse: 17\nJUSTIFICATION reuse: the capability search over reckon/ found doccheck.py:619 sprint_membership_index (an audit-wide slug-to-sprints map over composed project state, no root override) and crew/plan_review.py:3175 _sprint_member_slugs (sprint to slugs); neither is a point lookup of one plan's sprint with a checkout root, so reckon/mcp_edit_plan.py:707 adds the narrower reader rather than forking an owned one.\nFINDING reckon/mcp_edit_plan.py:829 non-blocking: the still-pending branch returns without rewriting the receipt's pending list, so entries already resolved as written/settled/superseded are re-evaluated and re-reported on every later retry; narrow the stored list to still_pending so the receipt states what is actually still owed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T014730321125-a-retried-partial-move-is-not-replayed/gate-head.log:1 non-blocking: the head gate log's revision line names the base commit 0409dcbe4 rather than the tree that carried c69a52c49's change (the gate ran pre-commit in the worktree), so the log cannot be tied to the reviewed head by its own header; the separate head probe at c69a52c49 is what pins the repaired behaviour.\n",
+  "review_run_id": "r-20261024T020603332218-review-of-a-retried-partial-move-is-not-replayed-c69a52c496c7",
+  "reviewed_base_sha": "0409dcbe4d11ac88b3429853ebfa74188c7ad898",
+  "reviewed_head_sha": "c69a52c496c75acb50937f6924af3eda8671395f",
+  "reviewed_run_id": "r-20261024T014730321125-a-retried-partial-move-is-not-replayed",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T02:14:00+00:00",
+  "total": 110
+}
