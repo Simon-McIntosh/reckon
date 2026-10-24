@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s50">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-tags" content="flight,config,tests,strict-read,lane-model">
+  <title>Flight-config tests read the validation the schema applies now | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="flight-config-tests-read-todays-validation" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="flight-config-tests-read-todays-validation-title">Flight-config tests read the validation the schema applies now</h2>
+
+  <p id="flight-config-tests-read-todays-validation-cause"><strong>Cause.</strong> All six census ids fail at
+  base <code>bb45e47e0</code> and reproduce with one command. Five read a contract the flight layer has
+  since changed, and their expectations are stale: an undeclared key is now ignored at load and refused
+  only by the strict authoring read; the review-exclusion list no longer names the codex lane; and
+  <code>crew preflight</code> is retired behind <code>crew budget --check</code>. The sixth is a
+  production regression the census exposed, not a stale test.</p>
+
+  <p id="flight-config-tests-read-todays-validation-decisions"><strong>Per id, the commit read and whether its change was intended.</strong></p>
+  <table id="flight-config-tests-read-todays-validation-table">
+    <thead>
+      <tr><th>Id</th><th>Commit read</th><th>Intended</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>test_crew_placement.py::test_a_placement_field_outside_the_declared_set_is_refused</code></td>
+        <td><code>78bad3aec</code> — undeclared keys are ignored at load and refused by the strict read</td>
+        <td>yes</td>
+        <td>the case passes <code>strict=True</code>, which is the authoring read</td>
+      </tr>
+      <tr>
+        <td><code>test_follower_survives_a_config_change.py::test_the_rate_reader_returns_an_unknown_reading_on_a_bad_config</code></td>
+        <td><code>78bad3aec</code> — the same; its fixture broke the layer with an undeclared key the loader now ignores</td>
+        <td>yes</td>
+        <td>the fixture breaks a declared key's value instead, so the layer is still unreadable and the reader's empty reading is exercised</td>
+      </tr>
+      <tr>
+        <td><code>test_no_layer_declares_a_lane_model_name.py::test_nameless_review_cannot_reach_an_excluded_lane</code></td>
+        <td><code>bcb9b138b</code> — codex leaves the project's <code>review_excluded_backends</code>, so reviews may follow work built there</td>
+        <td>yes</td>
+        <td>the closed set of excluded lanes is re-frozen to <code>claude</code></td>
+      </tr>
+      <tr>
+        <td><code>test_preflight_reads_the_published_document.py::test_the_cli_and_mcp_paths_agree_on_every_backend</code></td>
+        <td><code>8e0480392</code> — the preflight verb is folded behind <code>crew budget --check</code></td>
+        <td>yes</td>
+        <td>the CLI arm invokes the folded verb; the CLI/MCP agreement it pins is unchanged</td>
+      </tr>
+      <tr>
+        <td><code>test_the_settle_window_is_retired.py::test_a_layer_declaring_the_settle_window_is_refused</code></td>
+        <td><code>78bad3aec</code> — a retired key is an undeclared key, refused by the strict read</td>
+        <td>yes</td>
+        <td>the case passes <code>strict=True</code></td>
+      </tr>
+      <tr>
+        <td><code>test_promotion_reads_the_review_tier.py::test_an_unreadable_light_ceiling_falls_back_to_the_shipped_one</code></td>
+        <td><code>a5cedef37</code> — the domain gate resolves the flight layer unconditionally at promotion</td>
+        <td>no</td>
+        <td>blocked; neither the test nor that code is changed here</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p id="flight-config-tests-read-todays-validation-blocked"><strong>Blocked id.</strong>
+  <code>tests/test_promotion_reads_the_review_tier.py::test_an_unreadable_light_ceiling_falls_back_to_the_shipped_one</code>
+  is an unintended change in <code>a5cedef37</code>. The test passes at <code>a5cedef37^</code> and fails at
+  <code>a5cedef37</code> and after. The commit's own message says "Nothing is executed for a project that
+  declares no domain block, which keeps every repository that has not opted in promoting exactly as it
+  did before", yet a project declaring no domain block whose flight layer holds a wrong-shaped value now
+  raises <code>flight.FlightConfigError</code> out of <code>crew.complete</code> from
+  <code>_require_domain_invariant_checks</code> → <code>domain_rules.rules_for</code> →
+  <code>flight.resolve</code>, before the light-ceiling read's documented fallback can run.
+  <code>FlightConfigError</code> is a plain <code>Exception</code>, not a <code>CrewError</code>, so a
+  public command leaks a library exception rather than refusing. The repair belongs in
+  <code>reckon/crew/promotion_checks.py</code> or <code>reckon/crew/domain_rules.py</code>, both outside
+  this node's write scope; the coordinator owns it as its own section.</p>
+
+  <p id="flight-config-tests-read-todays-validation-repair"><strong>Repairs.</strong> Five test fixtures
+  now assert the current contract and keep the property each pins. The placement and retired-window cases
+  still prove that an undeclared key is refused where a typo must be caught — on the strict authoring
+  read. The rate-reader case still proves that a layer that will not validate costs a rate figure and not
+  the process. The lane case still proves that a nameless review cannot reach an excluded lane, against
+  the exclusion list the project layer now declares. The preflight case still proves the CLI and MCP paths
+  read one installed document and agree per backend. In the follower file, the deferral case's injected
+  <code>FlightConfigError</code> now stands for the broken layer by itself, because the layer it used to
+  break with an undeclared key is readable. That case also names a small valid host layer inside its
+  temporary home and runs its arming long enough to read back the row it writes from its own poll: with
+  no layer named, the per-tick read searched the machine's own configuration, which is neither this
+  repository's state nor its own, and the shared arming lifetime left no pass to deliver the row.</p>
+
+  <p id="flight-config-tests-read-todays-validation-measure"><strong>Measure.</strong> Both arms are
+  <code>git archive</code> extractions on node-local disk; each log's header names the revision, the tree,
+  the literal command, the imported module's <code>__file__</code> and the resolved working directory, and
+  each ends in a bare <code>EXIT=</code> line. Base arm
+  (<code>bb45e47e0</code>, change absent): <strong>6 failed, 27 passed, EXIT=1</strong> — exactly the six
+  listed ids. Head arm (<code>6d75c489e</code>, change present): <strong>1 failed, 32 passed,
+  EXIT=1</strong>. Every id that passes in the base arm still passes in the head arm, so the change
+  adds no failure; the one remaining failure is the blocked id, red in both arms. The head tree is a
+  copy of this run's clean worktree at that revision rather than a second <code>git archive</code>
+  extraction: <code>git archive</code> hung on this node for two attempts, and the worktree's
+  <code>git status --porcelain</code> at the copy held only this fragment, which the copy drops.</p>
+
+  <p id="flight-config-tests-read-todays-validation-control"><strong>Negative control.</strong> Each repaired id is
+  checked against the production contract it pins: the head tests are kept and one contract is mutated
+  at a time, and the id reddens in every case — six arms, each <strong>1 failed, EXIT=1</strong>, in
+  <code>logs/negative-control.log</code>. The strict authoring read stops refusing an undeclared key
+  (<code>reckon/flight.py</code>), reddening the placement case; the same read stops refusing the
+  retired settle window, reddening that case; the rate reader stops degrading an unreadable layer
+  (<code>reckon/crew/quota_weight.py</code>); the review router stops reading the excluded-lane list
+  (<code>reckon/crew/recovery_review_dispatch.py</code>); the budget check stops naming the published
+  document (<code>reckon/crew_dispatch_commands.py</code>); and the follow loop stops catching a config
+  error per tick (<code>reckon/crew_follow_commands.py</code>), reddening the deferral case. Reverting
+  the repaired fixtures to their base content is <em>not</em> a control: it shows the ids failed
+  before, not that they guard the contract now. The blocked id's repair is not attempted, so it has no
+  control.</p>
+
+  <p id="flight-config-tests-read-todays-validation-logs"><strong>Logs.</strong> Under the run directory's
+  <code>logs/</code>: <code>base-arm.log</code>, <code>head-arm.log</code>,
+  <code>negative-control.log</code>.</p>
+</article>
+</body>
+</html>

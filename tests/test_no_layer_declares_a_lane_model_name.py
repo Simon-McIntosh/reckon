@@ -51,9 +51,11 @@ _REAL_CATALOGUE = (
     / "model-catalogue.yaml"
 )
 
-# Lanes the project exclusions cover; a review routed with no lane named must
-# reach no model of either.
-EXCLUDED_LANES = {"claude", "codex"}
+# Lanes the project layer excludes from review routing; a review routed with no
+# lane named must reach no model of any of them. The codex lane is not excluded:
+# a review of work built there may follow it onto codex, so it is a reachable
+# lane like the local one and the assertion below must not treat it as closed.
+EXCLUDED_LANES = {"claude"}
 
 # A host layer that declares the claude and codex lanes and no combined name.
 # Its model keys match the real host's, so a combined name the project layer
