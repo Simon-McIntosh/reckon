@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted"
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2915",
+    "reckon/crew/dispatch.py:2919",
+    "reckon/crew/dispatch.py:2965",
+    "reckon/crew/dispatch.py:2997",
+    "reckon/crew/queue_admission.py:_launch_queued"
+  ],
+  "completed_at": "2026-10-24T23:40:48.162Z",
+  "dispatched_at": "2026-10-24T23:33:32Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-discarded-request-is-not-launched.html",
+      "line": "63",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states \"No failure is added\" citing logs/arm-head-narrow.log, an arm run at 5f9f2ae3a, while the importer arm at the final code head e513e59cd returned `1 failed, 211 passed, EXIT=1` (logs/arm-head-narrow-round2.log, manifest after_suite) and the flake check re-ran that id alone rather than under -n 4 on the base, so the green claim rests on a revision other than the one landing."
+    },
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "832",
+      "severity": "non-blocking",
+      "text": "non-blocking: the preserve_discard_record call added to `_release_launch_claim` is exercised by no test, because both discard-refusal paths preserve inside `_refuse_a_discarded_launch` at :863 before raising, so deleting this line leaves all eight gate cases green and its guarantee that no rollback destroys a marker is unverified."
+    },
+    {
+      "file": "logs/base-reproduction.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `# module.__file__:` header carries an AttributeError traceback instead of a module path, so the log of the base reproduction does not name the module the arm imported."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 0ab156b37; 5f9f2ae3a adds the check, two call sites, one re-export and two cases, e513e59cd adds the post-spawn read, the spool copy in `_release_launch_claim` and a third case, and 699ce843f rewrites the evidence fragment, with no existing test or production path otherwise altered.",
+    "done_when": "the done_when requires a new case failing at the base and passing at the head, an importer population adding no failure, and ruff clean; logs/base-reproduction.log records `1 failed` / `EXIT=1` at 0ab156b37 with the live pointer present and logs/gate-head-round2.log ends `8 passed` / `EXIT=0` at e513e59cd, while the head importer arm carries one failure the manifest attributes to timing.",
+    "goal": "the node's goal is to refuse a launch whose discard is recorded before the worker is spawned and to release its claim; reckon/crew/dispatch_claims.py:840 adds `_refuse_a_discarded_launch` and reckon/crew/dispatch.py:2915 and :2919 call it immediately before each spawn site, which is the deliverable the goal names.",
+    "manifest": "read; its status is a recognised value, its `baseline_suite` and `after_suite` lines now parse as JSON when loaded, and it records the head gate, both negative controls and the one flaky head-arm id.",
+    "write_paths": "the manifest declares five paths and the diff touches four of them (reckon/crew/dispatch.py, reckon/crew/dispatch_claims.py, tests/test_a_discarded_request_stays_discarded.py, docs/evidence/fragments/the-suite-is-green-at-head/a-discarded-request-is-not-launched.html), every one inside the declared set, with the declared figures directory unused."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log and logs/negative-control-2.log show each repair reverted turning its case red, so the three cases guard the change, but reckon/crew/dispatch_claims.py:832 is exercised by none of them.",
+    "evidence": "logs/gate-head-round2.log ends `8 passed` / `EXIT=0` at e513e59cd, but the head importer arm (logs/arm-head-narrow-round2.log) carries one failing id and the fragment reports an earlier head's green arm instead.",
+    "fit": "reckon/crew/dispatch_claims.py:840 follows the module's lazy-import refusal-guard idiom and names the mechanism, while the re-export at reckon/crew/dispatch.py:3178 is inserted out of the list's alphabetical order.",
+    "goal_fidelity": "reckon/crew/dispatch.py:2965 reads the discard record once more after the pid merge, so the fork-to-merge span the first cut left open is refused rather than narrowed, and the claim is released by the existing rollback at :2997.",
+    "reuse": "the check composes promotion.discard_recorded and promotion.preserve_discard_record (reckon/crew/promotion.py:1845 and :1875), and a search for an existing launch-path discard reader over reckon/crew found only read-only predicates in queue_admission.py:830 and :1873, none of which refuses a launch.",
+    "scope_discipline": "all four changed paths sit inside the reviewed manifest's five declared write paths, and the production change is 52 added lines confined to reckon/crew/dispatch.py and reckon/crew/dispatch_claims.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse a launch whose discard is recorded before the worker is spawned and to release its claim; reckon/crew/dispatch_claims.py:840 adds `_refuse_a_discarded_launch` and reckon/crew/dispatch.py:2915 and :2919 call it immediately before each spawn site, which is the deliverable the goal names.\nVERDICT done_when: the done_when requires a new case failing at the base and passing at the head, an importer population adding no failure, and ruff clean; logs/base-reproduction.log records `1 failed` / `EXIT=1` at 0ab156b37 with the live pointer present and logs/gate-head-round2.log ends `8 passed` / `EXIT=0` at e513e59cd, while the head importer arm carries one failure the manifest attributes to timing.\nVERDICT write_paths: the manifest declares five paths and the diff touches four of them (reckon/crew/dispatch.py, reckon/crew/dispatch_claims.py, tests/test_a_discarded_request_stays_discarded.py, docs/evidence/fragments/the-suite-is-green-at-head/a-discarded-request-is-not-launched.html), every one inside the declared set, with the declared figures directory unused.\nVERDICT manifest: read; its status is a recognised value, its `baseline_suite` and `after_suite` lines now parse as JSON when loaded, and it records the head gate, both negative controls and the one flaky head-arm id.\nVERDICT diff: read commit by commit against 0ab156b37; 5f9f2ae3a adds the check, two call sites, one re-export and two cases, e513e59cd adds the post-spawn read, the spool copy in `_release_launch_claim` and a third case, and 699ce843f rewrites the evidence fragment, with no existing test or production path otherwise altered.\nCALL_SITES: reckon/crew/dispatch.py:2915, reckon/crew/dispatch.py:2919, reckon/crew/dispatch.py:2965, reckon/crew/dispatch.py:2997, reckon/crew/queue_admission.py:_launch_queued\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:2965 reads the discard record once more after the pid merge, so the fork-to-merge span the first cut left open is refused rather than narrowed, and the claim is released by the existing rollback at :2997.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-head-round2.log ends `8 passed` / `EXIT=0` at e513e59cd, but the head importer arm (logs/arm-head-narrow-round2.log) carries one failing id and the fragment reports an earlier head's green arm instead.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all four changed paths sit inside the reviewed manifest's five declared write paths, and the production change is 52 added lines confined to reckon/crew/dispatch.py and reckon/crew/dispatch_claims.py.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative-control.log and logs/negative-control-2.log show each repair reverted turning its case red, so the three cases guard the change, but reckon/crew/dispatch_claims.py:832 is exercised by none of them.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/dispatch_claims.py:840 follows the module's lazy-import refusal-guard idiom and names the mechanism, while the re-export at reckon/crew/dispatch.py:3178 is inserted out of the list's alphabetical order.\nSCORE reuse: 20\nJUSTIFICATION reuse: the check composes promotion.discard_recorded and promotion.preserve_discard_record (reckon/crew/promotion.py:1845 and :1875), and a search for an existing launch-path discard reader over reckon/crew found only read-only predicates in queue_admission.py:830 and :1873, none of which refuses a launch.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-discarded-request-is-not-launched.html:63 non-blocking: the fragment states \"No failure is added\" citing logs/arm-head-narrow.log, an arm run at 5f9f2ae3a, while the importer arm at the final code head e513e59cd returned `1 failed, 211 passed, EXIT=1` (logs/arm-head-narrow-round2.log, manifest after_suite) and the flake check re-ran that id alone rather than under -n 4 on the base, so the green claim rests on a revision other than the one landing.\nFINDING reckon/crew/dispatch_claims.py:832 non-blocking: the preserve_discard_record call added to `_release_launch_claim` is exercised by no test, because both discard-refusal paths preserve inside `_refuse_a_discarded_launch` at :863 before raising, so deleting this line leaves all eight gate cases green and its guarantee that no rollback destroys a marker is unverified.\nFINDING logs/base-reproduction.log:4 non-blocking: the `# module.__file__:` header carries an AttributeError traceback instead of a module path, so the log of the base reproduction does not name the module the arm imported.",
+  "review_run_id": "r-20261024T233218437695-review-of-a-discarded-request-is-not-launched-699ce843f784",
+  "reviewed_base_sha": "0ab156b37bb78f80394efdd7436b58d0e12d3c13",
+  "reviewed_head_sha": "699ce843f784defc0999afcf3686f0bf6e1a8fe4",
+  "reviewed_run_id": "r-20261024T222006463560-a-discarded-request-is-not-launched",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T23:44:34.828516+00:00",
+  "total": 104
+}
