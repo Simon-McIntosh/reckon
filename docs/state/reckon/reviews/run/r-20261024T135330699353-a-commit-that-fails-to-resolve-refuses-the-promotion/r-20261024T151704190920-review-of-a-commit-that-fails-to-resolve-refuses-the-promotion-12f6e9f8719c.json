@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch",
+    "tests/test_crew_session_delivery.py::test_a_scoped_follower_receives_only_the_runs_its_session_dispatched",
+    "tests/test_follow_observes_other_sessions.py::test_a_follower_without_observed_sessions_behaves_exactly_as_today"
+  ],
+  "added_failures_note": "derived from the reviewed run's own baseline-suite.log and after-suite.log with reckon.crew.review.added_failures_from_gate_logs; all three ids are in the watch/follower family the change does not touch and this review re-ran them serially in the head arm tree, 3 passed in 9.82s (/tmp/reckon-crew-scratch/r-20261024T151704190920-review-of-a-commit-that-fails-to-resolve-refuses-the-promotion-12f6e9f8719c/added-ids-rerun.log), so the delta is parallel-load flapping",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion_release.py:_run_promoted_revision",
+    "reckon/crew/promotion.py:400",
+    "reckon/crew/promotion.py:1313",
+    "reckon/crew/promotion_checks.py:981",
+    "reckon/crew/promotion_evidence.py:_commit_canonical_id"
+  ],
+  "completed_at": "2026-10-24T15:28:15.721Z",
+  "dispatched_at": "2026-10-24T15:18:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "348",
+      "severity": "non-blocking",
+      "text": "non-blocking: the per-citation resolve-and-refuse loop duplicates the capability already owned by _resolve_commits at reckon/crew/promotion_scope.py:266 rather than calling it, and drops that function's foreign-repository remedy, so a citation that resolves only in another checkout now earns a less actionable refusal at the revision choice than at the landing check that reads the same list."
+    },
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "line": "246",
+      "severity": "non-blocking",
+      "text": "non-blocking: no case exercises the strict OSError branch, so reinstating \"return ''\" there leaves all eight cases green and only the timeout half of the two declared instrument faults is guarded."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": "1242",
+      "severity": "non-blocking",
+      "text": "non-blocking: the product commit carries formatting-only rewrites of _declared_manifest_commits, _worker_authored_landing_record (1291) and _restore_landing_writes (1711) that the goal does not imply, which makes the behavioural diff harder to read; every hunk is inside a declared path."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against c1473d66 \u2014 587bd5f6 changes the resolver and the chooser (59 and 30 lines, 426 new test lines) and 12f6e9f8 adds the 108-line evidence fragment; the behavioural change is the strict resolver plus the chooser's per-citation refusal, alongside five formatting-only hunks in unrelated functions of promotion_scope.py.",
+    "done_when": "the done_when at prompt.txt's evidence fence names six clauses measured over the importing population plus the new gate; the manifest records the gate at 8 passed, negative-control.log carries three red arms, and this review re-ran the three head-only ids serially in the head arm tree (3 passed in 9.82s), so the base-arm delta clause is measured, while the ruff clause is claimed with no stored log.",
+    "goal": "the goal at prompt.txt:30 is to make promotion refuse rather than drop a cited commit that fails to resolve, with a resolver timeout reported as an instrument fault; reckon/crew/promotion_scope.py:344 does the refusing and reckon/crew/recovery_review_subject.py:238 raises the instrument-fault error, so the landed change states the goal it was given.",
+    "manifest": "read at r-20261024T135330699353-a-commit-that-fails-to-resolve-refuses-the-promotion/manifest.md; status complete, two commits declared (587bd5f6, 12f6e9f8), the gate command and its log paths stated, and baseline_suite/after_suite carried as flat single-line JSON records.",
+    "write_paths": "the declared scope is promotion_scope.py, recovery_review_subject.py, the new test file, one evidence fragment and a figures directory; the two commits touch exactly the first four, all inside the fence, and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "negative-control.log's \"drop-unresolved\" arm reddens tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py::test_a_citation_that_stops_resolving_at_the_choice_refuses and the \"single-shortcut\" arm reddens test_a_single_citation_that_fails_at_the_choice_is_refused, so reinstating either regression fails the gate; the strict OSError branch is unguarded.",
+    "evidence": "the manifest's test_logs carry the new gate, the three negative-control arms in negative-control.log each end EXIT=1 with the declared case red, and both suite arms are recorded complete; the ruff clause and the three-id re-run were claimed without a stored log, the latter verified by this review at /tmp/reckon-crew-scratch/r-20261024T151704190920-review-of-a-commit-that-fails-to-resolve-refuses-the-promotion-12f6e9f8719c/added-ids-rerun.log.",
+    "fit": "the strict keyword at reckon/crew/recovery_review_subject.py:201 follows the module's existing optional-argument style and raises CrewError exactly as the same module's other refusals do at line 241.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:348 refuses a citation the strict resolver could not answer for, and reckon/crew/recovery_review_subject.py:238 reports a timeout as an instrument fault, which is the goal at prompt.txt:30.",
+    "reuse": "the change extends the single resolver _resolve_commit that tests/test_one_function_resolves_a_citation.py asserts has one definition, but reckon/crew/promotion_scope.py:348 duplicates the resolve-or-refuse loop owned by _resolve_commits at the same file's line 266.",
+    "scope_discipline": "every path in both commits is inside the five declared write paths, but reckon/crew/promotion_scope.py:1242 and :1291 carry formatting-only rewrites of functions the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal at prompt.txt:30 is to make promotion refuse rather than drop a cited commit that fails to resolve, with a resolver timeout reported as an instrument fault; reckon/crew/promotion_scope.py:344 does the refusing and reckon/crew/recovery_review_subject.py:238 raises the instrument-fault error, so the landed change states the goal it was given.\nVERDICT done_when: the done_when at prompt.txt's evidence fence names six clauses measured over the importing population plus the new gate; the manifest records the gate at 8 passed, negative-control.log carries three red arms, and this review re-ran the three head-only ids serially in the head arm tree (3 passed in 9.82s), so the base-arm delta clause is measured, while the ruff clause is claimed with no stored log.\nVERDICT write_paths: the declared scope is promotion_scope.py, recovery_review_subject.py, the new test file, one evidence fragment and a figures directory; the two commits touch exactly the first four, all inside the fence, and the figures directory is unused.\nVERDICT manifest: read at r-20261024T135330699353-a-commit-that-fails-to-resolve-refuses-the-promotion/manifest.md; status complete, two commits declared (587bd5f6, 12f6e9f8), the gate command and its log paths stated, and baseline_suite/after_suite carried as flat single-line JSON records.\nVERDICT diff: read commit by commit against c1473d66 \u2014 587bd5f6 changes the resolver and the chooser (59 and 30 lines, 426 new test lines) and 12f6e9f8 adds the 108-line evidence fragment; the behavioural change is the strict resolver plus the chooser's per-citation refusal, alongside five formatting-only hunks in unrelated functions of promotion_scope.py.\nCALL_SITES: reckon/crew/promotion_release.py:_run_promoted_revision, reckon/crew/promotion.py:400, reckon/crew/promotion.py:1313, reckon/crew/promotion_checks.py:981, reckon/crew/promotion_evidence.py:_commit_canonical_id\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:348 refuses a citation the strict resolver could not answer for, and reckon/crew/recovery_review_subject.py:238 reports a timeout as an instrument fault, which is the goal at prompt.txt:30.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest's test_logs carry the new gate, the three negative-control arms in negative-control.log each end EXIT=1 with the declared case red, and both suite arms are recorded complete; the ruff clause and the three-id re-run were claimed without a stored log, the latter verified by this review at /tmp/reckon-crew-scratch/r-20261024T151704190920-review-of-a-commit-that-fails-to-resolve-refuses-the-promotion-12f6e9f8719c/added-ids-rerun.log.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in both commits is inside the five declared write paths, but reckon/crew/promotion_scope.py:1242 and :1291 carry formatting-only rewrites of functions the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log's \"drop-unresolved\" arm reddens tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py::test_a_citation_that_stops_resolving_at_the_choice_refuses and the \"single-shortcut\" arm reddens test_a_single_citation_that_fails_at_the_choice_is_refused, so reinstating either regression fails the gate; the strict OSError branch is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: the strict keyword at reckon/crew/recovery_review_subject.py:201 follows the module's existing optional-argument style and raises CrewError exactly as the same module's other refusals do at line 241.\nSCORE reuse: 15\nJUSTIFICATION reuse: the change extends the single resolver _resolve_commit that tests/test_one_function_resolves_a_citation.py asserts has one definition, but reckon/crew/promotion_scope.py:348 duplicates the resolve-or-refuse loop owned by _resolve_commits at the same file's line 266.\nFINDING reckon/crew/promotion_scope.py:348 non-blocking: the per-citation resolve-and-refuse loop duplicates the capability already owned by _resolve_commits at reckon/crew/promotion_scope.py:266 rather than calling it, and drops that function's foreign-repository remedy, so a citation that resolves only in another checkout now earns a less actionable refusal at the revision choice than at the landing check that reads the same list.\nFINDING reckon/crew/recovery_review_subject.py:246 non-blocking: no case exercises the strict OSError branch, so reinstating \"return ''\" there leaves all eight cases green and only the timeout half of the two declared instrument faults is guarded.\nFINDING reckon/crew/promotion_scope.py:1242 non-blocking: the product commit carries formatting-only rewrites of _declared_manifest_commits, _worker_authored_landing_record (1291) and _restore_landing_writes (1711) that the goal does not imply, which makes the behavioural diff harder to read; every hunk is inside a declared path.",
+  "review_run_id": "r-20261024T151704190920-review-of-a-commit-that-fails-to-resolve-refuses-the-promotion-12f6e9f8719c",
+  "reviewed_base_sha": "c1473d669c74e86b03284aee3c88f506847b468e",
+  "reviewed_head_sha": "12f6e9f8719ced59b701b396773e38ee28d97aae",
+  "reviewed_run_id": "r-20261024T135330699353-a-commit-that-fails-to-resolve-refuses-the-promotion",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:29:12.678885+00:00",
+  "total": 105
+}
