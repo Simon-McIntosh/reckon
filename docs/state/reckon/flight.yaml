@@ -74,11 +74,10 @@ review_excluded_backends:
   # A lane name excludes every model of that lane, so one entry per lane stands
   # in for the per-model names that used to be listed beside it.
   - claude
-  # Reviews are local-lane-shaped work, and the lead's directive of 2026-09-23
-  # (user-global AGENTS.md, Runtime Model Routing) keeps them on the local lane:
-  # never moved to a metered lane, above all while the lane has capacity. With
-  # every metered backend excluded a review holds rather than falling back.
-  - codex
+  # codex is not excluded here: a review of work built on codex may follow it
+  # onto codex, because those reviews catch defects the work itself missed and
+  # a stronger reviewer finds them sooner. The host layer still excludes codex
+  # for projects that do not opt in.
   # An in-harness backend runs only when a coordinator attaches it, so a review
   # the reflex routes there is recorded as dispatched and never executes.
   - native
