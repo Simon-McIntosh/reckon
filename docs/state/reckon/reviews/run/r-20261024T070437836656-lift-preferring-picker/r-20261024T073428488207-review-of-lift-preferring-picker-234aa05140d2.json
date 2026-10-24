@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate arms: base-arm.log (revision 90ec1d3) records 3 failed / 154 passed with FAILED ids tests/test_picker_joins_codex_by_lane.py::test_document_backed_reading_carries_its_own_provenance, tests/test_congested_local_lane_still_reaches_the_picker.py::test_congested_local_lane_routing[alpha] and [explicit]; head-arm.log (revision 234aa0514) records 3 failed / 159 passed with the identical three ids, so the head adds no failing test and the set difference is empty",
+  "backend": "deepseek-v4.1-flash",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1283 dispatch_picker_selection call",
+    "reckon/crew_dispatch_commands.py:1655 dispatch_picker_selection call",
+    "reckon/crew/picker/prompts.py:618 build_state render that carries node.lift_preference",
+    "reckon/crew/dispatch_picker.py:1159 inner ask via _ask_excluding_lane"
+  ],
+  "completed_at": "2026-10-24T07:47:37.006Z",
+  "dispatched_at": "2026-10-24T07:35:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "line": "1353",
+      "severity": "non-blocking",
+      "text": "non-blocking: _record_lifted_choice records selection['lift'] whenever an elevated node's route lands on the preferred lane, including a first ask that already chose that lane on its own, so the docstring's claim at :1339 that a route the lift did not move carries no lift key is stronger than the code; a reader cannot separate a lift-shaped choice from one that happened to land on a lifted lane. The re-ask path is distinguishable by the reissued flag, so a downstream consumer could gate on it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "pass \u2014 verified 4 production call sites",
+    "diff": "read the single commit 234aa0514 against base 90ec1d3 file by file; it adds LIFT_PREFERENCE_RISK and lift_preference to reckon/crew/picker/prompts.py, the _reask_onto_a_lifted_lane and _record_lifted_choice helpers to reckon/crew/dispatch_picker.py, a 375-line test file, and the landing fragment.",
+    "done_when": "the done_when names tests/test_picker_prefers_lifted_lane.py; the manifest records that file at 5 passed EXIT=0, and my own re-run of it at head 234aa0514 gave 5 passed EXIT=0 in review-gate.log.",
+    "goal": "the goal is to make the picker prefer a lifted metered lane with window room for elevated work and to record the lift that moved its choice; reckon/crew/picker/prompts.py:271 derives node.lift_preference and reckon/crew/dispatch_picker.py:1281 re-asks with the local lane excluded, recording selection['lift'] at :1353.",
+    "manifest": "read; it states status complete, names the five-arm gate, the base and head arms with their three identical pre-existing failure ids, the negative-control mutation and its red log, and every changed path.",
+    "write_paths": "the manifest's orientation line declares six paths; git diff --name-only 90ec1d3..234aa0514 touches only four of them (dispatch_picker.py, picker/prompts.py, the new test file and the landing fragment), every one inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_picker_prefers_lifted_lane.py:255 asserts the backend the lift moved the choice to and the lift id read back from the record the test wrote, and the node's negative control shows that test reddens ('clive' != 'codex') when lift_preference is made to return None, so it is a guard rather than a restatement.",
+    "evidence": "the manifest's after_suite names the head-arm log at revision 234aa0514 (159 passed, 3 failed, EXIT=1) against the base arm at 90ec1d3 (154 passed, 3 failed, EXIT=1) with identical failure ids, giving added_failure_count 0, and the focused gate re-ran green at head in review-gate.log.",
+    "fit": "reckon/crew/dispatch_picker.py:1281 mirrors the sibling _reask_off_zero_slot_lane at :1197 in signature, docstring and return shape, and LIFT_PREFERENCE_RISK at reckon/crew/picker/prompts.py:39 names the mechanism rather than a plan label.",
+    "goal_fidelity": "reckon/crew/picker/prompts.py:271 states the preference only at or above LIFT_PREFERENCE_RISK and only for exactly one lifted metered lane, and reckon/crew/dispatch_picker.py:1288 acts on it only when the first route landed on the local lane, so both halves of the plan's rule are present.",
+    "reuse": "the re-ask reuses _ask_excluding_lane at reckon/crew/dispatch_picker.py:1134 rather than forking the second-ask plumbing, and the added prompt function reads the congestion block that reckon/crew/picker/snapshot.py:1596 already fills; a search for an existing lift-preference owner found only the inline lifted_serving_lane test at reckon/crew/dispatch.py:1311, which answers a different question (whether to continue a hold) and is not duplicated.",
+    "scope_discipline": "git diff --name-only 90ec1d3 234aa0514 lists docs/evidence/fragments/a-queue-holds-the-whole-plan/lift-preferring-picker.html, reckon/crew/dispatch_picker.py, reckon/crew/picker/prompts.py and tests/test_picker_prefers_lifted_lane.py, every one inside the six declared write paths."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the picker prefer a lifted metered lane with window room for elevated work and to record the lift that moved its choice; reckon/crew/picker/prompts.py:271 derives node.lift_preference and reckon/crew/dispatch_picker.py:1281 re-asks with the local lane excluded, recording selection['lift'] at :1353.\nVERDICT done_when: the done_when names tests/test_picker_prefers_lifted_lane.py; the manifest records that file at 5 passed EXIT=0, and my own re-run of it at head 234aa0514 gave 5 passed EXIT=0 in review-gate.log.\nVERDICT write_paths: the manifest's orientation line declares six paths; git diff --name-only 90ec1d3..234aa0514 touches only four of them (dispatch_picker.py, picker/prompts.py, the new test file and the landing fragment), every one inside the declared scope.\nVERDICT manifest: read; it states status complete, names the five-arm gate, the base and head arms with their three identical pre-existing failure ids, the negative-control mutation and its red log, and every changed path.\nVERDICT diff: read the single commit 234aa0514 against base 90ec1d3 file by file; it adds LIFT_PREFERENCE_RISK and lift_preference to reckon/crew/picker/prompts.py, the _reask_onto_a_lifted_lane and _record_lifted_choice helpers to reckon/crew/dispatch_picker.py, a 375-line test file, and the landing fragment.\nCALL_SITES: reckon/crew/dispatch.py:1283 dispatch_picker_selection call, reckon/crew_dispatch_commands.py:1655 dispatch_picker_selection call, reckon/crew/picker/prompts.py:618 build_state render that carries node.lift_preference, reckon/crew/dispatch_picker.py:1159 inner ask via _ask_excluding_lane\nSCORE goal_fidelity: 17\nSCORE evidence: 19\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 18\nSCORE reuse: 18\nJUSTIFICATION goal_fidelity: reckon/crew/picker/prompts.py:271 states the preference only at or above LIFT_PREFERENCE_RISK and only for exactly one lifted metered lane, and reckon/crew/dispatch_picker.py:1288 acts on it only when the first route landed on the local lane, so both halves of the plan's rule are present.\nJUSTIFICATION evidence: the manifest's after_suite names the head-arm log at revision 234aa0514 (159 passed, 3 failed, EXIT=1) against the base arm at 90ec1d3 (154 passed, 3 failed, EXIT=1) with identical failure ids, giving added_failure_count 0, and the focused gate re-ran green at head in review-gate.log.\nJUSTIFICATION scope_discipline: git diff --name-only 90ec1d3 234aa0514 lists docs/evidence/fragments/a-queue-holds-the-whole-plan/lift-preferring-picker.html, reckon/crew/dispatch_picker.py, reckon/crew/picker/prompts.py and tests/test_picker_prefers_lifted_lane.py, every one inside the six declared write paths.\nJUSTIFICATION durability: tests/test_picker_prefers_lifted_lane.py:255 asserts the backend the lift moved the choice to and the lift id read back from the record the test wrote, and the node's negative control shows that test reddens ('clive' != 'codex') when lift_preference is made to return None, so it is a guard rather than a restatement.\nJUSTIFICATION fit: reckon/crew/dispatch_picker.py:1281 mirrors the sibling _reask_off_zero_slot_lane at :1197 in signature, docstring and return shape, and LIFT_PREFERENCE_RISK at reckon/crew/picker/prompts.py:39 names the mechanism rather than a plan label.\nJUSTIFICATION reuse: the re-ask reuses _ask_excluding_lane at reckon/crew/dispatch_picker.py:1134 rather than forking the second-ask plumbing, and the added prompt function reads the congestion block that reckon/crew/picker/snapshot.py:1596 already fills; a search for an existing lift-preference owner found only the inline lifted_serving_lane test at reckon/crew/dispatch.py:1311, which answers a different question (whether to continue a hold) and is not duplicated.\nFINDING reckon/crew/dispatch_picker.py:1353 non-blocking: _record_lifted_choice records selection['lift'] whenever an elevated node's route lands on the preferred lane, including a first ask that already chose that lane on its own, so the docstring's claim at :1339 that a route the lift did not move carries no lift key is stronger than the code; a reader cannot separate a lift-shaped choice from one that happened to land on a lifted lane. The re-ask path is distinguishable by the reissued flag, so a downstream consumer could gate on it.\n",
+  "review_run_id": "r-20261024T073428488207-review-of-lift-preferring-picker-234aa05140d2",
+  "reviewed_base_sha": "90ec1d376751b2bdf38d87b79d6ecfef1561f13b",
+  "reviewed_head_sha": "234aa05140d2b3b9412f34004ab0a94b1cd572b2",
+  "reviewed_run_id": "r-20261024T070437836656-lift-preferring-picker",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:43:59.571445+00:00",
+  "total": 110
+}
