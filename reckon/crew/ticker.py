@@ -1363,6 +1363,14 @@ class RowPolicy:
         # withheld row never sets it, so a departure is measured against "the
         # word the pane last showed for it". Not the state a held row left.
         self._shown: dict[str, str] = {}
+        # run_id -> the wait facts of the last row this pane showed for it, or
+        # None where that row declared no wait (:func:`wait_facts`). The pane's
+        # word cannot separate a wait aging from a wait recovering, because
+        # both draw ``waiting``, so the same-word rule reads this beside the
+        # word: a row that repeats the word and only clears the overdue flag
+        # with the declaration otherwise unchanged is a re-derivation rather
+        # than news.
+        self._shown_wait: dict[str, tuple[Any, ...] | None] = {}
         # run_id -> the word of the last row this pane actually carried. A
         # landing is news only where that word is the delivery it follows, and
         # a drop only where there is one at all, so a withdrawal, a terminal
@@ -1437,17 +1445,20 @@ class RowPolicy:
                 self._told[str(run_id)] = True
 
     def _note_shown(self, rows: Iterable[Mapping[str, Any]]) -> None:
-        """Record the word the pane showed for each run a printed row names.
+        """Record what the pane showed for each run a printed row names.
 
         The round-trip rule measures a departure against the word the pane
-        actually shows, so this is written where rows are released rather than
-        where they are noted — a withheld row has reached nobody, and reading it
-        as shown would suppress a real departure later.
+        actually shows, and the same-word wait rule measures a return against
+        the declaration that was shown, so both are written where rows are
+        released rather than where they are noted — a withheld row has reached
+        nobody, and reading it as shown would suppress a real departure later
+        and make a withheld wait look like the one the reader saw.
         """
         for event in rows:
             run_id = str(event.get("run_id") or "")
             if run_id:
                 self._shown[run_id] = _pane_word(event)
+                self._shown_wait[run_id] = wait_facts(event)
 
     def _row_class(self, event: Mapping[str, Any], kind: tuple[Any, Any]) -> str:
         """The class of a row: coordinator, observer or counter.
@@ -2014,7 +2025,7 @@ class RowPolicy:
             run_id
             and word
             and word == _remembered_word(self._reported.get(run_id))
-            and not same_word_row_is_news(event)
+            and not same_word_row_is_news(event, self._shown_wait.get(run_id))
             and not launch
         ):
             self._reported[run_id] = to_state
@@ -2427,32 +2438,74 @@ def _actionable_recovery(event: Mapping[str, Any]) -> bool:
     )
 
 
-def same_word_row_is_news(event: Mapping[str, Any]) -> bool:
+def wait_facts(event: Mapping[str, Any]) -> tuple[Any, ...] | None:
+    """The facts a declared wait is judged by, or None for a row declaring none.
+
+    The set is the wait's own identity as the event carries it: the overdue flag
+    compared on its own, then the probe's verdict, the declaration's last
+    observation, the horizon it was declared against and the brief a resumed
+    worker reads. A row that declares no wait carries none of them, so None is
+    the explicit unmeasured state rather than a tuple of Nones — it tells a
+    caller the row has no wait to compare at all.
+    """
+    if not declares_a_wait(event):
+        return None
+    return (
+        bool(event.get("wait_overdue")),
+        event.get("wait_condition_state"),
+        event.get("wait_observed"),
+        event.get("expected_horizon_seconds"),
+        event.get("resume_brief"),
+    )
+
+
+def same_word_row_is_news(
+    event: Mapping[str, Any],
+    remembered: tuple[Any, ...] | None = None,
+) -> bool:
     """Whether a row repeating the pane's word for its run is still news.
 
     The pane draws a transition only where its two halves differ, so a row
     whose destination word equals the word the pane already shows for the run
     would draw an empty line — and a released row that draws nothing is a duty
-    the reader never saw. Three such rows are news all the same, because each
-    carries something a repeated word would hide: a recovery classification the
-    fleet calls actionable, a declared external wait whose condition the
-    coordinator must be able to read, and a launch the row policy released for
-    an attempt the pane's own session began. The launch's word is always
-    ``working``, which the pane may already show for the run from a seeded
-    reload memory, and the policy has already judged that this attempt's start
-    is news — so the renderer must not blank it.
+    the reader never saw. Such rows are news all the same for three reasons,
+    because each carries something a repeated word would hide: a recovery
+    classification the fleet calls actionable, a launch the row policy released
+    for an attempt the pane's own session began, and a declared external wait
+    whose condition the coordinator must be able to read.
 
-    ``RowPolicy`` and ``Ticker.render`` read this one predicate. The policy
-    withholds every other same-word row, so a row it releases is never drawn
-    blank, and the renderer draws the ones this names news rather than dropping
-    them as the empty line the pane never put up. A row whose two halves name
-    different words is judged by them and is news wherever they differ.
+    A wait is judged against the facts the pane's own last shown row carried
+    for that run, handed in as ``remembered`` (from :func:`wait_facts`). The
+    wait's word covers a departure the pane draws and a return it does not —
+    a run that ages out of its wait and one that recovers from the age both
+    read ``waiting`` — so the state word alone cannot tell the return from the
+    departure. A same-word wait row is news where it newly sets ``wait_overdue``
+    (the remembered row had it false or absent) or where the probe's verdict,
+    the observation, the horizon or the brief differ from that row's; a row
+    that only clears the overdue flag while the rest of its declaration stands
+    unchanged tells the reader nothing the aging row did not, so it is not
+    news. With no memory for the run the row is taken as news, because a wait
+    the pane has no shown declaration for is a duty rather than a repetition.
+
+    ``RowPolicy`` and ``Ticker.render`` read this one predicate, each handing
+    its own per-run memory of the shown row's wait facts. The policy withholds
+    every same-word row it is not told is news, so a row it releases is never
+    drawn blank, and the renderer draws the ones this names news rather than
+    dropping them as the empty line the pane never put up. A row whose two
+    halves name different words is judged by them and is news wherever they
+    differ.
     """
-    return (
-        _actionable_recovery(event)
-        or declares_a_wait(event)
-        or bool(event.get(LAUNCH_FIELD))
-    )
+    if _actionable_recovery(event) or bool(event.get(LAUNCH_FIELD)):
+        return True
+    facts = wait_facts(event)
+    if facts is None:
+        return False
+    if remembered is None:
+        return True
+    overdue, *declaration = facts
+    if overdue and not remembered[0]:
+        return True
+    return tuple(declaration) != tuple(remembered[1:])
 
 
 def _agent_label(agent: Any) -> str:
@@ -2546,6 +2599,11 @@ class Ticker:
         # independent render probes rather than stream rows and do not enter the
         # chain.
         self._reported: dict[str, str] = {}
+        # run_id -> the wait facts of the last row this pane drew for the run,
+        # or None where that row declared none. Read by the same-word rule
+        # beside the word, so a wait returning from aged with an unchanged
+        # declaration is not drawn as a fresh transition.
+        self._shown_wait: dict[str, tuple[Any, ...] | None] = {}
         # The lane's mean over the last read of its document, by project and
         # backend: the pane draws rows in bursts and the lane republishes on its
         # own cadence, so one read serves every row inside the reuse window. A
@@ -2724,12 +2782,16 @@ class Ticker:
             # twice, or its own left word where the row names a different one,
             # so a block or an unreadable the pane already shows is never
             # released as an empty line the reader never saw.
-            if not same_word_row_is_news(event):
+            if not same_word_row_is_news(event, self._shown_wait.get(run_id)):
                 return ""
             own_left = _display_state(event.get("from_state"))
             from_state = own_left if own_left and own_left != to_state else to_state
         if stream_event:
             self._reported[run_id] = to_state
+            # The wait facts the pane has now shown, so a later row repeating
+            # the word is judged against the declaration the reader can see
+            # rather than against its own alone.
+            self._shown_wait[run_id] = wait_facts(event)
 
         # A broadcast row carries no run and so no role: its stage names the
         # broadcast, and its job cell names the budget group it concerns. A
