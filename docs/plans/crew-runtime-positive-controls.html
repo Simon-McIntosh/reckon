@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="377">
+<meta name="plan-version" content="380">
 <meta name="plan-modified" content="2026-10-24">
 <meta name="plan-section-depends-on" content="{&quot;s64&quot;:[]}">
 </head>
@@ -1329,7 +1329,7 @@
 </ul>
 <p><strong>Deliverable.</strong></p>
 <ul>
-<li>Choosing the promoted revision never drops a commit the landing check resolved. Where a cited commit cannot be resolved while the revision is chosen, the promotion is refused, naming the commit and the tree it was read in. It never chooses among the remaining commits. A resolver timeout or a failure to start git is reported as an instrument fault, distinct from a revision that names no commit, in <code>_resolve_commit</code> in <code>reckon/crew/recovery_review_subject.py</code>.</li>
+<li>Choosing the promoted revision never drops a commit the landing check resolved. Where a cited commit cannot be resolved while the revision is chosen, the promotion is refused, naming the commit and the tree it was read in. It never chooses among the remaining commits, and no branch of <code>_descendant_commit</code> returns a citation that failed to resolve: today a single citation is returned as written without being resolved, and a list in which none resolves returns its last entry. A resolver timeout or a failure to start git is reported as an instrument fault, distinct from a revision that names no commit, in <code>_resolve_commit</code> in <code>reckon/crew/recovery_review_subject.py</code>.</li>
 </ul>
 <p><strong>Write paths:</strong> <code>reckon/crew/promotion_scope.py</code>, <code>reckon/crew/recovery_review_subject.py</code>, the new <code>tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py</code>, and the node's evidence fragment. Every commit resolver already delegates to that one function (<code>reports._commit_resolves_in</code> at <code>reckon/crew/reports.py</code> and <code>_commit_canonical_id</code> at <code>reckon/crew/promotion_evidence.py</code> both call it), so changing what it reports reaches them all. The land's own check of the head it merges is §65, split out because <code>reckon/crew_run_commands.py</code> is claimed by another plan's runs while this section is ready.</p>
 <p><strong>Done when</strong> all of these hold:</p>
@@ -1339,9 +1339,10 @@
 <li>with the resolver timing out for the fourth commit alone, the promotion is refused naming that commit and stating that the resolver timed out, worded differently from the refusal for a revision that names no commit, and no promoted revision is recorded;</li>
 <li>a revision that names no commit is still reported as unresolvable, not as an instrument fault;</li>
 <li>a cited commit that names nothing when the revision is chosen, although it resolved when the landing check read it, refuses the promotion naming it rather than being left out;</li>
+<li>a run citing a single commit that fails to resolve when the revision is chosen, and a run none of whose citations resolves then, are each refused, naming the citation, rather than promoted at the text as written;</li>
 </ul>The test asserts the real crew home is untouched.</li>
 <li>Negative controls, each applied alone and run under pytest with the default short summary: restoring the empty-string answer for a timeout in <code>_resolve_commit</code> fails the timeout case, and restoring the drop of an unresolved entry in <code>_descendant_commit</code> fails the case where a cited commit names nothing at the moment the revision is chosen.</li>
-<li>The test files importing <code>reckon/crew/promotion_scope.py</code>, <code>reckon/crew/recovery_review_subject.py</code>, or any module that calls <code>_resolve_commit</code> (<code>reckon/crew/recovery.py</code>, <code>promotion_evidence.py</code>, <code>reports.py</code>, <code>promotion.py</code>, <code>review.py</code>, <code>dispatch.py</code>, <code>dispatch_plan.py</code>, <code>dispatch_sessions.py</code> and <code>recovery_review_dispatch.py</code>, all under <code>reckon/crew/</code>), among them <code>tests/test_one_function_resolves_a_citation.py</code>, add no failure against a base arm. Both arms come from git checkouts under the run's own scratch directory and run in place on the fleet node with <code>pytest -n 8</code>. <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure at head. The manifest's <code>baseline_suite</code> and <code>after_suite</code> are flat suite records. Every log is under the run directory, starts with the revision it ran at and the literal command, and ends in <code>EXIT=</code>.</li>
+<li>The test files importing <code>reckon/crew/promotion_scope.py</code>, <code>reckon/crew/recovery_review_subject.py</code>, or any module under <code>reckon/</code> that names <code>_resolve_commit</code>, found with <code>grep -rln '_resolve_commit' reckon/</code> at the dispatched base and recorded in the run directory (at the time of writing it also finds <code>reckon/crew/routing.py</code>, <code>reckon/crew/gc.py</code> and <code>reckon/interface_counts.py</code>), among them <code>tests/test_one_function_resolves_a_citation.py</code>, add no failure against a base arm. Both arms come from git checkouts under the run's own scratch directory and run in place on the fleet node with <code>pytest -n 8</code>. <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure at head. The manifest's <code>baseline_suite</code> and <code>after_suite</code> are flat suite records. Every log is under the run directory, starts with the revision it ran at and the literal command, and ends in <code>EXIT=</code>.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the changed paths, judged against the base blobs.</li>
 </ul>
 
