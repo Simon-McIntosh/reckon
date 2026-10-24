@@ -1,0 +1,72 @@
+<section id="invariant-ids-in-claimed-modules-name-one-owner">
+  <h2 id="invariant-ids-in-claimed-modules-name-one-owner-title">invariant-ids-in-claimed-modules-name-one-owner — three one-owner census ids repaired against intended changes</h2>
+
+  <p><strong>Reproduction at the base.</strong> All three ids failed at
+  <code>e047134db</code> in the assigned worktree, run as
+  <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -q</code> over the three files: 3 failed,
+  14 passed, <code>EXIT=1</code> (<code>gate-base.log</code>). The failures were
+  <code>set(leaves) == set(STATE_PHRASES)</code> differing by <code>('retention-sweep',)</code>;
+  <code>crew path --kind live --project nova --run r-…</code> exiting 0 and printing
+  <code>…/crew/live/r-….json</code>; and
+  <code>['crew/station_store.py:_day_from_name']</code> reported as a second timestamp parser.</p>
+
+  <p><strong>Decision per id — every change was intended.</strong></p>
+
+  <ul>
+    <li><strong>retention-sweep.</strong> <code>81b4ea57e</code> added the verb as its own
+    <code>crew</code> leaf ("run the run-directory retention sweep on its own"), so the help
+    census owes it a row; the row was absent and its first help line named no condition. Repair:
+    the first help line now reads <em>Retire run directories past their retention window across
+    every mounted project</em> and the row records the same words.</li>
+    <li><strong>crew path --kind live.</strong> <code>8bac47b79</code> gave every run-taking verb
+    one identity grammar — <code>--project</code> is an optional cross-check beside
+    <code>--run</code>, refused when it disagrees with the run's own project and left alone for an
+    unknown run. <code>crew_path</code> calls that resolver, so the old expectation (refuse
+    <code>--project</code> outright, <code>548e3498e</code>) was superseded. The case now asserts
+    the new contract and keeps the property: a matching project resolves, and a project that
+    disagrees with the live pointer's project is refused naming <code>--project</code> and
+    <code>disagrees</code>. Production code was not changed for this id.</li>
+    <li><strong>station_store._day_from_name.</strong> <code>8dd3a03d0</code> introduced the
+    station store with <code>date.fromisoformat</code>, a second parser beside
+    <code>reckon._timestamps</code>, which the structural invariant refuses; the introduction was
+    not a decision any commit states. Repair: the day parses through
+    <code>reckon._timestamps.parse_utc</code> and must round-trip through
+    <code>date.isoformat</code>, so the accepted names stay exactly the ones
+    <code>_day_file_name</code> writes.</li>
+  </ul>
+
+  <p><strong>Day-name domain, before and after</strong> (<code>day_name_domain.log</code>):
+  <code>events-2026-10-24.sqlite3</code> → <code>2026-10-24</code>;
+  <code>events-2026-10-24T00:00:00Z.sqlite3</code>, <code>events-nope.sqlite3</code>,
+  <code>events-20261024.sqlite3</code> and <code>other-2026-10-24.sqlite3</code> → None. Only the
+  two exotic calendar forms the store never writes (basic and ISO-week) became foreign; every
+  name it writes still parses.</p>
+
+  <p><strong>Arms, from <code>git archive</code> extractions on the node-local disk</strong>
+  (<code>/var/tmp</code>, 232 GB local volume). The base arm at <code>e047134db</code> over the
+  three gate files plus the five test files that import the changed modules — 3 failed, 58 passed,
+  <code>EXIT=1</code> (<code>arm-base.log</code>). The head arm at <code>aec25ad98</code> over the
+  same eight files — 61 passed, <code>EXIT=0</code> (<code>arm-head.log</code>). The head gate over
+  the three listed files — 17 passed, <code>EXIT=0</code> (<code>gate.log</code>). Every log names
+  its revision, tree, literal command and <code>module.__file__</code>, and ends in a bare
+  <code>EXIT=</code> line.</p>
+
+  <p><strong>Negative controls</strong> (<code>negative_control.log</code>), each in a scratch
+  head extraction, never committed: restoring the retention-sweep help line to the one naming no
+  condition fails
+  <code>test_every_crew_verb_help_names_its_state_or_condition</code>; replacing the identity
+  resolver's call in <code>crew_path</code> with <code>resolved_project = project</code> fails
+  <code>test_a_selector_a_kind_does_not_take_is_refused</code>; restoring
+  <code>date.fromisoformat</code> in <code>_day_from_name</code> fails
+  <code>test_only_the_shared_parser_calls_fromisoformat</code>. Each log section ends
+  <code>EXIT=1</code> and the log ends non-zero.</p>
+
+  <p><strong>Scope.</strong> One commit, <code>aec25ad98</code>, touching
+  <code>reckon/crew/station_store.py</code>, <code>reckon/crew_run_commands.py</code>,
+  <code>tests/test_crew_help_names_its_state.py</code> and
+  <code>tests/test_crew_path_prints_the_resolved_home.py</code>.
+  <code>tests/test_structural_invariants.py</code> needed no change — its retained-exception list
+  is untouched, because the repair routes through the shared parser instead of adding a
+  deviation. <code>ruff check</code> and <code>ruff format --check</code> report nothing added on
+  the staged paths.</p>
+</section>
