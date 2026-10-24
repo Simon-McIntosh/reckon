@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T00:57:25.034Z",
+  "dispatched_at": "2026-10-24T00:47:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:172",
+      "id": "done_when-1",
+      "reason": "without a settled case the node's gate passes on an implementation whose pending entry never clears, which is the defect shape \u00a79 exists to remove.",
+      "text": "the Change enumerates \"Where the plan's sprint already agrees with the index, the entry retires as settled\" as a required outcome, but the done-when exercises only the differing-sprint, batch, unrelated-edit and superseded states, so an implementation that retires nothing when the plan write already landed is not caught; that is the crash-between-plan-write-and-receipt-update case, and an entry that never retires reproduces exactly the never-clearing pending entry an earlier review raised against this section",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:172",
+      "id": "reasoning-1",
+      "reason": "a node must invent the absent case, and the likely inventions (raise, or keep the entry pending forever) either crash the retry or strand the request as permanently partial.",
+      "text": "the retry branches on three index memberships (still the recorded sprint, another sprint, already agreeing) but states no outcome for a plan the index lists in no sprint at all \u2014 a plan retired from its sprint, or removed by a sprint closure between the failure and the retry \u2014 so a pending receipt entry for such a plan matches no branch and no case measures it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:172",
+      "id": "reasoning-2",
+      "reason": "the done-when already tells the test to induce the failure after the check by making the plan's own write raise, so the inaccurate premise does not redirect the node's mechanism or its measure.",
+      "text": "\u00a79 says \"\u00a78's pre-read refuses a plan it cannot write before the index moves\", but `_sprint_move_plan_writes` (reckon/mcp_edit_plan.py:622) refuses only a ref another project owns (`_unwritable_move_refusal`) and silently skips a ref naming no plan of this project, so there is no general writability pre-check",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "ef938dc86668d44f311f5c63257894b0acfd4ade92a513c0c335d51d628b4465",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 67,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T004641265315-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "8e2c9a39ffb530c9677b14f80912ffd3a10c379d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/mcp_edit_plan.py:1728` resolves to the `_carry_plan_sprints` call that produces the failure (`:1729` calls `_partial_plan_write`), `:1744` is the `record_write_receipt` call and `:1324` is the replay return, and `\"not found in sprint\"` is raised at `reckon/_store.py:3520` inside `_apply_move` (`:3492`).",
+    "done_when": "a finding \u2014 the \"settled\" branch \u00a79 makes a required outcome is not exercised by any case in the done-when at plan.html:172.",
+    "evidence_paths": "pass \u2014 write paths name the two modules and the test file, and the gate log is placed under the run directory, which survives the run.",
+    "naming": "pass \u2014 the test file `tests/test_a_retried_partial_move_is_not_replayed.py` and the outcomes (`pending`, `settled`, `superseded`) name the mechanism, and no plan label, ticket number or changelog prose reaches them.",
+    "reasoning": "two findings \u2014 the retry's index-membership state machine has no outcome for a plan the index no longer lists, and \u00a79's account of \u00a78's pre-read does not match what that pre-read does.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable (a retried partial sprint move must not replay as success), and every case in its measure discriminates that one mechanism.",
+    "wiring": "pass \u2014 \u00a79's open driving followup `f-tprt-009` names `/reckon-build the-portfolio-reads-true \u00a79`, and its only prerequisite (\u00a78) is landed and declared done, so no section wire is owed."
+  },
+  "section_digests": {
+    "_document": "99c9e3cf9942e999d5740a5fbefff3d49790d2568cd12c6bc07b4892fcca6913",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "755f24aa17a8dd4148274b97641bdca168cffbf4e24f74d8ae27ba1d5e11ebfc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T01:02:30.391763+00:00"
+}
