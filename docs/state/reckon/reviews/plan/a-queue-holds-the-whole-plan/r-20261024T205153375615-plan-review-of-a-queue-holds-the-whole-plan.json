@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T21:22:18.749Z",
+  "dispatched_at": "2026-10-24T21:04:25Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:92",
+      "id": "reasoning-1",
+      "reason": "implemented as written the mechanism contradicts \u00a78's declared wait union and un-satisfies waits \u00a78's done-when requires, so the node must re-derive the whole union (reusing `derive_wait_refs`) and compare that, which the plan should say.",
+      "text": "s11 says each admission pass \"re-reads a waiting or queued request's section waits from the plan ... and rewrites the stored `waits` when they differ\", but the stored `waits` is not section waits alone: `derive_wait_refs` (reckon/crew/queue_admission.py:1136) builds the union of the section's `plan-section-depends-on` refs, the plan's `depends_on`, and the `run:<request-id>` refs from `--after`, and `_hold_pointer` (:2091) writes that union; replacing the field from section refs alone silently drops every plan-level and `--after` wait on the first pass, so a request dispatched after a gate or another request would launch as though it waited on neither",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:92",
+      "id": "reasoning-2",
+      "reason": "",
+      "text": "\u2014 s11 states \"a plan that gained an unreviewed unit after the dispatch refuses every launch with `PlanReviewMissingError`\", but the gate is enforcement-gated: `_plan_review_verdict` (reckon/crew/routing.py:2439) raises only when `plan_review_gate_enforces` is true, and reckon/flight.py:931 documents report-only as the shipped default, so on a default config the launch proceeds with a recorded warning and the described four-hour hold cannot reproduce; WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: the node is required to confirm the defect reproduces before repairing it, and on default config it will see no refusal, so the plan must name the enforcing config the reproduction requires or the node will misreport the defect as gone.",
+      "type": "reasoning",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:92",
+      "id": "reasoning-3",
+      "reason": "",
+      "text": "\u2014 s11's primary mechanism, \"at admission the gate is evaluated only over the units the request reads\", names no caller, module or write paths where that narrowed evaluation happens, unlike s2, s5, s16 and s15 which each carry an Owners/Write paths paragraph and name `admit_once`, the pointer builder and the seat of the change; the only gate site s11 cites is the raise inside `reckon/crew/routing.py`, which every direct dispatch also passes through; WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: with the seam unnamed a node can narrow the guard inside the shared routing verdict and loosen the plan-review gate for every direct dispatch, which is not what s11 says and changes a guard outside the queued path, so naming where admission supplies the unit subset (the dispatch option or pre-dispatch check in the admission launch) would change the plan the node builds.",
+      "type": "reasoning",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:112",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 s16's removal arm, \"a grep of `skills/` and `AGENTS.md` finds no instruction to dispatch section by section on every beat\", names no pattern and its literal phrase occurs nowhere in the tree today (the actual instructions read \"Fill the lane every beat\" at skills/reckon-build/SKILL.md:141, \"reckon-build acts on this set every beat\" at skills/reckon-roadmap/SKILL.md:114, and \"dispatch every ready-idle section each beat\" at AGENTS.md:31), so the grep passes on the unmodified tree and the arm has no negative control; WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: a removal check that holds before the change proves nothing was removed, so the plan should name the literal strings the node must delete and require the same grep to hit before and miss after.",
+      "type": "done_when",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "736aad48bf2be8b1c0339a72eac7cbf326701839423bbe29b2f7d85e2732a53a",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 102,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T205153375615-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "7fe91fcec1495deb5ee0b0a69fe18d53549558d2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `PlanReviewMissingError` is raised at `reckon/crew/routing.py:2450`, `section_waits_for` is at `reckon/crew/queue_admission.py:1099` and reads only `pointer[\"waits\"]` as s11 states, all five skill files and the repository `AGENTS.md` named by s16 exist, and `crew view live` plus `crew queue edit|reprioritise|drop` resolve.",
+    "done_when": "a finding \u2014 s16's removal arm greps `skills/` and `AGENTS.md` for \"no instruction to dispatch section by section on every beat\", a phrase that appears nowhere in the unmodified tree, so the arm passes before and after and shows nothing was removed; s11's arms do carry controls (the edited \u00a73 goes `held` while the untouched \u00a72 still launches, and a hand-held request stays held through the release pass).",
+    "evidence_paths": "pass \u2014 neither changed section directs a log to a session scratchpad or a node-local temporary path, and the plan's close comments land section evidence in `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html`; no durable path is contradicted.",
+    "naming": "pass \u2014 `plan-review-owed` names a mechanism state and `held` is a phase name; no plan label, stage name, ticket number or version tag reaches a symbol or comment in either changed unit.",
+    "reasoning": "findings \u2014 s11's waits re-read rewrites the stored `waits` from the plan's section refs alone, while the stored field is \u00a78's union of section refs, the plan's `depends_on` and `--after` request refs, so the mechanism erases two of the three wait sources; s11 also reports today's gate refusal as unconditional when the shipped mode is report-only, and names no caller for the narrowed evaluation.",
+    "single_goal": "pass \u2014 s11's two clauses (the narrowed admission gate and the waits re-read) are two faces of one deliverable, \"a plan edit never strands a queued request\", scored by one done-when; s16 is one instruction change across a named file set.",
+    "wiring": "pass \u2014 s11 declares depends-on s10, which owns the `held` phase s11 moves requests into, and s16 declares depends-on s3, whose per-session cap retirement its body relies on; every ref in `plan-section-depends-on` resolves to a section that exists, and \u00a713 already declares its dependence on s16."
+  },
+  "section_digests": {
+    "_document": "987a63745858cb2a9a40af434bae9ebcd63481bacb3e1a789338ad700ddcf4f0",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "bd0e0bcec8af5fbee2452649504dcb91ff3dbe84c9a3526c5ff3bcc3040fd31a",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "91701502bec3aa2108300d5daa2f9bb156a04469ab0f9af8826fa43ad01c6c83",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "ea7721298a0a589a3beec72856856ce9b1b2a1da4d4cc31a1d547c862a6159f0",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T21:27:02.128131+00:00"
+}
