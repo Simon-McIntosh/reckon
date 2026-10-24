@@ -2234,6 +2234,9 @@ def _crew(
         "widen",
         "stop",
         "discard",
+        "queue-edit",
+        "queue-reprioritise",
+        "queue-drop",
     ]
     | None = None,
     run_id: str | None = None,
@@ -2279,6 +2282,12 @@ def _crew(
     kind: str | None = None,
     reason: str | None = None,
     write_paths: list[str] | None = None,
+    brief_path: str | None = None,
+    done_when: str | None = None,
+    time_budget: str | None = None,
+    backend: str | None = None,
+    model: str | None = None,
+    priority: int | None = None,
     finding: str | None = None,
     acted: bool = False,
     declined: str | None = None,
@@ -2290,7 +2299,7 @@ def _crew(
     or ``resume-ready`` to reach the same implementation as the corresponding
     crew CLI operation. Omit ``action`` for the read views below.
 
-    Eight further actions carry the coordinator's write verbs, each calling the
+    Further actions carry the coordinator's write verbs, each calling the
     same function its CLI verb calls with the same arguments and returning the
     same JSON: ``complete`` (``run_id``, ``gate``, ``commits``, ``outcome``,
     ``failure_classification``, ``tests_added``, ``scope_changed``,
@@ -2302,7 +2311,12 @@ def _crew(
     ``dimension``, ``finding_index``, ``kind``, ``node``, ``reason``), ``ack``
     (``run_id``, ``reason``, ``until``), ``answer`` (``project``, ``plan``,
     ``finding``, ``acted``, ``declined``, ``session``), ``widen`` (``run_id``,
-    ``write_paths``), ``stop`` (``run_id``) and ``discard`` (``run_id``). A
+    ``write_paths``), ``stop`` (``run_id``) and ``discard`` (``run_id``). Three
+    act on a request that has not launched: ``queue-edit`` (``run_id``,
+    ``brief_path``, ``done_when``, ``write_paths``, ``time_budget``,
+    ``backend``, ``model``), ``queue-reprioritise`` (``run_id``,
+    ``priority``, ``reason``) and ``queue-drop`` (``run_id``, ``reason``),
+    each refusing a request that has left the waiting phases. A
     refused ``complete`` or ``land`` carries every failing guard in ``guards``.
     ``directory`` reads every live coordinator across the workstation, or one
     project's coordinators, and resolves a run or human node id to its owner.
@@ -2429,6 +2443,12 @@ def _crew(
             node=node,
             reason=reason,
             write_paths=write_paths,
+            brief_path=brief_path,
+            done_when=done_when,
+            time_budget=time_budget,
+            backend=backend,
+            model=model,
+            priority=priority,
             until=until,
             plan=plan,
             session=session,

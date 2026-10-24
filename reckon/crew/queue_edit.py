@@ -342,11 +342,15 @@ def drop(
     by the same audit. The phase check is what makes this the queue's verb: a
     pointer past the waiting phases is a run, and dropping one is a different
     decision than withdrawing a request nobody started.
+
+    The phase is checked again by the removal itself, against the record it
+    re-reads under the pointer's lock, so a request that launches between this
+    call's first read and its discard is refused rather than removed.
     """
     from reckon import crew as crew_module
 
     record = _read_request(run_id, project)
     _refuse_unless_waiting(record, "drop")
     phase = _phase_of(record)
-    result = crew_module.discard(run_id)
+    result = crew_module.discard(run_id, allowed_phases=WAITING_PHASES)
     return {"run_id": run_id, "dropped_phase": phase, "reason": reason, **result}

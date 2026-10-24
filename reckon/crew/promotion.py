@@ -1859,7 +1859,7 @@ def discard_recorded(run_id: str) -> bool:
     return False
 
 
-def discard(run_id: str) -> dict[str, Any]:
+def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any]:
     """Remove a stopped or abandoned pointer without promoting it.
 
     The departure is recorded before the pointer goes, so a reader sees a
@@ -1879,9 +1879,22 @@ def discard(run_id: str) -> dict[str, Any]:
     the result rather than refused: their worktrees carry this run's commits, so
     the departure leaves them holding the work, and the coordinator reading the
     result is told which runs those are.
+
+    ``allowed_phases`` narrows the removal to a pointer still in one of those
+    phases, tested against the record re-read under the lock, so a caller whose
+    own pre-check raced a test sees a launch as the refusal it is rather than
+    removing a run that has started.
     """
     with _pointer_lock(run_id):
         record = read_pointer(run_id)
+        if allowed_phases:
+            phase = str(record.get("phase") or "")
+            if phase not in allowed_phases:
+                raise CrewError(
+                    f"cannot discard {run_id!r}: it is in phase "
+                    f"{phase or 'unknown'} which is not one of "
+                    f"{', '.join(allowed_phases)}"
+                )
         pid = record.get("pid")
         if record_process_alive(record, process_alive) is True:
             raise CrewError(
