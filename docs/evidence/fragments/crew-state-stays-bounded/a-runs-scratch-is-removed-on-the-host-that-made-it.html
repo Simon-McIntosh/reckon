@@ -99,13 +99,14 @@
     <strong>Negative control.</strong> The declared mutation makes the settling pass keep the orphan
     sweep's age wait: the run-ended branch additionally requires
     <code>age &gt;= SCRATCH_GRACE_SECONDS</code>. Under it the second-host case fails, together with
-    the retention-pass and step cases, and the head arm fails none of them. The mutation run finished
-    with <code>EXIT=1</code> and three failing test ids.
+    the retention-pass and step cases, and the head arm fails none of them. Run against the committed tree, the
+    mutation finished with <code>EXIT=1</code> and three failing test ids.
   </p>
 
   <p id="a-runs-scratch-is-removed-on-the-host-that-made-it-gate">
     <strong>Gate.</strong> <code>PYTHONPATH=. python -m pytest -p no:cacheprovider -q</code> over the
-    new case file and the eleven named suites: 81 passed, 4 failed, 0:01:53, <code>EXIT=1</code>. The
+    new case file and the eleven named suites, on the committed tree: 81 passed, 4 failed,
+    0:03:08, <code>EXIT=1</code>. The
     four failures are <code>tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release</code>
     in all four parametrisations, and they fail identically with
     <code>reckon/crew/promotion_release.py</code> restored to its HEAD content, so they are
