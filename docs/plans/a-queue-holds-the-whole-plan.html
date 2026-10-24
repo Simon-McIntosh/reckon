@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -154,6 +154,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261024T070740175300-review-of-queued-brief-binds-at-launch-a054a27a860c" data-who="reckon-build" data-when="2026-10-24T07:24:59.909Z">
     <div class="r-comment-body"><p>independent review of r-20261024T053326976410-queued-brief-binds-at-launch covering only the delta 13cc1960a..a054a27a: six dimensions scored, added_failure_count 0, four non-blocking findings (rebuilt-brief name-set duplication, malformed evidence table row, unretained skip-removal control log, truncated after_suite command)</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261024T053326976410-queued-brief-binds-at-launch" data-who="reckon-build" data-when="2026-10-24T07:07:12Z">
+    <div class="r-comment-body"><p>queued-brief-binds-at-launch stores a queued request&#x27;s brief as steering.md in its own run directory once and never overwrites it, and the admission launch reads that file in place of the queue-time brief before dispatch; 9 arms in tests/test_queue_steering_binding.py pass, the added-failure count against base is zero, and a run review&#x27;s composed brief is never frozen by the queue, so its launch composes it again from the head the reviewed tree carries now</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261023T124219597651-review-of-a-queued-request-waits-on-its-dependencies-1b2713f29e3f" data-who="reckon-build" data-when="2026-10-23T13:01:57.694Z">
     <div class="r-comment-body"><p>An independent review of run r-20261023T112727139233-a-queued-request-waits-on-its-dependencies (base 43677d0d2697ae3d8841b6d19addcdb77cc572be, head 1b2713f29e3f8e1569c688953e757ec6144305c1) is stored parsed: scores goal_fidelity 8, evidence 12, scope_discipline 18, durability 18, fit 17, reuse 13; added failures 0; one blocking finding and four non-blocking ones (queue_requests at reckon/crew/queue_admission.py:1338 has no production caller, so no dispatched node can enter awaiting-upstream; the base arm fails on AttributeError rather than on the ordering the done_when claims; the manifest's tests line is prose and does not reconcile with gate-main.log's EXIT=1; the duties view does not read the two new phases; _parse_section_ref at :1109 re-implements reckon/_schema.py:276 parse_plan_ref).</p></div>
