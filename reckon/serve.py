@@ -2103,7 +2103,7 @@ def _derive_lifecycle(
         # keep the assembly's blocked answer in the status and the count.
         plan["blocking"] = recorded_blockers({"blocking": state["blocking"]})
         plan["section_gate_blockers"] = state["section_gate_blockers"]
-        plan["blockers"] = len(plan["blocking"])
+        plan["blockers"] = len(state["blocking"])
         # Transition gates hold a closure or a choice, not execution, so they
         # leave this list and surface beside it instead.
         plan["closure_blockers"] = closure_blockers(plan)
