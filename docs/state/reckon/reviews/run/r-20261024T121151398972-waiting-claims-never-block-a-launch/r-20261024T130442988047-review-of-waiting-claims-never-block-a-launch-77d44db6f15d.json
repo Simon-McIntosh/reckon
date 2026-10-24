@@ -1,0 +1,88 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T121151398972-waiting-claims-never-block-a-launch/repair-head-importers.log",
+  "assertion_analysis": [
+    {
+      "fails_if": "dispatch marks a queued, awaiting-upstream or held claim binding",
+      "line": 85
+    },
+    {
+      "fails_if": "the production registry marks a queued, awaiting-upstream or held claim binding; this failed for two phases at the reviewed base",
+      "line": 86
+    },
+    {
+      "fails_if": "dispatch and registry give different disposition reasons for the same claim",
+      "line": 87
+    },
+    {
+      "fails_if": "admission records an error other than ScopeConflict",
+      "line": 134
+    },
+    {
+      "fails_if": "the refusal does not name r-launched as its working holder",
+      "line": 135
+    },
+    {
+      "fails_if": "the refusal omits the shared path, but the expected path follows the same fixture value passed into both claims",
+      "line": 136
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T121151398972-waiting-claims-never-block-a-launch/head-importers.log",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1404",
+    "reckon/crew/dispatch.py:2716",
+    "reckon/crew/claims.py:99",
+    "reckon/crew/dispatch_plan.py:1059",
+    "reckon/crew/runs.py:1125"
+  ],
+  "completed_at": "2026-10-24T13:14:05Z",
+  "dispatched_at": "2026-10-24T13:06:55Z",
+  "findings": [
+    {
+      "disposition": "exempted",
+      "disposition_reason": "The ScopeConflict type, holder ID, and red reverted-source control establish the required refusal.",
+      "file": "tests/test_waiting_claims_never_block_a_launch.py",
+      "line": "136",
+      "severity": "non-blocking",
+      "text": "non-blocking: The expected path is queue_cases.SHARED, the same value supplied to both fixture claims, so this assertion alone cannot distinguish a holder-derived path from a candidate-derived path; exempted because lines 134-135 and the reverted-source control independently identify the working holder's ScopeConflict."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commits 833819a9, 9cc390cf and 77d44db6 separately: the test first exposes registry disagreement, the source repair moves the rule to node.py, and the evidence fragment records the repaired results.",
+    "done_when": "The source prompt.txt:105-106 requires four behaviors and zero added importer failures; repair-focused.log:5 records 8 passed, repair-owner-importers.log:8 records 34 passed, and the importer summaries retain the same one failure ID.",
+    "goal": "The source prompt.txt:30 requires waiting claims to stop refusing dispatch and widening; reckon/crew/node.py:1527-1572 now gives all three waiting phases a shared nonbinding disposition used by dispatch.",
+    "manifest": "The source manifest.md records commits 833819a9, 9cc390cf and 77d44db6, the focused and importer gates, the negative control, and the exact base and after failure IDs, matching the cited logs.",
+    "write_paths": "The source prompt.txt:69-73 and resume-2-advice.txt grant the four changed paths, including the added reckon/crew/node.py owner path; git diff from 9a3d71a1 to 77d44db6 lists exactly those four."
+  },
+  "justifications": {
+    "durability": "tests/test_waiting_claims_never_block_a_launch.py:85-87 fails when registry and dispatch diverge, as review-reproduction.log:37-40 and repair-negative-control.log:122-126 demonstrate; line 136 is a coupled path assertion.",
+    "evidence": "The source repair-focused.log:5 and repair-owner-importers.log:8 record passing gates, while head-importers.log:42-44 and repair-head-importers.log:43-45 show the same one failure ID and zero added failures.",
+    "fit": "reckon/crew/node.py:1527 places the phase set beside claim_disposition and reckon/crew/dispatch_claims.py:459 calls that existing owner without a prohibited identifier.",
+    "goal_fidelity": "reckon/crew/node.py:1527-1572 makes queued, awaiting-upstream and held claims nonbinding through the shared owner, and reckon/crew/dispatch_claims.py:459 consumes it.",
+    "reuse": "The capability search for claim binding found reckon/crew/node.py:1530 as the owner; the added WAITING_REQUEST_PHASES extends it, while dispatch_claims.py:459 and runs.py:1125 consume it.",
+    "scope_discipline": "The three reviewed commits change only reckon/crew/node.py, reckon/crew/dispatch_claims.py, tests/test_waiting_claims_never_block_a_launch.py and the granted landing fragment, per resume-2-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:30 requires waiting claims to stop refusing dispatch and widening; reckon/crew/node.py:1527-1572 now gives all three waiting phases a shared nonbinding disposition used by dispatch.\nVERDICT done_when: The source prompt.txt:105-106 requires four behaviors and zero added importer failures; repair-focused.log:5 records 8 passed, repair-owner-importers.log:8 records 34 passed, and the importer summaries retain the same one failure ID.\nVERDICT write_paths: The source prompt.txt:69-73 and resume-2-advice.txt grant the four changed paths, including the added reckon/crew/node.py owner path; git diff from 9a3d71a1 to 77d44db6 lists exactly those four.\nVERDICT manifest: The source manifest.md records commits 833819a9, 9cc390cf and 77d44db6, the focused and importer gates, the negative control, and the exact base and after failure IDs, matching the cited logs.\nVERDICT diff: Read commits 833819a9, 9cc390cf and 77d44db6 separately: the test first exposes registry disagreement, the source repair moves the rule to node.py, and the evidence fragment records the repaired results.\nCALL_SITES: reckon/crew/dispatch.py:1404, reckon/crew/dispatch.py:2716, reckon/crew/claims.py:99, reckon/crew/dispatch_plan.py:1059, reckon/crew/runs.py:1125\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1527-1572 makes queued, awaiting-upstream and held claims nonbinding through the shared owner, and reckon/crew/dispatch_claims.py:459 consumes it.\nSCORE evidence: 18\nJUSTIFICATION evidence: The source repair-focused.log:5 and repair-owner-importers.log:8 record passing gates, while head-importers.log:42-44 and repair-head-importers.log:43-45 show the same one failure ID and zero added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three reviewed commits change only reckon/crew/node.py, reckon/crew/dispatch_claims.py, tests/test_waiting_claims_never_block_a_launch.py and the granted landing fragment, per resume-2-advice.txt.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_waiting_claims_never_block_a_launch.py:85-87 fails when registry and dispatch diverge, as review-reproduction.log:37-40 and repair-negative-control.log:122-126 demonstrate; line 136 is a coupled path assertion.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/node.py:1527 places the phase set beside claim_disposition and reckon/crew/dispatch_claims.py:459 calls that existing owner without a prohibited identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search for claim binding found reckon/crew/node.py:1530 as the owner; the added WAITING_REQUEST_PHASES extends it, while dispatch_claims.py:459 and runs.py:1125 consume it.\nFINDING tests/test_waiting_claims_never_block_a_launch.py:136 non-blocking: The expected path is queue_cases.SHARED, the same value supplied to both fixture claims, so this assertion alone cannot distinguish a holder-derived path from a candidate-derived path; exempted because lines 134-135 and the reverted-source control independently identify the working holder's ScopeConflict.\n",
+  "review_run_id": "r-20261024T130442988047-review-of-waiting-claims-never-block-a-launch-77d44db6f15d",
+  "reviewed_base_sha": "9a3d71a1f438249c3db53935a2b694499e3d8352",
+  "reviewed_head_sha": "77d44db6f15db9e26a6eec955750ef0381aecb63",
+  "reviewed_run_id": "r-20261024T121151398972-waiting-claims-never-block-a-launch",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T13:17:34.408738+00:00",
+  "total": 115
+}
