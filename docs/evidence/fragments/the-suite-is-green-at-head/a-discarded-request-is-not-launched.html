@@ -30,16 +30,31 @@
   (<code>preserve_discard_record</code>) before the refusal is raised, so the rollback cannot
   remove the only copy of a departure recorded in the run directory.</p>
 
-  <p><strong>Window left open.</strong> <code>_require_fleet_gate_open()</code> runs before the
-  check and a discard it trims away is the largest removal; the check then sits immediately
-  before the fork. What remains is the supervisor start itself — one process creation — after
-  which a discard that lands still arrives against a live run and is refused by
-  <code>discard</code>'s own liveness test rather than by this check.</p>
+  <p><strong>Window left open, and its second half.</strong> <code>_require_fleet_gate_open()</code>
+  runs before the check and a discard it trims away is the largest removal; the check then sits
+  immediately before the fork. What a first cut left was the spawn itself: the worker's pid
+  reaches the pointer through <code>_mutate_pointer</code> only after the process exists, and
+  <code>promotion.discard</code> refuses only a pointer naming a live process
+  (<code>record_process_alive</code> answers <code>None</code> for one naming none), so a discard
+  landing between the fork and that merge removed the pointer and wrote its record into the run
+  directory. The refusal rollback destroyed the directory, the admission restore read no record
+  and wrote the request back queued, and a running worker was left named by neither a pointer nor
+  a departure.</p>
+
+  <p><strong>Second repair</strong> (<code>e513e59cd</code>). <code>_release_launch_claim</code>
+  copies any discard marker into the shared spool before removing the run directory, so no
+  rollback can destroy the only record of a departure, and the launch reads the record once more
+  after the pid is merged onto the pointer. From that merge onward a discard is refused by
+  <code>discard</code>'s own liveness test, so the second read closes the span rather than
+  narrowing it: a discard it finds refuses the launch and the rollback stops the worker it already
+  holds a pid for. Nothing between the fork and the merge is covered by a check that runs before
+  it, and that is the reason the second read sits after the merge rather than before.</p>
 
   <p><strong>Measured, both arms from <code>git archive</code> extractions on node-local
   disk.</strong> Gate <code>tests/test_a_discarded_request_stays_discarded.py</code> at head
-  <code>5f9f2ae3a</code>: <strong>7 passed, EXIT=0</strong>
-  (<code>logs/gate-head.log</code>). Importer population — the 31 test files that reference a
+  <code>e513e59cd</code>: <strong>8 passed, EXIT=0</strong>
+  (<code>logs/gate-head-round2.log</code>); at <code>5f9f2ae3a</code>, before the second half,
+  <strong>7 passed, EXIT=0</strong> (<code>logs/gate-head.log</code>). Importer population — the 31 test files that reference a
   function on the changed path (<code>_claim_released_on_refusal</code>,
   <code>_publish_launch_claim</code>, <code>_release_launch_claim</code>,
   <code>_wire_peer_channels</code>, <code>discard_recorded</code>, <code>admit_once</code>,
@@ -52,14 +67,19 @@
   (<code>EXIT=124</code>, <code>logs/arm-base.log</code>, <code>logs/arm-head.log</code>), so it
   is replaced by the population above.</p>
 
-  <p><strong>Declared negative control, executed and logged.</strong> The repair is reverted in
-  a scratch extraction (the two call sites removed from
-  <code>reckon/crew/dispatch.py</code>; never committed), and both new cases fail:
-  <strong>2 failed, EXIT=1</strong> (<code>logs/negative-control.log</code>).</p>
+  <p><strong>Declared negative control, executed and logged.</strong> Two controls, each in a
+  scratch extraction and never committed. Reverting the first repair (the two call sites removed
+  from <code>reckon/crew/dispatch.py</code>) fails both first-round cases:
+  <strong>2 failed, EXIT=1</strong> (<code>logs/negative-control.log</code>). Reverting
+  <code>e513e59cd</code> in the second extraction fails
+  <code>test_a_discard_landing_after_the_spawn_stops_the_worker</code>:
+  <strong>1 failed, EXIT=1</strong> (<code>logs/negative-control-2.log</code>) — the pointer the
+  discard removed is written back queued, because the rollback took the only record, which is the
+  defect that case pins.</p>
 
-  <p><strong>Scope.</strong> <code>reckon/crew/dispatch.py</code> gains two call lines and one
-  re-export; <code>reckon/crew/dispatch_claims.py</code> gains the check;
-  <code>tests/test_a_discarded_request_stays_discarded.py</code> gains the two cases. No
+  <p><strong>Scope.</strong> <code>reckon/crew/dispatch.py</code> gains three call lines and one
+  re-export; <code>reckon/crew/dispatch_claims.py</code> gains the check and the spool copy on
+  release; <code>tests/test_a_discarded_request_stays_discarded.py</code> gains three cases. No
   existing test is changed, skipped or weakened.
   <code>ruff check</code> passes and <code>ruff format --check</code> reports the three staged
   files already formatted (<code>logs/ruff-check.log</code>,
