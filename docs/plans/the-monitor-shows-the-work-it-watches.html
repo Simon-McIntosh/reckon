@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="556">
+<meta name="plan-version" content="557">
 <meta name="plan-modified" content="2026-10-24">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -2123,7 +2123,10 @@ Both cases run under the file's existing temporary crew home.</li>
     <div class="r-comment-body"><p>Review of run r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued stored at the run's review-records store (legacy and .at-0144eca7a4f6 head-keyed copies); verdict parsed with scores goal_fidelity 19, evidence 14, scope_discipline 20, durability 15, fit 16, reuse 5, zero added failures against the reviewed run's own gate logs, four non-blocking findings (duplicated LaneHeld/withheld-state ownership, an unverified withheld-state branch, an unguarded queue write on the reflex sweep, and placeholder commands in the source manifest's suite arms).</p></div>
 </div>
 <div class="r-comment" data-section="s92" data-id="c-run-r-20261024T093532083248-review-of-an-automatic-review-held-by-a-full-lane-is-queued-ea25e552f63b" data-who="reckon-build" data-when="2026-10-24T09:45:50.246Z">
-    <div class="r-comment-body"><p>a second review of run r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued at head ea25e552f63be1521c49d5a29fe002c575348419 (delta 0144eca7..ea25e552) is stored parsed with scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 17, reuse 20, zero added failures against the reviewed run&#x27;s own gate logs, and three non-blocking findings; the delta answered three of the prior review&#x27;s four findings (the duplicated LaneHeld/withheld-state vocabulary, the unverified withheld-state branch and the unguarded queue write) and left the manifest-placeholder finding closed by rewording the suite commands.</p></div>
+    <div class="r-comment-body"><p>a second review of run r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued at head ea25e552f63be1521c49d5a29fe002c575348419 (delta 0144eca7..ea25e552) is stored parsed with scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 17, reuse 20, zero added failures against the reviewed run's own gate logs, and three non-blocking findings; the delta answered three of the prior review's four findings (the duplicated LaneHeld/withheld-state vocabulary, the unverified withheld-state branch and the unguarded queue write) and left the manifest-placeholder finding closed by rewording the suite commands.</p></div>
+</div>
+<div class="r-comment" data-section="s92" data-id="c-run-r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued" data-who="reckon-build" data-when="2026-10-24T09:34:26Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-automatic-review-held-by-a-full-lane-is-queued.html — names the condition separating the unqueued 06:44Z review dispatch from the queued 07:25Z run: which code path raised the lane hold. The reflex&#x27;s except branch reports a queued run only when the exception already carries one, and a router allowance hold on an unpaused local lane carries none, so the review existed only as a hold. The 07:25Z run (r-20261024T072532586923) was dispatched by the coordinator&#x27;s session with route_mode explicit, not by the CLI; the first hold on the deterministic route is the one that did not queue.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
