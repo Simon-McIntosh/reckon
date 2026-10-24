@@ -1210,6 +1210,12 @@ CREW_VERBS_OUTSIDE_ORCHESTRATION = {
         "the fleet service that launches queued dispatches when the lane opens "
         "a slot; the supervisor runs it, an orchestrator never calls it"
     ),
+    ("crew", "retention-sweep"): (
+        "an operator-run maintenance surface, for a hand-run sweep or for "
+        "installing the hourly timer; the installed timer runs the module "
+        "entry point `python -m reckon.crew.gc` rather than the verb, and no "
+        "orchestrator invokes the verb"
+    ),
 }
 
 
