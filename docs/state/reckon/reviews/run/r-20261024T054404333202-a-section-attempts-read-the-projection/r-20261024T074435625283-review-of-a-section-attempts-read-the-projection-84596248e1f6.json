@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-10-24T07:55:38.812Z",
+  "dispatched_at": "2026-10-24T07:45:33Z",
+  "findings": [
+    {
+      "file": "tests/test_section_attempts_read_the_projection.py",
+      "line": 255,
+      "severity": "non-blocking",
+      "text": "The guard reads its two thresholds from the same record it judges: time_bound and rss_bound come from the fragment's own data-time-bound-ratio and data-rss-bound-kb attributes, so loosening the bound inside the fragment lets a `pass` verdict satisfy the assertion. Pinning 0.2 and 51200 from the plan's done-when rather than reading them back from the artifact would make the guard independent of the record it checks."
+    },
+    {
+      "file": "tests/test_section_attempts_read_the_projection.py",
+      "line": 252,
+      "severity": "non-blocking",
+      "text": "The guard applies the one-fifth bound to whole-call aggregate time (4.259/10.259 = 0.42) and to the profile's section_attempts_by_plan cumulative time (1.824/6.347 = 0.287), while section 45's pass condition names the decode: `Pass when the head's decode costs at most a fifth of the base's per call`. The fragment's own profile figures put the decode at 0.596 s against 4.445 s, 0.134 of base, and memory 617 MB below base, so the section's stated condition is met on the quantity it names; the recorded pass-with-limitation and this guard therefore encode a stricter reading than the done-when, and would refuse a `pass` that measured the decode as the plan specifies."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Searched reckon/ and docs/ui for consumers of evidence-verdict and r-measure and found none; the gained commits add no production code, so there is no production call site that can reach the change.",
+    "diff": "Read commit by commit from eba634efa to 84596248e: 76 insertions and 7 deletions across the fragment (verdict, r-measure data attributes, gate re-run sentence, third negative control) and the test file (FRAGMENT constant, _measured_figures, test_the_fragment_verdict_agrees_with_its_measured_figures).",
+    "done_when": "Section 45 passes the section when the head's decode is at most one fifth of base's per call and resident memory is no more than 50 MB above base's; gate-head-repair.log records 1 failed, 178 passed at 22afe70de with the same failure id as gate-base.log's 1 failed, 171 passed, and the extra passing test is the repair's verdict guard.",
+    "goal": "The source node's goal is to read section attempts from the ledger index projection; the gained commits do not touch that mechanism (reckon/mcp_views.py, reckon/ledger.py are unchanged from eba634efa) and instead repair its evidence record, setting evidence-verdict to pass-with-limitation at docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:13 and adding a guard for it.",
+    "manifest": "Read at 84596248e's run directory; it records commits 22afe70de and 84596248e, the gate re-run (1 failed, 178 passed, same pre-existing id), both verdict negative controls, and status in-progress under the coordinator's repair cycle rather than complete.",
+    "write_paths": "The reviewed node declares five paths; the gained diff touches only tests/test_section_attempts_read_the_projection.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html, both inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to read section attempts from the ledger index projection; the gained commits leave reckon/mcp_views.py and reckon/ledger.py untouched and repair the evidence record instead, setting evidence-verdict to pass-with-limitation at docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:13.\nVERDICT done_when: section 45 passes the section when the head's decode is at most one fifth of base's per call and resident memory is no more than 50 MB above base's; gate-head-repair.log records 1 failed, 178 passed at 22afe70de with the same failure id as gate-base.log's 1 failed, 171 passed, and the added pass is the repair's verdict guard.\nVERDICT write_paths: the reviewed node declares five paths, and the gained diff touches only tests/test_section_attempts_read_the_projection.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html, both inside them.\nVERDICT manifest: read; it records commits 22afe70de and 84596248e, the gate re-run at 22afe70de (1 failed, 178 passed, same pre-existing id), both verdict negative controls, and status in-progress under the coordinator's repair cycle.\nVERDICT diff: read commit by commit from eba634efa to 84596248e; 76 insertions and 7 deletions across the fragment (verdict, r-measure data attributes, gate re-run note, third negative control) and the test file (FRAGMENT constant, _measured_figures, test_the_fragment_verdict_agrees_with_its_measured_figures).\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:77-92 now states the limitation the prior review found, though it applies the bound to whole-call time rather than the decode section 45 names.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head-repair.log ends EXIT=1 with one failing id, and negative-control-verdict.log and negative-control-verdict-commit.log each end EXIT=1 with test_the_fragment_verdict_agrees_with_its_measured_figures failing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (the fragment and tests/test_section_attempts_read_the_projection.py) is inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_section_attempts_read_the_projection.py:262-271 reds when the verdict is restored to pass at negative-control-verdict.log, but :255-256 reads its thresholds from the record under test.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment keeps the existing evidence markup at docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:77 and the new test follows the module's fixture idiom at tests/test_section_attempts_read_the_projection.py:228.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for fragment-verdict validation exists; searching reckon/ and docs/ui for evidence-verdict and r-measure consumers found none, so the guard duplicates no mechanism.\nFINDING tests/test_section_attempts_read_the_projection.py:255 non-blocking: the one-fifth and 50 MB bounds are read from the fragment's own data attributes, so loosening them inside the record lets a pass verdict satisfy the guard; pinning 0.2 and 51200 from the plan would make it independent.\nFINDING tests/test_section_attempts_read_the_projection.py:252 non-blocking: the guard applies the one-fifth bound to whole-call time (0.42) and profile cumulative time (0.287), while section 45's pass condition is on the decode, which the fragment records at 0.134 of base, so the recorded pass-with-limitation and this guard are stricter than the done-when and would refuse a correct pass.\n",
+  "review_run_id": "r-20261024T074435625283-review-of-a-section-attempts-read-the-projection-84596248e1f6",
+  "reviewed_base_sha": "eba634efa33eb3cc59ac4b9ef60d815d124c3f5d",
+  "reviewed_head_sha": "84596248e1f6064204346218e97a6b6c87331b2e",
+  "reviewed_run_id": "r-20261024T054404333202-a-section-attempts-read-the-projection",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:58:13.147705+00:00",
+  "total": 108
+}
