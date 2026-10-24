@@ -1,0 +1,98 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T20:31:51.538Z",
+  "dispatched_at": "2026-10-24T19:52:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 1918,
+      "severity": "non-blocking",
+      "text": "_reviewed_run_id re-implements the repository-owned resolution of a review node id to its run: reckon/crew/recovery_review_delivery.py:218 _resolved_reviewed_run_id already does the same startswith-r- check, the same live-fleet scan for a matching node id, and adds a durable-row fallback this copy omits, and dispatch_admission._reviewed_run_id_for_node already reaches it in production. A review of a run whose live pointer is gone therefore resolves to the bare source here where the owner would resolve the durable row, so the pane can draw an in-review row under a node name that names no run."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": 1533,
+      "severity": "non-blocking",
+      "text": "The added guard `if kind == START_KIND and run_id and (...)` is not ruff-formatted: `ruff format --check` on ticker.py reports 1 file would be reformatted and the only hunk is this block, while both production files were format-clean at base 8bdae2430, so the node's done-when clause that ruff check and ruff format --check add no findings on the staged paths against the base is not met."
+    },
+    {
+      "file": "tests/test_the_pane_shows_every_state_change.py",
+      "line": 128,
+      "severity": "non-blocking",
+      "text": "`assert \"delivered\" in drawn` is satisfied by the delivery row the test renders four lines earlier (grid.render(delivery) at line 124) and which stays on the grid, so it holds whatever the in-review row's left half draws; it does not test that the row reads delivered -> in review, which is the behaviour its docstring claims. `assert IMPL_NODE in drawn` at line 129 is weak for the same reason."
+    },
+    {
+      "file": "tests/test_the_stream_carries_only_actionable_lines.py",
+      "line": 55,
+      "severity": "non-blocking",
+      "text": "This file was edited (assertions at lines 94, 107, 142 and the flush at 58) although it is outside the node's declared write paths, and the node's own manifest records it as belonging to the concurrent node the-stream-carries-only-actionable-lines and as not edited; eleven test files outside the declared paths were changed in aeffe515f with no scope extension requested. The edits are coherent and necessary to the green population, but an exclusive write path was crossed unilaterally."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-pane-shows-every-state-change.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "The landing record states CARRIED_PANE_WORDS grows to `{delivered, halted, in review, landed, dropped}`, but reckon/crew/ticker.py:393 carries only the first three and landing/dropped travel on LANDING_FIELD judged by _landing_is_news; the record misdescribes the rule the code ships."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T045518148505-the-pane-shows-every-state-change/manifest.md",
+      "line": 30,
+      "severity": "non-blocking",
+      "text": "The record contradicts itself: changed_paths lists tests/test_the_stream_carries_only_actionable_lines.py while the outside_scope paragraph states that file 'was not edited'. A reader cannot tell from the manifest which files the node actually touched."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to carry a run's launch, a resume, a review starting as an in-review row on the reviewed run, and one landing or dropped row on the owner session's pane; reckon/crew/ticker.py:393 CARRIED_PANE_WORDS plus LAUNCH_FIELD, LANDING_FIELD and IN_REVIEW_STATE deliver each of them, and my own head arm at 220cc0042 prints working/delivered/in review/delivered/landed for the implement-and-review sequence. VERDICT done_when: the done_when names the sequences and the gate; tests/test_the_pane_shows_every_state_change.py states each one and I re-ran it at 220cc0042 (8 passed), but the ruff clause fails (one format finding at ticker.py:1533), head-gate.log stamps revision aff18d752 where the test file does not exist, and the 74-file population is covered by a 17-file arm. VERDICT write_paths: the declared paths were reckon/crew/ticker.py, reckon/crew/recovery_watch.py, tests/test_the_pane_shows_every_state_change.py and the evidence fragment/figures dir; the diff adds eleven test files outside them in aeffe515f. VERDICT manifest: read; it reports status complete, 87 passed over 17 files at head against 37 failing in the before arm, names its logs, and carries a self-contradiction over test_the_stream_carries_only_actionable_lines.py (changed_paths lists it, outside_scope says it was not edited). VERDICT diff: read commit by commit (bfb98f627 feat, aeffe515f fix, 220cc0042 docs) against merge-base 8bdae2430; the production change is +351/-.. in ticker.py and +67 in recovery_watch.py, the rest is the new test file, eleven superseded test files and the evidence fragment. CALL_SITES: reckon/crew/recovery_watch.py:2968, reckon/crew/recovery_watch.py:2994, reckon/crew/runs.py:2254, reckon/crew/lift_watch.py:349, reckon/crew_follow_commands.py:1052, reckon/crew_follow_commands.py:3156, reckon/crew_follow_commands.py:3368",
+  "review_run_id": "r-20261024T194948098126-review-of-the-pane-shows-every-state-change-220cc00421d7",
+  "reviewed_base_sha": "8bdae2430e95032e436d22a1268674f22c3b3139",
+  "reviewed_head_sha": "220cc00421d7d841a42c330bcd4607667a383d0c",
+  "reviewed_run_id": "r-20261024T045518148505-the-pane-shows-every-state-change",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 4,
+    "scope_discipline": 6
+  },
+  "status": "parsed",
+  "suite_arms": {
+    "after": {
+      "completed": true,
+      "failure_count": 2,
+      "failure_ids": [
+        "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_with_nothing_new_draws_the_fleet",
+        "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_delivers_only_the_transitions_written_while_away"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T194948098126-review-of-the-pane-shows-every-state-change-220cc00421d7/population-head.log",
+      "revision": "220cc00421d7d841a42c330bcd4607667a383d0c",
+      "summary": "2 failed, 93 passed, EXIT=1",
+      "tree": "/tmp/reckon-crew-scratch/r-20261024T194948098126-review-of-the-pane-shows-every-state-change-220cc00421d7/review-arms-UyVIvv/head"
+    },
+    "baseline": {
+      "completed": true,
+      "failure_count": 2,
+      "failure_ids": [
+        "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_with_nothing_new_draws_the_fleet",
+        "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_delivers_only_the_transitions_written_while_away"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T194948098126-review-of-the-pane-shows-every-state-change-220cc00421d7/population-base.log",
+      "revision": "8bdae2430e95032e436d22a1268674f22c3b3139",
+      "summary": "2 failed, 85 passed, EXIT=1",
+      "tree": "/tmp/reckon-crew-scratch/r-20261024T194948098126-review-of-the-pane-shows-every-state-change-220cc00421d7/review-arms-UyVIvv/base2"
+    },
+    "definition": "added failures are ids that fail at reviewed_head_sha and pass at reviewed_base_sha",
+    "mixed_head_tests_at_base_code": {
+      "failure_count": 31,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T194948098126-review-of-the-pane-shows-every-state-change-220cc00421d7/population-mixed.log",
+      "summary": "31 failed, 64 passed, EXIT=1; 29 substantive ids plus the same 2 scaffolding ids, showing the updated test files depend on the new behaviour"
+    },
+    "scaffolding": {
+      "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_delivers_only_the_transitions_written_while_away": "scaffolding: same stale-producer digest notice, same reproduction at base and head",
+      "tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_with_nothing_new_draws_the_fleet": "scaffolding: the test spawns the main checkout's .venv/bin/reckon console script, whose source digest differs from the archived scratch tree, so the follower prints 'producer ... runs older code than this follower' and _fleet_rows counts an extra line; the same two ids fail identically at base and at head and pass in a checkout whose PYTHONPATH matches the installed console script"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T20:33:30.823101+00:00",
+  "total": 74
+}
