@@ -975,7 +975,8 @@ def _pass_verdict_record(
     one account of the pass rather than two that can drift.
     """
     verdicts = result.get("verdicts") or []
-    if not verdicts:
+    landing = result.get("landing") or {}
+    if not verdicts and not landing.get("landed") and not landing.get("obligations"):
         return None
     return {
         "at": _utc_now(),
@@ -983,6 +984,7 @@ def _pass_verdict_record(
         "code_stamp": code_stamp,
         "gate": result.get("gate"),
         "pointers": list(verdicts),
+        "landing": landing,
     }
 
 
@@ -1018,7 +1020,8 @@ def _record_pass_verdicts(
     whose admission decision has already been made.
     """
     verdicts = result.get("verdicts") or []
-    if not verdicts:
+    landing = result.get("landing") or {}
+    if not verdicts and not landing.get("landed") and not landing.get("obligations"):
         return None
     from reckon.crew.fleet_supervisor import trim_service_log
     from reckon.crew.picker import _append_crew_log_line
@@ -2144,7 +2147,11 @@ def admit_until_stopped(
     """
     if once:
         stamp = _admit_code_stamp()
+        from reckon.crew.queue_landing import land_once
+
+        landing = land_once()
         result = admit_once(lane=lane)
+        result["landing"] = landing
         _record_pass_verdicts(result, lane=lane, code_stamp=stamp)
         return result
     passes = 0
@@ -2153,10 +2160,13 @@ def admit_until_stopped(
         while True:
             if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
                 _reexec_into_current_code()
+            from reckon.crew.queue_landing import land_once
+
+            landing = land_once()
+            admitted = admit_once(lane=lane)
+            admitted["landing"] = landing
             _publish_pass_verdicts(
-                _record_pass_verdicts(
-                    admit_once(lane=lane), lane=lane, code_stamp=code_stamp
-                )
+                _record_pass_verdicts(admitted, lane=lane, code_stamp=code_stamp)
             )
             passes += 1
             _pause(interval)
