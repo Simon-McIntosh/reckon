@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -167,7 +167,8 @@
     are compared with the copy stored beside the offset, a mismatch folding the stream from its start. The anchor
     misses a rewrite whose bytes at that position happen to be identical, which timestamped JSONL records make
     vanishingly unlikely, and it is not consulted for a stream that did not grow. It costs 64 bytes per grown
-    stream.
+    stream. The stream's size at the last read is stored beside its consumed offset, and a stream whose size has
+    not changed since is not read at all, so a trailing partial record is re-read only when more bytes arrive.
     <code>station_store.ingest_stream</code> (§5) checks only inode and size today, so this section adds the anchor. The classifier
     (<code>recovery.classify_pointer</code>) runs once per run whose classification inputs changed, keyed on
     <code>recovery_memo._classification_inputs</code>, which covers the pointer, the stream, the manifest, the run
@@ -185,12 +186,15 @@
     <p>Done when, replaying the fixture streams of five real runs (copied from the crew home into a test
     directory) in chunks: the station's folded observation equals a single full fold of each stream
     (<code>as_dict()</code> equal); the bytes it reads from each stream per tick are at most the bytes appended, plus 64, plus the partial record
-    carried from the previous tick, and zero for a stream that did not grow; a stream rewritten in place, keeping its inode and growing past its stored offset, is
+    carried from the previous tick, and zero for a stream whose size did not change, including one that ends in a
+    partial record; a stream rewritten in place, keeping its inode and growing past its stored offset, is
     detected and refolded, so its observation equals a full fold of the rewritten file. The fold already exists in §5's <code>station_store.ingest_stream</code>; this
     section's new mechanism is the classification, so it is measured directly. Over three ticks of a fixture with
     three live runs, with <code>recovery.classify_pointer</code> and the liveness probe counted through patches:
     a tick where nothing changed classifies no run; a tick where one run's pointer or stream moved classifies
-    exactly that run, once; a tick where only one run's manifest moved classifies exactly that run, once; a run whose worker exits while every file stays still reads its new verdict on the next tick; a working run silent past its stall window reads <code>stalled</code> without any file moving, and one whose silence a pause reason explains reads <code>waiting</code>; and the liveness probe is called only for runs whose pointer's
+    exactly that run, once; a tick where only one run's manifest moved classifies exactly that run, once; a run launched on this node whose worker exits while every file stays still reads its new verdict on the next
+    tick, while a run launched on another node is reclassified only when its files move, its liveness being read by
+    the station on its own node; a working run silent past its stall window reads <code>stalled</code> without any file moving, and one whose silence a pause reason explains reads <code>waiting</code>; and the liveness probe is called only for runs whose pointer's
     <code>launcher_host</code> is this node, so a run launched on another host is classified without a probe.
     Negative controls: an ingest that ignores the stored offset must fail the bytes test; one that drops the
     carried fold state must fail the equality test on a stream whose rate depends on earlier records; a tick
