@@ -1,0 +1,67 @@
+<section id="queue-edit-reprioritise-drop-landing">
+  <h2>A waiting request can be edited, re-ranked and dropped before it launches</h2>
+
+  <p><strong>What changed.</strong> Three verbs now act on a request that has
+  not launched: <code>reckon crew queue edit</code>,
+  <code>reckon crew queue reprioritise</code> and <code>reckon crew queue
+  drop</code>. The operations live in a new module,
+  <code>reckon/crew/queue_edit.py</code>, so the CLI verb and the MCP action
+  call one implementation rather than two that could drift.
+
+  <p><strong>Edit.</strong> An edit replaces the request's
+  <code>steering.md</code> in its own run directory and any of its
+  <code>done_when</code>, write paths, time budget or route. The edited node is
+  judged by the dispatch's own <code>validate_node</code> — with the decisions
+  the original dispatch recorded as locked — <em>before</em> anything is
+  written, so a refused edit leaves the request byte-identical. A route is a
+  <em>named</em> route: it passes the same <code>--backend</code> and
+  <code>--model</code> checks a dispatch applies, and a model the named lane
+  does not declare is refused by the catalogue's own resolver. The chosen
+  backend, lane and model key are recorded on the pointer under
+  <code>named_route</code>, with <code>route: deterministic</code> in the
+  request's dispatch options.
+
+  <p><strong>Reprioritise.</strong> The verb stores
+  <code>priority_override</code> (with its reason and the instant it was set)
+  on the request, so every later ranking pass reads the coordinator's intent
+  from the request rather than from a session's memory. The roadmap key the
+  request otherwise ranks by is untouched beside it.
+
+  <p><strong>Drop.</strong> A drop is the discard's own removal path, reached
+  only for a <code>queued</code> or <code>awaiting-upstream</code> request, so
+  the departure is recorded where a later reader looks for it and any worktree
+  a launch left behind is released by the audit a discard uses.
+
+  <p><strong>The launched boundary.</strong> All three verbs refuse a pointer
+  whose phase is no longer waiting, naming the phase it holds. The check runs
+  again under the pointer's own lock immediately before the write, because a
+  request can launch between the first read and the lock, and an edit that
+  slipped in there would change a brief a worker is already reading.
+
+  <h3 id="queue-edit-reprioritise-drop-measured">Measured</h3>
+
+  <p><code>tests/test_queue_verbs.py</code> (13 cases) drives every claim
+  above: the steering file and node fields are replaced; an edit that fails its
+  contract is refused and stores nothing; a named route lands as
+  <code>named_route</code> beside <code>backend</code>, <code>lane</code> and
+  <code>model_key</code>; a model outside the named lane is refused; edit,
+  reprioritise and drop each refuse a <code>working</code> pointer; an
+  <code>awaiting-upstream</code> request is still editable and droppable; the
+  priority override and its reason are stored; and each of the three MCP
+  actions returns the document its CLI verb returns for the same call.
+
+  <p><strong>Negative control.</strong> With the launched-request guard
+  replaced by a no-op, exactly the three refusal arms fail
+  (<code>test_a_launched_request_is_refused_by_every_verb[edit]</code>,
+  <code>[drop]</code>, <code>[reprioritise]</code>) and the other ten pass, so
+  the guard is what holds those assertions. Log:
+  <code>logs/negative-control.log</code> under the run directory.</p>
+
+  <p><strong>Not reachable through the crew MCP tool yet.</strong> The three
+  actions are registered in <code>reckon/mcp_crew_actions.py</code> and answer
+  correctly through <code>crew_action()</code>, but <code>reckon/mcp.py</code>
+  — outside this node's write scope — still declares the tool's
+  <code>action</code> vocabulary and parameter list, so the tool surface cannot
+  forward them until that file gains the three action names and their
+  parameters.</p>
+</section>
