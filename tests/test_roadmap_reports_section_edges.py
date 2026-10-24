@@ -55,6 +55,7 @@ def _write_plan(
     status: str = "active",
     depends_on: list[str] | None = None,
     gates: list[dict] | None = None,
+    section_declarations: dict[str, str] | None = None,
 ) -> Path:
     bare = (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
@@ -74,6 +75,11 @@ def _write_plan(
                 "depends_on": depends_on or [],
                 "decisions": {},
                 "gates": gates or [],
+                **(
+                    {"section_declarations": section_declarations}
+                    if section_declarations is not None
+                    else {}
+                ),
                 "followups": [],
                 "version": 0,
             },
@@ -120,9 +126,17 @@ def wired_project(mounted_project):
         docs,
         GATED,
         gates=[
-            _section_gate("rebank-dispatch-starts", "s1"),
-            _section_gate("rebank-after-rung-a", "s2", gating_plan=f"{TARGET}#s1"),
+            _section_gate(
+                "rebank-dispatch-starts", "s1", status="closed", gated_sections=["s1"]
+            ),
+            _section_gate(
+                "rebank-after-rung-a",
+                "s2",
+                gating_plan=f"{TARGET}#s1",
+                gated_sections=["s2"],
+            ),
         ],
+        section_declarations={"s1": "implementable", "s2": "implementable"},
     )
     _write_plan(docs, CARRIER, depends_on=[f"{TARGET}#s2"])
     _write_plan(docs, PLAIN, depends_on=[TARGET])
@@ -148,8 +162,18 @@ def test_the_gate_edge_holds_only_the_named_section(wired_project):
 
     row = _rows(result)[GATED]
 
-    assert row["blocked_sections"] == ["s2"]
-    assert "s1" in row["ready_sections"]
+    # The plan waits on the other plan's section 1, so no section of it is
+    # dispatchable yet. What the gate edge itself holds is still section 2
+    # alone: section 1 carries no gate hold at all.
+    assert row["blocked_sections"] == ["s1", "s2"]
+    assert row["ready_sections"] == []
+    gate_holds = {
+        item["section"]: [
+            hold["id"] for hold in item["blockers"] if hold.get("kind") == "gate"
+        ]
+        for item in row["section_readiness"]
+    }
+    assert gate_holds == {"s1": [], "s2": ["rebank-after-rung-a"]}
 
 
 def test_a_gate_naming_the_section_in_words_reports_it(wired_project):
