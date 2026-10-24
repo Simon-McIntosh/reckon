@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -342,6 +342,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261023T190307611902-review-of-the-station-store-is-node-local-6f17c16d8884" data-who="reckon-build" data-when="2026-10-23T19:47:45Z">
     <div class="r-comment-body"><p>independent review of r-20261023T170707287094-the-station-store-is-node-local at head 6f17c16d8884c401276d56bd37fc16945c47d42a from base 57c21285bcbfff76a6f1bfad1768a2ffbedd5d0a: scores goal_fidelity 20, evidence 17, scope_discipline 16, durability 19, fit 18, reuse 20; the store is the goal's store and its two refusals are driven by the tests, with four non-blocking findings (two dead public wrappers, one equivalence assertion that cannot fail alone, one misleading connection context manager) and an arm-derived added_failure_count of 1 (the arm-lock propagation-timing id the node already attributes to load); both stored records pass crew check --review.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261024T125322878212-the-station-ingests-only-new-bytes" data-who="reckon-build" data-when="2026-10-24T13:09:00.668Z">
+    <div class="r-comment-body"><p>stream ingest reads only bytes past its stored offset with a 64-byte tail anchor and a stored last-read size, refolding on a changed inode, a size below the consumed offset, a size below the last-read size, or a moved anchor; five recorded streams replayed as 93 appends fold equal to a full fold with 0 per-tick byte-bound violations, descriptors equal across 50 event writes, gate 24 passed exit 0 against base 15 passed exit 0</p></div>
 </div>
 </section>
 </main>
