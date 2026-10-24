@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="519">
+<meta name="plan-version" content="520">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -1394,6 +1394,9 @@
 </div>
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261024T091624498881-review-of-the-served-view-reads-the-roadmaps-blockers-70e662986c93" data-who="reckon-build" data-when="2026-10-24T09:37:07.184Z">
     <div class="r-comment-body"><p>Reviewed r-20261024T060459639539-the-served-view-reads-the-roadmaps-blockers over the commits it gained since it was last reviewed, 3a8aba6812416d55a81f5d5d9248052c24f5f74a to 70e662986c93e3d4aa078102a7dc1331678f0eb4 (c01ab4230 changes the shared blocker assembly and the served workflow status and adds one parity case; 70e662986 updates the evidence fragment). All six dimensions scored (goal_fidelity 18, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 17); added_failure_count 3 derived from the reviewed run's own base and head gate logs, all three in the browser-driven SPA family and two shown load-induced by the head-browser-rerun log; one non-blocking finding, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s51" data-id="c-run-r-20261024T101056276363-review-of-the-served-view-reads-the-roadmaps-blockers-f3ef141205c3" data-who="reckon-build" data-when="2026-10-24T10:28:30.284Z">
+    <div class="r-comment-body"><p>Independent review of the commits r-20261024T060459639539-the-served-view-reads-the-roadmaps-blockers gained since its review at 70e662986 (022b13bd4 refactor of reckon/roadmap.py:649 onto _status, f3ef14120 evidence-fragment update) scored 15/12/20/7/18/19 on goal_fidelity/evidence/scope_discipline/durability/fit/reuse, recorded 1 added failure (tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order) and three non-blocking findings; both record paths validate with crew check --review.</p></div>
 </div>
 <div class="r-comment" data-section="s60" data-id="c-defer-s60" data-who="reckon-build" data-when="2026-10-24T09:00:00Z">
     <div class="r-comment-body"><p>Deferred until §51 lands. Two content reviews of this section, on 2026-10-24, found its design depends on the shape of <code>roadmap.plan_blocker_state</code>. That function exists only in §51's run until §51 lands. Re-plan it then, against the landed function, carrying these points. First, the inventory's blocking rows also carry gate blockers with <code>kind: "gate"</code> (<code>reckon/serve.py</code> near line 2067, row shape in <code>reckon/lifecycle.py</code> near lines 52 to 71). <code>_blocking</code> includes gates today through <code>split_unpassed_gates</code>, so a filter to <code>explicit</code> and <code>held</code> rows drops them. Plan-level open decisions must likewise reach the function. Second, this section and §56 both write <code>reckon/mcp.py</code>, so the re-plan orders them with a section dependency.</p></div>

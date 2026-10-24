@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order"
+  ],
+  "call_sites": [
+    "reckon/roadmap.py:1515 dependency_row_state into the dependency row's status",
+    "reckon/mcp.py:1818 dependency_row_state into the MCP dependency row's status",
+    "reckon/roadmap.py:627 _status, the owner the refactor now calls",
+    "reckon/serve.py:2092 the served view's own inline spelling of the precedence"
+  ],
+  "completed_at": "2026-10-24T10:28:30.284Z",
+  "dispatched_at": "2026-10-24T10:12:54Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "2092",
+      "severity": "non-blocking",
+      "text": "non-blocking: the workflow-status precedence is still spelled inline at reckon/serve.py:2092 as plan.get(\"workflow_status\") or plan.get(\"status\") or \"draft\", a second copy of the rule roadmap._status owns (reckon/roadmap.py:627); the gained refactor removed that copy only from dependency_row_state (reckon/roadmap.py:649), so the fragment's and the commit's claim of one spelling of the precedence is not yet true of the surface this section is about."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-view-reads-the-roadmaps-blockers.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states \"21 findings across reckon/serve.py and reckon/roadmap.py at both base and head\", but ruff check reports 19 at both revisions (reckon/serve.py 17, reckon/roadmap.py 2), so the recorded ruff figure is inflated by two and misdescribes the arm it measures; the after-suite log the same paragraph's gate numbers cite has since been overwritten with a truncated re-run that carries no summary line and no EXIT=, so those gate numbers survive only in the run stream."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "649",
+      "severity": "non-blocking",
+      "text": "non-blocking: no test exercises dependency_row_state, so reinstating the removed inline precedence here reddens nothing; the only behaviour the refactor changes (the statusless default moving from \"\" to \"draft\") is unguarded."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 70e662986 to f3ef14120: 022b13bd4 replaces the inline precedence at reckon/roadmap.py:649 with _status(data), and f3ef14120 rewrites two paragraphs of the evidence fragment to record the refactor and the 371/2 gate.",
+    "done_when": "the done_when requires the parity test plus every test file exercising _derive_lifecycle or the served plan list, at base and head, adding zero failures; the manifest records base-suite.log (9608e78d5, 368 passed/5 failed/1 skipped, EXIT=1) and after-suite head-suite.log (371 passed/2 failed/1 skipped in the run stream), but the head log on disk (mtime 12:46 CEST) is a truncated re-run at f3ef14120 that stops at 96% with no summary and no EXIT=, so one added failure survives against the base arm.",
+    "goal": "the node goal is the served view taking each plan's blocker list from the roadmap assembly as section 51 specifies; the gained commit 022b13bd4 instead unifies the workflow-status precedence for dependency rows (reckon/roadmap.py:649 now calls _status), a related consistency fix that does not itself move the served view onto the roadmap assembly.",
+    "manifest": "read; status complete, gate arms and log paths recorded, three controls logged separately, retry_failures names the unstable shell-geometry case and outside_scope records the browser-family failures; the after-suite log_path now holds a different, incomplete run.",
+    "write_paths": "declared scope is reckon/serve.py, reckon/roadmap.py, tests/test_the_served_view_reads_the_roadmaps_blockers.py and the evidence fragment (plus the figures directory); git diff --stat 70e662986..f3ef14120 changes exactly reckon/roadmap.py (1 line) and the evidence fragment (2 lines), both inside it."
+  },
+  "justifications": {
+    "durability": "no assertion anywhere calls dependency_row_state, so re-spelling the removed precedence at reckon/roadmap.py:649 leaves every test green; the added default change from \"\" to \"draft\" is likewise unguarded.",
+    "evidence": "the base arm's log is complete (5 failed, 368 passed, EXIT=1) while the head arm's cited log, head-suite.log, is truncated at 96% with no summary or EXIT=, and its recorded 371/2 result survives only in the run stream at 10:02.",
+    "fit": "reckon/roadmap.py:649 calls the module's own _status helper (reckon/roadmap.py:627) and the commit body explains the mechanism, with no plan label in symbol, comment or filename.",
+    "goal_fidelity": "reckon/roadmap.py:649 now derives the dependency row's plan status through _status, so roadmap and mcp dependency rows rank a row carrying both spellings alike, but the served view's own precedence at reckon/serve.py:2092 is untouched.",
+    "reuse": "the refactor deletes a duplicate of the precedence _status owns rather than adding a reader, scoring high, but the same duplicate survives at reckon/serve.py:2092 where this node could have removed it.",
+    "scope_discipline": "git diff --stat 70e662986c93e3d4aa078102a7dc1331678f0eb4..f3ef141205c3a5474c12430dad361464d9e33e4e lists only reckon/roadmap.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T101056276363-review-of-the-served-view-reads-the-roadmaps-blockers-f3ef141205c3",
+  "reviewed_base_sha": "70e662986c93e3d4aa078102a7dc1331678f0eb4",
+  "reviewed_head_sha": "f3ef141205c3a5474c12430dad361464d9e33e4e",
+  "reviewed_run_id": "r-20261024T060459639539-the-served-view-reads-the-roadmaps-blockers",
+  "scores": {
+    "durability": 7,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: the node's goal is that the served view takes each plan's blocker list from the roadmap assembly as section 51 specifies; the gained commit 022b13bd4 instead unifies the workflow-status precedence for dependency rows at reckon/roadmap.py:649, a related consistency fix that leaves the served view's own assembly untouched.\nVERDICT done_when: the done_when requires the parity test plus every test file exercising _derive_lifecycle or the served plan list at base and head adding zero failures; base-suite.log is complete (368 passed/5 failed/1 skipped, EXIT=1) but head-suite.log is now a truncated re-run of f3ef14120 ending at 371 passed/1 failed in the stream with no summary line or EXIT= on disk.\nVERDICT write_paths: the declared scope is reckon/serve.py, reckon/roadmap.py, tests/test_the_served_view_reads_the_roadmaps_blockers.py, the evidence fragment and its figures directory; git diff --stat 70e662986..f3ef14120 changes only reckon/roadmap.py and the fragment, both inside it.\nVERDICT manifest: read at the reviewed run's manifest.md; it reports status complete, both gate arms with log paths, three separately logged controls and the browser-family failures under outside_scope, but the after-suite log_path it cites no longer holds the result it records.\nVERDICT diff: read commit by commit from 70e662986c93e3d4aa078102a7dc1331678f0eb4 to f3ef141205c3a5474c12430dad361464d9e33e4e: 022b13bd4 replaces the inline precedence at reckon/roadmap.py:649 with _status(data), and f3ef14120 rewrites two paragraphs of the evidence fragment.\nCALL_SITES: reckon/roadmap.py:1515 dependency_row_state into the dependency row's status, reckon/mcp.py:1818 dependency_row_state into the MCP dependency row's status, reckon/roadmap.py:627 _status, reckon/serve.py:2092 the served view's own inline spelling of the precedence\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:649 now reads the dependency row's status through _status so roadmap and mcp rows agree, but the served view's own precedence at reckon/serve.py:2092 is untouched by the gained work.\nSCORE evidence: 12\nJUSTIFICATION evidence: base-suite.log is complete (5 failed, 368 passed, EXIT=1) while head-suite.log is truncated at 96% with no summary or EXIT=, so the 371/2 result survives only in the run stream at 10:02.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 70e662986c93e3d4aa078102a7dc1331678f0eb4..f3ef141205c3a5474c12430dad361464d9e33e4e lists only reckon/roadmap.py and the declared evidence fragment.\nSCORE durability: 7\nJUSTIFICATION durability: no test calls dependency_row_state, so restoring the inline precedence at reckon/roadmap.py:649 reddens nothing and only the unguarded statusless default changed from \"\" to \"draft\".\nSCORE fit: 18\nJUSTIFICATION fit: reckon/roadmap.py:649 calls the module's own _status helper (reckon/roadmap.py:627) and the commit body states the mechanism with no plan label in symbol, comment or filename.\nSCORE reuse: 19\nJUSTIFICATION reuse: the refactor deletes a duplicate of the precedence _status owns rather than adding a reader, though the same duplicate survives at reckon/serve.py:2092.\nFINDING reckon/serve.py:2092 non-blocking: the workflow-status precedence is still spelled inline there, a second copy of roadmap._status that the gained refactor removed only from reckon/roadmap.py:649, so the claimed single spelling is not true of the served view.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-view-reads-the-roadmaps-blockers.html:25 non-blocking: the ruff figure reads 21 findings but ruff check reports 19 at both revisions, and the after-suite log the same paragraph cites is overwritten with a truncated run carrying no summary or EXIT=.\nFINDING reckon/roadmap.py:649 non-blocking: no test exercises dependency_row_state, so a regression to the removed inline precedence is invisible and the changed statusless default is unguarded.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T10:30:10.809965+00:00",
+  "total": 91
+}
