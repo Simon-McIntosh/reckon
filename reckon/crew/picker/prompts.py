@@ -32,6 +32,12 @@ from .lane_context import option_key
 
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
+#: The declared risk at or above which a lifted metered lane is preferred over
+#: the local lane. A lift is the lead saying the lane's window is meant to be
+#: spent, and the work worth spending it on is work whose failure is expensive;
+#: below this bar the local lane keeps the work while it has room.
+LIFT_PREFERENCE_RISK = "elevated"
+
 #: The fields of the routing judgment Jev is not expected to know by name. Each
 #: entry is one line of meaning, so a value the state carries can be weighed
 #: rather than guessed at.
@@ -107,6 +113,16 @@ _GLOSSARY: dict[str, str] = {
         "drain_by or multiple), who granted it, and when it ends. A lane under a "
         "lift is one whose window is meant to be spent, so its burn and pace do "
         "not press it while the lift stands."
+    ),
+    "lift_preference": (
+        "The lane a lift in force makes the preferred home for this node: its "
+        "form and scope, the lift block itself, and the risk the node declared "
+        "to earn it. Present only when the node's declared or assessed risk is "
+        "at or above elevated and exactly one metered lane carrying a lift "
+        "serves the node with room. Prefer it for that node -- route there "
+        "unless serving state, context fit, worker slots or review exclusion "
+        "forbid it -- and null means no lift moves this choice, so well-defined "
+        "low-risk work stays local while the local lane has room."
     ),
     "urgency": (
         "The dispatch deadline and reason. due is a UTC instant or null; "
@@ -250,6 +266,63 @@ def environment() -> Environment:
     env.filters["json"] = encode
     env.filters["tojson"] = encode
     return env
+
+
+def lift_preference(
+    candidates: Sequence[Any], declared: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """The lifted metered lane this node should prefer, or None.
+
+    A lane qualifies when one of its models is among the candidates offered --
+    an offered candidate is one the budget gate left, so the lane has window
+    room -- its congestion block carries the lift in force for this request's
+    session or project, and it is not the one the pick would otherwise make.
+    The preference is stated only for work at or above
+    :data:`LIFT_PREFERENCE_RISK`: an ordinary node keeps the local lane, which
+    is what the local lane having room is for.
+
+    ``declared`` is the requirement mapping the node or its coordinator
+    declared. A node declaring no risk has not stated that the work is worth a
+    metered window, so it gets no preference.
+
+    Two lifted lanes are left to the pick's own weighing: this states one
+    preference and never ranks lanes against each other.
+    """
+    from reckon.capability import REQUIREMENT_LEVELS, _rank
+
+    levels = REQUIREMENT_LEVELS.get("risk")
+    value = (declared or {}).get("risk")
+    if not levels or not isinstance(value, str) or value not in levels:
+        return None
+    if _rank(value, levels) < _rank(LIFT_PREFERENCE_RISK, levels):
+        return None
+    lifted: list[tuple[str, str, Mapping[str, Any]]] = []
+    for candidate in candidates:
+        if getattr(candidate, "local", False):
+            continue
+        congestion = getattr(candidate, "congestion", None)
+        lift = congestion.get("lift") if isinstance(congestion, Mapping) else None
+        if not isinstance(lift, Mapping):
+            continue
+        lifted.append(
+            (
+                str(getattr(candidate, "family", "") or ""),
+                str(getattr(candidate, "backend", "") or ""),
+                lift,
+            )
+        )
+    if not lifted or len({lane for lane, _backend, _lift in lifted}) != 1:
+        return None
+    lane, backend, lift = lifted[0]
+    return {
+        "lane": lane,
+        "backend": backend,
+        "risk": value,
+        "lift": {
+            key: lift.get(key)
+            for key in ("id", "form", "scope", "ends_at", "pace_multiple")
+        },
+    }
 
 
 def _negative_control_declared(node: Any) -> bool:
@@ -459,6 +532,18 @@ def build_state(
         "serving_lanes": serving_lanes,
         "serving_lane_count": len(serving_lanes),
         "hold_waits_for": _hold_waits_for(serving_lanes),
+        # The lane a lift in force makes the preferred home for this node, or
+        # null. It is derived here rather than left for the pick to infer from
+        # the candidate table so the rule that moves a choice is one function,
+        # and so the dispatch half can read back the same answer from the state
+        # it recorded.
+        "lift_preference": lift_preference(
+            candidates,
+            {
+                **((capability or {}).get("requirements") or {}),
+                **(orchestrator_assessment or {}),
+            },
+        ),
     }
     return {
         "node": node_state,

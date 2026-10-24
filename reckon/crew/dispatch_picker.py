@@ -590,7 +590,7 @@ def dispatch_picker_selection(
             urgency=urgency,
             allow=_allow_reask,
         )
-        return _reask_off_zero_slot_lane(
+        selection = _reask_off_zero_slot_lane(
             selection,
             node=node,
             config=config,
@@ -605,6 +605,26 @@ def dispatch_picker_selection(
             urgency=urgency,
             allow=_allow_reask,
         )
+        # The lift preference is applied after the zero-slot re-ask: a route
+        # that landed on a lane granting this session no worker has already
+        # been moved, and a lift preference never has to argue with it. A hold
+        # stays Jev's own answer on both paths.
+        selection = _reask_onto_a_lifted_lane(
+            selection,
+            node=node,
+            config=config,
+            project=project,
+            repo=repo,
+            session=session,
+            comment=comment,
+            authority=authority,
+            authority_error=authority_error,
+            orchestrator_assessment=orchestrator_assessment,
+            due=due,
+            urgency=urgency,
+            allow=_allow_reask,
+        )
+        return _record_lifted_choice(selection)
     error = result.get("error") or "picker returned no selection"
     reason = error
     if error == "timeout":
@@ -1212,6 +1232,125 @@ def _reask_off_zero_slot_lane(
         "excluded_zero_slot_lane": lane,
         "reissued": True,
     }
+
+
+def _lift_preference(selection: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The lift the pick's own state says should move this choice, or None.
+
+    The preference is derived in the state render, where the request's declared
+    requirement and the offered candidates are both in hand, and read back here
+    from the state the pick recorded. Reading the recorded state rather than
+    recomputing it keeps one owner for the rule: a dispatch that re-derived it
+    from the run records could disagree with what Jev was shown.
+    """
+    raw = selection.get("rendered_state")
+    if not isinstance(raw, str) or not raw:
+        return None
+    try:
+        state = json.loads(raw)
+    except (TypeError, ValueError):
+        return None
+    node = state.get("node") if isinstance(state, Mapping) else None
+    preference = node.get("lift_preference") if isinstance(node, Mapping) else None
+    return dict(preference) if isinstance(preference, Mapping) else None
+
+
+def _chosen_offered_row(selection: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The offered candidate the selection landed on, or None.
+
+    A hold, a refusal and a fallback name no backend, and a backend the
+    offering does not carry names no row, so both read as None rather than as a
+    guess at a row.
+    """
+    backend = str(selection.get("backend") or "")
+    if not backend:
+        return None
+    for row in selection.get("offered") or ():
+        if isinstance(row, Mapping) and str(row.get("backend") or "") == backend:
+            return dict(row)
+    return None
+
+
+def _reask_onto_a_lifted_lane(
+    selection: Mapping[str, Any],
+    *,
+    node: Any,
+    config: Mapping[str, Any],
+    project: str,
+    repo: Path,
+    session: str,
+    comment: str,
+    authority: Mapping[str, Any] | None,
+    authority_error: str | None,
+    orchestrator_assessment: Mapping[str, Any] | None,
+    due: str | None,
+    urgency: str | None,
+    allow: bool,
+) -> dict[str, Any]:
+    """Re-ask Jev once off the local lane when a lift preference names another.
+
+    An elevated node whose state carries a lift preference has a lane whose
+    window the lead meant to spend, and the local lane having room is exactly
+    the condition that kept such a lane idle. When the first answer still lands
+    on the local lane, Jev is asked once more with that lane left out, so the
+    answer it gives with every lane in view is not the only one it was able to
+    say, and both asks are recorded on the selection. A hold and a refusal are
+    Jev's own answers and are left alone, as is any answer that already landed
+    on the lifted lane.
+    """
+    if not allow:
+        return dict(selection)
+    if str(selection.get("action") or "") != "route":
+        return dict(selection)
+    preference = _lift_preference(selection)
+    if not preference:
+        return dict(selection)
+    chosen = _chosen_offered_row(selection)
+    if chosen is None or not chosen.get("local"):
+        return dict(selection)
+    second = _ask_excluding_lane(
+        "local",
+        _ask_summary(selection),
+        node=node,
+        config=config,
+        project=project,
+        repo=repo,
+        session=session,
+        comment=comment,
+        authority=authority,
+        authority_error=authority_error,
+        orchestrator_assessment=orchestrator_assessment,
+        due=due,
+        urgency=urgency,
+    )
+    return {
+        **second,
+        "action": second.get("action") or "refuse",
+        "preferred_lifted_lane": preference.get("lane"),
+        "reissued": True,
+    }
+
+
+def _record_lifted_choice(selection: Mapping[str, Any]) -> dict[str, Any]:
+    """Record the lift that moved a route, on the route it moved.
+
+    The lift is recorded only where one actually shaped the answer: the state
+    carried a preference, the route landed on that lane, and the node's risk
+    earned it. A route the lift did not move -- ordinary work, a hold, a lane
+    no lift covers -- carries no ``lift`` key, so a reader can tell a choice a
+    lift made from one that happened to run on a lifted lane.
+    """
+    preference = _lift_preference(selection)
+    if not preference:
+        return dict(selection)
+    if str(selection.get("action") or "") != "route":
+        return dict(selection)
+    chosen = _chosen_offered_row(selection)
+    if chosen is None or chosen.get("local"):
+        return dict(selection)
+    if str(chosen.get("family") or "") != str(preference.get("lane") or ""):
+        return dict(selection)
+    return {**selection, "lift": preference}
 
 
 def _write_existing_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
