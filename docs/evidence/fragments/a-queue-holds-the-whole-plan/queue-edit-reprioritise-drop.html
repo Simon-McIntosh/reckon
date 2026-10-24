@@ -50,6 +50,20 @@
   priority override and its reason are stored; and each of the three MCP
   actions returns the document its CLI verb returns for the same call.
 
+  <p><strong>The files that import the two modules.</strong> Exactly fourteen
+  test files import <code>reckon/crew_run_commands.py</code> or
+  <code>reckon/mcp_crew_actions.py</code> at base <code>560465a09</code>. Each
+  was run per file in that base tree and in this branch, with the same
+  interpreter and the same caps. Twelve pre-existing failures stand in the
+  base arm — two in <code>test_a_lane_change_keeps_its_waivers.py</code>, four
+  in <code>test_crew_lane_change.py</code>, four in
+  <code>test_read_verbs_retire_behind_crew_view.py</code>, one in
+  <code>test_crew_help_names_its_state.py</code> and one in
+  <code>test_crew_tool_carries_the_write_verbs.py</code> — and the identical
+  set stands in the branch arm: no failure is added. The new
+  <code>tests/test_queue_verbs.py</code> passes its 13 cases in the same
+  interpreter.
+
   <p><strong>Negative control.</strong> With the launched-request guard
   replaced by a no-op, exactly the three refusal arms fail
   (<code>test_a_launched_request_is_refused_by_every_verb[edit]</code>,
@@ -64,4 +78,18 @@
   <code>action</code> vocabulary and parameter list, so the tool surface cannot
   forward them until that file gains the three action names and their
   parameters.</p>
+
+  <p><strong>Two census suites name the new verbs before their rows exist.</strong>
+  The help census lists every leaf command and the run-verb identity sweep
+  requires a row per single-run verb, so each reports the three new leaves as
+  unregistered: at base the help census names one extra leaf
+  (<code>retention-sweep</code>) and in this branch it names four, and the
+  identity sweep goes from three failures to four, the added one a
+  <code>KeyError</code> where it looks up a verb it has no row for. Both files
+  are outside this change's write scope, so the rows are owed by a follow-up
+  rather than added here. Each verb's first help line already states the
+  condition it acts on, so the census row is a transcription; the sweep needs
+  one entry in its option table and one expected refusal per verb, and a verb
+  refuses a pointer that is not waiting with "not one of queued,
+  awaiting-upstream".</p>
 </section>
