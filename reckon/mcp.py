@@ -1977,9 +1977,17 @@ def _roadmap_stale_answer(kwargs: Mapping[str, Any]) -> dict[str, Any] | None:
         # stored answer to fall back to.
         return None
     max_paths = kwargs.get("max_paths")
+    # The read resolves its checkout inside the tool body, after this fallback
+    # is handed the call's own kwargs, so the same resolution is made here: a
+    # call routed at an explicit checkout, or one whose process carries a run
+    # that redirects its own project into a worktree, composes from that tree
+    # and keeps no snapshot of it.
+    checkout_path = kwargs.get("checkout_path")
+    if checkout_path is None:
+        checkout_path = _run_scoped_read_root(project)
     target = _roadmap_snapshot_target(
         project,
-        kwargs.get("checkout_path"),
+        checkout_path,
         kwargs.get("sprint"),
         5 if max_paths is None else int(max_paths),
         selected_view,

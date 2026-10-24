@@ -33,10 +33,13 @@ import reckon.mcp as mcp_module
 from reckon import mcp_deadlines, roadmap_snapshot, serve
 from reckon._mcp_tools import STORAGE_SLOW
 from reckon._store import advance_write_generation
+from reckon.crew import runs
 
 PROJECT = "p1"
 DEADLINE_ENV = "RECKON_MCP_READ_DEADLINE_SECONDS"
 RESERVE_ENV = "RECKON_ROADMAP_STALE_RESERVE_SECONDS"
+RUN_ENV = "RECKON_RUN_ID"
+RUN_ID = "r-a-slow-read-scope-case"
 
 # The shortened deadline and reserve the timing cases run under: a fraction of
 # a second each, so a case that would reach the deadline is bounded in a second
@@ -367,6 +370,44 @@ def test_with_no_stored_snapshot_a_held_recompute_reports_the_deadline(
     assert answered.get("error") == STORAGE_SLOW, answered
     assert answered["deadline_seconds"] == pytest.approx(0.4)
     assert composer.calls == 1
+
+
+def test_a_run_scoped_read_is_not_answered_from_the_mounted_tree(
+    home: Home, composer: Composer, loop, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A read redirected into a run's worktree never serves the mounted tree's record.
+
+    A process carrying this run's identity composes its own project from the
+    run's worktree, and that tree keeps no snapshot. The mounted tree's record
+    belongs to another tree, so a held read must report its deadline rather
+    than answer with plan state composed somewhere else.
+    """
+    monkeypatch.setenv(DEADLINE_ENV, "0.5")
+    monkeypatch.setenv(RESERVE_ENV, "0.1")
+    tool = _tool()
+
+    # A read with no run scope composes from the mounted tree and stores.
+    assert _call(loop, tool)["composition"] == 1
+    assert _last(home) is not None, "the mounted read's composition was not stored"
+
+    worktree = home.root / "worktree"
+    worktree.mkdir(exist_ok=True)
+    pointer = runs.pointer_path(RUN_ID)
+    pointer.parent.mkdir(parents=True, exist_ok=True)
+    pointer.write_text(
+        json.dumps({"run_id": RUN_ID, "project": PROJECT, "worktree": str(worktree)}),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv(RUN_ENV, RUN_ID)
+    assert mcp_deadlines._run_scoped_read_root(PROJECT) == str(worktree)
+
+    mcp_deadlines._INFLIGHT_READS.clear()
+    composer.gate.clear()
+    answered = _call(loop, tool)
+    composer.gate.set()
+
+    assert answered.get("error") == STORAGE_SLOW, answered
+    assert "stale" not in answered
 
 
 def test_two_reads_during_one_held_recompute_start_one_recompute(
