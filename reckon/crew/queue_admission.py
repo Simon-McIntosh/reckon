@@ -168,6 +168,28 @@ def _resolve_lane_config(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
     return config
 
 
+def _steering_brief(pointer: Mapping[str, Any]) -> Path | None:
+    """The launch-time authority text a queued request carries, if any.
+
+    ``steering.md`` in the request's own run directory is what the launch
+    reads, not the brief text the queued pointer carries: the file is where a
+    coordinator replaces the node's authority while the request waits. It is
+    contract-checked here, inside the admission path and before the launch
+    composes anything, so a file that no longer reads as authority text is
+    refused and the request returns to the queue with the failure named.
+    """
+    path = runs.run_dir(str(pointer["run_id"])) / runs.STEERING_FILE
+    if not path.exists():
+        return None
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise CrewError(f"the steering file {path} is not readable: {exc}") from exc
+    if not text.strip():
+        raise CrewError(f"the steering file {path} carries no authority text")
+    return path
+
+
 def _launch_queued(
     pointer: Mapping[str, Any],
     *,
@@ -186,6 +208,15 @@ def _launch_queued(
 
     options = dict(pointer.get("dispatch_options") or {})
     node = _node_from_pointer(pointer)
+    # The request's steering file is the authority the worker reads, so the
+    # node is pointed at it in place of the brief the queue-time pointer
+    # carried. A request whose authority is a plan section alone has no such
+    # file and launches from its section as it always has.
+    steering = _steering_brief(pointer)
+    if steering is not None:
+        node.brief = str(steering)
+        node.brief_path = str(steering)
+        node.brief_sha256 = ""
     # The queued pointer claims the run's own write paths, so the shared path
     # would refuse the launch as a scope conflict against the run itself. The
     # request is held in memory by the caller, which writes it back if the

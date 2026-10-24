@@ -102,6 +102,12 @@ def run_dir(run_id: str) -> Path:
     return runs_dir() / run_id
 
 
+#: The authority text a queued request is launched from. It lives in the
+#: request's own run directory so a coordinator can replace it while the
+#: request waits, and the launch reads whatever that file holds at that moment.
+STEERING_FILE = "steering.md"
+
+
 def pointer_path(run_id: str) -> Path:
     """Path of one run's live pointer."""
     return live_dir() / f"{run_id}.json"
@@ -543,6 +549,99 @@ def existing_node_run(
     return None
 
 
+#: The brief names a launch composes afresh from the reviewed run's record
+#: rather than reading as handed in (see ``materialize_run_review_brief``), by
+#: the path a run review's brief is written to.
+_REBUILT_BRIEF_NAMES = frozenset({"review-brief.md", "figure-review-brief.md"})
+
+
+def store_brief(
+    directory: Path, source: str | Path, *, block: str = "", name: str = ""
+) -> Path:
+    """Copy one brief's bytes into a run directory.
+
+    The single place a brief's bytes reach a run directory. A source a launch
+    re-composes — a run review's brief, which carries the head the reviewed
+    tree carries now — is materialized first, so a reader naming that path
+    reads the current text. ``block`` is appended to the copy when the source
+    does not already carry it, and ``name`` overrides the stored file's name;
+    otherwise the source's suffix is kept so the copy reads as the document it
+    was.
+    """
+    from reckon.crew.dispatch_admission import _brief_carries_heading
+    from reckon.crew.recovery_review_subject import materialize_run_review_brief
+
+    path = Path(source).expanduser()
+    materialize_run_review_brief(path)
+    data = path.read_bytes()
+    if block and not _brief_carries_heading(data):
+        data = data + b"\n\n" + block.encode("utf-8")
+    destination = directory / (name or f"brief{path.suffix or '.md'}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(data)
+    return destination
+
+
+def is_rebuilt_brief(path: Path) -> bool:
+    """Whether a launch re-composes this brief instead of reading this file.
+
+    A run review's brief is derived from the reviewed run's record, so a copy
+    taken while a request waits freezes the head the reviewed tree carried
+    then. The launch must compose it again from the head the tree carries at
+    launch, so the queued path must not take a steering copy of it. The path
+    shape and record read here are the ones ``materialize_run_review_brief``
+    acts on; this asks the question without composing, because composing for
+    the queue would write the same stale text it is meant to avoid.
+    """
+    if path.name not in _REBUILT_BRIEF_NAMES:
+        return False
+    try:
+        if run_dir(path.parent.name).resolve() != path.parent.resolve():
+            return False
+        record = read_pointer(path.parent.name)
+    except (OSError, CrewError):
+        return False
+    return bool(str(record.get("run_id") or ""))
+
+
+def _write_steering(run_id: str, brief: str) -> Path | None:
+    """Copy a request's brief into its run directory as the launch-time text.
+
+    A queued dispatch never reaches ``_store_brief`` — every queueing hold
+    raises before it — so the queued path stores the steering copy itself,
+    under the request's final run id. An existing ``steering.md`` is never
+    overwritten: an in-place re-queue of the same node
+    must leave the text a coordinator has since edited in place, because that
+    file is what the launch reads.
+
+    Three sources are left uncopied. One already lies inside the request's own
+    run directory: it is the request's stored copy, so there is nothing for a
+    second name to shadow. One is a run review's composed brief: a launch
+    re-composes it from the reviewed tree's head, and a queue-time copy would
+    freeze the head it carried then. One cannot be read: the launch is where
+    the coordinator's own brief is refused, so an unreadable source here
+    leaves no steering file and the request is held.
+    """
+    source = str(brief or "").strip()
+    if not source:
+        return None
+    directory = run_dir(str(run_id))
+    source_path = Path(source).expanduser()
+    if source_path.is_absolute() and source_path.resolve().is_relative_to(
+        directory.resolve()
+    ):
+        return None
+    destination = directory / STEERING_FILE
+    if destination.exists():
+        return destination
+    if is_rebuilt_brief(source_path):
+        return None
+    try:
+        return store_brief(directory, source_path, name=STEERING_FILE)
+    except OSError:
+        return None
+
+
 def queue_dispatch(
     record: dict[str, Any], *, cap: int | None = None
 ) -> tuple[dict[str, Any], int | None]:
@@ -638,6 +737,10 @@ def queue_dispatch(
                 run_id = str(record["run_id"])
                 with _pointer_lock(run_id):
                     _write_json(pointer_path(run_id), record)
+            _write_steering(
+                str(record["run_id"]),
+                str(dict(record.get("node") or {}).get("brief") or ""),
+            )
             from reckon.crew.queue_order import admission_order
 
             live = _list_live_records(project=str(record["project"]))

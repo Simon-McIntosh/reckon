@@ -1,0 +1,125 @@
+<section id="queued-brief-binds-at-launch-landing">
+  <h2>A queued request's brief binds at launch, from its steering file</h2>
+
+  <p><strong>What changed.</strong> A dispatch that is held stores its brief as
+  <code>steering.md</code> in the request's own run directory, once, and never
+  overwrites it. <code>queue_dispatch</code> in <code>reckon/crew/runs.py</code>
+  resolves the request's final id — the existing id on an in-place re-queue, the
+  fresh one otherwise — and copies the <code>--brief</code> source there only
+  when the directory holds no <code>steering.md</code> yet. A coordinator edits
+  that file while the request waits; an in-place re-queue of the same node
+  therefore leaves the edit in place rather than restoring the queue-time text.
+
+  <p><strong>The launch reads the file, not the pointer.</strong>
+  <code>_launch_queued</code> in <code>reckon/crew/queue_admission.py</code>
+  contract-checks <code>steering.md</code> when the request has one, then points
+  the node's <code>brief</code> and <code>brief_path</code> at that file in
+  place of the queue-time values <code>_node_from_pointer</code> carries, before
+  the node reaches <code>dispatch()</code>. Nothing else in the brief path
+  changed: <code>_store_brief</code> still copies the file the node names into
+  the run directory, and <code>_brief_digest</code> still digests
+  <code>node.brief_path</code> downstream, so the run records exactly the bytes
+  the worker read. A request whose authority is a plan section alone has no
+  <code>steering.md</code> and launches from its section as before.
+
+  <p><strong>A steering file that no longer reads is refused, not launched.</strong>
+  The check is readability and non-empty text. A refusal is raised inside
+  <code>_launch_queued</code>, before <code>dispatch()</code> runs, so
+  <code>_record_queued_failure</code> restores the request to
+  <code>queued</code> with the failure named and a retry time —
+  the same path every other admission refusal already takes. No worker starts.
+
+  <p><strong>One place stores a brief.</strong> <code>runs.store_brief</code>
+  now owns how a brief's bytes reach a run directory — it materializes a brief
+  the launch re-composes, appends the domain-rules block once, and keeps the
+  source's suffix so the copy reads as the document it was.
+  <code>_store_brief</code> in <code>reckon/crew/dispatch_admission.py</code>
+  delegates to it, so the launch and the queue cannot drift apart on how a
+  brief is written.</p>
+
+  <p><strong>Three sources the queue leaves alone.</strong> A brief whose source
+  already lies inside the request's own run directory is not copied: it is
+  already the request's stored copy, and a review's own readers resolve that
+  path. A brief the launch re-composes is not copied either — a run review's
+  <code>review-brief.md</code> carries the head the reviewed tree carries now,
+  so a queue-time copy would freeze a head the run may move past before it
+  launches. A brief the queue cannot read is not copied: the launch is where a
+  coordinator's unreadable brief is refused, and a silent queue-time refusal
+  would hide it. Every other brief is stored as <code>steering.md</code>.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the new <code>tests/test_queue_steering_binding.py</code> plus the
+  queue-and-admission test cohort, run in place on the fleet allocation with the
+  repository virtualenv, each arm logged to a file whose first line names the
+  revision, tree and command and whose last line is a bare
+  <code>EXIT=&lt;code&gt;</code>. The base arm runs the same command from a
+  <code>git archive</code> extraction of the run's base revision, and its log
+  names the absolute path of <code>reckon/crew/queue_admission.py</code> as
+  imported so the tree that answered is readable.
+
+  <table>
+    <thead><tr><th>arm</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change, committed)</td>
+        <td><strong>373 passed, 4 failed, <code>EXIT=1</code>, serially; every one of the 4 also fails at base</strong></td></tr>
+      <tr><td>base (the run's base revision, the failing ids and their neighbours)</td>
+        <td><strong>5 failed, 2 passed, <code>EXIT=1</code>; the head's 4 are a subset, so the added count is zero</strong></td></tr>
+      <tr><td>negative control: <code>_launch_queued</code> restored to pass the
+        queue-time brief unchanged</td>
+        <td><strong>3 failed (the replaced-steering, discriminating and invalid-steering arms), 6 passed, <code>EXIT=1</code></strong></td></tr>
+      <tr><td>skip-removal control: the three <code>_write_steering</code> skips
+        deleted</td>
+        <td><strong>3 failed (the three arms that hold them), 6 passed, <code>EXIT=1</code></strong></td></tr></td>
+    </tbody>
+  </table>
+
+  <h3>The arms the new module measures</h3>
+
+  <ul>
+    <li><strong>Stored once.</strong> Queueing a request with a brief writes
+    <code>steering.md</code> in its final run directory carrying that brief's
+    bytes.</li>
+    <li><strong>Not overwritten by a re-queue.</strong> The steering file is
+    edited, the same node is dispatched again so it re-queues in place, and the
+    edited text survives; no second request is created.</li>
+    <li><strong>Replaced before launch.</strong> The steering file is rewritten
+    while the request waits and the launched run's recorded digest matches the
+    replacement.</li>
+    <li><strong>Discriminating arm.</strong> <code>steering.md</code> is left
+    alone and the file the queued pointer's <code>node.brief</code> names is
+    changed; the launched digest matches <code>steering.md</code> and not the
+    pointer's file. On the base code this arm fails, because the queue-time
+    brief is what gets copied.</li>
+    <li><strong>Invalid while queued.</strong> The steering file is made
+    unreadable authority text; the request stays <code>queued</code>, the
+    failure is named, a retry time is set, and no launcher is called.</li>
+    <li><strong>Plan section alone.</strong> No <code>steering.md</code> is
+    written and the request launches from its section.</li>
+    <li><strong>A re-composed review brief is not frozen.</strong> A run review's
+    composed brief is queued as the request's brief; no <code>steering.md</code>
+    is written, the reviewed tree gains a commit while the request waits, and the
+    launch composes the brief again — its digest names the new head and differs
+    from the text the earlier composition left.</li>
+    <li><strong>A source inside the request's own run directory.</strong> No
+    second name is written and the source is untouched.</li>
+    <li><strong>An unreadable source.</strong> No <code>steering.md</code> is
+    written; the launch refuses the brief, the request returns to
+    <code>queued</code> with the failure named and a retry time, and no launcher
+    is called.</li>
+  </ul>
+
+  <p><strong>Each skip is held by a failing arm without it.</strong> Removing
+  the three skips from <code>_write_steering</code> turns the three arms above
+  red (3 failed, 6 passed) and nothing else, so a later regression that deletes
+  any of them cannot pass unnoticed.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation restores
+  <code>_launch_queued</code> to pass the queue-time brief from
+  <code>_node_from_pointer</code> unchanged. The replaced-steering and
+  discriminating arms fail under it, which is the defect this node closes, and
+  so does the invalid-steering arm, because the removed rebind is also what
+  reads the file the launch must refuse. A second control deletes the three
+  <code>_write_steering</code> skips and turns exactly the three arms that hold
+  them red, so neither the refinement nor its test can be lost unnoticed.</p>
+</section>
