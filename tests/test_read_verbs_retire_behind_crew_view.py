@@ -596,6 +596,16 @@ def _classification(row: dict) -> dict:
     return {field: row.get(field) for field in CLASSIFICATION_FIELDS}
 
 
+def _answered_empty(value: object) -> bool:
+    """Whether a captured answer holds no value for its field.
+
+    The successor's projection leaves such a field off the row, so this is what
+    tells a field the view dropped from a value this run has none of.
+    """
+
+    return value in (None, "", [], {})
+
+
 def test_the_live_rows_are_compared_over_the_written_down_field_set() -> None:
     """The field set the listing's answers are compared over is the shared one.
 
@@ -640,9 +650,13 @@ def test_crew_view_live_gives_the_listings_answer(
 
     Compared row by row per run id over :data:`CLASSIFICATION_FIELDS`, never as
     whole documents: the listing and the view compose their rows with different
-    builders, so the shared field set is the contract. The rows were captured
-    from the retired verb at the base revision the callers moved at, so the case
-    still holds once the verb is a tombstone.
+    builders, so the shared field set is the contract. A field the listing
+    answered with an empty value is left off the successor's row, because every
+    list view routes through one projection and that projection omits a field
+    with no value; the comparison reads the absence as the empty value it
+    stands for. The rows were captured from the retired verb at the base
+    revision the callers moved at, so the case still holds once the verb is a
+    tombstone.
     """
     expected_rows = CREW_LIST_BASE_ROWS[case]
     rows = _live_rows(CREW_LIST_CASES[case])
@@ -652,11 +666,28 @@ def test_crew_view_live_gives_the_listings_answer(
     assert expected_rows, f"no captured answer for {case!r}"
     for run_id, expected in expected_rows.items():
         assert run_id in rows, f"successor answers no {run_id} for {case!r}"
+        row = rows[run_id]
         missing = [
-            field for field in CLASSIFICATION_FIELDS if field not in rows[run_id]
+            field
+            for field, value in expected.items()
+            if not _answered_empty(value) and field not in row
         ]
         assert not missing, f"{run_id} carries no {missing}"
-        assert _classification(rows[run_id]) == expected, run_id
+        serialised = [
+            field
+            for field, value in expected.items()
+            if _answered_empty(value) and field in row
+        ]
+        assert not serialised, f"{run_id} serialises an empty {serialised}"
+        assert _classification(row) == expected, run_id
+    # The omission rule is exercised by the capture rather than assumed: a
+    # capture whose every field held a value would leave the arm above unable
+    # to fail.
+    assert any(
+        _answered_empty(value)
+        for expected in expected_rows.values()
+        for value in expected.values()
+    ), "the captured answer exercises no omission"
     assert set(rows) == set(expected_rows), (sorted(rows), sorted(expected_rows))
 
 

@@ -44,6 +44,12 @@ def test_the_cli_live_view_matches_the_mcp_classification_surface(
     log_path = tmp_path / "stream.jsonl"
     log_path.write_text("")
     os.utime(log_path, (900, 900))
+    # A manifest on disk, because a field the run has no value for is left off
+    # the row: this case compares every field of the shared vocabulary, so the
+    # fixture gives the classification a status to carry rather than reading
+    # the omission as one surface disagreeing with the other.
+    manifest_path = tmp_path / "manifest.md"
+    manifest_path.write_text("node: worker\nstatus: in-progress\n", encoding="utf-8")
     pointer = {
         "run_id": "run-working",
         "project": "sample",
@@ -53,7 +59,7 @@ def test_the_cli_live_view_matches_the_mcp_classification_surface(
         "process_alive": True,
         "created_at": "1970-01-01T00:11:40+00:00",
         "log_path": str(log_path),
-        "manifest_path": str(tmp_path / "manifest.md"),
+        "manifest_path": str(manifest_path),
         "worktree": str(tmp_path / "worktree"),
         "node": {
             "id": "worker",

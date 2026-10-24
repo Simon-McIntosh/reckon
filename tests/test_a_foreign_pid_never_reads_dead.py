@@ -366,7 +366,7 @@ def test_the_directory_row_does_not_read_a_foreign_pid_as_alive(
     fact that does is the host the run was launched on, which the pointer names
     and this host's process table cannot answer for. The same pointer with the
     host set to this one is the control: it reads alive, so the gate narrows the
-    reading rather than removing it.
+    reading to nothing rather than changing it to a death.
     """
     run_id = "r-foreign-row-with-a-local-number"
     with liveness._live_child() as local_pid:
@@ -380,8 +380,11 @@ def test_the_directory_row_does_not_read_a_foreign_pid_as_alive(
         runs._write_json(runs.pointer_path(run_id), pointer)
         local_row = _directory_row(run_id)
 
-    assert foreign_row["process_alive"] is not True, foreign_row
-    assert foreign_row["process_alive"] is None, foreign_row
+    # The view leaves a field with no reading off its row rather than
+    # serialising the emptiness, so absence here is the narrowed reading: the
+    # pid was never asked, rather than asked on this host and answered for.
+    assert "process_alive" not in foreign_row, foreign_row
+    assert foreign_row.get("process_alive") is not True, foreign_row
     assert local_row["process_alive"] is True, local_row
 
 

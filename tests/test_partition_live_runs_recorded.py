@@ -67,6 +67,9 @@ def test_recorded_classification_is_used_without_observing_logs(
                 "run_id": "run-recorded",
                 "member": "member-run-recorded",
                 "section": "implementation",
+                # The classification travels on the row rather than being left
+                # to the reader to derive again from the same record.
+                "classification": "interrupted",
                 "started_at": "",
                 "reason": "worker process ended",
                 "next_action": "resume the retained session",
