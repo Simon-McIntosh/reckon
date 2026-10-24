@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="A wait that recovers from aged prints no row">
+  <meta name="plan-summary" content="A declared wait ages and recovers under one pane word, so the return from aged printed as waiting → waiting. The row policy now remembers the shown row's wait facts beside the word and the same-word rule withholds a return that only clears the overdue flag with its declaration unchanged.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s5">
+  <meta name="plan-recorded-at" content="2026-10-25">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch-stream,pane,wait">
+  <title>A wait that recovers from aged prints no row — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="a-wait-that-recovers-from-aged-prints-no-row-note" class="r-note" data-node="a-wait-that-recovers-from-aged-prints-no-row" data-reckon="landed" data-when="2026-10-25">
+  <h2 id="a-wait-that-recovers-from-aged-prints-no-row-head">A wait that recovers from aged prints no row</h2>
+
+  <p id="a-wait-that-recovers-from-aged-prints-no-row-rule"><code>wait-aged</code> and <code>waiting</code> draw one pane word, <code>waiting</code>. The aging row is news because the wait has become overdue; the return to a pending wait is not, because nothing the coordinator must act on has changed — the same declaration is still being waited on. Both rows carry the wait declaration, so a same-word rule reading one event alone kept both and the pane drew <code>waiting → waiting</code> carrying only a growing elapsed.</p>
+
+  <p id="a-wait-that-recovers-from-aged-prints-no-row-mechanism">Two changes in <code>reckon/crew/ticker.py</code>. <code>RowPolicy</code> keeps <code>_shown_wait</code> beside <code>_shown</code>: the wait facts of the row the pane last actually showed for a run, written where rows are released rather than where they are noted. <code>same_word_row_is_news</code> takes that memory as <code>remembered</code> and reads it through the new <code>wait_facts</code> helper, which returns the overdue flag, the probe's verdict, the same-word row's last observation, its declared horizon and its resume brief — or None for a row declaring no wait. A same-word wait row is news where it newly sets <code>wait_overdue</code> (the shown row had it false or absent) or where the declaration differs from the shown one; a row that only clears the overdue flag with the declaration otherwise unchanged is withheld. No second same-word rule sits beside it: <code>RowPolicy.feed</code> and <code>Ticker.render</code> still call the one predicate, each handing its own per-run memory, which is why a row the policy releases is never drawn blank. The aging row's own wording is unchanged.</p>
+
+  <h3 id="a-wait-that-recovers-from-aged-prints-no-row-gate-head">Gate</h3>
+
+  <p id="a-wait-that-recovers-from-aged-prints-no-row-gate">At revision 71f97cac7, <code>tests/test_a_wait_that_recovers_from_aged_prints_no_row.py</code> is 3 passed in 1.26&nbsp;s, <code>EXIT=0</code> (<code>logs/head-test.log</code>). The ticker-importing population at that revision is 639 passed, <code>EXIT=0</code> (<code>logs/head-arm.log</code>), and <code>ruff check</code> and <code>ruff format --check</code> report no findings on the two staged paths, as they do at the base revision. The declared arm feeds <code>working → waiting</code> declaring the wait, then <code>waiting → wait-aged</code> with <code>wait_overdue</code> true, then <code>wait-aged → waiting</code> with it false and the same condition, spaced past the settle window: the first and the aging row print, the return does not. The second arm changes only the return's <code>wait_condition_state</code> and all three print. The third arms the aging row alone and asserts the row that moves nothing but the overdue flag still prints. Every released row is rendered through one <code>Ticker</code> in order and asserted non-empty, so the policy's and the renderer's judgement are shown to be one rule.</p>
+
+  <p id="a-wait-that-recovers-from-aged-prints-no-row-base-arm">The base arm is 636 passed, <code>EXIT=0</code> (<code>logs/base-arm.log</code>), the same population at the pristine base revision 0ab156b37, extracted with <code>git archive</code> into a scratch tree whose <code>module.__file__</code> and resolved cwd are named in the log header; the difference of three is this node's new test file, and no failure appears on either arm. The declared pair at that revision prints both halves, recorded at <code>logs/base-pair.log</code>: after the shown <code>working → waiting</code> row, the return sequence prints <code>('waiting', 'wait-aged')</code> and then <code>('wait-aged', 'waiting')</code> — the second is the row this node removes.</p>
+
+  <h3 id="a-wait-that-recovers-from-aged-prints-no-row-negative-head">Negative control</h3>
+
+  <p id="a-wait-that-recovers-from-aged-prints-no-row-negative">The declared mutation restores the base <code>same_word_row_is_news</code> body, so a row carrying a wait is always news and the memory is never read. With that body in place and the head code otherwise unchanged, the new test file is 1 failed, 2 passed in 1.75&nbsp;s, <code>EXIT=1</code> (<code>logs/negative-control.log</code>), the failing id being <code>test_a_return_to_waiting_after_the_wait_aged_prints_no_row</code> — a test the head arm does not fail. The file was restored from its own copy afterwards and the worktree showed no modified path under <code>reckon/crew/ticker.py</code>. The control therefore shows the check firing on exactly the row the change removes, not merely a suite that passes.</p>
+</article>
+</body>
+</html>
