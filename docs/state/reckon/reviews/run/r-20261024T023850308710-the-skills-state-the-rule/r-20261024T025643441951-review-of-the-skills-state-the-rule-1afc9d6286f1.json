@@ -1,0 +1,48 @@
+{
+  "added_failure_basis": "empty set difference, after_suite.failure_ids minus baseline_suite.failure_ids from the reviewed run's own manifest: baseline 7a6cd07ca6b93427cc5383a78ef52fd4e62b1993 ran both 2 failures, after 1afc9d6286f1d1cdd3f2adacfc2b52452f34eccb ran the same 2 (tests/test_skill_contracts.py::test_review_skill_is_discovered_beside_the_other_reckon_skills, tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt); gate-base.log and gate-head.log confirm both ids at each arm",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T03:07:04.767Z",
+  "dispatched_at": "2026-10-24T02:58:40Z",
+  "findings": [
+    {
+      "anchor": "tests/test_skill_contracts.py:141",
+      "id": "skills-guard-no-vacuity-control",
+      "severity": "non-blocking",
+      "text": "non-blocking: the skills scan iterates (ROOT / \"skills\").rglob(\"*\") and asserts only that offenders is empty, with no control proving the tree was walked; a renamed or emptied skills/ makes the guard report an absence it never looked for. The repository's own sibling guard declares this discipline at tests/test_skills_name_no_host_path.py:31 (test_the_skills_tree_is_walked); the paired source guard at tests/test_no_source_names_the_retired_field.py:111 has a planted-text control, the skills guard should follow one of those two models."
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T023850308710-the-skills-state-the-rule/negative-control-skills.log:1",
+      "id": "negative-control-log-revision-header",
+      "severity": "non-blocking",
+      "text": "non-blocking: both negative-control logs record '# revision: 7a6cd07ca6b93427cc5383a78ef52fd4e62b1993 (worktree head; mutation applied ...)' while the mutation was applied to a tree that already carried the node's head commit \u2014 the failing assertions at tests/test_skill_contracts.py:149 and tests/test_no_source_names_the_retired_field.py:102 belong to test code that does not exist at that base. A reader extracting the recorded revision gets a tree without the tested guards; negative-control-source.log:1 carries the same header."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 the skill prose reaches agents through reckon/agent_context.py:504 and reckon/cli_entry.py:223, and the guards allow the production mappings at reckon/crew/review.py:163, reckon/crew/reports.py:791 and reckon/run_record.py:44.",
+    "diff": "pass \u2014 read commit by commit: 71f1408e7 teaches the rule in six skill files and adds both guards, 98741af0e is a ruff-only reformat of tests/test_skill_contracts.py, 1afc9d628 adds the evidence fragment; no file outside the declared paths is touched.",
+    "done_when": "pass \u2014 the done_when names the two guard files with zero added failures, the log header/EXIT format, node-id failure ids and a clean ruff on both test files; gate-base.log (68 passed / 2 failed) and gate-head.log (73 passed / the same 2 failed) record it, baseline_suite and after_suite carry node-id failure ids, and ruff.log reports CHECK_EXIT=0 and FORMAT_EXIT=0.",
+    "goal": "pass \u2014 the goal is that no reckon skill or source teaches or names the retired deferred-work term outside the four exempt sites; an independent grep of the reviewed head finds zero occurrences under skills/ and exactly four under reckon/ scripts/, all four the module-level constants the plan exempts (reckon/crew/reports.py:83, reckon/run_record.py:33, reckon/crew/review.py:163, reckon/doccheck.py:419).",
+    "manifest": "pass \u2014 the reviewed manifest records status complete, three commits, both suite arms, both negative-control logs and the two pre-existing failures under outside_scope rather than repaired.",
+    "write_paths": "pass \u2014 the ten declared paths are the six skill files, the two test files, the evidence fragment and a figures path; the nine files in the diff are all inside that set and docs/figures/ is unused."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that no reckon skill or source teaches or names the retired deferred-work term outside the four exempt sites; the reviewed head carries zero occurrences under skills/ and exactly four in reckon/+scripts/, all at the plan's exempt constants (reckon/crew/reports.py:83, reckon/run_record.py:33, reckon/crew/review.py:163, reckon/doccheck.py:419).\nVERDICT done_when: the done_when names tests/test_skill_contracts.py plus the new source guard with zero added failures, log header/EXIT format and ruff cleanliness; gate-base.log shows 68 passed / 2 failed and gate-head.log 73 passed / the same 2 failed, and the manifest's baseline_suite and after_suite carry those node ids.\nVERDICT write_paths: read the ten declared paths; the nine files in the diff all sit inside them (six skill files, tests/test_skill_contracts.py, tests/test_no_source_names_the_retired_field.py, docs/evidence/fragments/additional-work-is-a-section/the-skills-state-the-rule.html) and the declared figures path is unused.\nVERDICT manifest: read; it records status complete, three commits, both suite arms with node-id failure ids, both negative-control logs, and lists the two pre-existing failures under outside_scope rather than repairing them.\nVERDICT diff: read commit by commit against 7a6cd07ca \u2014 71f1408e7 rewrites the six skill passages and adds both guards, 98741af0e is a behaviour-free ruff reformat of tests/test_skill_contracts.py, 1afc9d628 adds the 77-line evidence fragment; nothing outside the declared scope is touched.\nCALL_SITES: reckon/agent_context.py:504, reckon/cli_entry.py:223, reckon/crew/review.py:163, reckon/crew/reports.py:791, reckon/run_record.py:44\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the six skill files at skills/reckon-build/SKILL.md:394 and its five siblings each state the section-or-prompt rule and both names, and the grep of the head finds no retired term outside the four exemptions.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log:6 records the literal command and its last line EXIT=1 with the same two pre-existing failure ids as gate-base.log, so the zero-added claim is read from the logs rather than claimed, though negative-control-skills.log:1 misnames its revision.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in tests/test_skill_contracts.py and the six skills/ edits is inside the declared write paths, and the unrelated reformat is isolated in its own style commit 98741af0e required by the done_when's ruff clause.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_skill_contracts.py:133 reddens on a restored retired term (negative-control-skills.log:149) and tests/test_no_source_names_the_retired_field.py:98 reddens on the restored comment word (negative-control-source.log:102), both independent file reads rather than a value compared with what the test passed in.\nSCORE fit: 18\nJUSTIFICATION fit: the new tests follow the module's existing shape (a module-level regex beside tests/test_skill_contracts.py:21's normalized helper) and no added name carries a plan, sprint or ticket label.\nSCORE reuse: 16\nJUSTIFICATION reuse: a search over reckon/ and tests/ for an owner of the retired-term pattern found reckon/doccheck.py:419 (_DEFERRED_WORK_TERM) and tests/test_skills_name_no_host_path.py:31 (the skills walk), neither extended; the source guard's own regex is deliberately independent of the production pattern it guards, so only the skills walk is a genuine unextended copy.\nFINDING tests/test_skill_contracts.py:141 non-blocking: the skills scan asserts only an empty offender list and carries no control that the tree was walked, unlike tests/test_skills_name_no_host_path.py:31, so a moved skills/ passes silently.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T023850308710-the-skills-state-the-rule/negative-control-skills.log:1 non-blocking: the header records the base sha 7a6cd07ca as the revision while the mutation ran on the head tree, so the recorded revision does not contain the guard the failure names.\n",
+  "review_run_id": "r-20261024T025643441951-review-of-the-skills-state-the-rule-1afc9d6286f1",
+  "reviewed_base_sha": "7a6cd07ca6b93427cc5383a78ef52fd4e62b1993",
+  "reviewed_head_sha": "1afc9d6286f1d1cdd3f2adacfc2b52452f34eccb",
+  "reviewed_run_id": "r-20261024T023850308710-the-skills-state-the-rule",
+  "rubric": "code-review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T03:22:00+00:00",
+  "total": 106
+}
