@@ -1,0 +1,126 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T125322878212-the-station-ingests-only-new-bytes/gate-head.log",
+  "assertion_analysis": [
+    {
+      "assertion": "reader.bytes_for(path) <= appended + ANCHOR + partial (line 281-286)",
+      "fails_when": "the store reads any byte before the stored offset or re-reads the whole file on a grown stream; negative-control arm 1 (ignore the stored offset) reddens it.",
+      "file": "tests/test_the_station_ingests_only_new_bytes.py",
+      "independent": "partly \u2014 appended is the test's schedule, but partial is derived from the store's own consumed field at line 287.",
+      "line": "282"
+    },
+    {
+      "assertion": "_observation(store, path) == _full_fold(path) (line 291)",
+      "fails_when": "the incremental fold drops or mis-orders carried state; negative-control arm 2 (drop the carried fold state) reddens it.",
+      "file": "tests/test_the_station_ingests_only_new_bytes.py",
+      "independent": "yes \u2014 _full_fold at line 169 folds the finished file from no state through _backends.observe_stream, not through the store.",
+      "line": "291"
+    },
+    {
+      "assertion": "consumed == sizes[run_id] (line 294)",
+      "fails_when": "the store leaves a whole record unconsumed after the last append.",
+      "file": "tests/test_the_station_ingests_only_new_bytes.py",
+      "independent": "yes \u2014 sizes is the test's own tally of bytes it wrote.",
+      "line": "294"
+    },
+    {
+      "assertion": "the unchanged-size tick reads 0 bytes and leaves consumed put (lines 315-316)",
+      "fails_when": "the size-equal early return is removed; negative-control arm 1 reddens this test too.",
+      "file": "tests/test_the_station_ingests_only_new_bytes.py",
+      "independent": "yes.",
+      "line": "315"
+    },
+    {
+      "assertion": "each refold reads offset 0 (lines 355, 368, 394, 425)",
+      "fails_when": "any of the inode, consumed-size, last-read-size or anchor checks is dropped; negative-control arms 3 and 4 redden the anchor and last-read-size cases respectively.",
+      "file": "tests/test_the_station_ingests_only_new_bytes.py",
+      "independent": "yes \u2014 offsets_for records the actual read offsets.",
+      "line": "355"
+    },
+    {
+      "assertion": "after == before descriptor count across 50 events (line 460)",
+      "fails_when": "day-file connections are left open; negative-control arm 5 reddens it at 68 against 18.",
+      "file": "tests/test_the_station_ingests_only_new_bytes.py",
+      "independent": "yes \u2014 /proc/self/fd is outside the code under test.",
+      "line": "460"
+    },
+    {
+      "assertion": "the deleted constructors are absent from the source tree (line 471)",
+      "fails_when": "either constructor is reinstated under reckon/; it reads Path(station_store.__file__).resolve().parent.parent, so it follows the tree actually imported.",
+      "file": "tests/test_the_station_ingests_only_new_bytes.py",
+      "independent": "yes.",
+      "line": "471"
+    },
+    {
+      "assertion": "[row['path'] ...] == fixture_pointers for rebuilt and incremental (test_the_station_store_is_node_local.py:86-87)",
+      "fails_when": "the store reports pointer rows that are not the fixture's three; the expectation is built from the fixture layout, not from either store's output.",
+      "file": "tests/test_the_station_store_is_node_local.py",
+      "independent": "yes \u2014 this replaces the previous comparison of the two stores against each other.",
+      "line": "86"
+    }
+  ],
+  "assertion_analysis_note": "Every assertion added by the diff names a condition under which it fails, and the five-arm negative control demonstrates each guard firing rather than merely passing. The one non-independent element is the per-tick byte bound's partial term, recorded as a non-blocking finding.",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T125322878212-the-station-ingests-only-new-bytes/gate-base.log",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-24T13:22:45.611Z",
+  "dispatched_at": "2026-10-24T13:13:47Z",
+  "findings": [
+    {
+      "file": "tests/test_the_station_ingests_only_new_bytes.py",
+      "line": "287",
+      "severity": "non-blocking",
+      "text": "non-blocking: the per-tick byte bound at line 282 takes its partial-record allowance from the store's own reported consumed offset at line 287, so a store that under-advances consumed widens its own allowance and can pass the bound while re-reading old bytes; the independent consumed==size assertion at line 294 and the full-fold equality at line 291 close that hole, so the guard is not defeated, but the bound alone is not an independent measure."
+    },
+    {
+      "file": "tests/test_the_station_ingests_only_new_bytes.py",
+      "line": "446",
+      "severity": "non-blocking",
+      "text": "non-blocking: len(offsets)==2 pins the implementation to reading the anchor and the appended tail as two separate _read_range calls, so a correct future change that reads the anchor together with the tail in one call would redden this test even though the byte bound it supports at line 282 still held."
+    },
+    {
+      "file": "manifest.md",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's 'ruff check reports 0 added findings and ruff format --check 0 added formatting changes' clause is claimed in the artifacts line but no ruff log is recorded among the run's test_logs; I reproduced it on the three changed Python files at head with ruff check (All checks passed, exit 0) and ruff format --check (3 files already formatted, exit 0), so the claim is true and the gap is in the record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none \u2014 no production module imports reckon.crew.station_store at head (git grep over reckon/ finds no importer), the only in-module hop is StationStore.tick at station_store.py:369 calling ingest_stream, and the two deleted constructors had no caller anywhere.",
+    "diff": "Commit 34d55d7dd changes station_store.py (103/-27: the size and anchor columns with in-place migration, _read_range and _anchor_before, the rewritten ingest_stream, the day-file closing and the two deleted constructors) plus the 475-line test file and the four-line node-local assertion; commit f83b5cb59 adds the 83-line landing fragment; nothing else changes.",
+    "done_when": "The done_when asks for five replayed fixture streams folded equal to a full fold, a per-tick byte bound, four refold cases, an unchanged-size zero-read case, a descriptor count, a duplicate-constructor grep and a fixture-anchored pointer comparison; tests/test_the_station_ingests_only_new_bytes.py:238-471 and the edited tests/test_the_station_store_is_node_local.py:85-87 supply every clause and gate-head.log:30 records 24 passed EXIT=0.",
+    "goal": "The source prompt.txt sets the goal of reading only new bytes and refolding a detected rewrite; reckon/crew/station_store.py:439-502 does both, including all four refold triggers, so the goal is met.",
+    "manifest": "The source manifest.md records two commits, the literal gate command, both suite logs at zero failures, a red five-arm negative control with its named failing test ids, and the evidence_inputs note that the classification half of plan section 6 was outside this node's scope.",
+    "write_paths": "The source prompt.txt grants reckons/crew/station_store.py, the two test files, the landing fragment and a figures directory; git diff --name-only 0ebe07843 f83b5cb59 shows only the four files that exist and no path outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_ingests_only_new_bytes.py:291 compares the incremental fold against an independent full fold of the same file and its read counter is a real seam at station_store.py:188, and negative-control.log shows each of arms 1-5 reddening its named test, though the per-tick byte bound at line 282 takes its partial-record term from the store's own consumed field at line 287.",
+    "evidence": "gate-head.log:1-6 name revision 34d55d7dd, tree, imported module path, cwd and the literal command and gate-head.log:30 ends EXIT=0 at 24 passed against gate-base.log:1-6 and EXIT=0 at 15 passed, and negative-control.log's five arms each redden the case they name, but the done_when's ruff clause is claimed at manifest.md:24 with no ruff log recorded, so I ran ruff check and ruff format --check on the three changed Python files at head myself and both exit 0.",
+    "fit": "reckon/crew/station_store.py:57-62 declares ANCHOR_BYTES with the same 'configuration value' comment idiom as RETENTION_DAYS at line 66, and the added names (_read_range, _anchor_before, _ensure_stream_columns) describe mechanism rather than any plan label.",
+    "goal_fidelity": "reckon/crew/station_store.py:439-502 implements exactly the goal: a size-equal stream returns unread, a grown stream is checked against a 64-byte anchor before reading only bytes past its stored offset, and the four rewrite triggers (changed inode, size below consumed, size below last-read size, moved anchor) each fold from offset zero with no carried state.",
+    "reuse": "A search over reckon/ for table_info and ADD COLUMN found one analogous column migration at reckon/run_store.py:228-262; it is a private, store-specific method rather than a reusable owner, and the new _ensure_stream_columns at station_store.py:282 is likewise local to its own schema, while _read_range at line 188 extracts the inline seek/read the old ingest_stream already used rather than adding a second stream reader.",
+    "scope_discipline": "git diff --name-only 0ebe07843 f83b5cb59 lists exactly reckon/crew/station_store.py, tests/test_the_station_ingests_only_new_bytes.py, tests/test_the_station_store_is_node_local.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-ingests-only-new-bytes.html, all four inside the declared write paths, and the declared figures directory is untouched as the done-when requires."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is incremental ingest that reads only bytes past its stored offset and refolds a detected rewrite; reckon/crew/station_store.py:439-502 does both with the four refold triggers.\nVERDICT done_when: the done_when's replay, byte-bound, four-refold, unchanged-size, descriptor, constructor-grep and fixture-pointer clauses are all covered by tests/test_the_station_ingests_only_new_bytes.py:238-471 and tests/test_the_station_store_is_node_local.py:86-87, with gate-head.log:30 at 24 passed EXIT=0.\nVERDICT write_paths: the source prompt grants station_store.py, the two test files, the landing fragment and a figures directory; git diff --name-only 0ebe07843 f83b5cb59 lists only the four files that exist and no path outside them.\nVERDICT manifest: read; it records two commits, the literal gate command, both suites at zero failures, five negative-control arms each naming a red test id, and the disclosed out-of-scope classification half.\nVERDICT diff: commit 34d55d7dd carries the store change and the tests and f83b5cb59 the landing fragment; the store change adds the size and anchor columns with in-place migration, _read_range, _anchor_before and the rewritten ingest_stream, closes day-file connections and deletes two uncalled constructors.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station_store.py:439-502 reads only past the stored offset, returns unread when size is unchanged, and refolds from zero on a changed inode, a size below consumed, a size below last-read or a moved anchor, which is the whole node goal.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log:1-6 name the revision, tree, imported module, cwd and command and the log ends EXIT=0 at 24 passed against gate-base.log at 15 passed and five red negative-control arms, but the ruff clause carries no recorded log so I reproduced it clean myself.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 0ebe07843 f83b5cb59 lists exactly the four declared write paths and the declared figures directory is untouched.\nSCORE durability: 18\nJUSTIFICATION durability: the fold equality at tests/test_the_station_ingests_only_new_bytes.py:291 and the read-offset assertions are independent of the store's output and negative-control.log shows each guard reddening, but the byte bound at line 282 draws its partial term from the store's own consumed field at line 287.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/station_store.py:57-62 declares ANCHOR_BYTES in the same commented configuration idiom as RETENTION_DAYS at line 66, with no plan label in any added name.\nSCORE reuse: 18\nJUSTIFICATION reuse: the search over reckon/ for table_info and ADD COLUMN found only reckon/run_store.py:228-262, a private store-specific migration rather than a reusable owner, and _read_range extracts the seek/read the old ingest_stream already performed.\nFINDING tests/test_the_station_ingests_only_new_bytes.py:287 non-blocking: the per-tick byte bound takes its partial-record allowance from the store's own consumed offset, so a store that under-advances widens its own allowance; the independent consumed==size and full-fold assertions at lines 294 and 291 close the hole.\nFINDING tests/test_the_station_ingests_only_new_bytes.py:446 non-blocking: len(offsets)==2 pins the anchor and tail to two separate read calls, so a correct one-call implementation would redden a test whose byte bound still held.\nFINDING manifest.md:24 non-blocking: the ruff clause of the done-when is claimed in the artifacts line with no recorded log; I verified ruff check and ruff format --check both exit 0 on the three changed Python files at head.\n",
+  "review_run_id": "r-20261024T131127187301-review-of-the-station-ingests-only-new-bytes-f83b5cb5976a",
+  "reviewed_base_sha": "0ebe07843c9e50391a2c60c1b6b06d09220e5faf",
+  "reviewed_head_sha": "f83b5cb5976abfeb23a5e005ace10f210b35851c",
+  "reviewed_run_id": "r-20261024T125322878212-the-station-ingests-only-new-bytes",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T13:28:51.642121+00:00",
+  "total": 111
+}
