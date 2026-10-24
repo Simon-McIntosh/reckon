@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="376">
+<meta name="plan-version" content="377">
 <meta name="plan-modified" content="2026-10-24">
 <meta name="plan-section-depends-on" content="{&quot;s64&quot;:[]}">
 </head>
@@ -1341,7 +1341,7 @@
 <li>a cited commit that names nothing when the revision is chosen, although it resolved when the landing check read it, refuses the promotion naming it rather than being left out;</li>
 </ul>The test asserts the real crew home is untouched.</li>
 <li>Negative controls, each applied alone and run under pytest with the default short summary: restoring the empty-string answer for a timeout in <code>_resolve_commit</code> fails the timeout case, and restoring the drop of an unresolved entry in <code>_descendant_commit</code> fails the case where a cited commit names nothing at the moment the revision is chosen.</li>
-<li>The test files importing <code>reckon/crew/promotion_scope.py</code> or <code>reckon/crew/recovery_review_subject.py</code> add no failure against a base arm. Both arms come from git checkouts under the run's own scratch directory and run in place on the fleet node with <code>pytest -n 8</code>. <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure at head. The manifest's <code>baseline_suite</code> and <code>after_suite</code> are flat suite records. Every log is under the run directory, starts with the revision it ran at and the literal command, and ends in <code>EXIT=</code>.</li>
+<li>The test files importing <code>reckon/crew/promotion_scope.py</code>, <code>reckon/crew/recovery_review_subject.py</code>, or any module that calls <code>_resolve_commit</code> (<code>reckon/crew/recovery.py</code>, <code>promotion_evidence.py</code>, <code>reports.py</code>, <code>promotion.py</code>, <code>review.py</code>, <code>dispatch.py</code>, <code>dispatch_plan.py</code>, <code>dispatch_sessions.py</code> and <code>recovery_review_dispatch.py</code>, all under <code>reckon/crew/</code>), among them <code>tests/test_one_function_resolves_a_citation.py</code>, add no failure against a base arm. Both arms come from git checkouts under the run's own scratch directory and run in place on the fleet node with <code>pytest -n 8</code>. <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure at head. The manifest's <code>baseline_suite</code> and <code>after_suite</code> are flat suite records. Every log is under the run directory, starts with the revision it ran at and the literal command, and ends in <code>EXIT=</code>.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the changed paths, judged against the base blobs.</li>
 </ul>
 
