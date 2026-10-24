@@ -164,10 +164,14 @@ def _contract_findings(
     decisions the original dispatch recorded as locked travel with the request,
     so an edit is judged under the same locks the launch will be.
     """
+    from reckon.crew.queue_admission import _resolve_lane_config
+    from reckon.crew.routing import resolved_time_ceiling
+
     options = record.get("dispatch_options") or {}
     verdict = validate_node(
         node,
         locked_decisions=tuple(options.get("locked_decisions") or ()),
+        budget_ceiling=resolved_time_ceiling(_resolve_lane_config(record)),
     )
     return list(verdict.findings)
 

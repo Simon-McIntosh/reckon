@@ -205,7 +205,7 @@ def test_edit_replaces_steering_and_the_declared_fields(
             "--write-path",
             "tests/test_queue_verbs.py",
             "--time-budget",
-            "35m",
+            "25m",
         ],
     )
     payload = _answer(result)
@@ -215,13 +215,30 @@ def test_edit_replaces_steering_and_the_declared_fields(
     assert steering.read_text(encoding="utf-8") == "replacement steering text"
     assert payload["steering_sha256"]
     record = _pointer(home)
-    assert record["node"]["done_when"].startswith("pytest -q tests/test_queue_verbs.py")
+    assert record["node"]["done_when"] == (
+        "pytest -q tests/test_queue_verbs.py reports 9 passed."
+    )
     assert record["node"]["write_paths"] == [
         "reckon/crew/queue_edit.py",
         "tests/test_queue_verbs.py",
     ]
-    assert record["node"]["time_budget"] == "35m"
+    assert record["node"]["time_budget"] == "25m"
     assert record["node"]["brief_sha256"] == payload["steering_sha256"]
+
+
+def test_an_over_ceiling_edit_is_refused_and_stores_nothing(home: Path) -> None:
+    """An edit obeys the same project fence as a dispatch."""
+    pointer = _write_request(home)
+    before = pointer.read_bytes()
+
+    result = CliRunner().invoke(
+        CREW, ["queue", "edit", "--run", "r-queued", "--time-budget", "35m"]
+    )
+
+    assert result.exit_code != 0, result.output
+    assert "35m" in result.output
+    assert "25m" in result.output
+    assert pointer.read_bytes() == before
 
 
 def test_an_edit_that_fails_the_contract_is_refused_and_stores_nothing(
