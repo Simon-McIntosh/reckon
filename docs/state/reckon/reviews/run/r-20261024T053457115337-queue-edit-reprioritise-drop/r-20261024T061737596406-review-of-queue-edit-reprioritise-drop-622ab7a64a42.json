@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's logs/base-arm/summary.log and logs/after-arm/summary.log: 11 failing ids in both arms, identical, so 0 added.",
+  "completed_at": "2026-10-24T06:33:52.986Z",
+  "dispatched_at": "2026-10-24T06:18:42Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": 2224,
+      "severity": "non-blocking",
+      "summary": "The crew MCP tool's action Literal (line 2224) and parameter list still omit queue-edit, queue-reprioritise and queue-drop and the brief_path, done_when, time_budget, backend, model and priority arguments, so the three actions answer through crew_action() but cannot be reached through the MCP surface a coordinator actually calls; the rows needed are written out in the source run's required-out-of-scope-edits.md section 1, and the file is outside this node's fence."
+    },
+    {
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 18,
+      "severity": "non-blocking",
+      "summary": "No STATE_PHRASES rows exist for queue edit, queue reprioritise or queue drop, so the done-when clause 'the CLI help-contract tests cover the three verbs' is unmet and the census now names four unregistered leaves where it named one at base; the three rows are transcribed in tests/test_queue_verbs.py:404 and in required-out-of-scope-edits.md section 2, and the file is outside this node's fence."
+    },
+    {
+      "file": "tests/test_run_verbs_share_one_identity_grammar.py",
+      "line": 168,
+      "severity": "non-blocking",
+      "summary": "The single-run-verb sweep reaches the three new leaves and raises KeyError at line 168 for each because MINIMAL_OPTIONS has no row for them, adding three failing parametrisations at the reviewed head that did not fail at base; the delta gate's population excludes this file by construction because it imports neither changed module, and required-out-of-scope-edits.md section 3 names the exact rows owed."
+    },
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": 348,
+      "severity": "non-blocking",
+      "summary": "drop re-reads the pointer and checks only its own unlocked waiting-phase read; unlike edit (line 256) and reprioritise (line 320) it takes no pointer lock and repeats no phase check before crew.discard, which guards only on a live recorded pid, so the commit body's and the landing fragment's claim that every verb re-checks the phase under the lock is false for the one destructive verb."
+    },
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": 33,
+      "severity": "non-blocking",
+      "summary": "The module docstring (lines 33-36) states that the queued path writes steering.md at queue time and admission reads it at launch, but nothing outside this module writes or reads steering.md at this head, so the claim describes the sibling binding node rather than this tree, and an edit's brief_sha256 names the new text while dispatch will store a copy of node.brief instead of it at launch."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:crew_queue_edit, reckon/crew_run_commands.py:crew_queue_reprioritise, reckon/crew_run_commands.py:crew_queue_drop, reckon/mcp_crew_actions.py:_verb_for at line 273, reckon/mcp.py:_crew_write_action at line 2481 (which cannot forward the new arguments, see finding).",
+    "diff": "Read commit by commit from 560465a09 to 622ab7a64: one feat commit adds reckon/crew/queue_edit.py (352 lines), 123 lines of CLI verbs, 43 lines of MCP action rows and a 417-line test module; the two docs commits touch only docs/evidence/fragments/a-queue-holds-the-whole-plan/queue-edit-reprioritise-drop.html.",
+    "done_when": "The done-when names tests/test_queue_verbs.py plus parity with the CLI and help-contract coverage; the manifest records 13 passed at that file and the delta arms, but the help-contract clause is unmet because tests/test_crew_help_names_its_state.py:18 gains no rows for the three verbs.",
+    "goal": "The goal is three queue verbs with matching MCP crew actions; the verbs land in reckon/crew/queue_edit.py and the action rows land in reckon/mcp_crew_actions.py, but reckon/mcp.py:2224 still declares the tool's action Literal and parameter list without them, so the MCP half answers only through crew_action().",
+    "manifest": "Read; it records 15e64a0b5, 88a9c0692 and 622ab7a64, 13 of 13 new cases passing, identical 11-failure arms and both negative controls with their log paths, and it names the out-of-scope MCP and census work rather than hiding it.",
+    "write_paths": "All five changed paths are inside the six declared write paths: reckon/crew/queue_edit.py, reckon/crew_run_commands.py, reckon/mcp_crew_actions.py, tests/test_queue_verbs.py and the fragment under docs/evidence/fragments/a-queue-holds-the-whole-plan/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is crew queue edit, reprioritise and drop with matching MCP crew actions; reckon/crew/queue_edit.py:175, :303 and :335 deliver the verbs and reckon/mcp_crew_actions.py:40 registers the actions, but reckon/mcp.py:2224 still cannot forward them.\nVERDICT done_when: the done-when names tests/test_queue_verbs.py, CLI/MCP parity and help-contract coverage; logs/queue-verbs.log records 13 passed with EXIT=0 and the parity case is written, but tests/test_crew_help_names_its_state.py:18 has no rows for the three verbs.\nVERDICT write_paths: read the manifest's declared paths; every path in the diff (queue_edit.py, crew_run_commands.py, mcp_crew_actions.py, tests/test_queue_verbs.py, the plan fragment) is inside them.\nVERDICT manifest: read; it states the 13 passing cases, the identical 11-failure arms with their logs, both negative controls, and the out-of-scope MCP and census work.\nVERDICT diff: read commit by commit from 560465a09 to 622ab7a64; one feat commit carries all 978 code and test lines and two docs commits correct the fragment.\nCALL_SITES: reckon/crew_run_commands.py:crew_queue_edit, reckon/crew_run_commands.py:crew_queue_reprioritise, reckon/crew_run_commands.py:crew_queue_drop, reckon/mcp_crew_actions.py:_verb_for, reckon/mcp.py:_crew_write_action\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/queue_edit.py:175, :303 and :335 implement the three verbs, but the MCP half of the goal is unreachable because reckon/mcp.py:2224 declares neither the action names nor their arguments.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/queue-verbs.log records 13 passed with EXIT=0 and the two arm summaries carry added_failures_from_gate_logs = 0, but the done-when's help-contract clause is met by no census row (tests/test_crew_help_names_its_state.py:18).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five changed paths lie inside the declared write paths and no plan file, shared index or peer path was touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_queue_verbs.py:304 fails when the launched-request guard is removed, as negative-control-edit-only.log shows for edit alone, but :351 repeats the value the test passed in and :400 exercises the MCP parity only on the refusal path.\nSCORE fit: 13\nJUSTIFICATION fit: the module follows the surrounding style and names nothing forbidden, but reckon/crew/queue_edit.py:33 and :348 state guarantees the code does not provide (steering is not read at launch here; drop does not re-check under the lock).\nSCORE reuse: 20\nJUSTIFICATION reuse: edit and reprioritise delegate to validate_node (reckon/crew/node.py:1154), ledger.resolve_name and _model_narrowed_backend, and drop wraps the existing promotion discard at reckon/crew/promotion.py:1862 rather than forking any of them.\nFINDING reckon/mcp.py:2224 non-blocking: the tool's action Literal and parameter list omit the three actions and their six arguments, so the MCP half of the goal is unreachable in production.\nFINDING tests/test_crew_help_names_its_state.py:18 non-blocking: no census rows for the three new leaves, so the done-when's help-contract clause is unmet and the census names four unregistered leaves where it named one at base.\nFINDING tests/test_run_verbs_share_one_identity_grammar.py:168 non-blocking: the sweep raises KeyError for the three new verbs, adding three failing parametrisations at the reviewed head.\nFINDING reckon/crew/queue_edit.py:348 non-blocking: drop does not repeat its phase check under the pointer lock, so the stated re-check guarantee does not hold for the destructive verb.\nFINDING reckon/crew/queue_edit.py:33 non-blocking: the docstring claims steering.md is written at queue time and read at launch, which is the sibling node's behaviour and not this tree's.\n",
+  "review_run_id": "r-20261024T061737596406-review-of-queue-edit-reprioritise-drop-622ab7a64a42",
+  "reviewed_base_sha": "560465a09476d7064ab602f9734bfcaa8e2c57fc",
+  "reviewed_head_sha": "622ab7a64a42b2a6ea0bd0cc20ccfbf1cb85bc12",
+  "reviewed_run_id": "r-20261024T053457115337-queue-edit-reprioritise-drop",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 13,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T06:35:10.947147+00:00",
+  "total": 97
+}
