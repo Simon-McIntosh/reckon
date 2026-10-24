@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="67">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -480,6 +480,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal" data-who="reckon-build" data-when="2026-10-24T01:36:56Z">
     <div class="r-comment-body"><p>A queued request refused by QueueFull or by any ScopeConflict claim kind now reads as a wait rather than a session refusal, so it keeps run-queued and its retry back-off; the new file gives 8 passed at head, 4 failed at base and 6 failed of 8 under the negative control.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261024T051525577085-review-of-the-pane-shows-every-state-change-bfb98f627c18" data-who="reckon-build" data-when="2026-10-24T05:49:50.975Z">
+    <div class="r-comment-body"><p>A second opinion on bfb98f627: the change does what §14 asks — launch, resume, in-review row rendered &#x27;delivered → in review&#x27; under the reviewed run&#x27;s node naming the review run, one landing, one dropped row, repeat landing suppressed — but the ticker population adds 33 failures against the base, so the node&#x27;s done_when is not met at head.</p></div>
 </div>
 </section>
 </main>

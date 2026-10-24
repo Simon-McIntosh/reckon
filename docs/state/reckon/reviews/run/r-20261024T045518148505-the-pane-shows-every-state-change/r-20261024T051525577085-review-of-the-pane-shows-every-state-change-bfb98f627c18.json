@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 33,
+  "added_failure_ids": [
+    "tests/test_a_delivered_review_ends_its_turn.py::test_a_delivered_review_inside_the_grace_is_left_running",
+    "tests/test_a_delivered_review_ends_its_turn.py::test_a_delivered_review_still_streaming_is_stopped",
+    "tests/test_a_delivered_review_ends_its_turn.py::test_a_review_with_no_stored_record_is_never_stopped",
+    "tests/test_a_delivered_review_ends_its_turn.py::test_a_template_manifest_status_is_refused_by_the_template_guard",
+    "tests/test_a_delivered_review_ends_its_turn.py::test_an_incomplete_manifest_review_is_left_running",
+    "tests/test_a_delivered_review_ends_its_turn.py::test_the_grace_is_measured_from_the_later_write",
+    "tests/test_a_halt_the_run_left_is_not_drawn.py::test_a_move_to_another_live_word_draws_the_halt_at_once",
+    "tests/test_a_halt_the_run_left_is_not_drawn.py::test_a_return_after_the_window_draws_both_halves_as_before",
+    "tests/test_a_halt_the_run_left_is_not_drawn.py::test_a_return_inside_the_window_leaves_no_halt_on_the_pane",
+    "tests/test_a_halt_the_run_left_is_not_drawn.py::test_the_terminal_echo_still_supersedes_nothing",
+    "tests/test_a_pane_shows_its_own_starts.py::test_a_panes_own_start_prints_with_no_held_arrival",
+    "tests/test_a_pane_shows_its_own_starts.py::test_a_panes_own_start_stays_in_the_view_and_leaves_the_stream",
+    "tests/test_a_pane_shows_its_own_starts.py::test_a_reannouncement_or_replay_of_the_same_start_delivers_nothing",
+    "tests/test_a_remembered_state_renders_as_a_pane_word.py::test_every_internal_state_and_pane_word_renders_mapped",
+    "tests/test_a_resume_is_drawn_working_again.py::test_a_resume_out_of_a_stop_asks_the_coordinator_for_nothing",
+    "tests/test_a_resume_is_drawn_working_again.py::test_each_stop_state_the_pane_draws_halted_leaves_the_resume_out",
+    "tests/test_a_resume_is_drawn_working_again.py::test_the_halted_row_is_followed_by_the_delivered_row",
+    "tests/test_a_status_repair_prints_no_halted_row.py::test_an_unstamped_transition_is_untouched_by_the_rule",
+    "tests/test_follow_replays_the_gap.py::test_a_run_the_record_does_not_name_is_replayed_from_dispatched",
+    "tests/test_follow_settled_rows.py::test_observer_context_shown_still_leaves_the_start_rows_out",
+    "tests/test_follow_settled_rows.py::test_the_pane_receives_only_the_settled_changes",
+    "tests/test_row_policy_holds_observer_context.py::test_a_launch_prints_only_its_completion",
+    "tests/test_row_policy_holds_observer_context.py::test_a_run_discarded_by_the_coordinator_prints_nothing",
+    "tests/test_row_policy_holds_observer_context.py::test_a_shown_observer_pane_still_carries_only_the_delivery",
+    "tests/test_the_live_pane_delivers_its_own_starts.py::test_the_live_follower_keeps_its_own_start_out_of_the_stream",
+    "tests/test_the_pane_draws_no_round_trip.py::test_a_departure_that_does_not_return_still_prints_no_row",
+    "tests/test_the_pane_draws_no_round_trip.py::test_a_duty_arriving_while_away_still_reaches_the_pane",
+    "tests/test_the_pane_draws_no_round_trip.py::test_a_run_that_never_reached_the_pane_ends_with_no_row",
+    "tests/test_the_pane_draws_no_round_trip.py::test_a_terminal_echo_the_pane_withholds_stays_hidden",
+    "tests/test_the_stream_carries_only_actionable_lines.py::test_a_halted_run_reaches_the_stream_and_its_recovery_does_not",
+    "tests/test_the_stream_carries_only_actionable_lines.py::test_only_the_actionable_kinds_reach_the_stream",
+    "tests/test_the_stream_carries_only_actionable_lines.py::test_the_rule_names_the_words_the_stream_carries",
+    "tests/test_ticker_row_is_one_transition.py::test_every_pane_word_is_a_hued_table_key"
+  ],
+  "completed_at": "2026-10-24T05:49:50.975Z",
+  "dispatched_at": "2026-10-24T05:16:10Z",
+  "findings": [
+    {
+      "file": "tests/test_a_halt_the_run_left_is_not_drawn.py",
+      "line": 1,
+      "severity": "blocking",
+      "text": "The node's done_when requires the tests importing ticker or recovery_watch to add no failures against the base; measured at the reviewed head over the 76-file population, 33 tests fail that pass at base aff18d752 (36 failing at head, 3 pre-existing). Eleven of the 16 affected files lie in no dispatched node's write paths, so landing this commit leaves the tree red with no owner for most of the repair."
+    },
+    {
+      "file": "tests/test_the_pane_shows_every_state_change.py",
+      "line": 125,
+      "severity": "non-blocking",
+      "text": "assert 'delivered' in drawn is satisfied by the delivery row already on the grid from the previous render, so the assertion does not test that the in-review row's left half renders as 'delivered'."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": 1497,
+      "severity": "non-blocking",
+      "text": "_release_launch replaces _note_printed on the start, stale-arrival and expired-arrival paths, so a launched run is never marked told; a later settled row is then read as an unexplained end by _observer_exception, which now also exempts every landing, so the two rules overlap and launch told-bookkeeping is no longer written."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261024T051525577085-review-of-the-pane-shows-every-state-change-bfb98f627c18",
+  "reviewed_base_sha": "aff18d75205fa4b03304d96c0c8de0b470d80b08",
+  "reviewed_head_sha": "bfb98f627c18494996df19d566404f8dfbe6af25",
+  "reviewed_run_id": "r-20261024T045518148505-the-pane-shows-every-state-change",
+  "scores": {
+    "durability": 17,
+    "evidence": 9,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T05:50:33.481887+00:00",
+  "total": 100
+}
