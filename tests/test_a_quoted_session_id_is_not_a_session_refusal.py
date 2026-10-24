@@ -13,14 +13,15 @@ review command the refusal names as another run's action. So the queued run was
 published as a session-side refusal with the follower attach line as its remedy.
 Nothing a follower does clears an unreconciled-runs refusal; the refusal names
 its own two remedies — reconcile each named run, or waive. A queued run cannot
-take the waiver after it is queued, so the coordinator's path is to discard the
-queued run and dispatch again with ``--allow-unreconciled-runs``.
+take the waiver after it is queued, so the coordinator's path is the first
+remedy and nothing else: a re-dispatch would discard its place while admission
+re-tests the stored request by itself.
 
 The ticket is the exception class the admission pass stamps at the head of the
 stored failure, ``<ClassName>: <text>``, which says whose refusal it is without
 reading the text at all. ``UnreconciledRuns`` publishes the first named run's
-own action; a follower refusal, stamped as ``_FollowerAdmissionUnmet``, keeps
-the follower remedy it publishes today.
+own action while that run still has a live pointer; a follower refusal, stamped
+as ``_FollowerAdmissionUnmet``, keeps the follower remedy it publishes today.
 """
 
 from __future__ import annotations
@@ -92,6 +93,31 @@ def _write_queued(run_id: str, *, failure: str) -> None:
             "failure_at": "2026-10-23T15:40:00+00:00",
             "failure_attempts": 1,
             "retry_at": "2026-10-23T16:00:00+00:00",
+            "node": {
+                "id": run_id,
+                "plan": PLAN,
+                "section": "fixture-section",
+                "time_budget": "20m",
+                "write_paths": ["seed.txt"],
+            },
+        },
+    )
+
+
+def _write_live_named_run(run_id: str) -> None:
+    """Write the live pointer the refusal's named run still holds.
+
+    A named run that has been reconciled no longer has a pointer, and its
+    action is then no longer owed; the fixture writes the pointer so the run
+    the refusal names is still open when the remedy is read.
+    """
+    runs._write_json(
+        runs.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": PROJECT,
+            "session": SESSION,
+            "phase": "working",
             "node": {
                 "id": run_id,
                 "plan": PLAN,
@@ -180,6 +206,7 @@ def test_an_unreconciled_runs_refusal_publishes_the_named_runs_action(
     still owed one. It is neither the follower the session already has nor the
     waiver only a new dispatch can take.
     """
+    _write_live_named_run("r-review-in-flight")
     _write_queued("r-unreconciled", failure=_unreconciled_refusal())
     row = _row("r-unreconciled")
     assert row["classification"] == "queued"
@@ -193,22 +220,24 @@ def test_an_unreconciled_runs_refusal_publishes_the_named_runs_action(
     assert listed[0]["next_command"] == _review_action(), listed[0]["next_command"]
 
 
-def test_the_unreconciled_runs_detail_names_the_waiver_and_its_discard(
+def test_the_unreconciled_runs_detail_advises_no_redispatch(
     repository: Path,
 ) -> None:
-    """The detail carries the alternative a queued run must take.
+    """The detail never tells a queued run to discard itself and dispatch again.
 
-    A queued run cannot pass ``--allow-unreconciled-runs`` to a launch that has
-    already happened, so the detail says to discard it and dispatch again. The
-    assertion is on the classified row because the obligations duty row carries
-    no detail field.
+    A queued request cannot take ``--allow-unreconciled-runs`` on a launch that
+    has already happened, and re-dispatching it discards its place in the queue
+    while admission re-tests the stored request on its own. The refusal quotes
+    that waiver, so the detail carries the refusal's words; what it must not do
+    is advise acting on it. The assertion is on the classified row because the
+    obligations duty row carries no detail field.
     """
+    _write_live_named_run("r-review-in-flight")
     _write_queued("r-unreconciled", failure=_unreconciled_refusal())
     row = _row("r-unreconciled")
     detail = str(row["session_refusal"]["detail"])
-    assert "discard" in detail.lower(), detail
-    assert "--allow-unreconciled-runs" in detail
-    assert "dispatch again" in detail.lower(), detail
+    assert "discard" not in detail.lower(), detail
+    assert "dispatch again" not in detail.lower(), detail
 
 
 def test_the_unreconciled_runs_remedy_is_never_the_follower_or_the_waiver(
