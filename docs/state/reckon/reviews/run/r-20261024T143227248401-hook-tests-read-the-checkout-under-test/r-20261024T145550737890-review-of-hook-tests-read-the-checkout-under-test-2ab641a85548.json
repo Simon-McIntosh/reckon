@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: after_suite (f7d31f304) failure_ids [] against baseline_suite (19af48b2b) failure_ids [tests/test_a_worker_cannot_walk_the_crew_home.py::test_the_sync_installer_binds_the_walk_guard_behind_the_git_guard_flag], so the head adds no failure the base did not already carry; both arms completed: true with an EXIT= line (gate-after.log EXIT=0, gate-base.log EXIT=1).",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli_entry.py:345 (_configure_crew_guards)",
+    "reckon/hooks/install.py:421 (worker_walk_guard_groups)",
+    "reckon/cli_entry.py:302 (_crew_guard_path)"
+  ],
+  "completed_at": "2026-10-24T15:06:35.270Z",
+  "dispatched_at": "2026-10-24T14:57:05Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_cannot_walk_the_crew_home.py",
+      "line": "406",
+      "text": "non-blocking: 'assert interpreter == installer.interpreter_path(script)' compares the bound command against the same resolver the code under test calls (reckon/hooks/install.py:434), so the two sides move together and it cannot catch a regression inside that resolver; the replaced 'startswith(\"python\")' check was independent, and interpreter_bootstrap.is_checkout_interpreter (reckon/hooks/install.py:460) would restore one."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T143227248401-hook-tests-read-the-checkout-under-test/manifest.md",
+      "line": "20",
+      "text": "non-blocking: the artifacts line reports 'ruff check 1 finding at base and 1 at head'; ruff reports 'All checks passed!' at both 19af48b2b and 2ab641a85, so 1 is the line count of that message rather than a finding, and the record reads as a pre-existing defect that does not exist."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read f7d31f304 (test assertions and docstring) and 2ab641a85 (27-line evidence fragment) against base 19af48b2b; no production source changed.",
+    "done_when": "gate-base.log records '1 failed, 19 passed' at 19af48b2b, gate-after.log records '20 passed' at f7d31f304, negative-control.log reddens the id under include_walk_guard=False, and my re-run of the file in the detached source worktree at 2ab641a85 gives '20 passed' EXIT=0.",
+    "goal": "\u00a752's node goal is that the listed census id passes at the head while the test keeps the property it exists to pin; commit f7d31f304 rewrites tests/test_a_worker_cannot_walk_the_crew_home.py:368-407 to assert the resolved guard's properties instead of equality with the importing module's own path.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T143227248401-hook-tests-read-the-checkout-under-test/manifest.md; status complete, commits f7d31f304 and 2ab641a85, baseline_suite exit 1 with the target id, after_suite exit 0 with no failures; the artifacts ruff count does not reproduce.",
+    "write_paths": "the manifest declares tests/test_a_worker_cannot_walk_the_crew_home.py plus two docs/evidence paths; the diff's two files are inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_cannot_walk_the_crew_home.py:401-405 redden on a wrong script name, a wrong directory, a missing file or a missing sibling splitter, and negative-control.log reddens the id when the walk groups are not installed; the interpreter check at :406 is not independent of the resolver it exercises.",
+    "evidence": "gate-base.log ('1 failed, 19 passed' at 19af48b2b), gate-after.log ('20 passed' at f7d31f304) and negative-control.log all end in EXIT= and measure \u00a752's clauses; my re-run at 2ab641a85 in the detached worktree gives '20 passed EXIT=0' (review-worktree-check.log); only the manifest's ruff count is wrong.",
+    "fit": "tests/test_a_worker_cannot_walk_the_crew_home.py:376-406 keeps the file's typed pytest idiom and adds no plan, ticket or version label.",
+    "goal_fidelity": "tests/test_a_worker_cannot_walk_the_crew_home.py:387-407 still asserts both walk-group matchers, a worker_walk_guard.py inside reckon/hooks with worker_git_guard.py beside it, and the git guard installed by the same flag, so the property survives while the id passes.",
+    "reuse": "the diff adds no definition and reuses the file's existing _bound_command helper (tests/test_a_worker_cannot_walk_the_crew_home.py:286); a search over tests/ and reckon/hooks/ for a second owner of the sync-path guard assertion found only the neighbouring compose-path case at :324, which tests a different entry point.",
+    "scope_discipline": "git diff --stat 19af48b2b..2ab641a85 changes only tests/test_a_worker_cannot_walk_the_crew_home.py and docs/evidence/fragments/the-suite-is-green-at-head/hook-tests-read-the-checkout-under-test.html, both declared."
+  },
+  "node": "review-of-hook-tests-read-the-checkout-under-test-2ab641a85548",
+  "node:reviewed": "hook-tests-read-the-checkout-under-test",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a752's node goal is that the listed census id passes at the head while the test keeps the property it exists to pin; commit f7d31f304 rewrites the sync-path case at tests/test_a_worker_cannot_walk_the_crew_home.py:368-407 to assert the resolved guard's properties instead of equality with the importing module's own path.\nVERDICT done_when: \u00a752's done_when names the id, a base arm, a production-mutation negative control and a worktree run; gate-base.log records '1 failed, 19 passed' at 19af48b2b, gate-after.log records '20 passed' at f7d31f304, negative-control.log reddens the id under include_walk_guard=False, and I re-ran the file in the detached source worktree at 2ab641a85 (20 passed, EXIT=0, review-worktree-check.log).\nVERDICT write_paths: the manifest declares tests/test_a_worker_cannot_walk_the_crew_home.py plus two docs/evidence paths; git diff --stat 19af48b2b..2ab641a85 touches only that test file (+17/-5) and docs/evidence/fragments/the-suite-is-green-at-head/hook-tests-read-the-checkout-under-test.html (+27), both inside the declared set.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T143227248401-hook-tests-read-the-checkout-under-test/manifest.md; status complete, commits f7d31f304 and 2ab641a85, baseline_suite exit 1 carrying the target id, after_suite exit 0 with no failures, negative_control_log named; its artifacts line's ruff '1 finding' count does not reproduce (see FINDING).\nVERDICT diff: read both commits against base 19af48b2b: f7d31f304 replaces the sync-path assertions and adds a docstring paragraph, 2ab641a85 adds the 27-line evidence fragment; no production source is touched.\nCALL_SITES: reckon/cli_entry.py:345 (_configure_crew_guards), reckon/hooks/install.py:421 (worker_walk_guard_groups), reckon/cli_entry.py:302 (_crew_guard_path)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_worker_cannot_walk_the_crew_home.py:387-407 still asserts both walk-group matchers, a worker_walk_guard.py inside reckon/hooks with worker_git_guard.py beside it, and the git guard installed by the same flag, so the property survives while the id passes.\nSCORE evidence: 18\nJUSTIFICATION evidence: the arms and control in gate-base.log, gate-after.log and negative-control.log measure \u00a752's clauses and each ends in EXIT=, and my re-run at 2ab641a85 in the detached worktree gives '20 passed EXIT=0' (review-worktree-check.log); only the manifest's ruff count is wrong.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 19af48b2b..2ab641a85 changes only tests/test_a_worker_cannot_walk_the_crew_home.py and its declared evidence fragment.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_worker_cannot_walk_the_crew_home.py:401-405 redden if the sync path binds a differently named script, one outside reckon/hooks, or a checkout without worker_git_guard.py, and negative-control.log reddens the id when the walk groups are not installed at all, but the interpreter check at :406 compares against the resolver the code itself calls.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_worker_cannot_walk_the_crew_home.py:376-406 keeps the file's typed pytest idiom, adds one comment and a docstring paragraph, and introduces no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function or class; it extends the existing sync-path case and leaves the file's _bound_command helper (tests/test_a_worker_cannot_walk_the_crew_home.py:286) and the neighbouring compose-path case at :324 as the owners of that check.\nFINDING tests/test_a_worker_cannot_walk_the_crew_home.py:406 non-blocking: 'assert interpreter == installer.interpreter_path(script)' compares the bound command against the same resolver the code under test calls (reckon/hooks/install.py:434), so the two sides move together and it cannot catch a regression inside that resolver; the assertion it replaced ('name.startswith(\"python\")') was independent, and interpreter_bootstrap.is_checkout_interpreter, already owned at reckon/hooks/install.py:460, would restore that independence.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T143227248401-hook-tests-read-the-checkout-under-test/manifest.md:20 non-blocking: the artifacts line reports 'ruff check 1 finding at base and 1 at head'; ruff reports 'All checks passed!' at both 19af48b2b and 2ab641a85 (verified in the source worktree at 2ab641a85 and via --stdin-filename for base), so the 1 is the line count of that message rather than a finding, and the absolute reads as a pre-existing defect that does not exist.",
+  "review_run_id": "r-20261024T145550737890-review-of-hook-tests-read-the-checkout-under-test-2ab641a85548",
+  "reviewed_base_sha": "19af48b2b8877f4007c33e4444b3428dbfbbec6e",
+  "reviewed_head_sha": "2ab641a8554841219c57eaf856e4a5b886fcb15e",
+  "reviewed_run_id": "r-20261024T143227248401-hook-tests-read-the-checkout-under-test",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:04:48+00:00",
+  "total": 113
+}
