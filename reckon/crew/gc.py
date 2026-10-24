@@ -1028,6 +1028,30 @@ def _scratch_process_holders(root: Path) -> dict[str, list[int]]:
     return holders
 
 
+def scratch_root_pairs_with_state_home(
+    *,
+    scratch_root: str | Path | None = None,
+    state_runs_root: str | Path | None = None,
+) -> bool:
+    """Whether a pass knows both the scratch root it removes from and its home.
+
+    Removing a run-named directory is irreversible, and the copies under the
+    host-wide default root belong to the runs of the operator's own state home.
+    A private home cannot see those runs' live pointers, and the holder scan
+    cannot see a worker that is between turns with its cwd in its worktree, so a
+    pass that reads one tree and removes under the other would delete a live
+    run's scratch. The two are therefore taken together: both named by the
+    caller, both taken from the environment, or both left at their defaults.
+    """
+    from reckon.crew.dispatch import WORKER_SCRATCH_ROOT_ENV
+
+    if scratch_root is not None or state_runs_root is not None:
+        return scratch_root is not None and state_runs_root is not None
+    return bool(os.environ.get("RECKON_HOME")) == bool(
+        os.environ.get(WORKER_SCRATCH_ROOT_ENV)
+    )
+
+
 def garbage_collect_orphan_scratch(
     *, apply: bool = False, now: float | None = None
 ) -> dict[str, Any]:
@@ -1039,11 +1063,7 @@ def garbage_collect_orphan_scratch(
     from reckon.crew.dispatch import tree_size_bytes, worker_scratch_root
 
     root = worker_scratch_root()
-    # A private state home cannot prove that the host-wide default root has no
-    # live pointers in the operator's state home.
-    if os.environ.get("RECKON_HOME") and not os.environ.get(
-        "RECKON_WORKER_SCRATCH_ROOT"
-    ):
+    if not scratch_root_pairs_with_state_home():
         return {
             "root": str(root),
             "entries": [],
@@ -1187,29 +1207,13 @@ def settle_run_scratch(
     leaves it unable to see the live pointers that protect the copies it would
     delete.
     """
-    from reckon.crew.dispatch import (
-        WORKER_SCRATCH_ROOT_ENV,
-        tree_size_bytes,
-        worker_scratch_root,
-    )
+    from reckon.crew.dispatch import tree_size_bytes, worker_scratch_root
     from reckon.crew.runs import run_dir
 
     scratch = Path(root) if root is not None else worker_scratch_root()
-    # A removed copy cannot be recovered, and the copies under the host-wide
-    # default root belong to the runs of the operator's own state home. A
-    # private home cannot see those runs' live pointers, so it cannot show that
-    # a copy here is finished: a worker between turns sits in its worktree and
-    # holds nothing in the scratch directory to be seen by the holder scan.
-    # Removing on that reading is the destructive mis-scope this refuses, so the
-    # two trees are taken together: both named as arguments, both taken from the
-    # environment, or both left at their defaults.
-    if root is not None or runs_root is not None:
-        coherent = root is not None and runs_root is not None
-    else:
-        coherent = bool(os.environ.get("RECKON_HOME")) == bool(
-            os.environ.get(WORKER_SCRATCH_ROOT_ENV)
-        )
-    if not coherent:
+    if not scratch_root_pairs_with_state_home(
+        scratch_root=root, state_runs_root=runs_root
+    ):
         return {
             "root": str(scratch),
             "entries": [],

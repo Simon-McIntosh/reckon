@@ -38,7 +38,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _plan_html, ledger
+from reckon import _plan_html, _store, ledger
 from reckon.crew import gc, promotion
 from reckon.crew import promotion_release as release_module
 from reckon.crew import review as review_module
@@ -337,6 +337,20 @@ def test_naming_only_the_scratch_root_withholds(
     assert copy.exists()
 
 
+def test_naming_only_the_state_tree_withholds(
+    scratch_root: Path, crew_home: Path
+) -> None:
+    """The symmetric half: a runs root named alone is still an unnamed pair."""
+    copy = _run_copy(RUN)
+    _finished_run_directory(RUN)
+
+    result = settle_run_scratch(apply=True, runs_root=run_dir(RUN).parent)
+
+    assert result["withheld"] == "state and scratch roots differ"
+    assert result["removed"] == []
+    assert copy.exists()
+
+
 def test_naming_both_trees_lets_the_pass_remove(
     scratch_root: Path, crew_home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -450,6 +464,38 @@ def test_a_review_promoted_through_the_complete_route_removes_its_scratch(
     )
     assert receipt["scratch_removed"] is True
     assert receipt["scratch_host"] == socket.gethostname()
+
+
+def test_the_receipt_is_written_through_the_atomic_writer(
+    scratch_root: Path, crew_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A plain write_text would leave a reader able to see half a receipt."""
+    written: list[Path] = []
+    original = _store.write_json_atomically
+
+    def record(path: str | Path, payload: object, **kwargs: object) -> Path:
+        written.append(Path(path))
+        return original(path, payload, **kwargs)
+
+    monkeypatch.setattr(_store, "write_json_atomically", record)
+    _run_copy(RUN)
+    _finished_run_directory(RUN)
+    repo = _repository(tmp_path)
+    (repo / "docs" / "state" / PROJECT / "runs").mkdir(parents=True, exist_ok=True)
+    ledger.write_run_file(PROJECT, {"run_id": RUN, "project": PROJECT}, repo)
+    release = release_module._release_after_promotion(
+        RUN,
+        {"run_id": RUN, "project": PROJECT, "role": "review", "worktree": None},
+        gate="not-run",
+    )
+    release_module._record_release_on_ledger(
+        project=PROJECT, root=repo, run_id=RUN, release=release, checkout=repo
+    )
+
+    receipt = run_dir(RUN) / release_module.RELEASE_RECEIPT_NAME
+    assert receipt in written
+    assert json.loads(receipt.read_text(encoding="utf-8"))["scratch_removed"] is True
+    assert release["scratch_removed"] is True
 
 
 def test_a_release_receipt_survives_a_refused_landing_commit(

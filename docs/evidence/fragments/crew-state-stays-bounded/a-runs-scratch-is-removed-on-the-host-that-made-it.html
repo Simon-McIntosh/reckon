@@ -25,7 +25,9 @@
     private home cannot see, and the holder scan does not reach a worker sitting in its
     worktree between turns. The two trees are taken together — both named as arguments, both
     taken from the environment, or both left at their defaults — so one named and the other
-    read from the environment withdraws every removal. It withholds with
+    read from the environment withdraws every removal. That rule lives in one predicate,
+    <code>scratch_root_pairs_with_state_home</code>, which both this pass and
+    <code>garbage_collect_orphan_scratch</code> call. It withholds with
     <code>state and scratch roots differ</code>, the same guard the orphan sweep applies.
     The release receipt is also written beside the run's own record
     (<code>release.json</code>) before the ledger write, because the ledger write is not durable on
@@ -100,7 +102,10 @@
     run directory is left at its own ctime and removed once past the grace. A private home that
     leaves the scratch root to this process's environment removes nothing, and names
     <code>state and scratch roots differ</code>; a scratch root named alone with a private home
-    does the same, and a caller that names both trees is settled as usual. The step wrapper, run
+    does the same, a runs root named alone does the same, and a caller that names both trees is
+    settled as usual. The receipt is asserted to go through
+    <code>write_json_atomically</code> — the writer the landing and pointer records use — so a
+    plain <code>write_text</code> in its place fails the case. The step wrapper, run
     under <code>bash</code> with the wrapper's own environment, removes a finished run's copy. A
     review run's release removes its scratch and names the host, and its receipt survives a landing
     commit that is refused.
@@ -113,12 +118,16 @@
     <code>_release_after_promotion</code> and then records the release on the ledger row. The case
     builds a temporary crew home with a committed repository, a parsed head-keyed review record, a
     review-role pointer and the run's exit record, and calls that function — not the release function
-    behind it. Measured on the same fixture at both revisions, with the base revision's tree extracted
-    from <code>0409dcbe4</code>: at the base the copy is already removed on this host and the ledger
-    row already carries its release block, because the release predates this node; what the base does
-    not have is the receipt beside the run record, which reads absent there and present at the head.
-    At the head all three hold — copy removed, release block on the row, receipt beside the record —
-    and the case asserts all three, so it fails on the base tree.
+    behind it. The case file was run against a <code>git archive</code> extraction of the base
+    revision <code>0409dcbe4</code>, with the head's case file and the head's
+    <code>reckon/crew/gc.py</code> copied in so the module imports while
+    <code>promotion.py</code> and <code>promotion_release.py</code> stay at the base; the log is
+    <code>logs/review-route-base.log</code> and it ends <code>EXIT=1</code>. What it shows is that the
+    base removes the copy and records a release block — that part of the route predates this node —
+    but the block names no host: the case fails on <code>KeyError: 'scratch_host'</code>, which is
+    exactly the fact this node added, because a receipt that does not name its host cannot be told
+    apart from one describing a copy elsewhere. At the head the copy is gone, the row carries a
+    release block naming this host, and the same receipt sits beside the run record.
   </p>
 
   <p id="a-runs-scratch-is-removed-on-the-host-that-made-it-negative">
