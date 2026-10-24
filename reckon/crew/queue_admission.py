@@ -2147,12 +2147,17 @@ def admit_until_stopped(
     leaves the service on its current code, so a tree mid-merge never replaces a
     running service.
     """
+    admission_options: dict[str, Any] = {"lane": lane}
+    if launcher is not None:
+        admission_options["launcher"] = launcher
+    if config_for is not None:
+        admission_options["config_for"] = config_for
     if once:
         stamp = _admit_code_stamp()
         from reckon.crew.queue_landing import land_once
 
         landing = land_once()
-        result = admit_once(lane=lane, launcher=launcher, config_for=config_for)
+        result = admit_once(**admission_options)
         result["landing"] = landing
         _record_pass_verdicts(result, lane=lane, code_stamp=stamp)
         return result
@@ -2165,7 +2170,7 @@ def admit_until_stopped(
             from reckon.crew.queue_landing import land_once
 
             landing = land_once()
-            admitted = admit_once(lane=lane, launcher=launcher, config_for=config_for)
+            admitted = admit_once(**admission_options)
             admitted["landing"] = landing
             _publish_pass_verdicts(
                 _record_pass_verdicts(admitted, lane=lane, code_stamp=code_stamp)
