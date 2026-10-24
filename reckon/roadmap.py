@@ -646,7 +646,7 @@ def dependency_row_state(
     """
 
     data = plan if isinstance(plan, Mapping) else {}
-    plan_status = str(data.get("workflow_status") or data.get("status") or "")
+    plan_status = _status(data)
     if not section:
         return plan_status
     if declarations is None:
