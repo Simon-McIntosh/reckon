@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: after_suite (624c87262) failure_ids [tests/test_each_run_owns_its_harness_home.py::test_a_fenced_worker_edits_its_worktree_and_is_refused_on_the_main_checkout] against baseline_suite (4f02a29eb) failure_ids of the same fourteen ids including that one, so the head adds no failure the base did not already carry; both arms completed true and each log ends in a bare EXIT= line (gate-base.log EXIT=1, gate-head.log EXIT=1).",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1651 (change_lane)",
+    "reckon/crew/runs.py:861 (recorded_dispatch_overrides)",
+    "reckon/crew/tombstones.py:206 (redispatch tombstone naming crew resume --backend)",
+    "reckon/crew/queue_admission.py:283 (move_queued_run)"
+  ],
+  "completed_at": "2026-10-24T15:25:11.951Z",
+  "dispatched_at": "2026-10-24T15:16:00Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Superseded by the coordinator's base, head, merge and main arms from git-archive extractions, whose logs name each tree and command; ruff is re-checked on the staged paths at landing.",
+      "recorded_at": "2026-10-24T15:34:58.821897+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Superseded by the coordinator's base, head, merge and main arms from git-archive extractions, whose logs name each tree and command; ruff is re-checked on the staged paths at landing.",
+      "recorded_at": "2026-10-24T15:35:03.403080+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T134943832179-tests-drive-the-folded-resume-and-budget-verbs/manifest.md",
+      "line": "11",
+      "text": "non-blocking: the `tests` line names `cd /tmp/reckon-arms-head`, and the measurement_module/measurement_cwd lines (13-14) name `/tmp/reckon-arms-head/reckon/__init__.py` and `/tmp/reckon-arms-head`, but gate-head.log's header records tree=/tmp/reckon-crew-scratch/r-20261024T134943832179-tests-drive-the-folded-resume-and-budget-verbs/reckon-arms-head-Zjmv, cwd that same scratch path, and module=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/efd0ee8c-9d4e-4fa3-a440-ac05791d4758/tests-drive-the-folded-resume-and-budget-verbs/reckon/__init__.py, and neither /tmp/reckon-arms-head nor /tmp/reckon-arms-base exists; promotion fills its gate receipt from the tests line, so a re-run taken from it cannot resolve its tree."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T134943832179-tests-drive-the-folded-resume-and-budget-verbs/manifest.md",
+      "line": "21",
+      "text": "non-blocking: the artifacts line records the two arms and the mutation logs but no `ruff check`/`ruff format --check` result, which section 41's done_when requires on the staged paths; measured here on the six touched files at fd199244a against their 4f02a29eb copies, ruff check reports the same two F841 findings in tests/test_crew_lane_change.py and ruff format --check the same one reformat target, so the delta is zero and only the receipt is missing."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 624c87262 (six test files, +95/-34: verb spellings rewritten and tombstone assertions added) and fd199244a (61-line evidence fragment) against base 4f02a29eb; no production source is touched, and every changed assertion is in a file the manifest declares.",
+    "done_when": "gate-base.log records '14 failed, 27 passed' at 4f02a29eb and gate-head.log records '1 failed, 40 passed' at 624c87262, both from git archive extractions under the run's scratch tree and both ending EXIT=1; the manifest's per_id line names a commit and an intended/blocked verdict for each of the fourteen ids; the eleven logs/negative-*.log files each end EXIT=1, satisfying the one-production-mutation-per-repaired-id clause; the ruff clause has no recorded receipt (see FINDING on manifest.md:21).",
+    "goal": "section 41's goal is that its fourteen census ids pass at the head by asserting the intended contract or reporting an unintended change; commit 624c87262 rewrites six test files to drive crew resume --backend and crew budget --check, the manifest reports thirteen ids repaired and passing, and the fourteenth (tests/test_each_run_owns_its_harness_home.py::test_a_fenced_worker_edits_its_worktree_and_is_refused_on_the_main_checkout) is reported blocked with commit 203882d19 named, which is section 41's own procedure for an unintended change.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T134943832179-tests-drive-the-folded-resume-and-budget-verbs/manifest.md; status complete, commits 624c87262 and fd199244a, baseline_suite 14 failure ids with completed true and after_suite 1 failure id with completed true, negative_control_log named and eleven mutation logs on disk; its stated arm results reconcile with the two gate logs, but its tests and measurement fields name /tmp/reckon-arms-head* paths no gate log used (see FINDING on manifest.md:11).",
+    "write_paths": "the manifest declares the seven tests/ paths, the evidence fragment and a figures directory under docs/figures/the-suite-is-green-at-head/; `git diff --stat 4f02a29eb..fd199244a` changes only the six test files and docs/evidence/fragments/the-suite-is-green-at-head/tests-drive-the-folded-resume-and-budget-verbs.html, all inside the declared set, and tests/test_each_run_owns_its_harness_home.py is declared but deliberately untouched per the blocked-id rule."
+  },
+  "justifications": {
+    "durability": "logs/negative-tombstone-successor.log mutates reckon/crew/tombstones.py so the successor reads 'crew resume', and tests/test_crew_lane_change.py:396 reddens, proving the new successor assertion guards the folded verb; the run_id retention assertion at tests/test_a_lane_change_keeps_its_waivers.py:126 reddens on the pre-fold behaviour, which minted a second id.",
+    "evidence": "the base and head arms in logs/gate-base.log (14 failed, 27 passed at 4f02a29eb) and logs/gate-head.log (1 failed, 40 passed at 624c87262) measure section 41's clauses and both end in EXIT=, but the ruff clause is unrecorded and the manifest's tests/measurement lines name a tree that never existed.",
+    "fit": "tests/test_crew_lane_change.py:334-396 keeps the file's CliRunner/monkeypatch idiom and its typed helpers, and the diff introduces no plan, sprint, ticket or version label.",
+    "goal_fidelity": "tests/test_a_lane_change_keeps_its_waivers.py:124-132 asserts the moved queued run keeps queued_id, carries its waiver and appears in list_live, which is the contract reckon/crew/queue_admission.py:283 move_queued_run implements, and the one id the node could not repair is reported rather than silently left failing.",
+    "reuse": "the diff adds no production definition; a search over reckon/crew for the capability found the existing owners the tests now exercise - change_lane at reckon/crew/dispatch_sessions.py:1651 and recorded_dispatch_overrides at reckon/crew/runs.py:861 - and the only added test helper is the per-file _redispatch renamed to _retired_redispatch, which duplicates nothing in production.",
+    "scope_discipline": "`git diff --stat 4f02a29eb..fd199244a` changes only the six declared test files plus the declared evidence fragment, and no production path appears."
+  },
+  "node": "review-of-tests-drive-the-folded-resume-and-budget-verbs-fd199244ad18",
+  "node:reviewed": "tests-drive-the-folded-resume-and-budget-verbs",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 41's goal is that its fourteen census ids pass at the head by asserting the intended contract or reporting an unintended change; commit 624c87262 rewrites six test files to drive crew resume --backend and crew budget --check, thirteen ids are repaired and the fourteenth is reported blocked with commit 203882d19 named at tests/test_each_run_owns_its_harness_home.py:555.\nVERDICT done_when: the gate names the seven files and both arms are recorded - logs/gate-base.log '14 failed, 27 passed' at 4f02a29eb and logs/gate-head.log '1 failed, 40 passed' at 624c87262, each ending EXIT=1.\nVERDICT write_paths: the manifest declares the seven tests/ paths, the evidence fragment and a figures directory; git diff --stat 4f02a29eb..fd199244a changes only the six test files and docs/evidence/fragments/the-suite-is-green-at-head/tests-drive-the-folded-resume-and-budget-verbs.html, all declared.\nVERDICT manifest: read .../r-20261024T134943832179-tests-drive-the-folded-resume-and-budget-verbs/manifest.md; status complete, commits 624c87262 and fd199244a, baseline_suite 14 failure ids and after_suite 1 failure id both completed true, eleven negative-control logs present; its tests and measurement fields name /tmp/reckon-arms-head* paths no gate log used (see FINDING).\nVERDICT diff: read 624c87262 (six test files, +95/-34, verb spellings and tombstone assertions) and fd199244a (61-line evidence fragment) against base 4f02a29eb; no production source changed.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1651 (change_lane), reckon/crew/runs.py:861 (recorded_dispatch_overrides), reckon/crew/tombstones.py:206 (redispatch tombstone naming crew resume --backend), reckon/crew/queue_admission.py:283 (move_queued_run)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_lane_change_keeps_its_waivers.py:124-132 asserts the moved queued run keeps queued_id, carries its waiver and appears in list_live, which is the contract reckon/crew/queue_admission.py:283 move_queued_run implements, and the one unrepairable id is reported blocked rather than left silently failing.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-base.log (14 failed, 27 passed at 4f02a29eb) and logs/gate-head.log (1 failed, 40 passed at 624c87262) measure section 41's clauses and both end in EXIT=, but the ruff clause has no receipt and the manifest's tests/measurement lines name a tree that never existed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 4f02a29eb..fd199244a changes only the six declared test files plus the declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-tombstone-successor.log mutates reckon/crew/tombstones.py's successor and tests/test_crew_lane_change.py:396 reddens, and the retained-id assertion at tests/test_a_lane_change_keeps_its_waivers.py:126 reddens on the pre-fold behaviour that minted a second id.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_crew_lane_change.py:334-396 keeps the file's CliRunner/monkeypatch idiom and typed helpers, adding no plan, sprint, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition, and a search over reckon/crew for the capability found the existing owners the tests now exercise (change_lane at reckon/crew/dispatch_sessions.py:1651, recorded_dispatch_overrides at reckon/crew/runs.py:861); the only added helper is the per-file _redispatch renamed to _retired_redispatch.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T134943832179-tests-drive-the-folded-resume-and-budget-verbs/manifest.md:11 non-blocking: the tests line and the measurement_module/measurement_cwd lines name /tmp/reckon-arms-head* paths, while gate-head.log's header records tree and cwd under /tmp/reckon-crew-scratch/r-20261024T134943832179-tests-drive-the-folded-resume-and-budget-verbs/reckon-arms-head-Zjmv and module in the source worktree, and neither /tmp/reckon-arms-head nor /tmp/reckon-arms-base exists; promotion fills its gate receipt from the tests line, so a re-run taken from it cannot resolve.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T134943832179-tests-drive-the-folded-resume-and-budget-verbs/manifest.md:21 non-blocking: the artifacts line carries no ruff check/format receipt although section 41's done_when requires one; measured on the six touched files at fd199244a against their 4f02a29eb copies, both report the same two F841 findings and the same one reformat target, so the delta is zero and only the receipt is missing.",
+  "review_run_id": "r-20261024T151426359071-review-of-tests-drive-the-folded-resume-and-budget-verbs-fd199244ad18",
+  "reviewed_base_sha": "4f02a29ebb160a3a501161130cf362855c9cf985",
+  "reviewed_head_sha": "fd199244ad1827f25b012c4fbec3fe8dc6ec29b1",
+  "reviewed_run_id": "r-20261024T134943832179-tests-drive-the-folded-resume-and-budget-verbs",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:32:00+00:00",
+  "total": 112
+}
