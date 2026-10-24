@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T12:29:54.039Z",
+  "dispatched_at": "2026-10-24T12:23:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261024T122253259583-plan-review-of-the-monitor-reads-each-fact-once/plan.html:197",
+      "id": "done_when-1",
+      "reason": "",
+      "text": "\u2014 the measure \"a tick where a run's resume writes a new `resume-1.jsonl` \u2026 classifies that run\" with negative control \"a change key on `_classification_inputs` alone must fail the resume tick\" cannot be satisfied by a realistic resume: `resumption._resume` plans its next turn as `resume-{turn}.jsonl` and rewrites the pointer with that `log_path` (`reckon/crew/resumption.py:1425`, `:1561`), and the supervisor writes `attempt.json` (`reckon/crew/dispatch_launch.py:1892`); the pointer file and `attempt.json` are both inside `recovery_memo._classification_inputs` (`reckon/crew/recovery_memo.py:99-103`, `:452-472`), and the changed `log_path` also enters it as `str(log)`. So a key on `_classification_inputs` alone moves on a resume, the declared control passes on the mutant it is meant to kill, and only an artificial fixture that writes a stream without the pointer/attempt writes would make it fail \u2014 which is not a resume. WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: the node would either ship a negative control that cannot fail or test a resume that no real resume performs, and the claim that the newest-stream component is needed at all is left unsupported.",
+      "type": "done_when",
+      "would_change": null
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261024T122253259583-plan-review-of-the-monitor-reads-each-fact-once/plan.html:198",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 the done-when clause \"a run launched on another node is reclassified only when its files move\" contradicts the mechanism the same section states: the quiet-beat path is not host-gated (`recovery_watch._quiet_beat_snapshots` calls `_refresh_snapshot` for every pointer, and `_refresh_snapshot` runs `_stall_reading` on the stored `stall_base_state`, `reckon/crew/recovery_watch.py:1159-1168`), so a remote run that goes silent past its window flips to `stalled` on a tick where no file moved \u2014 which is exactly the preceding clause of the same sentence list (\"a working run silent past its stall window reads `stalled` without any file moving\"). Only the liveness probe is host-gated (`local_liveness` \u2192 `_launched_on_this_host`). A node writing the test literally gets a red test from correct code, or constrains the station to stop re-deriving the stall clock for foreign-host runs, which the mechanism paragraph does not say. WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: the measure as written is unsatisfiable together with the mechanism, so the node must either weaken the test or add a host gate to the stall clock that the plan never specifies.",
+      "type": "reasoning",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "cbdbf72a235d31a01db3a8cc10cdfd82cdf8dfcd1873340952f4e94c4cdafe85",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 26,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T122253259583-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "a9b7b1f4ff4fcf7679f0c813e46743bf239c94f2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery.classify_pointer`, `recovery_watch._snapshot_reuse_key`, `recovery_memo._classification_inputs`, `recovery_watch._quiet_beat_snapshots`, `recovery_watch._stall_reading`, `station_store.ingest_stream`, `_backends.observe_stream`, `store_at_runtime_root`, `default_store` and `tests/test_the_station_store_is_node_local.py` all resolve in the tree.",
+    "done_when": "a finding \u2014 the resume-tick negative control (`_classification_inputs` alone must fail the resume tick) cannot fail, because a real resume moves the pointer and `attempt.json`, both already inside `_classification_inputs`.",
+    "evidence_paths": "pass \u2014 the gate is the repository's own test suite with fixture streams copied into a test directory; no session-scratch or node-local evidence path is named.",
+    "naming": "pass \u2014 s6's prose and symbols carry no plan labels, stage names, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 \"a run launched on another node is reclassified only when its files move\" is contradicted by the section's own stall-clock mechanism, which re-derives state for every quiet-beat run regardless of host.",
+    "single_goal": "pass \u2014 s6's deliverable is the incremental ingest and the classification key; the four \u00a75 cleanups ride along as named non-blocking findings and are covered by the same done-when paragraph.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s6 \u2192 s5 and s7 \u2192 s6, both nodes exist, and open followup f-tmref-003 recommends `/reckon-build the-monitor-reads-each-fact-once \u00a76`, which is the section this review reads."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1c3739b9fb853a0a82248925adf6902336b99bf77fc612cc6bfbd7e9231f32f6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T12:33:14.954735+00:00"
+}
