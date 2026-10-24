@@ -1,0 +1,90 @@
+<section id="picker-state-tests-read-the-rendered-state-landing">
+  <h2>The picker-state tests read the state the picker renders now</h2>
+
+  <p><strong>What changed.</strong> Six test cases pinned picker-state facts
+  that three landed changes moved deliberately. Each was confirmed failing at
+  the base revision <code>c5e852c64</code> before repair, and each repair
+  asserts the contract the change introduced rather than restoring the old
+  expectation.</p>
+
+  <ul>
+    <li id="picker-state-tests-read-the-rendered-state-lift-preference"><code>tests/test_jev_prompt_carries_what_it_weighs.py</code>,
+    both cases — the rendered node gained <code>lift_preference</code>, the one
+    lifted metered lane in scope with room for work at or above elevated risk.
+    <code>234aa0514</code> states it as <code>node.lift_preference</code> so an
+    elevated node can prefer the lifted lane, and the dispatcher reads that
+    block back from the recorded state. Intended; the field is added to
+    <code>NODE_FIELDS</code>, the set a drop must fail.</li>
+    <li id="picker-state-tests-read-the-rendered-state-option-key"><code>tests/test_picker_joins_codex_by_lane.py</code> —
+    <code>return_times</code> is keyed by the option the questions offer
+    (<code>&lt;lane&gt;:&lt;model&gt;:&lt;backend&gt;</code>), not the bare
+    backend name. <code>06eeb6623</code> re-keyed the candidate and return-time
+    tables because a lane's models share one backend name, so a backend-keyed
+    table kept only the last model offered. Intended; the case looks up the
+    block by <code>lane_context.option_key</code> and pins the literal
+    <code>codex:m:codex</code> beside it.</li>
+    <li id="picker-state-tests-read-the-rendered-state-client-boundary"><code>tests/test_orchestrator_assessment_reaches_jev.py</code>,
+    both cases — the dispatcher now hands the pick its own caller wrapper
+    (added by <code>90ee4ee1a</code> so a reserved lane's reason is recorded on
+    the result), so a caller stubbed through the pick's keyword is never
+    invoked, and the recorded <code>seen["state"]</code> went empty. Intended;
+    the stub now patches the picker client, the boundary both the dispatcher's
+    wrapper and the pick read, so the case still pins that the state the client
+    weighed is the state the payload records.</li>
+    <li id="picker-state-tests-read-the-rendered-state-golden"><code>tests/test_picker_helpers_have_one_owner.py</code> —
+    the golden bytes are re-frozen with <code>"lift_preference":null</code> at
+    its rendered position, the one difference between the fixture's render and
+    the frozen bytes. The bytes stay an exact comparison, so any other moved
+    figure still fails it.</li>
+  </ul>
+
+  <h3 id="picker-state-tests-read-the-rendered-state-measure">Measure</h3>
+
+  <p>Gate: the four files, run in the fleet allocation at base and head, both
+  arms extracted with <code>git archive</code> on node-local disk and each
+  resolving <code>reckon.crew.picker.lane_context</code> from its own tree.
+  Each log's first lines name the revision, tree and literal command, and its
+  last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head</td><td><code>ce8255d8a</code></td>
+        <td><strong>32 passed</strong>, exit 0</td></tr>
+      <tr><td>base</td><td><code>c5e852c64</code></td>
+        <td>6 failed, 26 passed, exit 1 — the six listed ids and nothing else</td></tr>
+    </tbody>
+  </table>
+
+  <p>The head adds no failure against the base: the delta is exactly the six
+  ids, and every other case in the four files passes in both arms.</p>
+
+  <h3 id="picker-state-tests-read-the-rendered-state-controls">Controls</h3>
+
+  <p>Each control mutates the production code the repaired case reads, applied
+  alone in its own extracted tree, and shows the case fails. Restoring the old
+  expectation is not a control.</p>
+
+  <table>
+    <thead><tr><th>control</th><th>mutation</th><th>ids that fail</th></tr></thead>
+    <tbody>
+      <tr><td>c1</td><td>drop <code>node.lift_preference</code> from
+        <code>build_state</code></td>
+        <td>both <code>test_jev_prompt_carries_what_it_weighs</code> cases and
+        the golden-bytes case</td></tr>
+      <tr><td>c2</td><td>hand the client the state with the node's
+        <code>orchestrator_assessment</code> removed</td>
+        <td>both <code>test_orchestrator_assessment_reaches_jev</code> cases</td></tr>
+      <tr><td>c3</td><td>render <code>p50_s</code> as a float</td>
+        <td>the golden-bytes case</td></tr>
+      <tr><td>c4</td><td>key <code>return_times</code> by the bare backend name</td>
+        <td><code>test_document_backed_reading_carries_its_own_provenance</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Lint adds nothing: <code>ruff check</code> reports three pre-existing
+  <code>SIM300</code> findings in
+  <code>tests/test_jev_prompt_carries_what_it_weighs.py</code> at both the base
+  blobs and the head, and <code>ruff format --check</code> reports all four
+  files already formatted.</p>
+</section>
