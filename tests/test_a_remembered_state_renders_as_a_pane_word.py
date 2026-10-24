@@ -28,8 +28,8 @@ def _left_word(row: str) -> str:
     return match.group(1)
 
 
-def _render_after_seed(seed_state: str) -> str:
-    """Seed one run's memory and return the left word its following row draws."""
+def _render_row(seed_state: str) -> str:
+    """Seed one run's memory and return the row its following transition draws."""
     painter = ticker.Ticker(width=200)
     _seed_ticker_memory(painter, {"run": seed_state})
     delivered = ticker._remembered_word(seed_state) == "delivered"
@@ -44,7 +44,12 @@ def _render_after_seed(seed_state: str) -> str:
         }
     )
     assert row, f"seeding {seed_state!r} drew no transition"
-    return _left_word(row)
+    return row
+
+
+def _render_after_seed(seed_state: str) -> str:
+    """Seed one run's memory and return the single left word the row draws."""
+    return _left_word(_render_row(seed_state))
 
 
 def test_a_remembered_producer_state_renders_its_pane_word() -> None:
@@ -76,9 +81,14 @@ def test_a_remembered_producer_state_renders_its_pane_word() -> None:
 
 def test_every_internal_state_and_pane_word_renders_mapped() -> None:
     """Every internal state draws its pane word on the left, and every one of the
-    seven words — the four `_display_state` blanks included — draws itself."""
+    words — the `_display_state` blanks included — draws itself.
+
+    The words are compared as the whole left half rather than as one token: a
+    word may be two words long, so a reader that took the token before the
+    arrow would read half of it.
+    """
     for word, states in ticker.PANE_STATES.items():
         for state in states:
-            assert _render_after_seed(state) == word
+            assert f"{word} {ticker.ARROW}" in _render_row(state), state
     for word in ticker.PANE_STATES:
-        assert _render_after_seed(word) == word
+        assert f"{word} {ticker.ARROW}" in _render_row(word), word

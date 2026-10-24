@@ -220,8 +220,9 @@ def test_a_shown_observer_pane_still_carries_only_the_delivery() -> None:
     """The launch sequence over a pane that shows observer context.
 
     An operator who asks the pane to show observer context gets the rows the
-    view draws for a run that began working; the stream still carries only the
-    delivery, so the launch, the start and the terminal echo print nothing.
+    view draws for a run that began working. The stream carries the delivery and
+    the landing after it; the launch is not this pane's to draw, because a pane
+    with no named session owns no run.
     """
     printed = _drive(
         [
@@ -232,7 +233,10 @@ def test_a_shown_observer_pane_still_carries_only_the_delivery() -> None:
         ],
         show_observer=True,
     )
-    assert _kinds(printed) == [("working", "complete")], printed
+    assert _kinds(printed) == [
+        ("working", "complete"),
+        ("complete", "recorded"),
+    ], printed
     view = ticker.Ticker()
     for event in (_baseline("dispatched"), _row("dispatched", "working")):
         assert ticker._pane_word(event), event

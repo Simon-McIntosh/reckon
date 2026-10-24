@@ -1889,6 +1889,68 @@ def _transition_counts(
     return {**_fleet_counts(snapshots), "sessions": _session_fleet_counts(snapshots)}
 
 
+def _reviewed_run_facts(project: str, snapshot: Mapping[str, Any]) -> dict[str, Any]:
+    """The run a review run's event reviews, or nothing for any other run.
+
+    A review node id carries the run it reads: ``review-of-<run>-<head>``. The
+    id resolved back through its own writer's inverse names the run, and the
+    run's pointer names the node the pane draws it under, so a review's launch
+    can be drawn as the reviewed run's ``in review`` row instead of under the
+    review run's own id. A node id that names no run — a plan review, whose
+    source is a plan — carries nothing.
+    """
+    node_id = str(snapshot.get("node") or "")
+    from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
+    from reckon.crew.repair import round_node_source
+
+    if not node_id.startswith(REVIEW_NODE_PREFIX):
+        return {}
+    source = round_node_source(node_id, REVIEW_NODE_PREFIX)
+    if not source:
+        return {}
+    reviewed = _resolved_reviewed_run(project, node_id)
+    return {
+        "reviewed_run_id": reviewed,
+        "reviewed_node": _reviewed_run_node(reviewed, source),
+    }
+
+
+def _resolved_reviewed_run(project: str, node_id: str) -> str:
+    """The run a review node id names, through the resolver that already owns it.
+
+    The shared resolver matches a source against the live fleet and falls back
+    to the durable review rows, so a review whose run has left the fleet still
+    names it. Its fleet read publishes watcher transitions, and this resolution
+    runs inside the transition publisher, so the read is taken with that
+    publication held off: otherwise the publisher re-enters the transition it
+    is resolving for.
+    """
+    from reckon.crew import recovery_review_delivery as delivery
+
+    previous = getattr(runs._SWEEP_LOCAL, "in_sweep", False)
+    runs._SWEEP_LOCAL.in_sweep = True
+    try:
+        return delivery._resolved_reviewed_run_id({"node": {"id": node_id}}, project)
+    finally:
+        runs._SWEEP_LOCAL.in_sweep = previous
+
+
+def _reviewed_run_node(run_id: str, fallback: str) -> str:
+    """The node the reviewed run is drawn under, or the id its reviewer named.
+
+    The reviewed run's pointer is the only place its node id lives; a run the
+    fleet has already let go has no pointer, and its reviewer's own spelling of
+    the source is then the best name the row can carry.
+    """
+    try:
+        pointer = runs.read_pointer(run_id)
+    except Exception:  # noqa: BLE001 — an unreadable pointer names no other node
+        return fallback
+    return str(
+        (pointer.get("node") or {}).get("id") or pointer.get("run_id") or fallback
+    )
+
+
 def _watch_transition(
     project: str,
     *,
@@ -1977,6 +2039,10 @@ def _watch_transition(
         "resume_brief": snapshot.get("resume_brief"),
         "needs_help_complete": snapshot.get("needs_help_complete"),
     }
+    # A review run's event names the run it reviews and the node that run is
+    # drawn under, so the pane can show the review starting on the reviewed
+    # run rather than only on the reviewer. Every other run adds nothing.
+    event.update(_reviewed_run_facts(project, snapshot))
     if snapshot.get("status_repaired"):
         # The transition a coordinator's own ``crew repair --status`` caused.
         # The stamp names the repair's instant and reason, so the stream can

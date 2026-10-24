@@ -1,11 +1,11 @@
-"""A run resumed out of a stop is left to crew view.
+"""A run resumed out of a stop draws the halt and then its launch.
 
 The producer records a resume as a move out of the state the run stopped on
 into ``working`` — ``blocked -> working``, not ``dispatched -> working`` and not
 ``starting -> working``. A move out of any stop state the pane draws as
-``halted`` into ``working`` asks the coordinator for nothing: the worker is
-working again and there is no duty in that, so the stream carries the halt the
-run stopped on and leaves the resume to crew view.
+``halted`` into ``working`` opens a new attempt, so the pane draws it as the
+launch: the stream carries the halt the run stopped on and one row for the
+resume.
 
 The rows below drive ``PaneRowPath`` with an injected clock and render every row
 it releases through one ``Ticker``, so what is measured is the pane's own output
@@ -106,19 +106,18 @@ def _observed_stream() -> list[dict[str, Any]]:
 
 
 def test_a_resume_out_of_a_stop_asks_the_coordinator_for_nothing() -> None:
-    """A resume into a working word is left to crew view.
+    """A resume into a working word prints the halt and one launch row.
 
     The repeated ``blocked`` row releases the held stop opener, so the pane shows
-    the halt. The resume asks the coordinator for nothing — the run is working
-    again and there is no duty in that — so the stream carries the halt and the
-    delivered word alone, and the working row is one crew view draws.
+    the halt. The resume opens the run's next attempt — the worker is working
+    again — so it prints as the launch, once, drawn in the view too.
     """
     pane = _Pane()
     released, now = _drive(pane, _observed_stream())
 
-    assert _kinds(released) == [(WORKING, STOP)], released
+    assert _kinds(released) == [(WORKING, STOP), (STOP, WORKING)], released
     assert all(text for _, text in released), released
-    assert (STOP, WORKING) not in _kinds(released), released
+    assert _kinds(released).count((STOP, WORKING)) == 1, released
     assert _view(_row(STOP, WORKING)).strip()
 
     delivered = pane.flush(now=now)
@@ -133,7 +132,7 @@ def test_the_halted_row_is_followed_by_the_delivered_row() -> None:
     released += pane.flush(now=now)
 
     words = [ticker._pane_word(row) for row, _ in released]
-    assert words == ["halted", "delivered"], released
+    assert words == ["halted", "working", "delivered"], released
     assert _view(_row(STOP, WORKING)).strip()
 
 
@@ -157,12 +156,12 @@ def test_a_peer_sessions_resume_prints_no_working_row() -> None:
 
 
 def test_each_stop_state_the_pane_draws_halted_leaves_the_resume_out() -> None:
-    """Every stop state the pane draws ``halted`` is followed by a withheld resume.
+    """Every stop state the pane draws ``halted`` is followed by one launch row.
 
     The stop vocabulary is the pane's own, so a resume out of ``stalled`` or
-    ``exited-unfinished`` asks the coordinator for nothing just as one out of
-    ``blocked`` does: the halt reaches the stream and the resume is left to crew
-    view, whichever stop word the run came out of.
+    ``exited-unfinished`` opens an attempt just as one out of ``blocked`` does:
+    the halt reaches the stream and so does the launch, once, whichever stop
+    word the run came out of.
     """
     for stop in ("blocked", "stalled", "exited-unfinished", "abandoned"):
         pane = _Pane()
@@ -175,7 +174,7 @@ def test_each_stop_state_the_pane_draws_halted_leaves_the_resume_out() -> None:
             ],
         )
         released += pane.flush(now=now)
-        assert (stop, WORKING) not in _kinds(released), (stop, released)
+        assert _kinds(released).count((stop, WORKING)) == 1, (stop, released)
         assert _view(_row(stop, WORKING)).strip(), stop
 
 

@@ -256,21 +256,22 @@ def _deliver(
 def test_the_pane_receives_only_the_settled_changes(home) -> None:
     """Two runs deliver their start, completion, and block.
 
-    The owning pane shows the first run's start. The bare ``working`` and the
-    terminal echo (``complete -> recorded``) ask for nothing and stay hidden.
+    The owning pane draws the launch, the completion and the block. The terminal
+    echo (``complete -> recorded``) is the landing of a delivery the pane has
+    not shown yet, so it stays hidden.
     """
     first, rows, _ = _deliver(home)
     # The attach's own re-announcements ask for nothing, so the first arming
     # wakes nobody.
     assert first == [], first
-    assert len(rows) == 2, rows
+    assert len(rows) == 3, rows
     assert _states(rows) == [
+        ("dispatched", "working"),
         ("working", "complete"),
         ("exited-unfinished", "blocked"),
     ], rows
-    # The launch asks the coordinator for nothing, so the stream leaves it to
-    # crew view, which still draws it.
-    assert ("dispatched", "working") not in _states(rows), rows
+    # The launch opens the run's attempt, so the pane draws it once.
+    assert _states(rows).count(("dispatched", "working")) == 1, rows
     assert _view(_fixture_events()[1]).strip()
 
 
@@ -299,15 +300,16 @@ def test_observer_context_shown_still_leaves_the_start_rows_out(
     """The pane built with observer context shown draws no row that asks nothing.
 
     The observer path keeps more context for the rows it draws -- the second run
-    is named out of ``working`` rather than ``exited-unfinished`` -- and it still
-    withholds a launch and a bare re-announcement, because the carriage rule reads
-    the row's own duty rather than which pane is reading it. Crew view is where
-    those rows stay visible.
+    is named out of ``working`` rather than ``exited-unfinished`` -- and it
+    carries the launch, because every pane reads one carriage rule. A bare
+    re-announcement still adds nothing.
     """
     _, rows, _ = _deliver(home)
     assert _states(rows) == [
+        ("dispatched", "working"),
         ("working", "complete"),
+        ("complete", "recorded"),
         ("working", "exited-unfinished"),
     ], rows
-    assert ("dispatched", "working") not in _states(rows), rows
+    assert _states(rows).count(("dispatched", "working")) == 1, rows
     assert _view(_fixture_events()[1]).strip()

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="The pane shows every state change">
+  <meta name="plan-summary" content="A coordinator's pane printed a delivery and a halt, and nothing of a launch, a review starting on the run it reads, a landing or a drop. The stream now carries each of those once: a launch for the pane's own session only, a review's first working row drawn as an in-review row under the reviewed run's node, and one landing or dropped row per run.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s14">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch-stream,pane,row-policy,review">
+  <title>The pane shows every state change — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="the-pane-shows-every-state-change-note" class="r-note" data-node="the-pane-shows-every-state-change" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="the-pane-shows-every-state-change-head">The pane shows every state change</h2>
+
+  <p id="the-pane-shows-every-state-change-rule">A pane carried a run's delivery and its halt and almost nothing else, because <code>stream_carries</code> admitted only those two words plus waits and recoveries. The row policy built a launch and then dropped it on the way out, so a coordinator reading the Monitor stream could not tell a run starting from a run that had never existed, could not see a review begin, and never saw a run land.</p>
+
+  <p id="the-pane-shows-every-state-change-mechanism">Three changes carry it. <code>CARRIED_PANE_WORDS</code> in <code>reckon/crew/ticker.py</code> grows from <code>{delivered, halted}</code> to <code>{delivered, halted, in review}</code>: the word set names the duties a producer writes, and a launch and a landing are carried by markers the row policy sets on the row instead. <code>RowPolicy._launch_row</code> builds the launch row under the session, once-per-attempt and reviewed-run checks; <code>_release_launch</code> routes each of the three release paths — the arrival hold resolving, the direct start, and the expired or stale hold — through it, so no path appends an opener behind the checks. <code>_note_launch</code> advances the run's shown word so the following working row is not counted as a second launch. A review run's event now also carries the id and node of the run it reads: <code>recovery_watch._watch_transition</code> adds <code>reviewed_run_id</code> and <code>reviewed_node</code> from <code>_reviewed_run_facts</code>, which resolves the <code>review-of-</code> node id and reads the reviewed run's live pointer for its node.</p>
+
+  <p id="the-pane-shows-every-state-change-in-review">The in-review word is drawn by the row policy, not by a producer state. No producer ever writes a state called <code>in-review</code>; the policy rewrites a review run's first working row into the reviewed run's row with <code>to_state</code> <code>in-review</code>, <code>run_id</code> the reviewed run and <code>node</code> its node, keeping the hold memory keyed by the review run so the once-only judgement stays the review's own. That is what puts the row under the run it reads rather than under a node id no coordinator recognises.</p>
+
+  <p id="the-pane-shows-every-state-change-landing">A landing and a drop reach the pane through a second, narrower change. <code>_observer_exception</code> suppressed a settled row for a run already told, which silently swallowed every landing; it now asks <code>_landing_is_news</code> for the two landing words ahead of that logic. That judgement is what travels on the row as <code>LANDING_FIELD</code>: the policy marks a landing or a drop it judged news, and <code>stream_carries</code> carries the mark, so the carriage rule stays a function of the row. A landing is news when the pane printed the delivery it follows, and a drop when the pane printed anything for the run, which is why a <code>complete → recorded</code> pair fed twice prints one row.</p>
+
+  <h3 id="the-pane-shows-every-state-change-gate-head">The gate, and the negative control</h3>
+
+  <p id="the-pane-shows-every-state-change-gate">The new test file states one sequence per pane behaviour and drives them through a real <code>PaneRowPath</code> with timed arrivals, so a hold's window is measured rather than waited out: eight tests, all passing at the working tree. The negative control restores the base reading in a scratch copy — <code>CARRIED_PANE_WORDS</code> back to its two words, the launch arm of <code>stream_carries</code> deleted, the landing exception in <code>_observer_exception</code> removed — and runs the same file: eight failures, <code>EXIT=1</code>, every assertion arm failing. Both logs name the revision, the tree, the command, the module file actually imported and the cwd.</p>
+
+  <table id="the-pane-shows-every-state-change-arms">
+    <thead>
+      <tr><th>arm</th><th>sequence</th><th>rows printed</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>implement run and its review</td><td>dispatched, starting, working, complete; review dispatched, starting, working, complete; recorded</td><td>working, delivered, in review, delivered, landed</td></tr>
+      <tr><td>discarded run</td><td>dispatched, starting, working, discarded</td><td>working, dropped</td></tr>
+      <tr><td>resumed run</td><td>dispatched, working, blocked, working; the same working replayed</td><td>two launches, from-states dispatched and blocked, then nothing</td></tr>
+      <tr><td>working/running flicker and reload baseline</td><td>working, running, working; two baselines</td><td>working; nothing</td></tr>
+      <tr><td>a peer session's arrival, each release path</td><td>resolved, expired, stale</td><td>nothing, against an own-session expiry that prints one launch</td></tr>
+      <tr><td>a repeated landing</td><td>complete → recorded twice</td><td>one landed</td></tr>
+      <tr><td>the review producer</td><td>a review run's <code>_watch_transition</code> against a live pointer</td><td>event names the reviewed run and its node; feeds as one in-review row</td></tr>
+    </tbody>
+  </table>
+
+  <p id="the-pane-shows-every-state-change-scope">Two things are recorded as passing the fence rather than fixed. Tests that encode the old withholding — a pane that must not print its own start, a run discarded printing nothing, a settled row suppressed for a run already told — now contradict the ruled behaviour and were left untouched outside this node's write scope; they are named in the node's manifest under <code>outside_scope</code> for the merge gate.</p>
+
+  <section id="the-pane-shows-every-state-change-superseded-round">
+    <h2>The population run, and the tests it named</h2>
+    <p id="the-pane-shows-every-state-change-population">A run of the 175 files touching the row policy, the follower, the watcher and the carriage rule failed 25 tests at the base revision and 60 at this head: 37 added. Each was decided rather than silenced. Twenty of them state the rule this section supersedes — a launch carried, the in-review word, a landing the pane holds the delivery for, the eight-word vocabulary — and their assertions now state the new behaviour with every case kept. The other seventeen describe behaviour this section must not change, and the code was repaired until they passed untouched.</p>
+    <p id="the-pane-shows-every-state-change-repaired">Two defects surfaced that way and neither was in the tests. A review row's reviewed-run lookup ran inside the transition publisher and re-entered itself without end; it now reads the live pointers through the reader that publishes nothing. And carrying a launch turned a start the pane never watched into a notification: the row a re-attach replays from its own record, and the live stream's copy of the same start. A fresh launch is now drawn only for a run the pane does not already hold working, so a reload, a replay and a gap re-announcement each contribute nothing.</p>
+    <p id="the-pane-shows-every-state-change-arms-after">The same 17 files then passed 87 of 87 at this head, against the 37 the population run had named failing. The paragraph above recording those files as left outside the write scope is superseded: they were updated in this round, and nothing remains failing.</p>
+  </section>
+</article>
+</body>
+</html>
