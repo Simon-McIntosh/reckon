@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="385">
+<meta name="plan-version" content="386">
 <meta name="plan-modified" content="2026-10-24">
 <meta name="plan-section-depends-on" content="{&quot;s64&quot;:[]}">
 </head>
@@ -2449,6 +2449,9 @@
 </div>
 <div class="r-comment" data-section="s64" data-id="c-run-r-20261024T151704190920-review-of-a-commit-that-fails-to-resolve-refuses-the-promotion-12f6e9f8719c" data-who="reckon-build" data-when="2026-10-24T15:28:15.721Z">
     <div class="r-comment-body"><p>An independent review of run r-20261024T135330699353 at head 12f6e9f8 stores a parsed record scoring goal_fidelity 19, evidence 17, scope_discipline 17, durability 18, fit 19, reuse 15 (total 105), with added_failure_count 3 derived from the run's own suite arms and three non-blocking findings; the node's change itself is sound and the negative controls show the refusal genuinely reddens when the drop behaviour is reinstated.</p></div>
+</div>
+<div class="r-comment" data-section="s64" data-id="c-run-r-20261024T135330699353-a-commit-that-fails-to-resolve-refuses-the-promotion" data-who="reckon-build" data-when="2026-10-24T15:15:21.467Z">
+    <div class="r-comment-body"><p>Adding an opt-in strict mode to `_resolve_commit` and resolving every citation strictly in `_descendant_commit` makes a citation that fails to resolve refuse the promotion, naming the commit and the tree, instead of being dropped from the comparison; 8 passed in the new gate, three negative controls each red as declared, and the two-arm population delta is zero stable failures (three load-dependent watch/follower ids fail only under 16-way parallel load and pass alone at head).</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
