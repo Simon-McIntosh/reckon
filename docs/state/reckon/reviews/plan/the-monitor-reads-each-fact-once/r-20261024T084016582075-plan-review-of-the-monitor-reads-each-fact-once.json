@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T08:49:07.248Z",
+  "dispatched_at": "2026-10-24T08:41:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:164",
+      "id": "reasoning-1",
+      "reason": "an implementer following \u00a76 as written would key change detection on pointer+stream alone and silently drop every delivery whose manifest moved on its own; the sentence must name the manifest and the run-directory records as change inputs (or require the classifier's memo key to gate the run directory's real inputs).",
+      "text": "\"The classifier (`recovery.classify_pointer`) runs once per run whose inputs changed\" is not produced by the mechanism the section states: \u00a76's change detection (:160\u2013162) watches only the pointer's `file_memo.file_signature` and the stream's stored offset, whereas the classifier's real input set is `recovery_memo._classification_inputs` (reckon/crew/recovery_memo.py:450\u2013472), which also names the manifest, the run directory's records (`_CLASSIFICATION_RUN_RECORDS`), the review-store candidates and the tree head; the pointer's own `phase` \"only `observe` advances\" (reckon/crew/directory.py:100\u2013101), so a worker that finishes by writing its manifest delivers without touching the pointer or the stream, and the station would never reclassify it \u2014 the delivered transition \u00a77 must write once never appears.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:170",
+      "id": "done_when-1",
+      "reason": "without a tick where only the manifest moves, the measure cannot fail for the one input that carries the delivery signal, so \u00a76's gate would certify an incomplete classifier.",
+      "text": "the three-tick measure moves \"one run's pointer or stream\" and never a manifest alone, so it passes on an implementation that reclassifies only on pointer/stream movement, which is exactly the defect above; none of its three negative controls (:175\u2013177) exercises a manifest-only change.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "5b7a14c916811e11a6bdfbda08d57f7464f6736dad076878c84fb6a6510e420f",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T084016582075-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "b1d100c6336687b65baf7c1738fe42391bea7f1f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery.classify_pointer` resolves (re-exported at reckon/crew/recovery.py:84 from reckon/crew/recovery_classification.py:393), `_backends.observe_stream` accepts `state` and returns an `Observation` (reckon/_backends.py:2900), `file_memo.file_signature` (reckon/file_memo.py:273), `station_store.ingest_stream`/`_fold_stream` (reckon/crew/station_store.py:405,445), the dead wrappers `store_at_runtime_root`/`default_store` (reckon/crew/station_store.py:615,620, no callers outside their own definitions), and `tests/test_the_station_store_is_node_local.py:85\u201386` is the two-outputs assertion described.",
+    "done_when": "a finding \u2014 \u00a76's three-tick classification measure (docs/plans/the-monitor-reads-each-fact-once.html:170\u2013174) moves only the pointer and the stream, so it cannot see a classification input that moves alone.",
+    "evidence_paths": "pass \u2014 the measures are unit tests under tests/ and a fixture directory built inside the test, with no session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a76 introduces no plan labels, stage names or ticket numbers into code; \"old \u00a7..\" labels appear only in \u00a78, outside this unit.",
+    "reasoning": "a finding \u2014 \u00a76 asserts the classifier \"runs once per run whose inputs changed\" (:164), but the mechanism it names detects only pointer-signature and stream-offset movement, while `classify_pointer` reads the manifest, the run directory's own records, the review candidates and the tree head as inputs; a manifest-only move is the delivery signal and would never trigger a reclassification.",
+    "single_goal": "pass \u2014 \u00a76 has one goal (incremental ingest of pointers and streams, with the classifier driven from it); the \u00a75 cleanups in :178 are named carried obligations with their own measures, not a second deliverable, and their staging is what the plan states.",
+    "wiring": "pass \u2014 `plan-section-depends-on` has \"s6\":[\"the-monitor-reads-each-fact-once#s5\"], s5 is declared done, and the open followup at docs/plans/the-monitor-reads-each-fact-once.html:294 now states \"\u00a76 waits on \u00a75\", agreeing with the graph (the earlier disagreement recorded in the resolved followup at :288 is superseded, not re-raised)."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "ce69c227552468ee0a422bb56b188afd336d7211ba41ddfc67702b81ff60d6d6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T09:05:37.180900+00:00"
+}
