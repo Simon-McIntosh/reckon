@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/roadmap.py:2776",
+    "reckon/mcp_views.py:1830",
+    "reckon/mcp_views.py:1857",
+    "reckon/crew/dispatch_picker.py:223"
+  ],
+  "completed_at": "2026-10-24T07:10:28.274Z",
+  "dispatched_at": "2026-10-24T06:56:35Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html",
+      "line": 13,
+      "severity": "blocking",
+      "text": "The fragment's <meta name=\"evidence-verdict\" content=\"pass\"> contradicts its own recorded measure: the body states per-call time is 0.42 of base (line 82), and profile-head.log records section_attempts_by_plan at 1.824 s against profile-base.log's 6.347 s (0.287 of base), while the section's done-when passes only when head per-call time is at most one fifth (0.2) of base."
+    },
+    {
+      "file": "manifest.md",
+      "line": 13,
+      "severity": "non-blocking",
+      "text": "negative_control_log names negative-control-version.log, whose mutation drops the version from the index file name, while the negative control this node declared was pointing the aggregate back at ledger.load; that run is negative-control.log, cited only in the note on line 14."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified four production call sites reaching the change: the roadmap builder, the section-count fallback, the section-attempt view enrichment, and the dispatch picker.",
+    "diff": "Read commit by commit from 3df04d103 to eba634efa: the source change is 49 lines in reckon/ledger.py and 4 in reckon/mcp_views.py, plus a 219-line test module and the evidence fragment.",
+    "done_when": "Section 45 lists three test cases plus base/head gate arms and a one-fifth per-call time bound; tests/test_section_attempts_read_the_projection.py holds the three cases and gate-base.log/gate-head.log record the arms, but the logged profile measure records 0.287 to 0.42 of base, above the stated one-fifth bound.",
+    "goal": "The goal is to read section attempts from the ledger index projection instead of full payloads; reckon/mcp_views.py:1644 now takes history rows from ledger.picker_runs and the widened projection carries the grouping's six fields, so the goal is met.",
+    "manifest": "Read; it records the four commits, both gate arms, the fair-pair and profile logs, and marks status complete, while the evidence fragment's meta declares a pass the recorded measure does not reach.",
+    "write_paths": "All four diff paths (reckon/ledger.py, reckon/mcp_views.py, tests/test_section_attempts_read_the_projection.py and the evidence fragment) are inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read section attempts from the ledger index projection instead of full payloads; reckon/mcp_views.py:1644 takes the aggregate's rows from ledger.picker_runs and reckon/ledger.py:1204 carries the six fields the grouping reads.\nVERDICT done_when: section 45 lists three test cases plus base/head gate arms and a one-fifth per-call time bound; tests/test_section_attempts_read_the_projection.py holds the three cases and gate-base.log/gate-head.log record the arms, but profile-head.log records section_attempts_by_plan at 1.824 s against profile-base.log's 6.347 s (0.287 of base), above the stated one-fifth bound.\nVERDICT write_paths: all four diff paths (reckon/ledger.py, reckon/mcp_views.py, tests/test_section_attempts_read_the_projection.py and the evidence fragment) are inside the node's declared write paths.\nVERDICT manifest: read; it records the four commits, both gate arms and the fair-pair and profile logs, and marks status complete, while the evidence fragment's meta declares a pass the recorded measure does not reach.\nVERDICT diff: read commit by commit from 3df04d103 to eba634efa; the source change is 49 lines in reckon/ledger.py and 4 in reckon/mcp_views.py, plus a 219-line test module and the evidence fragment.\nCALL_SITES: reckon/roadmap.py:2776, reckon/mcp_views.py:1830, reckon/mcp_views.py:1857, reckon/crew/dispatch_picker.py:223\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:1644 takes the aggregate's rows from ledger.picker_runs, and reckon/ledger.py:1204 carries the projection fields the grouping reads.\nSCORE evidence: 8\nJUSTIFICATION evidence: profile-base.log and profile-head.log record the per-call measure as 6.347 s and 1.824 s, 0.287 of base, against the done-when's one-fifth bound at section 45.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every diff path is inside the declared write paths, but commit 11191c058 adds a version-named index file the section's deliverable does not ask for.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_section_attempts_read_the_projection.py:120 reds under the declared negative control in negative-control.log, and :212 reds under the version mutation in negative-control-version.log.\nSCORE fit: 17\nJUSTIFICATION fit: the change follows the surrounding idiom at reckon/ledger.py:1242 and introduces no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing projection owner (ledger.picker_runs and picker_record at reckon/ledger.py:1237 and :1242) rather than adding a second projection reader.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-section-attempts-read-the-projection.html:13 blocking: evidence-verdict is pass while the recorded per-call measure is 0.42 of base (line 82), and 0.287 in the profile, above the done-when's one-fifth bound.\nFINDING manifest.md:13 non-blocking: negative_control_log names the version-mutation log rather than the declared aggregate-to-ledger.load mutation, which is kept in negative-control.log.\n",
+  "review_run_id": "r-20261024T065455375359-review-of-a-section-attempts-read-the-projection-eba634efa33e",
+  "reviewed_base_sha": "3df04d103d2995617cf20c3f990764b3ea45031d",
+  "reviewed_head_sha": "eba634efa33eb3cc59ac4b9ef60d815d124c3f5d",
+  "reviewed_run_id": "r-20261024T054404333202-a-section-attempts-read-the-projection",
+  "scores": {
+    "durability": 16,
+    "evidence": 8,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:13:36.780135+00:00",
+  "total": 94
+}
