@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T10:26:04.475Z",
+  "dispatched_at": "2026-10-24T10:08:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:174",
+      "id": "reasoning-1",
+      "reason": "a node implementing \"stalled and nothing else\" passes every \u00a76 measure while a run paused in a queue past its window reads `stalled` instead of `waiting`, which is the row parity \u00a712 later measures.",
+      "text": "\u00a76 says the quiet-beat path \"can turn a waiting run `stalled` and nothing else\", but `_stall_reading` (reckon/crew/recovery_watch.py:698) acts only on `dispatched`/`working` \u2014 a run already `waiting` is never re-derived \u2014 and for those two it yields `waiting` (`reckon/crew/recovery_vocabulary.py:40`) when a pause reason explains the silence, `stalled` only when none does, so the reachable outcome set is paused-or-stalled rather than stalled alone and the \u00a76 done-when has no case for the paused branch.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:307",
+      "id": "wiring-1",
+      "reason": "the open followup is the dispatch target the next coordinator reads, and \u00a76 is the only section the dependency graph unblocks, so as written it would send the next node to rebuild a landed section.",
+      "text": "the open followup `f-tmref-002` still recommends `/reckon-build the-monitor-reads-each-fact-once \u00a75` and its body says \"the design review comes next, then \u00a75\", while \u00a75's declaration is `done` (\u00a75 landed at 2026-10-23T19:55Z, comment `c-close-s5`) and \u00a76 is the section that is `implementable` and depends on it.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "97ec0ca954193c84573690dfa661a03735e0645ded4c15136f99ad7fbd0bdee9",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T100707474501-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "77ebfe2c072a0c98a01bb861321ec94ec1cb4a53",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every \u00a76 anchor resolves at this revision: `recovery.classify_pointer` (reckon/crew/recovery_classification.py:393), `recovery_memo._classification_inputs` (reckon/crew/recovery_memo.py:450), `_backends.observe_stream(state=\u2026)` (reckon/_backends.py:2900), `station_store.ingest_stream`/`_fold_stream` (reckon/crew/station_store.py:405, :445), `recovery_watch._quiet_beat_snapshots`/`_watch_snapshot` (:2543, :1328), `store_at_runtime_root`/`default_store` (:615, :620, both uncalled) and `tests/test_the_station_store_is_node_local.py`; the extensionless hrefs resolve as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a76 carries five measures and five negative controls, one control per measure, and each control names the mutation that must turn its case red; the file-descriptor measure I checked is red at base without any mutation (measured below), so it is falsifiable as written.",
+    "evidence_paths": "pass \u2014 no section of the plan writes a gate log to a session scratchpad; \u00a74's population logs sit under `~/.cache/reckon-pointer-population/`, which survives the run.",
+    "naming": "pass \u2014 \u00a76 introduces no symbol carrying a plan label, stage name or ticket number, and its prose describes mechanism (`keyed on _classification_inputs`, `folded by observe_stream`) rather than changelog.",
+    "reasoning": "a finding \u2014 \u00a76's mechanism overstates the station's own classifier past the cited helper's guard and cites a cause the helper's other outcome lacks; the fold mechanism it relies on is otherwise on the real path with its caller named (`_watch_snapshot`, recovery_watch.py:1189).",
+    "single_goal": "pass \u2014 \u00a76's one deliverable is byte-bounded ingest; the four station_store cleanups it also takes are the same file's changes, named with the reason (\u00a76 is the next section to edit it), so they close on the same verdict.",
+    "wiring": "pass \u2014 the section graph (`s6` on `s5`, `s7` on `s6`, `s8`/`s9`/`s10` on `s7`, `s12` on `s8`\u2013`s11`) matches the plan's own narrative that \u00a76 writes \u00a75's tables and \u00a77 follows \u00a75 and \u00a76; the one wiring defect is the open followup's dispatch target, raised below."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "96331c2b7566cbb3c5bdea7df41eade65da3b8d53185f22153dc368e67417b43",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T10:30:36.743520+00:00"
+}
