@@ -408,6 +408,27 @@ def _reflex_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     )
 
 
+def _in_flight_review(
+    pointer: Mapping[str, Any], pointers: Sequence[Mapping[str, Any]]
+) -> str:
+    """The review standing for this run's head, read by the reflex's own rule.
+
+    The rule is :func:`reckon.crew.recovery._review_in_flight`, so a review's
+    subject and head are recognised in one place. A caller holding the view's
+    snapshot hands it over rather than have the sweep read the live directory
+    again. The rule's original one-argument form is still honoured: a reader
+    registered in its place without the snapshot keyword is asked for its own
+    read, and the answer is the same one the rule would give. Nothing is hidden
+    by the fallback — a failure raised inside the rule's body raises again on
+    the retry and surfaces from here.
+    """
+    try:
+        return recovery._review_in_flight(pointer, pointers=pointers)
+    except TypeError:
+        # A reader registered against the rule's one-argument form.
+        return recovery._review_in_flight(pointer)
+
+
 def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     """Whether a live review is working on this run's current revision.
 
@@ -434,7 +455,7 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
         for candidate in _live_pointers(str(pointer.get("project") or ""))
         if str(candidate.get("phase") or "") != queue_admission.QUEUED_PHASE
     ]
-    review_run_id = recovery._review_in_flight(pointer, pointers=launched)
+    review_run_id = _in_flight_review(pointer, launched)
     if not review_run_id:
         return False
     review_pointer = runs.read_pointer(review_run_id)
@@ -457,8 +478,8 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
 def _refused_delivered_review(pointer: Mapping[str, Any]) -> dict[str, str] | None:
     """Read a live review's refused delivery before asking for another review."""
     reviewed_run_id = str(pointer.get("run_id") or "")
-    review_run_id = recovery._review_in_flight(
-        pointer, pointers=_live_pointers(str(pointer.get("project") or ""))
+    review_run_id = _in_flight_review(
+        pointer, _live_pointers(str(pointer.get("project") or ""))
     )
     if not review_run_id:
         return None
@@ -773,7 +794,7 @@ def _queued_review_run_fields(
         for candidate in live_pointers
         if str(candidate.get("phase") or "") == queue_admission.QUEUED_PHASE
     ]
-    review_run_id = recovery._review_in_flight(pointer, pointers=queued)
+    review_run_id = _in_flight_review(pointer, queued)
     if not review_run_id:
         return None
     review_pointer = next(
@@ -832,8 +853,8 @@ def _review_duty_item(
     *,
     now: datetime,
     grace: int,
-    live_pointers: Sequence[Mapping[str, Any]],
-    placements: Mapping[str, Mapping[str, int]],
+    live_pointers: Sequence[Mapping[str, Any]] | None = None,
+    placements: Mapping[str, Mapping[str, int]] | None = None,
 ) -> dict[str, Any] | None:
     """One review duty, keyed to the review of the run's current worktree head.
 
@@ -875,6 +896,13 @@ def _review_duty_item(
     withdrawn while the run still carries the revision its resume superseded, and
     it returns naming the run's new head as soon as the run delivers one. Returns
     None for a withdrawn duty, which its caller lists as no duty at all.
+
+    ``live_pointers`` and ``placements`` are the caller's own read of the live
+    directory and its admission order. A derivation passes them so every duty
+    in one view answers from one snapshot; a caller holding neither — a slice
+    built from a fleet state the sweep already read, a reader outside any view —
+    may leave them out, and the queued reading reads the pointers and the
+    ordering for itself when it needs them.
     """
     age = _row_age(row, now=now)
     classification = str(row.get("classification") or "")
@@ -948,6 +976,10 @@ def _review_duty_item(
         # whether or not an older stored record exists, because a review
         # composed for the head after a test-driven repair is still a dispatch
         # already made.
+        if live_pointers is None:
+            live_pointers = _live_pointers(project)
+        if placements is None:
+            placements = queue_admission.queued_placements(live_pointers, now=now)
         queued = _queued_review_fields(
             pointer,
             head=head,
