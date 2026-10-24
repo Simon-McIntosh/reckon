@@ -14,6 +14,7 @@ from reckon.crew.node import NODE_PROPERTIES
 from reckon.crew.plan_review import plan_fingerprint
 from reckon.crew.runs import _watch_attach_line
 from reckon.mcp import _OP_VOCAB
+from tests.test_skills_name_no_host_path import _skill_files
 
 ROOT = Path(__file__).parents[1]
 
@@ -131,9 +132,9 @@ RETIRED_DEFERRED_WORK_TERM = re.compile(r"follow[-_]ons?", re.IGNORECASE)
 
 SKILLS_ROOT = ROOT / "skills"
 
-# The six files that carry the rule for work found beyond a node. The control
-# below asserts the walk reaches them, so an empty or renamed tree cannot
-# report an absence the scan never looked for.
+# The six files that carry the rule for work found beyond a node. The walk that
+# reaches them is the shared one in tests/test_skills_name_no_host_path.py,
+# whose own control refuses an empty or renamed tree.
 CONTINUATION_SKILL_FILES = [
     SKILLS_ROOT / "reckon-build" / "SKILL.md",
     SKILLS_ROOT / "reckon-build" / "references" / "worker-protocol.md",
@@ -142,22 +143,6 @@ CONTINUATION_SKILL_FILES = [
     SKILLS_ROOT / "reckon-build" / "references" / "conditional-guidance.md",
     SKILLS_ROOT / "reckon-edit" / "SKILL.md",
 ]
-
-
-def _skill_files(root: Path = SKILLS_ROOT) -> list[Path]:
-    return sorted(path for path in root.rglob("*") if path.is_file())
-
-
-def test_the_skills_tree_is_walked() -> None:
-    """A scan over an empty tree reports an absence it never looked for."""
-    files = _skill_files()
-    assert files, f"no files found under {SKILLS_ROOT}; the term scan is vacuous"
-    found = set(files)
-    missing = [path for path in CONTINUATION_SKILL_FILES if path not in found]
-    assert missing == [], (
-        "the skill walk never reached the files that teach the rule: "
-        + ", ".join(str(path.relative_to(ROOT)) for path in missing)
-    )
 
 
 def test_no_skill_file_names_the_retired_deferred_work_term() -> None:
