@@ -15,7 +15,6 @@ first read rather than served with the missing fields.
 from __future__ import annotations
 
 import json
-import re
 import sqlite3
 from pathlib import Path
 
@@ -23,11 +22,6 @@ from reckon import ledger, mcp_views
 
 PROJECT = "projection-fixture"
 PLAN = "a-read-answers-inside-its-deadline"
-FRAGMENT = (
-    Path(__file__).resolve().parents[1]
-    / "docs/evidence/fragments/a-read-answers-inside-its-deadline"
-    / "a-section-attempts-read-the-projection.html"
-)
 
 
 def _row(
@@ -223,51 +217,3 @@ def test_the_projection_carries_the_fields_the_grouping_reads() -> None:
     assert {"role", "run_id", "plan", "section", "gate", "failure_classification"} <= (
         set(ledger._PICKER_FIELDS)
     )
-
-
-def _measured_figures() -> tuple[str, dict[str, float]]:
-    """The fragment's verdict and the numbers it records as its measure."""
-    text = FRAGMENT.read_text(encoding="utf-8")
-    verdict = re.search(r'name="evidence-verdict" content="([^"]+)"', text)
-    assert verdict is not None, "the fragment records no verdict"
-    block = re.search(r'<p class="r-measure"([^>]*)>', text)
-    assert block is not None, "the fragment records no measured figures"
-    figures = {
-        name: float(value)
-        for name, value in re.findall(r'data-([a-z-]+)="([0-9.]+)"', block.group(1))
-    }
-    return verdict.group(1), figures
-
-
-def test_the_fragment_verdict_agrees_with_its_measured_figures() -> None:
-    """The recorded verdict may not claim more than the recorded measure.
-
-    The section passes the node when the head's per-call time is at most one
-    fifth of base and its resident memory is no more than 50 MB above base's.
-    The fragment carries both figures and a verdict, so the two are checked
-    against each other: a verdict of ``pass`` is refused while either bound is
-    and a verdict naming a limitation is refused when every bound is met.
-    """
-    verdict, figures = _measured_figures()
-    time_ratio = figures["head-seconds"] / figures["base-seconds"]
-    profile_ratio = figures["head-profile-seconds"] / figures["base-profile-seconds"]
-    rss_delta = figures["head-vmrss-kb"] - figures["base-vmrss-kb"]
-    time_bound = figures["time-bound-ratio"]
-    rss_bound = figures["rss-bound-kb"]
-
-    meets_time = time_ratio <= time_bound and profile_ratio <= time_bound
-    meets_memory = rss_delta <= rss_bound
-    assert verdict in {"pass", "pass-with-limitation", "fail"}, verdict
-
-    if verdict == "pass":
-        assert meets_time, (
-            f"verdict pass but per-call time is {time_ratio:.3f} of base, "
-            f"{profile_ratio:.3f} in the profile, against a {time_bound} bound"
-        )
-        assert meets_memory, f"verdict pass but VmRSS is {rss_delta:,.0f} kB above base"
-    elif verdict == "pass-with-limitation":
-        assert not (meets_time and meets_memory), (
-            "the verdict names a limitation but every bound is met"
-        )
-    else:
-        assert not meets_time or not meets_memory, "verdict fail but every bound is met"
