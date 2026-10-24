@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:2667 compose_landed_record composes the fragment into a served evidence record",
+    "reckon/mcp.py:1324 compose_landed_record composes the fragment on a plan read",
+    "reckon/doccheck.py:1887 compose_landed_record composes the fragment for the document audit"
+  ],
+  "completed_at": "2026-10-24T09:53:48.634Z",
+  "dispatched_at": "2026-10-24T09:45:46Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-page-paints-from-an-index/a-cold-read-sweeps-the-directories-once.html",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "the paragraph names the seven controls by suffix alone ('NO_WAIT', 'BUILD_REREADS', ...) where the switch the run armed is RECKON_TEST_COLD_<NAME>, and cites no command or log path, so a reader cannot reproduce an arm from the fragment without finding the run directory; spelling the variables in full and naming the per-arm log beside the mapping would make the claim re-runnable from the record it appears in."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/window-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/window-base.log",
+    "gate_final": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/gate-final.log",
+    "head_arm": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/cold-read-head.log",
+    "negative_control_summary": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/negative-control-summary.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit from d8ecab5e08ff to ebf3c554ec6a: a single commit, 'docs(evidence): name each cold-read control's own case', which rewrites one <p> in the fragment \u2014 replacing the combined-control sentence with the per-arm mapping and the 203-passed consolidated gate \u2014 and touches nothing else.",
+    "done_when": "The FENCE-EVIDENCE done-when requires each of the seven controls applied, run, logged with its failing test id and reversed, with every log ending in EXIT=; logs/negative-control-RECKON_TEST_COLD_*.log hold one arm per variable at ebf3c554ec6a, each reading '1 failed, 6 passed' and EXIT=1 over exactly the id its case names, and logs/gate-final.log now ends '203 passed in 332.30s' with EXIT=0.",
+    "goal": "The source node's goal is 'Make a cold index read stat each recorded directory once, however many readers arrive together'; the gained commit ebf3c554e changes no product code (git diff --stat d8ecab5e08ff..ebf3c554ec6a lists one evidence fragment line), so the behaviour it documents is the path already landed at d8ecab5e08ff in reckon/metadata_index.py.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/manifest.md; it records commits 5d7cf30ad, d8ecab5e0 and ebf3c554e, status complete, gate-final 203 passed EXIT=0, the seven per-arm control logs and the window arm pair at 4 passed EXIT=0, and every one of those claims reconciles with the log it names.",
+    "write_paths": "The manifest declares reckon/metadata_index.py, tests/test_a_cold_read_sweeps_the_directories_once.py, docs/evidence/fragments/the-page-paints-from-an-index/a-cold-read-sweeps-the-directories-once.html and the figure topic directory; 'git diff --stat d8ecab5e08ff ebf3c554ec6a' lists only the fragment path, inside them."
+  },
+  "justifications": {
+    "durability": "The commit adds no test and no assertion \u2014 line 23 of the fragment is prose \u2014 so no test reddens if the fragment drifts from the logs, although the claims it makes rest on the re-runnable env-armed cases in tests/test_a_cold_read_sweeps_the_directories_once.py.",
+    "evidence": "Every clause added at docs/evidence/fragments/the-page-paints-from-an-index/a-cold-read-sweeps-the-directories-once.html:23 reconciles with its artefact: the seven logs/negative-control-RECKON_TEST_COLD_*.log each show '1 failed, 6 passed' and EXIT=1 over the id the fragment names, logs/cold-read-head.log reads '7 passed' EXIT=0, and logs/gate-final.log ends '203 passed in 332.30s' with EXIT=0, all stamped at revision ebf3c554ec6a.",
+    "fit": "The rewritten paragraph keeps the surrounding fragment idiom of <article class=\"r-note\">, id anchors and <code>/<strong> markup used by the sibling fragments in docs/evidence/fragments/the-page-paints-from-an-index/, and carries no plan, sprint or ticket label in its prose.",
+    "goal_fidelity": "docs/evidence/fragments/the-page-paints-from-an-index/a-cold-read-sweeps-the-directories-once.html:23 now names each mutation's own failing case, which is the evidence account the landed code at reckon/metadata_index.py supports and the shape the prior review's finding 2 asked for.",
+    "reuse": "The diff adds no function, class or module, so there is no capability to fork; a search over reckon/evidence.py (the reader named compose_landed_record at :560) and the fragment directory found this is prose inside the owner fragment that compose_landed_record already composes.",
+    "scope_discipline": "'git diff --stat d8ecab5e08ff ebf3c554ec6a' is one file and one changed line, and that file is the fragment path the manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'Make a cold index read stat each recorded directory once, however many readers arrive together'; the gained commit ebf3c554e changes no product code (git diff --stat d8ecab5e08ff..ebf3c554ec6a lists one evidence fragment line), so the behaviour it documents is the path already landed at d8ecab5e08ff in reckon/metadata_index.py.\nVERDICT done_when: the FENCE-EVIDENCE done-when requires each of the seven controls applied, run, logged with its failing test id and reversed with every log ending in EXIT=; logs/negative-control-RECKON_TEST_COLD_*.log hold one arm per variable at ebf3c554ec6a each reading '1 failed, 6 passed' and EXIT=1 over exactly the id its case names, and logs/gate-final.log now ends '203 passed in 332.30s' with EXIT=0.\nVERDICT write_paths: the manifest declares reckon/metadata_index.py, tests/test_a_cold_read_sweeps_the_directories_once.py, the fragment and the figure topic directory; 'git diff --stat d8ecab5e08ff ebf3c554ec6a' lists only the fragment path, inside them.\nVERDICT manifest: read; it records commits 5d7cf30ad, d8ecab5e0 and ebf3c554e, status complete, gate-final 203 passed EXIT=0, the seven per-arm control logs and the window pair at 0 failures, and each claim I checked reconciles with the log it names.\nVERDICT diff: read commit by commit from d8ecab5e08ff to ebf3c554ec6a: one commit rewriting a single <p> in the fragment to replace the combined-control sentence with the per-arm mapping and the 203-passed consolidated gate, and nothing else.\nCALL_SITES: reckon/serve.py:2667 compose_landed_record, reckon/mcp.py:1324 compose_landed_record, reckon/doccheck.py:1887 compose_landed_record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-page-paints-from-an-index/a-cold-read-sweeps-the-directories-once.html:23 now names each mutation's own failing case, the account the landed code at reckon/metadata_index.py supports.\nSCORE evidence: 19\nJUSTIFICATION evidence: the seven logs/negative-control-RECKON_TEST_COLD_*.log each show '1 failed, 6 passed' EXIT=1 over the id the fragment names at line 23, and logs/gate-final.log ends '203 passed in 332.30s' with EXIT=0 at revision ebf3c554ec6a.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: 'git diff --stat d8ecab5e08ff ebf3c554ec6a' is one file and one changed line, inside the declared fragment write path.\nSCORE durability: 12\nJUSTIFICATION durability: line 23 of the fragment is prose with no test or assertion behind it, so nothing reddens if the fragment drifts, though the claims rest on the re-runnable env-armed cases in tests/test_a_cold_read_sweeps_the_directories_once.py.\nSCORE fit: 18\nJUSTIFICATION fit: the paragraph keeps the r-note article, id anchors and <code>/<strong> markup of the sibling fragments in docs/evidence/fragments/the-page-paints-from-an-index/ and carries no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; reckon/evidence.py:560 compose_landed_record already owns reading these fragments and the text adds no second mechanism.\nFINDING docs/evidence/fragments/the-page-paints-from-an-index/a-cold-read-sweeps-the-directories-once.html:23 non-blocking: the controls are named by suffix only ('NO_WAIT', 'BUILD_REREADS', ...) where the armed switch is RECKON_TEST_COLD_<NAME> and no command or log path is cited, so a reader cannot reproduce an arm from the fragment without finding the run directory.",
+  "review_run_id": "r-20261024T094425519889-review-of-a-cold-read-sweeps-the-directories-once-ebf3c554ec6a",
+  "reviewed_base_sha": "d8ecab5e08ff5f4b46394110c9ad67b7ebbe1750",
+  "reviewed_head_sha": "ebf3c554ec6af46de36f9b46deb5aa17c8719ab4",
+  "reviewed_run_id": "r-20261024T084213936111-a-cold-read-sweeps-the-directories-once",
+  "scores": {
+    "durability": 12,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T09:51:21+00:00",
+  "total": 107
+}
