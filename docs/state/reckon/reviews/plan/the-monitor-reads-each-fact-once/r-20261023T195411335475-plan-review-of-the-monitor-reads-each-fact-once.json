@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T21:04:42.035Z",
+  "dispatched_at": "2026-10-23T20:49:49Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:166",
+      "id": "done_when-1",
+      "reason": "\u00a77 is gated on \u00a76 and writes \"each transition once\" from classified pointer state, so an unmeasured classifier sends \u00a77 to build on a station that never classifies.",
+      "text": "\u00a76's done-when measures fold-equality, bytes-parsed and refold-on-rewrite, all of which `station_store.ingest_stream`/`_fold_stream` already implement, and it carries no measure at all for the section's one new mechanism, the classifier at :164 (\"`recovery.classify_pointer` runs once per run whose inputs changed, and its liveness probe runs only where the pointer's `launcher_host` is this node\") \u2014 a grep of `reckon/crew/station_store.py` for `classify_pointer` returns nothing and `tick()` calls only `ingest_pointer`, `ingest_stream` and `heartbeat`, so the node can close \u00a76 green with classification never running",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:224",
+      "id": "reasoning-1",
+      "reason": "the measure is the node's gate, so the node either fails it (and \u00a78 cannot close) or waives it while the follower goes on reading GPFS, which is the exact cost \u00a78 exists to remove; the plan needs a stated decision that the checkpoint and history move into the store, or the follower keeps a declared crew-home read and the measure is rewritten to name the one path allowed.",
+      "text": "\u00a78's measure is \"a 60 s `strace -f -e trace=openat,stat,newfstatat` of a running subscriber names no path under the crew home\", but the only crew-home surface the section retires is the watch record (:208, \"not a watch record under the crew home\"), while the follower's per-pane checkpoint and history stay under `runs.follower_dir()` \u2014 `follow_checkpoint.checkpoint_path` and `history_path` both return `runs.follower_dir(project) / \u2026`, and `reckon/crew_follow_commands.py` reads them on the poll path (`follow_checkpoint.read` :738, `.exists` :1656, `read_history` :2113), so the follower keeps opening crew-home paths and the measure cannot pass",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4ed2aa7a91536d8718ae3381ad3bd661cc177c803068ac725fb7b7381128edbc",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T195411335475-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "530cff7a167d4807fe3baa2be8aff5c9bb97774f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery.classify_pointer` (re-exported at `reckon/crew/recovery.py:84`), `_backends.observe_stream` (`reckon/_backends.py:2900`), `ticker.PaneRowPath` (`reckon/crew/ticker.py:1907`), `store_at_runtime_root`/`default_store` (`reckon/crew/station_store.py:615`,`:620`), all four named test files and `test_running_follower_reloads_without_stream_or_registration_gap` (`tests/test_follower_freshness.py:172`) resolve as written.",
+    "done_when": "a finding \u2014 \u00a76's done-when (snapshot :166\u2013171) measures only the ingest path that \u00a75 already landed and never the classifier, the one mechanism \u00a76 actually adds.",
+    "evidence_paths": "pass \u2014 \u00a76's evidence is repository tests over fixtures, \u00a78's is the existing pane tests plus a 60 s trace of a running subscriber; neither names a session scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the symbols the two units add; \"old \u00a777\" and \"the RCA's \u00a75\" are section references in prose, not identifiers in code.",
+    "reasoning": "a finding \u2014 \u00a78's stated mechanism retires only the watch record, while the follower's own crew-home checkpoint and history files remain unretired and contradict the section's measure.",
+    "single_goal": "pass \u2014 both changed units carry one deliverable each: \u00a76 ingests without re-reading, \u00a78 turns the follower into a subscriber; \u00a76's \u00a75-cleanup is scoped to the same module and the same edit and carries its own measures.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s6\u2192s5, s7\u2192s6 and s8\u2192s7, which matches the open followup's \"\u00a76 waits on \u00a75 ... and \u00a77 follows \u00a76\"; the superseded plan and the RCA both resolve."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "7823f34c78da67f4492186510c1622a3de027a15a832bc4d74deb648bdbc94d3",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T08:27:43.321827+00:00"
+}
