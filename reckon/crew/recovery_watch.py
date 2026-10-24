@@ -198,7 +198,7 @@ def _derived_manifest_text(record: Mapping[str, Any], paths: list[str]) -> str:
         "after_suite: none\n"
         "artifacts: none\n"
         f"evidence_inputs: {evidence}\n"
-        "follow_ons: none\n"
+        "outside_scope: none\n"
         "blockers: replace this derived artifact with a worker-written manifest\n"
     )
 

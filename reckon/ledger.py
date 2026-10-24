@@ -629,7 +629,7 @@ def new_failure_attribution(
 def _path_like_tokens(text: str) -> list[str]:
     """Return the repository-path-shaped words inside one prose entry.
 
-    A follow_on is free text a worker wrote, so a path it names may be bare
+    An outside-scope entry is free text a worker wrote, so a path it names may be bare
     (``reckon/crew/promotion.py``) or embedded in prose (``"workers.py is
     outside the fence"``). A token counts as a path when it carries a slash or
     ends in a file suffix — and is excluded when it is an option (``--flag``)
@@ -647,8 +647,8 @@ def _path_like_tokens(text: str) -> list[str]:
     return tokens
 
 
-def follow_on_paths(entries: Any) -> list[str]:
-    """Extract the repository paths a manifest's ``follow_ons`` name.
+def outside_scope_paths_from_entries(entries: Any) -> list[str]:
+    """Extract the repository paths a manifest's ``outside_scope`` names.
 
     A following run touching the paths an earlier manifest already named is the
     continuation of that node's stated followup — a different routing event
@@ -3709,7 +3709,6 @@ from reckon.run_record import (  # noqa: E402, F401
     measured_throughput,
     measurement_exclusion_reason,
     normalize_outside_scope_paths,
-    outside_scope_paths,
     per_run_budget,
     promoted_budget_fallback,
     promoted_pace_row,

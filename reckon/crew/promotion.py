@@ -1275,7 +1275,7 @@ def _complete_locked(
     outside_scope_paths = (
         None
         if outside_scope_entries is None
-        else ledger.follow_on_paths(outside_scope_entries)
+        else ledger.outside_scope_paths_from_entries(outside_scope_entries)
     )
     predecessor = ledger.predecessor_run_id(
         supplied=_coordinator_supplied_predecessor(record),

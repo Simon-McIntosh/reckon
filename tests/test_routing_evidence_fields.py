@@ -165,13 +165,13 @@ def _row(repository: Path, run_id: str) -> dict:
     return next(item for item in runs if item["run_id"] == run_id)
 
 
-# ── follow_on_paths extraction ──────────────────────────────────────────────
+# ── outside_scope_paths_from_entries extraction ─────────────────────────────
 
 
 def test_empty_follow_ons_extract_to_an_empty_list() -> None:
-    assert ledger.follow_on_paths(None) == []
-    assert ledger.follow_on_paths([]) == []
-    assert ledger.follow_on_paths(["none"]) == []
+    assert ledger.outside_scope_paths_from_entries(None) == []
+    assert ledger.outside_scope_paths_from_entries([]) == []
+    assert ledger.outside_scope_paths_from_entries(["none"]) == []
 
 
 def test_prose_without_paths_extracts_nothing() -> None:
@@ -179,20 +179,25 @@ def test_prose_without_paths_extracts_nothing() -> None:
         "the observe command needs a --wait flag",
         "the fixture README needs a diagram",
     ]
-    assert ledger.follow_on_paths(entries) == []
+    assert ledger.outside_scope_paths_from_entries(entries) == []
 
 
 def test_prose_naming_a_path_extracts_that_path() -> None:
-    assert ledger.follow_on_paths(["workers.py is outside the fence"]) == ["workers.py"]
-    assert ledger.follow_on_paths(["reckon/crew/promotion.py is not in my fence"]) == [
-        "reckon/crew/promotion.py"
-    ]
+    assert ledger.outside_scope_paths_from_entries(
+        ["workers.py is outside the fence"]
+    ) == ["workers.py"]
+    assert ledger.outside_scope_paths_from_entries(
+        ["reckon/crew/promotion.py is not in my fence"]
+    ) == ["reckon/crew/promotion.py"]
 
 
 def test_bare_paths_are_preserved_and_deduplicated() -> None:
     entries = ["reckon/crew/promotion.py", "tests/test_routing_evidence_fields.py"]
-    assert ledger.follow_on_paths(entries) == entries
-    assert ledger.follow_on_paths([*entries, "reckon/crew/promotion.py"]) == entries
+    assert ledger.outside_scope_paths_from_entries(entries) == entries
+    assert (
+        ledger.outside_scope_paths_from_entries([*entries, "reckon/crew/promotion.py"])
+        == entries
+    )
 
 
 def test_structured_follow_on_entries_name_their_own_paths() -> None:
@@ -200,11 +205,11 @@ def test_structured_follow_on_entries_name_their_own_paths() -> None:
         {"path": "reckon/ledger.py"},
         {"paths": "tests/test_routing_evidence_fields.py"},
     ]
-    assert ledger.follow_on_paths(entries) == [
+    assert ledger.outside_scope_paths_from_entries(entries) == [
         "reckon/ledger.py",
         "tests/test_routing_evidence_fields.py",
     ]
-    assert ledger.follow_on_paths(
+    assert ledger.outside_scope_paths_from_entries(
         [
             {"path": "reckon/ledger.py"},
             {"paths": ["experiments/lab.py", "experiments/lab.py"]},
