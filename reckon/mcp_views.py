@@ -1641,7 +1641,7 @@ def section_attempts_by_plan(
     def aggregate() -> dict[str, dict[str, dict[str, Any]]]:
         from reckon.crew import runs
 
-        history, _version = ledger.load(project, root)
+        history_rows = ledger.picker_runs(project, root)
         live = (
             pointers
             if pointers is not None
@@ -1649,7 +1649,7 @@ def section_attempts_by_plan(
         )
         return _group_section_attempts(
             project,
-            history.get("runs", []),
+            history_rows,
             live,
             only_plan=only_plan,
             only_section=only_section,

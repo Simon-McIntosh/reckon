@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="A read answers inside its deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s45">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-24">
+  <title>A section-attempts read decodes only its projection | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-section-attempts-read-the-projection-landing">
+  <h2>A section-attempts read decodes only its projection</h2>
+
+  <p><strong>Change.</strong> <code>mcp_views.section_attempts_by_plan</code>
+  takes its history rows from <code>ledger.picker_runs</code> instead of
+  <code>ledger.load</code>, so a warm read decodes only the projection the
+  index keeps beside each payload.
+  <code>section</code> and <code>failure_classification</code> joined
+  <code>ledger._PICKER_FIELDS</code>, and <code>ledger._RUN_INDEX_VERSION</code>
+  moved from 3 to 4 so each host rebuilds its index once with the wider
+  projection. <code>ledger.load</code> gained a <code>picker_only</code> mode
+  that reads the projection on the index path and projects what the aggregate
+  returns on the cold path, so <code>picker_runs</code> keeps the one read
+  entry point every existing attempts-read test substitutes.</p>
+
+  <p><strong>The index is now named by its version.</strong> Raising the
+  version alone was a defect of mine, not of the read: many processes on a host
+  run older code — a session server that predates a release, the producer, peer
+  agents — and they shared one index file whose drop-on-mismatch guard makes
+  each version destroy the other's tables on its first read. Two readers
+  alternating then paid a full rebuild on every switch (25–80 s here), until
+  every process had restarted. <code>_run_index_path</code> now returns
+  <code>ledger-{identity}-v{version}.sqlite</code>, so each version keeps its
+  own file and the guard remains the refusal for a same-named file. The
+  retention sweep in <code>reckon/crew/gc.py</code> globs
+  <code>ledger-*.sqlite</code> and still matches the versioned name; the two
+  other readers of the path (<code>mcp_views.section_attempt_count</code>, the
+  index stamp) call the function and move with it.</p>
+
+  <p><strong>The four cases hold.</strong>
+  <code>tests/test_section_attempts_read_the_projection.py</code> checks that
+  the projection agrees with <code>_group_section_attempts</code> over full
+  rows (a failed row keeps its classification, a non-executable row never
+  becomes an attempt); that a call never reaches <code>_index_payload</code>
+  with <code>picker_only=False</code>; that an index recorded at the previous
+  version inside a version-named file is rebuilt with <code>section</code>
+  restored (the stored projection is blanked as well as the version rolled
+  back, so only a rebuild can bring the field back); and that a reader at the
+  previous version and a reader at the current one alternate twice over one
+  ledger without either rebuilding — counted on <code>_read_run</code>, which
+  a rebuild must call for every run document it re-decodes.</p>
+
+  <p><strong>Gate.</strong> The thirteen files §45 names run at base and at
+  head with <code>-n 8</code>. Base <code>3df04d103</code>: 1 failed, 171
+  passed. Head <code>11191c058</code>: 1 failed, 177 passed. The failure is the
+  same id at both arms —
+  <code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>,
+  <code>KeyError: 'detail'</code> — so the change adds none. <code>ruff
+  check</code> reports the same three pre-existing findings in
+  <code>reckon/mcp_views.py</code> at both arms and none in the changed
+  <code>reckon/ledger.py</code> or the test file; <code>ruff format
+  --check</code> is clean on all three. Re-run at the head of this record,
+  <code>93b7d7fd</code>, against the restated measure: 1 failed, 177 passed,
+  the same failing id.</p>
+
+  <p class="r-measure" data-decode-base-seconds="4.445"
+  data-decode-head-seconds="0.596" data-decode-bound-ratio="0.2"
+  data-base-vmrss-kb="757112" data-head-vmrss-kb="140196"
+  data-rss-bound-kb="51200" data-base-refresh-seconds="5.252"
+  data-head-refresh-seconds="1.510" data-base-stat-walk-seconds="1.312"
+  data-head-stat-walk-seconds="1.297" data-base-call-seconds="10.259"
+  data-head-call-seconds="4.313"
+  data-base-profile-seconds="6.347" data-head-profile-seconds="1.824"><strong>Measure on the
+  fleet node</strong> (98dci4-clu-2068, job 1291586), one fresh process per
+  arm, entry point
+  <code>mcp_views.section_attempts_by_plan("reckon")</code>, aggregate timed
+  over an index that arm itself built. Base <code>3df04d103</code>: first call
+  9.604 s, aggregate 10.259 s, VmRSS 757,112 kB. Head <code>11191c058</code>:
+  first call 5.630 s, aggregate 4.313 s, VmRSS 140,196 kB.</p>
+
+  <p><strong>Against the section's measure.</strong> The projection decode —
+  <code>json.loads</code> inside <code>_index_payload</code>, profiled over the
+  second roadmap call — is <strong>4.445 s at base and 0.596 s at head</strong>,
+  0.134 of base against a bound of one fifth. Resident memory is
+  140,196 kB at head against 757,112 kB at base, 617 MB <em>below</em> the base
+  arm rather than up to 50 MB above it: the read no longer materialises every
+  retained payload. Both bounds pass. The index refresh stats every run file
+  whether or not a payload is decoded, so the section reports it beside the
+  decode rather than inside the bound: <strong>5.252 s at base and 1.510 s at
+  head</strong>, of which the run-directory stat walk
+  (<code>_run_snapshot</code> plus <code>_file_identity</code> over 7,243
+  files) is 1.312 s and 1.297 s — unchanged at both arms, as it must be, since
+  no projection can spare a stat. For completeness the whole aggregate is
+  10.259 s at base and 4.313 s at head. An earlier statement of this section
+  bounded the whole per-call time at one fifth of base; that bound was retired
+  on 2026-10-24, before this record, because the refresh and the stat walk sit
+  inside it and belong to no projection. Of the whole-call drop, 3.8 s is the
+  decode and the remaining head time is the walk the section excludes.</p>
+
+  <p><strong>Where the remaining time goes.</strong> A profile of the second
+  roadmap call, cumulative seconds by function, base then head:
+  <code>section_attempts_by_plan</code> 6.347 vs 1.824;
+  <code>_indexed_data</code> 5.252 vs 1.510; the live-pointer listing
+  <code>runs._list_live_records</code> 0.134 vs 0.138; and
+  <code>_group_section_attempts</code> 0.538 vs 0.054. The grouping is 10×
+  cheaper for the same reason the decode is, and the index refresh is what the
+  section leaves to its own node.</p>
+
+  <p><strong>Negative controls.</strong> Two mutations were applied and
+  logged. Pointing the aggregate back at <code>ledger.load</code> reds
+  <code>test_a_call_reads_no_full_payload</code> alone. Dropping the version
+  from the index file name reds
+  <code>test_two_versions_alternate_without_rebuilding_each_other</code>.</p>
+
+  <p><strong>Scope retained.</strong> The driving followup stays open, no
+  terminal status is set, and no plan-version meta line was touched.</p>
+</section>
+</main>
+</body>
+</html>
