@@ -1,0 +1,78 @@
+{
+  "added_failure_basis": "The manifest declares no baseline_suite or after_suite key, so the two arms were read from the reviewed run's own archived gate logs: gate-base.log (revision 8d010aef2), which ran tests/test_a_crashed_producer_is_restarted.py, tests/test_follower_freshness.py and tests/test_resume_reaps_its_child.py's sibling three-file set with 1 failed + 6 errors, and gate-head-final.log (revision 1335254cc, three commits before the reviewed head and differing from it only by a docs fragment) with 3 failed + 6 errors. The 6 ERROR ids and test_repeated_crashes_reach_a_reported_limit appear in both; the set difference is the two ids recorded here. Neither is attributable: gate-base-suspects.log shows test_crashed_producer_reoccupies_the_seat[crash] failing on an unmodified extraction of the base revision (1 failed, 2 passed), and gate-base-resume.log and gate-head-resume-serial.log both record 6 passed EXIT=0 for test_resume_reaps_its_child.py, so that id is a parallel-load flake (gate-head-clean-suspects.log: 15 passed when the suspect set runs alone). The base arm was scoped to the files that failed at head, which is sound for attribution but means the '0 added' figure is not a full-tree base measurement.",
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]",
+    "tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes"
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2915 (follower start-up calls the adoption)",
+    "reckon/crew_run_commands.py:3777 (CLI calls admit_until_stopped)",
+    "reckon/crew/recovery_watch.py:3041 (producer stream yields from watch_ticker)",
+    "reckon/crew/dispatch.py:3230 (re-exports the adoption for the follower)"
+  ],
+  "completed_at": "2026-10-24T23:39:24.218Z",
+  "dispatched_at": "2026-10-24T23:30:51Z",
+  "evidence_inputs": [
+    "Reproduction of the defect at base: the mutation log gate-head-importers.log carries the new test's first case red under eight-way parallelism, and negative-control.log applies 'inherited = []' at 0ad7fadfc and shows the inherited child left in state Z with EXIT=1, which is the zombie the plan describes.",
+    "The reaper start is the pre-existing _ensure_launched_worker_reaper call at dispatch_launch.py:523, reached through the new 'adoption' flag rather than by a second start path.",
+    "I verified the ruff delta at the reviewed head myself: six findings across the four changed files, byte-identical in id and location to the base arm's six (the W292 the ruff-delta.log recorded was removed by 1335254cc), and ruff format --check reports the same single file (dispatch_launch.py) reformatted at both revisions.",
+    "The importer gate ran at 1335254cc, three commits before the reviewed head; 0def2d8a7 adds only the evidence fragment, so no code differs between the gate tree and the reviewed head.",
+    "The reviewed head is not an ancestor of this review worktree's HEAD, so the landed change is not yet on main and the named test cannot be re-run in this tree; the gate result read here is the recorded one."
+  ],
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 489,
+      "severity": "non-blocking",
+      "text": "non-blocking: _inherited_child_pids adopts every child the process already holds, not only the ones the previous image left, so a child the new image started before this call is registered and the reaper's waitpid consumes an exit status its owning Popen.wait() then cannot read. In watch_ticker and admit_until_stopped the call is the first statement, so the exposure there is narrow, but the follower reaches it at crew_follow_commands.py:2915 after building the ticker grid and taking its checkpoint."
+    },
+    {
+      "file": "tests/test_a_reexec_reaps_the_children_it_inherits.py",
+      "line": 147,
+      "severity": "non-blocking",
+      "text": "non-blocking: test_a_child_the_new_image_starts_keeps_its_own_exit_status calls the adoption inside the pytest process and only starts its child afterwards, so it covers the after-ordering alone; the before-ordering case in the finding above is unguarded, and any child pytest already holds at line 147 is silently adopted into the shared registry for the rest of the module."
+    },
+    {
+      "file": "manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line claims '0 added against base', but the manifest carries no baseline_suite or after_suite key and the archived base arm gate-base.log covers only 3 of the 124 gate files; the claim is true in substance (gate-base-suspects.log shows test_crashed_producer_reoccupies_the_seat[crash] red at base and the resume file green at both revisions when run alone) but the record overstates the measurement it rests on."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Four production reach-points verified: crew_follow_commands.py:2915, crew_run_commands.py:3777, recovery_watch.py:3041, dispatch.py:3230.",
+    "diff": "Read all four commits against base 8d010aef2: the source commit adds the child scan and the two start-up calls, and the rest are a newline fix and two evidence commits.",
+    "done_when": "The done_when names tests/test_a_reexec_reaps_the_children_it_inherits.py and its four cases; gate-head-node.log records 5 passed EXIT=0 at the head tree, the file is absent at base, and negative-control.log is red at EXIT=1.",
+    "goal": "The node's goal is that a re-exec adopts and reaps the children the previous image left; reckon/crew/dispatch_launch.py:489-491 registers the kernel's child list through recovery_liveness._process_children with no run record, and :523 starts the shared reaper.",
+    "manifest": "Read; four commits, the 5/5 head arm, the red negative control and the importer gate are named, but baseline_suite and after_suite are absent so the arms live only in gate-base.log and gate-head-final.log.",
+    "write_paths": "Declared: the three crew modules, the new test file, the evidence fragment and the figure directory; git diff 8d010aef2..0def2d8a7 touches the four code/test paths plus the fragment and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reexec_reaps_the_children_it_inherits.py:136 reddens when the child scan is dropped (negative-control.log, state 'Z', EXIT=1), and :150-151 and :178 redden on a stolen exit status or a removed loop call.",
+    "evidence": "gate-head-node.log records 5 passed EXIT=0 and negative-control.log is red at EXIT=1, but the base arm covers only 3 of the 124 gate files, so the 0-added reading rests on targeted suspect re-runs.",
+    "fit": "queue_admission.py:2531-2533 and recovery_watch.py:2717-2719 follow the module's existing call-site lazy-import idiom, and no added name carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:489-491 registers the kernel's child list before the carrier is read, and :523 starts the reaper, so an inherited child has an owner again exactly as the goal states.",
+    "reuse": "The capability search found recovery_liveness._process_children at recovery_liveness.py:388 and the change calls it rather than forking it, extending the existing adoption and reaper owners.",
+    "scope_discipline": "git diff 8d010aef2..0def2d8a7 touches only the three modules, the new test file and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a re-exec adopts and reaps the children the previous image left; reckon/crew/dispatch_launch.py:489-491 now registers every pid the kernel lists under this process (via recovery_liveness._process_children) with no run record, and :523 starts the shared reaper, so the inherited child is collected instead of staying a zombie.\nVERDICT done_when: the done_when names tests/test_a_reexec_reaps_the_children_it_inherits.py and its four named cases; gate-head-node.log records that exact command at the head tree with 5 passed EXIT=0, the file is absent at base 8d010aef2, and negative-control.log records the child-scan-skipped mutation red at EXIT=1.\nVERDICT write_paths: the declared paths are reckon/crew/dispatch_launch.py, reckon/crew/queue_admission.py, reckon/crew/recovery_watch.py, the new test file, the evidence fragment and the figure directory; git diff 8d010aef2..0def2d8a7 touches exactly the first four plus the fragment and stays inside them.\nVERDICT manifest: read at the reviewed run directory; it names four commits, the 5/5 head arm, the red negative control, the 124-file importer gate and the base suspect re-runs, but its baseline_suite and after_suite keys are absent, so the gate arms exist only as gate-base.log and gate-head-final.log.\nVERDICT diff: read 2e111bf71, 1335254cc, 0ad7fadfc and 0def2d8a7 against base 8d010aef2; the source commit adds _inherited_child_pids and folds the scan into _adopt_launched_workers_from_reexec, adds one call each to queue_admission.admit_until_stopped and recovery_watch.watch_ticker, and adds the 212-line test file.\nCALL_SITES: reckon/crew_follow_commands.py:2915, reckon/crew_run_commands.py:3777, reckon/crew/recovery_watch.py:3041, reckon/crew/dispatch.py:3230\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:489-491 registers the kernel's child list before the carrier is read, and :523 starts the reaper, so an inherited child has an owner again exactly as the goal states.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head-node.log records 5 passed EXIT=0 for the named file at the head tree and negative-control.log records the mutation red at EXIT=1, but the base arm gate-base.log covers only 3 of the head arm's 124 files, so the 0-added reading rests on targeted suspect re-runs rather than a full base arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 8d010aef2..0def2d8a7 touches only the three modules, the new test file and the evidence fragment, all inside the manifest's declared write paths; the fragment is beyond the plan's literal 'Write paths' line but is the node's own landing record.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_reexec_reaps_the_children_it_inherits.py:136 reddens when the child scan is dropped (negative-control.log, state 'Z', EXIT=1), and :150-151 and :178 redden if a launched or post-adoption child's exit status is stolen or the two loop calls are removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:2531-2533 and recovery_watch.py:2717-2719 follow the module's existing lazy-import-at-call-site idiom used at queue_admission.py:2490, and the new names describe the mechanism with no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search for an existing child-list reader found recovery_liveness._process_children at recovery_liveness.py:388, and the change calls it rather than forking it, while extending the existing _adopt_launched_workers_from_reexec and _ensure_launched_worker_reaper owners.\nFINDING reckon/crew/dispatch_launch.py:489 non-blocking: the scan adopts every child the process already holds, not only the ones the previous image left, so a child the new image started before this call is registered and the reaper's waitpid consumes an exit status its owning Popen.wait() then cannot read; the plan's guarantee only covers children started after the call.\nFINDING tests/test_a_reexec_reaps_the_children_it_inherits.py:147 non-blocking: test_a_child_the_new_image_starts_keeps_its_own_exit_status calls the adoption inside the pytest process and starts its child only afterwards, so the before-ordering case above is unguarded and any child pytest already holds at line 147 is silently adopted into the shared registry.\nFINDING manifest.md:17 non-blocking: the artifacts line claims '0 added against base', but baseline_suite and after_suite are absent from the manifest and the archived base arm covers only 3 of the 124 gate files, so the claim rests on targeted suspect re-runs; the substance holds (gate-base-suspects.log shows test_crashed_producer_reoccupies_the_seat[crash] red at base) but the recorded provenance overstates the measurement.\n",
+  "review_run_id": "r-20261024T232929663030-review-of-a-reexec-reaps-the-children-it-inherits-0def2d8a7c3c",
+  "reviewed_base_sha": "8d010aef2bf71a4707c9f0f5ebaf94930c4c3ae7",
+  "reviewed_head_sha": "0def2d8a7c3cedf643faf15b591fd21791b831ac",
+  "reviewed_run_id": "r-20261024T110802029357-a-reexec-reaps-the-children-it-inherits",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T23:37:25.885134+00:00",
+  "total": 110
+}
