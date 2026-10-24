@@ -1274,29 +1274,6 @@ def _value_at_path(data: dict[str, Any], path: str) -> Any:
     return current
 
 
-#: The store's op verbs this module composes a target for. ``_store._OP_DISPATCH``
-#: is the authority on which verbs exist; a verb added there without an entry
-#: here would silently answer a conflict with no target, so a test compares the
-#: two sets and fails on the difference.
-TARGET_COMPOSED_VERBS = frozenset(
-    {
-        "set",
-        "append",
-        "resolve",
-        "lock",
-        "accept",
-        "gate",
-        "pass",
-        "fail",
-        "insert_section",
-        "append_evidence",
-        "retire_prose",
-        "close",
-        "move",
-    }
-)
-
-
 def _op_target_path(op: dict[str, Any]) -> str | None:
     """The document address one op touches, or ``None`` when it names none.
 
@@ -1310,8 +1287,6 @@ def _op_target_path(op: dict[str, Any]) -> str | None:
     if not isinstance(op, dict):
         return None
     verb = op.get("op")
-    if verb not in TARGET_COMPOSED_VERBS:
-        return None
     if verb == "set":
         path = op.get("path")
         return path if isinstance(path, str) and path else None

@@ -324,14 +324,38 @@ def test_an_append_of_a_new_record_names_its_path_alone(
 
 
 def test_every_store_op_verb_names_a_target() -> None:
-    """A verb added to the store's dispatch cannot silently lose its target."""
-    from reckon import _store as store_module
-    from reckon.mcp_edit_plan import TARGET_COMPOSED_VERBS
+    """Every store verb composes a target, so no verb falls through to none.
 
-    missing = set(store_module._OP_DISPATCH) - TARGET_COMPOSED_VERBS
-    assert not missing, (
-        f"{sorted(missing)} are store op verbs with no composed target address — "
-        "add each to TARGET_COMPOSED_VERBS and to _op_target_path"
+    The op below carries every key any address branch reads, so it is a usable
+    representative for every verb: a branch that exists finds its key and
+    returns an address, while a verb with no branch — a verb just added to the
+    store's dispatch, or whose branch was removed — returns ``None`` here.
+    """
+    from reckon import _store as store_module
+    from reckon.mcp_edit_plan import _op_target_path
+
+    representative = {
+        "op": None,
+        "path": "owner",
+        "target": "followups",
+        "id": "x-1",
+        "key": "d-1",
+        "item": {"id": "i-1"},
+        "plan": PLAN,
+        "anchor": "a-1",
+        "slug": "i-1",
+        "from": "s-1",
+        "to": "s-2",
+        "preimage": "<p>x</p>",
+    }
+    verbs = sorted(store_module._OP_DISPATCH)
+    assert verbs, "the store's dispatch is empty — the check would pass vacuously"
+    untargeted = [
+        verb
+        for verb in verbs
+        if _op_target_path({**representative, "op": verb}) is None
+    ]
+    assert not untargeted, (
+        f"{untargeted} are store op verbs with no composed target address — "
+        "give each a branch in _op_target_path"
     )
-    stale = TARGET_COMPOSED_VERBS - set(store_module._OP_DISPATCH)
-    assert not stale, f"{sorted(stale)} compose a target for no store verb"
