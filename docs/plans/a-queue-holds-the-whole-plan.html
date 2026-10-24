@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -114,6 +114,11 @@
     <div class="r-fu-body"><p>§2 is the change that lets a coordinator load a plan's width, and every other section waits on it through the declared edges. Build order, each step only after the step before it has landed: §2; then §5, §6 and §8; then §4; then §3, §7 and §10, with <code>imas-ambix:local-lane-admission-control</code> §27 once §4 has landed; then §9 and §11; then §15 and §12; then §13; and §14, the dogfood week, last. Sections in one step that write the same module are queued so that they launch in turn. Scheduled in S27.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-queue-holds-the-whole-plan §2</pre>
     <p class="r-fu-outcome">Section 2 landed at merge 7b20186d6 after seven review rounds; zero added failures at the merge with main, and the declared negative control fails. Sections 5, 6 and 8 are ready to dispatch; the plan owner writes the next followup.</p>
+    </article>
+<article class="r-fu" data-id="f-aqhwp-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-42" data-written-at="2026-10-24 01:50" data-recommends-skill="/reckon-build a-queue-holds-the-whole-plan §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the queue&#x27;s next wave: §5, then §8 and §6</h4>
+    <div class="r-fu-body"><p>§2 landed on 23 October (merge <code>7b20186d6</code>). Next, in build order: §5, as two parallel nodes (launch-time steering binding; the edit, reprioritise and drop verbs); then §8 and §6, on codex, one after the other because each writes <code>reckon/crew/queue_admission.py</code>; then §4, §3, §7, §10, §9, §11, §15, §12, §13 and §14 in the order the section waits declare, with <code>imas-ambix:local-lane-admission-control</code> §27 once §4 lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-queue-holds-the-whole-plan §5</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
