@@ -1,0 +1,37 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T01:17:58.006Z",
+  "dispatched_at": "2026-10-24T01:10:01Z",
+  "findings": [],
+  "plan_fingerprint": "2ae6d4aafdce185025d1ecfdf8b101506b32c98f328ccd59fa6cf7ce97267933",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T010858460704-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "55ec52cbdfdc0c17b335d3a6f4064f24a87706f8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every module, function and run id cited by \u00a78 resolves at `ac9700b4a` (`ensure_worker_scratch`, `remove_worker_scratch`, `_STEP_TASK_WRAPPER`, `garbage_collect_orphan_scratch`, `garbage_collect_scratch`, `SCRATCH_GRACE_SECONDS`, `_release_after_promotion`, `install_retention_timer`, `retention_sweep`), and the three named runs resolve in the crew home.",
+    "done_when": "pass \u2014 every case in the done-when (plan.html:170) is falsifiable and the negative control reddens the second-host case specifically, with a fresh copy whose ctime sits inside `SCRATCH_GRACE_SECONDS` (gc.py:1005) so the age-wait mutation leaves it in place.",
+    "evidence_paths": "pass \u2014 gate logs sit under the run directory in the shared crew home and the fragment is the repository's evidence record; nothing in \u00a78 writes to a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a78 introduces no plan label, stage name or ticket id; the new function is named for what it does (\"the settling pass\", \"a settling pass\"), and no comment in the section needs the plan to be understood.",
+    "reasoning": "pass \u2014 the stated root cause (the release removed a same-named path, or its host's copy, and the copy the worker wrote survived; review promotions reach no release) is what the three cited release-record signatures show, and every mechanism names a caller on the real path: `_worker_runtime_environment` \u2192 `ensure_worker_scratch`, `_release_after_promotion` \u2192 `remove_worker_scratch`, `retention_sweep` and the launch/step paths \u2192 the new settling pass.",
+    "single_goal": "pass \u2014 the release-host record, the settling pass and the review-promotion route are three mechanisms of one deliverable (\"every run-named copy is removed by a pass that runs\"), closed on one verdict.",
+    "wiring": "pass \u2014 `depends-on` declares `s8 \u2192 crew-state-stays-bounded#s7`, and \u00a78's single scheduler is \u00a77's landed `retention_sweep` (reckon/crew/gc.py:1329); no other dependency is needed and none is missing."
+  },
+  "section_digests": {
+    "_document": "7b027ab93025f3f1274af4c8c21f7e58c154d6e99dbdf5e7f4aa8931cbb1f280",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc03fa54cdefe8b48312fabda86a4fca8277e025db66430978900e888a969066"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T01:21:56.116815+00:00"
+}
