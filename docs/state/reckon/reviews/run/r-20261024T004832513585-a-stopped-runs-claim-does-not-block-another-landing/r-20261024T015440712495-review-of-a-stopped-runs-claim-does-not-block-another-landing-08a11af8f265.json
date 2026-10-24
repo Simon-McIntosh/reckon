@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed run's manifest carries neither baseline_suite nor after_suite (grep over the run directory's manifest.md finds neither key), so there are no arms to difference; its head gate log records no failing id (gate.log: '362 passed in 172.86s', EXIT=0) and both control logs are deliberately mutated arms, so the added count derived from the reviewed run's own gate records is 0 with an empty id list.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/claims.py:210",
+    "reckon/crew/promotion_scope.py:629"
+  ],
+  "completed_at": "2026-10-24T02:03:56.693Z",
+  "dispatched_at": "2026-10-24T01:56:51Z",
+  "findings": [
+    {
+      "file": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py",
+      "line": 289,
+      "severity": "non-blocking",
+      "text": "The stale-manifest fixture sets manifest_baseline_mtime_ns one second after the manifest's mtime, while the real resume path records the baseline at the manifest's current mtime (reckon/crew/resumption.py:1428 via _manifest_mtime_ns) and only rewrites the file when its status is in the supervisor's done set, so a peer that delivered 'blocked' and was then resumed leaves mtime == baseline exactly; reckon/crew/runs.py:159 compares with a strict '>', which refuses that real case, but the fixture never exercises it, so a change of '>' to '>=' would keep this test green while admitting the predecessor's blocked verdict as the current attempt's delivery. Add a case whose baseline equals the manifest mtime."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit against 59a955db872c: beb9bdb70 changes reckon/crew/dispatch_claims.py (freshness pairing, lowercase status compare) and adds test_manifest_from_a_previous_attempt_still_refuses; 08a11af8f265 changes only the evidence fragment, whose numbers (5 passed, 362 passed EXIT=0 at beb9bdb70, both controls at 1 failed 4 passed) match the logs on disk.",
+    "done_when": "The done_when's five cases predate this delta and remain green; the delta's own measure is recorded in gate.log (first line revision beb9bdb7018e4e305f35ec1b7cb435fe536e8713, the literal 21-file command, '362 passed in 172.86s', last line EXIT=0), newtest.log ('5 passed in 4.92s') and two executed controls at EXIT=1, both naming the test they reddened.",
+    "goal": "The node's goal is that crew complete accepts a path whose only live claimant is a stopped run with a terminal manifest; the delta restricts 'terminal manifest' to the delivering attempt by pairing the file with the pointer's manifest_baseline_mtime_ns at reckon/crew/dispatch_claims.py:1978, so a predecessor attempt's verdict no longer stands in for the current one.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T004832513585-a-stopped-runs-claim-does-not-block-another-landing/manifest.md; status complete, commits list carrying both delta commits, checkpoint naming the review-round-2 repair, tests line with the literal gate command, and negative_control_note describing both mutations with their logs.",
+    "write_paths": "The delta touches three files -- reckon/crew/dispatch_claims.py, tests/test_a_stopped_runs_claim_does_not_block_another_landing.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-stopped-runs-claim-does-not-block-another-landing.html -- every one of them inside the node's declared write paths recorded in its manifest."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:303 fails if the freshness clause is dropped, as negative_control_manifest.log demonstrates, but :289 synthesises a baseline one second after the manifest's mtime and so never exercises the equality boundary a resume after a 'blocked' delivery produces.",
+    "evidence": "gate.log names revision beb9bdb70, the tree and the literal 21-file command and ends EXIT=0 with '362 passed'; newtest.log holds '5 passed'; negative_control_manifest.log shows the new test reddening with 'assert 0 == 1' when the freshness rule is removed and negative_control.log does the same for the every-claim-protects mutation, and my own ruff check of the two changed source files at head found one pre-existing I001 in the test import block, identical at 59a955db, so the ruff clause adds no finding.",
+    "fit": "The local import of _manifest_freshness at reckon/crew/dispatch_claims.py:1972 follows the established cross-module use of that helper at reckon/crew/recovery_liveness.py:23 and reckon/crew/promotion_scope.py:46, and the added docstring states the mechanism with no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/dispatch_claims.py:1978 refuses to read a manifest older than the pointer's manifest_baseline_mtime_ns, so only a verdict written by the current attempt sets a stopped peer's claim aside, which is what the goal's 'terminal manifest' means after a resume.",
+    "reuse": "The delta reuses the repository's owners instead of duplicating them -- _manifest_freshness (reckon/crew/runs.py:148), local_liveness and parse_manifest/TERMINAL_MANIFEST_STATUSES (reckon/crew/reports.py:126) -- and correctly does not call the chain-aware _run_chain_manifest_freshness at reckon/crew/recovery_liveness.py:1296, which treats a predecessor's manifest as a readable handover and would readmit exactly the case review round 2 asked to refuse.",
+    "scope_discipline": "Only reckon/crew/dispatch_claims.py, tests/test_a_stopped_runs_claim_does_not_block_another_landing.py and the evidence fragment changed, all declared; the lowercase status compare at reckon/crew/dispatch_claims.py:1990 is inside the same function and the same judgement, not new scope."
+  },
+  "node": "review-of-a-stopped-runs-claim-does-not-block-another-landing-08a11af8f265",
+  "node:reviewed": "a-stopped-runs-claim-does-not-block-another-landing",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that crew complete accepts a path whose only live claimant is a stopped run with a terminal manifest; reckon/crew/dispatch_claims.py:1978 restricts that to the manifest the current attempt delivered, pairing the file with the pointer's manifest_baseline_mtime_ns, so a predecessor attempt's verdict no longer stands in for this one.\nVERDICT done_when: the done_when's five cases remain green and the delta's measure is recorded in gate.log (revision beb9bdb7018e4e305f35ec1b7cb435fe536e8713, literal 21-file command, '362 passed in 172.86s', EXIT=0), newtest.log ('5 passed in 4.92s') and two executed controls at EXIT=1.\nVERDICT write_paths: the delta changes reckon/crew/dispatch_claims.py, tests/test_a_stopped_runs_claim_does_not_block_another_landing.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-stopped-runs-claim-does-not-block-another-landing.html, all inside the node's declared write paths.\nVERDICT manifest: read; status complete, both delta commits named, the literal gate command on the tests line, and negative_control_note describing both mutations beside their logs.\nVERDICT diff: read commit by commit against 59a955db872c; beb9bdb70 changes dispatch_claims.py and adds test_manifest_from_a_previous_attempt_still_refuses, 08a11af8f265 changes only the evidence fragment, and the fragment's numbers match the logs on disk.\nCALL_SITES: reckon/crew/claims.py:210, reckon/crew/promotion_scope.py:629\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:1978 refuses a manifest older than the pointer's manifest_baseline_mtime_ns, so only a verdict the current attempt wrote sets a stopped peer's claim aside.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate.log names revision beb9bdb70 and the literal 21-file command and ends EXIT=0 with '362 passed', newtest.log holds '5 passed', negative_control_manifest.log shows 'assert 0 == 1' when the freshness rule is removed, and my ruff check of the changed source at head found only the I001 pre-existing at 59a955db.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only the three declared paths changed, and the lowercase status compare at reckon/crew/dispatch_claims.py:1990 stays inside the same function and judgement.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:303 fails when the freshness clause is dropped (negative_control_manifest.log), but :289 sets a baseline after the mtime and so never exercises the equality boundary a resume after a 'blocked' delivery produces.\nSCORE fit: 19\nJUSTIFICATION fit: the local import at reckon/crew/dispatch_claims.py:1972 follows reckon/crew/recovery_liveness.py:23, and the added docstring states the mechanism without a plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the delta reuses _manifest_freshness (reckon/crew/runs.py:148), local_liveness and parse_manifest/TERMINAL_MANIFEST_STATUSES (reckon/crew/reports.py:126) rather than re-deriving them, and rightly does not use the chain-aware handover rule at reckon/crew/recovery_liveness.py:1296.\nFINDING tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:289 non-blocking: the fixture sets manifest_baseline_mtime_ns one second after the manifest mtime, while a resume after a 'blocked' delivery leaves mtime == baseline, so the strict '>' at reckon/crew/runs.py:159 that refuses that real case is never exercised and a regression to '>=' would keep this test green.\n",
+  "review_run_id": "r-20261024T015440712495-review-of-a-stopped-runs-claim-does-not-block-another-landing-08a11af8f265",
+  "reviewed_base_sha": "59a955db872c07e33522fcb254449947e06e3213",
+  "reviewed_head_sha": "08a11af8f2657a6818885a5045e25ebd25b4eedf",
+  "reviewed_run_id": "r-20261024T004832513585-a-stopped-runs-claim-does-not-block-another-landing",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T02:20:00+00:00",
+  "total": 114
+}
