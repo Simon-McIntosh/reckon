@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="503">
+<meta name="plan-version" content="504">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -1342,7 +1342,10 @@
     <div class="r-comment-body"><p>review-of-one-cache-owns-a-plan-files-parse-161083d24362 — parsed review of r-20261024T060654985930-one-cache-owns-a-plan-files-parse at 9608e78d5..161083d24362, scores goal_fidelity 19 / evidence 18 / scope_discipline 19 / durability 17 / fit 18 / reuse 5, 0 added failures (base and after suites both record failure_ids []), two non-blocking findings (a stale plan_text store in file_memo.content_digest, and file_memo.content_digest duplicating metadata_index._content_digest)</p></div>
 </div>
 <div class="r-comment" data-section="s57" data-id="c-run-r-20261024T071146368384-review-of-one-cache-owns-a-plan-files-parse-5639a6521f82" data-who="reckon-build" data-when="2026-10-24T07:27:04.832Z">
-    <div class="r-comment-body"><p>independent review of r-20261024T060654985930-one-cache-owns-a-plan-files-parse gained commits 161083d24..5639a6521 — parsed record, all six dimensions scored, zero added failures, two non-blocking findings (two test files edited outside the declared write paths); the two findings the previous review raised are both resolved: metadata_index._content_digest is gone and file_memo.content_digest is the single owner, and the digest&#x27;s pre-read stat signature check is restored and shown to be load-bearing by a red negative control.</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261024T060654985930-one-cache-owns-a-plan-files-parse gained commits 161083d24..5639a6521 — parsed record, all six dimensions scored, zero added failures, two non-blocking findings (two test files edited outside the declared write paths); the two findings the previous review raised are both resolved: metadata_index._content_digest is gone and file_memo.content_digest is the single owner, and the digest's pre-read stat signature check is restored and shown to be load-bearing by a red negative control.</p></div>
+</div>
+<div class="r-comment" data-section="s57" data-id="c-run-r-20261024T060654985930-one-cache-owns-a-plan-files-parse" data-who="reckon-build" data-when="2026-10-24T07:10:08Z">
+    <div class="r-comment-body"><p>one-cache-owns-a-plan-files-parse — the index&#x27;s five-name parse cache is deleted and file_memo owns both the content digest and the opt-in content identity; grep -c is 0 for all five names, one digest definition remains in reckon/, the gate adds no failure at head over the base arm, and dropping the digest&#x27;s signature guard serves the stale title so the race case fails</p></div>
 </div>
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261024T064410309146-review-of-the-served-view-reads-the-roadmaps-blockers-74db0ba147ee" data-who="reckon-build" data-when="2026-10-24T07:05:24.403Z">
     <div class="r-comment-body"><p>Reviewed r-20261024T060459639539-the-served-view-reads-the-roadmaps-blockers at base 9608e78d56045156220788606408679e9fc21417 and head 74db0ba147eec04b43b4a1c5fb50357666cfede8; the record scores all six dimensions (18, 17, 19, 18, 18, 20), carries added_failure_count 1 for the head-only tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order failure that the manifest attributes to the browser runtime, and records one non-blocking finding: the served view calls plan_blocker_state without the released argument, so a stored-blocked plan whose cleared blocker a probe released reads blocked there while the roadmap reads ready.</p></div>
