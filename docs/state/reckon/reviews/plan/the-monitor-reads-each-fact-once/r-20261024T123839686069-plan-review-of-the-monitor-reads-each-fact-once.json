@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T12:46:55.739Z",
+  "dispatched_at": "2026-10-24T12:39:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261024T123839686069-plan-review-of-the-monitor-reads-each-fact-once/plan.html:164",
+      "id": "reasoning-1",
+      "reason": "the fix is a different comparison from the one the section states, refolding from the start whenever the current size is below the stored last-read size rather than below the consumed offset, and a node implementing the section as written would ship the undetected case the section claims its detection rules out.",
+      "text": "\u00a76 justifies its detection with \"Worker streams are append-only JSONL, so a rewrite is a truncate followed by fresh writes; a truncate a tick sees reads as that size test\", but a tick sees the truncated state only when the truncate and the rewrite straddle the tick; if both land between two ticks and the rewritten file ends larger than the consumed offset but smaller than the last-read size (a partial record is unconsumed whenever a run is mid-write, which the same paragraph and the done-when both expect), `station_store.ingest_stream`'s `stored <= info.st_size` test (station_store.py:421) takes the stored offset, folds the new bytes with the stale fold state, and neither the size test nor the 64-byte anchor fires (the anchor is consulted only for a stream that grew) \u2014 so the observation silently describes a file that no longer exists",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261024T123839686069-plan-review-of-the-monitor-reads-each-fact-once/plan.html:192",
+      "id": "done_when-1",
+      "reason": "adding the shrink case (or restating the rewrite case as \"rewritten to any size other than the last-read size\") is what makes the section's own negative control cover the mechanism it claims, and without it the new guard is measured only where it already works.",
+      "text": "the done-when's rewrite case varies only growth (\"a stream rewritten in place, keeping its inode and growing past its stored offset\"), so no measure exercises the shrink-above-offset rewrite above and the tail anchor's negative control (\"an ingest without the tail anchor must fail the case where a stream is truncated and rewritten past its consumed offset\") passes on an implementation that has the same hole",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "61e1e6136b5157fbed1252de0cd981230deff56420991bfba838f0694962dbc1",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T123839686069-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "6af50132eab49c7974cc0fca87f472ab1e4ef337",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol s6 cites resolves: `_backends.observe_stream` (`state=`",
+    "done_when": "pass \u2014 s6's measures are per-mechanism (fold equality, bytes per tick, refold on rewrite,",
+    "evidence_paths": "pass \u2014 s6's evidence is repository test files and fixtures copied into a test",
+    "naming": "pass \u2014 s6's symbols and prose name mechanisms (`_snapshot_reuse_key`, tail anchor, quiet",
+    "reasoning": "a finding \u2014 the section's rewrite detection covers an inode change, a size below the",
+    "single_goal": "pass \u2014 s6 carries ingest and classification, but both live in one module, are named as",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s6 only `s5`, s7 depends on s6, and f-tmref-003 (the"
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T12:50:29.187192+00:00"
+}
