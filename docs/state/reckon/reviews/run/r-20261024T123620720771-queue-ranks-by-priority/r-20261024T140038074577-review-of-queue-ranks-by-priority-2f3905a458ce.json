@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The completed baseline_suite and after_suite receipts each list the same four failing test ids (150 passed, 4 failed).",
+  "after_suite_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T123620720771-queue-ranks-by-priority/importers-head.log",
+  "baseline_suite_log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T123620720771-queue-ranks-by-priority/importers-base.log",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:1803",
+    "reckon/crew/queue_admission.py:1886",
+    "reckon/crew/dispatch.py:378",
+    "reckon/crew/query.py:426"
+  ],
+  "changed_paths": [
+    "docs/evidence/fragments/a-queue-holds-the-whole-plan/queue-ranks-by-priority.html",
+    "reckon/crew/queue_admission.py",
+    "reckon/crew/queue_order.py",
+    "tests/test_a_queued_pointer_without_its_time_reads_no_place.py",
+    "tests/test_queue_priority_order.py"
+  ],
+  "completed_at": "2026-10-24T14:12:33Z",
+  "dispatched_at": "2026-10-24T14:03:33Z",
+  "findings": [
+    {
+      "file": "tests/test_queue_priority_order.py",
+      "line": "140",
+      "severity": "blocking",
+      "text": "blocking: The ageing fixture takes its age from queue_order.STARVATION_AGE_SECONDS, the value tested by admission_order; raising that constant leaves lines 144-149 green and no assertion protects the plan's 30-minute limit."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "The four commits from 20a80cfb36e86356b3b65fde3bdf863c0c8c0df5 through 2f3905a458ceb197adbcc27b39b67337b62ff0a4 add ordering in reckon/crew/queue_order.py:19-230, placement fields in reckon/crew/queue_admission.py:1799-1815, tests, and one evidence fragment.",
+    "done_when": "The source measure in prompt.txt:103 is supported by focused-final.log (9 passed), importers-base.log and importers-head.log (the same four failures), and negative-control.log (override refusal), but tests/test_queue_priority_order.py:140 does not independently assert the 30-minute age.",
+    "goal": "The source goal in prompt.txt:30 asks for roadmap-key ordering with override and ageing, and reckon/crew/queue_order.py:75-107 implements those selection signals.",
+    "manifest": "The source manifest.md:5-24 reports completion, four commits, the focused gate, baseline and after receipts, and a red override control; each cited log carries its own result.",
+    "write_paths": "The declared paths in the source manifest.md:3 and live node.write_paths contain all five paths in the four-commit diff from 6f75b572aa7521949917cca24e1811058b9a31b0."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_priority_order.py:89-119 would fail if roadmap ranking or override precedence were removed, but line 140 passes the tested age from queue_order.STARVATION_AGE_SECONDS so lines 144-149 survive a change to that bound.",
+    "evidence": "focused-final.log records 9 passes and negative-control.log records an override regression failure, while tests/test_queue_priority_order.py:140 leaves the stated 30-minute bound without an independent measurement.",
+    "fit": "reckon/crew/queue_order.py:13 imports the roadmap ranking owner and queue_admission.py:1803 extends the existing placement surface with descriptive field names.",
+    "goal_fidelity": "reckon/crew/queue_order.py:75-107 selects delivered reviews, aged requests, explicit overrides and roadmap-ranked requests within a session, and lines 157-181 select the priority leader within the chosen project.",
+    "reuse": "The capability search found reckon/roadmap_ranking.py:196-274 as the priority-key owner, which queue_order.py:13 and :62-64 reuse while keeping queue ordering in its existing owner.",
+    "scope_discipline": "reckon/crew/queue_admission.py:1799-1815 and the other four changed paths all appear in the source manifest.md:3 declared scope and directly serve ordering, coverage or landing evidence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in prompt.txt:30 asks for roadmap-key ordering with override and ageing, and reckon/crew/queue_order.py:75-107 implements those selection signals.\nVERDICT done_when: The source measure in prompt.txt:103 is supported by focused-final.log (9 passed), importers-base.log and importers-head.log (the same four failures), and negative-control.log (override refusal), but tests/test_queue_priority_order.py:140 does not independently assert the 30-minute age.\nVERDICT write_paths: The declared paths in the source manifest.md:3 and live node.write_paths contain all five paths in the four-commit diff from 6f75b572aa7521949917cca24e1811058b9a31b0.\nVERDICT manifest: The source manifest.md:5-24 reports completion, four commits, the focused gate, baseline and after receipts, and a red override control; each cited log carries its own result.\nVERDICT diff: The four commits from 20a80cfb36e86356b3b65fde3bdf863c0c8c0df5 through 2f3905a458ceb197adbcc27b39b67337b62ff0a4 add ordering in reckon/crew/queue_order.py:19-230, placement fields in reckon/crew/queue_admission.py:1799-1815, tests, and one evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:1803, reckon/crew/queue_admission.py:1886, reckon/crew/dispatch.py:378, reckon/crew/query.py:426\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:75-107 selects delivered reviews, aged requests, explicit overrides and roadmap-ranked requests within a session, and lines 157-181 select the priority leader within the chosen project.\nSCORE evidence: 16\nJUSTIFICATION evidence: focused-final.log records 9 passes and negative-control.log records an override regression failure, while tests/test_queue_priority_order.py:140 leaves the stated 30-minute bound without an independent measurement.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: reckon/crew/queue_admission.py:1799-1815 and the other four changed paths all appear in the source manifest.md:3 declared scope and directly serve ordering, coverage or landing evidence.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_queue_priority_order.py:89-119 would fail if roadmap ranking or override precedence were removed, but line 140 passes the tested age from queue_order.STARVATION_AGE_SECONDS so lines 144-149 survive a change to that bound.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_order.py:13 imports the roadmap ranking owner and queue_admission.py:1803 extends the existing placement surface with descriptive field names.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found reckon/roadmap_ranking.py:196-274 as the priority-key owner, which queue_order.py:13 and :62-64 reuse while keeping queue ordering in its existing owner.\nFINDING tests/test_queue_priority_order.py:140 blocking: The ageing fixture takes its age from queue_order.STARVATION_AGE_SECONDS, the value tested by admission_order; raising that constant leaves lines 144-149 green and no assertion protects the plan's 30-minute limit.\n",
+  "review_run_id": "r-20261024T140038074577-review-of-queue-ranks-by-priority-2f3905a458ce",
+  "reviewed_base_sha": "6f75b572aa7521949917cca24e1811058b9a31b0",
+  "reviewed_commits": [
+    "20a80cfb36e86356b3b65fde3bdf863c0c8c0df5",
+    "020936c5c254a7ba8331efbf1c859d8ce933f961",
+    "eb50efd991c523ee72efe7c562d36134bb789835",
+    "2f3905a458ceb197adbcc27b39b67337b62ff0a4"
+  ],
+  "reviewed_head_sha": "2f3905a458ceb197adbcc27b39b67337b62ff0a4",
+  "reviewed_run_id": "r-20261024T123620720771-queue-ranks-by-priority",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T14:15:59.832091+00:00",
+  "total": 108
+}
