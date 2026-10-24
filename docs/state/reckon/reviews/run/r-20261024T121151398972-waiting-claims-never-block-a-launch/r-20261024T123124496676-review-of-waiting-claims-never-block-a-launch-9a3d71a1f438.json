@@ -1,0 +1,119 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T121151398972-waiting-claims-never-block-a-launch/head-importers-final.log",
+  "assertion_analysis": [
+    {
+      "fails_if": "a ready dispatch is refused by the waiting claim",
+      "line": 26
+    },
+    {
+      "fails_if": "dispatch returns a phase other than starting",
+      "line": 27
+    },
+    {
+      "fails_if": "dispatch changes the waiting pointer phase, but it does not distinguish a phase-specific regression because both sides use the phase parameter",
+      "line": 28
+    },
+    {
+      "fails_if": "the waiting claim makes scope widening raise",
+      "line": 54
+    },
+    {
+      "fails_if": "the working claim no longer refuses dispatch",
+      "line": 67
+    },
+    {
+      "fails_if": "the refusal reports another error than scope-conflict",
+      "line": 68
+    },
+    {
+      "fails_if": "the queued request is not initially awaiting-upstream",
+      "line": 84
+    },
+    {
+      "fails_if": "the waiting request launches despite the working holder",
+      "line": 98
+    },
+    {
+      "fails_if": "the waiting request does not become queued after its upstream declaration",
+      "line": 99
+    },
+    {
+      "fails_if": "no failure is recorded, though any unrelated failure also satisfies it",
+      "line": 100
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T121151398972-waiting-claims-never-block-a-launch/base-importers.log",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1404",
+    "reckon/crew/dispatch.py:2716",
+    "reckon/crew/claims.py:99",
+    "reckon/crew/dispatch_plan.py:1059",
+    "reckon/crew/runs.py:1125"
+  ],
+  "completed_at": "2026-10-24T12:40:57Z",
+  "dispatched_at": "2026-10-24T12:34:06Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": "465",
+      "severity": "blocking",
+      "text": "blocking: The new waiting-phase disposition duplicates the owner at reckon/crew/node.py:1527, so dispatch treats awaiting-upstream and held claims as nonbinding while the production registry at reckon/crew/runs.py:1125 still reports them binding; move the shared phase rule into the owner before landing."
+    },
+    {
+      "disposition": "exempted",
+      "disposition_reason": "Independent dispatch and mutation assertions already guard the behavior.",
+      "file": "tests/test_waiting_claims_never_block_a_launch.py",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: This assertion compares the stored phase with the same phase supplied to the fixture, so changing that supplied phase moves both sides together and it cannot prove the phase-specific refusal was fixed; exempted because lines 26-27 and the recorded negative control independently guard that behavior."
+    },
+    {
+      "disposition": "folded",
+      "file": "tests/test_waiting_claims_never_block_a_launch.py",
+      "folded_into": "waiting-claims-never-block-a-launch",
+      "line": "100",
+      "severity": "non-blocking",
+      "text": "non-blocking: A truthy failure can come from an unrelated admission error, so the test does not identify the working holder as the reason the waiter stayed queued; folded into the required claim-disposition repair for this node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Commits a9fc3e48, df2235c3, and 9a3d71a1 respectively change reckon/crew/dispatch_claims.py:465-515, tests/test_waiting_claims_never_block_a_launch.py:71-100, and the 19-line landing fragment.",
+    "done_when": "The source prompt.txt:105-106 requires four behaviors and zero added importer failures; tests/test_waiting_claims_never_block_a_launch.py:15-100 covers the behaviors, and the base-importers.log:43 and head-importers-final.log:39 summaries show the same single failure.",
+    "goal": "The source prompt.txt:30 asks that unlaunched requests stop refusing dispatch and widening; reckon/crew/dispatch_claims.py:465-515 makes their claims nonbinding and unlaunched.",
+    "manifest": "The source manifest.md:9-24 names three commits, a focused 5-pass gate, base/head 1-failure importer logs, and a red mutation log; the cited logs carry matching summaries and EXIT lines.",
+    "write_paths": "The source prompt.txt:69-73 grants dispatch_claims.py, the named test, and the landing fragment; git diff --name-only from 12b7fea24fffeb89d396200c0f8c6c80a7869cda to 9a3d71a1f438249c3db53935a2b694499e3d8352 lists only those three files."
+  },
+  "justifications": {
+    "durability": "The negative-control.log:35 turns red when waiting claims bind again and tests/test_waiting_claims_never_block_a_launch.py:26-27 independently checks dispatch, but line 28 follows the supplied phase and line 100 accepts any failure.",
+    "evidence": "tests/test_waiting_claims_never_block_a_launch.py:15-100 exercises the four stated paths and the recorded base/head logs show zero added failure IDs, but line 100 does not identify the conflict causing the waiter to remain queued.",
+    "fit": "reckon/crew/dispatch_claims.py:465 constructs ClaimDisposition in the existing claim walk, but its new phase decision diverges from the owner in reckon/crew/node.py:1527 and the live registry in reckon/crew/runs.py:1125.",
+    "goal_fidelity": "reckon/crew/dispatch_claims.py:465-515 releases queued, awaiting-upstream and held claims before dispatch and widening while retaining the working claim path.",
+    "reuse": "Searching claim binding in reckon/crew found reckon/crew/node.py:1527 as the existing ClaimDisposition owner, which the new branch in reckon/crew/dispatch_claims.py:465 duplicates instead of extending.",
+    "scope_discipline": "The diff contains only reckon/crew/dispatch_claims.py, tests/test_waiting_claims_never_block_a_launch.py and the granted landing fragment named in prompt.txt:69-73."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:30 asks that unlaunched requests stop refusing dispatch and widening; reckon/crew/dispatch_claims.py:465-515 makes their claims nonbinding and unlaunched.\nVERDICT done_when: The source prompt.txt:105-106 requires four behaviors and zero added importer failures; tests/test_waiting_claims_never_block_a_launch.py:15-100 covers the behaviors, and the base-importers.log:43 and head-importers-final.log:39 summaries show the same single failure.\nVERDICT write_paths: The source prompt.txt:69-73 grants dispatch_claims.py, the named test, and the landing fragment; git diff --name-only from 12b7fea24fffeb89d396200c0f8c6c80a7869cda to 9a3d71a1f438249c3db53935a2b694499e3d8352 lists only those three files.\nVERDICT manifest: The source manifest.md:9-24 names three commits, a focused 5-pass gate, base/head 1-failure importer logs, and a red mutation log; the cited logs carry matching summaries and EXIT lines.\nVERDICT diff: Commits a9fc3e48, df2235c3, and 9a3d71a1 respectively change reckon/crew/dispatch_claims.py:465-515, tests/test_waiting_claims_never_block_a_launch.py:71-100, and the 19-line landing fragment.\nCALL_SITES: reckon/crew/dispatch.py:1404, reckon/crew/dispatch.py:2716, reckon/crew/claims.py:99, reckon/crew/dispatch_plan.py:1059, reckon/crew/runs.py:1125\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:465-515 releases queued, awaiting-upstream and held claims before dispatch and widening while retaining the working claim path.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_waiting_claims_never_block_a_launch.py:15-100 exercises the four stated paths and the recorded base/head logs show zero added failure IDs, but line 100 does not identify the conflict causing the waiter to remain queued.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff contains only reckon/crew/dispatch_claims.py, tests/test_waiting_claims_never_block_a_launch.py and the granted landing fragment named in prompt.txt:69-73.\nSCORE durability: 16\nJUSTIFICATION durability: The negative-control.log:35 turns red when waiting claims bind again and tests/test_waiting_claims_never_block_a_launch.py:26-27 independently checks dispatch, but line 28 follows the supplied phase and line 100 accepts any failure.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/dispatch_claims.py:465 constructs ClaimDisposition in the existing claim walk, but its new phase decision diverges from the owner in reckon/crew/node.py:1527 and the live registry in reckon/crew/runs.py:1125.\nSCORE reuse: 3\nJUSTIFICATION reuse: Searching claim binding in reckon/crew found reckon/crew/node.py:1527 as the existing ClaimDisposition owner, which the new branch in reckon/crew/dispatch_claims.py:465 duplicates instead of extending.\nFINDING reckon/crew/dispatch_claims.py:465 blocking: The new waiting-phase disposition duplicates the owner at reckon/crew/node.py:1527, so dispatch treats awaiting-upstream and held claims as nonbinding while the production registry at reckon/crew/runs.py:1125 still reports them binding; move the shared phase rule into the owner before landing.\nFINDING tests/test_waiting_claims_never_block_a_launch.py:28 non-blocking: This assertion compares the stored phase with the same phase supplied to the fixture, so changing that supplied phase moves both sides together and it cannot prove the phase-specific refusal was fixed; exempted because lines 26-27 and the recorded negative control independently guard that behavior.\nFINDING tests/test_waiting_claims_never_block_a_launch.py:100 non-blocking: A truthy failure can come from an unrelated admission error, so the test does not identify the working holder as the reason the waiter stayed queued; folded into the required claim-disposition repair for this node.\n",
+  "review_run_id": "r-20261024T123124496676-review-of-waiting-claims-never-block-a-launch-9a3d71a1f438",
+  "reviewed_base_sha": "12b7fea24fffeb89d396200c0f8c6c80a7869cda",
+  "reviewed_head_sha": "9a3d71a1f438249c3db53935a2b694499e3d8352",
+  "reviewed_run_id": "r-20261024T121151398972-waiting-claims-never-block-a-launch",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 3,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T12:44:43.397867+00:00",
+  "total": 91
+}
