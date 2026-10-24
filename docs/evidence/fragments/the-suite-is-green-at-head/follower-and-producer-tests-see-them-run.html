@@ -81,21 +81,24 @@
   fails on the field, message or call it pins. Restoring an old expectation is not
   used anywhere in the arm.</p>
 
-  <p id="fptsr-head"><strong>At the head.</strong> The five-file gate runs
-  <code>1 failed, 29 passed in 82.24s</code>, <code>EXIT=1</code>
-  (<code>logs/head-gate.log</code>): the single failure is the blocked id above, and
-  the 10 repaired ids pass. The node changed no production module, so no unlisted test
-  file imports a module it changed; the arm that could show such a failure is the head
-  gate itself. <code>ruff check</code> and <code>ruff format --check</code> pass on the
-  four staged test paths.</p>
+  <p id="fptsr-head"><strong>At the head.</strong> The five-file gate at
+  <code>4cdd078a5</code> runs <code>1 failed, 29 passed in 108.24s</code>,
+  <code>EXIT=1</code> (<code>logs/head-gate.log</code>): the single failure is the
+  blocked id above, and the 10 repaired ids pass. The node changed no production
+  module, so no unlisted test file imports a module it changed; the arm that could
+  show such a failure is the head gate itself. <code>ruff check</code> and
+  <code>ruff format --check</code> pass on the four staged test paths.</p>
 
-  <p id="fptsr-flake"><strong>Watch item.</strong>
-  <code>test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three</code>
-  is not a census id and is not repaired here. It failed once on a three-second
-  thread-join (<code>logs/post-ruff-follow-observes.log</code>) after passing in the
-  gate run, and passed on the next run of that id alone in 5.06s
-  (<code>logs/retry-owning-and-observed.log</code>); recorded as a load-sensitive join
-  bound rather than a defect of this node.</p>
+  <p id="fptsr-flake"><strong>Load-sensitive join.</strong> The two follower helpers
+  joined their reader thread on a two- to three-second bound. It failed twice on a
+  loaded node — <code>test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three</code>
+  (<code>logs/post-ruff-follow-observes.log</code>, passing alone next run in 5.06s,
+  <code>logs/retry-owning-and-observed.log</code>) and then the census id
+  <code>test_pane_output_is_unchanged_by_the_sweep</code> — each time on
+  <code>a stopped follower must return</code> rather than on the property under test.
+  Commit <code>4cdd078a5</code> widens that bound to fifteen seconds in both helpers
+  and leaves the bounded join and the aliveness assertion in place, so a follower
+  that never stops still fails.</p>
 </article>
 </body>
 </html>
