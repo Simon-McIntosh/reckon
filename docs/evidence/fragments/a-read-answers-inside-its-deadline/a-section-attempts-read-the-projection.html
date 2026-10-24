@@ -10,7 +10,7 @@
   <meta name="plan-title" content="A read answers inside its deadline">
   <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
   <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s45">
-  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-verdict" content="pass-with-limitation">
   <meta name="evidence-date" content="2026-10-24">
   <title>A section-attempts read decodes only its projection | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -71,15 +71,22 @@
   <code>reckon/ledger.py</code> or the test file; <code>ruff format
   --check</code> is clean on all three.</p>
 
-  <p><strong>Measure on the fleet node</strong> (98dci4-clu-2068, job 1291586),
-  one fresh process per arm, entry point
+  <p class="r-measure" data-base-seconds="10.259" data-head-seconds="4.313"
+  data-base-vmrss-kb="757112" data-head-vmrss-kb="140196"
+  data-base-profile-seconds="6.347" data-head-profile-seconds="1.824"
+  data-time-bound-ratio="0.2" data-rss-bound-kb="51200"><strong>Measure on the
+  fleet node</strong> (98dci4-clu-2068, job 1291586), one fresh process per
+  arm, entry point
   <code>mcp_views.section_attempts_by_plan("reckon")</code>, aggregate timed
   over an index that arm itself built. Base <code>3df04d103</code>: first call
   9.604 s, aggregate 10.259 s, VmRSS 757,112 kB. Head <code>11191c058</code>:
   first call 5.630 s, aggregate 4.313 s, VmRSS 140,196 kB. Resident memory is
   617 MB <em>below</em> base, far inside the 50 MB envelope — the read no
   longer materialises every retained payload. Per-call time is 0.42 of base
-  here, against a one-fifth bound.</p>
+  here and 0.287 in the roadmap profile below, against a one-fifth bound: the
+  <strong>memory bound passes and the time bound does not</strong>, which is
+  why this fragment's verdict is a pass with that limitation rather than a
+  pass.</p>
 
   <p><strong>Where the remaining time goes.</strong> A profile of the second
   roadmap call, cumulative seconds by function, base then head:
@@ -93,11 +100,16 @@
   targets is 7.5× cheaper; what remains is the stamp walk and the index
   refresh, which no projection can remove.</p>
 
-  <p><strong>Negative controls.</strong> Two mutations were applied and
+  <p><strong>Negative controls.</strong> Three mutations were applied and
   logged. Pointing the aggregate back at <code>ledger.load</code> reds
   <code>test_a_call_reads_no_full_payload</code> alone. Dropping the version
   from the index file name reds
-  <code>test_two_versions_alternate_without_rebuilding_each_other</code>.</p>
+  <code>test_two_versions_alternate_without_rebuilding_each_other</code>.
+  Restoring this fragment's verdict to <code>pass</code> while the
+  <code>r-measure</code> figures stay as measured reds
+  <code>test_the_fragment_verdict_agrees_with_its_measured_figures</code>,
+  which is the check that holds the verdict to the numbers printed
+  above.</p>
 
   <p><strong>Scope retained.</strong> The driving followup stays open, no
   terminal status is set, and no plan-version meta line was touched.</p>
