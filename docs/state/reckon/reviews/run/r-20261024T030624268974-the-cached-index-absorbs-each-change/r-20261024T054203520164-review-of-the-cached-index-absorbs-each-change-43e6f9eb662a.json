@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed manifest carries no baseline_suite or after_suite keys, so the pair was derived from its own gate logs the way the previous review derived it. Head arm logs/population-final-4.log (revision 43e6f9eb6, 155 passed, EXIT=0) reports no FAILED or ERROR test id, so added is genuinely zero. reckon.crew.review.added_failures_from_gate_logs run with head=population-final-4.log returns (0, []) against each base arm: logs/base-arm-failures.log (2 failed at 0b9d642cd: test_edit_project_refuses_duplicate_north_star_id, test_batch_reports_every_refused_op) and logs/base-arm-spa.log (1 failed at 0b9d642cd: test_plans_surface_never_exceeds_its_window[1280]).",
+  "call_sites": [
+    "reckon/metadata_index.py:_walk_covered",
+    "reckon/metadata_index.py:covered_name",
+    "reckon/metadata_index.py:_patch_build",
+    "reckon/metadata_index.py:_reuse_covered",
+    "reckon/metadata_index.py:build_index",
+    "reckon/metadata_index.py:_covered_files",
+    "reckon/change_streams.py:observed_change",
+    "reckon/change_streams.py:_committed_paths"
+  ],
+  "completed_at": "2026-10-24T05:54:10.106Z",
+  "dispatched_at": "2026-10-24T05:42:55Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: the coverage paragraph states 'measured on this tree at about 21 microseconds per entry to build and resolve a path against about 0.06 for the suffix check, over roughly 10,800 entries', but no log under the run directory records that measurement and the dispatch prompt and brief carry none of the figures; the entry count is independently checkable (git ls-tree -r 43e6f9eb6 docs gives 10,779 non-covered files), while the two timings a reader would use to judge the optimisation are unverifiable from the record."
+    },
+    {
+      "file": "tests/test_the_cached_index_absorbs_each_change.py",
+      "line": "786",
+      "severity": "non-blocking",
+      "text": "non-blocking: the case is named test_a_non_covered_entry_is_rejected_before_its_path_is_built but its spy at :807-809 intercepts only Path.relative_to, so it proves the path is not resolved, not that it is not built: a mutation that leaves `path = Path(entry.path)` in place and moves the suffix check after it keeps every assertion green. The docstring states the narrower claim correctly ('not a resolved path'); the name overstates what the guard can see."
+    },
+    {
+      "file": "runs/r-20261024T030624268974-the-cached-index-absorbs-each-change/manifest.md",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest still carries no baseline_suite and no after_suite key, so the added-failure pair a promotion reader needs is derivable only by hand from logs/population-final-4.log against logs/base-arm-failures.log and logs/base-arm-spa.log; the head arm records 155 passed EXIT=0 and the pair is (0, []) from those logs, so record completeness rather than the measurement is what is missing."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against b6ded8488: c8a6faaa2 adds _COVERED_SUFFIXES and _may_be_covered (reckon/metadata_index.py:380-393), applies them in covered_name (:404) and in the walk before path construction (:1064), rewrites case 9 to compare against a literal set and adds case 10 with its control; 43e6f9eb6 rewrites the fragment's gate, coverage, controls and population paragraphs only.",
+    "done_when": "the plan s15 done-when asks for the gate cases with per-case controls plus the population and window measures; the manifest records tests/test_the_cached_index_absorbs_each_change.py, logs/gate-final.log shows 10 passed EXIT=0 at 43e6f9eb6, logs/negative-controls.log shows all eleven arms EXIT=1 at that head, and I re-ran the gate at 43e6f9eb6 in a scratch export (10 passed, EXIT=0).",
+    "goal": "the source node's goal is to keep the metadata index's cached build across every change a source can attribute; this increment adds a name-only suffix rejection so the walk builds and resolves no path it will discard, reckon/metadata_index.py:1064, while the accepted set is still decided by covered_name at :1071.",
+    "manifest": "read runs/r-20261024T030624268974-the-cached-index-absorbs-each-change/manifest.md; status complete, gate 10 passed with eleven controls green at 43e6f9eb6, population 155 passed EXIT=0 at that head, and its negative_control_note matches the arms in logs/negative-controls.log, but it carries no baseline_suite or after_suite keys.",
+    "write_paths": "the source node's declared write paths include reckon/metadata_index.py, tests/test_the_cached_index_absorbs_each_change.py and docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html; git diff --stat b6ded8488..43e6f9eb6 touches exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_cached_index_absorbs_each_change.py:826 reddens when the pre-check is removed, which the log's RECKON_TEST_INDEX_NO_SUFFIX_PRECHECK arm shows (EXIT=1), and :817's literal set reddens under RECKON_TEST_INDEX_COVERAGE_DRIFT, but the spy at :807 sees resolution only, so a partial regression that still constructs the Path passes.",
+    "evidence": "logs/gate-final.log and logs/negative-controls.log both name revision 43e6f9eb6 and I reproduced the gate at that revision in a scratch export (10 passed, EXIT=0), but the fragment's timing claim at docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html:27 has no log, and the manifest carries no baseline_suite/after_suite keys.",
+    "fit": "reckon/metadata_index.py:380-393 follows the module's docstring style and names the capability (_may_be_covered) rather than the change, though the test at :786 is named for a cost the spy at :807 does not measure.",
+    "goal_fidelity": "reckon/metadata_index.py:1064 rejects a name ending in none of _COVERED_SUFFIXES before Path(entry.path) at :1066, and :1071 still gates on covered_name, so the warm re-scan's cost drops without any change to the accepted set.",
+    "reuse": "the change removes the second copy of the suffix list that :753 previously restated and makes covered_name at :396 and the walk at :1064 read the one tuple _COVERED_SUFFIXES, extending the existing owner rather than forking it.",
+    "scope_discipline": "git diff --stat b6ded8488..43e6f9eb6 touches only reckon/metadata_index.py, tests/test_the_cached_index_absorbs_each_change.py and the evidence fragment, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to keep the metadata index's cached build across every change a source can attribute; this increment adds a name-only suffix rejection so the walk builds and resolves no path it will discard, reckon/metadata_index.py:1064, while the accepted set is still decided by covered_name at :1071.\nVERDICT done_when: the plan s15 done-when asks for the gate cases with per-case controls plus the population and window measures; the manifest records tests/test_the_cached_index_absorbs_each_change.py, logs/gate-final.log shows 10 passed EXIT=0 at 43e6f9eb6, logs/negative-controls.log shows all eleven arms EXIT=1 at that head, and I re-ran the gate at 43e6f9eb6 in a scratch export (10 passed, EXIT=0).\nVERDICT write_paths: the source node's declared write paths include reckon/metadata_index.py, tests/test_the_cached_index_absorbs_each_change.py and docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html; git diff --stat b6ded8488..43e6f9eb6 touches exactly those three files and nothing else.\nVERDICT manifest: read runs/r-20261024T030624268974-the-cached-index-absorbs-each-change/manifest.md; status complete, gate 10 passed with eleven controls green at 43e6f9eb6, population 155 passed EXIT=0 at that head, and its negative_control_note matches the arms in logs/negative-controls.log, but it carries no baseline_suite or after_suite keys.\nVERDICT diff: read both commits against b6ded8488: c8a6faaa2 adds _COVERED_SUFFIXES and _may_be_covered (reckon/metadata_index.py:380-393), applies them in covered_name (:404) and in the walk before path construction (:1064), rewrites case 9 to compare against a literal set and adds case 10 with its control; 43e6f9eb6 rewrites the fragment's gate, coverage, controls and population paragraphs only.\nCALL_SITES: reckon/metadata_index.py:_walk_covered, reckon/metadata_index.py:covered_name, reckon/metadata_index.py:_patch_build, reckon/metadata_index.py:_reuse_covered, reckon/metadata_index.py:build_index, reckon/metadata_index.py:_covered_files, reckon/change_streams.py:observed_change, reckon/change_streams.py:_committed_paths\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:1064 rejects a name ending in none of _COVERED_SUFFIXES before Path(entry.path) at :1066, and :1071 still gates on covered_name, so the warm re-scan's cost drops without any change to the accepted set.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-final.log and logs/negative-controls.log both name revision 43e6f9eb6 and I reproduced the gate at that revision in a scratch export (10 passed, EXIT=0), but the fragment's timing claim at docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html:27 has no log, and the manifest carries no baseline_suite/after_suite keys.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat b6ded8488..43e6f9eb6 touches only reckon/metadata_index.py, tests/test_the_cached_index_absorbs_each_change.py and the evidence fragment, every one inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_cached_index_absorbs_each_change.py:826 reddens when the pre-check is removed, which the log's RECKON_TEST_INDEX_NO_SUFFIX_PRECHECK arm shows (EXIT=1), and :817's literal set reddens under RECKON_TEST_INDEX_COVERAGE_DRIFT, but the spy at :807 sees resolution only, so a partial regression that still constructs the Path passes.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/metadata_index.py:380-393 follows the module's docstring style and names the capability (_may_be_covered) rather than the change, though the test at :786 is named for a cost the spy at :807 does not measure.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes the second copy of the suffix list that :753 previously restated and makes covered_name at :396 and the walk at :1064 read the one tuple _COVERED_SUFFIXES, extending the existing owner rather than forking it.\nFINDING docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html:27 non-blocking: the coverage paragraph states 'measured on this tree at about 21 microseconds per entry to build and resolve a path against about 0.06 for the suffix check, over roughly 10,800 entries', but no log under the run directory records that measurement; the entry count is independently checkable (10,779 non-covered files at 43e6f9eb6), while the two timings are unverifiable from the record.\nFINDING tests/test_the_cached_index_absorbs_each_change.py:786 non-blocking: the case is named for rejection 'before its path is built' while the spy at :807-809 intercepts only Path.relative_to, so a mutation that keeps `path = Path(entry.path)` and moves the suffix check after it keeps every assertion green.\nFINDING runs/r-20261024T030624268974-the-cached-index-absorbs-each-change/manifest.md:1 non-blocking: the manifest carries no baseline_suite and no after_suite key, so the added-failure pair is derivable only by hand from logs/population-final-4.log against logs/base-arm-failures.log and logs/base-arm-spa.log.\n",
+  "review_run_id": "r-20261024T054203520164-review-of-the-cached-index-absorbs-each-change-43e6f9eb662a",
+  "reviewed_base_sha": "b6ded84882ec33f142c5ccf542cea723c34d6ca4",
+  "reviewed_head_sha": "43e6f9eb662a636d4965ec1699af18ec8434d594",
+  "reviewed_run_id": "r-20261024T030624268974-the-cached-index-absorbs-each-change",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T05:57:48.743398+00:00",
+  "total": 112
+}
