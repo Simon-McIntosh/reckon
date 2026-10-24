@@ -1,0 +1,51 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_picker.py:513 answering_caller",
+    "reckon/crew/picker/__init__.py:319 pick caller default",
+    "reckon/crew/picker/prompts.py render",
+    "reckon/crew/picker/lane_context.py:334 option_key"
+  ],
+  "completed_at": "2026-10-24T14:36:24.998Z",
+  "dispatched_at": "2026-10-24T14:26:06Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read both commits against c5e852c64; ce8255d8a changes the four tests and 8d245d2c1 adds the evidence fragment.",
+    "done_when": "The done_when names the six ids plus a base-arm delta; logs/head-gate-wt.log records 32 passed EXIT=0 at 8d245d2c1 and logs/arm-base.log records 6 failed, 26 passed EXIT=1 whose failing ids are exactly the six.",
+    "goal": "The node goal is to make the six section 43 census ids pass by asserting each intended contract; the diff at 8d245d2c1 repairs exactly those six cases in the four named test files.",
+    "manifest": "Read; it states per-id the commit read and an intended verdict for all six, records head 32 passed vs base 6 failed/26 passed, and four negative controls each exiting 1.",
+    "write_paths": "Every path in the diff is inside the declared write paths, which are the four test files plus the evidence fragment and figures directory."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log shows c1 failing both jev cases and the golden case, c2 both orchestrator cases, c3 the golden case and c4 the provenance case, each EXIT=1 in its own tree.",
+    "evidence": "logs/head-gate-wt.log ends EXIT=0 with 32 passed at the reviewed head and logs/arm-base.log ends EXIT=1 with exactly the six census ids failing.",
+    "fit": "the additions follow the surrounding test idiom, e.g. tests/test_jev_prompt_carries_what_it_weighs.py:46 extends the existing NODE_FIELDS literal with an explanatory comment, and no added name is plan- or ticket-labelled.",
+    "goal_fidelity": "tests/test_jev_prompt_carries_what_it_weighs.py:125 asserts set(payload[\"node\"]) == NODE_FIELDS now including lift_preference, matching the land that introduced node.lift_preference.",
+    "reuse": "the only new lookups reuse the existing owner reckon/crew/picker/lane_context.py:334 option_key and the existing fixtures rather than re-defining a keying helper.",
+    "scope_discipline": "git diff --stat c5e852c64..8d245d2c1 touches only the four declared test files and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make the six section 43 census ids pass by asserting each intended contract; the diff at 8d245d2c1 repairs exactly those six cases in the four named test files, and docs/evidence/fragments/the-suite-is-green-at-head/picker-state-tests-read-the-rendered-state.html records the intent.\nVERDICT done_when: The done_when names the six ids plus a base-arm delta; logs/head-gate-wt.log records 32 passed EXIT=0 at 8d245d2c1 and logs/arm-base.log records 6 failed, 26 passed EXIT=1 whose failing ids are exactly the six.\nVERDICT write_paths: The declared paths are the four test files plus the evidence fragment and the figures directory; every path in the diff (the four tests and docs/evidence/fragments/the-suite-is-green-at-head/picker-state-tests-read-the-rendered-state.html) is inside them.\nVERDICT manifest: Read; it states per-id the commit read and an intended verdict for all six, records head 32 passed vs base 6 failed/26 passed, and records four negative controls each exiting 0/1 as specified.\nVERDICT diff: Read both commits against c5e852c64; ce8255d8a adds lift_preference to NODE_FIELDS and re-freezes the golden bytes, patches picker_package.client.ask, and keys the provenance lookup by lane_context.option_key with a literal key assertion; 8d245d2c1 adds the evidence fragment only.\nCALL_SITES: reckon/crew/dispatch_picker.py:513 answering_caller, reckon/crew/picker/__init__.py:319 pick caller default, reckon/crew/picker/prompts.py render, reckon/crew/picker/lane_context.py:334 option_key\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_jev_prompt_carries_what_it_weighs.py:125 asserts set(payload[\"node\"]) == NODE_FIELDS now including lift_preference, matching the land that introduced node.lift_preference.\nSCORE evidence: 20\nJUSTIFICATION evidence: logs/head-gate-wt.log ends EXIT=0 with 32 passed at the reviewed head and logs/arm-base.log ends EXIT=1 with exactly the six census ids failing.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat c5e852c64..8d245d2c1 touches only the four declared test files and the declared evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control.log shows c1 failing both jev cases and the golden case, c2 both orchestrator cases, c3 the golden case and c4 the provenance case, each EXIT=1 in its own tree.\nSCORE fit: 20\nJUSTIFICATION fit: the additions follow the surrounding test idiom, e.g. tests/test_jev_prompt_carries_what_it_weighs.py:46 extends the existing NODE_FIELDS literal with an explanatory comment, and no added name is plan- or ticket-labelled.\nSCORE reuse: 20\nJUSTIFICATION reuse: the only new lookups reuse the existing owner reckon/crew/picker/lane_context.py:334 option_key and the existing fixtures rather than re-defining a keying helper.\n",
+  "review_run_id": "r-20261024T142346990088-review-of-picker-state-tests-read-the-rendered-state-8d245d2c1404",
+  "reviewed_base_sha": "c5e852c641e8057553e7f67a8da5a3c7430b6619",
+  "reviewed_head_sha": "8d245d2c1404d9e422716ac5b3970cd8599796c2",
+  "reviewed_run_id": "r-20261024T135633032517-picker-state-tests-read-the-rendered-state",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T14:42:53.032843+00:00",
+  "total": 119
+}
