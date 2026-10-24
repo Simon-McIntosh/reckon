@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T11:54:16.560Z",
+  "dispatched_at": "2026-10-24T11:41:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:188",
+      "id": "done_when-1",
+      "reason": "the node is asked to hit a bound its own stated mechanism contradicts, and the fix is a one-line change to the plan (carry the pending partial so a non-growing stream reads nothing, or state the clause as \"zero plus any pending partial\").",
+      "text": "the measure \"the bytes it reads from each stream per tick are at most the bytes appended, plus 64, plus the partial record carried from the previous tick, and zero for a stream that did not grow\" has no implementation that satisfies its zero clause as the section states the mechanism: `station_store.ingest_stream` advances `consumed` only by the whole lines it folded (`reckon/crew/station_store.py:437` `consumed + advanced`) and reads to EOF from `consumed` (`:418`\u2013`419`), so a stream whose last write ends mid-record leaves that partial past the stored offset and it is re-read on every tick in which nothing grew; a fixture stream copied from a crew home for a worker killed mid-write ends exactly that way, so a faithful implementation fails the zero clause indefinitely",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:193",
+      "id": "reasoning-1",
+      "reason": "without the qualifier the node cannot tell whether the quiet-beat measure is a same-host case or a claim about the whole watched population, and the foreign-host silent-exit case is left with no stated behaviour.",
+      "text": "the done-when asserts \"a run whose worker exits while every file stays still reads its new verdict on the next tick\" without the host qualifier that the same paragraph applies to the probe at `:176` (\"Its liveness probe runs only where the pointer's `launcher_host` is this node\") and at `:194` (\"a run launched on another host is classified without a probe\"); the station watches every mounted project's live pointers, so a foreign-host run whose worker exits with no run-directory record moving is re-read by neither the probe nor `recovery_memo._classification_inputs` (`reckon/crew/recovery_memo.py:450`\u2013`480`, all file identities), and no measure or stated mechanism covers it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b7334a3a1e24b238d0a1ff5b9cf08fae8659d37a96b094e9c87ffa395657ce82",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 24,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T113845508497-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "f4323f10c9e65c5903aa935f5c909a0de402a6e3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/station_store.py` `ingest_stream`/`_fold_stream`/`_open_day`/`store_at_runtime_root`/`default_store`, `reckon/_backends.py:2900 observe_stream`, `reckon/crew/recovery_memo.py:450 _classification_inputs`, `reckon/crew/recovery_watch.py:679 _stall_reading` and `:2543 _quiet_beat_snapshots`, and `tests/test_the_station_store_is_node_local.py` all resolve; `recovery.classify_pointer` is `recovery_classification.py:393` re-exported at `recovery.py:84`.",
+    "done_when": "a finding \u2014 the bytes measure's \"zero for a stream that did not grow\" clause cannot hold for a stream whose last write is a partial record, under the mechanism the same section states.",
+    "evidence_paths": "pass \u2014 the gate is a pytest suite whose fixtures are copied from the crew home into a test directory, and the run's own manifest and gate log are the durable record; no session scratchpad or node-local temporary path is named as evidence.",
+    "naming": "pass \u2014 \u00a76 carries no plan label, stage name, ticket number or version tag; it names mechanisms (`ingest_stream`, `_classification_inputs`, `_stall_reading`) rather than deliverable IDs.",
+    "reasoning": "a finding \u2014 the host-gated liveness probe cannot produce the done-when's unqualified \"a worker exits while every file stays still\" case for a run launched on another node.",
+    "single_goal": "pass \u2014 the section has one goal (the station's tick reads and classifies only what changed); its gate measures each mechanism (ingest, comparison, classification, quiet beat, the four store repairs) on its own case.",
+    "wiring": "pass \u2014 s6 declares `depends-on` \"the-monitor-reads-each-fact-once#s5\" in `plan-section-depends-on`, s7 depends on s6, and the open followup `f-tmref-003` recommends exactly `/reckon-build ... \u00a76`."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "57b97deba709987dc418b5760d3674439b8f807a727ceed472a36f803ac2bf59",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T12:03:14.865344+00:00"
+}
