@@ -2521,7 +2521,8 @@ def test_an_unknown_crew_view_names_every_view_it_has(home, repo) -> None:
     result = mcp._crew(PROJECT, view="everything")
 
     assert result["ok"] is False
-    prefix = result["detail"].split(";", 1)[0]
+    assert result["error"] == "invalid_view"
+    prefix = result["message"].split(";", 1)[0]
     assert prefix.startswith("view must be ")
     named = prefix[len("view must be ") :].replace(" or ", ", ").split(", ")
     assert not set(CREW_VIEWS) - set(named), (

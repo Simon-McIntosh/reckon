@@ -21,6 +21,33 @@ from reckon.mcp_budget import (
 TEST_CEILING = 1_000
 
 
+@pytest.fixture(autouse=True)
+def _the_registered_tool_answers_in_this_process(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Keep each case's patched body the one the registered tool calls.
+
+    ``_refuse_when_stale`` hands a call on a moved checkout to a persistent
+    child that loads the tree's own code, so a body patched in this process is
+    invisible to it. These cases measure the ceiling the tool registered here
+    applies to an oversized answer, so the moved-checkout verdict is pinned to
+    the one an unmoved tree reports and the call stays in this process.
+    """
+    from reckon import served_code
+
+    monkeypatch.setattr(
+        mcp_module,
+        "_moved_checkout_state",
+        lambda: served_code.MovedCheckout(
+            moved=False,
+            trusted=False,
+            detail="",
+            running_stamp="",
+            disk_stamp="",
+        ),
+    )
+
+
 def _call_registered(tool_name: str, **arguments: Any) -> dict[str, Any]:
     tool = mcp_module.mcp._tool_manager._tools[tool_name].fn
     return asyncio.run(tool(**arguments))
@@ -47,6 +74,8 @@ def _roadmap_detail_fixture(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
 def _crew_scopes_fixture(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> dict[str, Any]:
+    from reckon import _store
+
     docs_dir = tmp_path / "docs"
     docs_dir.mkdir()
     claims = [
@@ -58,8 +87,8 @@ def _crew_scopes_fixture(
         }
         for index in range(40)
     ]
-    monkeypatch.setattr(mcp_module, "_docs_dir_for_project", lambda *args: docs_dir)
-    monkeypatch.setattr(mcp_module, "read_plan", lambda *args: ({"projects": [{}]}, 1))
+    monkeypatch.setattr(_store, "_docs_dir_for_project", lambda *args: docs_dir)
+    monkeypatch.setattr(_store, "read_plan", lambda *args: ({"projects": [{}]}, 1))
     monkeypatch.setattr(
         mcp_module.crew_module,
         "plan_scope_lanes",
@@ -74,6 +103,9 @@ def _crew_scopes_fixture(
 
 
 def _crew_live_fixture(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
+    from reckon.crew import query as crew_query
+    from reckon.crew import runs as crew_runs
+
     live = [{"project": "sample", "run_id": f"run-{index}"} for index in range(30)]
     rows = [
         {
@@ -84,9 +116,9 @@ def _crew_live_fixture(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
         for index in range(30)
     ]
     monkeypatch.setattr(mcp_module.crew_module, "list_live", lambda: live)
-    monkeypatch.setattr(mcp_module, "project_live_rows", lambda *args, **kwargs: rows)
+    monkeypatch.setattr(crew_query, "project_live_rows", lambda *args, **kwargs: rows)
     monkeypatch.setattr(
-        mcp_module,
+        crew_runs,
         "project_watch_visibility",
         lambda *args, **kwargs: {"producer": "synthetic"},
     )

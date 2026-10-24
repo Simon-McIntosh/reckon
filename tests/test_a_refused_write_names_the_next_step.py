@@ -167,7 +167,7 @@ def test_batch_reports_every_refused_op(setup):
     ops = [
         {"op": "set", "path": "sections.s9.effort_hours", "value": 1.0},
         {"op": "set", "path": "sections.s1.effort_hours", "value": 0.3},
-        {"op": "bogus"},
+        {"op": "set", "path": "sections.s8.effort_hours", "value": 1.0},
     ]
     result = _edit(docs_dir, ops, 0)
     assert result["ok"] is False
@@ -177,6 +177,24 @@ def test_batch_reports_every_refused_op(setup):
     assert all(entry["reason"] for entry in refused)
     # Reporting only the first refused op would leave two of the three unnamed.
     assert len(refused) == 3
+
+
+def test_an_unknown_verb_is_refused_before_the_batch_is_read(setup):
+    """A verb outside the plan grammar is refused from the argument alone.
+
+    The batch never reaches the store, so the refusal names the verb and the
+    verbs a plan does accept rather than reporting per-op refusals the store
+    would have produced.
+    """
+
+    docs_dir = setup
+    _make_plan(docs_dir)
+    result = _edit(docs_dir, [{"op": "bogus"}], 0)
+
+    assert result["ok"] is False
+    assert result["error"] == "op_error"
+    assert "a plan does not accept the verb 'bogus'" in result["detail"]
+    assert "refused_ops" not in result
 
 
 # ── 3. a request id makes a retry of a late write idempotent ─────────────────

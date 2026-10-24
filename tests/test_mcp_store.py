@@ -789,6 +789,10 @@ def test_edit_project_refuses_duplicate_north_star_id(setup):
         "ok": False,
         "error": "op_error",
         "detail": "duplicate north-star id 'clear-direction'",
+        "refused_op_index": 0,
+        "refused_ops": [
+            {"index": 0, "reason": "duplicate north-star id 'clear-direction'"}
+        ],
     }
     stored, version = _store_module.read_plan(project, "project")
     assert version == 0
