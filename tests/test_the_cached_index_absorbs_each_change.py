@@ -29,6 +29,9 @@ case it names must fail against:
   signature moves.
 * ``RECKON_TEST_INDEX_DROP_ON_STREAM_WAKE`` drops the build on every wake of an
   open change stream.
+* ``RECKON_TEST_INDEX_WHOLESALE_RELOAD`` adopts the reloaded directory stamps
+  wholesale, so a change folded into an absorbing write's own shape is never
+  reported.
 """
 
 from __future__ import annotations
@@ -41,7 +44,7 @@ import threading
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager, suppress
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -58,6 +61,7 @@ _DROP_ON_GIT = "RECKON_TEST_INDEX_DROP_ON_GIT"
 _KEEP_UNATTRIBUTED = "RECKON_TEST_INDEX_KEEP_UNATTRIBUTED"
 _DROP_ON_SLOW = "RECKON_TEST_INDEX_DROP_ON_SLOW"
 _DROP_ON_STREAM_WAKE = "RECKON_TEST_INDEX_DROP_ON_STREAM_WAKE"
+_WHOLESALE_RELOAD = "RECKON_TEST_INDEX_WHOLESALE_RELOAD"
 _CONTROLS = (
     _DROP_ON_BURST,
     _IGNORE_HTML,
@@ -67,6 +71,7 @@ _CONTROLS = (
     _KEEP_UNATTRIBUTED,
     _DROP_ON_SLOW,
     _DROP_ON_STREAM_WAKE,
+    _WHOLESALE_RELOAD,
 )
 
 _GIT_ENV = {
@@ -193,6 +198,13 @@ def _armed_controls(monkeypatch, request):
             return change
 
         monkeypatch.setattr(serve, "observed_change", wake_drops)
+
+    if _WHOLESALE_RELOAD in armed:
+        monkeypatch.setattr(
+            change_streams,
+            "merge_dir_stamps",
+            lambda tree, held, fresh: dict(fresh),
+        )
 
 
 @pytest.fixture()
@@ -391,7 +403,7 @@ def test_the_fast_pass_marks_the_directory_that_moved(
 
     docs, repo = tree
     before = _persist(docs, repo)
-    watch = _FleetChangeWatch(docs, monkeypatch)
+    watch = _fleet_change_watch(docs, monkeypatch)
     resolved = docs.resolve()
     watch._fast_tree(resolved)
 
@@ -416,7 +428,7 @@ def test_the_fast_pass_marks_the_directory_that_moved(
     assert rows == _full_walk_rows(docs, repo)
 
 
-def _FleetChangeWatch(
+def _fleet_change_watch(
     docs: Path, monkeypatch: pytest.MonkeyPatch
 ) -> change_streams._FleetChangeWatch:
     return _detector(docs, monkeypatch)
@@ -485,17 +497,23 @@ def test_a_commit_marks_only_the_covered_paths_it_touches(
     with _spies(monkeypatch) as calls:
         committed = _read(docs, repo)
     newest = {row["slug"]: row for row in committed if row["slug"] == "alpha"}["alpha"]
-    expected = datetime.fromtimestamp(
-        int(
-            subprocess.run(
-                ["git", "-C", os.fspath(repo), "log", "-1", "--format=%ct", "HEAD"],
-                check=True,
-                capture_output=True,
-                text=True,
-                env={**os.environ, **_GIT_ENV},
-            ).stdout.strip()
-        )
-    ).isoformat(timespec="seconds")
+    commit_time = int(
+        subprocess.run(
+            ["git", "-C", os.fspath(repo), "log", "-1", "--format=%ct", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+            env={**os.environ, **_GIT_ENV},
+        ).stdout.strip()
+    )
+    # The row renders a commit date the way the served process does: local
+    # time, with no offset spelled out.
+    expected = (
+        datetime.fromtimestamp(commit_time, tz=UTC)
+        .astimezone()
+        .replace(tzinfo=None)
+        .isoformat(timespec="seconds")
+    )
     assert newest["edited"] == expected, "the commit date never reached the row"
     assert newer_titles(committed)["alpha"] == "Alpha committed"
     assert calls["build"] == 0, "an HTML commit swept the index"
@@ -546,7 +564,7 @@ def test_the_slow_pass_marks_the_file_that_moved(
     """An in-place edit is absorbed; a state rewrite marks nothing."""
 
     docs, repo = tree
-    before = _persist(docs, repo)
+    _persist(docs, repo)
     watch = _detector(docs, monkeypatch)
     resolved = docs.resolve()
     watch._slow_tree(resolved)
@@ -587,7 +605,7 @@ class _Stream:
             (
                 f"GET /_changes/{project} HTTP/1.1\r\n"
                 "Host: 127.0.0.1\r\nAccept: text/event-stream\r\n\r\n"
-            ).encode("utf-8")
+            ).encode()
         )
         self._file = self._sock.makefile("r", encoding="utf-8", newline="")
 
@@ -662,3 +680,51 @@ def test_an_open_stream_keeps_the_build_across_a_json_write(
 
     assert calls["build"] == 0, "the stream's read swept the index"
     assert metadata_index._CACHE[key] is kept
+
+
+# ── (8) a change an absorbing read's write folded in ──────────────────────
+
+
+def test_a_change_folded_into_an_absorbing_write_still_fires(
+    tree, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A directory the read's shape already includes is still reported.
+
+    The absorbing read re-scans a marked directory and then writes the shape it
+    measured. A second document landing between that scan and that write is
+    inside the shape the detector reloads, so a reload that adopts it wholesale
+    compares the directory against a stamp that already contains the second
+    write and reports nothing — the pass is silent and no stream is woken.
+    """
+
+    docs, repo = tree
+    _persist(docs, repo)
+    detector = _fleet_change_watch(docs, monkeypatch)
+    resolved = docs.resolve()
+    detector._fast_tree(resolved)
+
+    (docs / "notes" / "alpha.html").write_text(
+        _plan_doc("alpha", "Alpha edited"), encoding="utf-8"
+    )
+    metadata_index.mark_tree_paths(
+        docs, metadata_index.TreeChange(dirs=frozenset({"notes"}))
+    )
+    # Written after the mark and before the read that absorbs it, so the read's
+    # own re-scan measures the directory with both writes in it.
+    (docs / "notes" / "gamma.html").write_text(
+        _plan_doc("gamma", "Gamma"), encoding="utf-8"
+    )
+    rows = _read(docs, repo)
+    assert "gamma" in _slugs(rows), "the read did not absorb the marked directory"
+
+    woken: list[Path] = []
+    monkeypatch.setattr(detector, "notify", woken.append)
+
+    detector._fast_tree(resolved)
+
+    assert woken == [resolved], "the pass reported nothing for the second write"
+    marked = metadata_index._MARKS.get(str(resolved))
+    assert marked is not None and "notes" in marked.dirs, (
+        "the pass reported a change without marking the directory it saw"
+    )
+    assert "gamma" in _slugs(_read(docs, repo))

@@ -403,6 +403,36 @@ def _committed_paths(
     return frozenset(files)
 
 
+def merge_dir_stamps(
+    tree: Path, held: dict[str, tuple], fresh: dict[str, tuple]
+) -> dict[str, tuple]:
+    """The stamps the detector compares against after the persisted shape moved.
+
+    The persisted shape is written by a read, so a source can add a file to a
+    directory the read has already measured before that write lands: the shape
+    then records an identity that includes a change no pass has reported.
+    Adopting it wholesale would make the next comparison quiet about exactly
+    that change, and the notification carrying it to an open stream would never
+    be sent.
+
+    A directory the detector holds is therefore compared against its current
+    identity first. Where that has moved away from the held stamp the held
+    stamp is kept, and the pass goes on to report the directory itself. The
+    reloaded stamp is adopted only where the directory has not moved since the
+    detector last looked — the case the reload exists for, a rebuild recording
+    directories and identities the detector never saw. A directory the
+    reloaded shape no longer records is dropped with it.
+    """
+
+    merged = dict(fresh)
+    for relative, stamp in held.items():
+        if relative not in fresh:
+            continue
+        if metadata_index._dir_identity(tree.joinpath(relative)) != stamp:
+            merged[relative] = stamp
+    return merged
+
+
 def _git_signal_identity(tree: Path) -> tuple | None:
     """The git-side identity whose movement means a commit or an add.
 
@@ -624,7 +654,7 @@ class _FleetChangeWatch:
             signal.index_identity = index_identity
             fresh = metadata_index._load_dir_stamps(tree, signal.project)
             if fresh:
-                signal.dir_stamps = dict(fresh)
+                signal.dir_stamps = merge_dir_stamps(tree, signal.dir_stamps, fresh)
         fired = False
         moved: set[str] = set()
         for relative, cached in list(signal.dir_stamps.items()):
