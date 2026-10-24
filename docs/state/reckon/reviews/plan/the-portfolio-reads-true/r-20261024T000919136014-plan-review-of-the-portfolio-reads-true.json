@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T00:18:27.836Z",
+  "dispatched_at": "2026-10-24T00:10:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:172",
+      "id": "reasoning-1",
+      "reason": "the section needs a rule for a version bump that is not a move (rewrite against the current version when the plan's sprint is still the recorded source, or a terminal state that says the move must be re-issued), otherwise its own \"success is recorded only once no plan is pending\" can never be reached after an ordinary concurrent edit, and its done-when has no case that would catch it.",
+      "text": "a pending plan whose version moved because of an unrelated write (a section, followup or comment edit) is reported conflicting, but its retirement test is \"the plan's sprint agrees with the index's membership for it\", and an unrelated write leaves the sprint at the source while the index names the destination, so the two never agree: the entry stays pending forever, every retry returns `partial_write`, success is never recorded, and the plan's sprint is never written \u2014 a fresh move cannot repair it because `_apply_move` refuses `not found in sprint <source>`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:172",
+      "id": "reasoning-2",
+      "reason": "the retry must confirm the index still lists the plan in the receipt's destination before writing, or it can undo a later index move and report success; without that clause the mechanism is not equivalent to its own claim that a later move by another call \"is never undone\", because the protection is stated only against plan-version moves.",
+      "text": "the retry writes the receipt's recorded target sprint whenever the plan's version still matches, but it never re-reads the index's membership first, so if another call moved the same plan in the index while its own plan write failed (two overlapping partial moves, or a second request id), the plan's version is unchanged, the retry writes the stale target, reports success, and leaves plan and index disagreeing \u2014 the mismatch \u00a78 exists to remove, re-created by the repair",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ea69bcdd2797ba50f5e2fc7710f4850689e736e36e17c440c68587bc83578ecf",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 66,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T000919136014-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "2489aa965385e5dd63df65b8aa6415565a260deb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 at head `reckon/mcp_edit_plan.py:1727-1729` is where `_carry_plan_sprints`/`_partial_plan_write` produce the failure, `:1744` is the `record_write_receipt` call, `:1324` is the `_replayed_response` replay; `_apply_move` in `reckon/_store.py:3492` raises `<slug> not found in sprint <frm>` at `:3520` and `record_write_receipt` is `_store.py:285`, as the section says.",
+    "done_when": "pass \u2014 s9's four cases each name an observable (retry reports `partial_write` naming the plan; second retry writes the plan without moving the index; a two-plan batch records only the failed plan pending; a plan another call moved is reported conflicting then superseded), name the test file `tests/test_a_retried_partial_move_is_not_replayed.py`, and the negative control \u2014 \"a receipt recorded as success on a partial write must fail the first case\" \u2014 is the defect itself, so it can fail.",
+    "evidence_paths": "pass \u2014 \"Every log is under the run directory\", the durable crew run directory, as \u00a78 also uses; no scratch or node-local path is named.",
+    "naming": "pass \u2014 the section names no plan label, stage name, ticket number or version tag, and its prose states the mechanism rather than a changelog of the ticket.",
+    "reasoning": "a finding \u2014 the receipt records the plan's version and the target sprint but not the index state the retry is completing against, so both the conflict test and the write are decided on a fact that a concurrent index move can invalidate. The stated root cause (a partial write records a receipt that replays as success) does match the cited evidence, and the mechanism does run on the production path (`_edit_plan_tool` \u2192 `_edit_plan`, `reckon/mcp_edit_plan.py:1973`).",
+    "single_goal": "pass \u2014 one deliverable, a retried partial sprint move is not replayed as success; the pending-entry, conflict and supersede rules are the parts of that one mechanism, not a second one.",
+    "wiring": "pass \u2014 s9 declares no new plan-level relationship, and the one wire that governs it (`s6` depends on `s8`, plan.html:29) resolves to a node that has landed; s9 needs no dependency of its own because the section it repairs (\u00a78) is `done`."
+  },
+  "section_digests": {
+    "_document": "99c9e3cf9942e999d5740a5fbefff3d49790d2568cd12c6bc07b4892fcca6913",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "d238858c9f503b75813d3e04bbe752c05689ce22e91117eb97915471f114b981"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T00:23:23.131607+00:00"
+}
