@@ -13,6 +13,12 @@
   <code>s2</code> dispatch against an equivalent authored key. At the
   committed head, all seven new cases pass and their waiting requests carry
   <code>plan-a#s1</code> in <code>awaiting-upstream</code>.</p>
+  <p>A repair check drives the production <code>dispatch()</code> entry point
+  with both <code>s2</code> and <code>§2</code> inputs. Dispatch stores the
+  canonical <code>§2</code> spelling; the pointer is checked for its upstream
+  ref, <code>awaiting-upstream</code> phase, and absence of a worker PID. Both
+  arms fail under the raw lookup because dispatch proceeds without raising
+  its upstream hold. The repaired focused module passes all nine cases.</p>
   <p>The serial suite of 23 existing importer modules completed at both
   revisions. Base: 123 passed, four failed. Head, with the seven new cases:
   130 passed, the same four failed. Added failure IDs: <strong>zero</strong>.
