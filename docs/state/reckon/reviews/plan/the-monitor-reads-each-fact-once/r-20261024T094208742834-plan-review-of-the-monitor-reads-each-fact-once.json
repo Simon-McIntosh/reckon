@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T09:54:16.341Z",
+  "dispatched_at": "2026-10-24T09:43:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:173",
+      "id": "reasoning-1",
+      "reason": "a node implementing the sentence literally either calls the classifier on a liveness move (contradicting the sentence it was told to implement) or omits it and fails its own exited-worker measure, so the sentence has to admit a liveness move alongside an input move.",
+      "text": "\"The full classifier runs only when inputs move\" contradicts the two sentences before it and the section's own done-when: a worker exit moves no classification input (`recovery_memo._classification_inputs` is the pointer, manifest, stream, run-directory records, review-store candidates and tree head \u2014 recovery_memo.py:450\u2013480), yet :181 requires that run to \"read its new verdict on the next tick\", and the cited exemplar settles it the other way \u2014 `recovery_watch._quiet_beat_snapshots` calls the full `_watch_snapshot` when the liveness triple moved (recovery_watch.py:2573\u20132580), while the only cheap re-derivation in the tree, `_stall_reading`, returns just `waiting` or `stalled` from `dispatched`/`working` (recovery_watch.py:698\u2013707) and cannot produce an exit verdict",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c35a6b4d880dc382aa18c6e1ec0ae8a7599130f43be354802834179737a7c894",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T094208742834-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "c0163d6d92afa15c1bb4b3e7fb4e966de381a85f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery.classify_pointer` (imported at reckon/crew/recovery.py:84), `recovery_memo._classification_inputs` (recovery_memo.py:450), `recovery_watch._quiet_beat_snapshots` (recovery_watch.py:2543), `_backends.observe_stream` (reckon/_backends.py:2900), `station_store.ingest_stream` (:405), `StationStore.at_runtime_root` (:216), `store_at_runtime_root` (:615) and `default_store` (:620) all resolve, and `tests/test_the_station_store_is_node_local.py` exists with the three-pointer fixture the section cites.",
+    "done_when": "pass \u2014 every item is measurable and five declared negative controls each name the test its mutation must fail (an ingest ignoring the stored offset, a dropped carried fold state, a classify-every-pass tick, a pointer-and-stream-only key, a station without the quiet-beat reading); the fd measure in the third paragraph is demonstrably red at head, measured 9 open descriptors before 50 event writes and 59 after.",
+    "evidence_paths": "pass \u2014 every measure is a pytest gate on `reckon/crew/station_store.py` and its own test module; no node-local or scratch path is named as evidence, and the fixture streams are copied into a repository test directory rather than read from the live crew home.",
+    "naming": "pass \u2014 the section introduces no plan label, stage name, ticket number or version tag; \"quiet-beat reading\" names the mechanism.",
+    "reasoning": "a finding \u2014 the paragraph's closing sentence excludes the liveness move that its own quiet-beat mechanism and the section's done-when both require.",
+    "single_goal": "pass \u2014 one mechanism per node: the incremental ingest plus its classification; the four \u00a75 review cleanups ride the same module with the reason stated and each carries its own measure (`git grep` empty, 50-write fd count equal, assertion replaced, day connections closed).",
+    "wiring": "pass \u2014 \u00a76 declares depends-on \u00a75, and \u00a75 is declared done; the open followup f-tmref-002 states the same order (\"\u00a76 waits on \u00a75, because its ingest writes \u00a75's tables, and \u00a77 follows \u00a76\"), so the graph and the narrative agree."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "345ec446a6c91616d1657bd677b9b6efa9334f83c937a9a06827b259df88b12e",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T10:03:56.546924+00:00"
+}
