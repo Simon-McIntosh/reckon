@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:119",
+    "reckon/crew_follow_commands.py:1772",
+    "reckon/crew_run_commands.py:1805",
+    "reckon/mcp.py:2769",
+    "reckon/crew/runs.py:3625"
+  ],
+  "completed_at": "2026-10-24T18:51:18.527Z",
+  "dispatched_at": "2026-10-24T18:42:11Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_recover.py",
+      "line": "830",
+      "severity": "non-blocking",
+      "text": "the two replacement assertions (startswith at 830, endswith at 831) are subsumed by the exact-equality assertion at 823-825 immediately above them, so neither can fail while that one holds and the pair adds no guard; the change is a de-fragilisation of a path-dependent substring search, not new coverage, and the node's durability rests entirely on the pre-existing listed case."
+    },
+    {
+      "file": "manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "the done-when requires both arms from git archive extractions on node-local disk; the base arm was one, but after_suite recorded here ran from the GPFS worktree at /home/ITER/mcintos/Code/.reckon-worktrees/... and is not an extraction, so the head figure comes from a tree the done-when did not name (mitigated: the log records module.__file__ under that tree)."
+    },
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "the done-when's ruff clause ('ruff check and ruff format --check add no findings on the staged paths') is recorded nowhere in the manifest or its test_logs; the reviewer ran both against the head versions of the two staged paths and they pass ('All checks passed!', '2 files already formatted'), so nothing is hidden, but the node's own record does not answer the clause."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against dea3758c1582cb7d688d5b2a3d0180bce507e4e6: be04247c6 changes the sweep candidate gate at reckon/crew/resumption.py:1877 and the substring assertion at tests/test_crew_recover.py:830-831, cd48a8a01 adds the landing fragment; no other file is touched.",
+    "done_when": "pass - the done_when names tests/test_crew_recover.py and the listed id; gate.log records 21 passed EXIT=0, base_arm.log records the listed id red at dea3758c1, and after_suite records it passing at cd48a8a01 with no added failure id.",
+    "goal": "pass - the node goal is to repair the production defect behind \u00a757's listed id; reckon/crew/resumption.py:1877 widens the sweep's candidate gate to keep a run whose attempt's end is observed, and the listed case passes at head after failing at base.",
+    "manifest": "pass - the manifest records the base reproduction, the mechanism, the arms' failure counts and ids, the negative control and the module.__file__ provenance; it leaves the ruff clause unrecorded (finding).",
+    "write_paths": "pass - the manifest declares reckon/crew/resumption.py, tests/test_crew_recover.py and the landing fragment; both commits touch only those three paths."
+  },
+  "justifications": {
+    "durability": "logs/negative_control.log reinstates the pre-repair gate at reckon/crew/resumption.py:1877 and the listed case reddens, so a real regression test guards the mechanism; the assertions the node itself added at tests/test_crew_recover.py:830-831 are subsumed by the equality at :823 and carry none of that weight.",
+    "evidence": "logs/gate.log carries 21 passed EXIT=0 at be04247c6 with module.__file__ inside the worktree, logs/base_arm.log carries the listed id red at dea3758c1, and logs/negative_control.log restores the classify-alone gate and shows assert [] == ['hold-in-force'] EXIT=1.",
+    "fit": "the change follows the surrounding gate shape at reckon/crew/resumption.py:1868 and its comment states the mechanism rather than a ticket, though the name 'settled' at :1877 reads as the opposite of what it holds (the end being observed) and the probe now runs for blocked candidates too.",
+    "goal_fidelity": "reckon/crew/resumption.py:1877 keeps a non-blocked pointer only when _observed_end_refusal returns None, which is the exact mechanism \u00a757 names, and tests/test_crew_recover.py::test_a_run_refused_again_waits_for_the_new_holds_own_expiry now reports 'hold-in-force'.",
+    "reuse": "the change adds no definition; it reuses _observed_end_refusal at reckon/crew/resumption.py:1099, the existing owner of the end-observation reading, and _launcher_refusal remains its own separate guard further down the same loop.",
+    "scope_discipline": "every path in dea3758c1..cd48a8a01 is one of reckon/crew/resumption.py, tests/test_crew_recover.py and docs/evidence/fragments/the-suite-is-green-at-head/a-re-refused-resume-waits-for-its-new-hold.html, all inside the declared scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to repair the production defect behind \u00a757's listed id; reckon/crew/resumption.py:1877 widens the sweep's candidate gate to keep a run whose attempt's end is observed, and the listed case passes at head after failing at base.\nVERDICT done_when: the done_when names tests/test_crew_recover.py and the listed id; gate.log records 21 passed EXIT=0, base_arm.log records the listed id red at dea3758c1, and after_suite records it passing at cd48a8a01 with no added failure id.\nVERDICT write_paths: the manifest declares reckon/crew/resumption.py, tests/test_crew_recover.py and the landing fragment; both commits touch only those three paths.\nVERDICT manifest: the manifest records the base reproduction, the mechanism, the arms' failure counts and ids, the negative control and the module.__file__ provenance; it leaves the ruff clause unrecorded (finding).\nVERDICT diff: read both commits against dea3758c1582cb7d688d5b2a3d0180bce507e4e6: be04247c6 changes the sweep candidate gate at reckon/crew/resumption.py:1877 and the substring assertion at tests/test_crew_recover.py:830-831, cd48a8a01 adds the landing fragment; no other file is touched.\nCALL_SITES: reckon/crew_follow_commands.py:119, reckon/crew_follow_commands.py:1772, reckon/crew_run_commands.py:1805, reckon/mcp.py:2769, reckon/crew/runs.py:3625\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1877 keeps a non-blocked pointer only when _observed_end_refusal returns None, which is the exact mechanism \u00a757 names, and tests/test_crew_recover.py::test_a_run_refused_again_waits_for_the_new_holds_own_expiry now reports 'hold-in-force'.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate.log carries 21 passed EXIT=0 at be04247c6 with module.__file__ inside the worktree, logs/base_arm.log carries the listed id red at dea3758c1, and logs/negative_control.log restores the classify-alone gate and shows assert [] == ['hold-in-force'] EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in dea3758c1..cd48a8a01 is one of reckon/crew/resumption.py, tests/test_crew_recover.py and docs/evidence/fragments/the-suite-is-green-at-head/a-re-refused-resume-waits-for-its-new-hold.html, all inside the declared scope.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative_control.log reinstates the pre-repair gate at reckon/crew/resumption.py:1877 and the listed case reddens, so a real regression test guards the mechanism; the assertions the node itself added at tests/test_crew_recover.py:830-831 are subsumed by the equality at :823 and carry none of that weight.\nSCORE fit: 16\nJUSTIFICATION fit: the change follows the surrounding gate shape at reckon/crew/resumption.py:1868 and its comment states the mechanism rather than a ticket, though the name 'settled' at :1877 reads as the opposite of what it holds (the end being observed) and the probe now runs for blocked candidates too.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it reuses _observed_end_refusal at reckon/crew/resumption.py:1099, the existing owner of the end-observation reading, and _launcher_refusal remains its own separate guard further down the same loop.\nFINDING tests/test_crew_recover.py:830 non-blocking: the two replacement assertions are subsumed by the exact-equality assertion above them, so neither can fail while that one holds and the pair adds no guard.\nFINDING manifest.md:22 non-blocking: the done-when requires both arms from git archive extractions on node-local disk; the head arm ran from the GPFS worktree instead.\nFINDING manifest.md:15 non-blocking: the done-when's ruff clause is recorded nowhere in the manifest or its logs, although the reviewer's own run of both commands at head passes.\n",
+  "review_run_id": "r-20261024T183932585433-review-of-a-re-refused-resume-waits-for-its-new-hold-cd48a8a01838",
+  "reviewed_base_sha": "dea3758c1582cb7d688d5b2a3d0180bce507e4e6",
+  "reviewed_head_sha": "cd48a8a018385c5283a9287e89520a17f71a5820",
+  "reviewed_run_id": "r-20261024T174700390764-a-re-refused-resume-waits-for-its-new-hold",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T19:11:45.666590+00:00",
+  "total": 109
+}
