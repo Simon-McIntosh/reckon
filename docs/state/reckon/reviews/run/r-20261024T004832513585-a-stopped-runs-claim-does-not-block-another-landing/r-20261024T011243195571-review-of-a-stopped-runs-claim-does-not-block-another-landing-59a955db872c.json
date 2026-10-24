@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run is an implement-role node with one head gate log (gate.log: revision e137fd2e, '361 passed', EXIT=0, no failing ids) and no baseline_suite/after_suite arms to difference, so the head arm carries no failing id and the added count is 0; newtest.log ('4 passed') and negative_control.log ('1 failed, 3 passed', the deliberately mutated arm) agree.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2358",
+    "reckon/crew/claims.py:99",
+    "reckon/crew/promotion_checks.py:2231"
+  ],
+  "completed_at": "2026-10-24T01:25:10.537Z",
+  "dispatched_at": "2026-10-24T01:14:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": 1966,
+      "severity": "non-blocking",
+      "text": "stopped_with_terminal_manifest reads whatever status sits at the pointer's manifest_path and never checks that the delivery belongs to the current attempt, so the repository's owner of that pairing, reckon/crew/runs.py:148 _manifest_freshness (used by _release_terminal_manifest at reckon/crew/promotion_records.py:488 via manifest_baseline_mtime_ns), is bypassed; a resumed or redispatched peer that dies before writing its own manifest leaves its predecessor's terminal manifest at the same path and is read as stopped-terminal from a verdict that is not this attempt's. It is harmless while the liveness clause also requires proven death, but the freshness check belongs here rather than being left to a second clause."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:2358 passes acceptance=True into widen_claim, reckon/crew/claims.py:99 forwards the set-aside list into refuse_widen_scope_conflicts, and reckon/crew/promotion_checks.py:2231 reaches _accepted_scope_exceptions from _landing_scope_products.",
+    "diff": "read commit by commit against ac36a73b: e137fd2e adds _set_aside_on_acceptance in claims.py, stopped_with_terminal_manifest and the set_aside_run_ids filter in dispatch_claims.py, the stopped-claims branch in promotion_scope.py, and the 302-line test file; 59a955db adds only the evidence fragment.",
+    "done_when": "the done_when's five cases and its negative control are all present in tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:184-302; the manifest records 4 passed (newtest.log) and the 21-file gate at 361 passed EXIT=0 (gate.log), and the executed negative control (negative_control.log: 1 failed, 3 passed, EXIT=1) reddens the stopped-peer case, though the done_when's ruff clause is not recorded in any log.",
+    "goal": "the goal is that crew complete accepts a path whose only live claimant is a stopped run with a terminal manifest; reckon/crew/promotion_scope.py:625-641 and reckon/crew/claims.py:191-206 make exactly that judgement at the acceptance, and the landed change does it.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T004832513585-a-stopped-runs-claim-does-not-block-another-landing/manifest.md; status complete, both commits named, tests line carrying the literal 21-file gate command, four logs named, and evidence_inputs quoting the reproduced refusal from promotion_scope.py in _accepted_scope_exceptions.",
+    "write_paths": "the manifest declares reckon/crew/claims.py, reckon/crew/promotion_scope.py, reckon/crew/dispatch_claims.py, the new test file and the evidence fragment; git show --stat e137fd2e and 59a955db changes exactly those five and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:184 fails on the absent stopped_peer_claims field or the refusal if either landed half is reverted, :211 fails if the manifest clause is dropped (negative_control.log proves it), :225 fails if liveness is dropped, and :280 fails if the set-aside leaks into the shared refuse_widen_scope_conflicts; no test covers a peer pointer with no manifest_path or an unreadable manifest, which the code answers conservatively.",
+    "evidence": "gate.log's first line names revision e137fd2e, tree and the literal 21-file command and its last line is EXIT=0 with '361 passed', newtest.log holds '4 passed', and negative_control.log holds '1 failed, 3 passed' failing test_stopped_peer_claim_is_recorded_on_the_acceptance; the done_when's ruff clause carries no log, and I found the staged paths clean (no added findings) with the one unformatted region in promotion_scope.py being pre-existing at lines 1241/1284/1704.",
+    "fit": "reckon/crew/claims.py:191-206 follows the module's local-import and docstring idiom, and the new names (stopped_with_terminal_manifest, _set_aside_on_acceptance, set_aside_run_ids, stopped_peer_claims) describe behaviour with no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:629-641 admits a claim held by a stopped peer with a terminal manifest and records it as stopped_peer_claims, while reckon/crew/dispatch_claims.py:2050 keeps a dispatch refusing, exactly as the goal states.",
+    "reuse": "stopped_with_terminal_manifest reuses reckon/crew/recovery_liveness.py:1156 local_liveness and reckon/crew/reports.py:126 TERMINAL_MANIFEST_STATUSES/parse_manifest rather than re-deriving either, and no owner for 'a pointer's run is stopped with a terminal manifest' existed; the related reckon/crew/runs.py:148 _manifest_freshness, which pairs a terminal status with the attempt it belongs to, is not reused and is the subject of the finding below.",
+    "scope_discipline": "every path in the diff -- reckon/crew/claims.py, reckon/crew/dispatch_claims.py, reckon/crew/promotion_scope.py, the new test file and docs/evidence/fragments/.../a-stopped-runs-claim-does-not-block-another-landing.html -- is inside the declared write paths, and the declared docs/figures directory is left unused as the done-when names no figure."
+  },
+  "node": "review-of-a-stopped-runs-claim-does-not-block-another-landing-59a955db872c",
+  "node:reviewed": "a-stopped-runs-claim-does-not-block-another-landing",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that crew complete accepts a path whose only live claimant is a stopped run with a terminal manifest; reckon/crew/promotion_scope.py:625-641 and reckon/crew/claims.py:191-206 make exactly that judgement at the acceptance, and the landed change does it.\nVERDICT done_when: the done_when's five cases and its negative control are all present in tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:184-302; the manifest records 4 passed (newtest.log) and the 21-file gate at 361 passed EXIT=0 (gate.log), and the executed negative control (negative_control.log: 1 failed, 3 passed, EXIT=1) reddens the stopped-peer case, though the done_when's ruff clause is not recorded in any log.\nVERDICT write_paths: the manifest declares reckon/crew/claims.py, reckon/crew/promotion_scope.py, reckon/crew/dispatch_claims.py, the new test file and the evidence fragment; git show --stat e137fd2e and 59a955db changes exactly those five and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T004832513585-a-stopped-runs-claim-does-not-block-another-landing/manifest.md; status complete, both commits named, tests line carrying the literal 21-file gate command, four logs named, and evidence_inputs quoting the reproduced refusal from promotion_scope.py in _accepted_scope_exceptions.\nVERDICT diff: read commit by commit against ac36a73b: e137fd2e adds _set_aside_on_acceptance in claims.py, stopped_with_terminal_manifest and the set_aside_run_ids filter in dispatch_claims.py, the stopped-claims branch in promotion_scope.py, and the 302-line test file; 59a955db adds only the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:2358, reckon/crew/claims.py:99, reckon/crew/promotion_checks.py:2231\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:629-641 admits a claim held by a stopped peer with a terminal manifest and records it as stopped_peer_claims, while reckon/crew/dispatch_claims.py:2050 keeps a dispatch refusing, exactly as the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate.log's first line names revision e137fd2e, tree and the literal 21-file command and its last line is EXIT=0 with '361 passed', newtest.log holds '4 passed', and negative_control.log holds '1 failed, 3 passed' failing test_stopped_peer_claim_is_recorded_on_the_acceptance; the done_when's ruff clause carries no log, and I found the staged paths clean (no added findings) with the one unformatted region in promotion_scope.py being pre-existing at lines 1241/1284/1704.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff -- reckon/crew/claims.py, reckon/crew/dispatch_claims.py, reckon/crew/promotion_scope.py, the new test file and docs/evidence/fragments/.../a-stopped-runs-claim-does-not-block-another-landing.html -- is inside the declared write paths, and the declared docs/figures directory is left unused as the done-when names no figure.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_stopped_runs_claim_does_not_block_another_landing.py:184 fails on the absent stopped_peer_claims field or the refusal if either landed half is reverted, :211 fails if the manifest clause is dropped (negative_control.log proves it), :225 fails if liveness is dropped, and :280 fails if the set-aside leaks into the shared refuse_widen_scope_conflicts; no test covers a peer pointer with no manifest_path or an unreadable manifest, which the code answers conservatively.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/claims.py:191-206 follows the module's local-import and docstring idiom, and the new names (stopped_with_terminal_manifest, _set_aside_on_acceptance, set_aside_run_ids, stopped_peer_claims) describe behaviour with no plan, ticket or version label.\nSCORE reuse: 17\nJUSTIFICATION reuse: stopped_with_terminal_manifest reuses reckon/crew/recovery_liveness.py:1156 local_liveness and reckon/crew/reports.py:126 TERMINAL_MANIFEST_STATUSES/parse_manifest rather than re-deriving either, and no owner for 'a pointer's run is stopped with a terminal manifest' existed; the related reckon/crew/runs.py:148 _manifest_freshness, which pairs a terminal status with the attempt it belongs to, is not reused and is the subject of the finding below.\nFINDING reckon/crew/dispatch_claims.py:1966 non-blocking: stopped_with_terminal_manifest reads whatever status sits at the pointer's manifest_path and never checks that the delivery belongs to the current attempt, so the repository's owner of that pairing, reckon/crew/runs.py:148 _manifest_freshness (used by _release_terminal_manifest at reckon/crew/promotion_records.py:488 via manifest_baseline_mtime_ns), is bypassed; a resumed or redispatched peer that dies before writing its own manifest leaves its predecessor's terminal manifest at the same path and is read as stopped-terminal from a verdict that is not this attempt's. It is harmless while the liveness clause also requires proven death, but the freshness check belongs here rather than being left to a second clause.\n",
+  "review_run_id": "r-20261024T011243195571-review-of-a-stopped-runs-claim-does-not-block-another-landing-59a955db872c",
+  "reviewed_base_sha": "ac36a73b7f4f7f85cb22010fcd24480865016354",
+  "reviewed_head_sha": "59a955db872c07e33522fcb254449947e06e3213",
+  "reviewed_run_id": "r-20261024T004832513585-a-stopped-runs-claim-does-not-block-another-landing",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T01:40:00+00:00",
+  "total": 109
+}
