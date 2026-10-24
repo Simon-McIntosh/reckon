@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="a-seat-held-elsewhere-is-not-restarted">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -264,7 +264,7 @@
     after §5.</p>
 
     <h2 id="s8">§8 — A queued review is not a missing review</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>The obligations view derives <code>review-missing</code> from the review store and the live pointers.
     A review dispatched into the queue has neither a live pointer nor a stored record, so the run's duty
     reads missing while its review is waiting to launch. The kind for this already exists:
@@ -427,6 +427,9 @@
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261023T234152899887-review-of-a-queued-review-is-not-a-missing-review-be765301adbc" data-who="reckon-build" data-when="2026-10-23T23:49:07.265Z">
     <div class="r-comment-body"><p>Independent review of r-20261023T191757300205-a-queued-review-is-not-a-missing-review at base 211086d79, head be765301a: parsed record, scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 19; added failures 0 (head 1 failed / 62 passed against base 8 failed / 55 passed, the single head failure present at base); two non-blocking findings (obligations.py:458 leaves the third _review_in_flight caller, _refused_delivered_review, on the unfiltered snapshot so a queued pointer can win the sweep; obligations.py:776 still has no earliest-queued tie-break among two queued reviews for one head) — no blocking defect, the delta can land.</p></div>
 </div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-24T00:35:00Z">
+    <div class="r-comment-body"><p>§8 closed. A queued review is read as <code>review-queued</code>, not <code>review-missing</code>. Five review rounds, and the population caught and repaired a 13-failure regression before landing. <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s8">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261023T232356997005-review-of-a-wait-nothing-can-lift-needs-the-coordinator-feb4b8e08146" data-who="reckon-build" data-when="2026-10-23T23:39:03.938Z">
     <div class="r-comment-body"><p>review of r-20261023T220123081008-a-wait-nothing-can-lift-needs-the-coordinator at feb4b8e08 from base 3adce740f: parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 20, durability 15, fit 17, reuse 16, with two non-blocking findings and added_failure_count 0; the halted arm lands as the plan section describes, and the untested current-attempt branch plus the prose-keyed probe discriminator are the recorded gaps</p></div>
 </div>
@@ -440,7 +443,7 @@
     <div class="r-comment-body"><p>reckon:a-live-worker-is-never-drawn-halted §10 — a declared wait whose worker recorded its own end for the current attempt and whose condition probe produced no answer is classified stalled (pane word halted) with `reckon crew resume` as the next action. "No answer" is the structured `answered: false` flag the probe result carries, set on a command that could not run, on a non-zero exit, and on a condition test that raises, never inferred from detail prose; a live worker, a probe answering a non-terminal state, a probe whose prose is reworded but which answered, and an exit record left by a superseded attempt all stay waiting. Head gate 6 passed, focused wait/recovery suite 348 passed, three negative controls each exit 1 on exactly the arm they target.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261024T001658902384-review-of-a-wait-nothing-can-lift-needs-the-coordinator-285b17174b1e" data-who="reckon-build" data-when="2026-10-24T00:24:33.896Z">
-    <div class="r-comment-body"><p>review of r-20261023T220123081008-a-wait-nothing-can-lift-needs-the-coordinator at 285b17174 from base 3adce740f — parsed record scoring goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 17, reuse 20, added_failure_count 0, one non-blocking finding (reckon/crew/recovery_wait.py:476 return annotation still dict[str, str] while the reader now returns the boolean answered field); the two findings of the prior review at 8861becdd are repaired — the exception arm carries answered:false and the head gate log&#x27;s `# committed-as: 285b17174` is verified by its tree-state digest 64e62e5618398d05 matching `git diff 8861becdd 285b17174 -- reckon/crew tests`.</p></div>
+    <div class="r-comment-body"><p>review of r-20261023T220123081008-a-wait-nothing-can-lift-needs-the-coordinator at 285b17174 from base 3adce740f — parsed record scoring goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 17, reuse 20, added_failure_count 0, one non-blocking finding (reckon/crew/recovery_wait.py:476 return annotation still dict[str, str] while the reader now returns the boolean answered field); the two findings of the prior review at 8861becdd are repaired — the exception arm carries answered:false and the head gate log's `# committed-as: 285b17174` is verified by its tree-state digest 64e62e5618398d05 matching `git diff 8861becdd 285b17174 -- reckon/crew tests`.</p></div>
 </div>
 </section>
 </main>
