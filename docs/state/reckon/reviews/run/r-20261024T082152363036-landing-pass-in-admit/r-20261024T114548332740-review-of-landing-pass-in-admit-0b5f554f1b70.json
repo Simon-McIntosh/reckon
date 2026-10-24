@@ -1,0 +1,101 @@
+{
+  "added_failure_attribution": "The complete historical ef7082d14..130ec9a6 comparison has one raw added failure ID. coordinator-overlap.log shows that ID fail once and pass once at base and pass twice at 130ec9a6; no completed importer arm exists at final head 0b5f554f.",
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted"
+  ],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/importers-head-local.log",
+  "assertion_analysis": [
+    {
+      "fails_if": "The ordering is reversed, the real readiness pass does not promote the waiter, or the real launch path does not launch it; RUN and downstream identity values are fixture inputs.",
+      "lines": "tests/test_queue_landing.py:204-207"
+    },
+    {
+      "fails_if": "A stale review reaches _land or removes the live pointer; the historical stale-head negative control failed on that mutation.",
+      "lines": "tests/test_queue_landing.py:218-219"
+    },
+    {
+      "fails_if": "A below-floor review lands, lacks a stored refusal, or fails to create the owning session duty.",
+      "lines": "tests/test_queue_landing.py:233-249"
+    },
+    {
+      "fails_if": "A refused land is retried or its guard is not stored and projected into the owner duty.",
+      "lines": "tests/test_queue_landing.py:266-279"
+    },
+    {
+      "fails_if": "An attempting marker is skipped forever or the automatic landing retries silently; the revert control records this test failing.",
+      "lines": "tests/test_queue_landing.py:303-308"
+    },
+    {
+      "fails_if": "The existing review dispatcher starts a second review for an unchanged head.",
+      "lines": "tests/test_queue_landing.py:318-319"
+    },
+    {
+      "fails_if": "The command omits the scheduler shim, shared completion verb, overlap options, or source path; the RUN token at :340 reuses the input.",
+      "lines": "tests/test_queue_landing.py:332-347"
+    },
+    {
+      "fails_if": "The shared land path fails to merge the introduced marker to main, fails to push main to origin, or leaves the live pointer.",
+      "lines": "tests/test_queue_landing.py:426-433"
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/importers-base-exact.log",
+  "call_sites": [
+    "reckon/crew_run_commands.py:3613",
+    "reckon/crew/queue_admission.py:2159",
+    "reckon/crew/queue_admission.py:2172",
+    "reckon/crew/obligations.py:926",
+    "reckon/crew/obligation_snapshot.py:1078"
+  ],
+  "completed_at": "2026-10-24T11:55:03Z",
+  "dispatched_at": "2026-10-24T11:47:50Z",
+  "final_head_gate_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/repair-focused-head-final.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/repair-admission-importers-fixed.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/repair-importers-head.log"
+  ],
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/manifest.md",
+      "line": "10",
+      "severity": "blocking",
+      "text": "blocking: The repaired head's importer run ended EXIT=124 without a summary; the recorded after_suite is at 130ec9a6, so zero added failures at 0b5f554f remains unverified."
+    },
+    {
+      "disposition": "exempted",
+      "disposition_reason": "The independent real-land test requires an introduced marker on the primary branch and origin, and this identity check is supplemental.",
+      "file": "tests/test_queue_landing.py",
+      "line": "340",
+      "severity": "non-blocking",
+      "text": "non-blocking: The expected command ID uses the same RUN input passed to _land, so a hard-coded fixture ID survives this assertion."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "crew_run_commands.py:3613 reaches admission; queue_admission.py:2159,2172 reaches landing; obligations.py:926 is read by obligation_snapshot.py:1078.",
+    "diff": "Seven commits from ef7082d14 to 0b5f554f change five granted paths.",
+    "done_when": "prompt.txt:101-102 requires all cases plus zero added importer failures; focused and targeted gates pass but final importer arm did not complete.",
+    "goal": "prompt.txt:30 states coordinator-free accepted landing; queue_admission.py:2159,2172 calls it before admission.",
+    "manifest": "manifest.md:10-21 lists seven commits and records the final importer timeout.",
+    "write_paths": "prompt.txt:69-74 and resume-1-advice.txt:1 grant the five changed paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:30 asks for coordinator-free landing; reckon/crew/queue_admission.py:2159,2172 invokes queue_landing.land_once before admission and queue_landing.py:155 calls the shared landing path.\nVERDICT done_when: The source prompt.txt:101-102 requires the downstream launch, refusal cases, scheduler shim and zero added importer failures; repair-focused-head-final.log records 8 passed and repair-admission-importers-fixed.log 33 passed, while manifest.md:10 records no completed final-head importer comparison.\nVERDICT write_paths: The source prompt.txt:69-74 grants four file paths and a figure directory, resume-1-advice.txt:1 adds obligations.py, and all five changed paths lie within those grants.\nVERDICT manifest: The source manifest.md:10-21 is complete and names seven commits, five changed paths, the focused and importer receipts, and the timeout of the final-head importer run.\nVERDICT diff: Read seven commits from ef7082d14ff548f51ece222f96d42618f16cdeeb to 0b5f554f1b707658c8e4a85e32d2f7fff8e30c39; the final diff changes queue_landing.py, queue_admission.py, obligations.py, test_queue_landing.py and the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:3613, reckon/crew/queue_admission.py:2159, reckon/crew/queue_admission.py:2172, reckon/crew/obligations.py:926, reckon/crew/obligation_snapshot.py:1078\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:94-170 selects accepted delivered heads and invokes the shared land command before reckon/crew/queue_admission.py:2160 admits downstream work.\nSCORE evidence: 10\nJUSTIFICATION evidence: tests/test_queue_landing.py:200-207 exercises the landing and downstream paths and the final focused gate passes, but source manifest.md:10 and repair-importers-head.log:14 show the final importer arm timed out without a failure delta.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five paths in the base-to-head diff match prompt.txt:69-74 plus the explicit obligations.py grant in resume-1-advice.txt:1.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_queue_landing.py:282-308 fails on the prior interrupted-attempt code, and :184-207 reaches real readiness and launch, but the command identity assertion at :340 uses its own RUN input.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_landing.py:19-30 uses the existing live-pointer mutation idiom and :54-91 reports the shared CLI receipt with source names free of plan labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found the promotion owner at reckon/crew/promotion.py:719 and acceptance owner at reckon/crew/recovery_review_acceptance.py:29; queue_landing.py:14,44-50,142 delegates to those owners.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/manifest.md:10 blocking: The 76-file importer run at the repaired head ended EXIT=124 with no summary; after_suite still names 130ec9a6, so the declared zero-added-failures measure at 0b5f554f is unverified until a completed final-head receipt is attached.\nFINDING tests/test_queue_landing.py:340 non-blocking: The expected command ID is RUN, the same variable supplied to _land at :332, so this one assertion survives an implementation hard-coded to the fixture ID; disposition exempted because the real-land test independently requires the introduced marker on main and origin.",
+  "review_run_id": "r-20261024T114548332740-review-of-landing-pass-in-admit-0b5f554f1b70",
+  "reviewed_base_sha": "ef7082d14ff548f51ece222f96d42618f16cdeeb",
+  "reviewed_head_sha": "0b5f554f1b707658c8e4a85e32d2f7fff8e30c39",
+  "reviewed_run_id": "r-20261024T082152363036-landing-pass-in-admit",
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/404513fc-8e68-4a0f-8060-29ac9ff3d5fd/landing-pass-in-admit",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T11:52:15Z",
+  "total": 104
+}
