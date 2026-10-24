@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s45">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-tags" content="crew,promotion,landing,release,tests">
+  <title>Promotion-result tests read the result promotion returns | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="promotion-result-tests-read-the-returned-result" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="promotion-result-tests-read-the-returned-result-title">Promotion-result tests read the result promotion returns</h2>
+
+  <p id="promotion-result-tests-read-the-returned-result-cause"><strong>Cause.</strong> Three shipped changes altered the values these ten
+  tests read, and each change was intended. The release outcome now lands through
+  the landing owner and carries that landing's own check on the returned receipt.
+  A refused landing commit now takes back every write it made, so an interrupted
+  landing no longer leaves its plan comment on disk. A review promotion now names
+  which delivery condition it refused, instead of one generic sentence. Each test
+  pinned the older value, so all ten failed while the production behaviour was
+  the one the commits described.</p>
+
+  <h3 id="promotion-result-tests-read-the-returned-result-intent">The commit read, per id</h3>
+
+  <ul id="promotion-result-tests-read-the-returned-result-ids">
+    <li><code>tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release[False-False]</code>,
+    <code>[False-True]</code>, <code>[True-False]</code>, <code>[True-True]</code>;
+    <code>tests/test_promotion_releases_its_worktree.py::test_promotion_releases_only_the_integrated_clean_case</code>;
+    <code>tests/test_promotion_stages_its_one_run_file.py::test_complete_commits_one_run_file_per_promotion[False]</code>,
+    <code>[True]</code> — commit read <code>881bf6b6f</code> (<em>report a release
+    landing's check to stderr and its receipt</em>), <strong>intended</strong>. That
+    commit attaches the release's landing check to the release dict
+    <code>_record_release_on_ledger</code> returns, so the returned receipt carries a
+    <code>landing_check</code> key the persisted row cannot have: the check is composed
+    when the release's own commit lands, after the row was written. Each test compared
+    the stored release to the returned one by equality. They now compare the row to the
+    returned release less that key, and assert the check separately (ok, no reversals,
+    no mismatches).</li>
+    <li><code>tests/test_landing_commit_carries_only_its_own_comment.py::test_a_re_promotion_commits_a_plan_differing_only_by_its_own_comment</code>;
+    <code>tests/test_repromotion_commits_its_recorded_comment.py::test_a_failed_landing_then_a_repromotion_commits_the_recorded_comment</code>
+    — commit read <code>5c17c07f4</code> (<em>a refused landing commit takes back every
+    write it made</em>), <strong>intended</strong>. The rollback now restores the
+    tracked plan file from HEAD's blob, read through the object store, so a held
+    <code>index.lock</code> no longer blocks it. Both tests held
+    <code>index.lock</code>, expected the plan comment to survive uncommitted, then
+    found the plan file clean. The landing-comment case now constructs that
+    comment-only plan difference through the store writer — which is the condition its
+    property is about — and still requires the re-promotion to carry the plan file into
+    its commit. The repromotion case asserts the refusal leaves the plan clean, then
+    that the retry records and commits the comment.</li>
+    <li><code>tests/test_bookkeeping_follows_the_run.py::test_a_review_runs_outcome_defaults_to_its_stored_review</code>
+    — commit read <code>e3010ebb3</code> (<em>name the delivery condition a review
+    promotion refused</em>), <strong>intended</strong>. The refusal was one generic
+    sentence; it now names the failing condition. The case's second arm declared no
+    head-keyed record path, so it was refused for that condition before the stored
+    review was ever read. It now declares the head-keyed path its dispatch would
+    grant, and asserts the refusal for the record that is not there.</li>
+  </ul>
+
+  <p id="promotion-result-tests-read-the-returned-result-measure"><strong>Measure.</strong> All ten ids pass at the node head, and the full gate
+  (<code>tests/test_bookkeeping_follows_the_run.py</code>,
+  <code>tests/test_landing_commit_carries_only_its_own_comment.py</code>,
+  <code>tests/test_promotion_never_amends_its_commit.py</code>,
+  <code>tests/test_promotion_releases_its_worktree.py</code>,
+  <code>tests/test_promotion_stages_its_one_run_file.py</code>,
+  <code>tests/test_repromotion_commits_its_recorded_comment.py</code>) adds no failure
+  against the base arm; both arms are <code>git archive</code> extractions under the
+  run's node-local scratch. The negative control reverts each repair and its id fails
+  again. No production module changed, so no further test file imports a changed
+  module.</p>
+
+  <p id="promotion-result-tests-read-the-returned-result-files"><strong>Files changed.</strong> The six test files above; no production code.</p>
+</article>
+</body>
+</html>
