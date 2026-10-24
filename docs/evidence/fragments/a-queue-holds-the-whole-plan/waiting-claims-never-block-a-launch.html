@@ -1,0 +1,19 @@
+<section id="waiting-claims-never-block-a-launch-landing">
+  <h2>Waiting requests yield their write claims until launch</h2>
+  <p>The pre-fix reproduction dispatched a ready node over an
+  <code>awaiting-upstream</code> request's path and received
+  <code>scope-conflict</code>: “write scope 'reckon/crew/shared_path.py' conflicts
+  with live claim 'reckon/crew/shared_path.py' held by run 'r-waiting'.” The
+  same waiting claim refused a working run's scope widening.</p>
+  <p>Claim arbitration now marks <code>queued</code>,
+  <code>awaiting-upstream</code>, and <code>held</code> requests nonbinding.
+  Five focused cases pass: ready dispatch across the waiting claim, widening
+  across it, refusal against a working claim, and admission after an upstream
+  declaration moves a waiting request to queued. That last request remains
+  queued with a conflict while the working run holds the shared path. The
+  declared mutation makes waiting claims binding again; the ready-dispatch
+  case fails under it.</p>
+  <p>The importer suite completed at both revisions. Base: 65 passed and one
+  failed. Head: 70 passed and the same one failed, for zero added failure IDs.
+  Ruff check and format check pass on the changed source and test paths.</p>
+</section>
