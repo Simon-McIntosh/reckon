@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="371">
+<meta name="plan-version" content="374">
 <meta name="plan-modified" content="2026-10-24">
 <meta name="plan-section-depends-on" content="{&quot;s64&quot;:[]}">
 </head>
@@ -1338,8 +1338,9 @@
 <li>with the resolver answering normally, the promoted revision is the fourth commit;</li>
 <li>with the resolver timing out for the fourth commit alone, the promotion is refused naming that commit, and no promoted revision is recorded;</li>
 <li>a revision that names no commit is still reported as unresolvable, not as an instrument fault;</li>
+<li>a cited commit that names nothing when the revision is chosen, although it resolved when the landing check read it, refuses the promotion naming it rather than being left out;</li>
 </ul>The test asserts the real crew home is untouched.</li>
-<li>Negative controls, each applied alone and run under pytest with the default short summary: restoring the drop of an unresolved entry in <code>_descendant_commit</code> fails the timeout case.</li>
+<li>Negative controls, each applied alone and run under pytest with the default short summary: restoring the empty-string answer for a timeout in <code>_resolve_commit</code> fails the timeout case, and restoring the drop of an unresolved entry in <code>_descendant_commit</code> fails the case where a cited commit names nothing at the moment the revision is chosen.</li>
 <li>The test files importing <code>reckon/crew/promotion_scope.py</code> or <code>reckon/crew/recovery_review_subject.py</code> add no failure against a base arm. Both arms come from git checkouts under the run's own scratch directory and run in place on the fleet node with <code>pytest -n 8</code>. <code>tests/test_every_module_fits_a_worker_window.py</code> adds no failure at head. The manifest's <code>baseline_suite</code> and <code>after_suite</code> are flat suite records. Every log is under the run directory, starts with the revision it ran at and the literal command, and ends in <code>EXIT=</code>.</li>
 <li><code>ruff check</code> and <code>ruff format --check</code> add no finding on the changed paths, judged against the base blobs.</li>
 </ul>
@@ -1588,6 +1589,11 @@
     <h4 class="r-fu-title">Build §21 once unresolvable-declared-sha is locked</h4>
     <div class="r-fu-body"><p>§21 is the plan's one open section. It waits on the lead's choice between reporting an unresolvable declared sha and keeping its silence with the reason written beside the pinning tests.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls §21</pre>
+    </article>
+<article class="r-fu" data-id="f-crpc-s64-s65" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-24 13:00" data-recommends-skill="/reckon-build crew-runtime-positive-controls §64" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §64, then §65 when reckon/crew_run_commands.py is free</h4>
+    <div class="r-fu-body"><p>§64 stops a promotion from dropping a cited commit that fails to resolve, the cause of the power_convertor land that merged an earlier commit than the run reached. §65 adds the land's own check against the run's worktree head and waits only for <code>reckon/crew_run_commands.py</code> to come free of another plan's runs.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls §64</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
