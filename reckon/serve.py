@@ -58,7 +58,6 @@ import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timezone
-from functools import partial
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -115,7 +114,7 @@ from reckon.evidence import (
     evidence_record_plan,
 )
 from reckon.figures import figure_rows, rasterise_svg
-from reckon.file_memo import file_revision, memoized
+from reckon.file_memo import file_revision
 from reckon.git_dates import (  # noqa: F401 — the import surface of this module
     _GIT_CREATION_CACHE,
     _GIT_CREATION_SCHEMA,
@@ -707,27 +706,16 @@ def _elapsed_since(stamp: object) -> int | None:
     return max(0, int((datetime.now(tz=timezone.utc) - started).total_seconds()))
 
 
-def _read_crew_plan_state(plan_path: Path) -> dict:
-    """Parse one plan once for the crew poll.
+def _crew_plan_state(docs: Path, slug: str) -> dict | None:
+    """Read one referenced plan's parsed state without discovery.
 
-    The whole document is read rather than its head, because the decisions a
-    crew page lists live in the body. The parse is memoised per file identity,
-    so the head fields a crew row wants and the decisions the page lists come
-    from one read of one file.
+    The parse comes from :func:`reckon._plan_html.read_state_and_text_file`,
+    which owns and memoises a plan's parse, so the crew poll reuses the state a
+    reader that already opened this plan holds and opens no second time. A
+    plan whose head declares neither its sprint nor its effort falls back to
+    the regex head record, which reads the head alone.
     """
 
-    with plan_path.open(encoding="utf-8") as source:
-        state = _plan_html.read_state(source.read())
-    if state.get("effort_hours") is None or not state.get("sprint"):
-        fallback = _plan_html.parse_meta(plan_path)
-        for field in ("sprint", "effort_hours"):
-            if state.get(field) is None:
-                state[field] = fallback.get(field)
-    return state
-
-
-def _crew_plan_state(docs: Path, slug: str) -> dict | None:
-    """Read one referenced plan's parsed state without discovery."""
     if not slug or not SAFE_NAME.fullmatch(slug):
         return None
     candidates = (
@@ -737,15 +725,17 @@ def _crew_plan_state(docs: Path, slug: str) -> dict | None:
     )
     for plan_path in candidates:
         try:
-            return memoized(
-                "crew-plan-details",
-                plan_path,
-                partial(_read_crew_plan_state, plan_path),
-            )
+            state = _plan_html.read_state_and_text_file(plan_path)[0]
         except FileNotFoundError:
             continue
         except (OSError, ValueError, UnicodeError):
             return None
+        if state.get("effort_hours") is None or not state.get("sprint"):
+            fallback = _plan_html.parse_meta(plan_path)
+            for field in ("sprint", "effort_hours"):
+                if state.get(field) is None:
+                    state[field] = fallback.get(field)
+        return state
     return None
 
 

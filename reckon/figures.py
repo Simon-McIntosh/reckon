@@ -138,16 +138,17 @@ def figure_row(
     project: str,
     plan_slugs: set[str] | None = None,
 ) -> dict | None:
-    """Return one inventory row for a figure file under ``docs_dir/figures``.
+    """Return one row for a figure file under ``docs_dir/figures``.
 
     This is the single builder of a figure's row: the Figures inventory and the
-    metadata index both take their fields from here, so a title, a kind or a
-    dimension is derived once. ``width`` and ``height`` are the numbers the
-    format's reader returns, unrounded, and ``width`` is ``None`` when the file
-    cannot be read. ``plan_slugs`` names the plans already discovered in this
-    project; a row's ``for_plan`` is its top-level directory when that directory
-    is itself a plan slug, and empty otherwise. A path outside the figures
-    directory yields no row.
+    metadata index both take their row from here, so a title, a kind, a
+    dimension or a href is derived once. ``width`` and ``height`` are the
+    numbers the format's reader returns, unrounded, and ``width`` is ``None``
+    when the file cannot be read; ``dims`` renders those two numbers the way a
+    surface shows them, and is empty when they are unknown. ``plan_slugs`` names
+    the plans already discovered in this project; a row's ``for_plan`` is its
+    top-level directory when that directory is itself a plan slug, and empty
+    otherwise. A path outside the figures directory yields no row.
     """
 
     try:
@@ -178,6 +179,7 @@ def figure_row(
         "download": href,
         "width": dims[0] if dims else None,
         "height": dims[1] if dims else None,
+        "dims": _format_dims(*dims) if dims else "",
         "path": path,
     }
 
@@ -191,12 +193,17 @@ def figure_rows(
 ) -> list[dict]:
     """Return one inventory row per PNG/SVG/GIF under ``docs_dir/figures``.
 
-    A PNG or an SVG yields a row whose kind is ``figure``; a GIF's row is
-    identical in every other field but carries kind ``gif``, so a surface can
-    register a separate tab beside Figures rather than interleaving
-    animations into the figures index. ``plan_slugs`` names the plans already
-    discovered in this project; a row's ``for_plan`` is its top-level
-    directory when that directory is itself a plan slug, and empty otherwise.
+    Every field comes from :func:`figure_row`, which owns a figure row's
+    derivation; this narrows the builder's row to the shape the inventory
+    serves, whose dimensions are the builder's rendered ``dims`` string rather
+    than the two numbers. A PNG or an SVG yields a row whose kind is ``figure``;
+    a GIF's row is identical in every other field but carries kind ``gif``, so
+    a surface can register a separate tab beside Figures rather than
+    interleaving animations into the figures index. ``plan_slugs`` names the
+    plans already discovered in this project; a row's ``for_plan`` is its
+    top-level directory when that directory is itself a plan slug, and empty
+    otherwise. ``covered_files`` names the files a caller has already walked,
+    so a reader sharing a tree walk pays for none.
     """
 
     figures_dir = docs_dir / "figures"
@@ -221,17 +228,16 @@ def figure_rows(
         row = figure_row(path, docs_dir, project, plan_slugs)
         if row is None:
             continue
-        # The inventory renders one dims string from the builder's numeric
-        # width and height, and carries neither number itself, so its row keeps
-        # the shape it served before the builder existed.
-        width, height = row["width"], row["height"]
+        # The inventory serves one dims string rather than the builder's two
+        # numbers, so its row is the builder's row narrowed here, at the
+        # boundary, instead of carrying a second derivation of its own.
         rows.append(
             {
                 "slug": row["slug"],
                 "type": row["type"],
                 "title": row["title"],
                 "caption": row["caption"],
-                "dims": _format_dims(width, height) if width is not None else "",
+                "dims": row["dims"],
                 "for_plan": row["for_plan"],
                 "href": row["href"],
                 "download": row["download"],
