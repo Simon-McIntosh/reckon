@@ -214,8 +214,27 @@ def _orientation_write_of_a_run_in_motion(
     return _newest_stream_in_motion(record)
 
 
-def _newest_stream_in_motion(
+def _newest_stream_quiet_seconds(
     record: Mapping[str, Any], *, now_seconds: float | None = None
+) -> int | None:
+    """How long the run's newest stream has been silent, or None with no stream.
+
+    The stream's own clock, with no attempt bound applied: a caller asking
+    whether the worker that wrote this stream is still writing wants the
+    stream's silence, which no record written by a later launch can shorten.
+    """
+    found = _record_newest_stream(record)
+    if found is None:
+        return None
+    moment = time.time() if now_seconds is None else now_seconds
+    return max(0, int(moment - found[1]))
+
+
+def _newest_stream_in_motion(
+    record: Mapping[str, Any],
+    *,
+    now_seconds: float | None = None,
+    from_stream_alone: bool = False,
 ) -> bool:
     """Whether a run whose liveness is unknown is producing output right now.
 
@@ -228,9 +247,20 @@ def _newest_stream_in_motion(
     stands as unwritten. No window is introduced: the same
     :data:`LOG_STALE_AFTER_SECONDS` bound that decides a stalled run decides
     this one.
+
+    ``from_stream_alone`` drops the attempt bound. A caller deciding whether a
+    run's *previous* worker has stopped asks about the stream, and the attempt
+    clock is dated from the claim a launch takes before it composes anything
+    else — so a door reading that clock after reserving its own attempt sees a
+    run launched this instant and reads three hours of silence as output. The
+    reservation is the new attempt's, and is no evidence about the worker that
+    wrote the stream.
     """
     if not _newest_stream_shows_work(record):
         return False
+    if from_stream_alone:
+        silence = _newest_stream_quiet_seconds(record, now_seconds=now_seconds)
+        return silence is not None and silence <= LOG_STALE_AFTER_SECONDS
     moment = time.time() if now_seconds is None else now_seconds
     return _run_stream_quiet_seconds(record, now_seconds=moment) <= (
         LOG_STALE_AFTER_SECONDS

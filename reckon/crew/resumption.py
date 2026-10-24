@@ -1038,8 +1038,16 @@ def _newest_stream_ended(record: Mapping[str, Any]) -> bool:
     machine that has gone quiet is read as ended rather than as unknown
     forever. A stream that carries no assistant turn — or none at all — is
     neither, so the missing verdict stands.
+
+    The stream is read on its own clock. A launch reserves its attempt claim
+    before it reaches any guard, and that claim dates the attempt this door is
+    starting; reading the attempt-bounded quiet time here would let the
+    reservation shorten the predecessor's silence to nothing and refuse the
+    very resume that took it.
     """
-    return _newest_stream_shows_work(record) and not _newest_stream_in_motion(record)
+    return _newest_stream_shows_work(record) and not _newest_stream_in_motion(
+        record, from_stream_alone=True
+    )
 
 
 def _observed_process_reading(record: Mapping[str, Any]) -> str:
@@ -1087,8 +1095,15 @@ def _stream_reading_refusal(
     the unknown alone. Both the launcher and the dry-run prediction of it
     consult this one helper, so a preview cannot offer a lift the launcher
     then refuses.
+
+    The stream's own clock is the one read here, for the reason
+    :func:`_newest_stream_ended` states: the launch asking this question has
+    already reserved its attempt, and that reservation must not silence the
+    stream it is asking about.
     """
-    if reading != "liveness unknown" or not _newest_stream_in_motion(record):
+    if reading != "liveness unknown" or not _newest_stream_in_motion(
+        record, from_stream_alone=True
+    ):
         return None
     run_id = str(record.get("run_id") or "")
     return CrewError(
