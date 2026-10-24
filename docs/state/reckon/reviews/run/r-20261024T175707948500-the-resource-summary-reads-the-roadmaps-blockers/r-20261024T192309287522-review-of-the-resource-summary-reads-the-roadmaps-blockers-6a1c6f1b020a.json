@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:1717",
+    "reckon/mcp_views.py:3284",
+    "reckon/mcp_views.py:3168",
+    "reckon/mcp_views.py:2842"
+  ],
+  "completed_at": "2026-10-24T19:33:55.569Z",
+  "dispatched_at": "2026-10-24T19:27:47Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": "2582",
+      "severity": "non-blocking",
+      "text": "The docstring justifies dropping the decision row's fields by saying the summary publishes its question, status and choice under open_decisions, but _open_decisions (reckon/mcp_views.py:2504-2516) publishes only key, question and options and skips every decision that carries a choice; status is never published there, so a decision whose row status is gated (a pending transition gate) or deferred (a recorded rationale) now reads identically to a plain open one from the summary's blocker list. Either publish the status beside the reference or state in the docstring what is actually carried."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against 11377a575: a19a5409b adds the decision branch and decision_reference at reckon/mcp_views.py:2591-2603 and rewrites five expectations in tests/test_mcp_views.py to the kind/id reference while tightening the share bound from 0.70 back to 0.60 at tests/test_mcp_views.py:273; 6a1c6f1b0 edits only the evidence fragment's prose and changes no code or test.",
+    "done_when": "The done_when names tests/test_the_resource_summary_reads_the_roadmaps_blockers.py over a temporary home with seven held plans plus an eighth stored blocked without a record, requiring the three surfaces agree; logs/base-gate.log records 4 failed / 129 passed EXIT=1 at a17c38e4a and logs/head-gate-compact-decision-reference.log records 133 passed EXIT=0 at a19a5409b, so the gate asserts the measure and adds no failure.",
+    "goal": "The node goal is to route the MCP plan summary through roadmap.plan_blocker_state with the roadmap's own arguments including sections_map and to leave the roadmap rule as the one orphaned-blocked-status emitter; this increment keeps that routing (reckon/mcp_views.py:2806 reads BLOCKER_STATE_KEY) and narrows only the published decision hold to a kind/id reference at reckon/mcp_views.py:2597-2603.",
+    "manifest": "Read complete; it records the head gate at a19a5409b with 133 passed, the base arm with four failing ids, both negative-control arms, the byte measurements (fixture summary 659 against a 1117-byte raw read, the reference 40 bytes where the full row was 129) and the restored 0.60 bound, and it names the three-field reference it considered and rejected at 677 bytes against a 670-byte budget.",
+    "write_paths": "The manifest declares reckon/mcp.py, reckon/mcp_views.py, tests/test_the_resource_summary_reads_the_roadmaps_blockers.py, tests/test_mcp_views.py, the evidence fragment and a figures directory; 11377a575..6a1c6f1b0 touches reckon/mcp_views.py, tests/test_mcp_views.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-resource-summary-reads-the-roadmaps-blockers.html, all inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_mcp_views.py:258 and :273 assert the published list against the literal {\"kind\": \"decision\", \"id\": \"open-choice\"} helper and the 0.60 share, so restoring the full row at reckon/mcp_views.py:2597 reddens both.",
+    "evidence": "logs/head-gate-compact-decision-reference.log ends '133 passed' with EXIT=0 at a19a5409b against logs/base-gate.log's 4 failed / 129 passed EXIT=1 at a17c38e4a; the reviewed head 6a1c6f1b0 is a docs-only commit that the gate files do not read, the page-paint suite using its own synthetic docs fixtures.",
+    "fit": "The branch and its local tuple follow the surrounding style of reckon/mcp_views.py:2593-2612, but the docstring at reckon/mcp_views.py:2582 states a fact about open_decisions that the code does not hold.",
+    "goal_fidelity": "reckon/mcp_views.py:2597 publishes an open decision as {\"kind\", \"id\"} rather than the row dict section 60's deliverable names, so a row whose status is gated or deferred loses that distinction from the summary's blocker list.",
+    "reuse": "A search of reckon/ for an existing key-subset or row-trimming helper found none, and reckon/mcp_views.py:2585 keeps the capability inside the function already owning the published blocker shape.",
+    "scope_discipline": "All three paths in 11377a575..6a1c6f1b0 sit inside the manifest's declared write paths, and the diff carries nothing the compactness finding did not ask for."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T192309287522-review-of-the-resource-summary-reads-the-roadmaps-blockers-6a1c6f1b020a",
+  "reviewed_base_sha": "11377a575b4a968be339c070bf949f5f27e25f2f",
+  "reviewed_head_sha": "6a1c6f1b020aaf28a13471bf97db9f74ad71468a",
+  "reviewed_run_id": "r-20261024T175707948500-the-resource-summary-reads-the-roadmaps-blockers",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T19:37:24.863982+00:00",
+  "total": 110
+}
