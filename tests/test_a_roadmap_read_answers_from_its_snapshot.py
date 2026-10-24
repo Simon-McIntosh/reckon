@@ -980,11 +980,27 @@ def test_a_project_keeps_at_most_the_named_number_of_snapshots(
     kept = roadmap_snapshot._SNAPSHOT_KEEP_PER_PROJECT
     directory = roadmap_snapshot.roadmap_snapshot_path(project, docs).parent
     directory.mkdir(parents=True, exist_ok=True)
+    # Every fixture root exists, and only mtime separates them, so the keep
+    # count is the only branch that can remove anything here.
+    stamped = []
     for index in range(kept + 4):
+        root = tmp_path / f"tree-{index}" / "docs"
+        root.mkdir(parents=True)
         stale = directory / f"roadmap-snapshot-{index:016x}.json"
-        stale.write_text(json.dumps({"root": str(tmp_path / f"gone-{index}" / "docs")}))
+        stale.write_text(json.dumps({"root": str(root)}))
+        age = time.time() - 10_000 + index
+        os.utime(stale, (age, age))
+        stamped.append(stale)
+
+    newest = sorted(stamped, key=lambda path: path.stat().st_mtime_ns, reverse=True)
 
     roadmap_snapshot.roadmap_snapshot_store(project, docs, "key-live", {"plane": 1})
 
+    written = roadmap_snapshot.roadmap_snapshot_path(project, docs)
     remaining = sorted(directory.glob("roadmap-snapshot-*.json"))
-    assert len(remaining) <= kept, remaining
+    assert len(remaining) == kept, remaining
+    assert written in remaining, "the file just written was pruned"
+    for path in newest[: kept - 1]:
+        assert path in remaining, f"a kept snapshot was removed: {path.name}"
+    for path in newest[kept - 1 :]:
+        assert path not in remaining, f"an over-count snapshot survived: {path.name}"

@@ -171,8 +171,11 @@
     walk arrived. The list is now named by <code>path_classes.PLAN_HTML_PREFIXES</code>
     — <code>plans</code>, <code>evidence</code> and <code>research</code> — one
     stat per directory through the discovery index's own
-    <code>covered_dir_identity</code>, which reuses the observation an open
-    discovery pass has already made. A case builds a tree with 70 directories
+    <code>covered_dir_identity</code>, so a key build costs one stat for each of
+    those three directories. That cost is paid per key build, and a cold read
+    builds the key twice, once before the read and once after it: the reuse that
+    identity offers applies only while a discovery scope is open, and both key
+    builds on the read path run outside one. A case builds a tree with 70 directories
     sorting before <code>plans</code> and 104 under <code>figures</code>, adds a
     plan file, and requires the key to move; with the capped walk restored it is
     red. The bound case now counts directory stats in its per-project budget,
