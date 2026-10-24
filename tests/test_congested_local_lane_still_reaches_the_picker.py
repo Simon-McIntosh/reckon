@@ -60,15 +60,17 @@ def test_congested_local_lane_routing(dispatch_repo, tmp_path, monkeypatch, choi
     )
     payload = json.loads(result.output.splitlines()[0])
     assert len(calls) == (0 if choice == "explicit" else 1)
-    assert result.exit_code == (
-        0 if choice == "beta" else 3 if choice == "hold" else 75
-    ), result.output
+    # A congested local lane holds work rather than refusing it: the dispatch
+    # is queued, so it exits 0 like a routed dispatch. A picker hold is still a
+    # budget refusal and exits 3.
+    assert result.exit_code == (3 if choice == "hold" else 0), result.output
     if choice == "beta":
         assert payload["backend"] == payload["picker_selection"]["backend"] == "beta"
     elif choice == "hold":
         assert payload["error"] == "budget-hold"
         assert payload["hold"]["picker_selection"]["action"] == "hold"
     else:
-        assert payload["error"] == "lane-paused"
+        # The alpha route and the explicit local dispatch both reach a lane
+        # whose router grants the session 0 workers, so both are queued.
+        assert payload["queued"] is True
         assert payload["lane_gate"]["allowance"] == 0
-        assert "grants 0" in payload["detail"]

@@ -519,14 +519,39 @@ def _case_home(host: dict[str, Any], tag: str) -> Path:
     return home
 
 
-def _write_stub(bin_dir: Path, marker_dir: Path, tag: str, sleep_seconds: int) -> None:
-    """Write the stub backend: record its pid, sleep, then write its marker."""
+def _write_stub(
+    bin_dir: Path,
+    marker_dir: Path,
+    tag: str,
+    sleep_seconds: int,
+    *,
+    wait_for_release: bool = False,
+) -> None:
+    """Write the stub backend: record its pid, wait, then write its marker.
+
+    ``wait_for_release`` makes the wait deterministic rather than timed: the
+    stub blocks until the case creates its release file, so a case that needs a
+    worker still running at a chosen moment does not depend on how long this
+    host takes to reach it. The polling loop is bounded so a case that never
+    releases still finishes.
+    """
     bin_dir.mkdir(parents=True, exist_ok=True)
     script = bin_dir / STUB_COMMAND
+    if wait_for_release:
+        wait = (
+            "waited=0\n"
+            f'while [ ! -e "{marker_dir}/release.{tag}" ]; do\n'
+            "  sleep 0.05\n"
+            "  waited=$((waited + 1))\n"
+            '  [ "$waited" -ge 6000 ] && break\n'
+            "done\n"
+        )
+    else:
+        wait = f"sleep {sleep_seconds}\n"
     script.write_text(
         "#!/bin/sh\n"
         f'echo $$ > "{marker_dir}/worker.{tag}.pid"\n'
-        f"sleep {sleep_seconds}\n"
+        f"{wait}"
         f': > "{marker_dir}/marker.{tag}"\n',
         encoding="utf-8",
     )
@@ -575,6 +600,15 @@ class _Run:
         """Let the held boundary scan finish. Idempotent."""
         self.scan_release.parent.mkdir(parents=True, exist_ok=True)
         self.scan_release.touch()
+
+    @property
+    def stub_release(self) -> Path:
+        return self.marker_dir / f"release.{self.tag}"
+
+    def release_stub(self) -> None:
+        """Let a stub started with ``stub_wait_for_release`` finish. Idempotent."""
+        self.stub_release.parent.mkdir(parents=True, exist_ok=True)
+        self.stub_release.touch()
 
     def elapsed(self) -> float:
         return time.monotonic() - self.started
@@ -670,10 +704,17 @@ def _start_dispatch(
     hold: bool,
     scan_gate: bool = False,
     config_data: dict[str, Any] | None = None,
+    stub_wait_for_release: bool = False,
 ) -> _Run:
     home = _case_home(host, tag)
     stub_dir = host["base"] / f"bin-{tag}"
-    _write_stub(stub_dir, marker_dir, tag, stub_sleep)
+    _write_stub(
+        stub_dir,
+        marker_dir,
+        tag,
+        stub_sleep,
+        wait_for_release=stub_wait_for_release,
+    )
     # The stub directory goes first so ``claude`` resolves to the stub and
     # ``git`` to the shim; the package root follows so every child imports the
     # same tree the case itself imported.
@@ -1244,8 +1285,9 @@ def test_a_discarded_run_is_not_recreated(
         host,
         tag=f"discarded-{uuid.uuid4().hex[:8]}",
         marker_dir=marker_dir,
-        stub_sleep=5,
+        stub_sleep=0,
         hold=False,
+        stub_wait_for_release=True,
     )
     outcome: dict[str, Any] = {"case": "a discarded run is not recreated"}
     try:
@@ -1285,6 +1327,10 @@ def test_a_discarded_run_is_not_recreated(
         outcome["discarded_while_worker_alive"] = _process_alive(
             int(worker_record["pid"])
         )
+
+        # The stub waited for this release, so it is alive by construction
+        # above and finishes only after the discard, never on its own clock.
+        run.release_stub()
 
         # The discard takes the bookkeeping, not the worker: the stub still runs
         # to completion. That is the positive control for the assertion below —

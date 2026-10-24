@@ -444,11 +444,17 @@ def test_a_new_dispatch_over_a_queued_claim_queues_then_launches(
     assert _payload(second)["queued"] is True
     assert _payload(second).get("error") != "scope-conflict"
 
-    # With room, a third node over the same path launches like any dispatch.
+    # With room, a third node over the same path is not refused; the dispatch
+    # yields that slot to its session's oldest queued request, launching it,
+    # and queues itself behind it.
     _configure(dispatch_repo, monkeypatch, session_slots=4)
     third = _dispatch(dispatch_repo, "node-three", paths=(SHARED,))
     assert third.exit_code == 0, third.output
-    assert _payload(third)["phase"] == "starting"
+    third_payload = _payload(third)
+    assert third_payload.get("error") != "scope-conflict"
+    assert third_payload.get("queued") is True
+    first_id = _payload(first)["run_id"]
+    assert runs.read_pointer(first_id)["phase"] != "queued"
     assert {pointer["node"]["id"] for pointer in runs.list_live(project=PROJECT)} >= {
         "node-one",
         "node-two",

@@ -298,21 +298,24 @@ def test_a_held_lane_refusal_carries_each_set_resolution(
         ("fences.ghost_key=1", "fences.ghost_key"),
         ("backends.codex.ghost_sub=1", "backends.codex.ghost_sub"),
     ],
+    ids=["undeclared-fence", "undeclared-backend-key"],
 )
-def test_a_schema_refused_override_answers_on_the_dry_run_channel(
+def test_an_undeclared_override_is_ignored_at_load_and_echoed(
     home: Path, repo: Path, override: str, path: str
 ) -> None:
-    """Every dry-run request error answers as a decodable refusal.
+    """A key the schema does not carry is ignored at load and echoed.
 
-    A leaf key the schema does not carry and a keyed-map name no layer defines
-    are one request error each; both must reach a caller that reads the dry
-    run's JSON rather than one arriving as plain text on stderr.
+    One flight config file is read by servers, producers and workers of
+    several ages at once, so an undeclared key is ignored rather than refused
+    on an ordinary resolution; authoring (``reckon flight --check``) is the
+    strict reader that refuses it. A dry run therefore completes, and still
+    tells the caller how the override resolved, so an override that changes
+    nothing is distinguishable from one that never applied.
     """
     result = CliRunner().invoke(cli_module.main, _arguments(repo, override))
 
-    assert result.exit_code == 1, result.output
+    assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    assert payload["ok"] is False and payload["dry_run"] is True
-    assert payload["error"] == "request-error"
-    assert path in payload["detail"]
+    assert payload["ok"] is True and payload["dry_run"] is True
+    assert payload["overrides"][path] == {"before": None, "resolved": 1}
     assert not list(crew.list_live(project="sample")), "nothing may be created"

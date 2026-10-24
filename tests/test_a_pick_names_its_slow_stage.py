@@ -360,8 +360,8 @@ def test_record_picker_hold_takes_no_docs_parameter():
     assert "docs" not in inspect.signature(outcomes.record_picker_hold).parameters
 
 
-def test_both_dispatch_holds_are_recorded_without_docs():
-    """Both hold-recording dispatch sites call the recorder, neither with docs."""
+def test_every_dispatch_hold_is_recorded_without_docs():
+    """Every hold-recording dispatch site calls the recorder, none with docs."""
     dispatch = importlib.import_module("reckon.crew.dispatch")
     tree = ast.parse(Path(dispatch.__file__).read_text(encoding="utf-8"))
     calls = [
@@ -371,6 +371,8 @@ def test_both_dispatch_holds_are_recorded_without_docs():
         and isinstance(node.func, ast.Name)
         and node.func.id == "record_picker_hold"
     ]
-    assert len(calls) == 2
+    # The lane hold, the unmet-section-waits hold, and the wait site's own
+    # stored request: three dispatch sites record a picker hold, none with docs.
+    assert len(calls) == 3
     for call in calls:
         assert "docs" not in {keyword.arg for keyword in call.keywords}
