@@ -11,8 +11,9 @@ A plan's coordinator is the dispatching session of its most recent dispatched
 run, live or committed, inside a staleness window. A run is matched to its plan
 by the row's ``plan`` field, and, where that is null because the run was
 dispatched from a brief, by its ``plan_link``. A run carrying neither is matched
-by the plan its node id names: a plan review's node ``plan-review-of-<slug>``
-names ``<slug>``, and a run review's node ``review-of-<source>`` names the run
+by the plan its node id names: a plan review's node is minted from the plan
+review prefix followed by the plan slug and names that slug, and a run review's
+node ``review-of-<source>`` names the run
 it reviews, whose own plan the review then carries. That source is the reviewed
 run's node id in the ordinary case and its run id for a paired arm, and the
 resolver the fleet already mints and reads those node ids with —

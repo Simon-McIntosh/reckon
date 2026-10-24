@@ -1,0 +1,107 @@
+<section id="each-one-owner-invariant-names-one-owner-landing">
+  <h2>Six one-owner ids name one owner again</h2>
+
+  <p><strong>What changed.</strong> All six ids in this section failed at base
+  against a behaviour a commit had changed on purpose, and all six now pass.
+  Two of the repairs are in production code, and both restore an invariant the
+  test exists to pin rather than changing what the code does:</p>
+
+  <ul>
+    <li><code>reckon/crew/recovery_review_subject.py</code> renders each declared
+    review check through <code>reckon.crew.prompts.render_review_check</code>
+    instead of restating the line. The rendered text is byte-identical; the
+    second spelling the AST search found is gone.</li>
+    <li><code>reckon/crew/merge.py:_rev_parse</code> resolves a revision through
+    the one bounded resolver,
+    <code>reckon.crew.recovery_review_subject._resolve_commit</code>, and raises
+    its own <code>MergeError</code> on an empty answer. The landing keeps its
+    refusal wording and gains the resolver's stated bound and
+    <code>--end-of-options</code> guard.</li>
+    <li><code>reckon/crew/plan_coordinator.py</code> states the plan-review
+    prefix in its docstring without spelling its literal, which is owned by
+    <code>reckon/crew/recovery_vocabulary.py</code>.</li>
+  </ul>
+
+  <p>Three repairs are in the tests, each re-frozen to the intended contract the
+  plan names. The composed review brief carries the review record contract
+  block beside the identity lines, and a non-shadow brief pins that block. The
+  module-reach ratchet allowlists the two modules whose production callers are
+  later sections of their own plans. The SPA shell owns its single crew poll
+  through the shared poller, so the topbar snapshot asserts that poll instead of
+  a bare <code>fetch(&quot;/crew&quot;)</code>.</p>
+
+  <h3>Intent, per id</h3>
+
+  <table>
+    <thead><tr><th>id</th><th>commit read</th><th>intended?</th><th>property kept</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_a_run_that_is_not_a_shadow_keeps_todays_brief</code></td>
+        <td><code>128b1c4dc</code> "State the review record contract in the composed brief"</td>
+        <td>yes</td>
+        <td>a non-shadow brief is the rubric, the identity lines and the shared record
+        contract, and carries no shadow block</td></tr>
+      <tr><td><code>test_every_module_is_reached</code></td>
+        <td><code>73decd0f4</code> (plan_coordinator) and <code>8dd3a03d0</code>
+        (station_store), each declaring its module retired nothing until a later section
+        wires it</td>
+        <td>yes</td>
+        <td>the allowlist names exactly the modules unreached at this revision, each
+        with the plan that owns reaching it</td></tr>
+      <tr><td><code>test_the_per_check_line_has_one_spelling</code></td>
+        <td><code>78268a3d6</code> introduced the declared-check block with a local
+        spelling; <code>prompts.render_review_check</code> already owned the one
+        spelling</td>
+        <td>yes</td>
+        <td>exactly one module in <code>reckon/crew</code> spells a check line</td></tr>
+      <tr><td><code>test_only_the_shared_resolver_peels_a_revision_to_a_commit</code></td>
+        <td><code>9720c1a18</code> added <code>merge._rev_parse</code> with its own
+        <code>^{commit}</code> call</td>
+        <td>yes</td>
+        <td>one shared resolver peels a citation to a commit, and every reader agrees
+        on resolving and refused revisions</td></tr>
+      <tr><td><code>test_plan_review_prefix_has_one_definition</code></td>
+        <td><code>73decd0f4</code> wrote the prefix literal into the docstring</td>
+        <td>yes</td>
+        <td>the prefix is spelled once, in
+        <code>reckon/crew/recovery_vocabulary.py</code></td></tr>
+      <tr><td><code>test_topbar_is_data_driven_and_owns_one_navigation_shell</code></td>
+        <td><code>aa11b8800</code> "poll each SPA route only after the previous answer
+        settles": the shell still owns the single <code>/crew</code> poll, through
+        <code>window.startPoll</code></td>
+        <td>yes</td>
+        <td>the topbar is data-driven and the shell owns one crew poll</td></tr>
+    </tbody>
+  </table>
+
+  <p>No id was unintended, so none is blocked.</p>
+
+  <h3>Measured</h3>
+
+  <p>Both arms are <code>git archive</code> extractions on node-local disk, each made
+  its own repository at its own revision so the reach ratchet reads a real
+  <code>HEAD</code>, and both run the same 22 test files: the six listed ids' files
+  plus every test file importing a production module this node changed. Each log's
+  second header line names the tree, the third the literal command, and the last line
+  reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>357349e44</code></td>
+        <td><strong>6 failed</strong>, 161 passed, exit 1 — exactly this section's six ids</td></tr>
+      <tr><td>head (this change)</td><td><code>334bdaeec</code></td>
+        <td><strong>0 failed</strong>, 167 passed, exit 0</td></tr>
+      <tr><td>gate, six listed files in the worktree</td><td><code>357349e44</code> + change</td>
+        <td><strong>36 passed</strong>, exit 0</td></tr>
+      <tr><td>negative control, all six repairs reverted</td><td>mutated <code>334bdaeec</code></td>
+        <td><strong>6 failed</strong>, exit 1 — each reverted repair fails its own id</td></tr>
+    </tbody>
+  </table>
+
+  <p>The controls are one mutation per repair, applied to a scratch extraction: the
+  record-contract block removed from the composer; both allowlist rows removed; the
+  check line restated locally; <code>merge._rev_parse</code> restored to its own
+  <code>^{commit}</code> call; the prefix literal restored to the docstring; the
+  shell's crew poll pointed at a route that is not <code>/crew</code>. None of the six
+  ids fails in the head arm.</p>
+</section>

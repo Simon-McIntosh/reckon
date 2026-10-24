@@ -95,7 +95,11 @@ def test_topbar_is_data_driven_and_owns_one_navigation_shell() -> None:
     assert '<details className="r-project-manage">' in source
     assert "PROJECT_VISIBILITY_STORAGE" in source
     assert 'fetch("/_projects/index.json")' in source
-    assert 'fetch("/crew")' in source
+    # The shell owns the single crew poll. It goes through the shared poller so
+    # the next request is scheduled only once the previous answer settled, so
+    # the property is the one poll the shell starts, not the call it starts it
+    # with.
+    assert re.search(r'window\.startPoll\(\s*"/crew"', source)
     assert "window.Cockpit" not in source
     assert "r-project-chip" in css
     assert all(

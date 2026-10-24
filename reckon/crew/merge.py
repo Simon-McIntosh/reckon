@@ -122,9 +122,17 @@ def _run(
 
 
 def _rev_parse(repo: Path, revision: str) -> str:
-    result = _run(repo, "rev-parse", "--verify", "--quiet", f"{revision}^{{commit}}")
-    answer = result.stdout.strip()
-    if result.returncode != 0 or not answer:
+    """Resolve ``revision`` to its commit through the one shared resolver.
+
+    The landing refuses a revision that names no commit, and it asks the same
+    bounded lookup every other citation reader uses, so a spelling that resolves
+    for one reader resolves for all of them. A refusal here is the caller's
+    ``MergeError`` rather than the resolver's empty answer.
+    """
+    from reckon.crew.recovery_review_subject import _resolve_commit
+
+    answer = _resolve_commit(repo, revision)
+    if not answer:
         raise MergeError(f"cannot resolve {revision!r} to a commit in {repo}")
     return answer
 

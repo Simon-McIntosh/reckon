@@ -13,6 +13,7 @@ from reckon.crew import review as review_module
 from reckon.crew.node import (
     CrewError,
 )
+from reckon.crew.prompts import render_review_check
 from reckon.crew.repair import round_node_id
 
 
@@ -571,7 +572,7 @@ def _declared_check_block(
         DECLARED_CHECK_HEADING + ":",
         f"  VERDICT <check id>: {outcomes} — <what you read>",
     ]
-    lines.extend(f"  {check.id}: {check.question}" for check in checks)
+    lines.extend(render_review_check(check) for check in checks)
     lines.append(
         "A check answered "
         f"{review_module.FAILED_CHECK_OUTCOME!r} is recorded as a blocking "

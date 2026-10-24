@@ -26,7 +26,9 @@ ROOT = Path(os.environ.get("RECKON_REACH_ROOT") or Path(__file__).resolve().pare
 #: Unreached module -> the plan that owns reaching it (or retiring it).
 ALLOWLIST = {
     "reckon.crew.hold": "a-window-paces-the-lane",
+    "reckon.crew.plan_coordinator": "a-coordinator-sees-the-board",
     "reckon.crew.serving_origin": "a-window-paces-the-lane",
+    "reckon.crew.station_store": "the-monitor-reads-each-fact-once",
     "reckon.project_state_parity": "project-state-fleet-migration",
 }
 
