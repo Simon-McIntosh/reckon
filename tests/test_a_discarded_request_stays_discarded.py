@@ -19,6 +19,7 @@ import os
 from pathlib import Path
 
 from reckon.crew import promotion, queue_admission, runs
+from reckon.crew.node import CrewError
 from tests.test_a_held_request_stays_queued import _stream_file_rows
 from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
     PROJECT,
@@ -229,6 +230,51 @@ def test_a_discard_landing_after_the_spawn_stops_the_worker(
     assert promotion.discard_recorded(run_id), (
         "the discard record outlives the rollback"
     )
+    assert run_id in result["failed"]
+
+
+def test_a_discard_outlives_a_refusal_by_another_guard(
+    admit_repo: Path, monkeypatch
+) -> None:
+    """A departure survives a rollback caused by a guard other than the record check.
+
+    The launch holds several guards after the claim is published — the fleet
+    gate, the roster and scope checks — and any of them can refuse a launch that
+    has already composed past a discard. The record check never runs then, so
+    nothing else copies the marker out of the run directory, and the rollback
+    removes that directory. The claim release copies it into the shared spool
+    first, so the departure is still readable after the refusal.
+    """
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
+    _, resolve = _config_for()
+    run_id = "r-discarded-refused-at-the-gate"
+    _attempted_request(admit_repo, run_id)
+
+    real_wire = dispatch_module._wire_peer_channels
+
+    def discard_then_wire(record, peers):
+        promotion.discard(str(record["run_id"]))
+        return real_wire(record, peers)
+
+    monkeypatch.setattr(dispatch_module, "_wire_peer_channels", discard_then_wire)
+
+    def refuse_at_the_gate():
+        raise CrewError("the fleet gate is closed")
+
+    monkeypatch.setattr(dispatch_module, "_require_fleet_gate_open", refuse_at_the_gate)
+    launched: list = []
+
+    result = queue_admission.admit_once(
+        config_for=resolve, launcher=_launcher(launched)
+    )
+
+    assert launched == [], "a refused launch starts no worker"
+    assert promotion.discard_recorded(run_id), (
+        "the discard record outlives a rollback the record check never ran at"
+    )
+    assert not runs.pointer_path(run_id).exists(), "the refusal leaves no live run"
+    assert not runs.run_dir(run_id).exists(), "the rollback removes the run directory"
     assert run_id in result["failed"]
 
 
