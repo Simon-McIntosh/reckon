@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s60">
+  <title>The resource summary reads the roadmap's blockers | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-resource-summary-reads-the-roadmaps-blockers-landing" data-node="the-resource-summary-reads-the-roadmaps-blockers" data-reckon="landed" data-when="2026-10-24">
+  <h2>The MCP plan summary takes its blockers from the roadmap's assembly</h2>
+  <p>The plan branch of <code>reckon.mcp</code> now calls <code>roadmap.plan_blocker_state</code> with the roadmap's own arguments — the plan row it just read, the blockers the inventory reports for it, the dependency rows it already resolved, the plan's decision&rarr;section scoping and whether a cleared hold's probe released it — and puts the answer in the summary's input under <code>blocker_state</code>. <code>mcp_views._summary</code> publishes that list and its <code>effective_status</code> for a plan selector, falling back to its own <code>_blocking</code> assembly when the key is absent, so the explicit-blocker and dependency row shapes the summary already published are unchanged. Held, gate, decision and placeholder rows join the list as row dicts carrying a <code>kind</code>.</p>
+  <p><code>tests/test_the_resource_summary_reads_the_roadmaps_blockers.py</code> builds a project in a temporary home with seven held plans and an eighth stored blocked with nothing recorded, and compares the three surfaces against each other rather than against literals: they agree on the blocked state and on the blocker kinds for every held plan, the released and free plans read open everywhere, and the unrecorded plan reads blocked with a non-zero served count. The audit reports <code>orphaned-blocked-status</code> once, in category <code>lifecycle</code>, and not for the released plan. Arm A of the negative control routes the summary back through <code>_blocking</code> and the decision-held plan disagrees (3 failing cases); arm B restores the deleted <code>reckon/mcp.py</code> orphan copy and the audit reports the plan twice.</p>
+  <p><strong>Open.</strong> The new assembly makes five pinned expectations in <code>tests/test_mcp_views.py</code> stale: that file's shared fixture gives every plan an unscoped open decision, which the roadmap and the served view already report as a plan-level hold, so a summary that agrees with them reads those fixtures blocked and lists the decision row. Those five assertions sit outside this node's write scope and carry the only added failures in the gate.</p>
+</article>
+</body>
+</html>
