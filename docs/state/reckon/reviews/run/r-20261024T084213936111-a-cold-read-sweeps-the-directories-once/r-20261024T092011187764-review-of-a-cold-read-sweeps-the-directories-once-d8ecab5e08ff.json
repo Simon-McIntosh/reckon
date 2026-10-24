@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:1286 _served_index_rows -> metadata_index.index_rows, reached from the /_index route at :3405 and the change stream at :2816 and :2861",
+    "reckon/mcp_views.py:1191 metadata_index.index_rows(docs_dir, project, revalidate=True)",
+    "reckon/resources.py:801 metadata_index._reuse_covered(docs_dir, project)[0], unaffected by the added third tuple element"
+  ],
+  "completed_at": "2026-10-24T09:40:27.202Z",
+  "dispatched_at": "2026-10-24T09:26:33Z",
+  "findings": [
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "635",
+      "severity": "non-blocking",
+      "text": "_cold_build publishes the unpatched build through _store_cold_build at :635 and only then takes the marks at :636, so a second reader entering index_rows in that window reads the cached build and _absorb_marked at :689 pops the marks the path was meant to consume; the path then pops nothing and returns rows read before a change recorded while it ran, which is the clause the section adds, and if that concurrent _absorb_marked returns None the marks are gone while the cache keeps the unpatched build. Popping the marks before publishing the build closes the window."
+    },
+    {
+      "file": "tests/test_a_cold_read_sweeps_the_directories_once.py",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "the delivered negative control arms all seven mutations in one pytest run (logs/negative-control-cold-read.log:4), so the log shows seven failures but cannot attribute each to its own case: a mutation that also reddened a second case's test would read identically in the same seven-id list, and the done-when asks for each control to be applied and logged with its failing test id. The run's later attempt has since written one log per mutation (logs/negative-control-RECKON_TEST_COLD_*.log), which is the evidence shape this finding asks for."
+    },
+    {
+      "file": "logs/gate-final.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the log named by the manifest's tests: line and by its checkpoint ('gate 203 passed EXIT=0 at d8ecab5e0') now carries '# revision: ebf3c554ec6a' and ends after its '# command:' header with no pytest summary and no EXIT= line, so a later reader cannot read the recorded combined-gate result from the artefact it is told to open and the done-when's 'every log ends in EXIT=' clause is not met at that path; the run's concurrent second attempt re-ran the same command over the same file at 09:31Z."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/window-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/window-base.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit from 5363cd91 to d8ecab5e08ff: 5d7cf30ad adds _ColdPath/_INFLIGHT/_GENERATIONS and the wait-and-reread path in reckon/metadata_index.py (+337/-42) plus the new 585-line test file; d8ecab5e0 adds the 27-line landing fragment. Nothing outside the declared scope.",
+    "done_when": "The FENCE-EVIDENCE done-when names tests/test_a_cold_read_sweeps_the_directories_once.py and the metadata-index/change-stream population; logs/gate-cold-read.log records '7 passed in 2.98s' EXIT=0 and logs/gate-metadata-and-change-streams.log records '199 passed in 130.66s' EXIT=0 at 5d7cf30ad, but the done-when clause that every log ends in EXIT= is broken by the named logs/gate-final.log (finding 3).",
+    "goal": "The node goal is 'Make a cold index read stat each recorded directory once, however many readers arrive together'; reckon/metadata_index.py:430-595 makes the cache-miss path single-reader per cache key via _join_cold_path/_await_flight/_read_after_flight/_run_cold_path, and _reuse_covered at :864-936 hands the identities it read to build_index at :1049 and to _record_covered_shape at :1330, so each recorded directory is statted once.",
+    "manifest": "Read; it states status in-progress, commits 5d7cf30ad and d8ecab5e08ff, gate-final 203 passed EXIT=0, negative control 7 failed EXIT=1, and the scratch base arm's measurement_module and measurement_cwd; its checkpoint claim about gate-final.log is not readable from that log now (finding 3).",
+    "write_paths": "The manifest declares reckon/metadata_index.py, tests/test_a_cold_read_sweeps_the_directories_once.py and the landing fragment; `git diff --stat 5363cd91 d8ecab5e08ff` lists exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "Each of the seven cases in tests/test_a_cold_read_sweeps_the_directories_once.py arms a mutation that reinstates the removed behaviour (_NO_WAIT, _BUILD_REREADS, _WAITERS_INHERIT, _SHAPE_REREADS, _MARK_DROPPED, _WAITERS_SKIP_CACHE, _STORE_ANYWAY) and logs/negative-control-cold-read.log records all seven failing with the same ids the head arm passes, but the mark-store ordering at reckon/metadata_index.py:635-636 has no case and the single combined arm cannot attribute each failure to its own mutation.",
+    "evidence": "logs/gate-cold-read.log:1 and logs/gate-metadata-and-change-streams.log:1 stamp revision 5d7cf30ad and end in EXIT=0, but logs/gate-final.log:1 now stamps ebf3c554 and ends after its command header with no pytest summary and no EXIT= line.",
+    "fit": "The new helpers follow the module's existing idiom of private, docstringed functions over module-level dicts guarded by _LOCK, as at reckon/metadata_index.py:270 and :302, and carry no plan or ticket label.",
+    "goal_fidelity": "reckon/metadata_index.py:430-595 runs the cache-miss path once per cache key and hands _reuse_covered's identities to build_index at :1049 and _record_covered_shape at :1330, which the new test's spy counts as one _dir_identity read per recorded directory.",
+    "reuse": "A capability search found reckon/serve.py:1510 _discovery_lock, a per-key mutual-exclusion lock for the discovery cache, and reckon/mcp_deadlines.py:446 _INFLIGHT_READS, an asyncio read-body cache; neither owns a threaded wait-then-reread of an index rebuild, so reckon/metadata_index.py:503 extends the module's own concern rather than forking one of them.",
+    "scope_discipline": "Every path in `git diff --stat 5363cd91 d8ecab5e08ff` (reckon/metadata_index.py, the new test, the landing fragment) is inside the declared write paths, and the fragment carries no figure with the reason stated in its commit body."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a cold index read stat each recorded directory once however many readers arrive; reckon/metadata_index.py:430-595 runs the cache-miss path in one reader per cache key and :864-936 hands the identities it read to build_index (:1049) and _record_covered_shape (:1330).\nVERDICT done_when: the done-when names tests/test_a_cold_read_sweeps_the_directories_once.py and the metadata-index/change-stream population; logs/gate-cold-read.log records 7 passed EXIT=0 and logs/gate-metadata-and-change-streams.log records 199 passed EXIT=0, but logs/gate-final.log no longer ends in EXIT=.\nVERDICT write_paths: the manifest declares reckon/metadata_index.py, the new test file and the landing fragment; `git diff --stat 5363cd91 d8ecab5e08ff` lists exactly those three paths.\nVERDICT manifest: read; it records commits 5d7cf30ad and d8ecab5e08ff, gate-final 203 passed EXIT=0, the armed control 7 failed EXIT=1, and the window arms' revisions, but its gate-final claim is not readable from that log now.\nVERDICT diff: read commit by commit from 5363cd91 to d8ecab5e08ff: the code commit adds _ColdPath, _INFLIGHT, _GENERATIONS and the wait-then-reread path (+337/-42) with a 585-line test, and the docs commit adds the 27-line landing fragment.\nCALL_SITES: reckon/serve.py:_served_index_rows, reckon/mcp_views.py:1191, reckon/resources.py:801\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:430-595 serialises the cache-miss path per cache key and :1049 passes the shape check's identities into the build, which the spy assertions count as one read per recorded directory.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-cold-read.log:1 and logs/gate-metadata-and-change-streams.log:1 stamp revision 5d7cf30ad and end in EXIT=0, while logs/gate-final.log:1 stamps ebf3c554 and ends without a summary or an EXIT= line.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --stat 5363cd91 d8ecab5e08ff` is inside the three declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: the seven env-armed mutations in tests/test_a_cold_read_sweeps_the_directories_once.py each reinstate a removed behaviour and all seven fail together in logs/negative-control-cold-read.log, but the mark-store ordering at reckon/metadata_index.py:635-636 has no case.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers follow the module's private docstringed helper and module-level dict idiom at reckon/metadata_index.py:270.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/serve.py:1510 _discovery_lock and reckon/mcp_deadlines.py:446 _INFLIGHT_READS are the nearest owners found by capability search and neither owns a threaded wait-then-reread of an index rebuild.\nFINDING reckon/metadata_index.py:635 non-blocking: the unpatched build is published before the marks are popped, so a concurrent reader can consume them and the path returns rows from before a change recorded while it ran.\nFINDING tests/test_a_cold_read_sweeps_the_directories_once.py:37 non-blocking: the delivered negative control arms all seven mutations in one run, so the log cannot attribute each failure to its own case.\nFINDING logs/gate-final.log:1 non-blocking: the named combined gate log now carries revision ebf3c554 and no EXIT= line, so its recorded 203-passed result cannot be read from the artefact the manifest names.",
+  "review_run_id": "r-20261024T092011187764-review-of-a-cold-read-sweeps-the-directories-once-d8ecab5e08ff",
+  "reviewed_base_sha": "5363cd91f4c27a212075bd1d96c57ad4a8fb6d16",
+  "reviewed_head_sha": "d8ecab5e08ff5f4b46394110c9ad67b7ebbe1750",
+  "reviewed_run_id": "r-20261024T084213936111-a-cold-read-sweeps-the-directories-once",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T09:52:00+00:00",
+  "total": 103
+}
