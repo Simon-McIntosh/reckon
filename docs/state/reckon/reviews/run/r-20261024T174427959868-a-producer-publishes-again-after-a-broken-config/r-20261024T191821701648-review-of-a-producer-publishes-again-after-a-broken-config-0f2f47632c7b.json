@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit"
+  ],
+  "added_failures_note": "derived from the reviewed run's baseline_suite (base-arm-focused.log: 2 failed, 65 passed, ids test_the_producer_defers_a_broken_config_and_recovers and test_bytes_parsed_equals_bytes_appended_and_unchanged_polls_parse_nothing) and after_suite (head-arm-focused.log: 2 failed, 65 passed, ids the two crashed-producer cases); the head-only ids are these two, unchanged by this docs-only commit and attributed in the manifest to host load, corroborated by head-crashed-alone.log (8 passed, EXIT=0)",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-24T19:30:11.242Z",
+  "dispatched_at": "2026-10-24T19:23:24Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html",
+      "line": "29",
+      "severity": "blocking",
+      "text": "blocking: the corrected Measure paragraph states the ten files \"ran on both arms from git archive extractions on node-local disk\", but head-arm-focused.log:1 records `rev=dea3758c1582cb7d688d5b2a3d0180bce507e4e6+worktree tree=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/efd0ee8c-9d4e-4fa3-a440-ac05791d4758/a-producer-publishes-again-after-a-broken-config` \u2014 a worktree on GPFS, not an extraction on node-local disk; only base-arm-focused.log:1 names an archive (`tree=/tmp/reckon-crew-scratch/.../arms/base (git archive of HEAD)`). Section 55's done_when names git archive extractions on node-local disk as its terms, so the page repeats the same class of provenance misstatement the prior blocking finding raised, and a reader cannot reconcile the head arm with the head commit."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against 40c01c603: one commit, one file, +1/-1 in docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html, replacing the claim that 532 importer files ran on both arms with the ten-file focused population, its 65/2 per-arm figures and the unattempted wider population named as left to the integration node.",
+    "done_when": "section 55 asks for the listed id at head, no added failure over every test file importing the changed module, both arms from `git archive` extractions on node-local disk, a base-failing case, a revert control, EXIT=-terminated logs and clean ruff; the delta reports those results at line 29, and its figures (65 passed / 2 failed per arm, no common id, 8 of 8 alone) match base-arm-focused.log, head-arm-focused.log and head-crashed-alone.log, but the head arm ran from a worktree (head-arm-focused.log:1), so the git-archive clause the page claims is not what the record shows.",
+    "goal": "the node goal is to make a producer that deferred a watch tick on a broken flight config publish again once the config loads, with its mechanism reproduced first; the delta commit 0f2f47632 touches only docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html:29, rewriting the Measure paragraph to state the coverage the arms actually recorded.",
+    "manifest": "read; status complete, commits 40c01c603 and 0f2f47632, the base reproduction and mechanism, the gate and arm log paths, the negative control, and an outside_scope that records the 532-file importer population reaching no summary and the full-population delta left to the integration test node.",
+    "write_paths": "the reviewed node's fence grants reckon/crew/runs.py, tests/test_producer_loop_survives_a_config_change.py, docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html and docs/figures/...; the delta touches only the evidence fragment, so it is inside the grant and inside the plan's evidence path."
+  },
+  "justifications": {
+    "durability": "no assertion pins the evidence text, so a re-broadened coverage claim at line 29 would redden nothing; the durable guard for the production repair, tests/test_producer_loop_survives_a_config_change.py, is untouched and still green at the head.",
+    "evidence": "the figures at line 29 reconcile with base-arm-focused.log, head-arm-focused.log and head-crashed-alone.log, but head-arm-focused.log:1 names a worktree rather than a git archive extraction, so one provenance clause in the deliverable is false against the log that records it.",
+    "fit": "the rewrite keeps the fragment's paragraph, <code> and id=\"...-measure\" idiom beside the Reproduction, Mechanism and Repair paragraphs of docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html:24-27.",
+    "goal_fidelity": "docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html:29 now states the focused population and the unrested wider one, which is the correction the delta was for, though the same sentence still asserts an archive provenance the head arm does not have.",
+    "reuse": "the delta adds no function, class or module, so there is no capability to duplicate; a search over reckon/crew for an existing evidence-provenance writer found none, and the page is prose.",
+    "scope_discipline": "the delta's single path docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html is inside the node's declared write paths and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a producer that deferred a watch tick on a broken flight config publish again once the config loads, with its mechanism reproduced first; the delta commit 0f2f47632 touches only docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html:29, rewriting the Measure paragraph to state the coverage the arms actually recorded.\nVERDICT done_when: section 55 asks for the listed id at head, no added failure over every test file importing the changed module, both arms from git archive extractions on node-local disk, a base-failing case, a revert control, EXIT=-terminated logs and clean ruff; the delta reports those results at line 29, and its figures (65 passed / 2 failed per arm, no common id, 8 of 8 alone) match base-arm-focused.log, head-arm-focused.log and head-crashed-alone.log, but the head arm ran from a worktree (head-arm-focused.log:1), so the git-archive clause the page claims is not what the record shows.\nVERDICT write_paths: the reviewed node's fence grants reckon/crew/runs.py, tests/test_producer_loop_survives_a_config_change.py, docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html and docs/figures/...; the delta touches only the evidence fragment, so it is inside the grant.\nVERDICT manifest: read; status complete, commits 40c01c603 and 0f2f47632, the base reproduction and mechanism, the gate and arm log paths, the negative control, and an outside_scope that records the 532-file importer population reaching no summary and the full-population delta left to the integration test node.\nVERDICT diff: read commit by commit against 40c01c603: one commit, one file, +1/-1 in docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html, replacing the claim that 532 importer files ran on both arms with the ten-file focused population, its 65/2 per-arm figures and the unattempted wider population named as left to the integration node.\nCALL_SITES: none\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html:29 now states the focused population and the unrested wider one, which is the correction the delta was for, though the same sentence still asserts an archive provenance the head arm does not have.\nSCORE evidence: 13\nJUSTIFICATION evidence: the figures at line 29 reconcile with base-arm-focused.log, head-arm-focused.log and head-crashed-alone.log, but head-arm-focused.log:1 names a worktree rather than a git archive extraction, so one provenance clause in the deliverable is false against the log that records it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta's single path docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html is inside the node's declared write paths and carries nothing the goal does not imply.\nSCORE durability: 14\nJUSTIFICATION durability: no assertion pins the evidence text, so a re-broadened coverage claim at line 29 would redden nothing, while the durable guard for the production repair, tests/test_producer_loop_survives_a_config_change.py, is untouched and still green at the head.\nSCORE fit: 19\nJUSTIFICATION fit: the rewrite keeps the fragment's paragraph, code and id idiom beside the Reproduction, Mechanism and Repair paragraphs of docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html:24-27.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no function, class or module, so there is no capability to duplicate; a search over reckon/crew for an existing evidence-provenance writer found none, and the page is prose.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html:29 blocking: the corrected Measure paragraph states the ten files ran on both arms from git archive extractions on node-local disk, but head-arm-focused.log:1 records rev=dea3758c1582cb7d688d5b2a3d0180bce507e4e6+worktree tree=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/efd0ee8c-9d4e-4fa3-a440-ac05791d4758/a-producer-publishes-again-after-a-broken-config, a worktree on GPFS, while only base-arm-focused.log:1 names an archive (tree=/tmp/reckon-crew-scratch/.../arms/base (git archive of HEAD)); section 55's done_when names archive extractions on node-local disk as its terms, so the page repeats the provenance misstatement the prior blocking finding raised.",
+  "review_run_id": "r-20261024T191821701648-review-of-a-producer-publishes-again-after-a-broken-config-0f2f47632c7b",
+  "reviewed_base_sha": "40c01c6032757a790a927ded186a72c3380f2a17",
+  "reviewed_head_sha": "0f2f47632c7bcdc2734863f5871f5fb546ed36f6",
+  "reviewed_run_id": "r-20261024T174427959868-a-producer-publishes-again-after-a-broken-config",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T19:32:59.723042+00:00",
+  "total": 102
+}
