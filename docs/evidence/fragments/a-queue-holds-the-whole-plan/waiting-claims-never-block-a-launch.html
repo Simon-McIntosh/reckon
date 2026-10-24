@@ -5,15 +5,17 @@
   <code>scope-conflict</code>: “write scope 'reckon/crew/shared_path.py' conflicts
   with live claim 'reckon/crew/shared_path.py' held by run 'r-waiting'.” The
   same waiting claim refused a working run's scope widening.</p>
-  <p>Claim arbitration now marks <code>queued</code>,
-  <code>awaiting-upstream</code>, and <code>held</code> requests nonbinding.
-  Five focused cases pass: ready dispatch across the waiting claim, widening
-  across it, refusal against a working claim, and admission after an upstream
-  declaration moves a waiting request to queued. That last request remains
-  queued with a conflict while the working run holds the shared path. The
-  declared mutation makes waiting claims binding again; the ready-dispatch
-  case fails under it.</p>
-  <p>The importer suite completed at both revisions. Base: 65 passed and one
-  failed. Head: 70 passed and the same one failed, for zero added failure IDs.
-  Ruff check and format check pass on the changed source and test paths.</p>
+  <p><code>claim_disposition</code> in the claim owner now marks
+  <code>queued</code>, <code>awaiting-upstream</code>, and <code>held</code>
+  requests nonbinding. Dispatch and the production scope registry consume the
+  same verdict and reason. Eight focused cases pass, including registry and
+  dispatch agreement for each waiting phase. A request whose upstream lands
+  remains queued specifically because <code>r-launched</code>, a working run,
+  still claims the shared path. Reverting the answering source commit in the
+  negative arm makes all three registry agreement cases fail.</p>
+  <p>The four-worker importer gate completed before and after the owner
+  repair. Before: 70 passed and one failed. After: 73 passed and the same one
+  failed, for zero added failure IDs. A separate owner and registry gate
+  passed 34 cases. Ruff format check passes on all changed paths; Ruff check
+  adds no findings to the owner file, whose eight existing findings remain.</p>
 </section>
