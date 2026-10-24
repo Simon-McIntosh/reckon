@@ -1,0 +1,41 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T09:47:05.114Z",
+  "dispatched_at": "2026-10-24T09:39:42Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-long-lived-crew-process-leaves-nothing-stale.html:44",
+      "id": "reasoning-1",
+      "reason": "the same section's done-when patches the adoption in both loops, so a worker that trusts the present tense and skips the call sites fails its own gate; the repair is wording (\"must call\", as the monitor-tick sentence already says), not scope.",
+      "text": "\u00a73 reads \"The admission loop \u2026 and the producer loop \u2026 call it once at start-up as well\", but `_adopt_launched_workers_from_reexec` today is reached only from `reckon/crew_follow_commands.py:2915` (plus its definition and re-export), so the sentence describes a call that must be added, not one that exists",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7e7f37dac8eda822f0a019a9d63e9924b6bc5b1c7e4319b7a5b1b266aacf1619",
+  "plan_slug": "a-long-lived-crew-process-leaves-nothing-stale",
+  "plan_version": 4,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T093846479928-plan-review-of-a-long-lived-crew-process-leaves-nothing-stale",
+  "reviewed_blob_sha": "df8c3ff89435d30281ffd75fc60d630008f6591e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited symbol resolves in this tree (`recovery_classification._unreconciled_runs_remedy` at :178 and `_queued_failure_remedy` at :206, `dispatch_launch._adopt_launched_workers_from_reexec` at :456, `queue_admission._reexec_into_current_code` at :594 and `admit_until_stopped` at :2111, `recovery_watch.watch_ticker` at :2632, `recovery_liveness._process_children` at :358, `runs.read_pointer` at :843); commits `f1181e0e5`, `0a976babc`, `41325f022` exist and their subjects match what \u00a72 claims they taught; `/reckon/research/monitor-storage-load-rca#s10` and `/reckon/plans/the-monitor-reads-each-fact-once#s7` both resolve as `<path>.html` with the named ids present.",
+    "done_when": "pass \u2014 \u00a72 and \u00a73 each declare an explicit negative control (removing the live-pointer check leaves the removed-pointer case reporting `queued-awaiting-session`; an adoption that skips the child scan leaves the inherited child a zombie), and each gate names a delta-against-base measure plus `ruff check` / `ruff format --check`.",
+    "evidence_paths": "pass \u2014 every measure is a test file in the repository tree plus ruff, and no gate names a scratchpad, a node-local temporary path, or a log that would not survive the run.",
+    "naming": "pass \u2014 the two new test filenames (`test_a_queued_run_is_never_told_to_redispatch.py`, `test_a_reexec_reaps_the_children_it_inherits.py`) and the private symbols are named by what they do, with no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a73's deliverable paragraph states in the present tense that the admission loop and the producer loop already call the adoption, which neither does today, and only the monitor-tick sentence beside it carries the modal that marks a required call; the three reasoning checks otherwise hold (the \u00a72 root cause \u2014 `_unreconciled_runs_remedy` publishes the first named run regardless of liveness and falls through to `_remedy_command_stated_by`, which quotes `reckon crew dispatch --allow-unreconciled-runs` \u2014 is exactly what the cited code does, and the \u00a73 root cause \u2014 a re-exec keeps its children while destroying the module state that owned them \u2014 is supported by `_export_launched_workers_for_reexec` carrying only launched workers).",
+    "single_goal": "pass \u2014 \u00a72 is one deliverable (a queued run is never told to re-dispatch) and \u00a73 is one deliverable (a re-exec reaps the children it inherits); the extra call sites in \u00a73 are the mechanism that makes the single goal true, not a second goal.",
+    "wiring": "pass \u2014 the plan-blocks target `the-monitor-reads-each-fact-once#s7` resolves (both the slug and its `id=\"s7\"` section exist, and `doccheck._local_ref_slug` accepts the `slug#stage` form), and the block is justified by \u00a73's requirement that the station tick make the same adoption call."
+  },
+  "section_digests": {
+    "_document": "f9cba4df7fbc196039ea8ec82ec7dc2e5db91846ecc923e44a457b5d8afdbd89",
+    "s1": "77bb91ddc14cac13de1d9957253392c537eaaceab9cd7d54a7aee16afb43f2cd",
+    "s2": "ca28b341fc363b1880316a661362829b1dbca0d4de7093e08155132c0ad79a65",
+    "s3": "3448a928ac3bc63a9fa412b1465626859a0bafdd1b2b1563a93a2a588a271885"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T09:52:32.117782+00:00"
+}
