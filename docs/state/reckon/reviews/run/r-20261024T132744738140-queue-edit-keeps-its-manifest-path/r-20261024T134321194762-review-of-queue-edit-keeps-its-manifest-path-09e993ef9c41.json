@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_queue_edit",
+    "reckon/mcp_crew_actions.py:_verb_for"
+  ],
+  "completed_at": "2026-10-24T13:52:02Z",
+  "dispatched_at": "2026-10-24T13:46:01Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites",
+    "diff": "commit 54ba98bd adds one manifest-path assignment and two tests; commit 09e993ef adds only the evidence fragment, all reviewed against d5e37bf0.",
+    "done_when": "prompt.txt:103-104 requires a stored measurable edit, refusal of an unmeasurable edit, no added importer failures, and clean Ruff checks; focused-gate.log reports 17 passes, the completed base/head receipts report 2/1 failures, and stream.jsonl records both Ruff checks passing.",
+    "goal": "prompt.txt:30 asks queue edit to carry the queued request's manifest path into contract validation; reckon/crew/queue_edit.py:171 now does so.",
+    "manifest": "manifest.md records both commits, the focused gate, completed base and head suite receipts, their failure IDs, and status complete.",
+    "write_paths": "prompt.txt:69-73 grants the production file, new test, and evidence fragment; git diff d5e37bf0..09e993ef9 changes only those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_edit_keeps_its_manifest_path.py:68 compares the stored value with supplied measure but reads the pointer independently, line 69 catches path loss, and lines 78-81 catch acceptance or mutation of an invalid edit; restoring the old validator makes the line 65 call fail as the base arm shows.",
+    "evidence": "baseline-suite-committed.log:29 reproduces the missing-path refusal, focused-gate.log reports 17 passes, and the completed base/head suite summaries move from 2 to 1 failures with none added.",
+    "fit": "reckon/crew/queue_edit.py:171 reuses the existing validate_node call at line 172 and adds no forbidden production name or divergent error path.",
+    "goal_fidelity": "reckon/crew/queue_edit.py:171 restores the exact path from the pointer before validate_node at line 172, so a measurable awaiting request edit passes the contract.",
+    "reuse": "the capability search found the existing validator in reckon/crew/node.py:1154 and queued-node reconstruction in reckon/crew/queue_admission.py:120; reckon/crew/queue_edit.py:171 extends their existing edit-validation path without adding a competing production definition.",
+    "scope_discipline": "git diff d5e37bf0..09e993ef9 changes only reckon/crew/queue_edit.py:171, tests/test_queue_edit_keeps_its_manifest_path.py, and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks queue edit to carry the queued request's manifest path into contract validation; reckon/crew/queue_edit.py:171 now does so.\nVERDICT done_when: prompt.txt:103-104 requires a stored measurable edit, refusal of an unmeasurable edit, no added importer failures, and clean Ruff checks; focused-gate.log reports 17 passes, the completed base/head receipts report 2/1 failures, and stream.jsonl records both Ruff checks passing.\nVERDICT write_paths: prompt.txt:69-73 grants the production file, new test, and evidence fragment; git diff d5e37bf0..09e993ef9 changes only those three paths.\nVERDICT manifest: manifest.md records both commits, the focused gate, completed base and head suite receipts, their failure IDs, and status complete.\nVERDICT diff: commit 54ba98bd adds one manifest-path assignment and two tests; commit 09e993ef adds only the evidence fragment, all reviewed against d5e37bf0.\nCALL_SITES: reckon/crew_run_commands.py:crew_queue_edit, reckon/mcp_crew_actions.py:_verb_for\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_edit.py:171 restores the exact path from the pointer before validate_node at line 172, so a measurable awaiting request edit passes the contract.\nSCORE evidence: 19\nJUSTIFICATION evidence: baseline-suite-committed.log:29 reproduces the missing-path refusal, focused-gate.log reports 17 passes, and the completed base/head suite summaries move from 2 to 1 failures with none added.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff d5e37bf0..09e993ef9 changes only reckon/crew/queue_edit.py:171, tests/test_queue_edit_keeps_its_manifest_path.py, and the declared evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_queue_edit_keeps_its_manifest_path.py:68 compares the stored value with supplied measure but reads the pointer independently, line 69 catches path loss, and lines 78-81 catch acceptance or mutation of an invalid edit; restoring the old validator makes the line 65 call fail as the base arm shows.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/queue_edit.py:171 reuses the existing validate_node call at line 172 and adds no forbidden production name or divergent error path.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found the existing validator in reckon/crew/node.py:1154 and queued-node reconstruction in reckon/crew/queue_admission.py:120; reckon/crew/queue_edit.py:171 extends their existing edit-validation path without adding a competing production definition.\n",
+  "review_run_id": "r-20261024T134321194762-review-of-queue-edit-keeps-its-manifest-path-09e993ef9c41",
+  "reviewed_base_sha": "d5e37bf0be7bd868634dd2ba6f353ae7505786bf",
+  "reviewed_head_sha": "09e993ef9c41fd90138b5535fa56c6aed5b214a5",
+  "reviewed_run_id": "r-20261024T132744738140-queue-edit-keeps-its-manifest-path",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T13:55:22.483365+00:00",
+  "total": 118
+}
