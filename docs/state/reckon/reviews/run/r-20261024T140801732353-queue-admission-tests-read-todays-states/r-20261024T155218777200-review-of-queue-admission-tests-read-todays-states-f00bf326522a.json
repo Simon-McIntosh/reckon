@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from logs/base-arm-gate.log (12 failed) and logs/head-arm-gate.log (3 failed): every head failure id is a base failure id, so the change adds none.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-24T16:01:32.050Z",
+  "dispatched_at": "2026-10-24T15:53:31Z",
+  "findings": [
+    {
+      "file": "docs/plans/the-suite-is-green-at-head.html",
+      "line": "816",
+      "severity": "non-blocking",
+      "text": "non-blocking: section 46's census list still names test_a_different_node_over_a_queued_path_launches, test_both_dispatch_holds_are_recorded_without_docs and test_a_schema_refused_override_answers_on_the_dry_run_channel, which no longer exist at f00bf3265, so the section's listed ids cannot be collected by name; the evidence fragment maps each to its new name and the plan text is outside the node's write scope, so the coordinator owns the edit."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read the single commit f00bf3265 against base fa865aaa2: 81 insertions and 21 deletions over five files, renaming three cases and their docstrings and parametrize ids, replacing the discard stub's fixed sleep with a release file the case creates, and setting the fragment's plan-verdict to partial.",
+    "done_when": "The done_when names the nine-file gate, a base arm from git archive extractions, a negative control per repaired id, the per-id commit and intent, and ruff; logs/head-arm-gate.log names revision f00bf3265 and its tree sha and records 3 failed, 76 passed, EXIT=1, and every head failure id is a base failure so added_failure_count is 0.",
+    "goal": "The node goal is that section 46's twelve census ids pass by asserting each intended contract or reporting the unintended change; the delta at f00bf3265 answers all seven findings raised against the repair of that goal, and the three ids it still reports blocked (tests/test_a_discarded_request_stays_discarded.py, tests/test_crew_recover.py) sit beside the production repairs the manifest records under outside_scope.",
+    "manifest": "Read; it records the head arm, the five negative-control arms, the blocked ids and their commits, the ruff delta and the outside_scope production repairs, with status complete.",
+    "write_paths": "The manifest declares twelve write paths and the five paths in git diff fa865aaa2..f00bf3265 (four test files and the evidence fragment) are all inside them."
+  },
+  "justifications": {
+    "durability": "renames change no assertion, and the release-wait mechanism is guarded by the live-worker assertion at tests/test_dispatch_returns_without_worker.py:1317, which the worker-alive arm of logs/negative-control.log reddens with exactly the message the worker had already exited.",
+    "evidence": "logs/head-arm-gate.log names f00bf3265, its tree sha and the git archive extraction and ends 3 failed, 76 passed with EXIT=1, logs/negative-control.log carries five arms each ending EXIT=1, and my own ruff comparison of the four staged test files at fa865aaa2 and at f00bf3265 returns the same six findings each.",
+    "fit": "the renamed cases follow the module's sentence-style names and the stub's shell wait at tests/test_dispatch_returns_without_worker.py:540 mirrors the inline release loop already used at tests/test_stop_before_spawn_spawns_nothing.py:153, and no new name carries a plan label.",
+    "goal_fidelity": "each of the seven prior findings is answered in the diff itself \u2014 tests/test_a_node_is_queued_once.py:312 and tests/test_a_pick_names_its_slow_stage.py:363 rename to what they pin, tests/test_dispatch_returns_without_worker.py:540 adds the release wait, and the fragment's plan-verdict reads partial at docs/evidence/fragments/the-suite-is-green-at-head/queue-admission-tests-read-todays-states.html:11.",
+    "reuse": "the change extends the module's own _write_stub at tests/test_dispatch_returns_without_worker.py:523 instead of adding a second stub writer, and a capability search over tests/ found no shared release-wait helper to compose with, only the inline loop at tests/test_stop_before_spawn_spawns_nothing.py:153.",
+    "scope_discipline": "every path in git diff fa865aaa2..f00bf3265 is inside the twelve write paths the manifest declares and no production module is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that section 46's twelve census ids pass by asserting each intended contract or reporting the unintended change; the delta at f00bf3265 answers all seven findings raised against the repair of that goal, and the three ids it still reports blocked (tests/test_a_discarded_request_stays_discarded.py, tests/test_crew_recover.py) sit beside the production repairs the manifest records under outside_scope.\nVERDICT done_when: The done_when names the nine-file gate, a base arm from git archive extractions, a negative control per repaired id, the per-id commit and intent, and ruff; logs/head-arm-gate.log names revision f00bf3265 and its tree sha and records 3 failed, 76 passed, EXIT=1, and every head failure id is a base failure so added_failure_count is 0.\nVERDICT write_paths: The manifest declares twelve write paths and the five paths in git diff fa865aaa2..f00bf3265 (four test files and the evidence fragment) are all inside them.\nVERDICT manifest: Read; it records the head arm, the five negative-control arms, the blocked ids and their commits, the ruff delta and the outside_scope production repairs, with status complete.\nVERDICT diff: Read the single commit f00bf3265 against base fa865aaa2: 81 insertions and 21 deletions over five files, renaming three cases and their docstrings and parametrize ids, replacing the discard stub's fixed sleep with a release file the case creates, and setting the fragment's plan-verdict to partial.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: each of the seven prior findings is answered in the diff itself \u2014 tests/test_a_node_is_queued_once.py:312 and tests/test_a_pick_names_its_slow_stage.py:363 rename to what they pin, tests/test_dispatch_returns_without_worker.py:540 adds the release wait, and the fragment's plan-verdict reads partial at docs/evidence/fragments/the-suite-is-green-at-head/queue-admission-tests-read-todays-states.html:11.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head-arm-gate.log names f00bf3265, its tree sha and the git archive extraction and ends 3 failed, 76 passed with EXIT=1, logs/negative-control.log carries five arms each ending EXIT=1, and my own ruff comparison of the four staged test files at fa865aaa2 and at f00bf3265 returns the same six findings each.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff fa865aaa2..f00bf3265 is inside the twelve write paths the manifest declares and no production module is touched.\nSCORE durability: 18\nJUSTIFICATION durability: renames change no assertion, and the release-wait mechanism is guarded by the live-worker assertion at tests/test_dispatch_returns_without_worker.py:1317, which the worker-alive arm of logs/negative-control.log reddens with exactly the message the worker had already exited.\nSCORE fit: 18\nJUSTIFICATION fit: the renamed cases follow the module's sentence-style names and the stub's shell wait at tests/test_dispatch_returns_without_worker.py:540 mirrors the inline release loop already used at tests/test_stop_before_spawn_spawns_nothing.py:153, and no new name carries a plan label.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the module's own _write_stub at tests/test_dispatch_returns_without_worker.py:523 instead of adding a second stub writer, and a capability search over tests/ found no shared release-wait helper to compose with, only the inline loop at tests/test_stop_before_spawn_spawns_nothing.py:153.\nFINDING docs/plans/the-suite-is-green-at-head.html:816 non-blocking: section 46's census list still names test_a_different_node_over_a_queued_path_launches, test_both_dispatch_holds_are_recorded_without_docs and test_a_schema_refused_override_answers_on_the_dry_run_channel, which no longer exist at f00bf3265, so the section's listed ids cannot be collected by name; the evidence fragment maps each to its new name and the plan text is outside the node's write scope, so the coordinator owns the edit.\n",
+  "review_run_id": "r-20261024T155218777200-review-of-queue-admission-tests-read-todays-states-f00bf326522a",
+  "reviewed_base_sha": "fa865aaa2dfabe873cc6e3c9ce501859baef3c26",
+  "reviewed_head_sha": "f00bf326522ad0bbe76d995dbc2345bcce7154e9",
+  "reviewed_run_id": "r-20261024T140801732353-queue-admission-tests-read-todays-states",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T16:05:41.877214+00:00",
+  "total": 113
+}
