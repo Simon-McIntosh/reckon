@@ -23,7 +23,7 @@
   <title>A Long-Lived Crew Process Leaves Nothing Stale | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-24">
 <meta name="plan-blocks" content="the-monitor-reads-each-fact-once#s7">
 </head>
@@ -51,6 +51,11 @@
     <pre class="r-fu-prompt">/reckon-build a-long-lived-crew-process-leaves-nothing-stale</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261024T104538546499-review-of-a-reconciled-refusal-reads-as-waiting-6683efa2be7d" data-who="reckon-build" data-when="2026-10-24T10:57:45.902Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261024T095738002560-a-reconciled-refusal-reads-as-waiting at head 6683efa2b over base 29a4768ab. Scores — goal_fidelity 19, evidence 13, scope_discipline 14, durability 18, fit 18, reuse 20. The change does what §2 asks (recovery_classification.py:196-212 publishes the first named run whose read_pointer succeeds and returns no remedy when none is live, so the queued request keeps the waiting reading and the quoted --allow-unreconciled-runs dispatch is never published). 2 added failure ids derived from the run&#x27;s own arms (gate-base 17 failed + 10 errors, gate-head 16 failed + 10 errors), both in tests/test_a_quoted_session_id_is_not_a_session_refusal.py; both were repaired by the head commit and that file re-ran green (5 passed, EXIT=0), which I confirmed first-hand (9 passed across the two test files at head). Three non-blocking findings: an unreadable pointer is read as reconciled (recovery_classification.py:200), a test file outside the declared write paths was edited (disclosed under outside_scope), and the manifest&#x27;s &#x27;0 added ids&#x27; claim is not supported by the archived arms.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>

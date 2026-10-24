@@ -1,0 +1,62 @@
+{
+  "added_failure_basis": "Derived by diffing the FAILED/ERROR ids of the reviewed run's own archived arms: logs/gate-base.log (27 ids, 17 failed + 10 errors) against logs/gate-head.log (26 ids, 16 failed + 10 errors). The two ids listed are absent from the base arm and were both repaired by the head commit 6683efa2; that file was then re-run alone at the head tree (logs/gate-head-changed-file.log, 5 passed, EXIT=0) and I re-ran both test files at the reviewed worktree head myself (9 passed, EXIT=0). No full gate was re-run at the final head, and the manifest's '0 ids in head-ids-final' claim is not supported by any archived id file.",
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_a_quoted_session_id_is_not_a_session_refusal.py::test_an_unreconciled_runs_refusal_publishes_the_named_runs_action",
+    "tests/test_a_quoted_session_id_is_not_a_session_refusal.py::test_the_unreconciled_runs_detail_names_the_waiver_and_its_discard"
+  ],
+  "completed_at": "2026-10-24T10:57:45.902Z",
+  "dispatched_at": "2026-10-24T10:46:43Z",
+  "evidence_inputs": [
+    "base arm reproduction: at 29a4768ab the same refusal with a named run whose pointer is gone publishes that run's action and lists the request as queued-awaiting-session (logs/base-arm-new-test.log, 3 failed 1 passed).",
+    "negative control: dropping the live-pointer check reddens test_a_named_run_whose_pointer_is_gone_reads_as_waiting and test_two_named_runs_are_read_for_the_one_still_live (logs/negative-control.log, EXIT=1), so the guard fires rather than merely passing.",
+    "first-hand re-run at the reviewed head: both test files (4 new + 5 updated cases) pass, 9 passed, EXIT=0.",
+    "the remedy's detail no longer advises discard-and-redispatch; the refusal's own quoted `--allow-unreconciled-runs` guidance survives inside the quoted refusal text but is never published as next_command."
+  ],
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 200,
+      "severity": "non-blocking",
+      "text": "non-blocking: `except CrewError: continue` treats every read_pointer failure as 'this run has been reconciled', including the invalid-JSON and non-object branches of read_pointer (reckon/crew/runs.py:850-857). A pointer that is unreadable rather than absent therefore drops the reconcile duty and leaves the request waiting with no remedy; the previous behaviour at least raised a duty. Narrowing to the FileNotFoundError-derived 'no live run' case would keep the intent while not masking a corrupt pointer."
+    },
+    {
+      "file": "tests/test_a_quoted_session_id_is_not_a_session_refusal.py",
+      "line": 107,
+      "severity": "non-blocking",
+      "text": "non-blocking: the node edited a test file outside its declared write paths (plan says 'Write paths: reckon/crew/recovery_classification.py and the new test file'). The edit is required by the measure and is disclosed in the manifest's outside_scope, and the two assertions it replaces did encode the superseded behaviour, so it is not folded into the score as a defect of judgement \u2014 but the write did leave the fenced scope."
+    },
+    {
+      "file": "manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "non-blocking: the artifacts line claims '0 ids in head-ids-final that are not in base-ids', but no head-ids-final file exists and the archived head arm (logs/gate-head.log) carries two failure ids absent from the base arm, both in the changed fixture. They were repaired by the head commit and that one file re-ran green, so the substance holds, but the plan's 'no added failure against base' clause is evidenced by a file-scoped re-run rather than a full gate at the final head."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Classified rows reach the change through reckon/crew/recovery_classification.py:939 (classify_pointer), consumed by reckon/crew/obligations.py:547, reckon/crew/recovery_watch.py:312 and reckon/crew/directory.py:97.",
+    "diff": "Read all three commits (861e07dfa, 2f7167c23, 6683efa2b) against base 29a4768ab: 64 lines changed in recovery_classification.py, a 198-line new test, a 33-line evidence fragment, and 43 added / 14 removed lines in the pre-existing fixture test.",
+    "done_when": "The done_when names tests/test_a_queued_run_is_never_told_to_redispatch.py and its four cases; the worker's gate ran exactly that file at head (4 passed, EXIT=0, logs/head-arm-new-test.log) and at base (3 failed 1 passed, EXIT=1, logs/base-arm-new-test.log), plus the negative control (logs/negative-control.log, 2 failed 2 passed, EXIT=1).",
+    "goal": "The node's goal is that a queued run whose UnreconciledRuns refusal names no live run reads as waiting and is never told to re-dispatch; reckon/crew/recovery_classification.py:196-212 now finds the first named run whose read_pointer succeeds and returns no remedy when none does, which is the waiting reading.",
+    "manifest": "Read manifest.md at the reviewed run directory; it reports the three commits, the 4/4 head arm, the 3-failure base arm, a red negative control, and discloses the out-of-scope fixture edit under outside_scope; its baseline_suite and after_suite keys are null, so the gate figures exist only in artifacts prose and the archived logs.",
+    "write_paths": "The declared write paths are reckon/crew/recovery_classification.py, tests/test_a_queued_run_is_never_told_to_redispatch.py, the evidence fragment and the figure directory; the diff stays inside them except tests/test_a_quoted_session_id_is_not_a_session_refusal.py, which commit 6683efa2 also changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a queued run whose UnreconciledRuns refusal names no live run reads as waiting and is never told to re-dispatch; reckon/crew/recovery_classification.py:196-212 now publishes the first named run whose read_pointer succeeds and returns no remedy at all when none does.\nVERDICT done_when: the done_when names tests/test_a_queued_run_is_never_told_to_redispatch.py and its four cases; the recorded gate ran that file at head (4 passed, EXIT=0) and at base (3 failed 1 passed, EXIT=1), and the negative control is recorded red (2 failed, EXIT=1).\nVERDICT write_paths: the declared paths are recovery_classification.py, the new test file, the evidence fragment and the figure directory; the diff is inside them except tests/test_a_quoted_session_id_is_not_a_session_refusal.py, changed by commit 6683efa2 and disclosed in the manifest's outside_scope.\nVERDICT manifest: read; it names the three commits, the four-of-four head arm against three base failures, the red negative control and the fixture edit; its baseline_suite and after_suite keys are null, so the gate figures live only in the artifacts line and the archived logs.\nVERDICT diff: read commit by commit against 29a4768ab; the source commit replaces the single-match scan with a finditer that skips runs whose pointer read raises CrewError and returns None when every named run is gone, and the head commit repairs the two assertions that encoded the superseded behaviour.\nCALL_SITES: reckon/crew/recovery_classification.py:classify_pointer, reckon/crew/obligations.py:obligations, reckon/crew/recovery_watch.py:_row_for_pointer, reckon/crew/directory.py:row\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:264-270 now returns _unreconciled_runs_remedy's result directly, so a refusal naming no live run yields the waiting reading instead of falling through to the quoted dispatch.\nSCORE evidence: 13\nJUSTIFICATION evidence: the new test file is measured at head and base and the negative control is red (logs/negative-control.log), but the archived head arm logs/gate-head.log still lists two ids absent from base and no full gate was re-run after commit 6683efa2.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every changed path but tests/test_a_quoted_session_id_is_not_a_session_refusal.py is inside the declared write paths; that file was edited to retire two superseded assertions and is disclosed under outside_scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_queued_run_is_never_told_to_redispatch.py:156 fails if the waived remedy returns for a gone pointer, and the base arm (3 failed) plus the negative control (2 failed) show the assertion reddens on the pre-change and check-removed code.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's existing lazy-import idiom at reckon/crew/recovery_classification.py:252-254 and adds no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the only added capability is a live-pointer read, and it calls reckon/crew/runs.py:843 read_pointer, the module every other reader in the tree uses (reckon/crew/claims.py:60, reckon/run_record.py:170); no existing still-unreconciled predicate was found to extend.\nFINDING reckon/crew/recovery_classification.py:200 non-blocking: `except CrewError: continue` treats an unreadable pointer (invalid JSON or non-object, reckon/crew/runs.py:850-857) as already reconciled and drops the duty.\nFINDING tests/test_a_quoted_session_id_is_not_a_session_refusal.py:107 non-blocking: the node edited a test file outside its declared write paths; the edit is required by the measure and disclosed in outside_scope.\nFINDING manifest.md:17 non-blocking: the '0 ids in head-ids-final' claim is unsupported by the archived arms and no head-ids-final file exists; logs/gate-head.log has two added ids, since repaired and re-run file-scoped.\n",
+  "review_run_id": "r-20261024T104538546499-review-of-a-reconciled-refusal-reads-as-waiting-6683efa2be7d",
+  "reviewed_base_sha": "29a4768ab0d0bd394ced77acef8168768f00d297",
+  "reviewed_head_sha": "6683efa2be7d0379e69189990dc542945f18c2c1",
+  "reviewed_run_id": "r-20261024T095738002560-a-reconciled-refusal-reads-as-waiting",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T11:03:17.652768+00:00",
+  "total": 102
+}
