@@ -1625,7 +1625,82 @@ def read_plan(
     return _read_state(project, slug, root, artifact_type)
 
 
+def write_generation_path(project: str) -> Path:
+    """Return the file holding one project's plan-write generation.
+
+    The counter is one file per project under the crew home, which the whole
+    fleet shares, so a write made by any process on any node is visible to
+    every other reader of that project. It is deliberately not in the docs
+    tree: a counter inside the tree would move the tree's own signature and
+    make every write look like a plan-file change.
+    """
+    readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
+    digest = hashlib.sha256(project.encode()).hexdigest()[:12]
+    return _config_home() / "crew" / "write-generation" / f"{readable}-{digest}"
+
+
+def read_write_generation(project: str) -> str:
+    """Read one project's plan-write generation as a comparable string.
+
+    Absence reads as ``"none"`` rather than as an error: a project never
+    written through the store has no generation, and a reader that treats the
+    missing file as invalid would recompute forever. The whole read is one
+    open, so a read that only wants the key pays one open per project.
+    """
+    try:
+        return write_generation_path(project).read_text().strip() or "none"
+    except OSError:
+        return "none"
+
+
+def advance_write_generation(project: str) -> None:
+    """Advance one project's plan-write generation past its current value.
+
+    Monotonic and never rewound: the value only has to differ from the one a
+    reader last saw, so a counter that cannot be read or written is not fatal
+    to the write it follows. A failed advance is what a reader sees as an
+    unchanged generation, and it falls back to the revalidation window.
+    """
+    path = write_generation_path(project)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        current = int(path.read_text().strip())
+    except (OSError, ValueError):
+        current = 0
+    with suppress(OSError):
+        path.write_text(f"{current + 1}\n")
+
+
 def write_plan(
+    project: str,
+    slug: str,
+    data: dict,
+    expected_version: int,
+    root: str | Path | None = None,
+    artifact_type: str | None = None,
+    retire_preimages: list[str] | None = None,
+) -> int:
+    """Write a plan through the store and advance its write generation.
+
+    Every plan-state writer in every process reaches ``write_plan`` — the MCP
+    editors above it and the HTTP handler alike — so the generation advances
+    for all of them at one place, whether or not the write commits and whether
+    or not a change watch is running.
+    """
+    version = _write_plan_at_version(
+        project,
+        slug,
+        data,
+        expected_version,
+        root,
+        artifact_type,
+        retire_preimages,
+    )
+    advance_write_generation(project)
+    return version
+
+
+def _write_plan_at_version(
     project: str,
     slug: str,
     data: dict,

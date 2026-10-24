@@ -168,6 +168,18 @@ from reckon.resources import (
     resource_map,
     resource_scan_scope,
 )
+from reckon.roadmap_snapshot import (  # noqa: F401 - the import surface of this module
+    _ROADMAP_SNAPSHOT_VERSION,
+    _head_commit_of,
+    _roadmap_live_readings,
+    remembered_mounts,
+    roadmap_project_generation,
+    roadmap_revalidate_window,
+    roadmap_snapshot_key,
+    roadmap_snapshot_load,
+    roadmap_snapshot_path,
+    roadmap_snapshot_store,
+)
 from reckon.service import ServiceError, node_executable
 from reckon.shell_assets import IMMUTABLE_CACHE as _IMMUTABLE_CACHE
 from reckon.shell_assets import revision_matches as _revision_matches
@@ -1128,6 +1140,27 @@ _SIGNATURE_MEMO_LOCK = threading.Lock()
 # The served process opts into the longer window; the library default stays 0
 # so a caller that never starts the fleet watch never reads a stale walk.
 _SERVED_SIGNATURE_TTL_S = 60.0
+
+
+# ── Roadmap snapshots ───────────────────────────────────────────────────────
+
+
+def mounts_for_snapshot() -> dict[str, Path]:
+    """Return the mounts a snapshot key is built over, reusing the last answer.
+
+    The memo holding the last resolution, and the stamp that decides whether it
+    can be reused, belong to the snapshot key and live beside the store in
+    ``reckon.roadmap_snapshot``.
+    """
+    path = _MOUNTS_FILE
+    if path is None:
+        _resolve_paths()
+        path = _MOUNTS_FILE
+    try:
+        stamp = path.stat().st_mtime_ns if path is not None else None
+    except OSError:
+        stamp = None
+    return remembered_mounts(stamp, load_mounts)
 
 
 def _served_code_report() -> dict | None:
