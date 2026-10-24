@@ -1,0 +1,62 @@
+{
+  "added_failure_basis": "Derived from the reviewed run's own archived gate arms. Base arm logs/gate-base.log (revision 29a4768ab, 117 files, '19 failed, 842 passed, 10 errors', EXIT=1) against head arm logs/gate_head_gate.log (same 117 files plus the node change, '14 failed, 847 passed, 10 errors', EXIT=1). The extracted id sets logs/base-fresh-ids.txt (29 ids = 19 failed + 10 errors) and logs/head-fresh-ids.txt (24 ids = 14 failed + 10 errors) were compared with comm -13; the result was empty, so zero ids are present at head and absent at base. The head arm tree /tmp/reckon-crew-scratch/r-20261024T095738002560-a-reconciled-refusal-reads-as-waiting/arms/head was verified byte-identical to d1f19f171 for both changed files before this reading was taken.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T11:50:09.896Z",
+  "dispatched_at": "2026-10-24T11:36:20Z",
+  "evidence_inputs": [
+    "Gained commits ddb95ea73 and d1f19f171 change only the catch narrowing, one new test, and the evidence fragment; the earlier out-of-scope fixture edit is in 6683efa and was already reviewed.",
+    "Prior review (head 6683efa) recorded a non-blocking finding that `except CrewError: continue` treated an invalid-JSON pointer as reconciled; ddb95ea73 repairs exactly that and adds a fail-open reproduction showing the widened catch reddens test_a_named_pointer_that_cannot_be_read_keeps_the_duty (logs/fail-open-reproduction.log, 1 failed EXIT=1).",
+    "Negative control for the gained behaviour: dropping the live-pointer check reddens test_a_named_run_whose_pointer_is_gone_reads_as_waiting and test_two_named_runs_are_read_for_the_one_still_live (logs/negative-control.log, 2 failed 3 passed, EXIT=1).",
+    "Independent re-run by this review: /tmp/reckon-crew-scratch/r-20261024T113529337252-review-of-a-reconciled-refusal-reads-as-waiting-d1f19f171bbc/verify-named-test.log, 5 passed, EXIT=0.",
+    "The head arm tree was verified byte-identical to d1f19f171 for recovery_classification.py and the new test file before reading its gate result."
+  ],
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 205,
+      "severity": "non-blocking",
+      "text": "non-blocking: the narrowed catch at line 205 handles only CrewError, but read_pointer (reckon/crew/runs.py:819-857) can raise a plain OSError from path.stat() or path.read_text() (EACCES, EIO on the shared home). Such an error now escapes _unreconciled_runs_remedy and classify_pointer, so one unreadable pointer aborts the whole classification loop in reckon/crew/obligations.py:547 or reckon/crew/query.py; before this branch touched the filesystem it could not. An OSError should keep the duty the way an unparseable pointer does."
+    },
+    {
+      "file": "tests/test_a_queued_run_is_never_told_to_redispatch.py",
+      "line": 183,
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert refusal[\"next_command\"] == action` compares the code's output against the same `action` string the test passed into UnreconciledRuns in the line above, so it holds whenever the reader echoes its input and cannot detect a regression in run selection; the same echo shape is at line 136. The discriminating guards for this change are the pointer-gone case at line 145, the two-run case at line 206 and _assert_no_redispatch at line 110."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Classify-classified rows reach the change through reckon/crew/recovery_classification.py:957 (_queued_failure_remedy, called from classify_pointer); production callers of classify_pointer are reckon/crew/obligations.py:547, reckon/crew/directory.py:97, reckon/crew/forgotten_runs.py:94, reckon/crew/promotion.py:387, reckon/crew/promotion_release.py:892 and reckon/crew/query.py:15.",
+    "diff": "Read ddb95ea73 and d1f19f171 against 6683efa: ddb95ea73 changes the catch to `if not pointer_path(run_id).exists(): continue` (reckon/crew/recovery_classification.py:203-207) and adds test_a_named_pointer_that_cannot_be_read_keeps_the_duty; d1f19f171 updates the fragment's measure line from 4/4 to 5/5 and adds the unreadable-pointer case.",
+    "done_when": "The done_when names tests/test_a_queued_run_is_never_told_to_redispatch.py; the manifest records the file at 5 passed EXIT=0 (logs/head-arm-new-test.log) and 4 failed 1 passed at base (logs/base-arm-new-test.log), a red negative control (logs/negative-control.log), a red fail-open reproduction for the unreadable-pointer case (logs/fail-open-reproduction.log), and I re-ran the named file at the reviewed head myself (5 passed, EXIT=0).",
+    "goal": "The node's goal is that a queued run whose UnreconciledRuns refusal names no run that is still live reads as waiting and is never told to re-dispatch; reckon/crew/recovery_classification.py:200-207 keeps that reading and narrows it so only an absent pointer settles a named run, and the gained commits add exactly that distinction.",
+    "manifest": "Read manifest.md in the reviewed run directory; it records the five commits, the 5/5 head arm against 4 base failures, both red controls, the 0-added-failure gate (base 19 failed + 10 errors, head 14 failed + 10 errors), and discloses the out-of-scope fixture edit under outside_scope.",
+    "write_paths": "The declared write paths are reckon/crew/recovery_classification.py, tests/test_a_queued_run_is_never_told_to_redispatch.py and docs/evidence/fragments/a-long-lived-crew-process-leaves-nothing-stale/a-reconciled-refusal-reads-as-waiting.html; git diff 6683efa..d1f19f171 touches exactly those three files (39 insertions, 7 deletions)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_run_is_never_told_to_redispatch.py:164 fails when the pointer-exists check is dropped (logs/fail-open-reproduction.log, 1 failed EXIT=1), so the gained distinction is guarded by a test that reddens on the regression.",
+    "evidence": "The done-when's named file is recorded green at head and red at base, and both controls are recorded red, but the gate arm's header reads '29a4768ab + node change' rather than naming reviewed_head_sha d1f19f171, so the revision is proven by the scratch tree rather than by the log header.",
+    "fit": "The local import at reckon/crew/recovery_classification.py:199 follows the module's existing lazy-import idiom (queue_admission and watch_unit at lines 246-247), and the test uses the importlib obligations idiom shared by tests/test_a_queued_refusal_names_its_remedy.py:32.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:203-207 publishes a named run only while its pointer exists, and returns no remedy when none does, which is the waiting reading the goal states.",
+    "reuse": "The change reads pointers through the owners reckon/crew/runs.py:129 pointer_path and reckon/crew/runs.py:843 read_pointer rather than re-implementing pointer presence or parsing.",
+    "scope_discipline": "Every path in git diff 6683efa..d1f19f171 is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a queued run whose UnreconciledRuns refusal names no run that is still live reads as waiting and is never told to re-dispatch; reckon/crew/recovery_classification.py:200-207 keeps that reading and narrows it so only an absent pointer settles a named run.\nVERDICT done_when: the done_when names tests/test_a_queued_run_is_never_told_to_redispatch.py; the manifest records 5 passed EXIT=0 at head (logs/head-arm-new-test.log) against 4 failed 1 passed at base (logs/base-arm-new-test.log), and this review re-ran that file at the reviewed head (5 passed, EXIT=0).\nVERDICT write_paths: the declared paths are reckon/crew/recovery_classification.py, tests/test_a_queued_run_is_never_told_to_redispatch.py and the evidence fragment; git diff 6683efa..d1f19f171 touches exactly those three.\nVERDICT manifest: read; it records the five commits, the 0-added-failure gate, both red controls and the out-of-scope fixture edit under outside_scope.\nVERDICT diff: read ddb95ea73 and d1f19f171 against 6683efa; the catch at recovery_classification.py:205 now skips only an absent pointer, and test_a_named_pointer_that_cannot_be_read_keeps_the_duty was added with a red fail-open reproduction.\nCALL_SITES: reckon/crew/obligations.py:547, reckon/crew/directory.py:97, reckon/crew/forgotten_runs.py:94, reckon/crew/promotion.py:387, reckon/crew/promotion_release.py:892, reckon/crew/query.py:15\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:203-207 publishes a named run only while its pointer exists and returns no remedy when none does.\nSCORE evidence: 17\nJUSTIFICATION evidence: the named file is recorded green at head and red at base with both controls red, though the gate log header names '29a4768ab + node change' rather than the head sha.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 6683efa..d1f19f171 is inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_queued_run_is_never_told_to_redispatch.py:164 reddens when the pointer-exists check is dropped (logs/fail-open-reproduction.log, EXIT=1).\nSCORE fit: 19\nJUSTIFICATION fit: the lazy import at reckon/crew/recovery_classification.py:199 follows the module's existing idiom at lines 246-247.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reads pointers through reckon/crew/runs.py:129 pointer_path and reckon/crew/runs.py:843 read_pointer rather than duplicating them.\nFINDING reckon/crew/recovery_classification.py:205 non-blocking: only CrewError is caught, so a plain OSError from read_pointer escapes and aborts classify_pointer for every live pointer.\nFINDING tests/test_a_queued_run_is_never_told_to_redispatch.py:183 non-blocking: the assertion compares next_command with the same action string the test supplied, so it cannot detect a regression in run selection.\n",
+  "review_run_id": "r-20261024T113529337252-review-of-a-reconciled-refusal-reads-as-waiting-d1f19f171bbc",
+  "reviewed_base_sha": "6683efa2be7d0379e69189990dc542945f18c2c1",
+  "reviewed_head_sha": "d1f19f171bbc7226d5cb9a9067b56cdcde82bb7e",
+  "reviewed_run_id": "r-20261024T095738002560-a-reconciled-refusal-reads-as-waiting",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T11:50:38.933772+00:00",
+  "total": 112
+}
