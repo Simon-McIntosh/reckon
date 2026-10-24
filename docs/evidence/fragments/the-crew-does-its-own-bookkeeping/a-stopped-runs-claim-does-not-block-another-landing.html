@@ -1,0 +1,46 @@
+<section id="a-stopped-runs-claim-does-not-block-another-landing">
+  <h2>a-stopped-runs-claim-does-not-block-another-landing — a stopped run's claim admits another run's landing</h2>
+
+  <p id="a-stopped-runs-claim-does-not-block-another-landing-what-changed"><strong>What changed.</strong>
+  A promotion that accepts a path outside its run's declared write scope now walks past a peer
+  claim when that peer's process has ended and its manifest records a terminal status. The
+  judgement is made where the acceptance calls in: <code>widen_claim(..., acceptance=True)</code>
+  in <code>reckon/crew/claims.py</code> passes the stopped peers to
+  <code>refuse_widen_scope_conflicts</code> to set aside, and
+  <code>_accepted_scope_exceptions</code> in <code>reckon/crew/promotion_scope.py</code> applies
+  the same rule and writes the walked-past claim on the acceptance as
+  <code>stopped_peer_claims: [{run_id, claim}]</code>. The shared
+  <code>_raise_repository_scope_conflict</code> is unchanged, so a dispatch over the same paths
+  still refuses. Stoppedness is read at the acceptance from
+  <code>local_liveness(pointer)</code> (host-gated) and from the peer's own manifest through
+  <code>parse_manifest</code>, never from a field kept on the pointer.</p>
+
+  <p id="a-stopped-runs-claim-does-not-block-another-landing-reproduction"><strong>The refusal,
+  reproduced before the repair.</strong> A temporary crew home held two stopped runs with
+  terminal manifests, each holding a commit that changed the path the other declared. Promoting
+  either with <code>accepted_paths={…}</code> raised
+  <code>reckon.crew.CrewError: run 'r-run-a' cannot accept b.txt: live run 'r-run-b' claims
+  b.txt</code> from <code>promotion_scope.py:635</code> in <code>_accepted_scope_exceptions</code>,
+  reached through <code>promotion.complete</code> → <code>_landing_preconditions</code> →
+  <code>_landing_scope_products</code>. The first fixture recorded each run's <code>repo</code>
+  as its own worktree, which made the peers look like different repositories and the promotion
+  succeeded; the reproduction is only valid once both runs record the same repository root.</p>
+
+  <p id="a-stopped-runs-claim-does-not-block-another-landing-measure"><strong>Measure.</strong>
+  <code>tests/test_a_stopped_runs_claim_does_not_block_another_landing.py</code>, <strong>4
+  passed</strong>: a stopped peer with a <code>complete</code> manifest admits the acceptance and
+  the landing row names <code>{run_id: r-stopped-peer, claim: declared-b.txt}</code>; a peer whose
+  process is alive is refused; a peer whose process ended with an <code>in-progress</code> manifest
+  is refused; a dispatch over the stopped peer's path raises <code>ScopeConflict</code>. Each case
+  re-reads the peer's pointer file and finds it byte-identical. Head gate over the new file and the
+  twenty named neighbour files: <strong>361 passed, EXIT=0</strong>.</p>
+
+  <p id="a-stopped-runs-claim-does-not-block-another-landing-negative-control"><strong>Declared
+  negative control, executed and logged.</strong> With
+  <code>stopped_with_terminal_manifest</code> returning <code>False</code> — every live claim
+  treated as protecting — the stopped-peer case is refused with the D12 dispatch wording
+  (<em>“write scope 'declared-b.txt' conflicts with live claim … held by run 'r-stopped-peer'”</em>)
+  and the file reports <strong>1 failed, 3 passed, EXIT=1</strong>, the failure being
+  <code>test_stopped_peer_claim_is_recorded_on_the_acceptance</code>. Log:
+  <code>negative_control.log</code> in the run directory.</p>
+</section>
