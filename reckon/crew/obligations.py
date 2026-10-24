@@ -888,6 +888,10 @@ def _review_duty_item(
     refused it and the session's published worker slots, so the coordinator
     sees a wait the reflex owns rather than a dispatch nobody ran.
 
+    A landing refusal for this head names its guard on the session's duty.
+    It takes precedence over a ready review, since the stored review alone
+    cannot explain why the automatic landing stopped.
+
     A run that was resumed owes nothing against the head the resume replaced.
     Whatever this run's delivered revision earned — a missing review, a stale one,
     a tier the merged-head gate checks instead — the evidence speaks for work the
@@ -922,6 +926,17 @@ def _review_duty_item(
     resumed_head, _tree = recovery._review_head_and_tree(pointer)
     if supersedes_head(pointer, resumed_head):
         return None
+    landing = pointer.get("admission_landing")
+    if (
+        isinstance(landing, Mapping)
+        and landing.get("status") == "refused"
+        and recovery.same_revision(str(landing.get("head") or ""), resumed_head)
+        and str(landing.get("guard") or "").strip()
+    ):
+        item = _live_item(row, kind="landing-refused", now=now)
+        item["head"] = resumed_head
+        item["reason"] = f"automatic landing refused: {landing['guard']}"
+        return item
 
     if _review_tier_for_duty(row, pointer) == review_tiers.NONE:
         item = _live_item(

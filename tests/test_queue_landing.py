@@ -189,7 +189,7 @@ def test_below_floor_review_raises_an_owner_obligation(
     duties = obligations.obligations(PROJECT, SESSION)["obligations"]
     assert any(item["run_id"] == RUN for item in duties)
     assert any(
-        "floor" in str(item.get("reason") or "")
+        item["kind"] == "landing-refused" and "floor" in str(item.get("reason") or "")
         for item in duties
         if item["run_id"] == RUN
     ), duties
@@ -216,6 +216,13 @@ def test_refused_land_names_its_guard_and_is_never_retried(
     assert (
         runs.read_pointer(RUN)["admission_landing"]["guard"] == "index.lock stayed held"
     )
+    duties = obligations.obligations(PROJECT, SESSION)["obligations"]
+    assert any(
+        item["kind"] == "landing-refused"
+        and "index.lock stayed held" in item.get("reason", "")
+        for item in duties
+        if item["run_id"] == RUN
+    ), duties
 
 
 def test_an_unchanged_head_is_not_reviewed_a_second_time(
