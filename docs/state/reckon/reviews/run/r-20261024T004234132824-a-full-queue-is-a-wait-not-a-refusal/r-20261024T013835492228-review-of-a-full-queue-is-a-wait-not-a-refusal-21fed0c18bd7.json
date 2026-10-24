@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery.py:83 imports classify_pointer from recovery_classification",
+    "reckon/crew/obligations.py:547 _classified_rows calls recovery.classify_pointer",
+    "reckon/crew/query.py:422 classifies live pointers for the crew view",
+    "reckon/serve.py:884 classifies a pointer for the served plan's crew phase",
+    "reckon/crew/recovery_watch.py:311 and :1182 classify pointers for the watch",
+    "reckon/crew/runs.py:1796 classifies a pointer for the CLI",
+    "reckon/roadmap.py:2539 and reckon/mcp_views.py:1885 classify via recovery.classify_pointer"
+  ],
+  "completed_at": "2026-10-24T01:50:19.549Z",
+  "dispatched_at": "2026-10-24T01:41:03Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "147",
+      "severity": "non-blocking",
+      "text": "non-blocking: the wait set is walked from ScopeConflict.__subclasses__() at call time, so it sees DirectoryClaimConflict only when reckon.crew.dispatch_claims has already been imported in the reading process; today that import arrives transitively (importing recovery_classification pulls dispatch_admission, which imports dispatch_claims), but nothing in this module states or tests that dependency, and tests/test_a_full_queue_is_a_wait_not_a_refusal.py:31 imports DirectoryClaimConflict itself so the test cannot notice if the chain is ever trimmed, at which point a directory-claim refusal silently falls back to the text search and republishes the dispatch remedy this node removed. Fold a node to import the subclass explicitly or pin the dependency."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Production reach confirmed at reckon/crew/obligations.py:547, reckon/crew/query.py:422, reckon/serve.py:884, reckon/crew/recovery_watch.py:311, reckon/crew/runs.py:1796, reckon/roadmap.py:2539 and reckon/mcp_views.py:1885, all through recovery.classify_pointer or its re-export.",
+    "diff": "Read commit by commit: 0a976babc adds the classifier arm and the test, 41325f022 replaces the typed _WAIT_REFUSALS set with the _wait_refusal_classes() walk and adds the DirectoryClaimConflict arm, and the three docs commits record the gate and the scope-claim family; the repair removes the dead constant rather than leaving both.",
+    "done_when": "tests/test_a_full_queue_is_a_wait_not_a_refusal.py covers every clause: three wait refusals keep no session_refusal and 'wait for a local lane slot' (lines 171-179), each lists as the queued-run duty (190-195), the unregistered follower still reads queued-awaiting-session (198-209), and _is_lane_hold stays false with the back-off holding (212-232); the base clause reproduces for both claim kinds (base-arm.log 4 failed, 4 passed) while the QueueFull half already read run-queued at base f56407c1 because the stamped reader landed at f1181e0e5, which the manifest records as a stated deviation at artifacts/evidence_inputs rather than claiming satisfied.",
+    "goal": "The node's goal is that a queued pointer refused by QueueFull or by a ScopeConflict naming another run's live claim reads as a wait; reckon/crew/recovery_classification.py:253 returns no remedy when the stamped class is in _wait_refusal_classes(), which at head covers QueueFull and DirectoryClaimConflict beside ScopeConflict (empirically confirmed), and the four parametrized arms pass at head-arm.log: 8 passed, EXIT=0.",
+    "manifest": "Read; it names commits 0a976babc, 22a087377, 7999dc3bb, 41325f022 and 21fed0c18, the head/base/negative-control arms with figures that match the logs on disk, and it corrects the prior review's outside_scope misstatement by stating that only the claim-kind arms reproduce at base.",
+    "write_paths": "The brief grants four paths; git diff f56407c1..21fed0c18 changes exactly three of them -- reckon/crew/recovery_classification.py, tests/test_a_full_queue_is_a_wait_not_a_refusal.py and docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-full-queue-is-a-wait-not-a-refusal.html -- with nothing outside them and no figure written."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T013835492228-review-of-a-full-queue-is-a-wait-not-a-refusal-21fed0c18bd7",
+  "reviewed_base_sha": "f56407c1a9c109aff3567f64d8230c038ffb0961",
+  "reviewed_head_sha": "21fed0c18bd768ac18202a108805b0bfb23deb76",
+  "reviewed_run_id": "r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T01:53:47.776549+00:00",
+  "total": 114
+}
