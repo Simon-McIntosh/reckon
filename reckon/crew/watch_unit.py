@@ -226,11 +226,15 @@ def runs_launched_on(project: str, node: str) -> list[str]:
     """
     if not node:
         return []
-    from reckon.crew.runs import list_live
+    from reckon.crew.runs import _list_live_records
 
+    # The pointers are read, not listed through ``list_live``: that one
+    # publishes the watcher stream and can start an obligations sweep, and this
+    # question is asked on every lease renewal — a misplaced producer would
+    # scan and publish the fleet every renewal to answer it.
     return [
         str(record.get("run_id") or "")
-        for record in list_live(project=project)
+        for record in _list_live_records(project=project)
         if _hosts_match(str(record.get("launcher_host") or ""), node)
     ]
 
@@ -349,17 +353,18 @@ def release_watch_seat(project: str) -> bool:
     """
     from reckon.crew import runs
 
-    handle = runs._WATCH_SEAT_HANDLES.pop(project, None)
-    lease = runs._WATCH_HOST_LEASES.pop(project, None)
-    runs._WATCH_STREAM_PRODUCERS.pop(project, None)
-    released = lease is not None
+    handle = runs._WATCH_SEAT_HANDLES.get(project)
+    lease = runs._WATCH_HOST_LEASES.get(project)
+    released = handle is not None or lease is not None
     if handle is not None:
-        released = True
         try:
             _write_watch_record(handle, {})
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
         except (OSError, ValueError):
             pass
+    try:
+        runs.drop_watch_seat(project, handle)
+    except (OSError, ValueError):
+        pass
     if lease is not None:
         lease.release()
     return released

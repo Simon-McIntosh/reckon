@@ -2961,6 +2961,23 @@ _WATCH_SEAT_HANDLES: dict[str, Any] = {}
 _WATCH_HOST_LEASES: dict[str, Any] = {}
 
 
+def drop_watch_seat(project: str, handle: Any) -> None:
+    """Give up the seat this process holds for ``project``.
+
+    The one teardown, shared by the claim's own exit and by a producer that
+    gives the seat up while it is still running, so neither path can leave
+    state the other would have dropped. What is not shared stays with the
+    caller: a producer handing the seat over erases the record first, while a
+    normal exit leaves it for the reader that dates it, and the descriptor is
+    closed by the claim that opened it.
+    """
+    _WATCH_SEAT_HANDLES.pop(project, None)
+    _WATCH_HOST_LEASES.pop(project, None)
+    _WATCH_STREAM_PRODUCERS.pop(project, None)
+    if handle is not None:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 def renew_watch_host_lease(project: str) -> bool:
     """Keep the producer's claim fresh; stop when another host owns it.
 
@@ -3137,10 +3154,7 @@ def _project_watch_claim(project: str, stall_window: str):
             _publish_watch_stream(project, _list_live_records(project=project))
             yield True, record
         finally:
-            _WATCH_SEAT_HANDLES.pop(project, None)
-            _WATCH_HOST_LEASES.pop(project, None)
-            _WATCH_STREAM_PRODUCERS.pop(project, None)
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            drop_watch_seat(project, handle)
     finally:
         handle.close()
         if lease is not None:

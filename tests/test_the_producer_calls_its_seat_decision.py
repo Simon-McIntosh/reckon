@@ -195,6 +195,34 @@ def test_the_producer_on_the_fleet_node_keeps_running_through_renewals(
     assert runners == {"commands": [], "exits": []}
 
 
+def test_ten_renewals_off_the_fleet_node_publish_no_watch_stream_rows(
+    home: dict[str, Path],
+    runners: dict[str, list],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The renewal question reads pointers; it does not publish or sweep.
+
+    A producer off the fleet node asks this on every renewal, so answering it
+    by listing the live fleet — which publishes the watcher stream and can
+    start an obligations sweep — would scan and publish every five seconds for
+    a producer that does nothing else. The project here has a run, launched on
+    this host rather than the fleet node, so the foreign-host arm reaches the
+    pointer read and holds.
+    """
+    _write_fleet_record(home["fleet_record"], OTHER_NODE)
+    _write_run(PROJECT, RUN_ID, fleet_supervisor._short_hostname())
+    published: list[tuple] = []
+    monkeypatch.setattr(
+        runs, "_publish_watch_stream", lambda *args, **kwargs: published.append(args)
+    )
+
+    for _ in range(10):
+        runs.renew_watch_host_lease(PROJECT)
+
+    assert published == []
+    assert runners["exits"] == []
+
+
 def test_the_host_comparison_shortens_both_names_through_the_fleet_owner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
