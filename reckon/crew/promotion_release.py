@@ -565,6 +565,33 @@ def _update_run_record(
     return updated
 
 
+RELEASE_RECEIPT_NAME = "release.json"
+
+
+def _write_release_receipt(run_id: str, release: Mapping[str, Any]) -> None:
+    """Write the release outcome into the run's own directory, best-effort.
+
+    A promoted run's ledger row is the durable home of its release receipt, but
+    that row only becomes durable through a landing commit, and a commit that
+    cannot stage is rolled back to HEAD — taking the receipt with it. The run
+    directory outlives the pointer and is read on this host alone, which is
+    exactly the scope of the fact: which host removed which scratch copy.
+    """
+    from reckon.crew.runs import run_dir
+
+    try:
+        directory = run_dir(run_id)
+        if not directory.is_dir():
+            return
+        target = directory / RELEASE_RECEIPT_NAME
+        target.write_text(
+            json.dumps(dict(release), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        return
+
+
 def _record_release_on_ledger(
     *,
     project: str,
@@ -586,6 +613,12 @@ def _record_release_on_ledger(
     per_run = path.is_file()
     if not per_run:
         path = ledger.ledger_path(project, root)
+    # The receipt is written beside the run's own record before the ledger
+    # write, because the ledger write is not durable on its own: a landing
+    # commit that cannot stage restores the row it wrote to HEAD, and the
+    # cleanup outcome then survives nowhere. A reader of the run directory
+    # can always see which host released what, and which paths it left.
+    _write_release_receipt(run_id, release)
     last_error: Exception | None = None
     updated: dict[str, Any] | None = None
     for _attempt in range(12):

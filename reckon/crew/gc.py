@@ -1,4 +1,5 @@
 import os
+import re
 import shlex
 import shutil
 import sys
@@ -1120,6 +1121,140 @@ def garbage_collect_orphan_scratch(
     }
 
 
+RUN_SCRATCH_SETTLED = "settled"
+
+
+RUN_SCRATCH_LIVE = "live"
+
+
+RUN_SCRATCH_HELD = "held"
+
+
+RUN_SCRATCH_UNENDED = "unended"
+
+
+RUN_SCRATCH_FRESH_ORPHAN = "fresh-orphan"
+
+
+_RUN_NAMED_SCRATCH = re.compile(r"^r-\d{8}T\d{12}(?:-|$)")
+
+
+def _run_directory_records_end(run_directory: Path) -> bool:
+    """Whether a run's own directory carries the record that it ended.
+
+    A supervisor writes ``exit.json`` beside the attempt's own exit record when
+    the worker process ends, and a discarded run leaves its discard marker. Both
+    say the run is over; a directory holding neither belongs to a run that is
+    still working or one whose supervisor died before writing the record, and
+    its scratch is not settled on that reading alone.
+    """
+    if (run_directory / "exit.json").is_file():
+        return True
+    if (run_directory / "discard.json").is_file():
+        return True
+    return any(run_directory.glob("attempt-*-exit.json"))
+
+
+def settle_run_scratch(
+    *,
+    apply: bool = True,
+    now: float | None = None,
+    root: str | Path | None = None,
+    runs_root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Remove every run-named scratch copy whose run is over, on this host.
+
+    A release removes the copy on the host that runs it. The copy a worker made
+    on its own node outlives that release: the two hosts share the crew home but
+    not their node-local temp trees, so nothing on the promoting host can see
+    the other copy. This pass is the one that removes it, and it runs on every
+    host that can hold one — from a launch, from a step-placed worker's start,
+    and from the hourly retention sweep.
+
+    The decision is made from the crew home, which every host shares, and never
+    from a project ledger: a directory named for a run whose run directory
+    records that the run ended, and that no live pointer names and no process
+    holds, is removed at once with no age wait. §3 retires a finished run's
+    directory after its grace, so a copy can outlive its record; such a copy is
+    removed under the same ``SCRATCH_GRACE_SECONDS`` rule the orphan sweep
+    applies, after the same holder check. A directory not named for a run is
+    left to :func:`garbage_collect_orphan_scratch`.
+    """
+    from reckon.crew.dispatch import tree_size_bytes, worker_scratch_root
+    from reckon.crew.runs import run_dir
+
+    scratch = Path(root) if root is not None else worker_scratch_root()
+    if scratch.is_symlink() or scratch.resolve() != scratch.absolute():
+        raise CrewError(f"scratch settling refuses noncanonical root {scratch}")
+    if not scratch.is_dir():
+        return {"root": str(scratch), "entries": [], "removed": [], "bytes_freed": 0}
+    stamp = time.time() if now is None else now
+    live_ids = {str(record.get("run_id") or "") for record in list_live()}
+    holders = _scratch_process_holders(scratch)
+    home = Path(runs_root) if runs_root is not None else None
+    entries: list[dict[str, Any]] = []
+    removed: list[str] = []
+    bytes_freed = 0
+    for child in sorted(scratch.iterdir()):
+        if child.is_symlink() or not child.is_dir():
+            continue
+        name = child.name
+        if not _RUN_NAMED_SCRATCH.match(name):
+            continue
+        directory = (home / name) if home is not None else run_dir(name)
+        age = max(0.0, stamp - _scratch_ctime(child))
+        if name in live_ids:
+            state, reason = RUN_SCRATCH_LIVE, "live pointer"
+        elif holders.get(name):
+            state, reason = RUN_SCRATCH_HELD, f"held by process {holders[name]}"
+        elif not directory.is_dir():
+            if age < SCRATCH_GRACE_SECONDS:
+                state = RUN_SCRATCH_FRESH_ORPHAN
+                reason = f"no run directory; ctime within {SCRATCH_GRACE_SECONDS} second grace"
+            else:
+                state, reason = RUN_SCRATCH_SETTLED, "no run directory; past the grace"
+        elif _run_directory_records_end(directory):
+            state, reason = RUN_SCRATCH_SETTLED, "run recorded its end"
+        else:
+            state, reason = RUN_SCRATCH_UNENDED, "run directory records no end"
+        entry: dict[str, Any] = {
+            "run_id": name,
+            "path": str(child),
+            "bytes": tree_size_bytes(child),
+            "ctime_age_seconds": age,
+            "state": state,
+            "withheld": reason if state != RUN_SCRATCH_SETTLED else "",
+            "removed": False,
+        }
+        entries.append(entry)
+        if state != RUN_SCRATCH_SETTLED or not apply:
+            continue
+        # Recheck the two live facts before deleting: a pointer may have been
+        # written and a process may have entered the directory while it was
+        # sized, and either makes the copy one a running worker still needs.
+        from reckon.crew.runs import pointer_path
+
+        if pointer_path(name).exists():
+            entry["withheld"] = "live pointer appeared during settling"
+            continue
+        if _scratch_process_holders(scratch).get(name):
+            entry["withheld"] = "held by a process that appeared during settling"
+            continue
+        if not directory.is_dir() and age < SCRATCH_GRACE_SECONDS:
+            entry["withheld"] = "run directory vanished within the grace"
+            continue
+        shutil.rmtree(child)
+        entry["removed"] = True
+        removed.append(str(child))
+        bytes_freed += entry["bytes"]
+    return {
+        "root": str(scratch),
+        "entries": entries,
+        "removed": removed,
+        "bytes_freed": bytes_freed,
+    }
+
+
 def _scratch_disposition(
     path: Path,
     *,
@@ -1396,8 +1531,15 @@ def retention_sweep(
             offered.append(row)
 
     removed = [row for row in offered if row["removed"]]
+    # The pass settles this host's scratch copies too. §8 makes a run's scratch
+    # leave with the run on every host, and the hourly timer is the one caller
+    # that runs whether or not this host launches a worker. It reads the crew
+    # home and /proc only, so it keeps the pass's promise of starting no git
+    # process.
+    settled = settle_run_scratch(apply=apply, now=moment.timestamp())
+    settled_removed = list(settled["removed"])
     written = ""
-    if removed:
+    if removed or settled_removed:
         from reckon.crew.watch_unit import _WatchLogStream
 
         target = log or retention_log_path()
@@ -1405,6 +1547,8 @@ def retention_sweep(
         try:
             for row in removed:
                 stream.write(f"removed {row['path']} ({row['bytes']} bytes)\n")
+            for path in settled_removed:
+                stream.write(f"removed scratch {path}\n")
         finally:
             stream.close()
         written = str(target)
@@ -1418,6 +1562,8 @@ def retention_sweep(
         "withheld": withheld,
         "removed": [row["run_id"] for row in removed],
         "removed_count": len(removed),
+        "scratch": settled,
+        "scratch_removed": settled_removed,
         "log": written,
     }
 
