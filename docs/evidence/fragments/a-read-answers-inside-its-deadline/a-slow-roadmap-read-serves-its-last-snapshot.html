@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s56">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <title>A slow roadmap read serves its last snapshot | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-slow-roadmap-read-serves-its-last-snapshot" data-node="a-slow-roadmap-read-serves-its-last-snapshot" data-reckon="landing" data-when="2026-10-24">
+  <h2>A slow roadmap read serves its last snapshot</h2>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-defect">
+    <strong>The defect.</strong> <code>_roadmap</code> stored a composition only
+    when the key was unchanged after the read —
+    <code>if settled is not None and settled[0] == scoped[0]</code>, before this
+    change — so on a busy fleet, where the key moves during most compositions,
+    the node-local cache directory held no snapshot at all and a fallback would
+    have had nothing to serve. The second half of the defect is the read itself:
+    a key miss recomposed for the whole 30 s deadline and then reported
+    <code>storage-slow</code>, discarding a composition that was still running.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-store">
+    <strong>Every composition is kept, per tree and per shape.</strong> The
+    record is filed under the project's resolved docs root and a digest of the
+    request shape — <code>sprint</code>, <code>max_paths</code>, <code>view</code>,
+    <code>cursor</code>, <code>limit</code> — under the key it was composed
+    from, and carries <code>held</code>: whether that key was still the tree's
+    when the record was composed. A record whose key held answers an exact-key
+    read; one whose key moved does not, because the tree has since changed past
+    it, but it is still the freshest answer the tree has for that shape.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-fallback">
+    <strong>The reserve.</strong> A read whose request shape has a stored record
+    awaits its recompute only to the deadline less
+    <code>STALE_SNAPSHOT_RESERVE_SECONDS</code> (1.0 s, overridable through
+    <code>RECKON_ROADMAP_STALE_RESERVE_SECONDS</code>), then answers from the
+    last record for that shape, marked
+    <code>stale: {age_seconds, key, shape, stored_at, reason}</code> with the
+    reason <em>the key moved and a recompute is in flight</em>.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-continues">
+    The wait is the existing shielded one in <code>_await_body</code>, so the
+    recompute is abandoned rather than cancelled: it runs on, stores its
+    composition, and the next call serves it fresh. A request shape with no
+    stored record keeps the whole deadline and reports
+    <code>storage-slow</code> exactly as before, and one recompute per key stays
+    the job of <code>_read_joining_running</code> over <code>_INFLIGHT_READS</code>.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-measure">
+    <strong>Measure.</strong>
+    <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 -rf</code>
+    over <code>test_a_slow_roadmap_read_serves_its_last_snapshot.py</code>,
+    <code>test_a_roadmap_read_answers_from_its_snapshot.py</code>,
+    <code>test_mcp_reads_have_deadlines.py</code> and
+    <code>test_every_module_fits_a_worker_window.py</code>. Head arm, this
+    change committed on a clean worktree — the log's revision line names the
+    commit: <strong>37 passed</strong>,
+    EXIT=0. Base arm, the base commit extracted into a scratch tree with the new
+    test file copied in beside the three existing ones:
+    <strong>7 failed / 30 passed</strong>, EXIT=1 — the three existing files
+    pass unchanged at base, and every new case fails there because the store and
+    the fallback do not exist. The 7 cases are listed under the section's
+    done-when.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-cases">
+    <strong>Cases held.</strong> With a stored record and a recompute held past
+    a shortened 1.0 s deadline, a 0.4 s reserve, the read answers from the stored
+    composition, marked stale with its age, key and reason, in a measured wall
+    time <strong>at or above 0.6 s</strong> and <strong>below 1.0 s</strong>. The
+    held recompute then completes and stores, and the next call answers fresh
+    with no further recomposition. A key miss whose recompute lands inside the
+    deadline is answered fresh. A composition during which the key moves is
+    stored with <code>held: false</code>, does not answer an exact-key read under
+    its own key, and answers a later held read as stale. A record stored for
+    <code>view="detail"</code> is not served to a <code>summary</code> read,
+    which reports its deadline. With no stored record, a held recompute reports
+    its deadline. Two reads arriving during one held recompute start
+    <strong>1</strong> recomposition.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-control">
+    <strong>Negative control.</strong> Removing the fallback — the registered
+    roadmap read passing no stale answer into <code>_deadline_tool</code> —
+    turns three cases red: the first answers
+    <code>{'error': 'storage-slow'}</code> instead of the stored composition, so
+    it misses the deadline. <strong>3 failed / 4 passed</strong>, EXIT=1,
+    over a scratch copy of this head; the head arm passes all 7. Log:
+    <code>negative-control.log</code>.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-lint">
+    <strong>Lint delta.</strong> <code>ruff check</code> on the staged paths
+    reports <strong>10</strong> findings at the base commit and
+    <strong>10</strong> at head — none added; <code>ruff format --check</code> is
+    clean on all four.
+  </p>
+</article>
+</body>
+</html>

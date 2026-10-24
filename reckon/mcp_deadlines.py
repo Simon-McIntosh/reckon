@@ -61,6 +61,14 @@ READ_DEADLINE_ENV = "RECKON_MCP_READ_DEADLINE_SECONDS"
 WRITE_DEADLINE_ENV = "RECKON_MCP_WRITE_DEADLINE_SECONDS"
 LANDING_GRACE_ENV = "RECKON_MCP_WRITE_LANDING_GRACE_SECONDS"
 
+# How much of a read's deadline is held back when a stored composition can
+# answer it. The recompute is awaited only up to the deadline less this, so the
+# stored answer is loaded and returned inside the deadline rather than after
+# it: the reserve pays for reading one snapshot file and serialising it back,
+# and it is deliberately a small fraction of the read deadline.
+STALE_SNAPSHOT_RESERVE_SECONDS = 1.0
+STALE_RESERVE_ENV = "RECKON_ROADMAP_STALE_RESERVE_SECONDS"
+
 
 def _positive_seconds(value: str | None) -> float | None:
     """Parse an override into a non-negative number of seconds, or None."""
@@ -86,6 +94,13 @@ def _deadline_seconds(kind: str) -> float:
     if specific is not None:
         return specific
     return WRITE_DEADLINE_SECONDS if kind == "write" else READ_DEADLINE_SECONDS
+
+
+def _stale_reserve_seconds() -> float:
+    """The part of a read's deadline held back for loading a stored answer."""
+
+    override = _positive_seconds(os.environ.get(STALE_RESERVE_ENV))
+    return STALE_SNAPSHOT_RESERVE_SECONDS if override is None else override
 
 
 def _landing_grace_seconds() -> float:
@@ -359,8 +374,16 @@ async def _await_body(
     label: str,
     limit: float,
     started: float | None = None,
+    on_timeout: Callable[[], Any] | None = None,
 ) -> Any:
-    """Await one started body under the deadline, naming a timeout's cause."""
+    """Await one started body under the deadline, naming a timeout's cause.
+
+    ``on_timeout`` is the answer to give instead of the ``storage-slow``
+    result when the wait expires and it can produce one: a read with a stored
+    composition answers from that composition rather than reporting the
+    storage as slow. The body is abandoned either way, so it still runs and
+    still stores what it composes for the next call.
+    """
 
     try:
         # Shield the body's future from this wait's cancellation: a timeout
@@ -370,6 +393,10 @@ async def _await_body(
             asyncio.shield(asyncio.wrap_future(inflight.future)), limit
         )
     except TimeoutError:
+        if on_timeout is not None:
+            fallback = on_timeout()
+            if fallback is not None:
+                return fallback
         waited = time.monotonic() - (inflight.started if started is None else started)
         waiting = inflight.waiting
         cpu_seconds: float | None = None
@@ -424,12 +451,28 @@ async def _run_under_deadline(
     return await _await_body(inflight, kind=kind, label=label, limit=limit)
 
 
+def _safe_fallback(fallback: Callable[[], Any]) -> Any:
+    """Ask a fallback for an answer, treating any failure as no answer.
+
+    A read with a stored composition available must never be failed by the
+    look-up for it: an unreadable or malformed record is the same as no
+    record, and the call then waits for its recompute as it would have without
+    one.
+    """
+
+    try:
+        return fallback()
+    except Exception:  # noqa: BLE001 — a fallback never becomes the read's failure
+        return None
+
+
 async def _read_joining_running(
     body: Callable[[], Any],
     *,
     label: str,
     kwargs: Mapping[str, Any],
     path_hint: Callable[[], str | None] | None = None,
+    stale: Callable[[Mapping[str, Any]], Any] | None = None,
 ) -> Any:
     """Run a read under its deadline, joining a body already answering it.
 
@@ -439,9 +482,25 @@ async def _read_joining_running(
     when it finishes, so the next identical read after that starts fresh. A
     read whose arguments differ keys its own body, and a write never reaches
     here — it always runs its own body under its own deadline.
+
+    ``stale`` answers the call from a stored composition when there is one for
+    it. Its presence shortens the wait by the reserve a stored answer needs to
+    be loaded and returned, and it is asked again at the moment the shortened
+    wait expires, so the age reported with the answer is the reader's own. The
+    recompute is not cancelled: it runs on and stores what the next call reads.
     """
 
     limit = _deadline_seconds("read")
+    wait_limit = limit
+    on_timeout: Callable[[], Any] | None = None
+    if stale is not None:
+
+        def _fallback() -> Any:
+            return stale(kwargs)
+
+        if _safe_fallback(_fallback) is not None:
+            wait_limit = max(0.0, limit - _stale_reserve_seconds())
+            on_timeout = _fallback
     key = _read_join_key(label, kwargs)
     inflight = _INFLIGHT_READS.get(key)
     join_started: float | None = None
@@ -454,7 +513,12 @@ async def _read_joining_running(
     else:
         join_started = time.monotonic()
     return await _await_body(
-        inflight, kind="read", label=label, limit=limit, started=join_started
+        inflight,
+        kind="read",
+        label=label,
+        limit=wait_limit,
+        started=join_started,
+        on_timeout=on_timeout,
     )
 
 
@@ -485,8 +549,14 @@ def _deadline_tool(
     label: str | None = None,
     path_hint: Callable[[Mapping[str, Any]], str | None] | None = None,
     response_budget: bool = False,
+    stale: Callable[[Mapping[str, Any]], Any] | None = None,
 ) -> Callable[..., Any]:
-    """Wrap one synchronous tool body as the async entry FastMCP registers."""
+    """Wrap one synchronous tool body as the async entry FastMCP registers.
+
+    ``stale`` is the read's fallback for a call whose body outlives the reserve
+    its deadline keeps: it answers the call from a stored result rather than
+    reporting the storage as slow, and is used only when it can produce one.
+    """
 
     signature = _resolved_signature(body)
     label = label or body.__name__.removeprefix("_").removesuffix("_tool")
@@ -496,7 +566,11 @@ def _deadline_tool(
         hint = (lambda: path_hint(kwargs)) if path_hint is not None else None
         if resolved_kind == "read":
             result = await _read_joining_running(
-                lambda: body(**kwargs), label=label, kwargs=kwargs, path_hint=hint
+                lambda: body(**kwargs),
+                label=label,
+                kwargs=kwargs,
+                path_hint=hint,
+                stale=stale,
             )
         else:
             result = await _run_under_deadline(

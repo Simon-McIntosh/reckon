@@ -18,6 +18,13 @@ The key is taken in three parts, each cheap enough to read on every call:
 The snapshot is held in process and on node-local disk. The disk copy is what
 lets a fresh process, another session's server and the current-code child
 answer their first call from a composition one of them already made.
+
+A composition is kept whether or not its key held for the whole of it, as the
+tree's last snapshot for the shape it answered. A record whose key moved while
+it was being composed cannot answer an exact-key read — the answer is older
+than the state its key was taken at — but it is still the freshest answer the
+tree has for that shape, so a read that cannot recompose inside its deadline
+is answered from it and marked stale rather than reported as slow.
 """
 
 from __future__ import annotations
@@ -35,18 +42,18 @@ from typing import Any
 # Bumped when the key's shape changes in a way a stored snapshot cannot survive:
 # a record written by an older shape would be compared field by field against a
 # key that no longer has the same fields.
-_ROADMAP_SNAPSHOT_VERSION = 2
+_ROADMAP_SNAPSHOT_VERSION = 3
 # A read whose key matches recomputes nothing, so a write that neither reckon
 # nor git made — an editor saving a plan in place — would be answered from a
 # stale snapshot until something else moved. A full revalidation at most once
 # per this window bounds how long that can last.
 _ROADMAP_REVALIDATE_DEFAULT_S = 120.0
 _ROADMAP_SNAPSHOT_LOCK = threading.Lock()
-# In-process reuse, so a hit costs no open beyond the snapshot file itself.
-#: Keyed on the project, the docs root and the crew home: a read is answered
-#: from one tree and one home's live pointers, so a record made under any other
-#: of them is a different answer and must not match.
-_ROADMAP_SNAPSHOTS: dict[tuple[str, str, str], tuple[str, dict[str, Any]]] = {}
+# In-process reuse, so a record is servable after the composition that made it
+# even when the write to disk failed. Keyed on the project, the docs root, the
+# crew home and the request shape: a read is answered from one tree and one
+# home's live pointers, and only for the request it was composed for.
+_ROADMAP_SNAPSHOTS: dict[tuple[str, str, str, str], dict[str, Any]] = {}
 
 
 class _MountsMemo:
@@ -405,15 +412,17 @@ def roadmap_snapshot_key(
 
 
 #: How many snapshots one project keeps under the node-local cache. One is
-#: written per resolved docs root, so a workstation that mounts many checkouts
-#: would otherwise accumulate them for trees that no longer exist.
+#: written per resolved docs root and per request shape, so a workstation that
+#: mounts many checkouts would otherwise accumulate them for trees that no
+#: longer exist.
 _SNAPSHOT_KEEP_PER_PROJECT = 8
 
 
 def _prune_snapshots(written: Path) -> None:
     """Remove this project's snapshot files whose tree is gone, and the oldest.
 
-    A snapshot is filed per resolved docs root, and a tree that is deleted —
+    A snapshot is filed per resolved docs root and per request shape, and a
+    tree that is deleted —
     a removed worktree, a finished run's temporary copy — leaves its file
     behind with nothing else to remove it. The file records the root it was
     composed from, so a root that no longer exists names a snapshot no reader
@@ -450,76 +459,192 @@ def _prune_snapshots(written: Path) -> None:
                 path.unlink()
 
 
-def roadmap_snapshot_path(project: str, docs_dir: Path | None) -> Path:
-    """Return the node-local file one tree's roadmap snapshot lives in.
+def roadmap_shape_identity(shape: Mapping[str, Any] | None) -> str:
+    """Return a short digest of the request a composition answered.
+
+    The shape is the request's ``sprint``, ``max_paths``, ``view``, ``cursor``
+    and ``limit``. Two calls that differ in any of them compose different
+    payloads from one unchanged project, so a stored answer is only worth
+    serving to a call of the same shape, and the file that holds it is filed
+    under this digest rather than shared between shapes.
+    """
+    encoded = json.dumps(dict(shape or {}), sort_keys=True, default=str)
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:12]
+
+
+def roadmap_snapshot_path(
+    project: str, docs_dir: Path | None, shape: Mapping[str, Any] | None = None
+) -> Path:
+    """Return the node-local file one tree's snapshot for one shape lives in.
 
     The file is filed under the filesystem identity of the project's docs root
-    as well as its name. The node-local cache directory is shared by every tree
-    on the node, so a name alone would let a read of one tree's docs open the
-    composition another tree with the same project name made.
+    and the identity of the request shape. The node-local cache directory is
+    shared by every tree on the node, so a name alone would let a read of one
+    tree's docs open the composition another tree with the same project name
+    made; and it names one shape, because a summary read is not answered by a
+    detail composition however fresh it is.
     """
     from reckon.crew.review_records import node_local_cache_dir
 
     identity = roadmap_docs_identity(docs_dir)
-    return node_local_cache_dir(project) / f"roadmap-snapshot-{identity}.json"
+    return (
+        node_local_cache_dir(project)
+        / f"roadmap-snapshot-{identity}-{roadmap_shape_identity(shape)}.json"
+    )
 
 
-def roadmap_snapshot_load(
-    project: str, docs_dir: Path | None, key: str
-) -> dict[str, Any] | None:
-    """Return the stored snapshot when the key matches and it is still fresh.
+def _snapshot_records(
+    project: str, docs_dir: Path | None, shape: Mapping[str, Any] | None
+) -> list[dict[str, Any]]:
+    """Return every record this tree and shape has, in process and on disk.
 
     The persisted file is read on every call: a fresh process, another
     session's server and the current-code child all answer a first call from
     the snapshot one of them computed, which is the whole reason the snapshot
-    is on disk rather than in a module global.
+    is on disk rather than in a module global. The in-process copy is the one
+    the composition just made, and it is present even when persisting it
+    failed, so a record is always offered to this process.
     """
-    window = roadmap_revalidate_window()
-    moment = time.time()
-    candidates: list[dict[str, Any]] = []
+    identity = roadmap_docs_identity(docs_dir)
     with _ROADMAP_SNAPSHOT_LOCK:
-        served = _ROADMAP_SNAPSHOTS.get(
-            (project, roadmap_docs_identity(docs_dir), crew_home_identity())
+        remembered = _ROADMAP_SNAPSHOTS.get(
+            (project, identity, crew_home_identity(), roadmap_shape_identity(shape))
         )
-    if served is not None and served[0] == key:
-        candidates.append(served[1])
+    records: list[dict[str, Any]] = []
+    if isinstance(remembered, dict):
+        records.append(remembered)
     try:
-        raw = roadmap_snapshot_path(project, docs_dir).read_text()
+        raw = roadmap_snapshot_path(project, docs_dir, shape).read_text()
         persisted = json.loads(raw)
     except (OSError, ValueError):
         persisted = None
-    if isinstance(persisted, dict) and persisted.get("key") == key:
-        candidates.append(persisted)
-    for record in candidates:
-        stored_at = record.get("stored_at")
-        if not isinstance(stored_at, (int, float)):
+    if isinstance(persisted, dict):
+        records.append(persisted)
+    return records
+
+
+def _usable_snapshot(
+    record: Mapping[str, Any], shape: Mapping[str, Any] | None
+) -> bool:
+    """Say whether a record is one this code wrote, for this request shape."""
+    return (
+        record.get("version") == _ROADMAP_SNAPSHOT_VERSION
+        and record.get("shape") == dict(shape or {})
+        and isinstance(record.get("stored_at"), (int, float))
+        and isinstance(record.get("payload"), dict)
+    )
+
+
+def roadmap_snapshot_load(
+    project: str,
+    docs_dir: Path | None,
+    key: str,
+    *,
+    shape: Mapping[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Return the stored answer when its key matches, held, and it is fresh.
+
+    A record whose key moved while it was being composed is not an answer to
+    this key: its payload was read from a tree that has since changed, so a
+    read whose key the record merely started under recomposes. Only a record
+    whose key held for the whole composition answers here.
+    """
+    window = roadmap_revalidate_window()
+    moment = time.time()
+    for record in _snapshot_records(project, docs_dir, shape):
+        if not _usable_snapshot(record, shape):
             continue
-        if window <= 0 or moment - float(stored_at) > window:
+        if record.get("key") != key or not record.get("held"):
             continue
-        payload = record.get("payload")
-        if isinstance(payload, dict):
-            return payload
+        if window <= 0 or moment - float(record["stored_at"]) > window:
+            continue
+        return record["payload"]
     return None
 
 
+def roadmap_snapshot_last(
+    project: str, docs_dir: Path | None, shape: Mapping[str, Any] | None = None
+) -> dict[str, Any] | None:
+    """Return the newest record this tree has for this shape, at any key.
+
+    This is the answer a read falls back to when it cannot recompose inside
+    its deadline. It is deliberately not keyed: the fallback exists because
+    the key moved, so requiring a match would require the very thing that made
+    the read slow. Age, not freshness, is what the caller reports with it.
+    """
+    newest: dict[str, Any] | None = None
+    for record in _snapshot_records(project, docs_dir, shape):
+        if not _usable_snapshot(record, shape):
+            continue
+        if newest is None or float(record["stored_at"]) > float(newest["stored_at"]):
+            newest = record
+    return newest
+
+
+def roadmap_stale_answer(
+    record: Mapping[str, Any], reason: str, *, now: float | None = None
+) -> dict[str, Any]:
+    """Return a stored record's payload marked stale, with its age and key.
+
+    The marking is what makes the answer honest: it names how old the
+    composition is, the key it was made under, and why a fresher one could not
+    be had, so a reader weighs the answer rather than believing it current.
+    ``now`` is the moment the answer is given, so the age is the reader's own
+    rather than the age at which the read gave up.
+    """
+    stored_at = float(record["stored_at"])
+    moment = time.time() if now is None else now
+    return {
+        **record["payload"],
+        "stale": {
+            "age_seconds": round(max(0.0, moment - stored_at), 3),
+            "key": record.get("key"),
+            "shape": record.get("shape"),
+            "stored_at": stored_at,
+            "reason": reason,
+        },
+    }
+
+
 def roadmap_snapshot_store(
-    project: str, docs_dir: Path | None, key: str, payload: dict[str, Any]
+    project: str,
+    docs_dir: Path | None,
+    key: str,
+    payload: dict[str, Any],
+    *,
+    shape: Mapping[str, Any] | None = None,
+    held: bool = True,
 ) -> None:
-    """Store a snapshot under its key, in process and on node-local disk."""
+    """Store a composition as this tree's last snapshot for this shape.
+
+    ``held`` records whether the key was still the tree's when the composition
+    finished. Every composition is kept, because on a busy fleet the key moves
+    during most of them, and a snapshot kept only when it held would leave the
+    stale fallback with nothing to serve. A record that did not hold is simply
+    never served to an exact-key read.
+    """
+    shape_value = dict(shape or {})
     record = {
         "version": _ROADMAP_SNAPSHOT_VERSION,
         "key": key,
+        "shape": shape_value,
         "root": _resolved_docs_root(docs_dir),
+        "held": bool(held),
         "stored_at": time.time(),
         "payload": payload,
     }
     with _ROADMAP_SNAPSHOT_LOCK:
         _ROADMAP_SNAPSHOTS[
-            (project, roadmap_docs_identity(docs_dir), crew_home_identity())
-        ] = (key, record)
+            (
+                project,
+                roadmap_docs_identity(docs_dir),
+                crew_home_identity(),
+                roadmap_shape_identity(shape_value),
+            )
+        ] = record
     from reckon._store import write_atomically
 
-    path = roadmap_snapshot_path(project, docs_dir)
+    path = roadmap_snapshot_path(project, docs_dir, shape_value)
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         # The snapshot is a disposable cache, so its bytes need not be durable:

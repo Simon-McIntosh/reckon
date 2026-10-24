@@ -1866,7 +1866,7 @@ _OP_VOCAB = {
 }
 
 
-def _roadmap_snapshot_scope(
+def _roadmap_snapshot_target(
     project: str,
     checkout_path: str | None,
     sprint: str | None,
@@ -1874,14 +1874,13 @@ def _roadmap_snapshot_scope(
     view: Literal["summary", "detail", "raw"] | None,
     cursor: str | None,
     limit: int | None,
-) -> tuple[str, dict[str, Path]] | None:
-    """Return the key this call's answer is valid under, or None when it has none.
+) -> tuple[dict[str, Path], dict[str, Any]] | None:
+    """Return the trees and the request shape this call's answer belongs to.
 
-    A snapshot is keyed to one project's composed result, so a portfolio or
-    graph target — or a read routed at an explicit checkout — has no single
-    project to hold it and is answered as before. The key is what makes a hit
-    safe: it carries the code stamp the process took once at startup, every
-    mounted project's plan-write generation, and this project's live runs.
+    A snapshot is filed per project tree and per request shape, so a portfolio
+    or graph target — or a read routed at an explicit checkout — has no single
+    project to hold it and is answered as before. ``None`` means this call has
+    no snapshot at all.
     """
     if (
         project in {"", "*"}
@@ -1895,19 +1894,107 @@ def _roadmap_snapshot_scope(
         mounts = dict(serve_module.mounts_for_snapshot())
     except OSError:
         return None
-    key, _live_states = serve_module.roadmap_snapshot_key(
-        project,
-        mounts,
-        _SERVER_CODE_STAMP,
-        shape={
-            "sprint": sprint,
-            "max_paths": max_paths,
-            "view": view,
-            "cursor": cursor,
-            "limit": limit,
-        },
+    return mounts, _roadmap_shape(sprint, max_paths, view, cursor, limit)
+
+
+def _roadmap_shape(
+    sprint: str | None,
+    max_paths: int,
+    view: Literal["summary", "detail", "raw"] | None,
+    cursor: str | None,
+    limit: int | None,
+) -> dict[str, Any]:
+    """Return the request shape a composition answers, as the key carries it."""
+    return {
+        "sprint": sprint,
+        "max_paths": max_paths,
+        "view": view,
+        "cursor": cursor,
+        "limit": limit,
+    }
+
+
+def _roadmap_selected_view(
+    project: str, view: Literal["summary", "detail", "raw"] | None
+) -> Literal["summary", "detail", "raw"] | None:
+    """Return the view this call composes, defaulted as the read defaults it."""
+    if view is None and project != "*" and not project.startswith("graph:"):
+        return "summary"
+    return view
+
+
+def _roadmap_snapshot_scope(
+    project: str,
+    checkout_path: str | None,
+    sprint: str | None,
+    max_paths: int,
+    view: Literal["summary", "detail", "raw"] | None,
+    cursor: str | None,
+    limit: int | None,
+) -> tuple[str, dict[str, Path], dict[str, Any]] | None:
+    """Return the key this call's answer is valid under, or None when it has none.
+
+    The key is what makes a hit safe: it carries the code stamp the process
+    took once at startup, every mounted project's plan-write generation, and
+    this project's live runs. The shape beside it names the request the answer
+    was composed for, and it is what the snapshot is filed under.
+    """
+    target = _roadmap_snapshot_target(
+        project, checkout_path, sprint, max_paths, view, cursor, limit
     )
-    return key, mounts
+    if target is None:
+        return None
+    mounts, shape = target
+    from reckon import serve as serve_module
+
+    key, _live_states = serve_module.roadmap_snapshot_key(
+        project, mounts, _SERVER_CODE_STAMP, shape=shape
+    )
+    return key, mounts, shape
+
+
+#: Why a read answered from a stored composition: the key it was made under
+#: moved, and the recompute that would answer under the current one is running.
+_ROADMAP_STALE_REASON = "the key moved and a recompute is in flight"
+
+
+def _roadmap_stale_answer(kwargs: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Return the last composition this call's tree has, marked stale.
+
+    This is the fallback a roadmap read takes when its recompute has not
+    finished with the reserve it keeps before its deadline. It looks the record
+    up by tree and shape only, never by key: the key always moves on a busy
+    fleet, and it is the recompute under the new key that has not arrived. A
+    call with no stored record of its own shape gets ``None``, so it waits for
+    its recompute and reports its deadline as it always did.
+    """
+    project = str(kwargs.get("project") or "")
+    try:
+        selected_view = _roadmap_selected_view(project, kwargs.get("view"))
+        normalize_roadmap_view(selected_view)
+    except ViewRequestError:
+        # A view the read itself refuses has composed nothing, so it has no
+        # stored answer to fall back to.
+        return None
+    max_paths = kwargs.get("max_paths")
+    target = _roadmap_snapshot_target(
+        project,
+        kwargs.get("checkout_path"),
+        kwargs.get("sprint"),
+        5 if max_paths is None else int(max_paths),
+        selected_view,
+        kwargs.get("cursor"),
+        kwargs.get("limit"),
+    )
+    if target is None:
+        return None
+    mounts, shape = target
+    from reckon import roadmap_snapshot as snapshot_module
+
+    record = snapshot_module.roadmap_snapshot_last(project, mounts.get(project), shape)
+    if record is None:
+        return None
+    return snapshot_module.roadmap_stale_answer(record, _ROADMAP_STALE_REASON)
 
 
 def _roadmap(
@@ -1936,8 +2023,10 @@ def _roadmap(
     if scoped is not None:
         from reckon import serve as serve_module
 
-        key, mounts = scoped
-        served = serve_module.roadmap_snapshot_load(project, mounts.get(project), key)
+        key, mounts, shape = scoped
+        served = serve_module.roadmap_snapshot_load(
+            project, mounts.get(project), key, shape=shape
+        )
         if served is not None:
             return served
     with metadata_index.discovery_file_scope():
@@ -1953,16 +2042,22 @@ def _roadmap(
     if scoped is not None:
         from reckon import serve as serve_module
 
+        key, mounts, shape = scoped
         settled = _roadmap_snapshot_scope(
             project, checkout_path, sprint, max_paths, view, cursor, limit
         )
-        # The composition is stored only under the key the project is in
-        # *after* the read: a write that landed while it ran would otherwise
-        # be answered from the snapshot for the state before that write.
-        if settled is not None and settled[0] == scoped[0]:
-            serve_module.roadmap_snapshot_store(
-                project, scoped[1].get(project), scoped[0], result
-            )
+        # Every composition is stored as the tree's last answer for its shape,
+        # whether or not the key held for the whole of it. On a busy fleet the
+        # key moves during most compositions, so storing only the ones that
+        # held leaves nothing for a read that cannot recompose in time to
+        # answer from. A record whose key moved is marked not held, and that
+        # mark is what keeps it from answering an exact-key read: a write that
+        # landed while the read ran is newer than the composition, so the read
+        # under the new key recomposes.
+        held = settled is not None and settled[0] == key
+        serve_module.roadmap_snapshot_store(
+            project, mounts.get(project), key, result, shape=shape, held=held
+        )
     return result
 
 
@@ -2170,6 +2265,21 @@ def _roadmap_scoped(
         }
 
 
+def _roadmap_deadline_tool() -> Callable[..., Any]:
+    """The roadmap read as it is registered: under a deadline, with a fallback.
+
+    The fallback is what makes a slow read answer instead of reporting the
+    storage as slow: a call whose recompute outlives the reserve its deadline
+    keeps is answered from the last composition its tree holds for its shape.
+    """
+    return _deadline_tool(
+        _roadmap_tool,
+        kind="read",
+        response_budget=True,
+        stale=_roadmap_stale_answer,
+    )
+
+
 def _roadmap_tool(
     project: str,
     checkout_path: str | None = None,
@@ -2186,15 +2296,13 @@ def _roadmap_tool(
     retain their existing defaults.
     """
 
-    selected_view = view
     # The roadmap read's own validator decides this, before the scan that builds
     # the report it would otherwise answer with.
     try:
         normalize_roadmap_view(view)
     except ViewRequestError as error:
         return _view_refusal(error)
-    if view is None and project != "*" and not project.startswith("graph:"):
-        selected_view = "summary"
+    selected_view = _roadmap_selected_view(project, view)
     if checkout_path is None:
         checkout_path = _run_scoped_read_root(project)
     return _roadmap(
@@ -3392,10 +3500,7 @@ if mcp is not None:
         )
     )
     roadmap_tool = mcp.tool(name="roadmap")(
-        _refuse_when_stale(
-            _deadline_tool(_roadmap_tool, kind="read", response_budget=True),
-            name="roadmap",
-        )
+        _refuse_when_stale(_roadmap_deadline_tool(), name="roadmap")
     )
     audit_tool = mcp.tool(name="audit")(
         _refuse_when_stale(
