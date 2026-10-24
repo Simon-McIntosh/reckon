@@ -2912,9 +2912,11 @@ def dispatch(
                         ),
                     )
                     _require_fleet_gate_open()
+                    _refuse_a_discarded_launch(run_id)
                     spawned_pid = _start_supervisor(spec_path, directory, run_id)
                 else:
                     _require_fleet_gate_open()
+                    _refuse_a_discarded_launch(run_id)
                     spawned_pid = launcher(
                         plan,
                         log_path=log_path,
@@ -3164,6 +3166,7 @@ from .dispatch_claims import (  # noqa: E402
     _publish_launch_claim as _publish_launch_claim,
     _racing_claim_current as _racing_claim_current,
     _racing_clock as _racing_clock,
+    _refuse_a_discarded_launch as _refuse_a_discarded_launch,
     _racing_pause as _racing_pause,
     _raise_repository_scope_conflict as _raise_repository_scope_conflict,
     _read_node_dispatch_claim as _read_node_dispatch_claim,

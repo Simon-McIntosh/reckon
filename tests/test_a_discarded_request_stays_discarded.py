@@ -14,6 +14,7 @@ not it has a run directory, and a request nobody discarded is still restored.
 
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 
 from reckon.crew import promotion, queue_admission, runs
@@ -22,6 +23,7 @@ from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
     PROJECT,
     _config_for,
     _failing_launcher,
+    _launcher,
     _queue,
     admit_repo,
 )
@@ -101,6 +103,80 @@ def test_a_request_with_no_run_directory_is_found_discarded(
     )
     assert promotion.discard_recorded(run_id), "the discard left a readable record"
     assert not runs.run_dir(run_id).exists(), "the discard must not create a run dir"
+    assert run_id in result["failed"]
+
+
+def test_a_request_discarded_before_its_spawn_is_not_launched(
+    admit_repo: Path, monkeypatch
+) -> None:
+    """A launch admitted for a request already discarded starts no worker.
+
+    The pass selects the request and releases it into the shared dispatch path,
+    which publishes the run's claim before composing the launch and spawns the
+    worker at the end of that path. An operator's discard landing inside the
+    span removes the pointer and records the departure, and nothing on the
+    launch path read that record: the launch wrote the run back and started a
+    worker beside the record of its own discard, which every reader treating a
+    recorded discard as an abandoned run then reads as a live abandoned run.
+    """
+    _, resolve = _config_for()
+    run_id = "r-discarded-before-spawn"
+    _attempted_request(admit_repo, run_id)
+
+    _discard_mid_pass(monkeypatch)
+    launched: list = []
+
+    result = queue_admission.admit_once(
+        config_for=resolve, launcher=_launcher(launched)
+    )
+
+    assert promotion.discard_recorded(run_id), "the discard left a record"
+    assert not runs.pointer_path(run_id).exists(), (
+        f"a discarded request leaves no live run, and starts no worker "
+        f"(launcher calls: {len(launched)})"
+    )
+    assert launched == [], "a discarded request starts no worker"
+    assert run_id in result["failed"]
+
+
+def test_a_discard_arriving_while_the_launch_composes_is_refused(
+    admit_repo: Path, monkeypatch
+) -> None:
+    """A discard landing after the claim is published still stops the launch.
+
+    The run's claim is on disk before the launch is composed, and the worker is
+    started after it. ``_wire_peer_channels`` runs inside that span, so a
+    discard issued here is the operator's own: the pointer goes, the departure
+    is recorded in the run directory, and the launch must refuse rather than
+    republish the pointer and start a worker. The record has to outlive the
+    refusal's rollback, which removes that directory.
+    """
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
+    _, resolve = _config_for()
+    run_id = "r-discarded-while-composing"
+    _attempted_request(admit_repo, run_id)
+
+    real_wire = dispatch_module._wire_peer_channels
+
+    def discard_then_wire(record, peers):
+        promotion.discard(str(record["run_id"]))
+        return real_wire(record, peers)
+
+    monkeypatch.setattr(dispatch_module, "_wire_peer_channels", discard_then_wire)
+    launched: list = []
+
+    result = queue_admission.admit_once(
+        config_for=resolve, launcher=_launcher(launched)
+    )
+
+    assert not runs.pointer_path(run_id).exists(), (
+        f"a discarded request leaves no live run (launcher calls: {len(launched)})"
+    )
+    assert launched == [], "a discarded request starts no worker"
+    assert promotion.discard_recorded(run_id), (
+        "the discard record outlives the rollback"
+    )
     assert run_id in result["failed"]
 
 

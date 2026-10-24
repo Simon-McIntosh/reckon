@@ -829,6 +829,36 @@ def _release_launch_claim(run_id: str) -> None:
     shutil.rmtree(run_dir(run_id), ignore_errors=True)
 
 
+def _refuse_a_discarded_launch(run_id: str) -> None:
+    """Refuse a launch whose request was discarded before its worker started.
+
+    A discard removes the run's pointer and leaves its own record behind, and
+    the admission path hands an already-selected request to dispatch, which
+    publishes the claim and composes the launch over several seconds. An
+    operator's discard can land inside that span, after the pass selected the
+    request and before this dispatch starts the worker, and nothing else on the
+    path reads that record: the launch would write the pointer back and spawn a
+    worker beside the record of its own discard, so every reader that takes a
+    recorded discard for an abandoned run reads the new worker as one.
+
+    Called at the last step before the spawn, so the window left open to a
+    discard is only the fork itself.
+    """
+    from reckon.crew.promotion import discard_recorded, preserve_discard_record
+
+    if discard_recorded(run_id):
+        # The rollback that follows this refusal removes the run directory,
+        # which is where a discard issued while this launch was composing
+        # recorded its departure. Copied to the shared spool first, the record
+        # outlives the directory exactly as it does for a discard the admission
+        # pass preserved before handing the request over.
+        preserve_discard_record(run_id)
+        raise CrewError(
+            f"run {run_id!r} was discarded before its worker was started; the "
+            "launch is refused"
+        )
+
+
 @contextlib.contextmanager
 def _claim_released_on_refusal(run_id: str, published: bool) -> Iterator[None]:
     """Return the claim this dispatch published if the guarded work refuses.
