@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: after_suite (gate-head.log, revision 3111d232d, completed, 0 failures) minus baseline_suite (gate-base.log, revision de788d103, completed, 10 failures); no id fails at head that also passes at base.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_release.py:592",
+    "reckon/crew/promotion.py:1728",
+    "reckon/crew/promotion_checks.py:1573",
+    "reckon/crew/recovery_review_delivery.py:393"
+  ],
+  "completed_at": "2026-10-24T14:57:29.023Z",
+  "dispatched_at": "2026-10-24T14:46:43Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140353060421-promotion-result-tests-read-the-returned-result/negative-control-landing-check.log",
+      "line": "1",
+      "text": "blocking: all four negative-control logs (negative-control-landing-check, -landing-comment, -repromotion, -bookkeeping) reinstate the base test rather than mutating the production code the new assertions pin \u2014 each fails on the old assertion text (e.g. 'assert row[\"release\"] == payload[\"release\"]' and 'assert _dirty(repository, PLAN_RELATIVE)') \u2014 and \u00a745's done-when states 'restoring the old expectation is not a control', so the durability of the ten repaired ids is not demonstrated by the node's own evidence; the production mutations to record are dropping the landing_check attach at reckon/crew/promotion_release.py:678-679, writing landing_check into the row, and reverting the working-tree restore in reckon/crew/promotion.py."
+    },
+    {
+      "file": "tests/test_bookkeeping_follows_the_run.py",
+      "line": "257",
+      "text": "non-blocking: the asserted path is the value the test computed through production review_module.review_path and then passed in as write_paths, so the assertion holds whatever path that helper returns and cannot catch a wrong record location; it guards only that the refusal echoes its input and keeps the 'refused for delivery' wording."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the landed change is test-only, so no production code reaches it; the runtime owners the assertions pin were read and verified: reckon/crew/promotion_release.py:592 _record_release_on_ledger, reckon/crew/promotion.py:1728 complete, reckon/crew/promotion_checks.py:1573 review delivery refusal, reckon/crew/recovery_review_delivery.py:393 review_delivery_refusal detail.",
+    "diff": "read 3111d232d and b63b3c857 against de788d103: six test files (+169/-16) changing the release comparisons, replacing the landing-test fixture, asserting the rollback leaves nothing dirty, and reading the new delivery refusal, plus one 83-line evidence fragment; no production source changed.",
+    "done_when": "\u00a745's measure names the ten ids and a base-arm differential; the manifest records baseline_suite 10 failed / after_suite 0 failed from gate-base.log and gate-head.log, whose headers name de788d103 and 3111d232d and whose last lines are EXIT=1 and EXIT=0.",
+    "goal": "the node goal is to make the ten \u00a745 census ids pass by asserting each intended contract or reporting an unintended change; the landed tests re-pin the release-with-landing_check contract, the refused-landing rollback, and the named review delivery refusal, and gate-head.log shows all ten green at 3111d232d.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140353060421-promotion-result-tests-read-the-returned-result/manifest.md; status complete, commits 3111d232d and b63b3c857, tests line carries the literal head-arm command, artifacts line reports gate-head 28 passed EXIT=0 against gate-base 10 failed EXIT=1.",
+    "write_paths": "read the manifest's declared paths (six tests/test_*.py files, docs/evidence/fragments/the-suite-is-green-at-head/promotion-result-tests-read-the-returned-result.html, and the figures directory); git diff de788d103..b63b3c857 changes only the six tests and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "each repair fails under a named production change: removing the landing_check attach at reckon/crew/promotion_release.py:678-679 breaks the literal assertion in tests/test_promotion_stages_its_one_run_file.py:219, recording landing_check in the row breaks tests/test_promotion_never_amends_its_commit.py:212, reverting the working-tree restore leaves tests/test_repromotion_commits_its_recorded_comment.py:193's dirty check red, and changing the detail string at reckon/crew/recovery_review_delivery.py:393 breaks tests/test_bookkeeping_follows_the_run.py:257 \u2014 but the node's recorded controls do not demonstrate this, and the bookkeeping assertion's path half is the value the test itself supplied.",
+    "evidence": "gate-head.log and gate-base.log carry revision, tree, literal command and module.__file__ headers and end EXIT=0 / EXIT=1, and the base arm fails exactly the ten census ids (10 failed, 18 passed), so the measure \u00a745 names is recorded and met; the negative-control evidence does not meet \u00a745's stated form \u2014 all four logs reinstate the base test rather than mutating the production code the new assertions pin, which \u00a745 explicitly excludes ('restoring the old expectation is not a control').",
+    "fit": "the additions follow the surrounding style \u2014 a module-level helper beside the existing _fail_first_landing at tests/test_landing_commit_carries_only_its_own_comment.py:160, mechanism-worded comments, no new import beyond html, and no plan, phase, issue or version label anywhere in the diff.",
+    "goal_fidelity": "tests/test_promotion_never_amends_its_commit.py:200 now compares the persisted row's release to the returned release less its landing_check and separately pins the exact {\"ok\": True, \"reversals\": [], \"mismatched\": []}, so the id asserts the contract reckon/crew/promotion_release.py:678-679 creates rather than the pre-881bf6b6f equality; gate-head.log records all 28 cases passing at 3111d232d, which includes the ten named ids that gate-base.log fails.",
+    "reuse": "no added definition forks a production capability; the one new helper, tests/test_landing_commit_carries_only_its_own_comment.py:172 _record_comment_without_committing, writes through the same reckon/_store.write_plan the file already uses, and a search of tests/conftest.py and tests/ for a shared plan-comment fixture found none (the per-file pattern at tests/test_a_run_comment_earns_no_plan_review.py:97 is the idiom).",
+    "scope_discipline": "git diff de788d103..b63b3c857 touches only the six declared test files plus docs/evidence/fragments/the-suite-is-green-at-head/promotion-result-tests-read-the-returned-result.html, each a declared write path; no production module and no concurrent node's path is touched."
+  },
+  "node": "review-of-promotion-result-tests-read-the-returned-result-b63b3c857de6",
+  "node:reviewed": "promotion-result-tests-read-the-returned-result",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the ten \u00a745 census ids pass by asserting each intended contract; tests/test_promotion_never_amends_its_commit.py:200 re-pins the release comparison to the returned release less landing_check and gate-head.log records all 28 cases passing at 3111d232d where gate-base.log fails exactly the ten named ids.\nVERDICT done_when: \u00a745's measure names the ten ids and a base-arm differential; the manifest records baseline_suite 10 failed and after_suite 0 failed from gate-base.log (EXIT=1) and gate-head.log (EXIT=0), whose headers name de788d103 and 3111d232d with the literal command and module.__file__.\nVERDICT write_paths: the manifest declares six test files and the evidence fragment; git diff de788d103..b63b3c857 touches only those six plus docs/evidence/fragments/the-suite-is-green-at-head/promotion-result-tests-read-the-returned-result.html, all inside the grant.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140353060421-promotion-result-tests-read-the-returned-result/manifest.md; it reports status complete, commits 3111d232d and b63b3c857, the literal head-arm command on the tests line, gate-head.log 28 passed EXIT=0 and gate-base.log 10 failed EXIT=1.\nVERDICT diff: read 3111d232d and b63b3c857 against de788d103: six test files (+169/-16) altering the release comparisons, replacing the landing-test fixture, asserting the refused landing leaves nothing dirty, and reading the named delivery refusal, plus one 83-line evidence fragment; no production source changed.\nCALL_SITES: reckon/crew/promotion_release.py:592, reckon/crew/promotion.py:1728, reckon/crew/promotion_checks.py:1573, reckon/crew/recovery_review_delivery.py:393\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_promotion_never_amends_its_commit.py:200 now compares the persisted row's release to the returned release less its landing_check and separately pins the exact landing check, so the id asserts the contract reckon/crew/promotion_release.py:678-679 creates rather than the pre-881bf6b6f equality.\nSCORE evidence: 11\nJUSTIFICATION evidence: gate-head.log and gate-base.log carry revision, tree, literal command and module.__file__ headers and end EXIT=0 and EXIT=1 with the base arm failing exactly the ten census ids, but all four negative-control logs reinstate the base test instead of mutating the production code the new assertions pin, which \u00a745 explicitly excludes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff de788d103..b63b3c857 touches only the six declared test files plus the declared evidence fragment under docs/evidence/fragments/the-suite-is-green-at-head/, and no production or concurrent-node path.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_promotion_stages_its_one_run_file.py:219 fails if the landing_check attach at reckon/crew/promotion_release.py:678-679 is dropped and tests/test_repromotion_commits_its_recorded_comment.py:193 fails if the working-tree restore is reverted, but the node's recorded controls do not show either and tests/test_bookkeeping_follows_the_run.py:257 asserts a path the test itself supplied.\nSCORE fit: 18\nJUSTIFICATION fit: the new helper at tests/test_landing_commit_carries_only_its_own_comment.py:172 sits beside the existing _fail_first_landing and follows the file's module-level-fixture idiom, with mechanism-worded comments and no plan, phase, issue or version label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the only added definition, _record_comment_without_committing at tests/test_landing_commit_carries_only_its_own_comment.py:172, writes through the reckon/_store.write_plan the file already uses, and a search of tests/conftest.py and tests/ for a shared plan-comment fixture found no owner to extend.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140353060421-promotion-result-tests-read-the-returned-result/negative-control-landing-check.log:1 blocking: all four negative-control logs reinstate the base test rather than mutating the production code the new assertions pin, and \u00a745's done-when states restoring the old expectation is not a control, so the ten repaired ids' durability is not demonstrated by the node's own evidence.\nFINDING tests/test_bookkeeping_follows_the_run.py:257 non-blocking: the asserted path is the value the test computed through production review_module.review_path and passed in as write_paths, so the assertion holds whatever that helper returns and guards only that the refusal echoes its input.",
+  "review_run_id": "r-20261024T144426209549-review-of-promotion-result-tests-read-the-returned-result-b63b3c857de6",
+  "reviewed_base_sha": "de788d1031ee7588cb2f202961c4b072ffabcef7",
+  "reviewed_head_sha": "b63b3c857de655c396528ec831ae00c2a0fd9561",
+  "reviewed_run_id": "r-20261024T140353060421-promotion-result-tests-read-the-returned-result",
+  "scores": {
+    "durability": 17,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:25:00+00:00",
+  "total": 102
+}
