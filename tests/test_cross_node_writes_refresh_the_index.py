@@ -59,13 +59,14 @@ class _NeverFiringWatch(_RealWatch):
     def __init__(self, root: Path, *, wake_fd: int | None = None) -> None:
         self.root = Path(root).resolve()
         self._wake_fd = wake_fd
+        self._carried: list[tuple[Path, bool]] = []
         self.fd, self._sink = os.pipe()
 
-    def consume(self) -> bool:
-        return True
+    def consume(self) -> list[tuple[Path, bool]]:
+        return []
 
-    def drain(self, settle_s: float) -> None:
-        return None
+    def drain(self, settle_s: float) -> list[tuple[Path, bool]]:
+        return []
 
     def close(self) -> None:
         for descriptor in (self.fd, self._sink):
@@ -472,9 +473,9 @@ def test_one_change_invalidates_once_and_a_rebuild_reloads(
     calls: list[Path] = []
     original = serve._invalidate_tree_views
 
-    def counted(root, *, changed_at=None):
+    def counted(root, **kwargs):
         calls.append(Path(root).resolve())
-        return original(root, changed_at=changed_at)
+        return original(root, **kwargs)
 
     monkeypatch.setattr(serve, "_invalidate_tree_views", counted)
 
@@ -511,9 +512,9 @@ def test_a_git_index_change_fires_without_moving_head_identity(
     calls: list[Path] = []
     original = serve._invalidate_tree_views
 
-    def counted(root, *, changed_at=None):
+    def counted(root, **kwargs):
         calls.append(Path(root).resolve())
-        return original(root, changed_at=changed_at)
+        return original(root, **kwargs)
 
     monkeypatch.setattr(serve, "_invalidate_tree_views", counted)
 

@@ -105,6 +105,7 @@ from reckon.change_streams import (  # noqa: F401 — the import surface of this
     _ProjectChangeWatch,
     _TreeSignal,
     _TreeWake,
+    observed_change,
 )
 from reckon.crew.recovery import _PRE_SPAWN_PHASES
 from reckon.env_duration import read_duration_override
@@ -1473,21 +1474,35 @@ def _invalidate_discovery_tree(docs_dir: Path, changed_at: float | None = None) 
         _DISC_CACHE.pop(key, None)
 
 
-def _invalidate_tree_views(root: Path, changed_at: float | None = None) -> None:
+def _invalidate_tree_views(
+    root: Path,
+    changed_at: float | None = None,
+    index_change: metadata_index.TreeChange | None = None,
+) -> None:
     """Drop every derived view of one docs tree after a reported change.
 
     One entry point for every watch: the discovery reuse window, the cached
     discoveries and the in-process metadata index all key off the same tree, so
-    a change to any one of them drops all three together. The reuse window and
-    the index rows go on every reported change — a reader must never be handed
-    a row list that predates it — while the cached discoveries are dropped only
-    when they predate the reporting watch's own observation, so N open pages
-    pay for one recomputation per change.
+    a change to any one of them reaches all three together. The reuse window
+    and the cached discoveries are dropped on every reported change — a reader
+    must never be handed a derived payload that predates it — while the cached
+    discoveries are dropped only when they predate the reporting watch's own
+    observation, so N open pages pay for one recomputation per change.
+
+    The index is the one view a source can patch instead of dropping.
+    ``index_change`` is what the source could attribute: the marked paths are
+    absorbed by the next read, and an empty change keeps the build because the
+    change touched nothing the index covers. ``None`` is a change no source
+    could attribute, and the build is dropped so the next read pays the full
+    sweep.
     """
 
     _invalidate_discovery_signatures(root)
     _invalidate_discovery_tree(root, changed_at=changed_at)
-    metadata_index.invalidate_tree(root)
+    if index_change is None:
+        metadata_index.invalidate_tree(root)
+    else:
+        metadata_index.mark_tree_paths(root, index_change)
 
 
 def _discovery_lock(cache_key: tuple[str, str]) -> threading.Lock:
@@ -2815,7 +2830,7 @@ class Handler(BaseHTTPRequestHandler):
                 changed_at = time.monotonic()
                 # A save or a merge is a burst of events; let it settle so the
                 # burst costs one rediscovery rather than one per event.
-                watch.drain(_CHANGE_SETTLE_S)
+                events = watch.drain(_CHANGE_SETTLE_S)
                 # A finished refresh publishes its fleet-scoped result through
                 # the parent's waiter, which wakes this stream. One event per
                 # key whose version moved, even when this project's own rows
@@ -2832,10 +2847,17 @@ class Handler(BaseHTTPRequestHandler):
                         self._write_project_event(
                             "fleet", fleet={"key": fleet_key, "version": fleet_version}
                         )
-                # Every watch that reports a tree drops the same views of it,
+                # Every watch that reports a tree reaches the same views of it,
                 # so a page that paints from the index is never handed rows
-                # that predate the change its own stream just reported.
-                _invalidate_tree_views(docs_dir, changed_at=changed_at)
+                # that predate the change its own stream just reported. This
+                # burst's own names are what the index can absorb; a wake
+                # through the fleet watch's pipe carries none, because whoever
+                # wrote it has already marked its own paths.
+                _invalidate_tree_views(
+                    docs_dir,
+                    changed_at=changed_at,
+                    index_change=observed_change(docs_dir, events),
+                )
                 rows = _served_index_rows(docs_dir, project)
                 row_changes = _index_row_diff(known, rows)
                 known = {_index_row_identity(row): row for row in rows}

@@ -247,8 +247,34 @@ class IndexBuild:
         return bool(self.rebuilt or self.added or self.removed)
 
 
+@dataclass(frozen=True)
+class TreeChange:
+    """The paths one reported change named, as the index can absorb them.
+
+    ``files`` are docs-relative posix paths of covered files a source named,
+    and ``dirs`` are docs-relative directories whose entry set moved. An empty
+    change is a source saying it has nothing the index covers: the build is
+    kept as it is. ``None`` is never a ``TreeChange``: a caller with no
+    attributable paths drops the build instead, so the distinction between
+    "nothing moved" and "nobody can say" survives to the read.
+    """
+
+    files: frozenset[str] = frozenset()
+    dirs: frozenset[str] = frozenset()
+
+    def __or__(self, other: TreeChange) -> TreeChange:
+        return TreeChange(self.files | other.files, self.dirs | other.dirs)
+
+    def __bool__(self) -> bool:
+        return bool(self.files or self.dirs)
+
+
 _LOCK = threading.Lock()
 _CACHE: dict[tuple[str, str, bool], IndexBuild] = {}
+#: The paths each tree's next read must absorb, keyed by its resolved root. A
+#: change marks the build rather than dropping it, so a change to one covered
+#: file costs a read of that file and nothing else.
+_MARKS: dict[str, TreeChange] = {}
 
 #: Discovery batches in flight, keyed by (resolved docs dir, project). A batch
 #: holds the persisted entries as loaded when it opened; :func:`record_discovery`
@@ -276,6 +302,7 @@ def clear() -> None:
 
     with _LOCK:
         _CACHE.clear()
+        _MARKS.clear()
     with _META_LOCK:
         _META_BY_DIGEST.clear()
         _META_HEAD_BY_DIGEST.clear()
@@ -336,12 +363,95 @@ def _parse_meta_head_shared(path: Path, slug: str | None = None) -> dict:
 
 
 def invalidate_tree(docs_dir: Path) -> None:
-    """Drop the in-process index of the tree the change watch reported."""
+    """Drop the in-process index of the tree the change watch reported.
+
+    This is the fallback for a change no source could attribute: an event
+    queue overflow, a commit that cannot be resolved, a rewritten history. The
+    next read pays the full sweep.
+    """
 
     root = str(Path(docs_dir).resolve())
     with _LOCK:
         for key in [key for key in _CACHE if key[1] == root]:
             del _CACHE[key]
+        _MARKS.pop(root, None)
+
+
+_COVERED_SUFFIXES = (".html", *_FIGURE_SUFFIXES)
+
+
+def _may_be_covered(name: str) -> bool:
+    """Whether a file name could be covered, decided from the name alone.
+
+    The walk visits every entry in a directory and most of them are not
+    covered, so it rejects by suffix before it builds a path or resolves one
+    against the docs root. The suffixes here are the ones
+    :func:`covered_name` accepts, so this is a rejection that can never drop a
+    file the rule would keep.
+    """
+
+    return name.endswith(_COVERED_SUFFIXES)
+
+
+def covered_name(relative: str) -> bool:
+    """Whether a docs-relative path is one the index builds a row for.
+
+    The covered set is every HTML file anywhere in the tree plus figure images
+    under the top-level figures directory, and a source that reports paths uses
+    this same rule to decide which of them the index can absorb.
+    """
+
+    if not _may_be_covered(relative):
+        return False
+    if relative.endswith(".html"):
+        return True
+    parts = PurePosixPath(relative).parts
+    return len(parts) > 1 and parts[0] == _FIGURE_DIR
+
+
+def mark_tree_paths(docs_dir: Path, change: TreeChange) -> None:
+    """Record the paths a source named for the next read to absorb.
+
+    A tree with no cached build has nothing to absorb: its next read builds
+    anyway, and the persisted shape already tells it which directories moved. A
+    change that names nothing covered is not recorded, so a write the index
+    does not read costs neither a stat nor a rebuild.
+    """
+
+    if not change:
+        return
+    root = str(Path(docs_dir).resolve())
+    with _LOCK:
+        if not any(key[1] == root for key in _CACHE):
+            return
+        recorded = _MARKS.get(root)
+        _MARKS[root] = change if recorded is None else recorded | change
+
+
+def marked_covered_changes(docs_dir: Path, project: str) -> TreeChange:
+    """Mark the covered files whose stat identity moved since the index was built.
+
+    The cross-node slow sweep already walks and stats every covered file; this
+    is the comparison that walk was not making. A file the persisted index does
+    not list was added, one it lists and the walk did not reach was removed, and
+    one whose stat identity moved was replaced — each is a row the next read
+    must rebuild. The state files that sweep also reads are not in the covered
+    set and so mark nothing.
+    """
+
+    entries = _load_persisted(docs_dir, project)
+    if not entries:
+        return TreeChange()
+    walked = dict(_covered_files_for_project(docs_dir, project))
+    files = {
+        relative
+        for relative, path in walked.items()
+        if (entry := entries.get(relative)) is None
+        or (observed := covered_stat(docs_dir, project, relative, path)) is None
+        or not _same_stat_identity(entry.get("signature"), observed)
+    }
+    files.update(relative for relative in entries if relative not in walked)
+    return TreeChange(files=frozenset(files))
 
 
 def index_rows(
@@ -373,7 +483,14 @@ def index_rows(
         with _LOCK:
             build = _CACHE.get(key)
         if build is not None:
-            return [dict(row) for row in build.rows]
+            absorbed = _absorb_marked(
+                docs_dir, project, key, repo_dir, git_first, git_last
+            )
+            if absorbed is not None:
+                return [dict(row) for row in absorbed.rows]
+            # The sources named paths this cached build cannot absorb, which
+            # happens when its persisted shape is unusable; the rebuild below
+            # is the honest answer to a mark that cannot be applied.
     covered: list[tuple[str, Path]] | None = None
     dirs: dict[str, Path] | None = None
     reused = _reuse_covered(docs_dir, project)
@@ -390,6 +507,201 @@ def index_rows(
         dirs=dirs,
     )
     return [dict(row) for row in build.rows]
+
+
+def _absorb_marked(
+    docs_dir: Path,
+    project: str,
+    key: tuple[str, str, bool],
+    repo_dir: Path | None,
+    git_first: Mapping[str, int] | None,
+    git_last: Mapping[str, int] | None,
+) -> IndexBuild | None:
+    """Patch every cached build of the tree with the paths its sources marked.
+
+    A build's rows are served without a stat while it is held, so a change to
+    one covered file must reach that build before the next read answers from
+    it. Every cached variant of the tree is patched, because the marked paths
+    belong to the tree rather than to one reader's stamp source; the variant
+    being served takes the caller's git maps, and the others rebuild the marked
+    rows from their own stat identity.
+    """
+
+    root = str(Path(docs_dir).resolve())
+    with _LOCK:
+        change = _MARKS.pop(root, None)
+        builds = {
+            cached: build for cached, build in _CACHE.items() if cached[1] == root
+        }
+    if change is None:
+        return builds.get(key)
+    patched: dict[tuple[str, str, bool], IndexBuild] = {}
+    for cached, build in builds.items():
+        if cached == key:
+            fresh = _patch_build(
+                docs_dir, project, build, change, repo_dir, git_first, git_last
+            )
+        else:
+            fresh = _patch_build(docs_dir, project, build, change, None, None, None)
+        if fresh is None:
+            return None
+        patched[cached] = fresh
+    with _LOCK:
+        _CACHE.update(patched)
+    return patched.get(key)
+
+
+def _patch_build(
+    docs_dir: Path,
+    project: str,
+    build: IndexBuild,
+    change: TreeChange,
+    repo_dir: Path | None,
+    git_first: Mapping[str, int] | None,
+    git_last: Mapping[str, int] | None,
+) -> IndexBuild | None:
+    """Rebuild only the rows the marked paths reach, reusing every other row.
+
+    Each marked directory is re-scanned, together with any subdirectory it
+    gained, and a recorded directory that no longer exists drops its files and
+    its descendants. A marked file is restatted and re-parsed, so its stamps
+    come from the caller's git maps and a commit that only moves a document's
+    commit date reaches its row. A file the re-scan reached whose stat identity
+    is unchanged keeps its persisted row without being read, and every file no
+    mark reaches is carried over without a stat.
+    """
+
+    entries = _load_persisted(docs_dir, project)
+    if not entries:
+        return None
+    stamps = dict(build.dir_stamps) or _load_dir_stamps(docs_dir, project)
+    if not stamps:
+        return None
+    recorded = set(stamps)
+    marked = set(change.dirs) & recorded
+    # A named file's own directory has moved too: its entry set changed when
+    # the file was added, removed or replaced. Re-observing it is what records
+    # the shape the next reader starts from.
+    for relative in change.files:
+        parent = PurePosixPath(relative).parent.as_posix()
+        if parent in recorded:
+            marked.add(parent)
+    observed: set[str] = set()
+    removed: set[str] = set()
+    for relative in sorted(marked):
+        identity = covered_dir_identity(docs_dir / relative)
+        observed.add(relative)
+        if identity is None:
+            removed.add(relative)
+            stamps.pop(relative, None)
+        else:
+            stamps[relative] = identity
+    scanned = marked - removed
+    # A marked directory under another marked directory is reached by that
+    # one's scan; skipping every *unmarked* recorded directory is what lets the
+    # scan descend into a marked child and into a subdirectory the tree gained.
+    roots = [
+        relative
+        for relative in sorted(scanned)
+        if not any(
+            relative.startswith(other + "/") for other in scanned if other != relative
+        )
+    ]
+    walked: list[tuple[str, Path]] = []
+    scanned_files: list[tuple[str, Path]] = []
+    if roots:
+        scanned_files, walked = _walk_covered(
+            docs_dir,
+            [docs_dir / relative for relative in roots],
+            frozenset(recorded - scanned),
+        )
+    for relative, path in walked:
+        if relative in observed:
+            continue
+        identity = covered_dir_identity(path)
+        if identity is not None:
+            stamps[relative] = identity
+    scanned_dirs = {relative for relative, _path in walked}
+    files: dict[str, Path] = {}
+    for relative in entries:
+        if any(relative == gone or relative.startswith(gone + "/") for gone in removed):
+            continue
+        files[relative] = docs_dir / relative
+    for relative in list(files):
+        if PurePosixPath(relative).parent.as_posix() in scanned_dirs:
+            del files[relative]
+    files.update(scanned_files)
+
+    stamp = _make_stamp(repo_dir, git_first, git_last)
+    fresh = IndexBuild(project=project, docs_dir=docs_dir)
+    fresh_entries: list[dict] = []
+    seen: set[str] = set()
+    for relative, path in sorted(files.items()):
+        seen.add(relative)
+        entry = entries.get(relative)
+        reuse = False
+        if entry is not None and _row_is_complete(entry):
+            if relative in change.files:
+                # A named file is read again even when its identity is
+                # unchanged: a commit that touched it moves the stamp its row
+                # carries, which no stat of the file can show.
+                reuse = False
+            elif PurePosixPath(relative).parent.as_posix() in scanned_dirs:
+                current = covered_stat(docs_dir, project, relative, path)
+                reuse = current is not None and _same_stat_identity(
+                    entry.get("signature"), current
+                )
+            else:
+                reuse = True
+        if reuse:
+            _reuse_entry(fresh, fresh_entries, relative, entry)
+            continue
+        try:
+            digest = _content_digest(path)
+        except OSError:
+            digest = None
+        if (
+            relative not in change.files
+            and entry is not None
+            and digest is not None
+            and entry.get("digest") == digest
+            and _row_is_complete(entry)
+        ):
+            _reuse_entry(fresh, fresh_entries, relative, entry)
+            continue
+        try:
+            signature = list(file_signature(path))
+        except OSError:
+            continue
+        if entry is None:
+            fresh.added += 1
+        else:
+            fresh.rebuilt.append(relative)
+        fields, plan, discovery = _row_for(
+            path, relative, docs_dir, project, signature, stamp
+        )
+        fresh_entry = {"path": relative, "digest": digest, "signature": signature[1:]}
+        if fields is None:
+            fresh_entry["skip"] = True
+        else:
+            fresh_entry["fields"] = fields
+            fresh.rows.append(fields)
+            if discovery is not None:
+                fresh_entry["discovery"] = discovery
+                fresh.discovery[relative] = discovery
+            if plan is not None:
+                if not plan["unreadable"]:
+                    fresh_entry["plan"] = plan
+                fresh.plans.append({"path": relative, **plan})
+        fresh_entries.append(fresh_entry)
+
+    fresh.removed = len(set(entries) - seen)
+    fresh.dir_stamps = stamps
+    # A re-scan that found no row change still learned the tree's new shape;
+    # recording it is what stops the next reader scanning the same directory.
+    if fresh.changed or stamps != build.dir_stamps or not entries:
+        _store_persisted(docs_dir, project, fresh_entries, stamps)
+    return fresh
 
 
 def _reuse_covered(
@@ -702,9 +1014,10 @@ def _walk_covered(
 ) -> tuple[list[tuple[str, Path]], list[tuple[str, Path]]]:
     """Return the covered files and every visited directory, from one walk.
 
-    The files are ``(docs-relative posix path, path)`` for every HTML file
-    anywhere in the tree plus figure images under the top-level figures
-    directory. The directories are ``(docs-relative posix path, path)`` for
+    The files are ``(docs-relative posix path, path)`` for every file
+    :func:`covered_name` accepts, so the walk and the sources that report paths
+    decide coverage by one rule. The directories are ``(docs-relative posix
+    path, path)`` for
     every directory the walk reached, including ones that held no covered
     file: a directory's stat identity moves when an entry is added to or
     removed from it, so recording the set lets a later read tell whether the
@@ -720,7 +1033,6 @@ def _walk_covered(
     have before and is read in full.
     """
 
-    figures_root = os.path.join(os.fspath(docs_dir), _FIGURE_DIR)
     found: dict[str, Path] = {}
     directories: dict[str, Path] = {}
     pending = [os.fspath(root) for root in (roots or [docs_dir])]
@@ -749,17 +1061,14 @@ def _walk_covered(
                         continue
                 except OSError:
                     continue
-                name = entry.name
-                is_figure = name.endswith(_FIGURE_SUFFIXES) and (
-                    directory == figures_root
-                    or directory.startswith(figures_root + os.sep)
-                )
-                if not (name.endswith(".html") or is_figure):
+                if not _may_be_covered(entry.name):
                     continue
                 path = Path(entry.path)
                 try:
                     relative = path.relative_to(docs_dir).as_posix()
                 except ValueError:
+                    continue
+                if not covered_name(relative):
                     continue
                 found[relative] = path
     return sorted(found.items()), sorted(directories.items())
