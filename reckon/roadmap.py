@@ -905,6 +905,37 @@ def split_unpassed_gates(
     return plan_holding, []
 
 
+def section_readiness_verdict(
+    section: str,
+    *,
+    plan_ready: bool,
+    plan_blockers: Iterable[Mapping[str, Any]],
+    section_blockers: Iterable[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """One section's dispatch readiness after plan and section holds."""
+
+    blockers = [dict(blocker) for blocker in (*plan_blockers, *section_blockers)]
+    return {
+        "section": section,
+        "ready": bool(plan_ready and not blockers),
+        "blockers": blockers,
+    }
+
+
+def _legacy_section_readiness(verdict: Mapping[str, Any]) -> dict[str, Any]:
+    """Keep the older section row shape while reading the shared verdict."""
+
+    return {
+        **verdict,
+        "blockers": [
+            {key: value for key, value in blocker.items() if key != "kind"}
+            if blocker.get("kind") == SECTION_DEPENDENCY_BLOCKER
+            else blocker
+            for blocker in verdict["blockers"]
+        ],
+    }
+
+
 def _gate_is_closed(gate: Mapping[str, Any]) -> bool:
     """Whether a gate's status records a verdict the plan has already settled.
 
@@ -1936,7 +1967,7 @@ def _dependency_cycles(graph: dict[str, list[str]]) -> list[list[str]]:
 
     for node in sorted(graph):
         visit(node)
-    return [list(cycle) + [cycle[0]] for cycle in sorted(found) if cycle]
+    return [[*cycle, cycle[0]] for cycle in sorted(found) if cycle]
 
 
 def _sprint_membership(
@@ -3289,16 +3320,16 @@ def _build_roadmap(
 
     cycles = _dependency_cycles(dict(local_graph))
     cycle_members = {slug for cycle in cycles for slug in cycle[:-1]}
-    for cycle in cycles:
-        findings.append(
-            _finding(
-                "dependency-cycle",
-                "error",
-                "dependency cycle: " + " -> ".join(cycle),
-                slug=cycle[0],
-                extra={"cycle": cycle},
-            )
+    findings.extend(
+        _finding(
+            "dependency-cycle",
+            "error",
+            "dependency cycle: " + " -> ".join(cycle),
+            slug=cycle[0],
+            extra={"cycle": cycle},
         )
+        for cycle in cycles
+    )
 
     endpoint_rows = _dependency_endpoints(project, plans)
     endpoint_memberships: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -3576,61 +3607,9 @@ def _build_roadmap(
             for section in decision.get("sections") or []:
                 decision_section_blockers[section].append(decision)
         if section_dependency_blockers or mapped_edges or decision_section_blockers:
-            # A staging anchor holds the source plan's section of the same
-            # identity; the mapping names its waiting section outright, so every
-            # section-scoped edge keys its blockers by the section that waits.
-            section_blockers: dict[str, list[dict[str, Any]]] = defaultdict(list)
-            for blocker in section_dependency_blockers:
-                waiting = str(blocker.get("source_section") or blocker.get("stage"))
-                section_blockers[waiting].append(blocker)
-            for section, holding in decision_section_blockers.items():
-                section_blockers[section].extend(holding)
-            # The readiness split enumerates a plan's sections from the same
-            # authored set every existence question reads, so a section that
-            # lives only in a declaration or a typed record still appears; the
-            # section-scoped blockers beside it are the split's own addition.
-            sections = sorted(
-                declared_section_identities(
-                    _plan_authored_state(plan, docs_dir, project, slug)
-                )
-                | set(section_blockers)
-            )
-            row["section_readiness"] = [
-                {
-                    "section": section,
-                    "ready": section not in section_blockers,
-                    "blockers": section_blockers.get(section, []),
-                }
-                for section in sections
-            ]
-            row["ready_sections"] = [
-                section for section in sections if section not in section_blockers
-            ]
-            row["blocked_sections"] = [
-                section for section in sections if section in section_blockers
-            ]
             row["section_depends_on"] = mapped_edges
-        # The section rows rank the plan's own ready work, which the row already
-        # states twice: the sections it declares implementable, less the ones a
-        # section-scoped hold names. The hold set is the row's own, so a hold
-        # the row does not report cannot hold a section here.
+        # The section rows and readiness split use the same authored state.
         authored_by_plan[slug] = authored
-        plan_ready_sections = [
-            section
-            for section in row["implementable_sections"]
-            if section not in set(row.get("blocked_sections") or [])
-        ]
-        row["stuck"] = any(
-            section_is_stuck(
-                attempts_by_plan.get(slug, {})
-                .get(section_record_id(section), {})
-                .get("attempts", 0),
-                blocked_run_seconds.get((slug, section))
-                or blocked_run_seconds.get((slug, section_record_id(section))),
-            )
-            for section in plan_ready_sections
-        )
-        ready_sections_by_plan[slug] = plan_ready_sections
         # Every hold the plan itself names, by section and by kind, so a section
         # row reports a dependency, a gate and a decision alongside the two
         # kinds only a run can carry. A row that reports a hold of one kind and
@@ -3651,6 +3630,65 @@ def _build_roadmap(
             for gated in gate.get("gated_sections") or []:
                 named_holds[str(gated)].append({**gate, "kind": GATE_BLOCKER})
         section_holds_by_plan[slug] = named_holds
+        plan_holds = [
+            *plan_dependency_blockers,
+            *explicit_blockers,
+            *held_blockers,
+            *gate_blockers,
+            *plan_holding_decisions,
+        ]
+        verdicts = {
+            section: section_readiness_verdict(
+                section,
+                plan_ready=is_ready,
+                plan_blockers=plan_holds,
+                section_blockers=named_holds.get(section, []),
+            )
+            for section in plan_implementable
+        }
+        row["section_verdicts"] = verdicts
+        if (
+            section_dependency_blockers
+            or mapped_edges
+            or decision_section_blockers
+            or section_gate_blockers
+            or gate_blockers
+        ):
+            sections = sorted(declared_section_identities(authored) | set(named_holds))
+            row["section_readiness"] = [
+                _legacy_section_readiness(
+                    verdicts.get(section)
+                    or section_readiness_verdict(
+                        section,
+                        plan_ready=is_ready,
+                        plan_blockers=plan_holds,
+                        section_blockers=named_holds.get(section, []),
+                    )
+                )
+                for section in sections
+            ]
+            row["ready_sections"] = [
+                item["section"] for item in row["section_readiness"] if item["ready"]
+            ]
+            row["blocked_sections"] = [
+                item["section"]
+                for item in row["section_readiness"]
+                if not item["ready"]
+            ]
+        plan_ready_sections = [
+            section for section, verdict in verdicts.items() if verdict["ready"]
+        ]
+        row["stuck"] = any(
+            section_is_stuck(
+                attempts_by_plan.get(slug, {})
+                .get(section_record_id(section), {})
+                .get("attempts", 0),
+                blocked_run_seconds.get((slug, section))
+                or blocked_run_seconds.get((slug, section_record_id(section))),
+            )
+            for section in plan_ready_sections
+        )
+        ready_sections_by_plan[slug] = plan_ready_sections
         if slug in live_runs:
             row["in_flight"] = live_runs[slug]
         if slug in interrupted_runs:

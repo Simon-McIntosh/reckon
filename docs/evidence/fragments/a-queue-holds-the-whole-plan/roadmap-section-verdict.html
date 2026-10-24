@@ -1,0 +1,21 @@
+<section id="roadmap-section-verdict-landing">
+  <h2>Roadmap rows now answer readiness for each implementable section</h2>
+  <p><code>section_verdicts</code> applies plan readiness and the
+  section's dependency, decision and gate holds. The older
+  <code>section_readiness</code> list is derived from those verdicts where that
+  list was already emitted. The project read in
+  <code>reckon/crew/plan_review.py</code> exposes the same per-section verdicts
+  and supplies its existing per-plan summary.</p>
+  <p>The new cases cover an unmet section dependency, a section edge, a scoped
+  decision, a gate on one of two implementable sections, a gate on both,
+  an unshipped plan dependency and ready sections, including the section beside
+  a different section's open decision. The base revision failed all eight
+  original cases because no public verdict existed; the product commit passed
+  the nine current cases. A scratch mutation that removed gate holds from the
+  verdict made both gate cases fail, each reporting a falsely ready section.</p>
+  <p>The serial existing-importer cohort passed 553 tests at the base revision
+  and the same 553 at the product commit: zero added failures. The final
+  focused gate passed nine tests. Ruff check and format check passed for all
+  changed paths after a separate style correction of two pre-existing lint
+  findings in the touched roadmap file.</p>
+</section>
