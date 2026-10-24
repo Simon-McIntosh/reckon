@@ -411,24 +411,25 @@ def roadmap_snapshot_key(
     return key, live_states
 
 
-#: How many snapshots one project keeps under the node-local cache. One is
-#: written per resolved docs root and per request shape, so a workstation that
-#: mounts many checkouts would otherwise accumulate them for trees that no
-#: longer exist.
+#: How many docs roots one project keeps snapshots for under the node-local
+#: cache. Records are one per resolved docs root and per request shape, and the
+#: bound counts trees rather than files: every shape one live tree answers is
+#: kept whole, so pruning another tree's shapes never drops this tree's newest
+#: record for a shape it still holds.
 _SNAPSHOT_KEEP_PER_PROJECT = 8
 
 
 def _prune_snapshots(written: Path) -> None:
     """Remove this project's snapshot files whose tree is gone, and the oldest.
 
-    A snapshot is filed per resolved docs root and per request shape, and a
-    tree that is deleted —
-    a removed worktree, a finished run's temporary copy — leaves its file
-    behind with nothing else to remove it. The file records the root it was
-    composed from, so a root that no longer exists names a snapshot no reader
-    can ever match. Beyond that the newest ``_SNAPSHOT_KEEP_PER_PROJECT`` are
-    kept, which bounds a host that mounts and deletes trees continuously. The
-    file just written always survives, whatever its age.
+    A tree that is deleted — a removed worktree, a finished run's temporary copy
+    — leaves its records behind with nothing else to remove them. Each file
+    records the root it was composed from, so a root that no longer exists
+    names a snapshot no reader can ever match. Beyond that the newest
+    ``_SNAPSHOT_KEEP_PER_PROJECT`` roots are kept whole, which bounds a host
+    that mounts and deletes trees continuously without pruning a live tree's
+    newest record for a shape it holds. The file just written always
+    survives, whatever its age.
     """
     try:
         siblings = sorted(
@@ -438,22 +439,37 @@ def _prune_snapshots(written: Path) -> None:
         )
     except OSError:
         return
-    for index, path in enumerate(siblings):
+    roots_seen: list[str] = []
+    # The file just written holds one of the kept roots, so it is counted here
+    # before the loop skips it: otherwise its tree would come on top of the
+    # bound rather than inside it.
+    try:
+        just_written = json.loads(written.read_text())
+    except (OSError, ValueError):
+        just_written = None
+    written_root = just_written.get("root") if isinstance(just_written, dict) else None
+    roots_seen.append(written_root if isinstance(written_root, str) else "")
+    for path in siblings:
         if path == written:
             continue
-        why = None
-        if index >= _SNAPSHOT_KEEP_PER_PROJECT:
-            why = "over the keep count"
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, ValueError):
+            record = None
+        root = record.get("root") if isinstance(record, dict) else None
+        if record is None:
+            why: str | None = "unreadable"
+        elif isinstance(root, str) and not Path(root).exists():
+            why = "its tree is gone"
         else:
-            try:
-                record = json.loads(path.read_text())
-            except (OSError, ValueError):
-                record = None
-            root = record.get("root") if isinstance(record, dict) else None
-            if isinstance(root, str) and not Path(root).exists():
-                why = "its tree is gone"
-            elif record is None:
-                why = "unreadable"
+            root_key = root if isinstance(root, str) else ""
+            if root_key not in roots_seen:
+                roots_seen.append(root_key)
+            why = (
+                None
+                if roots_seen.index(root_key) < _SNAPSHOT_KEEP_PER_PROJECT
+                else "its tree is older than the trees kept"
+            )
         if why is not None:
             with suppress(OSError):
                 path.unlink()

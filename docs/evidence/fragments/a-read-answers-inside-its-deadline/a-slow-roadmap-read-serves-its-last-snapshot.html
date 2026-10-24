@@ -112,6 +112,22 @@
     repair in place. The gate over the four files is <strong>38 passed</strong>
     at the repair head.
   </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-bound">
+    <strong>Two follow-ups from the same review.</strong> The keep bound counted
+    files while records are one per docs root and per shape, so a tree answering
+    more shapes than the bound lost its oldest answers to age alone. It now
+    counts docs roots and keeps each kept tree whole, counting the file just
+    written, and the gone-tree rule is unchanged; the case
+    <code>test_one_tree_keeps_its_record_for_every_shape_it_holds</code> stores
+    ten shapes in one tree and requires all ten back. Separately, every read
+    asked the fallback for a full stale answer up front, building a whole
+    composition only to discard it on every read that did not time out. The
+    deadline wrapper now takes a presence check, which the roadmap read answers
+    from the record lookup alone, and builds the marked answer only at the
+    timeout. With both in place the gate over the four files is
+    <strong>39 passed</strong>, and the base arm run against the same test file
+    is <strong>9 failed / 30 passed</strong>.
+  </p>
   <p id="a-slow-roadmap-read-serves-its-last-snapshot-lint">
     <strong>Lint delta.</strong> <code>ruff check</code> on the staged paths
     reports <strong>10</strong> findings at the base commit and

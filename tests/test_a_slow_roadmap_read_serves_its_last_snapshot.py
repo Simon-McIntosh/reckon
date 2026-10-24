@@ -372,6 +372,33 @@ def test_with_no_stored_snapshot_a_held_recompute_reports_the_deadline(
     assert composer.calls == 1
 
 
+def test_one_tree_keeps_its_record_for_every_shape_it_holds(home: Home) -> None:
+    """The keep bound counts docs roots, so a tree's older shapes are not pruned.
+
+    The old bound counted files, so a tree answering more shapes than the bound
+    lost the oldest of them to nothing but their age. A record per shape is a
+    live answer for that tree, and pruning another tree's records must not take
+    it.
+    """
+    shapes = [
+        {"view": "summary", "limit": index}
+        for index in range(roadmap_snapshot._SNAPSHOT_KEEP_PER_PROJECT + 2)
+    ]
+    for index, shape in enumerate(shapes):
+        roadmap_snapshot.roadmap_snapshot_store(
+            PROJECT, home.docs, f"key-{index}", {"composition": index}, shape=shape
+        )
+
+    for shape in shapes:
+        record = roadmap_snapshot.roadmap_snapshot_last(PROJECT, home.docs, shape)
+        assert record is not None, f"a live tree lost its record for shape {shape}"
+    directory = roadmap_snapshot.roadmap_snapshot_path(
+        PROJECT, home.docs, shapes[0]
+    ).parent
+    kept = list(directory.glob("roadmap-snapshot-*.json"))
+    assert len(kept) == len(shapes), sorted(path.name for path in kept)
+
+
 def test_a_run_scoped_read_is_not_answered_from_the_mounted_tree(
     home: Home, composer: Composer, loop, monkeypatch: pytest.MonkeyPatch
 ) -> None:

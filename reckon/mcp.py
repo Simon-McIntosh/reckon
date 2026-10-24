@@ -1958,15 +1958,21 @@ def _roadmap_snapshot_scope(
 _ROADMAP_STALE_REASON = "the key moved and a recompute is in flight"
 
 
-def _roadmap_stale_answer(kwargs: Mapping[str, Any]) -> dict[str, Any] | None:
-    """Return the last composition this call's tree has, marked stale.
+def _roadmap_stale_record(kwargs: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Return the last composition this call's tree has for its shape, if any.
 
-    This is the fallback a roadmap read takes when its recompute has not
-    finished with the reserve it keeps before its deadline. It looks the record
-    up by tree and shape only, never by key: the key always moves on a busy
-    fleet, and it is the recompute under the new key that has not arrived. A
-    call with no stored record of its own shape gets ``None``, so it waits for
-    its recompute and reports its deadline as it always did.
+    This is the lookup both halves of the fallback share. It answers by tree and
+    shape only, never by key: the key always moves on a busy fleet, and it is
+    the recompute under the new key that has not arrived. A call with no stored
+    record of its own shape, or one that composes from a tree which keeps no
+    snapshot, gets ``None``.
+
+    The checkout is resolved exactly as the read resolves it, because a
+    snapshot belongs to the tree it was composed from: a call routed at an
+    explicit checkout, or one whose process carries a run that redirects its
+    own project into a worktree, composes from that tree and keeps no snapshot
+    of it. Reaching past that to the mounted tree's record would answer a read
+    of one tree with another tree's plan state.
     """
     project = str(kwargs.get("project") or "")
     try:
@@ -1977,11 +1983,6 @@ def _roadmap_stale_answer(kwargs: Mapping[str, Any]) -> dict[str, Any] | None:
         # stored answer to fall back to.
         return None
     max_paths = kwargs.get("max_paths")
-    # The read resolves its checkout inside the tool body, after this fallback
-    # is handed the call's own kwargs, so the same resolution is made here: a
-    # call routed at an explicit checkout, or one whose process carries a run
-    # that redirects its own project into a worktree, composes from that tree
-    # and keeps no snapshot of it.
     checkout_path = kwargs.get("checkout_path")
     if checkout_path is None:
         checkout_path = _run_scoped_read_root(project)
@@ -1999,9 +2000,34 @@ def _roadmap_stale_answer(kwargs: Mapping[str, Any]) -> dict[str, Any] | None:
     mounts, shape = target
     from reckon import roadmap_snapshot as snapshot_module
 
-    record = snapshot_module.roadmap_snapshot_last(project, mounts.get(project), shape)
+    return snapshot_module.roadmap_snapshot_last(project, mounts.get(project), shape)
+
+
+def _roadmap_has_stale_answer(kwargs: Mapping[str, Any]) -> bool:
+    """Say whether this call has a stored answer, without building it.
+
+    A roadmap read asks this before it waits, to decide whether to keep the
+    reserve a stored answer needs. Building the answer to answer that question
+    would carry a whole composition's payload through every read on the fleet
+    only to discard it on all but the ones that time out.
+    """
+    return _roadmap_stale_record(kwargs) is not None
+
+
+def _roadmap_stale_answer(kwargs: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Return the last composition this call's tree has, marked stale.
+
+    This is the fallback a roadmap read takes when its recompute has not
+    finished with the reserve it keeps before its deadline; it is built at the
+    moment the shortened wait expires, so the age it reports is the reader's
+    own. A call with no stored record of its own shape gets ``None``, so it
+    waits for its recompute and reports its deadline as it always did.
+    """
+    record = _roadmap_stale_record(kwargs)
     if record is None:
         return None
+    from reckon import roadmap_snapshot as snapshot_module
+
     return snapshot_module.roadmap_stale_answer(record, _ROADMAP_STALE_REASON)
 
 
@@ -2285,6 +2311,7 @@ def _roadmap_deadline_tool() -> Callable[..., Any]:
         kind="read",
         response_budget=True,
         stale=_roadmap_stale_answer,
+        stale_present=_roadmap_has_stale_answer,
     )
 
 

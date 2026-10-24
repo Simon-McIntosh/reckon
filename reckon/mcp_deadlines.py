@@ -473,6 +473,7 @@ async def _read_joining_running(
     kwargs: Mapping[str, Any],
     path_hint: Callable[[], str | None] | None = None,
     stale: Callable[[Mapping[str, Any]], Any] | None = None,
+    stale_present: Callable[[Mapping[str, Any]], bool] | None = None,
 ) -> Any:
     """Run a read under its deadline, joining a body already answering it.
 
@@ -484,10 +485,12 @@ async def _read_joining_running(
     here — it always runs its own body under its own deadline.
 
     ``stale`` answers the call from a stored composition when there is one for
-    it. Its presence shortens the wait by the reserve a stored answer needs to
-    be loaded and returned, and it is asked again at the moment the shortened
-    wait expires, so the age reported with the answer is the reader's own. The
-    recompute is not cancelled: it runs on and stores what the next call reads.
+    it. ``stale_present`` says whether one exists without building it, because
+    the question asked here is only whether the reserve is worth keeping: the
+    answer itself is built at the moment the shortened wait expires, where its
+    age is the reader's own, and a read with nothing stored pays neither the
+    lookup's payload nor the wait. The recompute is not cancelled: it runs on
+    and stores what the next call reads.
     """
 
     limit = _deadline_seconds("read")
@@ -498,7 +501,11 @@ async def _read_joining_running(
         def _fallback() -> Any:
             return stale(kwargs)
 
-        if _safe_fallback(_fallback) is not None:
+        if stale_present is not None:
+            has_stored = bool(_safe_fallback(lambda: stale_present(kwargs)))
+        else:
+            has_stored = _safe_fallback(_fallback) is not None
+        if has_stored:
             wait_limit = max(0.0, limit - _stale_reserve_seconds())
             on_timeout = _fallback
     key = _read_join_key(label, kwargs)
@@ -550,12 +557,16 @@ def _deadline_tool(
     path_hint: Callable[[Mapping[str, Any]], str | None] | None = None,
     response_budget: bool = False,
     stale: Callable[[Mapping[str, Any]], Any] | None = None,
+    stale_present: Callable[[Mapping[str, Any]], bool] | None = None,
 ) -> Callable[..., Any]:
     """Wrap one synchronous tool body as the async entry FastMCP registers.
 
     ``stale`` is the read's fallback for a call whose body outlives the reserve
     its deadline keeps: it answers the call from a stored result rather than
     reporting the storage as slow, and is used only when it can produce one.
+    ``stale_present`` is the cheap half of it, asked up front to decide whether
+    that reserve is worth keeping; without it the fallback itself answers the
+    question, which builds an answer only to discard it.
     """
 
     signature = _resolved_signature(body)
@@ -571,6 +582,7 @@ def _deadline_tool(
                 kwargs=kwargs,
                 path_hint=hint,
                 stale=stale,
+                stale_present=stale_present,
             )
         else:
             result = await _run_under_deadline(
