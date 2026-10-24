@@ -161,7 +161,7 @@ def test_redispatch_keeps_the_run_node_and_worktree(
         cli_module.main,
         [
             "crew",
-            "redispatch",
+            "resume",
             "--run",
             before["run_id"],
             "--backend",
@@ -224,7 +224,7 @@ def test_redispatch_continues_a_stream_resolved_session_and_records_its_source(
         cli_module.main,
         [
             "crew",
-            "redispatch",
+            "resume",
             "--run",
             before["run_id"],
             "--backend",
@@ -315,7 +315,7 @@ def test_a_held_destination_lane_is_named_and_changes_nothing(
         cli_module.main,
         [
             "crew",
-            "redispatch",
+            "resume",
             "--run",
             before["run_id"],
             "--backend",
@@ -334,6 +334,12 @@ def test_a_held_destination_lane_is_named_and_changes_nothing(
 
 
 def test_both_commands_call_the_shared_lane_change_operation(monkeypatch) -> None:
+    """One operation serves every spelling of a lane move.
+
+    The backend-move case of ``resume`` reaches ``change_lane``, and the folded
+    ``redispatch`` name answers with a tombstone naming that successor rather
+    than carrying a second implementation that could drift from it.
+    """
     calls: list[tuple[str, str]] = []
 
     def change(run_id, backend, reason, **kwargs):
@@ -371,7 +377,7 @@ def test_both_commands_call_the_shared_lane_change_operation(monkeypatch) -> Non
             "--print-only",
         ],
     )
-    redispatch = runner.invoke(
+    retired = runner.invoke(
         cli_module.main,
         [
             "crew",
@@ -386,8 +392,10 @@ def test_both_commands_call_the_shared_lane_change_operation(monkeypatch) -> Non
         ],
     )
 
-    assert resume.exit_code == redispatch.exit_code == 0
-    assert calls == [("r-shared", "beta"), ("r-shared", "beta")]
+    assert resume.exit_code == 0
+    assert json.loads(retired.output)["successor"] == "crew resume --backend"
+    assert retired.exit_code != 0
+    assert calls == [("r-shared", "beta")]
 
 
 # ── the figures a lane change names in the file its worker reads ────────────

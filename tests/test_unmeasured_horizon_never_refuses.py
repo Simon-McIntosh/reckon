@@ -341,7 +341,11 @@ def test_redispatch_without_an_estimate_keeps_the_carried_one(
 def test_redispatch_cli_accepts_estimated_hours(
     home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The command surface exposes the override and passes it through."""
+    """The command surface exposes the override and passes it through.
+
+    A backend move is the ``--backend`` case of ``resume``; the folded spelling
+    is answered by a tombstone and reaches no lane change of its own.
+    """
     captured: dict[str, object] = {}
 
     monkeypatch.setattr(
@@ -359,7 +363,7 @@ def test_redispatch_cli_accepts_estimated_hours(
         cli_module.main,
         [
             "crew",
-            "redispatch",
+            "resume",
             "--run",
             "run-1",
             "--backend",

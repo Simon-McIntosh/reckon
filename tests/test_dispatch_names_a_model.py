@@ -57,6 +57,15 @@ CATALOGUE: dict = {
 CONFIG: dict = {
     "default_backend": "claude",
     "local_backend": "clive",
+    # The lane declarations the catalogue expands into the backends below, kept
+    # here because a named model is resolved onto its lane from this block.
+    "lanes": {
+        name: {
+            "default_model": lane["default_model"],
+            "models": deepcopy(lane["models"]),
+        }
+        for name, lane in CATALOGUE["lanes"].items()
+    },
     "backends": {
         "claude": {
             "launch": "in-harness",
@@ -317,7 +326,7 @@ def test_promoted_row_carries_lane_and_model_key(catalogue) -> None:
 
 def test_sibling_surfaces_name_a_model() -> None:
     """The surfaces that already take ``--backend`` take ``--model`` too."""
-    for args in (["crew", "preflight", "--help"], ["crew", "shadow", "--help"]):
+    for args in (["crew", "budget", "--check", "--help"], ["crew", "shadow", "--help"]):
         result = CliRunner().invoke(cli.main, args)
         assert result.exit_code == 0, result.output
         assert "--model" in result.output

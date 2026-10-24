@@ -1,0 +1,61 @@
+<section id="tests-drive-the-folded-resume-and-budget-verbs">
+  <h2 id="tests-drive-the-folded-resume-and-budget-verbs-heading">The folded resume and budget verbs are driven through their successors</h2>
+
+  <div id="tests-drive-the-folded-resume-and-budget-verbs-landing" class="r-landing">
+    <p><strong>What changed.</strong> Thirteen of the fourteen ids in the census invoked a
+    verb the crew surface had folded away and therefore exited 10 on a tombstone. Each now
+    drives its successor and keeps the property it pins. A backend move is
+    <code>crew resume --backend</code> and a budget pre-flight is
+    <code>crew budget --check</code>.</p>
+
+    <p>The retired spellings are not merely dropped. <code>redispatch</code> is answered by a
+    tombstone naming <code>crew resume --backend</code>, so the tests that pin the one shared
+    lane-change operation and the one owner of a run's recorded overrides now assert that the
+    retired door reaches that same successor and reads nothing of its own. A queued request
+    moved to another lane keeps the run id it was recorded under, so the waiver test asserts
+    the retained id and the live row rather than a second launch id. The resolved-flight
+    stand-in in the model test now carries the lane declarations the catalogue expands into
+    its backends, which is what a named model resolves against when it is the lane's own
+    default.</p>
+
+    <p><strong>Measure.</strong> Both arms are <code>git archive</code> extractions of the
+    node's tree on node-local disk, running the same command over the seven listed files.</p>
+
+    <table id="tests-drive-the-folded-resume-and-budget-verbs-table">
+      <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+      <tbody>
+        <tr><td>base</td><td><code>4f02a29eb</code></td>
+          <td>14 failed, 27 passed, <code>EXIT=1</code></td></tr>
+        <tr><td>head</td><td><code>624c8726</code></td>
+          <td>1 failed, 40 passed, <code>EXIT=1</code> — the thirteen repaired ids pass; the
+          one failure is the blocked id below</td></tr>
+      </tbody>
+    </table>
+
+    <p><strong>Blocked id.</strong>
+    <code>tests/test_each_run_owns_its_harness_home.py::test_a_fenced_worker_edits_its_worktree_and_is_refused_on_the_main_checkout</code>
+    is left as it is. It fails on <code>stale_server_code</code> rather than the read-only
+    refusal it pins: the MCP guard introduced by <code>203882d19</code> compares a startup
+    stamp taken over the package directory (<code>follower_code_stamp()</code>) against a disk
+    stamp taken over <code>_import_root()</code>, the repository root, so the two identities
+    never match and every failed MCP call in a clean checkout is rewritten as a stale-code
+    refusal. Reproduced outside the fence in both the worktree and the main checkout:
+    <code>identity(reckon/) = 7c41a0bba388</code> against
+    <code>identity(repo root) = 6bedfeef35d6</code>. The node changes neither that code nor
+    that test; the plan section it belongs to is the coordinator's to write.</p>
+
+    <p id="tests-drive-the-folded-resume-and-budget-verbs-negative-control"><strong>Declared
+    negative control, executed and logged.</strong> For each repaired id a production lever a
+    test reads was mutated in an extraction and the id rerun: dropping the carried options,
+    forcing the waiver on, discarding the recorded overrides (three ids fail together),
+    injecting an override where none was recorded, discarding the estimate, discarding the
+    move reason, forcing the session source to <code>fresh</code>, changing the held-lane exit
+    status, rewriting the tombstone's successor, disabling the local-lane filter, and renaming
+    the budget model option. Every mutation produced by the declared string
+    <em>revert each repair; its id must fail again</em> makes its id fail with
+    <code>EXIT=1</code>.</p>
+
+    <p>Logs are under the run directory: <code>logs/gate-base.log</code>,
+    <code>logs/gate-head.log</code>, and <code>logs/negative-*.log</code> (ten mutations).</p>
+  </div>
+</section>
