@@ -70,8 +70,13 @@
   5 errors</code>. Head <code>93e0b5a52</code>: <code>188 passed, 5 errors</code>, no failure. The six
   base failures are exactly the listed ids, and the five errors are the same module-scoped fixture
   timing out at 300&nbsp;s in both arms while it builds 15 git worktrees and 500 ledger records under
-  six-way parallelism &mdash; identical in the two arms, so the delta is zero added. Ruff reports
-  nothing on the changed paths.</p>
+  six-way parallelism &mdash; identical in the two arms, so the delta is zero added. Both arms'
+  receipts therefore end <code>EXIT=1</code>: the base on its six failures and five errors, the head
+  on its five errors alone with no test failure, which is why the record's <code>after_suite</code>
+  carries <code>exit_status: 1</code> beside <code>failure_count: 0</code> rather than a green
+  receipt the log does not show. Ruff reports nothing on the changed paths
+  (<code>ruff.log</code>: <code>All checks passed!</code>, <code>2 files already formatted</code>,
+  <code>EXIT=0</code>).</p>
 </article>
 </body>
 </html>
