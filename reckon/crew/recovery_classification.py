@@ -125,6 +125,33 @@ _UNRECONCILED_RUNS_REFUSAL = "UnreconciledRuns"
 _UNRECONCILED_RUN_LINE = re.compile(r"^-\s+(\S+):\s+(.+)$", re.MULTILINE)
 
 
+def _wait_refusal_classes() -> frozenset[str]:
+    """The refusals that leave a queued request waiting rather than in debt.
+
+    ``QueueFull`` says the session already holds its share of queued
+    dispatches, and a ``ScopeConflict`` says a live run claims a write path the
+    request needs. A slot opens, or that run ends, whichever the refusal names;
+    nothing the session arms clears either, so both keep the waiting reading
+    and the retry back-off they are stored with.
+
+    The class family is walked rather than typed out, because a coarser claim
+    kind — a directory claim overlapping a peer's exact path — is the same wait
+    and would otherwise fall back to the text search, where the refusal's own
+    guidance quotes a dispatch command and reads as a session duty. All of them
+    name the session or quote commands, so none is legible from its text alone.
+    """
+    from reckon.crew.node import ScopeConflict
+    from reckon.crew.runs import QueueFull
+
+    names = {QueueFull.__name__, ScopeConflict.__name__}
+    pending = list(ScopeConflict.__subclasses__())
+    while pending:
+        subclass = pending.pop()
+        names.add(subclass.__name__)
+        pending.extend(subclass.__subclasses__())
+    return frozenset(names)
+
+
 def _remedy_command_stated_by(text: str) -> str | None:
     """The command a refusal quotes as the one that clears it, if it quotes one.
 
@@ -188,9 +215,15 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     neither the live view nor the obligations view read it.
 
     A lane hold is told apart by its own message: it is the lane speaking and
-    is left to the waiting reading. Any other refusal is surfaced, and the
-    remedy is the one the refusal itself states. Whose refusal it is comes from
-    the exception class the admission pass stamps at the head of the stored
+    is left to the waiting reading. A ``QueueFull`` refusal says the session
+    already holds its share of queued dispatches, and a ``ScopeConflict`` —
+    any subclass of it included, a directory claim among them — says a live run
+    claims a write path the request needs; each clears when a slot opens or
+    that run ends, so each keeps the waiting reading too, and the class stamp
+    is what tells them apart from the refusals below. Any other
+    refusal is surfaced, and the remedy is the one the refusal itself states.
+    Whose refusal it is comes from the exception class the admission pass
+    stamps at the head of the stored
     failure, never from a search of its whole text — a refusal quotes the
     commands that clear it, and a quoted command can carry this session's id
     without the session being its subject. A follower condition keeps the
@@ -217,6 +250,8 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
         return None
     text = _failure_text(failure)
     refusal_class = _stamped_refusal_class(text)
+    if refusal_class in _wait_refusal_classes():
+        return None
     if refusal_class == _UNRECONCILED_RUNS_REFUSAL:
         remedy = _unreconciled_runs_remedy(text)
         if remedy is not None:
