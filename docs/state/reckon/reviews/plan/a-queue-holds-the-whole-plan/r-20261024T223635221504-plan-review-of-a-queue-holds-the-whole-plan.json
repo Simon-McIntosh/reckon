@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T22:45:36.043Z",
+  "dispatched_at": "2026-10-24T22:37:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261024T223635221504-plan-review-of-a-queue-holds-the-whole-plan/plan.html:112",
+      "id": "reasoning-1",
+      "reason": "a coordinator following the skill as written either loops or loses the queue place the same caveat exists to preserve, and the fix is one clause naming the local lane or the in-place re-route verb.",
+      "text": "the caveat says a metered-lane request still `awaiting-upstream` or `queued` after its upstream lands \"is discarded and dispatched again\", but the re-dispatch names no lane, so the picker can pick the same metered lane and the new request stalls again (`admit_once` receives `lane` from `reckon crew admit --lane clive`, the deployed fleet service in `~/.config/fleet/services.json`, and skips every pointer whose backend differs); `crew queue edit --backend` from \u00a75 re-routes the queued request in place, and `crew queue drop` withdraws it without the place loss `crew discard` causes",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6f1b10cdb6d51c3849f03fbfc0968e6edcb17dfb80a69d419d130344c99a5c85",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 106,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T223635221504-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "1fc8a3dcdb56923ac5acd6d622371954900fe15a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `skills/reckon-build/SKILL.md:141` carries \"Fill the lane every beat\", `skills/reckon-build/references/sprint-orchestration.md`, `skills/reckon-create/SKILL.md`, `skills/reckon-edit/SKILL.md`, `skills/reckon-roadmap/SKILL.md:114` and `AGENTS.md:31` all exist, and `crew view live`, `crew queue edit`, `reprioritise` and `drop` all resolve in `reckon/crew_run_commands.py`.",
+    "done_when": "pass \u2014 s16's measure names a new `tests/test_skills_load_full_width.py` and a negative control that restores the \"dependency-ready\" qualifier, which is the exact text its assertion forbids, so the control can fail the test.",
+    "evidence_paths": "pass \u2014 the gate is a test under `tests/` and the landing grep is recorded in the run's own record, no scratch or node-local path.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach a symbol, file name or comment; the new test name describes what it measures.",
+    "reasoning": "a finding \u2014 the interim caveat's remedy (discard the request and dispatch it again) names no lane, so the picker can re-route it to the same metered lane the caveat says is never admitted.",
+    "single_goal": "pass \u2014 one deliverable: rewrite five skill files and the repository AGENTS.md into the load-then-steer rule.",
+    "wiring": "pass \u2014 s16's declared upstream (`s3`, plan.html:22) resolves, \u00a713 depends on s16 and says it removes \u00a716's caveat, and the caveat references \u00a715 which lands after s16 and before \u00a713, so the declared edges hold."
+  },
+  "section_digests": {
+    "_document": "987a63745858cb2a9a40af434bae9ebcd63481bacb3e1a789338ad700ddcf4f0",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "dde8872488345eab67e906f4ad3ac380b37442af56d5803fa2a2c10c8443a423",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T22:49:01.758483+00:00"
+}
