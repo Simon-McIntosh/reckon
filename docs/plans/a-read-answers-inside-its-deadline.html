@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="552">
+<meta name="plan-version" content="553">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -1447,7 +1447,10 @@
     <div class="r-comment-body"><p>Review of r-20261024T175707948500-the-resource-summary-reads-the-roadmaps-blockers at reviewed head 6a1c6f1b020a against reviewed base 11377a575b; scores goal_fidelity 17, evidence 18, scope_discipline 20, durability 18, fit 17, reuse 20; one non-blocking finding that reckon/mcp_views.py:2582 justifies dropping the decision row's fields by claiming open_decisions carries question, status and choice when reckon/mcp_views.py:2504 publishes only key, question and options, so a gated or deferred decision reads as a plain open one; no blocking finding; added_failure_count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s60" data-id="c-run-r-20261024T194836644915-review-of-the-resource-summary-reads-the-roadmaps-blockers-a138d1990ebf" data-who="reckon-build" data-when="2026-10-24T20:07:07.022Z">
-    <div class="r-comment-body"><p>Independent review of r-20261024T175707948500-the-resource-summary-reads-the-roadmaps-blockers at reviewed base 6a1c6f1b0 to head a138d1990: parsed, scores goal_fidelity 18, evidence 18, scope_discipline 18, durability 19, fit 17, reuse 19, added failures 0, no findings; the increment publishes the status that holds a gated or deferred decision in open_decisions, which resolves the prior review&#x27;s one non-blocking finding, and its new test is an independent guard because &#x27;gated&#x27; is never passed in.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261024T175707948500-the-resource-summary-reads-the-roadmaps-blockers at reviewed base 6a1c6f1b0 to head a138d1990: parsed, scores goal_fidelity 18, evidence 18, scope_discipline 18, durability 19, fit 17, reuse 19, added failures 0, no findings; the increment publishes the status that holds a gated or deferred decision in open_decisions, which resolves the prior review's one non-blocking finding, and its new test is an independent guard because 'gated' is never passed in.</p></div>
+</div>
+<div class="r-comment" data-section="s60" data-id="c-run-r-20261024T175707948500-the-resource-summary-reads-the-roadmaps-blockers" data-who="reckon-build" data-when="2026-10-24T19:47:00Z">
+    <div class="r-comment-body"><p>The MCP plan summary reads its blocker list and effective status from roadmap.plan_blocker_state, called with the roadmap&#x27;s own arguments including sections_map, and the second orphaned-blocked-status emitter is deleted from reckon/mcp.py. The summary publishes an open decision as a {kind, id} reference (the roadmap keeps the full row) and states the status that holds a gated or deferred decision in open_decisions, where the reader meets it. Gate: 134 passed at head 17ab0656e against 4 failed / 129 passed at base, so zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s52" data-id="c-run-r-20261024T141009573446-review-of-one-reader-owns-each-row-454795d498d0" data-who="reckon-build" data-when="2026-10-24T14:33:36.889Z">
     <div class="r-comment-body"><p>independent review of one-reader-owns-each-row at head 454795d: goal_fidelity 12, evidence 15, scope_discipline 19, durability 14, fit 18, reuse 20 (total 98); one blocking finding (candidate-fallback regression at serve.py:728) and three non-blocking findings; records stored at the reviewed run's review-records/ and both pass crew check --review.</p></div>
