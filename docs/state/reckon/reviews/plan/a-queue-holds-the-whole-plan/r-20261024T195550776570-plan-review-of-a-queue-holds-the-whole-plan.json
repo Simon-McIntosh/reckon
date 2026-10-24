@@ -1,0 +1,113 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T20:11:10.885Z",
+  "dispatched_at": "2026-10-24T19:57:50Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:22",
+      "id": "wiring-1",
+      "reason": "either the s4 edge must be restored or the \u00a73 rationale rewritten and a fairness guard named for the interval before \u00a74 lands, otherwise the first node to run \u00a73 removes the only fairness mechanism while ranking is still unbuilt.",
+      "text": "the s3 depends-on edge was cut to s2 only, but \u00a73 at line 53 still reads \"\u00a73 waits on \u00a74: retiring the clamp is safe only once ranking does the work the clamp stood in for\"; on the declared edge a node may dispatch \u00a73 immediately and retire the 2\u20138 per-session fairness clamp before \u00a74's ranking exists",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:112",
+      "id": "done_when-1",
+      "reason": "\u00a713 is left with no measure for its own work (the hold/release teaching and the \u00a711 edit-holds-only-its-request rule), so a node dispatched on \u00a713 could close on a done-when that measures s16's output, and \u00a713 either needs its own discriminating arm or should be narrowed to what s16 leaves undone.",
+      "text": "s16's done-when (\"the four skill files and AGENTS.md describe the full-width load and section linking, each queue verb is named once, a grep ... finds no instruction to dispatch section by section on every beat\") is the same measure as \u00a713's at line 100, and since s13 now depends on s16 this whole arm is satisfied the moment s16 lands",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:112",
+      "id": "done_when-2",
+      "reason": "the section's stated goal is to change what coordinators are told, and the one file that carries the rule for every coordinator is outside both the node's write scope and its gate, so completion can report success while the behaviour it targets is unchanged.",
+      "text": "the body requires the coordinator to update the user-global agent guidelines (which carry the per-beat dispatch rule and the 2-to-8 queue limit), a file the worker's fence cannot write, yet the done-when names only \"the four skill files and AGENTS.md\" and greps only skills/ and the repository AGENTS.md, so the delivered instruction set is never measured where coordinators actually read it",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "35b2552c32c309b28a46173c42d39f816c24a74ef989ca22c2e29fbde860afe8",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 98,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-24T20:14:16.963591+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-24T20:14:53.264688+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-2",
+      "reason": "",
+      "when": "2026-10-24T20:15:21.230277+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T20:14:53.264688+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T20:15:21.230277+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T20:14:16.963591+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v98.json",
+  "review_run_id": "r-20261024T195550776570-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "987f03bfcad1fd8ae4694d8cbb8e63ccc9c39a1a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all five cited files exist and carry the per-beat rule s16 says it changes (skills/reckon-build/SKILL.md:141, skills/reckon-build/references/sprint-orchestration.md:775 and :791, AGENTS.md:31), and the plan-section-depends-on field it instructs authors to use exists at line 22.",
+    "done_when": "findings \u2014 s16's done-when duplicates \u00a713's and omits the user-global guidelines its body requires.",
+    "evidence_paths": "pass \u2014 the gate is the repository's skill-contract test suite and the section names no session-scratch or node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach the section or the document metas; the \"2-to-8 queue limit\" names a numeric bound, not a plan stage.",
+    "reasoning": "pass \u2014 s16's stated blocker (instruction, not mechanism) matches the per-beat dispatch rule verified in the files it cites, and \u00a72, \u00a75, \u00a76 and \u00a78 are declared done in plan-section-declarations as the section asserts.",
+    "single_goal": "pass \u2014 s16 names one deliverable, the full-width instruction rewrite, and stays within it; its overlap with \u00a713 is raised under done_when.",
+    "wiring": "a finding \u2014 _document declares section 3 depends only on s2 while \u00a73 itself (line 53) says it waits on \u00a74."
+  },
+  "section_digests": {
+    "_document": "987a63745858cb2a9a40af434bae9ebcd63481bacb3e1a789338ad700ddcf4f0",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "ca1a65d4b3df210111abfaf189440036f2af3e3fa8225a4166e3cb497f612e91",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T20:13:54.942964+00:00"
+}
