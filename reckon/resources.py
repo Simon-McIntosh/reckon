@@ -272,16 +272,19 @@ def _identify_meta(path: Path) -> dict:
     """Read one file's head metadata, sharing a parse of byte-identical content.
 
     Identification runs once per file per docs tree, and a promotion reads the
-    same documents from several trees. The digest-keyed memo reuses one parse
-    across the trees holding identical bytes instead of re-parsing each copy.
-    The identity is declared in the head, so this is the head parse: it builds
-    no soup, and the derived ``impl`` a record read wants stays with
-    ``_plan_html.parse_meta``.
+    same documents from several trees. The memo is keyed on the content digest
+    here, so one parse answers every tree holding identical bytes rather than
+    each copy being parsed again. The identity is declared in the head, so this
+    is the head parse: it builds no soup, and the derived ``impl`` a record read
+    wants stays with ``_plan_html.parse_meta``.
     """
 
-    from reckon import metadata_index
-
-    return metadata_index._parse_meta_head_shared(path)
+    return file_memo.memoized(
+        "_parse_meta_head",
+        path,
+        lambda: _plan_html._parse_meta_head_uncached(path, None),
+        by_content=True,
+    )
 
 
 def identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | None:
