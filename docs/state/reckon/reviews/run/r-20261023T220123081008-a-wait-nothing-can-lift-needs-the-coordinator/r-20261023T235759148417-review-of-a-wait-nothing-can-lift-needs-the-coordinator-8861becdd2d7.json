@@ -1,0 +1,66 @@
+{
+  "added_failure_basis": "the reviewed manifest records baseline_suite and after_suite as null (no armed suite role), so the delta was read from the node's own arms: logs/head-before-fix.log (base arm, 1 failed / 2 passed) and logs/head-gate.log (head, 5 passed) plus the focused-suite log (347 passed); no failing id at head is absent at base, so zero failures were added.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:311",
+    "reckon/crew/recovery_watch.py:1182",
+    "reckon/crew/runs.py:1796",
+    "reckon/crew/query.py:422",
+    "reckon/crew/obligations.py:482",
+    "reckon/crew/directory.py:97",
+    "reckon/crew/promotion.py:387",
+    "reckon/serve.py:884",
+    "reckon/crew/recovery.py:355"
+  ],
+  "completed_at": "2026-10-24T00:04:19.129Z",
+  "dispatched_at": "2026-10-23T23:59:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 689,
+      "severity": "non-blocking",
+      "text": "the exception arm builds its observation without an `answered` field, so a probe fault that escapes the reader (or an injected condition test that raises) now reads as an answer at :336 and the halted arm cannot fire for it, although the prose matcher this repair replaced would have matched its 'condition probe could not answer' detail; carry `answered: False` on that arm."
+    },
+    {
+      "file": "logs/head-gate.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the gate log's revision header names feb4b8e08, a revision that carries three tests and none of the repair, while the tested tree held all five tests and the repair; the result reproduces at the reviewed head (re-run: 5 passed, EXIT=0) but the recorded revision cannot reproduce it, and the focused-suite log carries the same stale header."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from feb4b8e08 to 8861becdd; the single repair commit touches four files (138 insertions, 34 deletions): the flag in recovery_wait.py, the classifier's flag read in recovery_classification.py, two new test arms and the fragment's evidence paragraphs.",
+    "done_when": "the measure names the new test, the base arm for the first fixture and the import population; I read logs/head-gate.log (5 passed, EXIT=0) and re-ran the named test at 8861becdd (5 passed, EXIT=0), and logs/negative-control-base-arm.log shows 2 failed / 3 passed at the pre-node revision, so the gate asserts the measure.",
+    "goal": "the node's goal is to classify a declared wait whose worker has ended and whose condition probe cannot answer as halted with a resume remedy; the delta keeps that outcome at reckon/crew/recovery_classification.py:1136-1160 and replaces the prose test at :336 with a structured `answered is False` read, so the landed change does what the goal states.",
+    "manifest": "read at the source run directory; it records commits feb4b8e08 and 8861becdd, head gate 5 passed, focused suite 347 passed, the base arm 2 failed / 3 passed, the attempt-guard mutation 1 failed / 4 passed, ruff delta zero and no retry failures; baseline_suite and after_suite are null because no armed suite role dispatched this node.",
+    "write_paths": "the source prompt declares recovery_classification.py, the node test, the landing fragment and a figures directory; resume-1-advice.txt grants recovery_wait.py, and git diff --stat feb4b8e08 8861becdd touches only those product files plus the test and fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:276-300 reddens when the discriminator reverts to prose (recorded in negative-control-base-arm.log) and :306-345 reddens when _exit_record_names_attempt is replaced by True (negative-control-attempt-guard.log), so both added guards are falsifiable rather than incidental, though the exception arm at recovery_classification.py:689 is unguarded.",
+    "evidence": "logs/head-gate.log records 5 passed EXIT=0 and I re-ran the same gate at the reviewed head 8861becdd (5 passed, EXIT=0), while logs/negative-control-base-arm.log reddens the first fixture and the reworded arm at the pre-node revision, though that log's and the focused-suite log's revision header names feb4b8e08, which does not contain the repair.",
+    "fit": "the added `answered` flag follows the surrounding observation dict at reckon/crew/recovery_wait.py:392-436, and the test's _absent_pid helper at tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:77-79 repeats the established idiom in tests/test_wait_shapes.py:50-51.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:319-336 now reads the structured flag the probe reader sets, so the halted arm at :1136-1160 still classifies a declared wait over an ended worker's current attempt as stalled with a `reckon crew resume` action.",
+    "reuse": "the diff extends the existing owner reckon/crew/recovery_wait.py:393 _wait_condition_observation with one field and reuses recover_liveness helpers at reckon/crew/recovery_liveness.py:501 and :634 rather than adding a second normaliser.",
+    "scope_discipline": "git diff --stat feb4b8e08 8861becdd lists exactly recovery_classification.py, recovery_wait.py, the node test and the landing fragment, and resume-1-advice.txt extends the original scope to recovery_wait.py, so every path is inside the granted set."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to classify a declared wait whose worker has ended and whose condition probe cannot answer as halted with a resume remedy; the delta keeps that outcome at reckon/crew/recovery_classification.py:1136-1160 and replaces the prose test at :336 with a structured `answered is False` read.\nVERDICT done_when: the measure names the new test and the base arm; logs/head-gate.log records 5 passed EXIT=0, my re-run at 8861becdd also gives 5 passed EXIT=0, and logs/negative-control-base-arm.log records 2 failed / 3 passed at the pre-node revision.\nVERDICT write_paths: the prompt declares recovery_classification.py, the node test, the landing fragment and a figures directory; resume-1-advice.txt extends scope to recovery_wait.py, and the diff feb4b8e08..8861becdd touches only those files.\nVERDICT manifest: read; it records both commits, the 5-passed head gate, the 347-passed focused suite, both negative controls, ruff delta zero, and no retry failures.\nVERDICT diff: read commit by commit against feb4b8e08; one repair commit, four files, 138 insertions and 34 deletions, all inside the granted scope.\nCALL_SITES: reckon/crew/recovery_watch.py:311, reckon/crew/recovery_watch.py:1182, reckon/crew/runs.py:1796, reckon/crew/query.py:422, reckon/crew/obligations.py:482, reckon/crew/directory.py:97, reckon/crew/promotion.py:387, reckon/serve.py:884, reckon/crew/recovery.py:355\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:319-336 reads the structured flag, so the halted arm at :1136-1160 still yields stalled with a `reckon crew resume` action.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-gate.log records 5 passed EXIT=0 and a re-run at 8861becdd confirms it, but the log's revision header names feb4b8e08, which cannot reproduce the five-test result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat feb4b8e08 8861becdd touches only recovery_classification.py, recovery_wait.py, the node test and the fragment, all inside the prompt's paths plus the resume-advice grant.\nSCORE durability: 18\nJUSTIFICATION durability: the reworded-detail arm at tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:276-300 and the superseded-attempt arm at :306-345 each redden under their declared mutation, though the exception arm at recovery_classification.py:689 has no arm.\nSCORE fit: 19\nJUSTIFICATION fit: the flag extends the observation dict at reckon/crew/recovery_wait.py:392-436 and the test helper at tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:77-79 follows the idiom in tests/test_wait_shapes.py:50-51.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff extends the existing owner reckon/crew/recovery_wait.py:393 _wait_condition_observation and reuses reckon/crew/recovery_liveness.py:501 and :634 rather than forking a normaliser.\nFINDING reckon/crew/recovery_classification.py:689 non-blocking: the exception arm omits `answered`, so a fault escaping the probe reader reads as an answer and the halted arm cannot fire there, unlike the prose matcher it replaced.\nFINDING logs/head-gate.log:1 non-blocking: the revision header names feb4b8e08, which carries three tests and none of the repair, so the recorded revision cannot reproduce the 5-passed result the log reports.\n",
+  "review_run_id": "r-20261023T235759148417-review-of-a-wait-nothing-can-lift-needs-the-coordinator-8861becdd2d7",
+  "reviewed_at": "2026-10-24T02:03:00Z",
+  "reviewed_base_sha": "feb4b8e08146b19817859acaa4ec8655a4498843",
+  "reviewed_head_sha": "8861becdd2d7304479f150f7ffa20159fe2f42f8",
+  "reviewed_run_id": "r-20261023T220123081008-a-wait-nothing-can-lift-needs-the-coordinator",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T00:05:09.245993+00:00",
+  "total": 111
+}
