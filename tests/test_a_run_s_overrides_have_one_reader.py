@@ -1,15 +1,17 @@
 """A run's recorded dispatch overrides have exactly one reader.
 
 A dispatch may answer a ``--set`` override that changes a resolved flight value.
-The answer is recorded on the run as ``dispatch_options.overrides``. Three
-readers resolve a run's flight config under that recorded policy: the two move
-commands and the queued-admission pass. They read it through one owner,
-``reckon.crew.runs.recorded_dispatch_overrides``, so the copies cannot drift.
+The answer is recorded on the run as ``dispatch_options.overrides``. Every
+reader that resolves a run's flight config under that recorded policy — a plain
+resume, a backend move and the queued-admission pass — reads it through one
+owner, ``reckon.crew.runs.recorded_dispatch_overrides``, so the copies cannot
+drift.
 """
 
 from __future__ import annotations
 
 import importlib
+import json
 from pathlib import Path
 
 import pytest
@@ -127,7 +129,8 @@ def _plain_resume(runner: CliRunner, run_id: str):
     )
 
 
-def _redispatch(runner: CliRunner, run_id: str):
+def _retired_redispatch(runner: CliRunner, run_id: str):
+    """The folded name, answered by a tombstone rather than a second path."""
     return runner.invoke(
         cli_module.main,
         [
@@ -179,5 +182,8 @@ def test_every_reader_resolves_its_config_through_the_owner(
     assert _plain_resume(runner, "r-owner-move").exit_code == 0
     assert seen["resume_plan"]["backends"]["alpha"]["model"] == "sentinel-model"
 
-    assert _redispatch(runner, "r-owner-move").exit_code == 0
-    assert seen["change_lane"]["backends"]["alpha"]["model"] == "sentinel-model"
+    # The folded name resolves nothing of its own: it answers with the
+    # successor, so it can never become a third reader of the record.
+    retired = _retired_redispatch(runner, "r-owner-move")
+    assert retired.exit_code != 0
+    assert json.loads(retired.output)["successor"] == "crew resume --backend"

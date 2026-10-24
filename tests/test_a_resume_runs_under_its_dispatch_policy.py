@@ -1,16 +1,17 @@
 """A resume resolves its flight config under the policy its run was dispatched with.
 
 A dispatch may answer a ``--set`` override that changes a resolved flight value.
-That answer is recorded on the run, and both commands that move a run — resume
-and redispatch — must resolve the flight config under it, through one shared
+That answer is recorded on the run, and every way a run moves — a plain resume
+and a backend move — must resolve the flight config under it, through one shared
 reading. Otherwise a run resumed after an outage would come back under the base
-policy while the same run moved by redispatch keeps the policy it was launched
+policy while the same run moved to another lane keeps the policy it was launched
 under.
 """
 
 from __future__ import annotations
 
 import importlib
+import json
 from pathlib import Path
 
 import pytest
@@ -128,7 +129,8 @@ def _plain_resume(runner: CliRunner, run_id: str):
     )
 
 
-def _redispatch(runner: CliRunner, run_id: str):
+def _retired_redispatch(runner: CliRunner, run_id: str):
+    """The folded name, answered by a tombstone rather than a second path."""
     return runner.invoke(
         cli_module.main,
         [
@@ -158,8 +160,11 @@ def test_resume_resolves_the_overrides_its_dispatch_recorded(
     assert _plain_resume(runner, "r-overridden").exit_code == 0
     assert seen["resume_plan"]["backends"]["alpha"]["model"] == "overridden-model"
 
-    assert _redispatch(runner, "r-overridden").exit_code == 0
-    assert seen["change_lane"]["backends"]["alpha"]["model"] == "overridden-model"
+    # The retired spelling reaches the same command through a tombstone, so it
+    # resolves no policy of its own and cannot drift from the one above.
+    retired = _retired_redispatch(runner, "r-overridden")
+    assert retired.exit_code != 0
+    assert json.loads(retired.output)["successor"] == "crew resume --backend"
 
 
 def test_a_run_without_recorded_overrides_resolves_the_base_value(
@@ -175,14 +180,12 @@ def test_a_run_without_recorded_overrides_resolves_the_base_value(
     assert _plain_resume(runner, "r-plain").exit_code == 0
     assert seen["resume_plan"]["backends"]["alpha"]["model"] == "base-model"
 
-    assert _redispatch(runner, "r-plain").exit_code == 0
-    assert seen["change_lane"]["backends"]["alpha"]["model"] == "base-model"
-
 
 def test_both_move_commands_read_the_overrides_through_one_helper(
     config_home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The recorded-overrides reading is one helper, called by both commands."""
+    """The recorded-overrides reading is one helper, called by every way a run
+    moves; the retired spelling adds no second reading."""
     calls: list[dict] = []
     real = runs.recorded_dispatch_overrides
 
@@ -196,8 +199,14 @@ def test_both_move_commands_read_the_overrides_through_one_helper(
     runner = CliRunner()
 
     assert _resume_backend(runner, "r-one-helper").exit_code == 0
-    assert _redispatch(runner, "r-one-helper").exit_code == 0
+    assert _plain_resume(runner, "r-one-helper").exit_code == 0
 
     assert len(calls) == 2
     assert calls[0]["dispatch_options"]["overrides"] == [OVERRIDE]
     assert calls[1]["dispatch_options"]["overrides"] == [OVERRIDE]
+
+    # The folded name refuses and names the successor, so it reads nothing.
+    retired = _retired_redispatch(runner, "r-one-helper")
+    assert retired.exit_code != 0
+    assert json.loads(retired.output)["successor"] == "crew resume --backend"
+    assert len(calls) == 2

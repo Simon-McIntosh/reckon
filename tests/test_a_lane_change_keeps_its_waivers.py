@@ -110,7 +110,7 @@ def test_a_lane_change_keeps_the_waivers_its_dispatch_recorded(
         cli.main,
         [
             "crew",
-            "redispatch",
+            "resume",
             "--run",
             queued_id,
             "--backend",
@@ -121,18 +121,19 @@ def test_a_lane_change_keeps_the_waivers_its_dispatch_recorded(
     )
     assert moved.exit_code == 0, moved.output
     moved_payload = backend_tests._payload(moved)
-    launched_id = moved_payload["run_id"]
-    assert launched_id != queued_id
+    # A queued request has never launched, so the move re-composes it under the
+    # id the coordinator recorded rather than minting a second one.
+    assert moved_payload["run_id"] == queued_id
 
-    launched = runs.read_pointer(launched_id)
+    launched = runs.read_pointer(queued_id)
     assert launched["backend"] == "beta"
     assert launched["phase"] != "queued"
     assert launched["unreviewed_plan_override"] == {"requested": True, "plan": "plan-a"}
     assert launched["carried_options"]["allow_unreviewed_plan"] is True
     # The move is a continuation, not a withdrawal: the launched run names the
-    # queued request it was moved from, and that request is gone (replaced).
+    # queued request it was admitted from and is the live row for that id.
     assert launched["admitted_from"] == queued_id
-    assert queued_id not in [row["run_id"] for row in runs.list_live(project="proj")]
+    assert queued_id in [row["run_id"] for row in runs.list_live(project="proj")]
 
 
 def test_a_node_dispatched_without_the_waiver_is_still_refused_on_redispatch(
@@ -172,7 +173,7 @@ def test_a_node_dispatched_without_the_waiver_is_still_refused_on_redispatch(
         cli.main,
         [
             "crew",
-            "redispatch",
+            "resume",
             "--run",
             "queued-without-waiver",
             "--backend",
