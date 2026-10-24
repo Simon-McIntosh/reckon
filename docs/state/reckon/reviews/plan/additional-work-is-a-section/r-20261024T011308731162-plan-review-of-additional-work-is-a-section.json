@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T01:19:28.720Z",
+  "dispatched_at": "2026-10-24T01:14:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:86",
+      "id": "done_when-1",
+      "reason": "the guard cannot pass at head until that comment is amended (`reckon/crew/reports.py:105` still reads \"``artifacts``, ``evidence_inputs``, ``follow_ons``, ``blockers``\"), and the section neither grants the file nor assigns the fix to a section that owns it.",
+      "text": "the negative control is \"restores the retired word in that comment (`reckon/crew/reports.py`, near line 105)\", but \u00a75's write paths grant only the six skill files, `tests/test_skill_contracts.py`, `tests/test_no_source_names_the_retired_field.py` and the evidence fragment, so the comment sits in a file the node may not edit",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:86",
+      "id": "reasoning-1",
+      "reason": "a worker implementing the section as written must either invent exemption kinds the plan does not grant or land a guard that is red at head, and deleting the doccheck regex to go green would remove \u00a74's refusal.",
+      "text": "the guard as described (\"fails when any comment, docstring or string literal in `reckon/` or `scripts/` names `follow_on`, `follow_ons` or `follow-on`\") fires on three sites that must keep the term, and neither stated exemption reaches them: `reckon/doccheck.py:419` (`_DEFERRED_WORK_TERM = re.compile(r\"\\bfollow-ons?\\b\", re.IGNORECASE)`, the detector \u00a74 lands), `reckon/crew/review.py:163` (`RETIRED_FINDING_SEVERITIES: dict[str, str] = {\"follow-on\": \"non-blocking\"}`, a mapping of a pre-rename *review record*, while the exemption says only \"manifest or ledger row\"), and `reckon/run_record.py:33` (`RETIRED_OUTSIDE_SCOPE_PATHS = \"follow_on_paths\"`, the constant behind \u00a76's mapping, exempted only by analogy with the separately named `RETIRED_OUTSIDE_SCOPE`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/additional-work-is-a-section.html:86",
+      "id": "single_goal-1",
+      "reason": "two guards that fail independently cannot be closed on one verdict, and the plan already split \u00a77 out of \u00a73 for exactly this reason, so this guard needs its own section (or the section retitled and scoped to both).",
+      "text": "the section's goal is \"The skills and references state the rule\", yet it now also owns a source-lint guard over every comment, docstring and string literal in `reckon/` and `scripts/`, with a second test file and a second negative control unrelated to the skills",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "55eda479102ae231d66a8ebc5f534ef51997f42e2228ebb63ddabb27205d7908",
+  "plan_slug": "additional-work-is-a-section",
+  "plan_version": 52,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T011308731162-plan-review-of-additional-work-is-a-section",
+  "reviewed_blob_sha": "0ca903cc46b43a7f1fcd634b6d8042e04ec04763",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the six named skill files, `tests/test_skill_contracts.py`, and both reports.py anchors resolve at base 84ed386d5: `RETIRED_OUTSIDE_SCOPE = \"follow_ons\"` is at line 83 and the cited comment is at line 105.",
+    "done_when": "a finding \u2014 the added source-side negative control restores the retired word in a comment at `reckon/crew/reports.py:105`, a production module \u00a75's write paths do not grant.",
+    "evidence_paths": "pass \u2014 the declared fragment `docs/evidence/fragments/additional-work-is-a-section/the-skills-state-the-rule.html` sits on a durable repository path, not a scratchpad.",
+    "naming": "pass \u2014 the new test is named for what it checks (`test_no_source_names_the_retired_field.py`) and no plan label, stage name or ticket number reaches a symbol or path.",
+    "reasoning": "a finding \u2014 the guard's mechanism (any comment, docstring or string literal in `reckon/` or `scripts/` naming the term, with two exempt kinds) cannot produce the done-when it asserts, because three sites that must keep the word are covered by neither exemption.",
+    "single_goal": "a finding \u2014 \u00a75 now carries two independent deliverables: the six skill files and a repo-wide source guard over `reckon/` and `scripts/`, each with its own test file and negative control.",
+    "wiring": "pass \u2014 plan-section-depends-on (snapshot line 24) declares s5 on s2, s3, s4, s6 and s7, which matches the section's own \"This section runs last\" and its use of the severity grammar, the manifest field, the ledger key and the derived-manifest fix."
+  },
+  "section_digests": {
+    "_document": "edf7f32827e72affb12cd9e488ed27db272b42b30d40a6095338f58ef1bbe1bd",
+    "s1": "53035db610c769f9fabc12038e7a13898064f071d29b27f9e4b9cfe7e6e9cbfb",
+    "s2": "da6965864ffd2ed27a0442cf22caf15936faa1f5ecfe3c8d4be21504a5d51387",
+    "s3": "ac2943c184863917be20d90cb41e0c41066fd2dd0cf386d57cc73789f89d8187",
+    "s4": "f54fdafb18757876821e9a2c5955d3db854946ef19afb4d56a5e83886375b088",
+    "s5": "2393d586bdb942128898f9e6c79af519b1280e54022076354c236f7f26a55b3f",
+    "s6": "0f8796c8305cc16163a272e7a32db694def457ce5ed1c506aa8ed5d5e962f591",
+    "s7": "eff42915cc419e1306f40547dd5fc9eaaa0714b5f864f9e44a54d07603e57f2d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T01:28:46.502294+00:00"
+}
