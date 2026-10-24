@@ -1,0 +1,115 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_attribution": "The raw head-minus-base failure set contains one ID; coordinator-overlap.log reproduces that ID once in two base repeats and zero in two head repeats.",
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted"
+  ],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/importers-head-local.log",
+  "assertion_analysis": [
+    {
+      "fails_if": "landing moves after admission or the fake launch is absent; the fake waiter release means these assertions cannot detect a real readiness failure",
+      "lines": "tests/test_queue_landing.py:160-163",
+      "test": "accepted delivery ordering"
+    },
+    {
+      "fails_if": "the older review reaches the mocked land call or removes the run pointer; the recorded negative control reinstated this defect and failed",
+      "lines": "tests/test_queue_landing.py:174-175",
+      "test": "older head"
+    },
+    {
+      "fails_if": "a low review lands, loses its refusal record, or lacks a matching owner duty",
+      "lines": "tests/test_queue_landing.py:189-205",
+      "test": "below floor"
+    },
+    {
+      "fails_if": "a returned refusal is retried or its guard fails to appear in the pointer and owner duty",
+      "lines": "tests/test_queue_landing.py:222-235",
+      "test": "refused land"
+    },
+    {
+      "fails_if": "the existing review dispatch accepts an unchanged reviewed head",
+      "lines": "tests/test_queue_landing.py:245-246",
+      "test": "duplicate review"
+    },
+    {
+      "fails_if": "the command omits the shim, overlap flags, land options or source root; the run ID expectation reuses the input RUN",
+      "lines": "tests/test_queue_landing.py:259-273",
+      "test": "scheduler command"
+    },
+    {
+      "fails_if": "the introduced marker is absent from the primary branch, the remote misses that branch, or the live pointer survives",
+      "lines": "tests/test_queue_landing.py:355-360",
+      "test": "real land path"
+    }
+  ],
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/importers-base-exact.log",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3613",
+    "reckon/crew/queue_admission.py:2150",
+    "reckon/crew/queue_admission.py:2163",
+    "reckon/crew/obligations.py:1580"
+  ],
+  "completed_at": "2026-10-24T10:49:01Z",
+  "dispatched_at": "2026-10-24T10:38:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "121",
+      "severity": "blocking",
+      "text": "blocking: A service interruption after :143 stores attempting leaves the live run unlanded, every later pass skips that head at :121-125, and obligations.py:932 reports only refused, so neither automatic landing nor an owner duty can recover it."
+    },
+    {
+      "file": "tests/test_queue_landing.py",
+      "line": "150",
+      "severity": "blocking",
+      "text": "blocking: The downstream test replaces advance_waiting_requests with a helper that forces the waiter queued and replaces _launch_queued at :155, so its passing assertions at :160-163 cannot establish the real landing-to-downstream-launch path required by done_when."
+    },
+    {
+      "file": "tests/test_queue_landing.py",
+      "line": "263",
+      "severity": "non-blocking",
+      "text": "non-blocking: The command run ID assertion reuses RUN passed to _land at :259, and identity assertions at :161-163, :222 and :355 similarly reuse fixture inputs; a hardcoded fixture ID could satisfy them, so fold stronger independent ID checks into the proposed landing-pass-repair node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read 31513e1b (landing pass and tests), 9fecd5d (owner duty), 503fd0a (real CLI fixture) and 130ec9a (evidence) against ef7082d; the final diff changes five declared paths.",
+    "done_when": "The source prompt names tests/test_queue_landing.py and a serial base/head delta; head-focused-final.log records 7 passed and negative-control.log records 1 failed, while tests/test_queue_landing.py:150 replaces the real downstream transition and :352 replaces the scheduler process.",
+    "goal": "The source prompt requires automatic landing of an accepted delivered run; reckon/crew/queue_admission.py:2150 and :2163 call the new landing pass before admission, but an interrupted attempt can remain stranded.",
+    "manifest": "The source manifest is complete, lists four commits and five changed paths, and records a focused pass, negative control, serial suites and a clean manifest audit; the suite logs show one raw added failure ID.",
+    "write_paths": "The original source prompt grants queue_landing.py, queue_admission.py, the landing test and evidence fragment, and resume-1-advice.txt grants obligations.py; the five paths in the base-to-head diff are within that combined scope."
+  },
+  "justifications": {
+    "durability": "The stale-head mutation reddens tests/test_queue_landing.py:174, and the marker checks at :356-360 fail on a lost land, but no assertion fails for a persisted attempting state or an actual downstream transition.",
+    "evidence": "tests/test_queue_landing.py:150 supplies the downstream readiness answer and :352 runs the scheduler shim inside the test process, so the recorded 7-pass gate does not assert those two declared outcomes.",
+    "fit": "reckon/crew/queue_landing.py:19-94 follows the crew module style and its new source names carry no plan or release labels.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:143 starts the shared land path, but :121-125 permanently skips the same head after an interrupted attempt.",
+    "reuse": "The capability search found the land owner at reckon/crew/promotion.py:719 and acceptance owner at reckon/crew/recovery_review_acceptance.py:29; queue_landing.py:14 and :44-50 delegate to both rather than copy them.",
+    "scope_discipline": "The diff changes only the five paths named by the source prompt plus the explicit obligations.py grant in resume-1-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt requires automatic landing of an accepted delivered run; reckon/crew/queue_admission.py:2150 and :2163 call the new landing pass before admission, but an interrupted attempt can remain stranded.\nVERDICT done_when: The source prompt names tests/test_queue_landing.py and a serial base/head delta; head-focused-final.log records 7 passed and negative-control.log records 1 failed, while tests/test_queue_landing.py:150 replaces the real downstream transition and :352 replaces the scheduler process.\nVERDICT write_paths: The original source prompt grants queue_landing.py, queue_admission.py, the landing test and evidence fragment, and resume-1-advice.txt grants obligations.py; the five paths in the base-to-head diff are within that combined scope.\nVERDICT manifest: The source manifest is complete, lists four commits and five changed paths, and records a focused pass, negative control, serial suites and a clean manifest audit; the suite logs show one raw added failure ID.\nVERDICT diff: Read 31513e1b (landing pass and tests), 9fecd5d (owner duty), 503fd0a (real CLI fixture) and 130ec9a (evidence) against ef7082d; the final diff changes five declared paths.\nCALL_SITES: reckon/crew_run_commands.py:3613, reckon/crew/queue_admission.py:2150, reckon/crew/queue_admission.py:2163, reckon/crew/obligations.py:1580\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:143 starts the shared land path, but :121-125 permanently skips the same head after an interrupted attempt.\nSCORE evidence: 11\nJUSTIFICATION evidence: tests/test_queue_landing.py:150 supplies the downstream readiness answer and :352 runs the scheduler shim inside the test process, so the recorded 7-pass gate does not assert those two declared outcomes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff changes only the five paths named by the source prompt plus the explicit obligations.py grant in resume-1-advice.txt.\nSCORE durability: 12\nJUSTIFICATION durability: The stale-head mutation reddens tests/test_queue_landing.py:174, and the marker checks at :356-360 fail on a lost land, but no assertion fails for a persisted attempting state or an actual downstream transition.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_landing.py:19-94 follows the crew module style and its new source names carry no plan or release labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found the land owner at reckon/crew/promotion.py:719 and acceptance owner at reckon/crew/recovery_review_acceptance.py:29; queue_landing.py:14 and :44-50 delegate to both rather than copy them.\nFINDING reckon/crew/queue_landing.py:121 blocking: A service interruption after :143 stores attempting leaves the live run unlanded, every later pass skips that head at :121-125, and obligations.py:932 reports only refused, so neither automatic landing nor an owner duty can recover it.\nFINDING tests/test_queue_landing.py:150 blocking: The downstream test replaces advance_waiting_requests with a helper that forces the waiter queued and replaces _launch_queued at :155, so its passing assertions at :160-163 cannot establish the real landing-to-downstream-launch path required by done_when.\nFINDING tests/test_queue_landing.py:263 non-blocking: The command run ID assertion reuses RUN passed to _land at :259, and identity assertions at :161-163, :222 and :355 similarly reuse fixture inputs; a hardcoded fixture ID could satisfy them, so fold stronger independent ID checks into the proposed landing-pass-repair node.\n",
+  "review_run_id": "r-20261024T103555437791-review-of-landing-pass-in-admit-130ec9a6d7e6",
+  "reviewed_base_sha": "ef7082d14ff548f51ece222f96d42618f16cdeeb",
+  "reviewed_head_sha": "130ec9a6d7e6dc312e490de6368e05c7b2439416",
+  "reviewed_run_id": "r-20261024T082152363036-landing-pass-in-admit",
+  "reviewer_run_id": "r-20261024T103555437791-review-of-landing-pass-in-admit-130ec9a6d7e6",
+  "scores": {
+    "durability": 12,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_manifest": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T082152363036-landing-pass-in-admit/manifest.md",
+  "source_worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/404513fc-8e68-4a0f-8060-29ac9ff3d5fd/landing-pass-in-admit",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T10:46:57.305797+00:00",
+  "total": 95
+}
