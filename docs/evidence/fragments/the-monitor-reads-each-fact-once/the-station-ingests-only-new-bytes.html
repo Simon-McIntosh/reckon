@@ -1,0 +1,83 @@
+<section id="the-station-ingests-only-new-bytes">
+  <h2>The station reads only the bytes a stream gained, and refolds a rewrite</h2>
+
+  <p><strong>What changed.</strong> <code>StationStore.ingest_stream</code> now stores
+  the size it last read beside the consumed offset, and returns without reading
+  anything when a stream's size has not moved — so a trailing partial record waits for
+  the bytes that complete it instead of being re-read on every tick. Every byte it
+  reads passes through one named step, <code>_read_range</code>, so the volume per tick
+  is countable. A grown stream is checked against a 64-byte tail anchor kept beside its
+  offset; a stream whose inode changed, whose size fell below its consumed offset,
+  whose size fell below its last-read size, or whose anchor no longer matches is folded
+  from its start with no carried state. The <code>streams</code> table gains
+  <code>size</code> and <code>anchor</code>, with the columns added in place on a store
+  written before them. Each day file's connection is now closed after its event is
+  written (<code>contextlib.closing</code>), because
+  <code>sqlite3.Connection</code>'s context manager commits but does not close, and the
+  unused duplicate constructors <code>store_at_runtime_root</code> and
+  <code>default_store</code> are deleted. The node-local rebuild case now compares the
+  incremental store's pointer paths against the fixture's own three rather than against
+  the rebuilt store's output.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the two test files that import
+  <code>reckon/crew/station_store.py</code>, one arm per revision. Each arm's log names
+  its revision, tree, imported module path and command on its header lines and ends
+  with a bare <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>0ebe07843</code></td>
+        <td>15 passed, exit 0</td></tr>
+      <tr><td>head</td><td><code>34d55d7dd</code></td>
+        <td><strong>24 passed</strong>, exit 0 — no added failure id</td></tr>
+      <tr><td>negative control, five declared mutations</td>
+        <td>mutated head</td><td>all five arms red, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The replay.</strong> Five recorded claude stream-json runs (init,
+    assistant turns carrying prompt usage, rate-limit readings, a result, and one
+    interrupted half record) are replayed as 93 appends across chunk sizes of 1 to 251
+    bytes, so records are split mid-line and partial records are carried across ticks.
+    On every tick the bytes read from the grown stream are within
+    <em>appended + 64 + the partial record carried from the previous tick</em>, the four
+    other streams read zero, and after the last append each stream's incremental
+    observation equals one full fold of the finished file
+    (<code>as_dict()</code> equal) with its consumed offset at the file size.</li>
+    <li><strong>The four refolds.</strong> Each is measured by what the store read: a
+    changed inode, a size below the consumed offset, and a size below the last-read
+    size (the anchor still matching, so only that test can catch it) each read the file
+    once from offset zero, and a moved anchor on a grown stream reads the anchor then
+    the file from zero. A grown stream whose anchor still matches reads exactly the
+    anchor and the appended tail, and never from zero.</li>
+    <li><strong>A stream that did not grow.</strong> A file ending in a half record is
+    read once; the next tick with the same size reads zero bytes and leaves the offset
+    where it was; appending the rest of the record completes the fold.</li>
+    <li><strong>Descriptors.</strong> The store's open file descriptors are equal before
+    and after writing 50 events.</li>
+    <li><strong>The 64-byte anchor's limit.</strong> It misses a rewrite whose bytes at
+    that position are byte-identical, which timestamped records make vanishingly
+    unlikely; a stream that did not grow is not read at all, so an in-place rewrite that
+    keeps its size is outside this check by design.</li>
+    <li><strong>The negative control.</strong> Five mutations, each failing its named
+    case: ignoring the stored offset fails the replay's byte bound and the
+    unchanged-size case; dropping the carried fold state fails the replay's equality
+    (the carried peak prompt and event count come from earlier records); dropping the
+    anchor comparison fails the truncate-and-rewrite-past-the-offset case; dropping the
+    last-read-size test fails the rewrite that lands between the consumed offset and the
+    last-read size; leaving day-file connections open fails the descriptor count
+    (18 descriptors before, 68 after).</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> and
+    <code>ruff format --check</code> report no finding and no formatting change on any
+    changed Python file, at head and at base.</li>
+  </ul>
+
+  <p><strong>Not in this node.</strong> The quiet-beat classification half of §6 (the
+  classifier keyed on <code>recovery_watch._snapshot_reuse_key</code>, the liveness
+  probe and the stall clock) is outside this node's write scope and is not implemented
+  here; this node measures ingestion only.</p>
+</section>
