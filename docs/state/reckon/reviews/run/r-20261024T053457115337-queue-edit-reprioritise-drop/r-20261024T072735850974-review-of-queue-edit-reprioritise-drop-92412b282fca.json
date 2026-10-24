@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own logs/mcp-surface-base.log (revision 560465a09, base tree) and logs/mcp-surface-after.log (revision aecb4e9c0, worktree), with each arm's recorded directory: both arms name the single same node id test_crew_tool_carries_the_write_verbs.py::test_the_obligations_view_prints_the_action_form, so the difference is 0. Independently re-ran tests/test_queue_verbs.py at head 92412b282 (15 passed, EXIT=0) and the two census files at head (3 failed, 27 passed, EXIT=1) where the three failures are gc/shadow/verify-gate, the identical ids identity-base.log records at base, so the queue rows and the census row add none.",
+  "completed_at": "2026-10-24T07:42:43.398Z",
+  "dispatched_at": "2026-10-24T07:29:13Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T053457115337-queue-edit-reprioritise-drop/manifest.md",
+      "line": 19,
+      "severity": "blocking",
+      "summary": "The artifacts line misdescribes three of the logs it cites: logs/queue-verbs.log records 13 passed at revision 15e64a0b5, before the two cases this window adds existed, and is cited as 15 passed; logs/identity-after.log records 4 failed, 21 passed, EXIT=1 \u2014 including the KeyError at tests/test_run_verbs_share_one_identity_grammar.py:168 this window repairs \u2014 and is cited as all passing; and logs/census-after.log ends at 22 dots with no summary and no EXIT= line, so promotion cannot read its status. The facts are true (I re-ran the head and got 15 passed, and the census files pass), but the receipt a promotion gate reconciles against says otherwise, which is the defect this record exists to prevent."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T053457115337-queue-edit-reprioritise-drop/logs/after-arm/summary.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "summary": "The fourteen-file after-arm names revision 15e64a0b5 \u2014 the first commit \u2014 so the recorded zero delta predates bad9d68f5, which is where reckon/mcp.py and the two census suites change; the manifest presents these arms as the branch arm without naming their revision, so the delta as recorded covers only the pre-window tree."
+    },
+    {
+      "file": "tests/test_queue_verbs.py",
+      "line": 404,
+      "severity": "non-blocking",
+      "summary": "test_each_crew_tool_action_returns_its_cli_verb_document compares tool == cli on a missing run for all three actions, so read_pointer raises before priority, time_budget, backend or model is ever read: the assertion holds even if reckon/mcp.py:2443-2448 stops forwarding any one of those six parameters. It guards action routing, not argument forwarding, which is the half of the wiring this node adds."
+    },
+    {
+      "file": "tests/test_queue_verbs.py",
+      "line": 404,
+      "severity": "non-blocking",
+      "summary": "The new parity test re-implements the capability the repository already owns at tests/test_crew_tool_carries_the_write_verbs.py:70-169, whose CASES table is exactly an action-to-CLI-verb parity census called through reckon.mcp._crew, and it repeats this file's own :374 test with one call layer added; three rows appended to the owner's CASES table would have covered the same ground and kept one census rather than two."
+    },
+    {
+      "file": "tests/test_crew_help_names_its_state.py",
+      "line": 47,
+      "severity": "non-blocking",
+      "summary": "The retention-sweep row belongs to no verb this node adds; it repairs a base-revision census failure in passing and lands in the same commit as the three queue rows, so the diff carries a change the goal does not imply and a reviewer cannot tell this node's census work from an unrelated repair."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:2036 crew_queue_edit, :2083 crew_queue_reprioritise, :2105 crew_queue_drop; reckon/mcp_crew_actions.py:273-278; reckon/mcp.py:_crew at :2234 and :2443; reckon/crew/queue_edit.py:355; reckon/crew_run_commands.py:1989 crew_discard and reckon/crew/recovery_review_dispatch.py:464, both unchanged callers of promotion.discard.",
+    "diff": "Read commit by commit from 622ab7a64 to 92412b282: bad9d68f5 wires the MCP tool and adds drop's in-lock phase re-check, and aecb4e9c0 and 92412b282 rewrite the evidence fragment only; seven files, 158 added and 31 removed lines.",
+    "done_when": "The done-when names tests/test_queue_verbs.py, CLI/MCP parity, the help-contract census, a base delta with logs and ruff; the code meets it (I re-ran the 15 cases at head, 15 passed EXIT=0, and the census/identity files at head where only the three base failures remain) but the record cites logs that do not show what it says they show.",
+    "goal": "The goal is crew queue edit, reprioritise and drop with matching MCP crew actions; this window closes the MCP half at reckon/mcp.py:2234 and :2443-2448, where the tool's action Literal gains queue-edit, queue-reprioritise and queue-drop and the six parameters brief_path, done_when, time_budget, backend, model and priority are forwarded into _crew_write_action, which runs the same crew_action the CLI verb runs.",
+    "manifest": "Read; it states 15 passing cases, three negative controls, the two-arm delta and the unswept 121-file population, and it names the census, MCP and drop-lock work the review ordered, but three of the logs it cites say something other than the manifest reports.",
+    "write_paths": "Read the widened scope in resume-1-advice.txt and required-out-of-scope-edits.md; all seven paths the window changes are inside the same set"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is crew queue edit, reprioritise and drop with matching MCP crew actions, and this window closes the MCP half at reckon/mcp.py:2234 (the three action names) and :2443-2448 (the six forwarded parameters), with drop's in-lock re-check at reckon/crew/queue_edit.py:355.\nVERDICT done_when: the done-when names tests/test_queue_verbs.py, CLI/MCP parity, the help census, a logged base delta and ruff; I re-ran the 15 cases at 92412b282 (15 passed, EXIT=0) and the two census files at that head (3 failed, 27 passed, the three ids identity-base.log records at base), but the manifest's own receipts for those runs are stale or truncated.\nVERDICT write_paths: every path the window touches \u2014 reckon/mcp.py, reckon/crew/promotion.py, reckon/crew/queue_edit.py, tests/test_queue_verbs.py, tests/test_crew_help_names_its_state.py, tests/test_run_verbs_share_one_identity_grammar.py and the fragment; the first four were widened in resume-1-advice.txt and required-out-of-scope-edits.md, and the evidence fragment is the always-permitted landing path.\nVERDICT manifest: read; it records the 15 cases, three negative controls, the two-arm delta and the deliberately unswept 121-file population, but its artifacts line cites logs that read 13 passed, 4 failed and a truncated run.\nVERDICT diff: read commit by commit from 622ab7a64 to 92412b282: bad9d68f5 wires the MCP tool and adds promotion.discard's allowed_phases with drop passing WAITING_PHASES, and aecb4e9c0 and 92412b282 change only the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:crew_queue_edit, reckon/crew_run_commands.py:crew_queue_reprioritise, reckon/crew_run_commands.py:crew_queue_drop, reckon/mcp_crew_actions.py:_verb_for (lines 273-278), reckon/mcp.py:_crew (lines 2234, 2443-2448), reckon/crew/queue_edit.py:355, reckon/crew_run_commands.py:1989 crew_discard, reckon/crew/recovery_review_dispatch.py:464\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2234 and :2443 now declare and forward the three queue actions and their six parameters, so the MCP half of the goal that the previous review found unreachable is reachable.\nSCORE evidence: 8\nJUSTIFICATION evidence: the gate's substance holds \u2014 tests/test_queue_verbs.py passes 15 cases at 92412b282 and the derived added_failure_count is 0 \u2014 but manifest.md:19 cites logs/queue-verbs.log (13 passed, revision 15e64a0b5).\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every changed path is inside the widened fence, but tests/test_crew_help_names_its_state.py:47 adds a retention-sweep row the goal does not imply.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_queue_verbs.py:431 fails when promotion.discard's allowed_phases is dropped (logs/negative-control-drop-lock.log shows the pointer removed at phase working), while :404 holds even if the parameter forwarding at reckon/mcp.py:2443 regresses.\nSCORE fit: 16\nJUSTIFICATION fit: the additions follow reckon/mcp.py's existing action documentation and reckon/crew/promotion.py's locked read-then-write shape, and no added name carries a plan or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: promotion.discard extends its owner and queue_edit.drop wraps it, but tests/test_queue_verbs.py:404 duplicates the parity census tests/test_crew_tool_carries_the_write_verbs.py:70-169 already owns.\nFINDING manifest.md:19 blocking: three cited logs contradict the claims \u2014 queue-verbs.log says 13 passed at 15e64a0b5, identity-after.log says 4 failed EXIT=1, census-after.log has no summary or EXIT line.\nFINDING logs/after-arm/summary.log:1 non-blocking: the fourteen-file after-arm ran at 15e64a0b5, before the mcp.py and census changes it is presented as measuring.\nFINDING tests/test_queue_verbs.py:404 non-blocking: the parity assertion uses a missing run so it cannot fail when the six forwarded parameters stop reaching the verb.\nFINDING tests/test_queue_verbs.py:404 non-blocking: it forks the action-parity census that tests/test_crew_tool_carries_the_write_verbs.py:70-169 owns rather than extending it.\nFINDING tests/test_crew_help_names_its_state.py:47 non-blocking: an unrelated retention-sweep row lands in the same commit as the three queue rows.\n",
+  "review_run_id": "r-20261024T072735850974-review-of-queue-edit-reprioritise-drop-92412b282fca",
+  "reviewed_base_sha": "622ab7a64a42b2a6ea0bd0cc20ccfbf1cb85bc12",
+  "reviewed_head_sha": "92412b282fca8bf102767c217ea4326142151917",
+  "reviewed_run_id": "r-20261024T053457115337-queue-edit-reprioritise-drop",
+  "scores": {
+    "durability": 14,
+    "evidence": 8,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:47:37.956689+00:00",
+  "total": 77
+}

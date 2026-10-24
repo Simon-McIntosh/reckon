@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="67">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -158,6 +158,9 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261024T053326976410-queued-brief-binds-at-launch" data-who="reckon-build" data-when="2026-10-24T07:07:12Z">
     <div class="r-comment-body"><p>queued-brief-binds-at-launch stores a queued request's brief as steering.md in its own run directory once and never overwrites it, and the admission launch reads that file in place of the queue-time brief before dispatch; 9 arms in tests/test_queue_steering_binding.py pass, the added-failure count against base is zero, and a run review's composed brief is never frozen by the queue, so its launch composes it again from the head the reviewed tree carries now</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261024T072735850974-review-of-queue-edit-reprioritise-drop-92412b282fca" data-who="reckon-build" data-when="2026-10-24T07:42:43.398Z">
+    <div class="r-comment-body"><p>reviewed r-20261024T053457115337-queue-edit-reprioritise-drop at 92412b282 against 622ab7a64 and stored a parsed record: goal_fidelity 19, evidence 8, scope_discipline 15, durability 14, fit 16, reuse 5, added_failure_count 0 over the run's own two arms; one blocking finding, that the reviewed manifest's artifacts line cites a 13-passed log for its 15 cases and calls a 4-failed log "all passing".</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261023T124219597651-review-of-a-queued-request-waits-on-its-dependencies-1b2713f29e3f" data-who="reckon-build" data-when="2026-10-23T13:01:57.694Z">
     <div class="r-comment-body"><p>An independent review of run r-20261023T112727139233-a-queued-request-waits-on-its-dependencies (base 43677d0d2697ae3d8841b6d19addcdb77cc572be, head 1b2713f29e3f8e1569c688953e757ec6144305c1) is stored parsed: scores goal_fidelity 8, evidence 12, scope_discipline 18, durability 18, fit 17, reuse 13; added failures 0; one blocking finding and four non-blocking ones (queue_requests at reckon/crew/queue_admission.py:1338 has no production caller, so no dispatched node can enter awaiting-upstream; the base arm fails on AttributeError rather than on the ordering the done_when claims; the manifest's tests line is prose and does not reconcile with gate-main.log's EXIT=1; the duties view does not read the two new phases; _parse_section_ref at :1109 re-implements reckon/_schema.py:276 parse_plan_ref).</p></div>
 </div>
@@ -193,6 +196,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261024T065430023532-roadmap-section-verdict" data-who="reckon-build" data-when="2026-10-24T07:30:19Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/roadmap-section-verdict.html — 553 existing importer tests passed at base and product head (zero added); 9 verdict tests passed, and the gate mutation failed both held cases.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261024T073428488207-review-of-lift-preferring-picker-234aa05140d2" data-who="reckon-build" data-when="2026-10-24T07:47:37.006Z">
+    <div class="r-comment-body"><p>review of r-20261024T070437836656-lift-preferring-picker at head 234aa0514 against base 90ec1d3 — parsed, scores goal_fidelity 17, evidence 19, scope_discipline 20, durability 18, fit 18, reuse 18 (total 110), added_failure_count 0, one non-blocking finding at reckon/crew/dispatch_picker.py:1353</p></div>
 </div>
 </section>
 </main>
