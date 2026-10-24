@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station_store.py:789",
+    "reckon/crew_run_commands.py:1587",
+    "reckon/crew_run_commands.py:402"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "2026-10-24T21:01:08.830Z",
+  "dispatched_at": "2026-10-24T20:43:17Z",
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": 29,
+      "severity": "non-blocking",
+      "text": "The done_when requires that every test file importing a changed production module, plus the listed gate files, add no failure against a base arm, but the arms cover only four of the eight test files that import the changed modules: tests/test_crew.py, tests/test_a_promoted_code_review_is_stored.py, tests/test_a_lane_change_keeps_its_waivers.py and tests/test_crew_lane_change.py all import reckon/crew_run_commands.py and ran in neither arm."
+    },
+    {
+      "file": "reckon/crew/station_store.py",
+      "line": 233,
+      "severity": "non-blocking",
+      "text": "The round-trip check that keeps _day_from_name's accepted names identical to _day_file_name is guarded by no test: removing the parsed.date().isoformat() != stamp clause widens the domain to time-bearing stamps and no suite test would redden, because day_name_domain.log is a one-off script rather than an assertion."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commit by commit; aec25ad98 replaces date.fromisoformat with parse_utc plus a round-trip test in station_store, renames the sweep's help line, and moves the live/resolved expectation while adding a disagreement refusal assertion; ce6924746 adds only the evidence fragment.",
+    "done_when": "The done_when names tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition, tests/test_crew_path_prints_the_resolved_home.py::test_a_selector_a_kind_does_not_take_is_refused and tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat; gate.log records all three passing at ce6924746.",
+    "goal": "The node goal is to make the three census ids of the plan's section pass by asserting each intended contract or reporting the unintended change; all three pass at ce6924746 and each id's driving commit is named in the evidence fragment, including the correction that the live case fails as --project beside --run rather than a --run selector.",
+    "manifest": "Read; it records commits aec25ad98 and ce6924746 and states the gate result, the two arms and the three negative controls, though its artifacts line omits any ruff receipt.",
+    "write_paths": "The manifest declares seven write paths; the diff touches only tests/test_crew_help_names_its_state.py, tests/test_crew_path_prints_the_resolved_home.py, reckon/crew/station_store.py, reckon/crew_run_commands.py and docs/evidence/fragments/the-suite-is-green-at-head/invariant-ids-in-claimed-modules-name-one-owner.html, all inside them."
+  },
+  "justifications": {
+    "durability": "Each added assertion reddens on its own reinstated regression as negative_control.log shows, but the round-trip guard at reckon/crew/station_store.py:233 has no test behind it.",
+    "evidence": "gate.log records 17 passed EXIT=0 at ce6924746 and arm-base.log 3 failed/58 passed EXIT=1 against arm-head.log 61 passed EXIT=0, but the arms cover only four of the eight test files that import the changed modules.",
+    "fit": "reckon/crew/station_store.py:220 and reckon/crew_run_commands.py:1583 follow the surrounding docstring style and introduce no plan or ticket label.",
+    "goal_fidelity": "All three census ids pass at ce6924746 (gate.log 17 passed), and the evidence fragment names the commit read for each id: 81b4ea57e, 8bac47b79 and 8dd3a03d0.",
+    "reuse": "No definition is added; reckon/crew/station_store.py:233 now calls the existing owner reckon/_timestamps.py:parse_utc rather than forking a second parser, which is the capability the structural invariant tracks.",
+    "scope_discipline": "Every path in the e047134db..ce6924746 diff is inside the declared write paths; tests/test_structural_invariants.py was left untouched and no figure was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to make the three census ids of the plan's section pass by asserting each intended contract or reporting the unintended change; all three pass at ce6924746 and each id's driving commit is named in the evidence fragment, including the correction that the live case fails as --project beside --run rather than a --run selector.\nVERDICT done_when: The done_when names tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition, tests/test_crew_path_prints_the_resolved_home.py::test_a_selector_a_kind_does_not_take_is_refused and tests/test_structural_invariants.py::test_only_the_shared_parser_calls_fromisoformat; gate.log records all three passing at ce6924746.\nVERDICT write_paths: The manifest declares seven write paths; the diff touches only tests/test_crew_help_names_its_state.py, tests/test_crew_path_prints_the_resolved_home.py, reckon/crew/station_store.py, reckon/crew_run_commands.py and docs/evidence/fragments/the-suite-is-green-at-head/invariant-ids-in-claimed-modules-name-one-owner.html, all inside them.\nVERDICT manifest: Read; it records commits aec25ad98 and ce6924746 and states the gate result, the two arms and the three negative controls, though its artifacts line omits any ruff receipt.\nVERDICT diff: Read commit by commit; aec25ad98 replaces date.fromisoformat with parse_utc plus a round-trip test in station_store, renames the sweep's help line, and moves the live/resolved expectation while adding a disagreement refusal assertion; ce6924746 adds only the evidence fragment.\nCALL_SITES: reckon/crew/station_store.py:789, reckon/crew_run_commands.py:1587, reckon/crew_run_commands.py:402\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: All three census ids pass at ce6924746 (gate.log 17 passed), and the evidence fragment names the commit read for each id: 81b4ea57e, 8bac47b79 and 8dd3a03d0.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log records 17 passed EXIT=0 at ce6924746 and arm-base.log 3 failed/58 passed EXIT=1 against arm-head.log 61 passed EXIT=0, but the arms cover only four of the eight test files that import the changed modules.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the e047134db..ce6924746 diff is inside the declared write paths; tests/test_structural_invariants.py was left untouched and no figure was written.\nSCORE durability: 17\nJUSTIFICATION durability: Each added assertion reddens on its own reinstated regression as negative_control.log shows, but the round-trip guard at reckon/crew/station_store.py:233 has no test behind it.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/station_store.py:220 and reckon/crew_run_commands.py:1583 follow the surrounding docstring style and introduce no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: No definition is added; reckon/crew/station_store.py:233 now calls the existing owner reckon/_timestamps.py:parse_utc rather than forking a second parser, which is the capability the structural invariant tracks.\nFINDING tests/test_crew.py:29 non-blocking: The done_when requires that every test file importing a changed production module, plus the listed gate files, add no failure against a base arm, but the arms cover only four of the eight test files that import the changed modules: tests/test_crew.py, tests/test_a_promoted_code_review_is_stored.py, tests/test_a_lane_change_keeps_its_waivers.py and tests/test_crew_lane_change.py import reckon/crew_run_commands.py and ran in neither arm.\nFINDING reckon/crew/station_store.py:233 non-blocking: The round-trip check that keeps _day_from_name's accepted names identical to _day_file_name is guarded by no test: removing the parsed.date().isoformat() != stamp clause widens the domain to time-bearing stamps and no suite test would redden, because day_name_domain.log is a one-off script rather than an assertion.\n",
+  "review_run_id": "r-20261024T204053764251-review-of-invariant-ids-in-claimed-modules-name-one-owner-ce6924746386",
+  "reviewed_base_sha": "e047134dbad3d33c38f006d3b0af931231cb2579",
+  "reviewed_head_sha": "ce6924746386821eec4586c27660afcf3281153d",
+  "reviewed_run_id": "r-20261024T201144368065-invariant-ids-in-claimed-modules-name-one-owner",
+  "rubric": "text",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T22:48:01.268922+00:00",
+  "total": 110
+}
