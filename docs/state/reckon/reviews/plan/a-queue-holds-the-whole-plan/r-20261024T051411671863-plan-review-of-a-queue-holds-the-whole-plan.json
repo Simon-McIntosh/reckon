@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T05:20:18.873Z",
+  "dispatched_at": "2026-10-24T05:14:57Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261024T051411671863-plan-review-of-a-queue-holds-the-whole-plan/plan.html:64",
+      "id": "reasoning-1",
+      "reason": "implemented as written the request is either restored `queued` (never reaching `launch-failed`) or written `launch-failed` with no `admit_request` and therefore never re-queued, so the section's own \"on a later pass\" claim fails and an invalid steering file strands the node.",
+      "text": "\u00a75 says an invalid `steering.md` \"moves the request to `launch-failed` with the failure named, as any launch failure does today, and `_requeue_admitted_failures` returns it to `queued` on a later pass\"; but a steering check inside `_launch_queued` raises before `dispatch()` returns, so `admit_once` catches it and `_record_queued_failure` restores the pointer as `queued` with the failure and a `_retry_backoff_hold` (queue_admission.py:1957-1972, :804-833), while `launch-failed` is written only for a launched run whose process died before reaching a model (dispatch_launch.py:330, dispatch_sessions.py:314) \u2014 and `_requeue_admitted_failures` skips any pointer without `admit_request` (:760-761), which is stamped only after a successful launch (`_stamp_admission`, :2049)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261024T051411671863-plan-review-of-a-queue-holds-the-whole-plan/plan.html:64",
+      "id": "reasoning-2",
+      "reason": "\u00a79 queues exactly these section-only requests, so as written the binding mechanism blocks the plan's own loading path until the repointing is made conditional on the file existing.",
+      "text": "\u00a75 says `_launch_queued` \"points the node's `brief` and `brief_path` at that file in place of the queue-time values `_node_from_pointer` carries\" with no condition, but a request whose authority is a plan section alone (\"a plan section, a steering file, or both\") has no `steering.md`: `queue_dispatch` copies `--brief` only when the node carries one, and `plan_dispatch` takes `_brief_digest(node.brief_path or node.brief)` whenever `node.brief.strip()` is non-empty (dispatch_plan.py:830-834), so a repointed-but-absent path makes every section-only queued request fail its launch with \"the brief ... is not readable\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8c0f82f22c1f16d948f5dfb0895fcb4ea9457664bcb6c58f4991809207156cce",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 57,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T05:21:48.433460+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-24T05:22:00.595940+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T05:21:48.433460+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T05:22:00.595940+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v57.json",
+  "review_run_id": "r-20261024T051411671863-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "7b23099a6bae7c1a80a997b7f92f25b0d65203ce",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol and path \u00a75's changed text names resolves: `queue_dispatch` (runs.py:546), `_queued_request_record` (dispatch.py:229), `_launch_queued` (queue_admission.py:171), `_node_from_pointer` (queue_admission.py:119), `_requeue_admitted_failures` (queue_admission.py:748), `_store_brief` (dispatch_admission.py:2241), `_brief_digest` (dispatch_admission.py:2204), and all six declared write paths exist.",
+    "done_when": "pass \u2014 \u00a75 now declares a discriminating arm (leave `steering.md` alone, change the file the pointer's `node.brief` names, require the worker's digest to match `steering.md` and fail on today's code) plus an in-place re-queue arm and a refused-edit arm, so the measure can fail.",
+    "evidence_paths": "pass \u2014 every log is stated under the request's own run directory (`~/.config/reckon/crew/runs/<request-id>/`), which is durable.",
+    "naming": "pass \u2014 the changed text introduces no plan labels, stage names, ticket numbers or changelog prose; `launch-failed` and `steering.md` are runtime vocabulary, not plan identifiers.",
+    "reasoning": "two findings \u2014 (a) the launch-failure arm names a phase and a re-queue function that the synchronous refusal path never produces, and (b) the launch repointing of `brief`/`brief_path` at `steering.md` is stated unconditionally, while a request whose authority is a plan section alone has no such file.",
+    "single_goal": "pass \u2014 \u00a75's two-node split (binding, then verbs) is declared in its own done-when and was declined as one deliverable by an earlier review; the changed text does not reopen it.",
+    "wiring": "pass \u2014 \u00a75's declared edge `s5 -> a-queue-holds-the-whole-plan#s2` is the only dependency the changed text needs (the request-phase vocabulary, `awaiting-upstream`, and `launch-failed` all come from \u00a72's landed implementation)."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "3f659c5b6174d47ee3b0d2104083ae3093b8b269c717a633ff48328477dc896a",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T05:21:38.619699+00:00"
+}
