@@ -316,6 +316,45 @@ def _filed_review_record(
     return None
 
 
+def _the_probe_did_not_answer(observation: Mapping[str, Any] | None) -> bool:
+    """Whether the declared condition's probe produced no answer at all.
+
+    A probe that prints a state matching no declared terminal is answering:
+    the run is still waiting on something that may yet arrive, and the sweep
+    lifts it when the state it prints becomes terminal. A probe that exits
+    non-zero or cannot run reported nothing about the condition, so no later
+    sweep will see a terminal state and the wait cannot end itself.
+
+    The question is read from the structured ``answered`` flag the probe
+    reader sets, never from its detail text: the text is prose for a person
+    and changes whenever the reader's wording does, so a decision resting on
+    it would break silently on that change. A probe result carrying no flag
+    is one that answered, because it produced the state it reports.
+    """
+    if observation is None:
+        return False
+    return observation.get("answered") is False
+
+
+def _exit_record_ends_the_current_attempt(
+    record: Mapping[str, Any], exit_record: Mapping[str, Any] | None
+) -> bool:
+    """Whether the run's exit record is the current attempt's own receipt.
+
+    A resumed run reuses the run directory, so a record left by the attempt a
+    resume replaced must not stand for the attempt now running. The attempt
+    number stamped on the record is what separates them; a run that records no
+    attempt at all has only one attempt, so the record it holds is that
+    attempt's.
+    """
+    if exit_record is None:
+        return False
+    attempt = _current_attempt_number(record)
+    if attempt is None:
+        return True
+    return _exit_record_names_attempt(record, attempt)
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -634,7 +673,7 @@ def classify_pointer(
         # a live run reads running from liveness with the same text beside it,
         # so both readings share one refusal instead of each arm re-deriving it.
         manifest_error = str(wait["error"])
-    wait_observation: dict[str, str] | None = None
+    wait_observation: dict[str, Any] | None = None
     if wait is not None and wait["valid"]:
         observe_condition = (
             _run_wait_condition_probe if condition_test is None else condition_test
@@ -651,6 +690,7 @@ def classify_pointer(
             wait_observation = {
                 "state": "unknown",
                 "observed": "unavailable",
+                "answered": False,
                 "detail": f"condition probe could not answer: {exc}",
             }
     # A live worker may hold no written verdict yet, because the reader caught
@@ -1093,6 +1133,29 @@ def classify_pointer(
             action = (
                 f"the recovery sweep lifts run {run_id} once its process is "
                 "observed to have ended"
+            )
+        elif _the_probe_did_not_answer(wait_observation) and (
+            _exit_record_ends_the_current_attempt(record, ended_exit)
+        ):
+            # The sweep resumes a declared wait only on a terminal probe
+            # answer. This worker recorded its own end and its probe reported
+            # nothing about the condition — the command could not run, or it
+            # ran and failed — so no later sweep will see the terminal state
+            # and the wait cannot end itself. The row is drawn halted and the
+            # only action left is named beside the probe's failure, instead of
+            # promising a mechanism that will never act on this run.
+            classification = "stalled"
+            detail = (
+                f"waiting {wait['age_seconds']}s on {wait['condition']}; the "
+                f"condition probe did not answer — "
+                f"{wait_observation['detail']} — and the worker "
+                f"{_exit_record_end_phrase(ended_exit)}, so no later sweep can "
+                "lift this run"
+            )
+            action = (
+                f"reckon crew resume --run {run_id} --advice "
+                "continue past the declared wait, whose condition probe "
+                "cannot answer"
             )
         else:
             observation_detail = (

@@ -392,12 +392,21 @@ def _wait_terminal_values(value: Any) -> list[str]:
 
 def _wait_condition_observation(
     value: Any, *, terminal_values: list[str]
-) -> dict[str, str]:
-    """Normalise a probe result into pending, met, or unknown."""
+) -> dict[str, Any]:
+    """Normalise a probe result into pending, met, or unknown.
+
+    ``answered`` is carried through as a structured fact: whether the probe
+    produced any answer at all. A probe that failed or could not run reports
+    ``answered: False``, and that is what a reader tests — the detail text is
+    prose for a person, reworded whenever the reader's wording changes, so no
+    decision may rest on it. A probe result that carries no ``answered`` field
+    answered by construction: it produced the state and observation it reports.
+    """
     if isinstance(value, bool):
         return {
             "state": "met" if value else "pending",
             "observed": "terminal" if value else "pending",
+            "answered": True,
             "detail": "condition test returned a boolean verdict",
         }
     if isinstance(value, Mapping):
@@ -411,9 +420,11 @@ def _wait_condition_observation(
                 if terminal is False
                 else "unknown"
             )
+        answered = value.get("answered")
         return {
             "state": state,
             "observed": str(value.get("observed") or state),
+            "answered": True if answered is None else bool(answered),
             "detail": str(value.get("detail") or "condition test returned a verdict"),
         }
     observed = str(value or "").strip()
@@ -421,6 +432,7 @@ def _wait_condition_observation(
     return {
         "state": "met" if observed.casefold() in terminal else "unknown",
         "observed": observed or "unavailable",
+        "answered": True,
         "detail": "condition test returned an unstructured observation",
     }
 
@@ -499,6 +511,7 @@ def _run_wait_condition_probe(
         return {
             "state": "unknown",
             "observed": "unavailable",
+            "answered": False,
             "detail": f"condition probe could not answer: {exc}",
         }
     lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
@@ -507,6 +520,7 @@ def _run_wait_condition_probe(
         return {
             "state": "unknown",
             "observed": observed,
+            "answered": False,
             "detail": (
                 f"condition probe did not answer successfully; exit "
                 f"{completed.returncode}"
@@ -521,11 +535,13 @@ def _run_wait_condition_probe(
         return {
             "state": "met",
             "observed": observed,
+            "answered": True,
             "detail": f"condition probe reported terminal state {observed!r}",
         }
     return {
         "state": "unknown",
         "observed": observed,
+        "answered": True,
         "detail": (
             f"condition probe reported {observed!r}, which matches no declared "
             "terminal state"
