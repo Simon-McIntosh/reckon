@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite blocks, which cite its logs on disk: base.log at 778e326d1 records 2 failed, 70 passed (EXIT=1) with failure ids test_review_skill_is_discovered_beside_the_other_reckon_skills and test_every_registered_crew_verb_is_documented_or_exempt; head.log at 5f70b98a9 records 1 failed, 71 passed (EXIT=1) with only test_review_skill_is_discovered_beside_the_other_reckon_skills. The single remaining id is present in both arms, so no failure id is added.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1558",
+    "reckon/crew/gc.py:1443",
+    "skills/reckon-build/SKILL.md"
+  ],
+  "completed_at": "2026-10-24T04:52:30.213Z",
+  "dispatched_at": "2026-10-24T04:48:18Z",
+  "findings": [
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1214",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added reason's three factual claims (the timer's ExecStart is `python -m reckon.crew.gc`, the installed timer never reaches the verb, and no orchestrator invokes it) are asserted by no test. They are true today (reckon/crew/gc.py:1443 builds that argv, and `retention-sweep` appears nowhere else under reckon/ or skills/), but if the timer were later changed to call the verb the exemption would keep passing while its stated justification became false, so the entry would certify a fact nobody rechecks."
+    },
+    {
+      "file": "tests/test_skill_contracts.py",
+      "line": "1213",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_every_registered_crew_verb_is_documented_or_exempt consults CREW_VERBS_OUTSIDE_ORCHESTRATION only as membership over the registered leaf paths (tests/test_skill_contracts.py:1561-1568), so nothing fails if an exempt key stops being a registered verb. A rename or removal of `retention-sweep` leaves this entry inert and silently unexercised, which is the class of dead exemption the set cannot currently detect."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read all three commits against 778e326d1: 5f70b98a9 adds the six-line exemption entry, fd022e625 adds the 58-line landing fragment, a50f5823d corrects one line of that fragment to quote the negative control's failure count; git diff 5f70b98a9 a50f5823d is the fragment alone, so the tree the head arm measured carries the same code the final head carries.",
+    "done_when": "The done_when asks that test_every_registered_crew_verb_is_documented_or_exempt pass at head and fail at base with every other case keeping its base result; base.log and head.log record exactly that (2 failed/70 passed -> 1 failed/71 passed, the flipped case named in both failure and summary), and the negative control in negative-control.log reddens it again at EXIT=1.",
+    "goal": "The goal is to name reckon crew retention-sweep among the crew verbs run outside orchestration; tests/test_skill_contracts.py:1213-1218 adds exactly that entry to CREW_VERBS_OUTSIDE_ORCHESTRATION beside the existing path and admit exemptions.",
+    "manifest": "Read the manifest at the reviewed run directory; it states status complete, lists commits 5f70b98a9 fd022e625 a50f5823d, names tests/test_skill_contracts.py as the gate command, records test_logs paths for base, head, negative control and ruff, and attributes the one remaining failure to a pre-existing 1506-word reckon-review skill body outside its scope.",
+    "write_paths": "The declared scope is tests/test_skill_contracts.py, docs/evidence/fragments/crew-state-stays-bounded/the-retention-sweep-verb-is-maintenance.html and an unused docs/figures directory; the diff touches only the first two, so every changed path is inside the sum of the grants."
+  },
+  "justifications": {
+    "durability": "The exemption is data, not a new assertion, so the guard is the pre-existing tests/test_skill_contracts.py:1565-1568 whose both arms fire; the added reason's three factual claims at tests/test_skill_contracts.py:1214-1217 are asserted by nothing, and no case checks that an exempt key is still a registered verb, so the entry can rot green.",
+    "evidence": "base.log and head.log carry revision, tree, command, module and cwd header lines and end in bare EXIT= lines, and the head arm was run at 5f70b98a9 rather than the final a50f5823d; that gap is benign only because git diff 5f70b98a9 a50f5823d is the evidence fragment alone, which the reviewer verified.",
+    "fit": "The entry follows the surrounding tuple-to-reason mapping at tests/test_skill_contracts.py:1184-1210 in wording, length and punctuation, and introduces no plan label, ticket number or version suffix in its symbols or prose.",
+    "goal_fidelity": "tests/test_skill_contracts.py:1213-1218 places (\"crew\", \"retention-sweep\") in CREW_VERBS_OUTSIDE_ORCHESTRATION with the reason the plan fixes, which is the whole of the stated goal.",
+    "reuse": "The change extends the owner of its capability, CREW_VERBS_OUTSIDE_ORCHESTRATION at tests/test_skill_contracts.py:1184, rather than adding a second exemption mechanism; no new function, class or module is introduced.",
+    "scope_discipline": "git diff --stat 778e326d1 a50f5823d names only tests/test_skill_contracts.py (+6) and docs/evidence/fragments/crew-state-stays-bounded/the-retention-sweep-verb-is-maintenance.html (+58), both granted, with no figure and no product source touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to name reckon crew retention-sweep among the crew verbs run outside orchestration, and tests/test_skill_contracts.py:1213-1218 adds exactly that entry to CREW_VERBS_OUTSIDE_ORCHESTRATION.\nVERDICT done_when: the done_when asks the exempt-verb case to pass at head and fail at base with every other case keeping its base result; base.log records 2 failed, 70 passed and head.log 1 failed, 71 passed with the target case flipped, and negative-control.log reddens it again at EXIT=1.\nVERDICT write_paths: the grant covers tests/test_skill_contracts.py, the node's evidence fragment and an unused figures directory, and git diff --stat 778e326d1 a50f5823d touches only the first two.\nVERDICT manifest: read; it records status complete, commits 5f70b98a9 fd022e625 a50f5823d, the gate command, four log paths and a failure attribution for the one remaining red case.\nVERDICT diff: read all three commits against base 778e326d1 \u2014 a six-line exemption entry, a 58-line landing fragment and a one-line correction to that fragment \u2014 and the last two commits carry no code, so the measured tree matches the final head.\nCALL_SITES: reckon/crew_run_commands.py:1558, reckon/crew/gc.py:1443, skills/reckon-build/SKILL.md\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_skill_contracts.py:1213-1218 places (\"crew\", \"retention-sweep\") in CREW_VERBS_OUTSIDE_ORCHESTRATION with the reason the plan fixes, which is the whole of the stated goal.\nSCORE evidence: 19\nJUSTIFICATION evidence: base.log and head.log carry revision, tree, command, module and cwd header lines and end in bare EXIT= lines, with the head arm at 5f70b98a9 and the final head a50f5823d differing by the evidence fragment alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 778e326d1 a50f5823d names only tests/test_skill_contracts.py (+6) and the node's evidence fragment (+58), both granted.\nSCORE durability: 17\nJUSTIFICATION durability: the guard is the pre-existing tests/test_skill_contracts.py:1565-1568 and both its arms fire, but the reason at tests/test_skill_contracts.py:1214-1217 is asserted by nothing and no case checks that an exempt key is still registered.\nSCORE fit: 19\nJUSTIFICATION fit: the entry follows the surrounding tuple-to-reason mapping at tests/test_skill_contracts.py:1184-1210 and introduces no plan label, ticket number or version suffix.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends CREW_VERBS_OUTSIDE_ORCHESTRATION at tests/test_skill_contracts.py:1184 rather than adding a second exemption mechanism, and adds no function, class or module.\nFINDING tests/test_skill_contracts.py:1214 non-blocking: the added reason's three factual claims are asserted by no test, so a later change making the timer call the verb would leave the exemption passing while its justification became false.\nFINDING tests/test_skill_contracts.py:1213 non-blocking: nothing fails if an exempt key stops being a registered verb, so a rename or removal of retention-sweep leaves this entry inert and silently unexercised.",
+  "review_run": "r-20261024T044733940789-review-of-the-retention-sweep-verb-is-maintenance-a50f5823d10a",
+  "review_run_id": "r-20261024T044733940789-review-of-the-retention-sweep-verb-is-maintenance-a50f5823d10a",
+  "reviewed_base_sha": "778e326d1219b5d5a85f88e01606af3dcdf5b716",
+  "reviewed_head_sha": "a50f5823d10ab3479fa19e90e0204b62b4e09b0c",
+  "reviewed_run_id": "r-20261024T043616104091-the-retention-sweep-verb-is-maintenance",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T05:00:00Z",
+  "total": 115
+}

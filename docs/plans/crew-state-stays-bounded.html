@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s7&quot;:[&quot;crew-state-stays-bounded#s3&quot;],&quot;s8&quot;:[&quot;crew-state-stays-bounded#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -159,7 +159,7 @@
     fail.</p>
 
     <h2 id="s8">§8 — A run&#x27;s scratch leaves with the run, on the host that made it</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> Measured on clu-2068 on 2026-10-23 at about 14:05Z: 107 run scratch directories under <code>/tmp/reckon-crew-scratch/</code> hold 9.7 GB. 62 of them belong to promoted runs with no live pointer, 1.3 GB, and a peer on imas-ambix counted 16 GB across 104 directories going back to 2026-10-20. Reading each promoted run's release record shows three ways the scratch survives:</p>
     <ul>
       <li>29 runs record <code>scratch_removed: true</code> and their directory is still there. <code>r-20261020T202608740663-shc-gap-docs-regen</code> recorded 5,014 bytes removed while the worker's files from 22:55 to 23:11 remain, so the release removed a same-named path somewhere other than the node-local tree the worker wrote.</li>
@@ -192,10 +192,11 @@
     <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §7</pre>
     <p class="r-fu-outcome">§7 landed by merge 91cf7375a; §8, the host-aware scratch release, is next.</p>
     </article>
-<article class="r-fu" data-id="f-cssb-008" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-23 16:45" data-recommends-skill="/reckon-build crew-state-stays-bounded §8" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cssb-008" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-23 16:45" data-recommends-skill="/reckon-build crew-state-stays-bounded §8" data-resolved-at="2026-10-24T04:54:20+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Remove a run&#x27;s scratch on the host that made it</h4>
     <div class="r-fu-body"><p>Measured by a peer on 2026-10-23. §8 runs after §7, whose sweep settles a removal owed to another host. A content review of §8 is owed before dispatch.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §8</pre>
+    <p class="r-fu-outcome">Section 8 landed at merge 6fce240f4 after four review rounds: a finished run scratch is removed by run on every host. Review 111, zero added failures. f-cssb-009 carries section 9 and f-cssb-001 section 2.</p>
     </article>
 <article class="r-fu" data-id="f-cssb-009" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-24" data-recommends-skill="/reckon-build crew-state-stays-bounded §9" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Implement §9: the retention-sweep verb is named as maintenance</h4>
@@ -268,7 +269,13 @@
     <div class="r-comment-body"><p>the review of run r-20261024T014216727662-a-runs-scratch-is-removed-on-the-host-that-made-it at head 3149f9b6f2000a353f872e1a09dace816c02eb55 from base 29ef6788af7a3f80d1c695b0ffd6784cb94a3380 (the head the previous review read) is stored parsed: goal_fidelity 18, evidence 16, scope_discipline 20, durability 19, fit 19, reuse 19 (111/120), added_failure_count 0, four non-blocking findings — the fragment's Gate paragraph still quotes the previous round's 85 passed / 0:02:14 rather than the head log's 87 / 0:01:42 and an abbreviated command, the negative-control paragraph says "committed tree" while its log names bef70cb4, the manifest's negative_control_log names the repair control rather than the declared one, and gc.py:1171 repeats the exit/discard record-name literals instead of the constants the modules already declare</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261024T014216727662-a-runs-scratch-is-removed-on-the-host-that-made-it" data-who="reckon-build" data-when="2026-10-24T04:29:15Z">
-    <div class="r-comment-body"><p>settle_run_scratch in reckon/crew/gc.py removes a run-named scratch copy at once when its run has no live pointer, no process holds it and the shared run directory records its end (orphan copies after SCRATCH_GRACE_SECONDS), from ensure_worker_scratch, the step wrapper and retention_sweep; remove_worker_scratch names the host and reports an absent copy absent; the pass withholds every removal when the scratch root and the state home are not both named to it (&quot;state and scratch roots differ&quot;, the guard the orphan sweep already applies), and the release receipt is written beside the run record before the ledger write — 12 new cases green, four pre-existing failures in tests/test_promotion_never_amends_its_commit.py at base too</p></div>
+    <div class="r-comment-body"><p>settle_run_scratch in reckon/crew/gc.py removes a run-named scratch copy at once when its run has no live pointer, no process holds it and the shared run directory records its end (orphan copies after SCRATCH_GRACE_SECONDS), from ensure_worker_scratch, the step wrapper and retention_sweep; remove_worker_scratch names the host and reports an absent copy absent; the pass withholds every removal when the scratch root and the state home are not both named to it ("state and scratch roots differ", the guard the orphan sweep already applies), and the release receipt is written beside the run record before the ledger write — 12 new cases green, four pre-existing failures in tests/test_promotion_never_amends_its_commit.py at base too</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
+    <div class="r-comment-body"><p>Section 8 landed at merge <code>6fce240f4</code>: a finished run's scratch is removed by run on every host. Debt: the record names in <code>_run_directory_records_end</code> are literals beside their constants. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s8">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261024T044733940789-review-of-the-retention-sweep-verb-is-maintenance-a50f5823d10a" data-who="reckon-build" data-when="2026-10-24T04:52:30.213Z">
+    <div class="r-comment-body"><p>Reviewed r-20261024T043616104091-the-retention-sweep-verb-is-maintenance at base 778e326d1219b5d5a85f88e01606af3dcdf5b716 and head a50f5823d10ab3479fa19e90e0204b62b4e09b0c: goal_fidelity 20, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 20 (115/120), added_failure_count 0 with no added failure ids; two non-blocking findings on the exemption&#x27;s unasserted reason text (tests/test_skill_contracts.py:1214) and on no check that an exempt key is still a registered verb (tests/test_skill_contracts.py:1213). Nothing blocking.</p></div>
 </div>
 </section>
 </main>
