@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -247,7 +247,10 @@
     <div class="r-comment-body"><p>§3 landed by merge <code>8cd631bfe</code>: gc retires a finished run's directory once nothing can need it, after a one-day grace window; 142 passed at head with only the pre-existing width failure. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s3">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261024T021814228242-review-of-a-runs-scratch-is-removed-on-the-host-that-made-it-74a709571f78" data-who="reckon-build" data-when="2026-10-24T02:40:16.366Z">
-    <div class="r-comment-body"><p>review of r-20261024T014216727662 at head 74a709571 from base 0409dcbe4d — scores goal_fidelity 18, evidence 15, scope_discipline 20, durability 15, fit 18, reuse 5; five findings, one blocking (reckon/crew/gc.py:1185 settle_run_scratch omits the state/scratch-root coherence guard that garbage_collect_orphan_scratch applies at gc.py:1044-1052 and can rmtree live runs&#x27; scratch when RECKON_HOME is private)</p></div>
+    <div class="r-comment-body"><p>review of r-20261024T014216727662 at head 74a709571 from base 0409dcbe4d — scores goal_fidelity 18, evidence 15, scope_discipline 20, durability 15, fit 18, reuse 5; five findings, one blocking (reckon/crew/gc.py:1185 settle_run_scratch omits the state/scratch-root coherence guard that garbage_collect_orphan_scratch applies at gc.py:1044-1052 and can rmtree live runs' scratch when RECKON_HOME is private)</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261024T025425207189-review-of-a-runs-scratch-is-removed-on-the-host-that-made-it-2abb60a10105" data-who="reckon-build" data-when="2026-10-24T03:05:01.062Z">
+    <div class="r-comment-body"><p>review of run r-20261024T014216727662-a-runs-scratch-is-removed-on-the-host-that-made-it at head 2abb60a10105ec8a43461b3429b6a0c7079e156f (base 0409dcbe4d11ac88b3429853ebfa74188c7ad898) is parsed, scoring goal_fidelity 18, evidence 16, scope_discipline 20, durability 17, fit 18, reuse 5, with 0 added failures and three non-blocking findings — the guard docstring overstating its behaviour (gc.py:1190), the non-atomic release receipt (promotion_release.py:587) and the review-promotion clause covered only at the release-function boundary (tests:299); the earlier blocking coherence-guard finding is repaired at 0b80e2208 and its negative control is recorded</p></div>
 </div>
 </section>
 </main>
