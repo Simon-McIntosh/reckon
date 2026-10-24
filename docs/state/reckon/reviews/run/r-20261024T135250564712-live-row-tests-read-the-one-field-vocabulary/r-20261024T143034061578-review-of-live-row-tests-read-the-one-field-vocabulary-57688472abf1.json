@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T14:46:14.610Z",
+  "dispatched_at": "2026-10-24T14:34:02Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_surface_parity.py",
+      "line": 47,
+      "severity": "non-blocking",
+      "text": "tests/test_crew_surface_parity.py:47 now writes a manifest so every classified field has a value, which removes the only case in that file where a field the projection omits was compared across the CLI and MCP surfaces; the omission rule is still guarded by tests/test_read_verbs_retire_behind_crew_view.py, so parity of the omitted-field case is no longer exercised."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the eight section-42 census ids pass by asserting each intended contract; the landed change is two commits (29f762f3d tests, 57688472a evidence) and logs/head-arm.log shows all eight ids green at 57688472a.\nVERDICT done_when: the done_when names the eight ids and the five test files plus both arms and ruff; the manifest's tests and test_logs lines give the literal command and the logs, and logs/head-arm.log records 40 passed with EXIT=0 while logs/base-arm.log records the same eight ids failing with EXIT=1.\nVERDICT write_paths: the five declared test files plus the evidence fragment and figures directory; git diff --stat c1473d66..57688472a lists exactly those five test files and docs/evidence/fragments/the-suite-is-green-at-head/live-row-tests-read-the-one-field-vocabulary.html, and nothing else.\nVERDICT manifest: read; status complete, baseline_suite 8 failed at c1473d66 and after_suite 0 failed at 57688472a with completed true, negative_control_log named, and evidence_inputs naming the commit read per id (eb07961b3, 9a7c6b83d, ba405e2c4).\nVERDICT diff: read commit by commit; 29f762f3d changes five test files (57 added / 10 deleted, no production module) and 57688472a adds the 104-line landing fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/query.py:project_run_rows, reckon/crew/runs.py:list_live, reckon/mcp_views.py:partition_live_runs, reckon/crew_run_commands.py:217\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_read_verbs_retire_behind_crew_view.py:673-681 asserts the projection omission rule the goal names, and all eight listed ids are green at 57688472a in logs/head-arm.log.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/base-arm.log and logs/head-arm.log carry revision, tree and literal command on their header lines and a bare EXIT line last, and negative-control-3-empty-field-kept.log shows six of the eight ids red under a real production mutation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat c1473d66..57688472a is inside the manifest declared write paths, and no product source changed.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_read_verbs_retire_behind_crew_view.py:681 reddens if project_run_rows serialises an empty field, and negative-control-3-empty-field-kept.log records that exact mutation failing ids 1, 3 and 5-8.\nSCORE fit: 19\nJUSTIFICATION fit: the new helper at tests/test_read_verbs_retire_behind_crew_view.py:599 follows the local _classification helper beside it, and no plan, ticket or version label enters any added name.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search over reckon/ and tests/ found no owner of an empty-value predicate to extend (the only match is an inline tuple check inside reckon/project_state_parity.py:209 _field_values), and the change adds no second projection beside reckon/crew/query.py:311.\nFINDING tests/test_crew_surface_parity.py:47 non-blocking: writing a manifest so every classified field has a value means this file no longer exercises a field the projection omits across the two surfaces, so a CLI/MCP divergence on an omitted field would now go uncaught here.\n",
+  "review_run_id": "r-20261024T143034061578-review-of-live-row-tests-read-the-one-field-vocabulary-57688472abf1",
+  "reviewed_base_sha": "c1473d669c74e86b03284aee3c88f506847b468e",
+  "reviewed_head_sha": "57688472abf1036d1d1eaf4711c22d06135282c4",
+  "reviewed_run_id": "r-20261024T135250564712-live-row-tests-read-the-one-field-vocabulary",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:24:14.503672+00:00",
+  "total": 116
+}
