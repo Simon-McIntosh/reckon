@@ -539,10 +539,12 @@ Immediately after each `reckon crew complete`, the orchestrator:
 3. Resolves the driving followup only when the node closes its section. A
    partially landed section remains open even though its plan ledger advanced.
 4. Collapses a section in the evergreen only when its final node has landed.
-5. Adds every manifest `follow_ons` entry to the same triage queue as the
-   plan's open followups. Work owned by the plan in hand becomes a new evergreen
-   section and executable DAG node, never a followup; only work owned by another
-   plan may remain a followup that identifies that owning plan. Do not set a
+5. Adds every manifest `outside_scope` entry to the same triage queue as the
+   plan's open followups. Work found beyond a node becomes a plan section, or an
+   instruction in the next dispatch's prompt, and never a followup: work owned by
+   the plan in hand becomes a new evergreen section and executable DAG node; only
+   work owned by another plan may remain a followup that identifies that owning
+   plan. A review reports such work as a `non-blocking` finding. Do not set a
    terminal status while a same-plan section remains open.
 6. Re-reads the sprint resource and verifies its composed item status reflects
    the plan writeback. Item lifecycle status and implementation fraction are
@@ -557,9 +559,12 @@ number of quarter hours (`0.25` steps, for example `1.25`), and its
 ### Followup drain at every landing beat
 
 The coordinator re-triages open followups after every landing beat, together
-with the landed manifest's `follow_ons`. Manifest `follow_ons` enter the
-same triage loop as open plan followups. Folding into the current orchestration
-is the default; an entry may stay open only under one of these exemptions:
+with the landed manifest's `outside_scope` entries. Manifest `outside_scope`
+entries enter the same triage loop as open plan followups. Work found beyond a
+node becomes a plan section, or an instruction in the next dispatch's prompt;
+a review reports it as a `non-blocking` finding. Folding into the current
+orchestration is the default; an entry may stay open only under one of these
+exemptions:
 
 - **`authority-required`** — spend, an outward-facing effect, or an irreversible
   action needs authority the coordinator does not hold;
@@ -620,7 +625,7 @@ After all executable nodes:
   the dependency graph, so they cannot go stale the way a written list would, and
   a sprint that feeds nothing says so rather than staying silent. This is the
   sprint end of the three-altitude continuation rule; the worker and plan ends are
-  the manifest's `follow_ons` and the refused-without-continuation writeback;
+  the manifest's `outside_scope` field and the refused-without-continuation writeback;
 - set that sprint resource to done only when all non-deferred nodes are complete.
 
 ## 9. Cleanup and recovery

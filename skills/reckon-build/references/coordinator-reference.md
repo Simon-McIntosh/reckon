@@ -956,7 +956,9 @@ and the section's `section_declarations` reclassification to `done` in the same
 the node's section, leave that followup open: a node landing advances the ledger
 without pretending the larger section is finished.
 
-**Same-plan follow-on work becomes a section, never a followup.** Before closing
+**Work found beyond a node becomes a plan section, or an instruction in the
+next dispatch's prompt, never a followup.** A review reports it as a
+`non-blocking` finding. Before closing
 a plan, add discovered work that belongs to this plan to the evergreen
 as a concrete section, add its executable nodes to the DAG, and keep the plan
 active. A followup is reserved for work owned by a different plan, whose own
@@ -1178,12 +1180,15 @@ git pull --no-rebase origin <branch>
 git push origin <branch>
 ```
 
-### 9. Surface follow-on work to the user — MANDATORY final-report format
+### 9. Surface advised followups to the user — MANDATORY final-report format
 
 Followup ids (`f-<...>`) are internal plan-state keys — NEVER the primary way
-follow-on work is presented to the user. Every session that ends with open
-follow-on work MUST close its final report with a **"Next up"** block that
-names each follow-on by PLAN + SECTION/RUNG (the human handles), and gives a
+followup work is presented to the user. Work found beyond a node is not a
+handoff: it becomes a plan section, or an instruction in the next dispatch's
+prompt, and a review reports it as a `non-blocking` finding. Every session that
+ends with open followup work MUST close its final report with a **"Next up"**
+block that names each advised followup by PLAN + SECTION/RUNG (the human
+handles), and gives a
 fenced, paste-ready prompt so switching to a fresh session is seamless:
 
 ````markdown
@@ -1204,7 +1209,7 @@ to a ledger row disposed `authority-required`, `dissent-reopen`,
 or to no row, means the session stopped early and the block is the evidence.
 
 Rules:
-- One fenced prompt per advised follow-on; if several follow-ons are advised
+- One fenced prompt per advised followup; if several followups are advised
   for one session, stack them in ONE fence in execution order.
 - Every fenced line traces to an exempt ledger row. If the ledger says
   `foldable-remaining: 0` and `executable-remaining: 0` and no row is

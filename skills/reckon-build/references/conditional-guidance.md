@@ -58,10 +58,15 @@ Please authorize one of the above before I continue.
 
 A worker is graded on the done-when, not on surrounding prose. A measured
 failure showed a goal naming three call sites while its done-when named only
-two: the worker correctly delivered two and reported the third as a follow-on.
-The fault was the unmeasured claim. This is particularly visible on a local
+two: the worker correctly delivered two and reported the third as unmeasured
+work. The fault was the unmeasured claim. This is particularly visible on a local
 lane, which tends to implement the stated measure precisely rather than infer
 an omitted one.
+
+Work found beyond a node becomes a plan section, or an instruction in the next
+dispatch's prompt — never a bucket nobody reads. A review reports it as a
+`non-blocking` finding; a worker records it in the manifest's `outside_scope`
+field.
 
 For a complete measure, read these details while reviewing its wording:
 
