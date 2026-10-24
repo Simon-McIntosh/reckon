@@ -1,0 +1,23 @@
+<section id="section-waits-read-normalised-keys-landing">
+  <h2>Section waits survive equivalent section spellings</h2>
+  <p><code>section_wait_refs</code> now compares authored mapping keys and the
+  requested section through <code>ledger.normalize_section</code>. The same
+  identity is used when readiness rows identify the waiting section and when a
+  failed request identifies a dead upstream section. The dispatch hold and
+  admission pass therefore read one section as <code>s2</code>,
+  <code>§2</code>, or <code>section 2</code>.</p>
+  <p>The unchanged lookup reproduced the defect: two alternate dispatch
+  spellings stored <code>waits=[]</code>, so those requests could be queued
+  without their declared upstream. The declared negative control restored
+  the raw <code>.get(section)</code> lookup; five tests failed, including an
+  <code>s2</code> dispatch against an equivalent authored key. At the
+  committed head, all seven new cases pass and their waiting requests carry
+  <code>plan-a#s1</code> in <code>awaiting-upstream</code>.</p>
+  <p>The serial suite of 23 existing importer modules completed at both
+  revisions. Base: 123 passed, four failed. Head, with the seven new cases:
+  130 passed, the same four failed. Added failure IDs: <strong>zero</strong>.
+  The focused head check passes seven cases; ruff check and format check pass
+  on both changed paths. The base suite ran from an archived tree, and its
+  recorded import probe confirms it loaded that tree's
+  <code>queue_admission.py</code>.</p>
+</section>
