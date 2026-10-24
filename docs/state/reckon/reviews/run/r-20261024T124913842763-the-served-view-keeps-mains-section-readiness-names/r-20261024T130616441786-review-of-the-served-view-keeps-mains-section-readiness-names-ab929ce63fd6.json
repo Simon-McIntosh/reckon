@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T124913842763-the-served-view-keeps-mains-section-readiness-names/gate-head.log",
+  "assertion_analysis": [],
+  "assertion_analysis_note": "The diff adds no assertion: the source node's write paths reached no test path, and its guard is the pre-existing tests/test_roadmap_section_verdict.py carried by origin/main. The negative-control arm is the independent check of that guard and it reddens when the binding is dropped.",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T124913842763-the-served-view-keeps-mains-section-readiness-names/gate-base.log",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/serve.py:1860",
+    "reckon/mcp.py:2275",
+    "reckon/mcp.py:3343",
+    "reckon/crew/plan_review.py:3104",
+    "reckon/crew/queue_admission.py:1128",
+    "reckon/flight.py:2635",
+    "reckon/graph_target.py:204"
+  ],
+  "completed_at": "2026-10-24T13:17:12.494Z",
+  "dispatched_at": "2026-10-24T13:08:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-view-keeps-mains-section-readiness-names.html",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: The fragment says build_roadmap rebinds plan_holding_decisions, but the binding is in _build_roadmap (reckon/roadmap.py:2728) and build_roadmap at 2691 is a wrapper that carries no binding, so a reader following the record lands on the wrong function."
+    },
+    {
+      "file": "gate-base.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: The base arm records origin/main=0ebe07843 while the head arm's merged tree was built from a81e39b7b, so the delta is not taken against the exact base merged; the intervening range touches only docs/plans and review-records, leaving tests/test_roadmap_section_verdict.py, tests/test_mcp_audit.py and reckon/roadmap.py identical, so the zero-added-failures conclusion stands."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Commit 417a5902b adds the single binding at reckon/roadmap.py:3480, a48d437ea adds the 22-line landing fragment, and ab929ce63 rewrites one clause of that fragment; nothing else changes.",
+    "done_when": "The done_when requires a git merge-tree scratch tree running tests/test_roadmap_section_verdict.py and tests/test_mcp_audit.py at zero added failures with no NameError, logs naming the merged tree id and ending EXIT=, plus ruff clean on reckon/roadmap.py; gate-head.log, gate-base.log and gate-negative-control.log satisfy the test clauses and I reproduced merged-tree 8734efe96 and a clean ruff run independently.",
+    "goal": "The source prompt.txt names the goal of keeping every build_roadmap local that main's section-readiness code reads bound; the diff adds exactly one binding at reckon/roadmap.py:3480 and the merged tree carries no undefined name.",
+    "manifest": "The source manifest.md records three commits, the literal gate command, base and head suites at zero failures, a red negative-control log and the branch-head F841 it deliberately measured on the merged tree instead; every cited log carries a matching summary line and EXIT line.",
+    "write_paths": "The source prompt.txt grants reckon/roadmap.py, the landing fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/ and a figures directory; git diff --name-only 777de1d7b ab929ce63 lists only reckon/roadmap.py and that fragment."
+  },
+  "justifications": {
+    "durability": "No assertion is added by this diff; the guard is tests/test_roadmap_section_verdict.py, which exists only at origin/main, and gate-negative-control.log:13977 shows it fails 16 of 21 with NameError at roadmap.py:3690 when the binding is dropped, so the branch alone is unguarded until the merge.",
+    "evidence": "gate-head.log:1 names merged-tree 8734efe96 with the literal command and gate-head.log:18 ends EXIT=0 at 21 passed against gate-base.log:17 at 21 passed, but gate-base.log:1 names origin/main=0ebe07843 while gate-head.log:1 merges a81e39b7b, and the ruff clause is claimed in the manifest rather than recorded in a log.",
+    "fit": "reckon/roadmap.py:3480 uses the blocker_state key name and sits in the same five-line binding idiom as its neighbours, though the landing fragment at line 18 calls the enclosing function build_roadmap where the binding is in _build_roadmap.",
+    "goal_fidelity": "reckon/roadmap.py:3480 binds plan_holding_decisions in _build_roadmap from blocker_state, and the merged tree 8734efe96 is clean under ruff F821/F841, so no local the section-readiness block reads is left unbound.",
+    "reuse": "No function, class or module is added; the value already has an owner in plan_level_decisions (reckon/roadmap.py:1237) exposed through plan_blocker_state, and the change reads that owner instead of recomputing it.",
+    "scope_discipline": "The diff from 777de1d7b to ab929ce63 adds one line to reckon/roadmap.py:3480 and the 22-line landing fragment, both inside the declared write paths, and touches no test file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is to keep every build_roadmap local that main's section-readiness code reads bound after the shared-blocker refactor; reckon/roadmap.py:3480 adds that binding and the merged tree 8734efe96 carries no undefined name under ruff F821/F841.\nVERDICT done_when: the done_when requires the merge-tree scratch tree to run tests/test_roadmap_section_verdict.py and tests/test_mcp_audit.py at zero added failures with no NameError and ruff clean; gate-head.log:17 records 21 passed with gate-head.log:18 EXIT=0 against gate-base.log:17 at 21 passed, and I reproduced merged-tree 8734efe96 and a clean ruff run myself.\nVERDICT write_paths: the source prompt grants reckon/roadmap.py, the landing fragment and a figures directory; git diff --name-only 777de1d7b ab929ce63 lists only reckon/roadmap.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-view-keeps-mains-section-readiness-names.html.\nVERDICT manifest: read; it records three commits, the literal gate command, base and head suites at zero failures and a red negative control, and it discloses that ruff F841 on the branch head is expected there.\nVERDICT diff: three commits against 777de1d7b add one line at reckon/roadmap.py:3480 and a 22-line landing fragment, with no other change.\nCALL_SITES: reckon/serve.py:1860, reckon/mcp.py:2275, reckon/mcp.py:3343, reckon/crew/plan_review.py:3104, reckon/crew/queue_admission.py:1128, reckon/flight.py:2635, reckon/graph_target.py:204\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:3480 binds plan_holding_decisions from blocker_state and the merged tree is free of undefined and unused names, so the section-verdict block at merged-tree roadmap.py:3690 has every local it reads.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log:18 ends EXIT=0 at 21 passed against gate-base.log:17 at 21 passed, but gate-base.log:1 records origin/main=0ebe07843 while gate-head.log:1 merges a81e39b7b and the ruff clause has no recorded log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 777de1d7b ab929ce63 lists only reckon/roadmap.py and the declared landing fragment, and no test file is touched.\nSCORE durability: 16\nJUSTIFICATION durability: gate-negative-control.log:13977 shows tests/test_roadmap_section_verdict.py failing 16 of 21 with NameError at roadmap.py:3690 when the binding is dropped, but that guard test exists only at origin/main, so the branch alone carries nothing that reddens.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/roadmap.py:3480 follows the five-line blocker_state binding idiom, though the landing fragment at line 18 names build_roadmap for a binding that lives in _build_roadmap.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; plan_level_decisions at reckon/roadmap.py:1237 is the existing owner of the value and the change reads it through plan_blocker_state rather than recomputing it.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-view-keeps-mains-section-readiness-names.html:18 non-blocking: the fragment says build_roadmap rebinds plan_holding_decisions but the binding is in _build_roadmap (reckon/roadmap.py:2728), so a reader following the record lands on a wrapper that carries no binding.\nFINDING gate-base.log:1 non-blocking: the base arm records origin/main=0ebe07843 while the head arm merged a81e39b7b, so the delta is not against the exact base; the intervening range touches only docs, leaving the gate files and roadmap.py identical, so zero added failures still holds.\n",
+  "review_run_id": "r-20261024T130616441786-review-of-the-served-view-keeps-mains-section-readiness-names-ab929ce63fd6",
+  "reviewed_base_sha": "777de1d7bc9e1207e9e53ed408c59f86b31f0047",
+  "reviewed_head_sha": "ab929ce63fd6a07be708b8861ecc0f2ce870f0f1",
+  "reviewed_run_id": "r-20261024T124913842763-the-served-view-keeps-mains-section-readiness-names",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T13:22:16.304397+00:00",
+  "total": 110
+}
