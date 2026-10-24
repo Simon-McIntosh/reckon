@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="496">
+<meta name="plan-version" content="497">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -1328,6 +1328,9 @@
 </div>
 <div class="r-comment" data-section="s59" data-id="c-defer-s59" data-who="reckon-build" data-when="2026-10-24T05:10:00Z">
     <div class="r-comment-body"><p>Deferred for re-planning. Two content reviews found that the section does not yet name the path that walks a tree twice. On a warm cache, <code>discover_plans</code> walks each tree once through <code>_fresh_discovery</code> (<code>reckon/serve.py</code>, near line 1507) and <code>_external_project_signatures</code> (near line 1431). So a case written against that path passes at base, and its negative control never fires. The live profile's three walks in one call come from a path the section has not identified; the review points at the scan path, where <code>_external_project_signatures</code> runs twice. Also, whether a discovery region is open is held in private context variables in <code>reckon/metadata_index.py</code> (near line 102), so the deliverable needs that file. That file is also §57's, and is held by the-page-paints-from-an-index §15. The section is re-planned once that §15 lands: a census of <code>_walk_discovery_signature</code>'s callers in one warm live call, with each tree, names the repeated walk, and the done-when is written against it.</p></div>
+</div>
+<div class="r-comment" data-section="s59" data-id="c-census-s59" data-who="reckon-build" data-when="2026-10-24T06:20:00Z">
+    <div class="r-comment-body"><p>Census taken on 2026-10-24 at <code>9608e78d5</code>, after the-page-paints-from-an-index §15 landed (<code>~/.cache/reckon-raid/s59-walk-census.log</code>). Two live <code>reckon.mcp._roadmap(project="reckon")</code> calls ran in one process, with every call to <code>_walk_discovery_signature</code> wrapped. The warm-up call took 30.2 s and walked two trees once each: reckon (1.9 s, via <code>_fresh_discovery</code>) and nova (1.3 s, via <code>_cache_discovery_result</code> → <code>_external_project_signatures</code>). The measured call took 18.4 s and again walked each tree once: reckon 3.0 s, nova 1.9 s, through <code>_fresh_discovery</code> and its <code>_external_project_signatures</code>. The three walks in the earlier 155.9 s profile do not recur, so there is no repeated walk to remove. The section stays deferred. Its remaining cost is one walk of each tree per call, about 2 to 3 s per tree. Removing that means giving the MCP process a signature window like the served process's, which trades freshness. §6's measurement decides whether that trade is worth a section.</p></div>
 </div>
 </section>
 </main>
