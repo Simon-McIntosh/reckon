@@ -3091,13 +3091,10 @@ def _open_followups(state: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     ]
 
 
-def _readiness_by_slug(project: str, docs_dir: Path) -> dict[str, str]:
-    """Each plan's roadmap readiness verdict, from the roadmap rows.
-
-    The roadmap is the owner of the ready-or-blocked verdict, so it is read
-    rather than re-derived; a project the roadmap cannot build for yields an
-    empty mapping and every plan reads ``unknown`` rather than a guess.
-    """
+def project_section_readiness(
+    project: str, docs_dir: Path
+) -> dict[str, dict[str, Any]]:
+    """Build the roadmap once and expose every implementable section verdict."""
     try:
         from reckon.mcp_discovery import _discover_project, _inventory_row
         from reckon.roadmap import build_roadmap
@@ -3114,9 +3111,25 @@ def _readiness_by_slug(project: str, docs_dir: Path) -> dict[str, str]:
     except Exception:  # noqa: BLE001 - an unbuildable roadmap yields no verdict
         return {}
     return {
-        str(row.get("slug")): str(row.get("readiness") or "unknown")
+        str(row.get("slug")): {
+            "readiness": str(row.get("readiness") or "unknown"),
+            "sections": {
+                section: row["section_verdicts"][section]
+                for section in row.get("implementable_sections") or ()
+                if section in row.get("section_verdicts", {})
+            },
+        }
         for row in roadmap.get("pending_work") or ()
         if row.get("slug")
+    }
+
+
+def _readiness_by_slug(project: str, docs_dir: Path) -> dict[str, str]:
+    """Each plan's readiness from the shared project and section read."""
+
+    return {
+        slug: verdict["readiness"]
+        for slug, verdict in project_section_readiness(project, docs_dir).items()
     }
 
 
