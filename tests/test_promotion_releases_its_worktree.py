@@ -328,7 +328,18 @@ def test_promotion_releases_only_the_integrated_clean_case(
         else:
             assert release["worktree_released"] is False
             assert worktree.is_dir()
-            assert stored["release"] == release
+            # The release's own landing check is composed when that commit
+            # lands, after the stored row was written, so the returned receipt
+            # carries it and the stored row cannot.
+            recorded_release = {
+                key: value for key, value in release.items() if key != "landing_check"
+            }
+            assert stored["release"] == recorded_release
+            assert release["landing_check"] == {
+                "ok": True,
+                "reversals": [],
+                "mismatched": [],
+            }
 
         if name == "dirty":
             assert "uncommitted changes" in release["worktree_withheld"]

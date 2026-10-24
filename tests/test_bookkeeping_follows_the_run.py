@@ -233,11 +233,17 @@ def test_a_review_runs_outcome_defaults_to_its_stored_review(
 
     unstored = "r-20260918T084300000000-reviewed-but-unstored"
     review_with_no_review = "r-20260918T084400000000-review-scoring-nothing"
+    # The run declares the head-keyed record path its dispatch would grant an
+    # unreadable head, and nothing is stored there.
+    missing_review = review_module.review_path(
+        PROJECT, unstored, reviewed_head_sha=REVIEWED_HEAD
+    )
     _write_pointer(
         repository,
         review_with_no_review,
         role="review",
         node_id=f"review-of-{unstored}",
+        write_paths=[str(missing_review)],
     )
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(
@@ -246,7 +252,9 @@ def test_a_review_runs_outcome_defaults_to_its_stored_review(
             gate="failed",
             failure_classification="work-rejected",
         )
-    assert "review run whose stored review cannot be read" in str(refusal.value)
+    message = str(refusal.value)
+    assert "refused for delivery" in message
+    assert f"stored no record that reads as a review at {missing_review}" in message
 
     plain_run = "r-20260918T084500000000-not-a-review"
     _write_pointer(repository, plain_run)

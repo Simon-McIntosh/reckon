@@ -172,9 +172,10 @@ def test_a_failed_landing_then_a_repromotion_commits_the_recorded_comment(
     """A held index.lock fails the first landing; the retry leaves the plan clean.
 
     The first promotion writes the plan comment, then cannot commit it because
-    ``index.lock`` is held. The comment survives on disk. Releasing the lock and
-    promoting again finds the comment already recorded, and the landing commit
-    must now carry the plan file so ``git status`` reads clean for it.
+    ``index.lock`` is held. A refused landing commit takes back every write it
+    made, so the plan file is restored to HEAD and no comment survives.
+    Releasing the lock and promoting again records the comment and lands it, so
+    ``git status`` reads clean for the plan file.
     """
     run_id = RUN_IDS[0]
     narrative = "the landing the first attempt could not commit"
@@ -188,14 +189,12 @@ def test_a_failed_landing_then_a_repromotion_commits_the_recorded_comment(
     finally:
         lock.unlink()
 
-    # The reproduction: the comment is on disk and the plan file is dirty, an
-    # uncommitted landing write the failed rollback could not reach.
-    assert _dirty(repository, PLAN_RELATIVE), "the plan file should be dirty"
+    # The refusal leaves no uncommitted landing write behind.
+    assert _dirty(repository, PLAN_RELATIVE) == ""
 
     result = _promote(repository, run_id, narrative)
 
     assert result["plan_comment"]["recorded"] is True
-    assert result["plan_comment"]["already_recorded"] is True
     # The measure: the plan file is committed, not left as uncommitted state.
     assert _dirty(repository, PLAN_RELATIVE) == ""
     assert PLAN_RELATIVE in _promotion_commit_files(repository, run_id)

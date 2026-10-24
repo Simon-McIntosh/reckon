@@ -26,6 +26,7 @@ does not prove an isolated write.
 
 from __future__ import annotations
 
+import html
 import json
 import subprocess
 from pathlib import Path
@@ -168,6 +169,37 @@ def _fail_first_landing(repository: Path, narrative: str) -> None:
         lock.unlink()
 
 
+def _record_comment_without_committing(
+    repository: Path, narrative: str, run_id: str = RUN_ID
+) -> None:
+    """Leave the run's own landing comment in the plan, uncommitted.
+
+    A refused landing commit takes its plan write back, so the uncommitted
+    comment an interrupted landing once left on disk is written here directly,
+    through the same store writer promotion uses.
+    """
+    state, version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
+    comments = {
+        key: list(items) for key, items in (state.get("comments") or {}).items()
+    }
+    comments.setdefault("s2", []).append(
+        {
+            "id": f"c-run-{run_id}",
+            "who": "reckon-build",
+            "when": "2026-09-17T11:05:00Z",
+            "body": f"<p>{html.escape(narrative)}</p>",
+        }
+    )
+    _store.write_plan(
+        PROJECT,
+        PLAN,
+        {**state, "comments": comments},
+        version,
+        repository,
+        artifact_type="plan",
+    )
+
+
 def _plan_comments(repository: Path) -> list[str]:
     state, _version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
     return [item["id"] for item in state.get("comments", {}).get("s2", [])]
@@ -181,7 +213,7 @@ def test_a_re_promotion_commits_a_plan_differing_only_by_its_own_comment(
 ) -> None:
     narrative = "a landing whose plan difference is only its own comment"
     _pointer(repository)
-    _fail_first_landing(repository, narrative)
+    _record_comment_without_committing(repository, narrative)
 
     plan_path = repository / PLAN_RELATIVE
     assert _dirty(repository, plan_path), "the plan file should be dirty"
