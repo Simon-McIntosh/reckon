@@ -1143,6 +1143,7 @@ def _validated_batch_waits(
     project: str,
     repo_root: str | Path,
     live: Sequence[Mapping[str, Any]],
+    read_own_verdict: bool = True,
 ) -> tuple[dict[str, list[str]], dict[str, dict[str, str]]]:
     """Resolve all waits and reject absent targets or a combined graph cycle."""
     from reckon import _plan_html as plan_html_reader
@@ -1196,15 +1197,15 @@ def _validated_batch_waits(
         )
         if docs is None:
             raise CrewError(f"wait names missing project {target_project!r}: {ref}")
-        _, inventory = _readiness_rows(target_project, docs, cache)
-        row = inventory.get(parsed.slug)
-        if row is None:
+        html = _plan_html(docs.parent, parsed.slug)
+        if not html:
             raise CrewError(f"wait names missing plan {target_project}:{parsed.slug}")
+        row = plan_html_reader.read_state(html)
         if parsed.stage:
             authored = {
                 normalize_section(identity)
                 for identity, _heading in plan_html_reader.authored_section_headings(
-                    _plan_html(docs.parent, parsed.slug)
+                    html
                 )
             }
             if (
@@ -1253,7 +1254,7 @@ def _validated_batch_waits(
                 wait_projects[ref[len(REQUEST_REF_PREFIX) :]] = upstream_project
             elif not ref.startswith((GATE_REF_PREFIX, "readiness:")):
                 section_edges(child)
-        if node.plan and node.section:
+        if read_own_verdict and node.plan and node.section:
             rows, _ = _readiness_rows(project, current_docs, cache)
             verdicts = (rows.get(node.plan) or {}).get("sections", {})
             own = next(
@@ -1633,6 +1634,66 @@ def _section_readiness_state(
     return SATISFIED if verdict and verdict.get("ready") else PENDING
 
 
+def _dispatch_nonrun_wait_state(ref: str, *, project: str, docs_dir: Path) -> str:
+    """Read authored declarations without a portfolio scope-claim scan."""
+    from reckon import _plan_html as plan_html_reader
+    from reckon._schema import parse_plan_ref
+    from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
+
+    gate_ref = ref.startswith(GATE_REF_PREFIX)
+    parsed = parse_plan_ref(ref[len(GATE_REF_PREFIX) :] if gate_ref else ref)
+    if parsed is None:
+        return PENDING
+    target_project = parsed.project or project
+    target_docs = _docs_for_project(
+        target_project, current_project=project, current_docs=docs_dir
+    )
+    if target_docs is None:
+        return PENDING
+    html = _plan_html(target_docs.parent, parsed.slug)
+    if not html:
+        return PENDING
+    state = plan_html_reader.read_state(html)
+    if gate_ref:
+        gate = next(
+            (
+                item
+                for item in state.get("gates") or ()
+                if str(item.get("id") or "") == parsed.stage
+            ),
+            None,
+        )
+        if gate is None:
+            return PENDING
+        if gate.get("passed"):
+            return SATISFIED
+        source = parse_plan_ref(str(gate.get("gating_plan") or ""))
+        if source is not None and source.stage:
+            source_docs = _docs_for_project(
+                source.project or target_project,
+                current_project=project,
+                current_docs=docs_dir,
+            )
+            if source_docs is not None:
+                source_state = plan_html_reader.read_state(
+                    _plan_html(source_docs.parent, source.slug)
+                )
+                if _section_status(source_state, source.stage) == "done":
+                    return SATISFIED
+        return PENDING
+    if parsed.stage:
+        declaration = _section_status(state, parsed.stage)
+        if declaration == "done":
+            return SATISFIED
+        if declaration in {"descoped", "deferred", "failed", "blocked"}:
+            return ABANDONED
+        return PENDING
+    status = str(state.get("status") or "")
+    if status in COMPLETED_STATUSES:
+        return SATISFIED
+    return ABANDONED if status in TERMINAL_STATUSES else PENDING
+
+
 def unmet_waits(
     node: TaskNode,
     *,
@@ -1648,15 +1709,25 @@ def unmet_waits(
     pass re-reads, so a node is held for the reason the pass would hold it, and
     a node whose refs have all landed returns nothing and launches as usual.
     """
-    if not derive_wait_refs(node, repo_root=repo_root):
+    refs = derive_wait_refs(node, repo_root=repo_root)
+    if not refs:
         return []
     docs_dir = Path(str(repo_root)) / "docs"
+    owner_project = project or _project_of_docs_dir(docs_dir)
+    if not any(wait_ref_kind(ref) == "request" for ref in refs):
+        return [
+            ref
+            for ref in refs
+            if _dispatch_nonrun_wait_state(
+                ref, project=owner_project, docs_dir=docs_dir
+            )
+            != SATISFIED
+        ]
     if live is None:
         try:
             live = runs.list_live()
         except Exception:  # noqa: BLE001 - an unreadable live set holds no wait
             live = []
-    owner_project = project or _project_of_docs_dir(docs_dir)
     refs_by_run, projects_by_run = _validated_batch_waits(
         [node],
         {node.id: f"candidate:{node.id}"},
@@ -2034,6 +2105,8 @@ def hold_request_for_upstream(
     empty list — a request with nothing to wait for is not held, and no pointer
     is written for it at all.
     """
+    if not derive_wait_refs(node, repo_root=repo_root):
+        return []
     pointer = runs.read_pointer(run_id)
     project = str(pointer.get("project") or "")
     refs_by_run, projects_by_run = _validated_batch_waits(
@@ -2042,6 +2115,7 @@ def hold_request_for_upstream(
         project=project,
         repo_root=repo_root,
         live=runs.list_live(),
+        read_own_verdict=False,
     )
     refs = refs_by_run[run_id]
     if not refs:

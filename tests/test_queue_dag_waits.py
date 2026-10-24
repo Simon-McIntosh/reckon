@@ -160,6 +160,25 @@ def test_foreign_section_already_done_queues_directly(
     assert stored["r-waiting"]["phase"] == "queued"
 
 
+def test_section_preflight_does_not_scan_scope_claims(
+    projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first, second = projects
+    fixtures._declare_wait_refs(first, section="s2", refs=["other:plan-b#s2"])
+    _write_other_plan(second, declarations={"s1": "implementable", "s2": "done"})
+    monkeypatch.setattr(
+        queue_admission,
+        "_readiness_rows",
+        lambda *args, **kwargs: pytest.fail("dispatch scanned portfolio claims"),
+    )
+    assert (
+        queue_admission.unmet_waits(
+            _node("waiting", "s2"), repo_root=first, project=fixtures.PROJECT
+        )
+        == []
+    )
+
+
 def test_mutual_section_cycle_refuses_without_storage(
     projects: tuple[Path, Path],
 ) -> None:
