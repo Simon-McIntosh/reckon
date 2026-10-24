@@ -1,7 +1,7 @@
 """A queued pointer without a readable arrival time reads no place.
 
-A queued request's place is derived from when it arrived: the ordering that
-places it needs its arrival time and refuses a pointer that carries none. That
+A queued request's place uses its arrival time even when its roadmap priority
+cannot be resolved: the ordering needs that time and refuses a pointer with none. That
 refusal belongs to the pointer, not to the read. One malformed pointer must not
 cost every other queued request its place, and it must not take down a whole
 live read, because the pointer can arrive without the field from anything that
@@ -116,8 +116,18 @@ def test_queued_placements_places_only_pointers_with_a_readable_time(
     placements = queued_placements(snapshot)
 
     assert placements == {
-        PLACED_OLDER: {"position": 1, "rank": 1},
-        PLACED_NEWER: {"position": 2, "rank": 2},
+        PLACED_OLDER: {
+            "position": 1,
+            "rank": 1,
+            "effective_rank": 1,
+            "reason": "queued at (roadmap priority unavailable)",
+        },
+        PLACED_NEWER: {
+            "position": 2,
+            "rank": 2,
+            "effective_rank": 2,
+            "reason": "queued at (roadmap priority unavailable)",
+        },
     }
     assert UNREADABLE not in placements
 
@@ -131,8 +141,15 @@ def test_the_live_view_lists_the_unplaceable_run_as_queued(
     assert {row["classification"] for row in rows.values()} == {"queued"}
     assert (rows[PLACED_OLDER]["position"], rows[PLACED_OLDER]["rank"]) == (1, 1)
     assert (rows[PLACED_NEWER]["position"], rows[PLACED_NEWER]["rank"]) == (2, 2)
+    assert (
+        rows[PLACED_OLDER]["effective_rank"],
+        rows[PLACED_NEWER]["effective_rank"],
+    ) == (1, 2)
+    assert rows[PLACED_OLDER]["reason"] == "queued at (roadmap priority unavailable)"
     assert rows[UNREADABLE].get("position") is None
     assert rows[UNREADABLE].get("rank") is None
+    assert rows[UNREADABLE].get("effective_rank") is None
+    assert rows[UNREADABLE].get("reason") is None
 
 
 def test_the_admission_ordering_still_refuses_an_unreadable_time() -> None:
