@@ -328,10 +328,10 @@ def test_the_change_watch_invalidates_the_tree(project_tree, monkeypatch):
     stamps: list[float | None] = []
     real = serve._invalidate_tree_views
 
-    def spy(root, changed_at: float | None = None):
+    def spy(root, changed_at: float | None = None, **kwargs):
         invalidated.append(Path(root))
         stamps.append(changed_at)
-        real(root, changed_at=changed_at)
+        real(root, changed_at=changed_at, **kwargs)
 
     monkeypatch.setattr(serve, "_invalidate_tree_views", spy)
     watch = serve._FleetChangeWatch({_PROJECT: docs_dir})

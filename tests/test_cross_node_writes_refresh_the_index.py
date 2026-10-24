@@ -473,9 +473,9 @@ def test_one_change_invalidates_once_and_a_rebuild_reloads(
     calls: list[Path] = []
     original = serve._invalidate_tree_views
 
-    def counted(root, *, changed_at=None):
+    def counted(root, **kwargs):
         calls.append(Path(root).resolve())
-        return original(root, changed_at=changed_at)
+        return original(root, **kwargs)
 
     monkeypatch.setattr(serve, "_invalidate_tree_views", counted)
 
@@ -512,9 +512,9 @@ def test_a_git_index_change_fires_without_moving_head_identity(
     calls: list[Path] = []
     original = serve._invalidate_tree_views
 
-    def counted(root, *, changed_at=None):
+    def counted(root, **kwargs):
         calls.append(Path(root).resolve())
-        return original(root, changed_at=changed_at)
+        return original(root, **kwargs)
 
     monkeypatch.setattr(serve, "_invalidate_tree_views", counted)
 

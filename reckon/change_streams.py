@@ -299,6 +299,37 @@ def _persisted_index_identity(root: Path, project: str) -> tuple[int, int, int] 
         return None
 
 
+def _ref_head(repo_dir: Path) -> str | None:
+    """The commit HEAD names, read as files, or None when it cannot be read.
+
+    Arming must not start a process: it runs on the detector thread beside every
+    other tree, and a commit landing while a tree is armed would be baked into
+    the baseline the detector compares against. The loose ref holds the same
+    forty characters ``git rev-parse`` would print, and a packed ref, a detached
+    HEAD or an unreadable file answers None, which the first movement of the git
+    identity then treats as an unattributable change.
+    """
+
+    git_dir = _git_directory(repo_dir)
+    if git_dir is None:
+        return None
+    try:
+        head_text = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+        if not head_text.startswith("ref:"):
+            return head_text or None
+        ref_name = head_text[4:].strip()
+        for candidate in (git_dir / ref_name, git_dir / ".." / ref_name):
+            try:
+                resolved = candidate.read_text(encoding="utf-8").strip()
+            except OSError:
+                continue
+            if resolved:
+                return resolved
+    except OSError:
+        return None
+    return None
+
+
 def _resolve_head(repo_dir: Path) -> str | None:
     """The commit HEAD resolves to, or None when git cannot say.
 
@@ -587,7 +618,7 @@ class _FleetChangeWatch:
                 metadata_index._load_dir_stamps(tree, signal.project)
             )
             signal.git_identity = _git_signal_identity(tree)
-            signal.head_commit = _resolve_head(tree.parent)
+            signal.head_commit = _ref_head(tree.parent)
             return
         if index_identity != signal.index_identity:
             signal.index_identity = index_identity
