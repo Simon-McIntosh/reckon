@@ -2711,6 +2711,12 @@ def watch_ticker(
     stop is the tick's own concern rather than a yielded event: it changes run
     state, and a caller reading transitions is watching for a different thing.
     """
+    # A producer that replaced its own image in place still owns the children
+    # the old image left. Registering them here, once, lets the shared reaper
+    # collect them; nothing in this image refers to them otherwise.
+    from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
+
+    _adopt_launched_workers_from_reexec()
     _refuse_unresolvable_watch(project)
     stall_seconds = parse_duration(stall_window)
     known: dict[str, dict[str, Any]] = {}
