@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T09:24:31.321Z",
+  "dispatched_at": "2026-10-24T09:12:29Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:164",
+      "id": "reasoning-1",
+      "reason": "the section's central mechanism cannot observe the transition it exists to publish, so the node would build a key that provably never sees a run cross the stall window; the key needs a clock input (or a per-tick re-derivation of `_stall_reading` from the stored verdict and the stream's own stat, which the code already supports) plus a quiet-run control that the file-only key fails.",
+      "text": "\u00a76 specifies that `recovery.classify_pointer` \"runs once per run whose classification inputs changed, keyed on `recovery_memo._classification_inputs`\", and :178 goes further, requiring \"a tick where nothing changed classifies no run\"; but `_classification_inputs` (reckon/crew/recovery_memo.py:450\u2013481) returns 11 entries for a live run, all of them file stat identities plus `git-head:`/`own-review-record:` values, with no clock and no process table, while the verdict it gates moves on both: `_stall_reading` is documented as \"the only part of a verdict that moves with the clock rather than with a file\" (reckon/crew/recovery_watch.py:661\u2013670) and flips `working` \u2192 `stalled` at 900 s of stream silence with every file identity unchanged (measured: `quiet=899` \u2192 `('working', '')`, `quiet=901` \u2192 `('stalled', 'pid gone, quiet 15m')`), and `local_liveness` (reckon/crew/recovery_liveness.py:1156) answers from the process table, which is not a file at all. So a worker whose stream stops, or one killed with no `exit.json` written, leaves the station's stored verdict frozen at its last file-changing classification and the pane never shows the run as stalled or gone; worse, the negative control at :180 (\"a tick that classifies every run on every pass must fail the unchanged-tick count\") makes the file-only key a required behaviour, so an implementer cannot close the gap without failing the section's own gate.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8fb8564b67db1b02a000ccf41bf5e6d3b6eab74f41f0e7594ad259462a84701c",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T091003858852-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "54e4dd0e55708739d7b04f2cce86962133f189af",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in \u00a76 resolves at the reviewed blob `54e4dd0e5570`: `station_store.ingest_stream` (:405), `_fold_stream` (:445), `StationStore.at_runtime_root` (:216), the two uncalled wrappers `store_at_runtime_root` (:615) and `default_store` (:620), `_backends.observe_stream` (reckon/_backends.py:2900), `file_memo.file_signature` (reckon/file_memo.py:273), `recovery.classify_pointer` (re-exported at reckon/crew/recovery.py:84), `recovery_memo._classification_inputs` (reckon/crew/recovery_memo.py:450), and the equivalence assertion in `tests/test_the_station_store_is_node_local.py:85`; the plan-level hrefs resolve as `<path>.html` per the house convention.",
+    "done_when": "pass \u2014 \u00a76's done-when names six measurable outcomes (fold equality, bytes parsed against bytes appended, rewrite refold, per-tick classification counts including the manifest-only tick, probe gating by `launcher_host`, and the two \u00a75-cleanup measures) and carries four negative controls, each naming the measure it must fail (:178\u2013181).",
+    "evidence_paths": "pass \u2014 \u00a76's measures are repository unit tests under `tests/`, whose gate log the run's manifest and report directory carry; no measure is placed in a session scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 \u00a76 introduces no plan labels, stage names, ticket numbers or version tags in the symbols and files it names (`ingest_stream`, `classify_pointer`, `_classification_inputs`), and its prose states mechanisms rather than tracker references.",
+    "reasoning": "a finding \u2014 \u00a76 keys the station's reclassification on `recovery_memo._classification_inputs`, which is composed entirely of file identities and a git head, while the classifier's verdict also moves with the clock and the process table, so a run that goes quiet is never reclassified into `stalled`.",
+    "single_goal": "pass \u2014 \u00a76's one goal is that ingest and classification run only on changed inputs; the \u00a75-review cleanups it carries are confined to the same module and are separately measured at :182, so they add no second verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s6: [the-monitor-reads-each-fact-once#s5]` (plan.html:23), the open followup at :298 agrees (\"\u00a76 waits on \u00a75, because its ingest writes \u00a75's tables\"), and \u00a77 declares `s7: [\u2026#s6]`, matching \u00a76's position as the section that first edits `reckon/crew/station_store.py`."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "75aa9d2b241f12ccf0523aa1458bceedef63558b61798fdf84b9091713fef140",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T09:33:07.414208+00:00"
+}
