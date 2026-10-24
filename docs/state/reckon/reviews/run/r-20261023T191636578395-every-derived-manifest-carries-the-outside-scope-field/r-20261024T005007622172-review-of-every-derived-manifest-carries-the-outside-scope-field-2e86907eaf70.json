@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/ledger.py:764",
+    "reckon/evidence.py:168",
+    "reckon/hooks/worker_stop.py:307",
+    "reckon/crew/promotion_release.py:160",
+    "reckon/crew/promotion_scope.py:228",
+    "reckon/crew/dispatch_launch.py:2973"
+  ],
+  "completed_at": "2026-10-24T00:59:29.838Z",
+  "dispatched_at": "2026-10-24T00:51:01Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html",
+      "line": 72,
+      "severity": "non-blocking",
+      "text": "the head-arm row says its failure set is 'identical to the base arm's pre-existing failures', but the logs it cites disagree: base-suite-folded.log carries 33 failed, six of them the new test's cases, leaving 27 pre-existing, against head-suite-final.log's 25, because tests/test_producer_reads_only_what_changed.py::test_bytes_parsed_equals_bytes_appended_and_unchanged_polls_parse_nothing and tests/test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration fail at base and pass at head; the following sentence ('every one of the head arm's 25 failures was already failing at base') is the accurate claim, and both should not stand"
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 105,
+      "severity": "non-blocking",
+      "text": "no test guards the prose-field list this comment states: tests/test_every_derived_manifest_carries_the_outside_scope_field.py:96 scans only reckon/ledger.py docstrings for the retired spellings, so reintroducing follow_ons at this comment would pass every test, and the fragment's 'git grep over reckon/ and scripts/' result at line 42 is a one-time measurement with no guard behind it"
+    },
+    {
+      "file": "docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html",
+      "line": 88,
+      "severity": "non-blocking",
+      "text": "the done-when's 'ruff check and ruff format --check add no findings on the staged paths' clause still has no log a reader can open: the reckon/crew/reports.py re-check ran as 'head check 1 / base check 1 / head unformatted 0 / base unformatted 0' and survives only in the run directory's resume-2.jsonl, while the manifest's evidence_inputs reports 9 findings at head against 10 at base over the changed-path set and test_logs names no ruff log, so the two figures cannot be reconciled from anything on disk"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "two commits read against 4aeebb15b; d2f4a09b8 changes the prose-field comment at reckon/crew/reports.py:105 from follow_ons to outside_scope and leaves RETIRED_OUTSIDE_SCOPE at line 83 intact, and 2e86907ea adds the reports.py paragraph to the fragment and moves the head-arm row from efd409b03 to d2f4a09b8 with its new 25-failed summary",
+    "done_when": "the done-when asks the test file's cases plus a base/head delta over the importing test files and a ruff clause; tests/test_every_derived_manifest_carries_the_outside_scope_field.py holds six cases that fail at base and pass at head, the arms recorded at 67cba14e6 (33 failed, base-suite-folded.log) and d2f4a09b8 (25 failed, head-suite-final.log) recompute to zero added failure ids, and the ruff clause still has no log a reader can open",
+    "goal": "the source node's goal is docs/plans/additional-work-is-a-section.html section 7, that the three derived manifest sites write and list outside_scope and no ledger docstring keeps the retired spelling; the gained commits are the repair of the one item the previous review left open at reckon/crew/reports.py:105 and record it, so section 7's goal is met at this head",
+    "manifest": "read the live manifest.md at status complete; it names commits through 2e86907ea, after_suite at d2f4a09b8 with 25 ids against baseline_suite's 33 at 67cba14e6, head-suite-final.log and negative-control.log as test_logs, and the reckon/crew/reports.py widening under outside_scope",
+    "write_paths": "the gained commits touch docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html, declared in the node's FENCE - SCOPE list, and reckon/crew/reports.py, widened by name in the coordinator's resume-2 advice ('Your scope is widened to reckon/crew/reports.py for it'), so no path is outside the granted scope"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is docs/plans/additional-work-is-a-section.html section 7, that the three derived manifest sites write and list outside_scope and no ledger docstring keeps the retired spelling; the gained commits are the repair of the one item the previous review left open at reckon/crew/reports.py:105 and record it, so section 7's goal is met at this head\nVERDICT done_when: the done-when asks the test file's cases plus a base/head delta over the importing test files and a ruff clause; tests/test_every_derived_manifest_carries_the_outside_scope_field.py holds six cases that fail at base and pass at head, the arms recorded at 67cba14e6 (33 failed, base-suite-folded.log) and d2f4a09b8 (25 failed, head-suite-final.log) recompute to zero added failure ids, and the ruff clause still has no log a reader can open\nVERDICT write_paths: the gained commits touch docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html, declared in the node's FENCE - SCOPE list, and reckon/crew/reports.py, widened by name in the coordinator's resume-2 advice ('Your scope is widened to reckon/crew/reports.py for it'), so no path is outside the granted scope\nVERDICT manifest: read the live manifest.md at status complete; it names commits through 2e86907ea, after_suite at d2f4a09b8 with 25 ids against baseline_suite's 33 at 67cba14e6, head-suite-final.log and negative-control.log as test_logs, and the reckon/crew/reports.py widening under outside_scope\nVERDICT diff: two commits read against 4aeebb15b; d2f4a09b8 changes the prose-field comment at reckon/crew/reports.py:105 from follow_ons to outside_scope and leaves RETIRED_OUTSIDE_SCOPE at line 83 intact, and 2e86907ea adds the reports.py paragraph to the fragment and moves the head-arm row from efd409b03 to d2f4a09b8 with its new 25-failed summary\nCALL_SITES: reckon/ledger.py:764, reckon/evidence.py:168, reckon/hooks/worker_stop.py:307, reckon/crew/promotion_release.py:160, reckon/crew/promotion_scope.py:228, reckon/crew/dispatch_launch.py:2973\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:105 now names outside_scope among the prose list fields and keeps the retired-spelling constant at line 83 as the pre-rename mapping, which is what the coordinator's widened instruction asked for\nSCORE evidence: 14\nJUSTIFICATION evidence: head-suite-final.log opens with its revision and literal command and closes EXIT=1 at 25 failed against the base arm's 33, so the added failure set recomputes to empty, but no ruff log exists and after_suite records d2f4a09b8 rather than the reviewed head 2e86907ea\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the gained diff touches only docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html and reckon/crew/reports.py, each declared in the node's scope or widened by name in resume-2-advice.txt\nSCORE durability: 8\nJUSTIFICATION durability: no test reads the comment at reckon/crew/reports.py:105 or the fragment, so reintroducing follow_ons there would leave every test green, and tests/test_every_derived_manifest_carries_the_outside_scope_field.py:96 guards only reckon/ledger.py docstrings\nSCORE fit: 19\nJUSTIFICATION fit: the comment at reckon/crew/reports.py:105 keeps the surrounding parenthetical list style and adds no plan label, version suffix or author attribution\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no definition - they correct prose in reckon/crew/reports.py:105 and record it - and a grep of reckon/ and scripts/ confirms the only remaining occurrence of the retired spelling is the deliberate RETIRED_OUTSIDE_SCOPE mapping at line 83\nFINDING docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html:72 non-blocking: the head-arm row says its failure set is 'identical to the base arm's pre-existing failures', but the logs it cites disagree: base-suite-folded.log carries 33 failed, six of them the new test's cases, leaving 27 pre-existing, against head-suite-final.log's 25, because tests/test_producer_reads_only_what_changed.py::test_bytes_parsed_equals_bytes_appended_and_unchanged_polls_parse_nothing and tests/test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration fail at base and pass at head; the following sentence ('every one of the head arm's 25 failures was already failing at base') is the accurate claim, and both should not stand\nFINDING reckon/crew/reports.py:105 non-blocking: no test guards the prose-field list this comment states: tests/test_every_derived_manifest_carries_the_outside_scope_field.py:96 scans only reckon/ledger.py docstrings for the retired spellings, so reintroducing follow_ons at this comment would pass every test, and the fragment's 'git grep over reckon/ and scripts/' result at line 42 is a one-time measurement with no guard behind it\nFINDING docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html:88 non-blocking: the done-when's 'ruff check and ruff format --check add no findings on the staged paths' clause still has no log a reader can open: the reckon/crew/reports.py re-check ran as 'head check 1 / base check 1 / head unformatted 0 / base unformatted 0' and survives only in the run directory's resume-2.jsonl, while the manifest's evidence_inputs reports 9 findings at head against 10 at base over the changed-path set and test_logs names no ruff log, so the two figures cannot be reconciled from anything on disk\n",
+  "review_run_id": "r-20261024T005007622172-review-of-every-derived-manifest-carries-the-outside-scope-field-2e86907eaf70",
+  "reviewed_base_sha": "4aeebb15bb07ffea7589ace45c380a6bb2b06868",
+  "reviewed_head_sha": "2e86907eaf70cb11920ee516363bea6e09b6f9a4",
+  "reviewed_run_id": "r-20261023T191636578395-every-derived-manifest-carries-the-outside-scope-field",
+  "scores": {
+    "durability": 8,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T01:05:27.196284+00:00",
+  "total": 99
+}
