@@ -22,7 +22,7 @@
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="It collects the crew-command defects the power_convertor fleet reported on 2026-10-22; the monitor&#x27;s own items are filed in the-monitor-shows-the-work-it-watches §81–§88, related duty fixes live in a-coordinator-can-clear-its-own-duties, and no section waits on another plan.">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;}">
-  <meta name="plan-version" content="26">
+  <meta name="plan-version" content="27">
   <meta name="plan-modified" content="2026-10-24">
   <title>The Crew Does Its Own Bookkeeping | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -311,6 +311,9 @@
 </div>
 <div class="r-comment" data-section="s23" data-id="c-close-s23" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
     <div class="r-comment-body"><p>Section 23 landed at merge <code>53bc0d08b</code>: a stopped peer with a current terminal manifest no longer blocks another run's accepted path. <a href="/reckon/evidence/archive/the-crew-does-its-own-bookkeeping-landed.html#s23">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-s18-promotion-sweeps-an-authored-edit" data-who="reckon-build" data-when="2026-10-24T21:30:00Z">
+    <div class="r-comment-body"><p>Measured 2026-10-24 on the-suite-is-green-at-head: the two promotion paths disagree on an uncommitted text-mode edit. <code>crew complete --land</code> refused while the plan carried one (the refusal from <code>reckon/crew/promotion_scope.py</code>). A review run's <code>crew complete --gate not-run</code>, a few minutes later, committed the whole plan file, so another writer's uncommitted section addition went out as <code>c3473734a</code> under a <code>promote(...)</code> subject. A git note now records what that commit carries. Whichever way this section resolves the refusal, a promotion should not commit authored content it did not write under its own subject. It should commit only the regions it wrote, or proceed and leave the authored edit uncommitted for its writer.</p></div>
 </div>
 </section>
 </main>
