@@ -24,6 +24,8 @@ the case it names must fail against:
   without reading again.
 * ``RECKON_TEST_COLD_STORE_ANYWAY`` stores the build regardless of the
   generation it started against.
+* ``RECKON_TEST_COLD_EARLY_STORE`` publishes the build before the path takes
+  its marks, so a reader entering in that gap consumes them.
 """
 
 from __future__ import annotations
@@ -49,6 +51,7 @@ _SHAPE_REREADS = "RECKON_TEST_COLD_SHAPE_REREADS"
 _MARK_DROPPED = "RECKON_TEST_COLD_MARK_DROPPED"
 _WAITERS_SKIP_CACHE = "RECKON_TEST_COLD_WAITERS_SKIP_CACHE"
 _STORE_ANYWAY = "RECKON_TEST_COLD_STORE_ANYWAY"
+_EARLY_STORE = "RECKON_TEST_COLD_EARLY_STORE"
 
 
 def _armed(name: str) -> bool:
@@ -583,3 +586,66 @@ def test_a_drop_during_the_path_keeps_its_build_uncached(
         cached = [key for key in metadata_index._CACHE if key[1] == root]
     assert cached == [], "a build that started before the drop was cached"
     assert _slugs(result["rows"]) == _EXPECTED_SLUGS
+
+
+# ── (8) a reader that enters as the path publishes its build ──────────────
+
+
+def test_a_reader_entering_the_gap_sees_the_mark_and_so_does_the_path(
+    docs: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A mark a reader entering at publication takes must not be lost."""
+
+    metadata_index.clear()
+    key = metadata_index._cache_key(docs, _PROJECT, False)
+    real_build = metadata_index.build_index
+    real_store = metadata_index._store_cold_build
+
+    results: dict[str, list[dict]] = {}
+
+    def inner() -> None:
+        results["inner"] = _rows(docs)
+
+    inner_thread = threading.Thread(target=inner, daemon=True)
+
+    def mark_delta() -> None:
+        (docs / "notes" / "delta.html").write_text(
+            _plan_doc("delta", "Delta"), encoding="utf-8"
+        )
+        metadata_index.mark_tree_paths(
+            docs, metadata_index.TreeChange(files=frozenset({"notes/delta.html"}))
+        )
+
+    def enter_the_gap() -> None:
+        inner_thread.start()
+        inner_thread.join(timeout=10)
+
+    def sweep_then_maybe_publish_early(*args, **kwargs):
+        build = real_build(*args, **kwargs)
+        mark_delta()
+        if _armed(_EARLY_STORE):
+            # Control: the build is published before the path takes its
+            # marks, so the reader entering here consumes the mark and the
+            # path keeps rows from before the change.
+            with metadata_index._LOCK:
+                metadata_index._CACHE[key] = build
+            enter_the_gap()
+        return build
+
+    def store_then_let_a_reader_enter(key_, build, generation) -> None:
+        real_store(key_, build, generation)
+        if not inner_thread.is_alive() and "inner" not in results:
+            enter_the_gap()
+
+    monkeypatch.setattr(metadata_index, "build_index", sweep_then_maybe_publish_early)
+    monkeypatch.setattr(
+        metadata_index, "_store_cold_build", store_then_let_a_reader_enter
+    )
+
+    results["path"] = _rows(docs)
+    inner_thread.join(timeout=20)
+    assert not inner_thread.is_alive(), "the reader never finished"
+
+    marked = sorted([*_EXPECTED_SLUGS, "delta"])
+    assert _slugs(results["inner"]) == marked, "the entering reader missed the mark"
+    assert _slugs(results["path"]) == marked, "the path's own reader missed the mark"

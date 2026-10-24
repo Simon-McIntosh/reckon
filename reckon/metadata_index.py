@@ -610,8 +610,10 @@ def _cold_build(
     The identities :func:`_reuse_covered` read are handed to the build and to
     the shape it records, so the cold path stats each recorded directory once
     rather than once per reader that needs it. A mark recorded while the build
-    ran is applied to the rows before they are returned, so a change that
-    landed after the walk passed its directory still reaches them.
+    ran is applied to the rows before they are returned, and the marks are
+    taken before the build is published: a reader entering while the path runs
+    must not find a build without them, because taking them there would leave
+    this path answering from rows written before the change it recorded.
     """
 
     build: IndexBuild | None = None
@@ -632,9 +634,13 @@ def _cold_build(
             dirs=dirs,
             identities=identities,
         )
-        _store_cold_build(key, build, generation)
+        # Take the marks first. Storing the build before consuming them lets a
+        # reader that enters in the gap answer from, and consume the marks of,
+        # a build this path is about to patch, leaving this path's own rows
+        # without a change recorded while it ran.
         change = _pop_marks(key[1])
         if change is None:
+            _store_cold_build(key, build, generation)
             return build
         patched = _patch_build(
             docs_dir, project, build, change, repo_dir, git_first, git_last
