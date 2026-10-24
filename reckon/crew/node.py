@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import re
 import subprocess
-from collections.abc import MutableMapping
+from collections.abc import Iterable, Mapping, MutableMapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 from reckon import capability, ledger
 from reckon.crew.refusals import format_refusal
@@ -405,7 +405,7 @@ def refuse_member_in_flight(member: str, pointer: Mapping[str, Any]) -> None:
         )
 
 
-class MemberInFlight(CrewError):
+class MemberInFlight(CrewError):  # noqa: N818 - public refusal name
     """A roster member already owns a live, non-terminal run."""
 
     def __init__(
@@ -429,7 +429,7 @@ class MemberInFlight(CrewError):
         )
 
 
-class ScopeConflict(CrewError):
+class ScopeConflict(CrewError):  # noqa: N818 - public refusal name
     """A live run already claims a containing or contained write path."""
 
     def __init__(
@@ -453,7 +453,7 @@ class ScopeConflict(CrewError):
         )
 
 
-class UnreconciledRuns(CrewError):
+class UnreconciledRuns(CrewError):  # noqa: N818 - public refusal name
     """Finished worker records must be reconciled before more work starts."""
 
     def __init__(self, runs: Iterable[Mapping[str, Any]], grace: str) -> None:
@@ -490,7 +490,7 @@ def dispatch_invocation_shape(*, project: str, role: str = "investigate") -> str
     )
 
 
-class WatcherRequired(CrewError):
+class WatcherRequired(CrewError):  # noqa: N818 - public refusal name
     """A dispatch needs a producer, and a reader for the dispatching session.
 
     Two distinct failures answer to the same fix, so they share one type. A
@@ -555,7 +555,7 @@ class WatcherRequired(CrewError):
         )
 
 
-class BudgetHold(CrewError):
+class BudgetHold(CrewError):  # noqa: N818 - public refusal name
     """A wave is held on budget rather than failed.
 
     A distinct type because the two outcomes call for opposite responses: a
@@ -594,7 +594,7 @@ def _context_refusal_recommendation(verdict: Mapping[str, Any]) -> str:
     )
 
 
-class CompetenceLimit(CrewError):
+class CompetenceLimit(CrewError):  # noqa: N818 - public refusal name
     """A node must be split before this worker configuration can run it."""
 
     def __init__(self, verdict: Mapping[str, Any]) -> None:
@@ -1244,7 +1244,7 @@ def validate_node(
             present = sorted(
                 term
                 for term in SUBJECTIVE_TERMS
-                if re.search(rf"(?<!-)\b{re.escape(term)}\b", done_when, re.I)
+                if re.search(rf"(?<!-)\b{re.escape(term)}\b", done_when, re.IGNORECASE)
             )
             fail(
                 "demonstrable",
