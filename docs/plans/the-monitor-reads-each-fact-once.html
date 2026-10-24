@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -171,8 +171,9 @@
     tick, as <code>recovery_watch._quiet_beat_snapshots</code> does for the producer today: its liveness, for a run
     launched on this node, and its stall clock are read again. The full classifier runs when the run's inputs moved or its
     liveness reading moved, as <code>_quiet_beat_snapshots</code> calls <code>_watch_snapshot</code> when the liveness
-    triple moved; otherwise only the stall clock is re-derived, which can turn a waiting run <code>stalled</code> and
-    nothing else.</p>
+    triple moved; otherwise only the stall clock is re-derived through <code>recovery_watch._stall_reading</code>, which acts on
+    a <code>dispatched</code> or <code>working</code> run and reads it <code>waiting</code> when a pause reason explains the
+    silence and <code>stalled</code> when none does.</p>
     <p>Done when, replaying the fixture streams of five real runs (copied from the crew home into a test
     directory) in chunks: the station's folded observation equals a single full fold of each stream
     (<code>as_dict()</code> equal); the bytes it parses equal the bytes appended; a rewritten stream is
@@ -180,7 +181,7 @@
     section's new mechanism is the classification, so it is measured directly. Over three ticks of a fixture with
     three live runs, with <code>recovery.classify_pointer</code> and the liveness probe counted through patches:
     a tick where nothing changed classifies no run; a tick where one run's pointer or stream moved classifies
-    exactly that run, once; a tick where only one run's manifest moved classifies exactly that run, once; a run whose worker exits while every file stays still reads its new verdict on the next tick; a run silent past its stall window reads <code>stalled</code> without any file moving; and the liveness probe is called only for runs whose pointer's
+    exactly that run, once; a tick where only one run's manifest moved classifies exactly that run, once; a run whose worker exits while every file stays still reads its new verdict on the next tick; a working run silent past its stall window reads <code>stalled</code> without any file moving, and one whose silence a pause reason explains reads <code>waiting</code>; and the liveness probe is called only for runs whose pointer's
     <code>launcher_host</code> is this node, so a run launched on another host is classified without a probe.
     Negative controls: an ingest that ignores the stored offset must fail the bytes test; one that drops the
     carried fold state must fail the equality test on a stream whose rate depends on earlier records; a tick
@@ -302,9 +303,9 @@
     <p class="r-fu-outcome">§4 landed (merge 57e274889, test repair 99e614314); a follower reads 0.10 MB of pointers in 15 s. The station store §5 is next, after the plan's first content and design reviews.</p>
     </article>
 <article class="r-fu" data-id="f-tmref-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-23 13:25" data-recommends-skill="/reckon-build the-monitor-reads-each-fact-once §5" data-resolved-at="" data-resolved-by="">
-    <h4 class="r-fu-title">Review the plan, then build the station store</h4>
-    <div class="r-fu-body"><p>The content review is answered; the design review comes next, then §5. §6 waits on §5, because its ingest writes §5's tables, and §7 follows §6.</p></div>
-    <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §5</pre>
+    <h4 class="r-fu-title">Build the station&#x27;s ingest</h4>
+    <div class="r-fu-body"><p>§5 landed (merge <code>06079a8a2</code>). §6, the ingest and classification, is next; §7 follows §6.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §6</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
