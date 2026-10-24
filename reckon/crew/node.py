@@ -739,6 +739,7 @@ class TaskNode:
     goal: str
     plan: str
     section: str = ""
+    after: list[str] = field(default_factory=list)
     brief: str = ""
     brief_sha256: str = ""
     brief_path: str = ""
@@ -778,6 +779,7 @@ class TaskNode:
         """Return the node as sorted JSON-ready data."""
         return {
             "brief": self.brief,
+            "after": list(self.after),
             "brief_path": self.brief_path,
             "brief_sha256": self.brief_sha256,
             "compares_with": self.compares_with,
