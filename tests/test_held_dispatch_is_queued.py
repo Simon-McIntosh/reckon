@@ -121,7 +121,11 @@ def test_held_local_dispatch_is_one_queued_pointer_and_can_be_discarded(
     assert listed.exit_code == 0
     row = json.loads(listed.output)["runs"][0]
     assert row["classification"] == "queued"
-    assert row["process_alive"] is not True
+    # A queued run has no process to ask about, and the live row leaves a field
+    # with no reading off rather than serialising it as a null: the absence is
+    # the statement that no worker was asked about, not one reported gone.
+    assert "process_alive" not in row, row
+    assert row.get("process_alive") is not True, row
     assert row["next_action"] == "wait for a local lane slot"
     assert (
         subprocess.check_output(

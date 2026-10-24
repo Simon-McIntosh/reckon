@@ -1,0 +1,104 @@
+<section id="live-row-tests-read-the-one-field-vocabulary-landing">
+  <h2>Live-row tests read the one live field vocabulary</h2>
+
+  <p><strong>What changed.</strong> All eight ids were stale expectations against
+  behaviour that was intended, and no product module needed changing. The four list
+  views project their run rows through
+  <code>reckon.crew.query.project_run_rows</code>, which leaves a field with no value
+  off the row, and a plan partition's run row now carries the classification it was
+  read with. Each test now asserts that contract while keeping the property it exists
+  to pin.</p>
+
+  <h3 id="live-row-tests-read-the-one-field-vocabulary-intended">Commit read, and whether its change was intended</h3>
+
+  <table id="live-row-tests-read-the-one-field-vocabulary-readings">
+    <thead>
+      <tr><th>id</th><th>commit read</th><th>intended?</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>test_a_foreign_pid_never_reads_dead.py::test_the_directory_row_does_not_read_a_foreign_pid_as_alive</code></td>
+        <td><code>eb07961b3</code> — directory rows route through the one projection, which "leaves a field whose value is empty off the row". A foreign record's
+        <code>process_alive</code> is empty, so the key is now absent where the case read <code>None</code>.</td>
+        <td>intended</td>
+      </tr>
+      <tr>
+        <td><code>test_crew_surface_parity.py::test_the_cli_live_view_matches_the_mcp_classification_surface</code></td>
+        <td><code>9a7c6b83d</code> — the live view routes through the same projection. The fixture's pointer named a manifest that did not exist, so
+        <code>manifest_status</code> had no value and was omitted. The case now writes a manifest, so every field of the written-down vocabulary has a value on
+        both surfaces and the comparison stays byte-exact over the closed set.</td>
+        <td>intended</td>
+      </tr>
+      <tr>
+        <td><code>test_held_dispatch_is_queued.py::test_held_local_dispatch_is_one_queued_pointer_and_can_be_discarded</code></td>
+        <td><code>9a7c6b83d</code> — a queued run has no pid, so its <code>process_alive</code> reading is empty and omitted. The case now states the absence
+        (<code>"process_alive" not in row</code>) beside the property it keeps: the row is not reported alive.</td>
+        <td>intended</td>
+      </tr>
+      <tr>
+        <td><code>test_partition_live_runs_recorded.py::test_recorded_classification_is_used_without_observing_logs</code></td>
+        <td><code>ba405e2c4</code> — "The classification travels on the run row rather than being derived again by the reader." The expected row now names the
+        classification it already produces.</td>
+        <td>intended</td>
+      </tr>
+      <tr>
+        <td><code>test_read_verbs_retire_behind_crew_view.py::test_crew_view_live_gives_the_listings_answer[project|phase|session|mine]</code></td>
+        <td><code>9a7c6b83d</code> — the captured listing answered <code>manifest_status: None</code>; the successor omits the field. The comparison now requires
+        every field the listing answered <em>with a value</em> to be carried, and requires a field it answered empty to be omitted, with the capture itself
+        asserted to exercise an omission so the arm can fail.</td>
+        <td>intended</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="live-row-tests-read-the-one-field-vocabulary-measure">Measure</h3>
+
+  <p>Both arms are <code>git archive</code> extractions on node-local disk, run in the
+  fleet allocation. Every log's first line names its revision, tree and literal
+  command (the arms also print the imported <code>module.__file__</code> and the
+  resolved working directory); its last line is a bare <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table id="live-row-tests-read-the-one-field-vocabulary-arms">
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>c1473d66</code></td><td>8 failed, 32 passed — <code>EXIT=1</code></td></tr>
+      <tr><td>head</td><td><code>29f762f3</code></td><td>40 passed — <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative controls.</strong> Each mutates the production code the repaired
+  id reads and shows the id failing again; no control restores a test expectation.</p>
+
+  <table id="live-row-tests-read-the-one-field-vocabulary-controls">
+    <thead><tr><th>mutation</th><th>ids that fail</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>project_run_rows</code> keeps a field with an empty value</td>
+        <td>1, 3, and 5–8 (six ids)</td>
+      </tr>
+      <tr>
+        <td><code>classify_pointer</code> always emits <code>manifest_status: None</code></td>
+        <td>2</td>
+      </tr>
+      <tr>
+        <td><code>_run_row</code> emits an empty classification</td>
+        <td>4</td>
+      </tr>
+      <tr>
+        <td><code>_launched_on_this_host</code> answers true — the bare local pid probe</td>
+        <td>1, with five other ids in the same file</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>A first control attempt on id 1 mutated <code>_record_is_known_foreign</code>,
+  which the directory row's liveness does not consult: the arm passed, so that
+  mutation was not a control and is kept as
+  <code>negative-control-1a-misaimed-gate.log</code> rather than discarded. The gate
+  that governs the row is <code>_launched_on_this_host</code>, which the second run
+  mutates.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check</code> reports nothing on the five staged
+  paths, and <code>ruff format --check</code> adds no finding: the one unformatted file
+  reports the same two pre-existing long lines at the base revision.</p>
+</section>
