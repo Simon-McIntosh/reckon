@@ -2,21 +2,19 @@
 
 Promotion writes the landing comment to the plan HTML, then appends the ledger
 row, then commits both stores as one landing. When that landing commit fails —
-a held ``index.lock`` is the measured case — the rollback restores what it can:
-a newly created ledger run file is dropped, but the tracked plan file survives
-the failed rollback because the same lock that blocked the commit also blocks
-``git restore``. The plan comment therefore stays on disk, uncommitted.
+a held ``index.lock`` is the measured case — a refused landing takes back every
+write it made: a newly created ledger run file is dropped, and the tracked plan
+file returns to its committed content even though the same lock that blocked
+the commit also blocks ``git restore``, because the fallback reads HEAD's blob
+through the object store. No landing write survives the refusal.
 
-The next promotion reads that comment back, finds it already recorded with the
-same narrative, and must carry the plan file into its landing commit so the
-checkout is left clean. It does not: the already-recorded branch excluded the
-plan file from the landing commit under the assumption that an idempotent retry
-leaves the plan unchanged, which is false when a passing gate's own earlier
-attempt wrote the comment and could not commit it. The file then stays modified
-until someone commits it by hand.
-
-The fix carries the plan file whenever it differs from HEAD, whether this call
-recorded the comment or found it already recorded. These tests synthesise a
+The next promotion then records the comment again — the plan carries none —
+and carries the plan file into its landing commit, so the checkout is left
+clean. A comment found already recorded is carried on the same rule: the plan
+file joins the landing commit whenever it differs from HEAD, whether this call
+wrote the comment or found it. Excluding it because the comment reads as
+recorded would strand the plan file as modified state until someone committed
+it by hand. These tests synthesise a
 fixture repository and a fixture crew home per case, and assert the real plan
 and crew directories are untouched, because an isolated read does not prove an
 isolated write.

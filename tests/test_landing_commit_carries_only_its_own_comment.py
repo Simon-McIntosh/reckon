@@ -1,9 +1,9 @@
 """A landing commit carries the run's own plan comment and nothing else.
 
 An idempotent re-promotion carries the plan file whenever it differs from
-HEAD, because an earlier attempt that recorded the comment and then failed to
-commit it leaves the comment on disk. That rule carried the *whole* file, so
-an unrelated uncommitted edit to the plan was swept into the landing commit.
+HEAD: a plan file the store has written and no commit has taken is the state a
+re-promotion has to settle. That rule carried the *whole* file, so an unrelated
+uncommitted edit to the plan was swept into the landing commit.
 
 Promotion now parses each side as HTML and keeps only the authored content
 outside the store-owned regions. The admitted class is any change confined to
@@ -159,7 +159,7 @@ def _promotion_commit_files(repository: Path, run_id: str = RUN_ID) -> list[str]
 
 
 def _fail_first_landing(repository: Path, narrative: str) -> None:
-    """Hold index.lock so the first landing's commit fails, comment uncommitted."""
+    """Hold index.lock so the first landing's commit fails and is taken back."""
     lock = repository / ".git" / "index.lock"
     lock.write_text("", encoding="utf-8")
     try:
@@ -337,7 +337,7 @@ def test_a_store_written_collapse_of_one_section_lands_as_the_runs_own_bookkeepi
     _git(repository, "commit", "-q", "-m", "test: seed a section landed note")
 
     # The store collapses the section again, rewriting that note and touching no
-    # authored prose, and leaves it uncommitted as a failed landing would.
+    # authored prose, and leaves it uncommitted for the re-promotion to settle.
     plan_path.write_text(
         seeded.replace("the earlier landed note", "the collapse summary for s2"),
         encoding="utf-8",
@@ -420,7 +420,7 @@ def test_a_plan_stored_before_the_writers_canonical_encoding_lands(
     _git(repository, "commit", "-q", "-m", "test: seed a non-canonical comment")
 
     # A store write would canonicalise that entity. Leave the re-encoded copy
-    # uncommitted, as a landing whose commit failed would.
+    # uncommitted, for the re-promotion to settle.
     plan_path.write_text(seeded.replace("&#x27;", "'"), encoding="utf-8")
     assert _dirty(repository, plan_path), "the encoding-only difference must be dirty"
 
