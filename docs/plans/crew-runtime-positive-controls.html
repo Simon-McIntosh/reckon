@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="390">
+<meta name="plan-version" content="391">
 <meta name="plan-modified" content="2026-10-24">
 <meta name="plan-section-depends-on" content="{&quot;s64&quot;:[]}">
 </head>
@@ -1591,10 +1591,11 @@
     <div class="r-fu-body"><p>§21 is the plan's one open section. It waits on the lead's choice between reporting an unresolvable declared sha and keeping its silence with the reason written beside the pinning tests.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls §21</pre>
     </article>
-<article class="r-fu" data-id="f-crpc-s64-s65" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-24 13:00" data-recommends-skill="/reckon-build crew-runtime-positive-controls §64" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-crpc-s64-s65" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-24 13:00" data-recommends-skill="/reckon-build crew-runtime-positive-controls §64" data-resolved-at="2026-10-24T16:24:48+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §64, then §65 when reckon/crew_run_commands.py is free</h4>
     <div class="r-fu-body"><p>§64 stops a promotion from dropping a cited commit that fails to resolve, the cause of the power_convertor land that merged an earlier commit than the run reached. §65 adds the land's own check against the run's worktree head and waits only for <code>reckon/crew_run_commands.py</code> to come free of another plan's runs.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls §64</pre>
+    <p class="r-fu-outcome"><p>§64 landed in <code>3524dac58</code> and §65 in <code>5ce32243a</code>. A promotion no longer drops a cited commit that fails to resolve, and a land refuses a head behind the run's worktree. The plan's remaining open section is §21, gated on the decision <code>unresolvable-declared-sha</code> and carried by its own followup.</p></p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -2461,6 +2462,9 @@
 </div>
 <div class="r-comment" data-section="s65" data-id="c-run-r-20261024T160609715220-review-of-a-land-refuses-a-head-behind-its-worktree-c6ecadc7e216" data-who="reckon-build" data-when="2026-10-24T16:15:22.736Z">
     <div class="r-comment-body"><p>review of run r-20261024T154305467602 at head c6ecadc7e scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 20; no findings; added failures 0 (base and head arms fail on the same single pre-existing obligations-view id).</p></div>
+</div>
+<div class="r-comment" data-section="s65" data-id="c-close-s65" data-who="reckon-build" data-when="2026-10-24T16:30:00Z">
+    <div class="r-comment-body"><p>§65 landed in <code>5ce32243a</code>: <code>crew complete --land</code> refuses, before merging, a head that would leave the run's worktree commits behind. 3 cases pass, the negative control fires, no added population failure, review 115/120. <a href="/reckon/evidence/archive/crew-runtime-positive-controls-landed.html#s65">evidence</a></p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
