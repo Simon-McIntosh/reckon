@@ -45,7 +45,7 @@ from pathlib import Path
 from typing import Any, NoReturn, Self
 
 from reckon import _backends, file_memo, host
-from reckon.crew import dispatch_watch
+from reckon.crew import dispatch_watch, recovery
 from reckon.crew.run_paths import crew_home
 
 DATABASE_NAME = "station.sqlite3"
@@ -97,6 +97,12 @@ CREATE TABLE IF NOT EXISTS obligations (
     session    TEXT PRIMARY KEY,
     changed_at TEXT,
     payload    TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS classifications (
+    run_id     TEXT PRIMARY KEY,
+    path       TEXT NOT NULL,
+    reuse_key  TEXT NOT NULL,
+    snapshot   TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS station (
     key   TEXT PRIMARY KEY,
@@ -521,6 +527,124 @@ class StationStore:
             if str(record.get("log_path") or "") == str(path):
                 return record
         return {}
+
+    # ── classification ───────────────────────────────────────────────────
+
+    def _classification_cache(self) -> dict[str, tuple[str, dict[str, Any]]]:
+        """The stored verdicts, keyed as the producer's reuse path keys them."""
+        cache: dict[str, tuple[str, dict[str, Any]]] = {}
+        for row in self.classification_rows():
+            passed = row.get("reuse_key")
+            snapshot = row.get("snapshot")
+            if not isinstance(passed, str) or not isinstance(snapshot, Mapping):
+                continue
+            cache[str(row["run_id"])] = (passed, dict(snapshot))
+        return cache
+
+    def classification_rows(self) -> list[dict[str, Any]]:
+        rows = (
+            self.connect()
+            .execute(
+                "SELECT run_id, path, reuse_key, snapshot FROM classifications "
+                "ORDER BY run_id"
+            )
+            .fetchall()
+        )
+        return [
+            {
+                "run_id": str(row["run_id"]),
+                "path": str(row["path"]),
+                "reuse_key": str(row["reuse_key"]),
+                "snapshot": json.loads(str(row["snapshot"])),
+            }
+            for row in rows
+        ]
+
+    def classifications(self) -> dict[str, dict[str, Any]]:
+        """Each live run's stored verdict, keyed by its run id."""
+        return {
+            str(row["run_id"]): row["snapshot"] for row in self.classification_rows()
+        }
+
+    def _write_classification(
+        self, run_id: str, path: Path, reuse_key: str, snapshot: Mapping[str, Any]
+    ) -> None:
+        connection = self.connect()
+        connection.execute(
+            "INSERT INTO classifications (run_id, path, reuse_key, snapshot) "
+            "VALUES (?, ?, ?, ?) ON CONFLICT(run_id) DO UPDATE SET "
+            "path = excluded.path, reuse_key = excluded.reuse_key, "
+            "snapshot = excluded.snapshot",
+            (
+                run_id,
+                str(path),
+                reuse_key,
+                json.dumps(dict(snapshot), sort_keys=True),
+            ),
+        )
+        connection.commit()
+
+    def _drop_absent_classifications(self, present: set[str]) -> None:
+        connection = self.connect()
+        for row in connection.execute("SELECT run_id FROM classifications").fetchall():
+            stored = str(row["run_id"])
+            if stored not in present:
+                connection.execute(
+                    "DELETE FROM classifications WHERE run_id = ?", (stored,)
+                )
+        connection.commit()
+
+    def classify_tick(
+        self,
+        *,
+        now_seconds: float | None = None,
+        stall_seconds: int = 900,
+    ) -> dict[str, dict[str, Any]]:
+        """Re-derive each live run's verdict, classifying only the runs that moved.
+
+        A run whose classification inputs are unchanged since its stored verdict
+        and whose liveness reading is unchanged takes only the quiet-beat
+        reading: its silence is recomputed from the stream instant recorded on
+        the stored verdict and the clock, through the same stall reading a
+        fresh classification uses. A run whose reuse key moved, or whose
+        liveness the process table now reads differently, is classified afresh
+        once. The stored verdicts are the station's own across passes, so a
+        restarted station serves them exactly as the producer's memory does.
+
+        The verdicts are keyed and reused by
+        :func:`reckon.crew.recovery_watch._snapshot_reuse_key`, the identity of
+        every input a classification is a function of, so the manifest, the
+        run's records, the review store and the tree head are covered as well
+        as the pointer and the stream. A worker that finishes by writing its
+        manifest moves neither its pointer nor its stream, and its delivery is
+        still seen on the tick that manifest lands.
+        """
+        moment = recovery._utc_seconds() if now_seconds is None else float(now_seconds)
+        cache = self._classification_cache()
+        verdicts: dict[str, dict[str, Any]] = {}
+        present: set[str] = set()
+        for row in self.pointer_rows():
+            path = Path(str(row["path"]))
+            try:
+                record = json.loads(str(row["fields"]))
+            except ValueError:
+                continue
+            if not isinstance(record, Mapping) or not record.get("run_id"):
+                continue
+            run_id = str(record["run_id"])
+            present.add(run_id)
+            verdict = recovery._watch_snapshot(
+                record,
+                moment=moment,
+                stall_seconds=stall_seconds,
+                cache=cache,
+            )
+            verdicts[run_id] = verdict
+            served = cache.get(run_id)
+            if served is not None:
+                self._write_classification(run_id, path, served[0], served[1])
+        self._drop_absent_classifications(present)
+        return verdicts
 
     # ── readers ──────────────────────────────────────────────────────────
 
