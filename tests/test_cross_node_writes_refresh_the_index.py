@@ -59,13 +59,14 @@ class _NeverFiringWatch(_RealWatch):
     def __init__(self, root: Path, *, wake_fd: int | None = None) -> None:
         self.root = Path(root).resolve()
         self._wake_fd = wake_fd
+        self._carried: list[tuple[Path, bool]] = []
         self.fd, self._sink = os.pipe()
 
-    def consume(self) -> bool:
-        return True
+    def consume(self) -> list[tuple[Path, bool]]:
+        return []
 
-    def drain(self, settle_s: float) -> None:
-        return None
+    def drain(self, settle_s: float) -> list[tuple[Path, bool]]:
+        return []
 
     def close(self) -> None:
         for descriptor in (self.fd, self._sink):

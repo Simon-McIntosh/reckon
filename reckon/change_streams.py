@@ -5,10 +5,11 @@ import os
 import select
 import socket
 import struct
+import subprocess
 import threading
 import time
 from collections.abc import Mapping
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from reckon import metadata_index
 from reckon.env_duration import read_duration_override
@@ -17,6 +18,9 @@ from reckon.git_dates import _file_identity, _git_directory, _head_identity
 _INOTIFY_EVENT = struct.Struct("iIII")
 _INOTIFY_CHANGE_MASK = 0x00000FCC
 _INOTIFY_DIRECTORY = 0x40000000
+#: The kernel could not queue every event, so the burst that was read is a
+#: fragment of what happened and no source can say what it missed.
+_INOTIFY_OVERFLOW = 0x00004000
 _CHANGE_SETTLE_S = 0.25
 
 
@@ -27,6 +31,11 @@ class _ProjectChangeWatch:
     watch writes to when its cross-node detector reports a change to this tree.
     The select below then has two change sources — the kernel for a local write
     and the pipe for a write another node made — through one handler.
+
+    Each event is reported with the path it names and whether it names a
+    directory, because the two carry different attributions: a covered file's
+    own name marks that file, while a directory appearing or vanishing marks
+    its parent.
     """
 
     def __init__(self, root: Path, *, wake_fd: int | None = None) -> None:
@@ -34,6 +43,8 @@ class _ProjectChangeWatch:
 
         self.root = root.resolve()
         self._wake_fd = wake_fd
+        self._carried: list[tuple[Path, bool]] = []
+        self._overflowed = False
         self._libc = ctypes.CDLL(None, use_errno=True)
         initializer = getattr(self._libc, "inotify_init1", None)
         add_watch = getattr(self._libc, "inotify_add_watch", None)
@@ -68,24 +79,42 @@ class _ProjectChangeWatch:
             raise OSError(error, os.strerror(error), str(directory))
         self._directories[descriptor] = directory
 
-    def consume(self) -> bool:
-        """Read pending notifications, arming a watch on any new directory."""
-        events = os.read(self.fd, 64 * 1024)
+    def _parse(self, events: bytes) -> list[tuple[Path, bool]]:
+        """Return the (path, is-directory) each event in a read names."""
+
+        observed: list[tuple[Path, bool]] = []
         offset = 0
         while offset + _INOTIFY_EVENT.size <= len(events):
             descriptor, mask, _cookie, name_length = _INOTIFY_EVENT.unpack_from(
                 events, offset
             )
+            if mask & _INOTIFY_OVERFLOW:
+                # The burst is incomplete, so nothing about it can be
+                # attributed: the caller must drop the build rather than
+                # absorb a partial list of paths.
+                self._overflowed = True
             offset += _INOTIFY_EVENT.size
             name = events[offset : offset + name_length].rstrip(b"\0")
             offset += name_length
-            if mask & _INOTIFY_DIRECTORY and name:
-                candidate = self._directories.get(descriptor, self.root) / os.fsdecode(
-                    name
-                )
-                if candidate.is_dir():
-                    self._watch_tree(candidate)
-        return True
+            if not name:
+                continue
+            directory = self._directories.get(descriptor, self.root)
+            candidate = directory / os.fsdecode(name)
+            is_directory = bool(mask & _INOTIFY_DIRECTORY)
+            observed.append((candidate, is_directory))
+            if is_directory and candidate.is_dir():
+                self._watch_tree(candidate)
+        return observed
+
+    def consume(self) -> list[tuple[Path, bool]]:
+        """Read pending notifications, arming a watch on any new directory.
+
+        Returns the names the read carried, so the caller can attribute a
+        burst to the paths that moved rather than dropping a whole tree's index
+        for it.
+        """
+
+        return self._parse(os.read(self.fd, 64 * 1024))
 
     def wait(self, connection: socket.socket) -> bool:
         """Return false when the browser disconnects, true on a tree change."""
@@ -103,8 +132,7 @@ class _ProjectChangeWatch:
         woke = self._wake_fd is not None and self._wake_fd in readable
         if not local and not woke:
             return False
-        if local:
-            self.consume()
+        self._carried = self.consume() if local else []
         if woke:
             self._drain_wake()
         return True
@@ -117,20 +145,74 @@ class _ProjectChangeWatch:
         except OSError:
             return
 
-    def drain(self, settle_s: float) -> None:
-        """Consume further events until none arrive for ``settle_s`` seconds."""
+    def drain(self, settle_s: float) -> list[tuple[Path, bool]]:
+        """Consume further events until none arrive for ``settle_s`` seconds.
 
+        Returns the whole burst: the names ``wait`` already read plus those of
+        the settle window, so the caller attributes one change rather than the
+        events it happened to see first.
+        """
+
+        observed = self._carried
+        self._carried = []
         while True:
             readable, _, _ = select.select([self.fd], [], [], settle_s)
             if not readable:
-                return
+                return observed
             try:
-                os.read(self.fd, 64 * 1024)
+                observed.extend(self._parse(os.read(self.fd, 64 * 1024)))
             except OSError:
-                return
+                return observed
 
     def close(self) -> None:
         os.close(self.fd)
+
+
+def observed_change(
+    root: Path, events: list[tuple[Path, bool]]
+) -> metadata_index.TreeChange:
+    """Return what a kernel burst lets the index absorb, by the naming rule.
+
+    A covered file's own name marks that file; a directory created or removed
+    marks its parent, because the parent's entry set is what moved and the
+    read's re-scan of it decides whether a covered entry appeared or vanished.
+    Any other name marks nothing: a JSON record, a log or a state file is not
+    something the index builds a row for.
+    """
+
+    files: set[str] = set()
+    dirs: set[str] = set()
+    for path, is_directory in events:
+        try:
+            relative = Path(path).relative_to(root).as_posix()
+        except ValueError:
+            continue
+        if is_directory:
+            dirs.add(PurePosixPath(relative).parent.as_posix())
+        elif metadata_index.covered_name(relative):
+            files.add(relative)
+    return metadata_index.TreeChange(files=frozenset(files), dirs=frozenset(dirs))
+
+
+def note_watch_burst(watch: _ProjectChangeWatch) -> None:
+    """Read one settled kernel burst and record what the index can absorb.
+
+    The stamp is taken as the change is observed, before the settle wait, so a
+    discovery another watcher recomputed for the same event is reused rather
+    than recomputed again. A burst the kernel reported as incomplete is passed
+    on as no attribution at all, which drops the build.
+    """
+
+    from reckon.serve import _invalidate_tree_views
+
+    changed_at = time.monotonic()
+    events = watch.consume()
+    # A save or a merge is a burst of events; let it settle so the burst costs
+    # one invalidation rather than one per event.
+    events += watch.drain(_CHANGE_SETTLE_S)
+    change = None if watch._overflowed else observed_change(watch.root, events)
+    watch._overflowed = False
+    _invalidate_tree_views(watch.root, changed_at=changed_at, index_change=change)
 
 
 class _TreeWake:
@@ -173,6 +255,7 @@ class _TreeSignal:
         self.dir_stamps: dict[str, list[int]] = {}
         self.index_identity: tuple[int, int, int] | None = None
         self.git_identity: tuple | None = None
+        self.head_commit: str | None = None
         self.slow_signature: tuple[int, int] | None = None
 
 
@@ -214,6 +297,79 @@ def _persisted_index_identity(root: Path, project: str) -> tuple[int, int, int] 
         return _file_identity(metadata_index._index_path(root, project))
     except OSError:
         return None
+
+
+def _resolve_head(repo_dir: Path) -> str | None:
+    """The commit HEAD resolves to, or None when git cannot say.
+
+    Only a movement of the ref's own identity calls this: the fast pass proves
+    HEAD unmoved by reading files, and this resolves the commit only when it
+    moved, which is the one moment the paths between two commits are needed.
+    """
+
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo_dir), "rev-parse", "HEAD"],
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    try:
+        resolved = result.stdout.decode("utf-8").strip()
+    except UnicodeDecodeError:
+        return None
+    return resolved or None
+
+
+def _committed_paths(
+    repo_dir: Path, base: str, head: str, docs_dir: Path
+) -> frozenset[str] | None:
+    """The covered paths the commits between ``base`` and ``head`` touch.
+
+    Returns their docs-relative names, or None when git cannot answer — an old
+    commit the repository no longer has, a rewritten history — which the caller
+    treats as unattributable and answers by dropping the build.
+    """
+
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo_dir),
+                "diff",
+                "--name-only",
+                "--no-renames",
+                "-z",
+                base,
+                head,
+                "--",
+            ],
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    try:
+        touched = result.stdout.decode("utf-8").split("\0")
+    except UnicodeDecodeError:
+        return None
+    files: set[str] = set()
+    for name in touched:
+        if not name:
+            continue
+        try:
+            relative = (repo_dir / name).relative_to(docs_dir).as_posix()
+        except ValueError:
+            continue
+        if metadata_index.covered_name(relative):
+            files.add(relative)
+    return frozenset(files)
 
 
 def _git_signal_identity(tree: Path) -> tuple | None:
@@ -431,6 +587,7 @@ class _FleetChangeWatch:
                 metadata_index._load_dir_stamps(tree, signal.project)
             )
             signal.git_identity = _git_signal_identity(tree)
+            signal.head_commit = _resolve_head(tree.parent)
             return
         if index_identity != signal.index_identity:
             signal.index_identity = index_identity
@@ -438,19 +595,50 @@ class _FleetChangeWatch:
             if fresh:
                 signal.dir_stamps = dict(fresh)
         fired = False
+        moved: set[str] = set()
         for relative, cached in list(signal.dir_stamps.items()):
             current = metadata_index._dir_identity(tree / relative)
             if current != cached:
                 signal.dir_stamps[relative] = current
                 fired = True
+                moved.add(relative)
+        touched: set[str] = set()
+        unattributable = False
         git_identity = _git_signal_identity(tree)
         if git_identity != signal.git_identity:
             first = signal.git_identity is None
             signal.git_identity = git_identity
             if not first:
                 fired = True
+                # Staging moves the git index file without moving HEAD, and a
+                # staged file has no new commit date to give a row, so this
+                # marks nothing. A moved HEAD marks the covered paths the
+                # commits between the two touch.
+                head = _resolve_head(tree.parent)
+                if head is None:
+                    unattributable = True
+                elif head != signal.head_commit:
+                    commits = (
+                        _committed_paths(tree.parent, signal.head_commit, head, tree)
+                        if signal.head_commit is not None
+                        else None
+                    )
+                    if commits is None:
+                        unattributable = True
+                    else:
+                        touched.update(commits)
+                    signal.head_commit = head
         if fired:
-            _invalidate_tree_views(tree, changed_at=time.monotonic())
+            change = (
+                None
+                if unattributable
+                else metadata_index.TreeChange(
+                    files=frozenset(touched), dirs=frozenset(moved)
+                )
+            )
+            _invalidate_tree_views(
+                tree, changed_at=time.monotonic(), index_change=change
+            )
             self._spawn_changes(tree)
             self.notify(tree)
 
@@ -483,7 +671,13 @@ class _FleetChangeWatch:
             return
         if signature != signal.slow_signature:
             signal.slow_signature = signature
-            _invalidate_tree_views(tree, changed_at=time.monotonic())
+            # The sweep has already stat-ed every covered file; comparing those
+            # identities against the index's entries is what lets a document
+            # edited in place reach its row without a directory moving.
+            change = metadata_index.marked_covered_changes(tree, signal.project)
+            _invalidate_tree_views(
+                tree, changed_at=time.monotonic(), index_change=change
+            )
             self._spawn_changes(tree)
             self.notify(tree)
 
@@ -515,8 +709,6 @@ class _FleetChangeWatch:
                 self._watches[watch.fd] = watch
 
     def _run(self) -> None:
-        from reckon.serve import _invalidate_tree_views
-
         self._arm_every_tree()
         while self._watches:
             readable, _, _ = select.select([*self._watches, self._stop_reader], [], [])
@@ -526,15 +718,7 @@ class _FleetChangeWatch:
                 watch = self._watches.get(descriptor)
                 if watch is None:
                     continue
-                watch.consume()
-                # The stamp is taken as the change is observed, before the
-                # settle wait, so a discovery another watcher recomputed for
-                # the same event is reused rather than recomputed again.
-                changed_at = time.monotonic()
-                # A save or a merge is a burst of events; let it settle so the
-                # burst costs one invalidation rather than one per event.
-                watch.drain(_CHANGE_SETTLE_S)
-                _invalidate_tree_views(watch.root, changed_at=changed_at)
+                note_watch_burst(watch)
                 self._spawn_changes(watch.root)
                 self.notify(watch.root)
 
