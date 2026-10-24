@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-queue-holds-the-whole-plan-landed">
+  <meta name="plan-title" content="A Queue Holds the Whole Plan — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Queue Holds the Whole Plan: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-queue-holds-the-whole-plan">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Queue Holds the Whole Plan — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Queue Holds the Whole Plan — landed record</h1>
+  <p>Closure synthesis for A Queue Holds the Whole Plan: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — A dispatched node waits on its dependencies</h2>
+    <p>Run <code>r-20261023T112727139233-a-queued-request-waits-on-its-dependencies</code> landed at merge <code>7b20186d6</code> (head <code>d14a8111f</code>, base <code>43677d0d2</code>) after seven review rounds. A dispatched node whose section waits on unlanded sections is stored as an <code>awaiting-upstream</code> request. The admission pass re-reads its readiness through <code>resolve_waits</code> in <code>reckon/crew/queue_admission.py</code> and releases it to <code>queued</code> once every wait has landed, or moves it to <code>blocked-upstream</code> when a wait is abandoned. The two phase names are declared beside <code>QUEUED_PHASE</code>. <code>classify_pointer</code> returns them with their own remedies, and the pane table in <code>reckon/crew/ticker.py</code> gives each a column.</p><p>The coordinator measured the change from <code>git archive</code> extractions: zero added failures over the 110-file population against a red base, and, after §54 of a-read-answers-inside-its-deadline and §10 of a-live-worker-is-never-drawn-halted landed in the same files, the merge and main alone failing the same 17 ids over 117 files. The declared negative control, <code>resolve_waits</code> releasing a request without its readiness, fails the chain and abandoned-upstream cases. The final review scored 101 with four non-blocking findings. Two are folded into §8 (the <code>RUN_DELIVERED_STATUSES</code> tuple, and <code>_readiness_rows</code> duplicating <code>plan_review._readiness_by_slug</code>). Two are exempted: the pane-table path is accepted, and the negative control is now shown red.</p>
+  </section>
+
+</main>
+</body>
+</html>
