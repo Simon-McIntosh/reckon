@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:904 classify_pointer calls _queued_failure_remedy",
+    "reckon/crew/obligations.py:547 _classified_rows calls recovery.classify_pointer",
+    "reckon/crew/obligations.py:1545 lists queued-awaiting-session only when row['session_refusal'] is set",
+    "reckon/crew/query.py:422 classifies live pointers for the crew view",
+    "reckon/serve.py:884 classifies a pointer for the served plan's crew phase"
+  ],
+  "completed_at": "2026-10-24T01:11:27.190Z",
+  "dispatched_at": "2026-10-24T01:01:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "130",
+      "severity": "non-blocking",
+      "text": "non-blocking: _WAIT_REFUSALS names only the exact QueueFull and ScopeConflict stamps, so DirectoryClaimConflict -- a ScopeConflict subclass raised at reckon/crew/dispatch_claims.py:75 for another run's live claim -- still returns the D12 remedy 'reckon crew dispatch' at head (verified in memory against the head tree), and the source manifest's outside_scope entry says it 'quotes no command, so it already reads run-queued', which is false; the record misinforms the coordinator about the one sibling refusal the change was positioned to cover, so fold a node to decide its reading or correct the entry."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal/manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the source done_when requires that 'both pointers give queued-awaiting-session at the base revision as recorded in the gate log', but baseline_suite records base f56407c1 where only the ScopeConflict half fails (base-arm.log: 2 failed, 4 passed) because the stamped-class reader landed earlier at f1181e0e5; the node substituted the declared mutation arm (negative-control.log: 4 failed, 2 passed, both pointers queued-awaiting-session), which does falsify both guards, so the clause is unmet as written and should read as a stated deviation rather than as satisfied."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal/logs/gate-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal/logs/gate-base.log",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal/logs/negative-control.log"
+  },
+  "item_verdicts": {
+    "diff": "Read commit by commit from f56407c1a9c109aff3567f64d8230c038ffb0961 to 7999dc3bb6a4da13dbb59172cefe78e50620b3c4: 0a976babc adds _WAIT_REFUSALS and the early return, 22a087377 and 7999dc3bb write the landing fragment and its corrected figure; 252 insertions across three files.",
+    "done_when": "The done_when names both pointers reading queued with no session_refusal, the follower condition still queued-awaiting-session, and _is_lane_hold unchanged; tests/test_a_full_queue_is_a_wait_not_a_refusal.py covers all four, head-arm.log ends 6 passed EXIT=0, but the base-arm clause is satisfied for only the ScopeConflict pointer (base-arm.log 2 failed, 4 passed).",
+    "goal": "The node's goal is that a queued pointer refused by QueueFull or by a ScopeConflict naming another run's live claim reads as a wait; reckon/crew/recovery_classification.py:130,235 returns no remedy for both stamps, verified in memory against the head tree (remedy None for each), though DirectoryClaimConflict at dispatch_claims.py:75 still returns one.",
+    "manifest": "Read; it names commits 0a976babc, 22a087377 and 7999dc3bb, the six-check gate, the head/base/negative-control arms with figures that match the logs, and an outside_scope entry about DirectoryClaimConflict whose stated reason is factually wrong.",
+    "write_paths": "The source brief grants four paths; git diff f56407c1..7999dc3b changes exactly three of them -- recovery_classification.py, the new test, and the landing fragment -- and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_full_queue_is_a_wait_not_a_refusal.py:162 reddens at base for the ScopeConflict pointer and logs/negative-control.log reddens both pointers under the declared mutation, but the test re-spells the producer's stamp format ('{ClassName}: {text}', queue_admission.py:1963) instead of driving _record_queued_failure, so a change to that format would not redden it.",
+    "evidence": "logs/gate-head.log ends '2 failed, 87 passed' with EXIT=1 and logs/gate-base.log ends '4 failed, 85 passed' with EXIT=1, so the change adds no failure, but logs/base-arm.log records only the ScopeConflict half red where the done_when requires both.",
+    "fit": "reckon/crew/recovery_classification.py:130 sits beside _SESSION_SUBJECT_REFUSALS and _UNRECONCILED_RUNS_REFUSAL and follows the same stamped-class reader, with a mechanism comment and no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:235 returns no remedy for the QueueFull and ScopeConflict stamps the goal names, but DirectoryClaimConflict raised at dispatch_claims.py:75 carries the same defect and still returns 'reckon crew dispatch'.",
+    "reuse": "the capability search over reckon/crew found _stamped_refusal_class and _is_lane_hold; the change extends the former rather than adding a second reader and deliberately does not widen the latter, with the back-off reason stated at recovery_classification.py:126-129.",
+    "scope_discipline": "git diff f56407c1..7999dc3b touches only reckon/crew/recovery_classification.py, tests/test_a_full_queue_is_a_wait_not_a_refusal.py and the landing fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a queued pointer refused by QueueFull or by a ScopeConflict naming another run's live claim reads as a wait; reckon/crew/recovery_classification.py:130,235 returns no remedy for both stamps (verified in memory against the head tree), though DirectoryClaimConflict at dispatch_claims.py:75 still returns one.\nVERDICT done_when: the done_when names both pointers reading queued with no session_refusal, the follower condition still queued-awaiting-session, and _is_lane_hold unchanged; tests/test_a_full_queue_is_a_wait_not_a_refusal.py covers all four and head-arm.log ends 6 passed EXIT=0, but the base-arm clause holds for only the ScopeConflict pointer (base-arm.log 2 failed, 4 passed).\nVERDICT write_paths: the source brief grants four paths; git diff f56407c1..7999dc3b changes exactly three of them -- recovery_classification.py, the new test and the landing fragment -- and nothing outside them.\nVERDICT manifest: read; it names commits 0a976babc, 22a087377 and 7999dc3bb, the six-check gate, and the head/base/negative-control arms whose figures match the logs, with one false outside_scope claim about DirectoryClaimConflict.\nVERDICT diff: read commit by commit from f56407c1a9c109aff3567f64d8230c038ffb0961 to 7999dc3bb6a4da13dbb59172cefe78e50620b3c4; 0a976babc adds _WAIT_REFUSALS and the early return, 22a087377 and 7999dc3bb write the landing fragment, 252 insertions across three files.\nCALL_SITES: reckon/crew/recovery_classification.py:904 classify_pointer calls _queued_failure_remedy, reckon/crew/obligations.py:547 _classified_rows calls recovery.classify_pointer, reckon/crew/obligations.py:1545 lists queued-awaiting-session only when row['session_refusal'] is set, reckon/crew/query.py:422 classifies live pointers for the crew view, reckon/serve.py:884 classifies a pointer for the served plan's crew phase\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:235 returns no remedy for the QueueFull and ScopeConflict stamps the goal names, but DirectoryClaimConflict raised at dispatch_claims.py:75 carries the same defect and still returns 'reckon crew dispatch'.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head.log ends '2 failed, 87 passed' with EXIT=1 and logs/gate-base.log ends '4 failed, 85 passed' with EXIT=1, so the change adds no failure, but logs/base-arm.log records only the ScopeConflict half red where the done_when requires both.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f56407c1..7999dc3b touches only reckon/crew/recovery_classification.py, tests/test_a_full_queue_is_a_wait_not_a_refusal.py and the landing fragment, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_full_queue_is_a_wait_not_a_refusal.py:162 reddens at base for the ScopeConflict pointer and logs/negative-control.log reddens both under the declared mutation, but the test re-spells the producer's stamp format from queue_admission.py:1963 rather than driving _record_queued_failure.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:130 sits beside _SESSION_SUBJECT_REFUSALS and _UNRECONCILED_RUNS_REFUSAL and follows the same stamped-class reader, with a mechanism comment and no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the capability search over reckon/crew found _stamped_refusal_class and _is_lane_hold; the change extends the former rather than adding a second reader and deliberately does not widen the latter, with the back-off reason stated at recovery_classification.py:126-129.\nFINDING reckon/crew/recovery_classification.py:130 non-blocking: _WAIT_REFUSALS names only the exact QueueFull and ScopeConflict stamps, so DirectoryClaimConflict -- a ScopeConflict subclass raised at dispatch_claims.py:75 for another run's live claim -- still returns the D12 remedy at head, and the source manifest's outside_scope entry claiming it already reads run-queued is false; fold a node to decide its reading or correct the entry.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal/manifest.md:22 non-blocking: the done_when requires both pointers to give queued-awaiting-session at the base revision as recorded in the gate log, but base f56407c1 fails only the ScopeConflict half; the node's declared mutation arm falsifies both, so the clause is unmet as written and should be recorded as a stated deviation rather than as satisfied.\n",
+  "review_run_id": "r-20261024T010015758684-review-of-a-full-queue-is-a-wait-not-a-refusal-7999dc3bb6a4",
+  "reviewed_base_sha": "f56407c1a9c109aff3567f64d8230c038ffb0961",
+  "reviewed_head_sha": "7999dc3bb6a4da13dbb59172cefe78e50620b3c4",
+  "reviewed_run_id": "r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T01:06:32+00:00",
+  "total": 104
+}
