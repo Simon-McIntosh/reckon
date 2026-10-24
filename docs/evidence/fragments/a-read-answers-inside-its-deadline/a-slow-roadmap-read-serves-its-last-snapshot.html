@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s56">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <title>A slow roadmap read serves its last snapshot | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-slow-roadmap-read-serves-its-last-snapshot" data-node="a-slow-roadmap-read-serves-its-last-snapshot" data-reckon="landing" data-when="2026-10-24">
+  <h2>A slow roadmap read serves its last snapshot</h2>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-defect">
+    <strong>The defect.</strong> <code>_roadmap</code> stored a composition only
+    when the key was unchanged after the read —
+    <code>if settled is not None and settled[0] == scoped[0]</code>, before this
+    change — so on a busy fleet, where the key moves during most compositions,
+    the node-local cache directory held no snapshot at all and a fallback would
+    have had nothing to serve. The second half of the defect is the read itself:
+    a key miss recomposed for the whole 30 s deadline and then reported
+    <code>storage-slow</code>, discarding a composition that was still running.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-store">
+    <strong>Every composition is kept, per tree and per shape.</strong> The
+    record is filed under the project's resolved docs root and a digest of the
+    request shape — <code>sprint</code>, <code>max_paths</code>, <code>view</code>,
+    <code>cursor</code>, <code>limit</code> — under the key it was composed
+    from, and carries <code>held</code>: whether that key was still the tree's
+    when the record was composed. A record whose key held answers an exact-key
+    read; one whose key moved does not, because the tree has since changed past
+    it, but it is still the freshest answer the tree has for that shape.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-fallback">
+    <strong>The reserve.</strong> A read whose request shape has a stored record
+    awaits its recompute only to the deadline less
+    <code>STALE_SNAPSHOT_RESERVE_SECONDS</code> (1.0 s, overridable through
+    <code>RECKON_ROADMAP_STALE_RESERVE_SECONDS</code>), then answers from the
+    last record for that shape, marked
+    <code>stale: {age_seconds, key, shape, stored_at, reason}</code> with the
+    reason <em>the key moved and a recompute is in flight</em>.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-continues">
+    The wait is the existing shielded one in <code>_await_body</code>, so the
+    recompute is abandoned rather than cancelled: it runs on, stores its
+    composition, and the next call serves it fresh. A request shape with no
+    stored record keeps the whole deadline and reports
+    <code>storage-slow</code> exactly as before, and one recompute per key stays
+    the job of <code>_read_joining_running</code> over <code>_INFLIGHT_READS</code>.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-measure">
+    <strong>Measure.</strong>
+    <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -n 8 -rf</code>
+    over <code>test_a_slow_roadmap_read_serves_its_last_snapshot.py</code>,
+    <code>test_a_roadmap_read_answers_from_its_snapshot.py</code>,
+    <code>test_mcp_reads_have_deadlines.py</code> and
+    <code>test_every_module_fits_a_worker_window.py</code>. Head arm, this
+    change committed on a clean worktree — the log's revision line names the
+    commit: <strong>41 passed</strong>,
+    EXIT=0. Base arm, the base commit extracted into a scratch tree with the new
+    test file copied in beside the three existing ones:
+    <strong>11 failed / 30 passed</strong>, EXIT=1 — the three existing files
+    pass unchanged at base, and every new case fails there because the store and
+    the fallback do not exist. Nine fail inside <code>_tool()</code> on the
+    missing deadline wrapper, one on the missing stale-answer builder, and the
+    pruning case on the store's <code>shape</code> keyword.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-cases">
+    <strong>Cases held.</strong> With a stored record and a recompute held past
+    a shortened 1.0 s deadline, a 0.4 s reserve, the read answers from the stored
+    composition, marked stale with its age, key and reason, in a measured wall
+    time <strong>at or above 0.6 s</strong> and <strong>below 1.0 s</strong>. The
+    held recompute then completes and stores, and the next call answers fresh
+    with no further recomposition. A key miss whose recompute lands inside the
+    deadline is answered fresh. A composition during which the key moves is
+    stored with <code>held: false</code>, does not answer an exact-key read under
+    its own key, and answers a later held read as stale. A record stored for
+    <code>view="detail"</code> is not served to a <code>summary</code> read,
+    which reports its deadline. With no stored record, a held recompute reports
+    its deadline. Two reads arriving during one held recompute start
+    <strong>1</strong> recomposition.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-control">
+    <strong>Negative control.</strong> Removing the fallback — the registered
+    roadmap read passing no stale answer into <code>_deadline_tool</code> —
+    turns three cases red: the first answers
+    <code>{'error': 'storage-slow'}</code> instead of the stored composition, so
+    it misses the deadline. <strong>3 failed / 4 passed</strong>, EXIT=1,
+    over a scratch copy of this head; the head arm passes all 7. Log:
+    <code>negative-control.log</code>.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-scope">
+    <strong>The fallback resolves its tree as the read does.</strong> Review
+    found the fallback filing against the mounted tree while the read itself
+    resolved <code>_run_scoped_read_root(project)</code> inside the tool body: a
+    process carrying a run — as every crew worker's MCP server does — composes
+    its own project from the run's worktree, which keeps no snapshot, and its
+    held read was answered from the mounted checkout's record and marked stale.
+    One tree's plan state served as another's answer. The fallback now resolves
+    the checkout the same way, so an explicit or run-scoped read has no stored
+    answer and reports its deadline. The case
+    <code>test_a_run_scoped_read_is_not_answered_from_the_mounted_tree</code> holds
+    it: a composition stored from the mounted tree, then a pointer naming a run
+    whose own project is that project, then a held read — which reports
+    <code>storage-slow</code>. Reverting the repair turns it red — that case
+    alone fails, 1 failed and 7 passed, against 8 passed in the file with the
+    repair in place. The gate over the four files is <strong>38 passed</strong>
+    at the repair head.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-bound">
+    <strong>Two follow-ups from the same review.</strong> The keep bound counted
+    files while records are one per docs root and per shape, so a tree answering
+    more shapes than the bound lost its oldest answers to age alone. It now
+    counts docs roots and keeps each kept tree whole, counting the file just
+    written, and the gone-tree rule is unchanged; the case
+    <code>test_one_tree_keeps_its_record_for_every_shape_it_holds</code> stores
+    ten shapes in one tree and requires all ten back. Separately, every read
+    asked the fallback for a full stale answer up front, building a whole
+    composition only to discard it on every read that did not time out. The
+    deadline wrapper now takes a presence check, which the roadmap read answers
+    from the record lookup alone, and builds the marked answer only at the
+    timeout. With both in place the gate over the four files is
+    <strong>39 passed</strong>, and the base arm run against the same test file
+    is <strong>9 failed / 30 passed</strong>.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-guard">
+    <strong>Three more from the review of that head.</strong> The fallback was
+    handed to the waiter raw at the timeout, while the presence check earning
+    the reserve went through the guard that treats a failing look-up as no
+    answer; a stored record that could not be rebuilt therefore escaped as the
+    read's own failure. Both call sites now go through that guard, so a build
+    that raises or returns nothing degrades to <code>storage-slow</code>:
+    <code>test_a_stale_answer_that_cannot_be_built_reports_the_deadline</code>
+    stores a composition, makes the builder raise, and requires the deadline
+    report — reverting the guard makes it raise
+    <code>RuntimeError</code>, 1 failed and 8 passed. The presence check had no
+    failing condition of its own, so
+    <code>test_the_stale_answer_is_built_only_when_the_wait_expires</code>
+    counts builds: a read answered inside its deadline builds none and one
+    whose shortened wait expires builds exactly one — building up front again
+    fails its first assertion after one build, 1 failed and 8 passed. The stale
+    answer's shape is now asserted against a literal written for the request
+    the case makes, rather than against the module's own scope, so a shape
+    defect can no longer move both sides of that comparison together. The gate
+    over the four files is <strong>41 passed</strong>; the base arm against the
+    same test file is <strong>11 failed / 30 passed</strong>, every new case
+    failing on the API it calls rather than on a behavioural assertion.
+  </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-lint">
+    <strong>Lint delta.</strong> <code>ruff check</code> on the staged paths
+    reports <strong>10</strong> findings at the base commit and
+    <strong>10</strong> at head — none added, all of them pre-existing in
+    <code>reckon/mcp.py</code>; the deadline wrapper and the case file are clean
+    at both, and <code>ruff format --check</code> is clean on all four.
+  </p>
+</article>
+</body>
+</html>
