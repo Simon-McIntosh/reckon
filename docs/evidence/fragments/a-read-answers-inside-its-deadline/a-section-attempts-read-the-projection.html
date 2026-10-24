@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="A read answers inside its deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s45">
+  <meta name="evidence-verdict" content="partial">
+  <meta name="evidence-date" content="2026-10-24">
+  <title>A section-attempts read decodes only its projection | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-section-attempts-read-the-projection-landing">
+  <h2>A section-attempts read decodes only its projection</h2>
+
+  <p><strong>Change.</strong> <code>mcp_views.section_attempts_by_plan</code>
+  takes its history rows from <code>ledger.picker_runs</code> instead of
+  <code>ledger.load</code>, so a warm read decodes the projection the index
+  keeps beside each payload rather than every full record.
+  <code>section</code> and <code>failure_classification</code> joined
+  <code>ledger._PICKER_FIELDS</code>, and <code>ledger._RUN_INDEX_VERSION</code>
+  moved from 3 to 4 so each host rebuilds its index once with the wider
+  projection. <code>ledger.load</code> gained a <code>picker_only</code> mode
+  that reads the projection on the index path and projects what the aggregate
+  returns on the cold path, so <code>picker_runs</code> keeps the one read
+  entry point every existing attempts-read test substitutes.</p>
+
+  <p><strong>The three cases hold.</strong>
+  <code>tests/test_section_attempts_read_the_projection.py</code> checks that
+  the projection agrees with <code>_group_section_attempts</code> over full
+  rows (including a failed row carrying a classification, and a row from a
+  non-executable role), that a call never reaches <code>_index_payload</code>
+  with <code>picker_only=False</code>, and that an index recorded at the
+  previous version is rebuilt with <code>section</code> restored — the stored
+  projection is blanked as well as the version rolled back, so only a rebuild
+  can bring the field back.</p>
+
+  <p><strong>Gate.</strong> The thirteen files §45 names run at base and at
+  head with <code>-n 8</code>. Base: 1 failed, 171 passed —
+  <code>tests/test_ledger.py::test_an_unknown_crew_view_names_every_view_it_has</code>
+  (<code>KeyError: 'detail'</code>). Head: 175 passed, 1 failed, the same id.
+  Zero added failures. The new test file is absent from the base arm because
+  it does not exist at that revision; the head arm runs four of its cases
+  green.</p>
+
+  <p><strong>Measure, and why it is not yet a pass.</strong> On this fleet node
+  (98dci4-clu-2068, job 1291586), one fresh process per arm, entry point
+  <code>mcp_views.section_attempts_by_plan("reckon")</code>, aggregate timed
+  over an index the arm itself had just built. Base
+  <code>3df04d103</code>: 5.516 s, VmRSS 753,828 kB. Head
+  <code>60bbbb17e</code>: 1.945–2.850 s. That is 0.35–0.52 of the base, short
+  of the one-fifth §45 asks for. Two instrument problems stop a fair reading
+  of the rest. First, the run index is shared by every reader on the host and
+  its version flips between arms, so each arm's first process rebuilds it
+  (48–64 s) and that rebuild peak — not the read — dominates the resident
+  figure: 1.20–1.55 GB at head against 754 MB at base. Second, the ledger
+  underneath is live: one head run returned 6 plans and 10 sections where every
+  other run returned 185 and 1302, which is the empty view a promotion's own
+  read publishes while it writes. Neither arm could be held quiet long enough
+  to answer the memory bound.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation — pointing the
+  aggregate back at <code>ledger.load</code> — runs and reds the second case;
+  the log is named in the manifest.</p>
+
+  <p><strong>Scope retained.</strong> The driving followup stays open, no
+  terminal status is set, and no plan-version meta line was touched.</p>
+</section>
+</main>
+</body>
+</html>
