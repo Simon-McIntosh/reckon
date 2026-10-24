@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/crew/merge.py:651",
+    "reckon/crew/merge.py:658",
+    "reckon/crew/merge.py:668",
+    "reckon/crew/merge.py:670",
+    "reckon/crew/merge.py:706",
+    "reckon/crew/merge.py:717",
+    "reckon/crew/merge.py:768",
+    "reckon/crew_run_commands.py:2710",
+    "reckon/crew_run_commands.py:2780",
+    "reckon/crew/recovery_review_subject.py:489",
+    "reckon/crew/recovery_review_subject.py:885"
+  ],
+  "call_sites_emission": "sites",
+  "completed_at": "2026-10-24T18:34:56.459Z",
+  "dispatched_at": "2026-10-24T18:26:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": 132,
+      "severity": "non-blocking",
+      "text": "_rev_parse now calls _resolve_commit in its non-strict mode, which returns the empty string for a TimeoutExpired or an OSError as well as for a revision that names no commit, so a landing that fails because git could not start or did not answer reports 'cannot resolve <rev> to a commit in <repo>' instead of the instrument fault the previous direct subprocess.run would have raised."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified the changed production code against reckon/crew/merge.py's own landing callers and reckon/crew_run_commands.py:2710,2780 for _rev_parse, and reckon/crew/recovery_review_subject.py:489,885 for the check-line renderer; plan_coordinator.py is a docstring change in a module the ratchet records as unreached.",
+    "diff": "Read commit by commit: 334bdaeec makes the three production repairs (merge.py delegation, render_review_check in recovery_review_subject.py, docstring literal removal in plan_coordinator.py) and re-freezes three test files; 4436b98db adds only the landing fragment.",
+    "done_when": "The done_when names the six ids, a base arm and head arm from git archive extractions, per-id intent in the manifest, and ruff on the staged paths; logs/arm-base.log shows exactly those six FAILED and 161 passed, logs/arm-head.log shows 167 passed, and logs/head-gate.log shows 36 passed at 4436b98db.",
+    "goal": "The goal is to make the six census ids of \u00a751 pass by asserting each intended contract or reporting the unintended change; docs/plans/the-suite-is-green-at-head.html#s51 names those six ids and the landed tests/test_one_function_resolves_a_citation.py::test_only_the_shared_resolver_peels_a_revision_to_a_commit is one of them, now green at head.",
+    "manifest": "The manifest records all six ids with the commit each reads and states each change was intended, cites logs under the run directory, and its baseline_suite/after_suite carry revision, literal command, completed:true and failure ids.",
+    "write_paths": "The declaration lists the six test files, reckon/crew/plan_coordinator.py, reckon/crew/recovery_review_subject.py and reckon/crew/merge.py; the diff touches exactly those plus the always-permitted docs/evidence/fragments/the-suite-is-green-at-head/each-one-owner-invariant-names-one-owner.html, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "Each of the six repairs has a negative control that reddens its own id \u2014 logs/neg-resolver.log fails test_only_the_shared_resolver_peels_a_revision_to_a_commit when merge._rev_parse restores its own ^{commit} call \u2014 and the added record-contract assertion at tests/test_a_shadow_is_reviewed_on_its_patch.py:40 is a frozen literal independent of the composer.",
+    "evidence": "logs/arm-base.log fails exactly the six ids and logs/arm-head.log passes 167, both from git archive extractions with revision/tree/command headers and a bare EXIT line; the ruff claim is manifest-recorded rather than logged, and was verified independently.",
+    "fit": "The production edits delegate to existing owners in the surrounding idiom (reckon/crew/merge.py:132 imports the resolver lazily) and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "Every one of the six ids listed at docs/plans/the-suite-is-green-at-head.html#s51 passes at 4436b98db in logs/head-gate.log, and the manifest's per-id table cites the intended commit for each.",
+    "reuse": "No new capability is defined: reckon/crew/merge.py:132 extends the shared resolver at reckon/crew/recovery_review_subject.py:_resolve_commit, and reckon/crew/recovery_review_subject.py:575 calls the existing render_review_check owner at reckon/crew/prompts.py:418.",
+    "scope_discipline": "git diff 357349e44 4436b98db lists only the nine declared paths plus the always-permitted landing fragment, with no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make the six \u00a751 census ids pass by asserting each intended contract or reporting the unintended change; docs/plans/the-suite-is-green-at-head.html#s51 lists those six ids and all pass at head.\nVERDICT done_when: logs/arm-base.log fails exactly the six ids (161 passed), logs/arm-head.log passes 167, and logs/head-gate.log shows 36 passed in 27.79s EXIT=0 at 4436b98db, so the gate measures the done_when.\nVERDICT write_paths: every path in the diff is inside the manifest's declared list plus the always-permitted landing fragment under docs/evidence/fragments/the-suite-is-green-at-head/.\nVERDICT manifest: read; it names each id's commit and intent, cites six negative-control logs, and carries baseline_suite and after_suite with completed:true.\nVERDICT diff: read commit by commit from 357349e44 to 4436b98db; 334bdaeec carries the three production repairs and three test re-freezings, 4436b98db the fragment alone.\nCALL_SITES: reckon/crew/merge.py:651, reckon/crew/merge.py:658, reckon/crew/merge.py:668, reckon/crew/merge.py:670, reckon/crew/merge.py:706, reckon/crew/merge.py:717, reckon/crew/merge.py:768, reckon/crew_run_commands.py:2710, reckon/crew_run_commands.py:2780, reckon/crew/recovery_review_subject.py:489, reckon/crew/recovery_review_subject.py:885\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/plans/the-suite-is-green-at-head.html#s51's six ids all pass in logs/head-gate.log at 4436b98db.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/arm-base.log and logs/arm-head.log each carry revision, tree, literal command and a bare EXIT line, and the base arm fails exactly the six ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 357349e44 4436b98db touches only the declared paths and the always-permitted landing fragment.\nSCORE durability: 19\nJUSTIFICATION durability: logs/neg-resolver.log fails tests/test_one_function_resolves_a_citation.py::test_only_the_shared_resolver_peels_a_revision_to_a_commit when merge._rev_parse's own ^{commit} call is restored.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/merge.py:124 follows the module's existing helper idiom and the docstring names the mechanism rather than a plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the production edits extend reckon/crew/prompts.py:418 and reckon/crew/recovery_review_subject.py:202 rather than defining a second resolver or check renderer.\nFINDING reckon/crew/merge.py:132 non-blocking: _resolve_commit in non-strict mode swallows a TimeoutExpired or OSError into the same empty answer as a revision that names no commit, so a landing whose git instrument failed reports a citation refusal instead.",
+  "review_run_id": "r-20261024T182246627775-review-of-each-one-owner-invariant-names-one-owner-4436b98db50c",
+  "reviewed_base_sha": "357349e44d8781be5ece5677a3899c42785cfbbb",
+  "reviewed_head_sha": "4436b98db50ce801faa482926abd82c8053e4807",
+  "reviewed_run_id": "r-20261024T175253043079-each-one-owner-invariant-names-one-owner",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T18:49:04.507554+00:00",
+  "total": 116
+}
