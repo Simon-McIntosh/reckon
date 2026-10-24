@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s59">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-tags" content="crew,promotion,flight-config,review-tier">
+  <title>An unresolvable flight config refuses promotion by name | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="an-unresolvable-config-refuses-promotion-by-name" data-reckon="landed" data-when="2026-10-24">
+  <h2>An unresolvable flight config refuses promotion by name</h2>
+  <p><strong>Cause, reproduced at the base.</strong> The case
+  <code>test_an_unreadable_light_ceiling_falls_back_to_the_shipped_one</code> wrote
+  <code>review.tiers.light_changed_lines: many</code>, stored a review, and expected the
+  promotion to land light on the shipped ceiling. At base
+  (<code>18d24c35f</code>) the promotion refuses instead:
+  <code>FlightConfigError: .../flight.yaml: review.tiers.light_changed_lines: Input should
+  be a valid integer, unable to parse string as an integer</code>. Since <code>a5cedef37</code>
+  promotion replays the project's declared invariant checks, and that read reaches
+  <code>_domain_config</code> before the ceiling is read; the block is unresolvable, so a
+  promotion that sizes its review from it must refuse rather than substitute a per-key
+  default. No configuration leaves the ceiling alone unreadable while the rest of the
+  configuration resolves, so the old case asserted an outcome no commit intends.</p>
+  <p><strong>Repair, test only.</strong> Production code does not change. The case is
+  replaced by two that state what they assert:</p>
+  <ul>
+    <li><code>test_a_flight_config_that_will_not_resolve_refuses_promotion_by_name</code>
+    — promotion over the malformed light ceiling raises <code>FlightConfigError</code>,
+    and the refusal names <code>review.tiers.light_changed_lines</code>.</li>
+    <li><code>test_a_resolution_failure_leaves_the_shipped_light_ceiling_in_force</code>
+    — <code>_light_changed_line_ceiling</code> called with <code>flight.resolve</code>
+    raising <code>FlightConfigError</code> returns
+    <code>flight.DEFAULT_LIGHT_CHANGED_LINES</code> (fifty). No configuration reaches this
+    arm, so the case drives the resolver to raise directly.</li>
+  </ul>
+  <p><strong>Measure.</strong> Logs are under the run directory's <code>logs/</code>. Head
+  arm, the file at <code>18d24c35f</code> plus this change:
+  <code>11 passed</code>, <code>EXIT=0</code>. Base arm, a <code>git archive</code>
+  extraction of <code>18d24c35f</code> on node-local disk with only the new test file
+  applied: <code>11 passed</code>, <code>EXIT=0</code> — the file adds no failure. The
+  original case at base was red: <code>1 failed</code>, the reproduced
+  <code>FlightConfigError</code>.</p>
+  <p><strong>Negative controls, in scratch extractions never committed.</strong> Making
+  <code>_domain_config</code> swallow <code>FlightConfigError</code> and return no block
+  turns the promotion case red (<code>1 failed</code>, <code>EXIT=1</code>, a
+  <code>CrewError</code> from the downstream review gate). Making
+  <code>_light_changed_line_ceiling</code> re-raise <code>FlightConfigError</code> turns the
+  direct fallback case red (<code>1 failed</code>, <code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>

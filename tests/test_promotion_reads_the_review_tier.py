@@ -16,8 +16,9 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _plan_html, crew, ledger
+from reckon import _plan_html, crew, flight, ledger
 from reckon.crew import review as review_module
+from reckon.crew.promotion_checks import _light_changed_line_ceiling
 from reckon.crew.runs import _write_json, pointer_path
 from tests.conftest import EXECUTABLE_GATE_COMMAND
 from tests.helpers.git import git as _git
@@ -435,20 +436,23 @@ def test_the_light_ceiling_follows_the_project_flight_layer(
     assert _row(repository, full_run)["review_tier"] == "full"
 
 
-def test_an_unreadable_light_ceiling_falls_back_to_the_shipped_one(
+def test_a_flight_config_that_will_not_resolve_refuses_promotion_by_name(
     repository: Path, tmp_path: Path
 ) -> None:
-    """A flight layer that will not resolve leaves the shipped ceiling in force.
+    """An unresolvable flight configuration refuses promotion, naming the key.
 
     The key's declared shape is an integer; a string is refused by the schema, so
-    the ceiling read falls back to the shipped fifty and a two-line source run is
-    still light rather than failing the promotion over a lookup.
+    the whole configuration is unresolvable and the promotion refuses with the
+    configuration error naming ``review.tiers.light_changed_lines``. The refusal
+    is the loud failure the configuration reader exists to give, rather than a
+    fallback for the ceiling alone — the same block sizes this run's review, so
+    a promotion that could not read it must not land.
     """
     _write_flight(
         repository,
         "review:\n  tiers:\n    light_changed_lines: many\n    light_time_budget: 10m\n",
     )
-    run_id = "r-20260928T140900000000-unreadable-ceiling"
+    run_id = "r-20260928T140900000000-unresolvable-config"
     commit = _commit_change(repository, "reckon/thing.py", _SMALL_SOURCE)
     _write_pointer(
         repository,
@@ -459,12 +463,37 @@ def test_an_unreadable_light_ceiling_falls_back_to_the_shipped_one(
         spec_level="exact",
     )
 
-    with pytest.raises(crew.CrewError):
+    with pytest.raises(flight.FlightConfigError) as refusal:
         crew.complete(run_id, gate="passed", commits=[commit], root=repository)
 
-    _store_review(run_id, head=commit)
-    crew.complete(run_id, gate="passed", commits=[commit], root=repository)
-    assert _row(repository, run_id)["review_tier"] == "light"
+    assert refusal.value.key_path == "review.tiers.light_changed_lines"
+    assert "review.tiers.light_changed_lines" in str(refusal.value)
+    assert "integer" in str(refusal.value)
+
+
+def test_a_resolution_failure_leaves_the_shipped_light_ceiling_in_force(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The ceiling read falls back to the shipped value when resolution fails.
+
+    ``_light_changed_line_ceiling`` is reached for the tier alone, and a config
+    it cannot resolve leaves the shipped ceiling in force rather than failing the
+    promotion over a lookup. The case drives ``flight.resolve`` itself to raise,
+    which no configuration can do while still resolving for the rest of the
+    promotion, so the fallback arm is exercised directly.
+    """
+
+    def _refuse(*_args: object, **_kwargs: object) -> flight.ResolvedConfig:
+        raise flight.FlightConfigError(
+            "flight.yaml",
+            "review.tiers.light_changed_lines",
+            "Input should be a valid integer",
+        )
+
+    monkeypatch.setattr(flight, "resolve", _refuse)
+    assert (
+        _light_changed_line_ceiling(PROJECT, None) == flight.DEFAULT_LIGHT_CHANGED_LINES
+    )
 
 
 def test_a_silent_non_implement_run_changing_runtime_source_is_refused(
