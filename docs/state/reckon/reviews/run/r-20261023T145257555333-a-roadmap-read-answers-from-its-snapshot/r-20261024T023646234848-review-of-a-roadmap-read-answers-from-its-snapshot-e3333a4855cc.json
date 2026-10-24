@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T02:46:10.157Z",
+  "dispatched_at": "2026-10-24T02:38:33Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 46,
+      "severity": "non-blocking",
+      "text": "The after_suite arm is recorded at a41ebcda01b0, one commit before the reviewed head e3333a485, and its 240-file population list (s50-base-files.txt) excludes tests/test_a_roadmap_read_answers_from_its_snapshot.py, so the 0-added-failure delta the record states is not measured at the reviewed head. The direction is safe because the gained commit changes only that test file and a doc fragment and the focused head gate s50-r11-head-gate.log covers the test file at e3333a485, but the record's revision does not match the promotion head."
+    },
+    {
+      "file": "s50-negative-control-keep.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The header names revision a41ebcda0 while the body runs the e3333a485 test source against a keep-count branch removed in the copy. The control genuinely reddens (assert 13 == 8, EXIT=1), but the recorded revision does not name the code the control exercised, so a reader cannot reproduce it from the header alone."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node answers a warm roadmap read from a snapshot keyed on the project's write generation; the one commit gained since the review at a41ebcda01b0 (e3333a485) repairs the keep-count test and the evidence fragment that review flagged.\nVERDICT done_when: Section 50 requires the snapshot test at base and head with failure_ids in tests/<file>::<name> form judged by delta; the manifest records baseline_suite at 04c10e00c and after_suite at a41ebcda, both 38 ids with an empty set difference, plus a focused head gate of 24 passed.\nVERDICT write_paths: The diff a41ebcda01b0..e3333a485 touches exactly docs/evidence/fragments/a-read-answers-inside-its-deadline/a-roadmap-read-answers-from-its-snapshot.html and tests/test_a_roadmap_read_answers_from_its_snapshot.py, the two files this review covers, and nothing else.\nVERDICT manifest: Read; it records status complete, the keep-count negative control at s50-negative-control-keep.log (assert 13 == 8, EXIT=1) and the focused head gate at s50-r11-head-gate.log (24 passed, EXIT=0).\nVERDICT diff: Read commit by commit against a41ebcda01b0; the single commit gives every keep-count fixture an existing root with a distinct mtime, asserts the exact survivor set, and rewrites the fragment's directory-stat paragraph to state the per-key-build cost and the absence of a discovery scope.\nCALL_SITES: reckon/mcp.py:_roadmap, reckon/roadmap_snapshot.py:roadmap_snapshot_store, reckon/roadmap_snapshot.py:_prune_snapshots\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_roadmap_read_answers_from_its_snapshot.py:983-1005 now builds existing fixture roots and asserts the exact survivor set, and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-roadmap-read-answers-from-its-snapshot.html:171-181 states the corrected per-key-build cost.\nSCORE evidence: 16\nJUSTIFICATION evidence: s50-negative-control-keep.log ends EXIT=1 on assert 13 == 8 and s50-r11-head-gate.log ends EXIT=0 over 24 tests, though manifest.md:46 records the population arm at a41ebcda rather than the reviewed head e3333a485.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat a41ebcda01b0..e3333a485 shows only the two declared files, 23 insertions and 4 deletions.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_roadmap_read_answers_from_its_snapshot.py:1001-1005 compares the store's survivors against the test's own fixture list, and restoring the removed keep-count branch reddens it at assert 13 == 8.\nSCORE fit: 18\nJUSTIFICATION fit: the added lines at tests/test_a_roadmap_read_answers_from_its_snapshot.py:983-1005 reuse the module's existing json, os and time imports and carry no plan, stage or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the case calls roadmap_snapshot.roadmap_snapshot_store and reads _SNAPSHOT_KEEP_PER_PROJECT, extending the owner reckon/roadmap_snapshot.py:413-446 rather than adding a second prune; the change adds no new capability.\nFINDING manifest.md:46 non-blocking: the after_suite arm is recorded at a41ebcda01b0, one commit before the reviewed head e3333a485, and its 240-file population list excludes tests/test_a_roadmap_read_answers_from_its_snapshot.py, so the 0-added-failure delta is not measured at the reviewed head.\nFINDING s50-negative-control-keep.log:1 non-blocking: the header names revision a41ebcda0 while the body runs the e3333a485 test source, so the recorded revision does not match the code the control exercised.",
+  "review_run_id": "r-20261024T023646234848-review-of-a-roadmap-read-answers-from-its-snapshot-e3333a4855cc",
+  "reviewed_base_sha": "a41ebcda01b0cb75abb6406b36f4dd28b19e713f",
+  "reviewed_head_sha": "e3333a4855cc2fa43e6af95f10fc4da7ef2280c6",
+  "reviewed_run_id": "r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T02:47:38.975045+00:00",
+  "total": 111
+}
