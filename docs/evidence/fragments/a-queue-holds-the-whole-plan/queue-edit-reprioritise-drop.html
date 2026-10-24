@@ -60,8 +60,32 @@
   <code>test_read_verbs_retire_behind_crew_view.py</code> and one in
   <code>test_crew_tool_carries_the_write_verbs.py</code> — and the identical
   set stands in the branch arm: no failure is added. The new
-  <code>tests/test_queue_verbs.py</code> passes its 13 cases in the same
+  <code>tests/test_queue_verbs.py</code> passes its 15 cases in the same
   interpreter.
+
+  <p><strong>The widened surface the MCP wiring touches.</strong> Because
+  <code>reckon/mcp.py</code> is now edited, the population also covers the
+  tests that read the crew tool's own action and argument surface:
+  <code>test_crew_tool_carries_the_write_verbs.py</code>,
+  <code>test_mcp_tool_names_are_regular.py</code>,
+  <code>test_mcp_tools.py</code>, <code>test_mcp_import_surface.py</code> and
+  <code>test_tool_arguments_accept_a_serialised_list.py</code>. Both trees
+  report the same result, <code>1 failed, 63 passed</code>, the single failure
+  the unchanged
+  <code>test_the_obligations_view_prints_the_action_form</code>
+  (<code>TypeError: … got an unexpected keyword argument 'fields'</code>,
+  raised inside <code>reckon/mcp_views.py</code> by a lambda the test installs),
+  which fails identically at base. So the delta over this surface is also zero.
+
+  <p><strong>What the 121-file sweep did not settle.</strong> Every test file
+  importing <code>reckon.mcp</code> is 121 files, and sweeping all of them was
+  attempted twice and did not complete inside the attempt's time fence: the
+  parallel form was abandoned because tests here terminate child processes and
+  killed their own workers, and the serial form reached roughly a fifth of the
+  population before the harness stopped it, so neither left a usable arm. The
+  five files above are the subset that exercises the tool surface this branch
+  changes; the rest were not measured, and the zero delta is claimed only over
+  what was run.
 
   <p><strong>Negative control.</strong> With the launched-request guard
   made to return early for <code>edit</code> alone, exactly one arm fails
