@@ -209,6 +209,25 @@ def _live_pointer(
     }
 
 
+def _open_choice_hold(plan: str) -> dict:
+    """The plan-level hold the fixture's unscoped open decision raises.
+
+    ``_plan`` gives every plan an open decision with no section scope, which the
+    roadmap reports as a hold on the whole plan; the summary publishes the same
+    row, so every plan in this file reads blocked until that decision locks.
+    """
+
+    return {
+        "kind": "decision",
+        "plan": plan,
+        "id": "open-choice",
+        "question": "Choose a route",
+        "status": "open",
+        "choice": "",
+        "rationale": "",
+    }
+
+
 def test_legacy_read_shape_is_exactly_unchanged(setup):
     docs_dir, project = setup
     _plan(docs_dir, "readable")
@@ -240,7 +259,8 @@ def test_typed_plan_defaults_to_small_human_summary(setup):
     }
     assert result["view"] == "summary"
     assert result["state"]["status"] == "active"
-    assert result["state"]["effective_status"] == "active"
+    assert result["state"]["effective_status"] == "blocked"
+    assert result["blocking"] == [_open_choice_hold("readable")]
     assert result["state"]["progress"] == 0.4
     assert result["open_decisions"] == [
         {
@@ -255,7 +275,10 @@ def test_typed_plan_defaults_to_small_human_summary(setup):
     response_without_provenance = {
         key: value for key, value in result.items() if key != "provenance"
     }
-    assert compact_size(response_without_provenance) <= compact_size(raw) * 0.60
+    # The summary carries one published row per hold, so the bound allows a
+    # little more than the bare plan shape; the fixture's open decision is one
+    # such row, and the summary is still well under the raw read.
+    assert compact_size(response_without_provenance) <= compact_size(raw) * 0.70
 
 
 def test_version_view_returns_only_identity_and_concurrency_token(setup):
@@ -453,8 +476,10 @@ def test_stale_plan_read_remains_advisory_and_dispatchable(setup):
 
     assert result["state"]["age_days"] == ACTIVE_PLAN_STALE_AFTER_DAYS + 1
     assert result["state"]["staleness"] == "stale"
-    assert result["state"]["effective_status"] == "active"
-    assert result["blocking"] == []
+    # Staleness is advisory: the plan is still dispatchable, and the only hold
+    # on it is the fixture's own open decision.
+    assert result["state"]["effective_status"] == "blocked"
+    assert result["blocking"] == [_open_choice_hold("readable")]
     assert result["next"]["id"] == "next"
 
 
@@ -485,7 +510,8 @@ def test_dependency_blocking_is_derived_and_clears_when_dependency_ships(setup):
             "ref": "dependency",
             "found": True,
             "status": "active",
-        }
+        },
+        _open_choice_hold("dependent"),
     ]
 
     dependency_state = read_state(dependency.read_text(encoding="utf-8"))
@@ -500,8 +526,10 @@ def test_dependency_blocking_is_derived_and_clears_when_dependency_ships(setup):
         resource={"project": project, "type": "plan", "id": "dependent"}
     )
     assert ready["state"]["status"] == "active"
-    assert ready["state"]["effective_status"] == "active"
-    assert ready["blocking"] == []
+    # The dependency row clears with the dependency; the plan stays blocked on
+    # the open decision, which is a hold of its own.
+    assert ready["state"]["effective_status"] == "blocked"
+    assert ready["blocking"] == [_open_choice_hold("dependent")]
 
 
 def test_external_dependency_blocking_clears_without_local_file_changes(
@@ -560,8 +588,10 @@ def test_external_dependency_blocking_clears_without_local_file_changes(
     ready = mcp_module._read_plan(
         resource={"project": project, "type": "plan", "id": "dependent"}
     )
-    assert ready["state"]["effective_status"] == "active"
-    assert ready["blocking"] == []
+    # The remote dependency row clears with the dependency; the open decision
+    # still holds the plan, so the list is the decision row alone.
+    assert ready["state"]["effective_status"] == "blocked"
+    assert ready["blocking"] == [_open_choice_hold("dependent")]
 
 
 def test_legacy_sprint_rollup_uses_hydrated_effective_status(setup):
@@ -651,7 +681,10 @@ def test_explicit_sprint_blocker_keeps_plan_effectively_blocked(setup):
 
     assert result["state"]["status"] == "active"
     assert result["state"]["effective_status"] == "blocked"
-    assert result["blocking"] == ["external-access"]
+    assert result["blocking"] == [
+        "external-access",
+        _open_choice_hold("waiting"),
+    ]
 
 
 def test_detail_prompts_are_explicitly_opt_in(setup):
