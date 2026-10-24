@@ -1,0 +1,19 @@
+<section id="queue-edit-keeps-its-manifest-path-landing">
+  <h2>Queue edits retain the request's delivery path</h2>
+
+  <p><code>crew queue edit</code> now validates a waiting request with the
+  manifest path its dispatch recorded. Launch may clear that path when it
+  rebuilds a queued node for a new run; an edit checks the existing request
+  instead. An <code>awaiting-upstream</code> fixture carrying a manifest inside
+  its run directory reproduced the former refusal: <code>no manifest path is
+  named</code>. The edited request now stores the complete replacement
+  done-when while retaining exactly the same manifest path. An unmeasurable
+  replacement remains refused without changing the pointer.</p>
+
+  <p>The focused gate passed 17 tests. The base-source mutation failed the new
+  stored-measure test, as declared. Across all three test files importing queue
+  edit, the base arm had 2 failures and the committed head had 1, so the change
+  added 0 failures and removed 1. The remaining obligations-view failure is
+  outside this node's scope and appears in both arms. Ruff check and format
+  check passed on the two changed Python paths.</p>
+</section>
