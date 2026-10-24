@@ -2627,7 +2627,10 @@ def _land_a_promoted_run(
     when the merge dropped the change — and its entry names the command that
     resumes from there rather than restating what the report already shows.
     Promotion is reported first because it is the step whose guards run before
-    any code reaches the branch: a run promotion refuses lands nothing.
+    any code reaches the branch: a run promotion refuses lands nothing. The
+    merge is also refused here, before it runs, when the run's worktree still
+    exists at a head this merge would leave behind — the release step reads the
+    same fact afterwards, which is after the branch has moved.
 
     The workspace the release reads is carried over from the live pointer
     captured before the promotion deleted it: the committed ledger row states
@@ -2675,21 +2678,59 @@ def _land_a_promoted_run(
         "onto the branch and reaches every reader rather than only the "
         "worktree the change was written in."
     )
-    resume_merge = shlex.join(
-        [
-            "reckon",
-            "crew",
-            "merge",
-            "--project",
-            project,
-            "--head",
-            head,
-            "--message",
-            message,
-            "--body",
-            body,
-        ]
-    )
+
+    def _merge_command(revision: str) -> str:
+        return shlex.join(
+            [
+                "reckon",
+                "crew",
+                "merge",
+                "--project",
+                project,
+                "--head",
+                revision,
+                "--message",
+                message,
+                "--body",
+                body,
+            ]
+        )
+
+    resume_merge = _merge_command(head)
+    # The release step reads this same reachability fact after the merge, and
+    # reads it too late: a head behind the run's own work merges, pushes, and
+    # only then reports that the worktree it left behind carries commits no
+    # reader has. The worktree is still on disk at this point, so the fact is
+    # readable before anything is merged or pushed.
+    worktree_value = str(record.get("worktree") or "").strip()
+    worktree = Path(worktree_value) if worktree_value else None
+    worktree_head = ""
+    if worktree is not None and worktree.is_dir():
+        try:
+            worktree_head = merge_module._rev_parse(worktree, "HEAD")
+        except merge_module.MergeError:
+            worktree_head = ""
+    if (
+        worktree_head
+        and worktree_head != head
+        and not merge_module._is_ancestor(repository, worktree_head, head)
+    ):
+        worktree_merge = _merge_command(worktree_head)
+        report["steps"]["land"] = {
+            "ok": False,
+            "error": (
+                f"the run's worktree {worktree} is at {worktree_head}, which is "
+                f"neither the reviewed head {head} being merged nor an ancestor "
+                f"of it; merge the worktree's head instead with `{worktree_merge}`"
+            ),
+            "reviewed_head": head,
+            "worktree_head": worktree_head,
+            "resume": worktree_merge,
+        }
+        report["worktree_released"] = bool(
+            (promoted.get("release") or {}).get("worktree_released")
+        )
+        return report, 1
     try:
         landed = merge_module.land(repository, head=head, message=message, body=body)
     except merge_module.MergePushOutstandingError as exc:
