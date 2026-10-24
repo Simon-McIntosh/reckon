@@ -24,11 +24,17 @@
   <code>reckon.crew.reports.parse_manifest</code> and asserts
   <code>outside_scope == []</code> with no retired key present.</p>
 
-  <p id="every-derived-manifest-carries-the-outside-scope-field-ledger-scope">The
-  ledger's public helper keeps its function name, which is an API surface used
-  outside this node's write scope; only its docstrings changed, which is what
-  the section's done-when reads (every docstring, read with <code>ast</code>,
-  names <code>outside_scope</code>).</p>
+  <p id="every-derived-manifest-carries-the-outside-scope-field-ledger-scope"><strong>Nothing
+  is left named after the retired field.</strong> The ledger's manifest-field
+  extractor is <code>outside_scope_paths_from_entries</code>, and its one
+  production caller in <code>reckon/crew/promotion.py</code> calls it by that
+  name; every test that calls it follows. <code>reckon/run_record.py</code>'s
+  <code>outside_scope_paths</code> helper had no production caller — every
+  reader maps the retired row key through
+  <code>normalize_outside_scope_paths</code>, which owns the one mapping — so it
+  and the ledger re-export it fed are deleted. Two assertions now hold the
+  shape: the ledger module carries the extractor and not the retired name, and
+  the record module carries the normalising reader and not the deleted helper.</p>
 
   <h3>Measured</h3>
 
@@ -36,7 +42,7 @@
   declared mutation restores the old word at
   <code>reckon/crew/recovery_watch.py</code>. Under it the first case fails with
   the manifest text still reading <code>follow_ons: none</code>, and the run
-  exits non-zero; the other three cases pass, so the assertion that first case
+  exits non-zero; the other five cases pass, so the assertion that first case
   makes is what the site's change is responsible for, and nothing else in the
   test file covers that site. The source is restored in the same step and the
   tree carries no mutation afterwards.</p>
@@ -46,32 +52,36 @@
     <tbody>
       <tr>
         <td>the new test file alone</td>
-        <td>160e251c2</td>
-        <td>4 cases pass; under the declared mutation 1 fails and 3 pass</td>
+        <td>efd409b03</td>
+        <td>6 cases pass; under the declared mutation 1 fails and 5 pass</td>
       </tr>
       <tr>
-        <td>the population of test files importing the three modules (284 files)</td>
+        <td>the population of test files importing the three modules plus the ledger-key test (285 files)</td>
         <td>67cba14e6 (base, scratch tree plus the new test)</td>
-        <td>31 failed, 2938 passed, 4 skipped, 5 setup errors — the four new cases are among the failures, each reproducing the defect at base</td>
+        <td>33 failed, 2943 passed, 4 skipped, no errors — all six new cases are among the failures, each reproducing the defect at base</td>
       </tr>
       <tr>
         <td>the same population at the head</td>
-        <td>160e251c2</td>
-        <td>25 failed, 2949 passed, 4 skipped, no errors — none of the 25 is a case this work touched</td>
+        <td>efd409b03</td>
+        <td>25 failed, 2941 passed, 4 skipped, 10 setup errors — none of the 25 is a case this work touched, and the 10 errors are 300 s fixture timeouts, not assertion failures</td>
       </tr>
     </tbody>
   </table>
 
   <p id="every-derived-manifest-carries-the-outside-scope-field-arms-note"><strong>The
   change adds no failure.</strong> Taking the head arm's failing ids away from
-  the base arm's leaves nothing: every head failure was already failing at base,
-  and the head arm runs eleven more passing cases, which is the four new ones plus
-  seven the base run's five timed-out fixtures never got to run. The four new cases fail at base — the
-  defect the section names, reproduced — and pass at head. Both arms ran with
-  <code>-n 8</code> on a host carrying load 23 on eight CPUs, which is why the
-  base arm also lost five costly module-scoped fixtures to a 300 s timeout at
-  setup; those five are a contention artifact of the base run, absent at head,
-  and are not failure ids.</p>
+  the base arm's leaves nothing: every one of the head arm's 25 failures was
+  already failing at base, and the six new cases fail at base — the defect the
+  section names, reproduced — and pass at head. Both arms ran with
+  <code>-n 8</code> on a host carrying load above 20 on eight CPUs. That load
+  cost the head arm ten setup errors in two modules whose module-scoped
+  fleet-build fixture exceeds 300 s under contention
+  (<code>tests/test_the_held_worktree_read_is_bounded.py</code> and
+  <code>tests/test_held_worktree_records_match_each_record_once.py</code>); the
+  same fixture family timed out in the base arm of the earlier run of this
+  gate. An isolated rerun of those ten ids passed seven before that run reached
+  its own 560 s bound, so they are recorded as timeouts rather than as
+  assertion failures, and no assertion in them reads the changed sites.</p>
 
   <p id="every-derived-manifest-carries-the-outside-scope-field-outside">Failing at
   both revisions and outside this node's scope:
