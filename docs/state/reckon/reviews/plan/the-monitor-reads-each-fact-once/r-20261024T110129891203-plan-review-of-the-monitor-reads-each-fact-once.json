@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T11:14:15.633Z",
+  "dispatched_at": "2026-10-24T11:02:54Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:164",
+      "id": "reasoning-1",
+      "reason": "the mechanism needs either a bounded trigger for the prefix check (only where a rewrite can arise) or a paragraph saying the prefix is re-read each tick with a measure covering those bytes; as written the section both promises offset-only reads and specifies a per-tick full-prefix read, and its done-when cannot see the difference.",
+      "text": "\"whose first 4 KiB no longer match the digest stored beside its offset\" makes every tick re-read 4 KiB of every live stream from GPFS before the offset read; at even 30 live streams and a 2 s tick that is roughly 3.6 MB/min, 18% of \u00a73's whole 20 MB/min crew-monitor budget, spent re-reading bytes the design says it reads once, and paragraph 1's \"a stream is read only past its stored offset\" is false as soon as the digest clause is read with it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:194",
+      "id": "done_when-1",
+      "reason": "one line naming what the replacement asserts (the incremental store's pointer paths compared to the fixture's three) makes the third repair reviewable, and without it a gate passes on two of three carried items.",
+      "text": "of the \u00a75 review items \u00a76 adopts, the dead wrappers are measured (`git grep` returns nothing) and the connection leak is measured (fd count equal), but \"replaces the assertion in `tests/test_the_station_store_is_node_local.py` that compares two outputs of the store with one against the fixture's three pointer paths\" carries no measure, so the node can close \u00a76 with the equivalence assertion still in place",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e9228d85d284cfbadc36dfa9402de206f4df681ce01d524c757047aa4a829868",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T110129891203-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "61457ce47d97732c6e2ad5d0669f4348694a1d59",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_backends.observe_stream` (reckon/_backends.py:2900), `station_store.ingest_stream` (reckon/crew/station_store.py:405), `recovery.classify_pointer` (re-exported at reckon/crew/recovery.py:84), `recovery_memo._classification_inputs` (reckon/crew/recovery_memo.py:450), `recovery_watch._quiet_beat_snapshots` (:2543), `_watch_snapshot` (:1328) and `recovery_watch._stall_reading` (:679) all resolve; merge shas 06079a8a2, 57e274889 and 99e614314 resolve, and the extensionless `docs/evidence/archive/the-monitor-reads-each-fact-once-landed.html` exists.",
+    "done_when": "a finding \u2014 \u00a76's ingest measure counts only the bytes the station *parses*, so the per-tick prefix re-read the new digest mechanism requires is unmeasured, and the carried `tests/test_the_station_store_is_node_local.py` equivalence-assertion replacement has no done-when at all.",
+    "evidence_paths": "pass \u2014 the gate writes tests under a test directory and measures real fixtures; no session scratchpad or node-local temporary path is named as an evidence location.",
+    "naming": "pass \u2014 the section names real symbols (`ingest_stream`, `_classification_inputs`, `_stall_reading`, `store_at_runtime_root`, `default_store`) and carries no plan labels, stage names or ticket numbers into code.",
+    "reasoning": "a finding \u2014 the new prefix-digest check re-reads the first 4 KiB of every live stream on every tick, which contradicts the same paragraph's claim that \"a stream is read only past its stored offset\" and the section title, and is the per-fact re-read the plan exists to remove.",
+    "single_goal": "pass \u2014 \u00a76 carries one deliverable (byte-economical ingest plus the classification keyed on its inputs); the \u00a75 review debt it takes is confined to the same module and is stated as such.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gates s6 on s5 (`the-monitor-reads-each-fact-once#s5`), s5 is `done`, and the open followup `f-tmref-002` now recommends `/reckon-build the-monitor-reads-each-fact-once \u00a76` with a body naming \u00a76 as next."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "59de76e5c2f1fa2c86fa4bfcc5c5b91bc068985c54da96dc27b24cba026fecd8",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T11:17:10.869057+00:00"
+}
