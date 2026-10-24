@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s48">
+  <meta name="plan-verdict" content="blocked">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-tags" content="crew,recovery,tests,served-code,widening">
+  <title>Reading today's recovery census | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="recovery-tests-read-todays-recovery" data-reckon="landed" data-when="2026-10-24">
+  <h2>Reading today's recovery census</h2>
+
+  <p><strong>Measure.</strong> Nine census ids were reproduced failing at base
+  <code>5cb2dc2f</code> in one serial gate over the four named files:
+  <code>10 failed, 19 passed in 511.00s</code>, <code>EXIT=1</code>. The extra
+  failure is <code>test_mcp_recovery.py::test_resume_of_a_live_process_is_refused_like_the_cli</code>,
+  which is not on the census list and which the same defect below explains.</p>
+
+  <p><strong>Two classes, and only one of them is the node's to repair.</strong>
+  Two paths reach the same result by opposite routes: the widening ids read a
+  contract that was deliberately retired, and the served-code ids read a
+  contract the code no longer keeps by accident.</p>
+
+  <table>
+    <thead>
+      <tr><th>Ids</th><th>Change read</th><th>Intended?</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>the two <code>test_a_folded_finding_widens_its_repair.py</code> ids</td>
+        <td><code>7e57ff94c</code>, <code>3fa018070</code></td>
+        <td>yes</td>
+        <td>tests rewritten to the current contract</td>
+      </tr>
+      <tr>
+        <td>five <code>test_mcp_recovery.py</code> ids</td>
+        <td><code>7308514db</code></td>
+        <td>no</td>
+        <td>reported blocked, out of the write fence</td>
+      </tr>
+      <tr>
+        <td><code>test_one_check_trusts_a_moved_checkout.py</code> clean case</td>
+        <td><code>ada13bb60</code></td>
+        <td>no</td>
+        <td>reported blocked, out of the write fence</td>
+      </tr>
+      <tr>
+        <td><code>test_a_stream_past_the_window_launches</code></td>
+        <td>not established</td>
+        <td>unknown</td>
+        <td>reported blocked, unattributed</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Intended: widening a stopped worker's fence.</strong>
+  <code>7e57ff94c</code> states that phase and manifest status are descriptive
+  only, and <code>3fa018070</code> removed the eligibility gate outright. The
+  rule is pinned elsewhere in the suite — <code>tests/test_widen_reaches_a_blocked_run.py</code>
+  opens with "A stopped worker permits widening regardless of phase or manifest
+  status" and passes at base — so the two folded ids were asserting the retired
+  refusal of a complete run. They now assert the half that still discriminates:
+  the grant reports a folded disposition only when the run's own review folded
+  that dimension into the run's own node, and the widening carries every other
+  recorded pointer field unchanged. An exempted dimension and a fold naming
+  another node both widen and report no disposition, so a reader driven by the
+  disposition cannot resume a run for work it does not owe. Live-worker refusal
+  is untouched and still asserted.</p>
+
+  <p><strong>Unintended: the served-code guard reads the wrong directory.</strong>
+  <code>reckon.mcp._import_root()</code> returns the checkout root, and
+  <code>served_code.moved_checkout</code> hands it to
+  <code>checkout_trust.source_code_identity</code>, whose signature expects the
+  package directory and derives <code>source_root = package_dir.parent</code>.
+  The committed-tree identity of <code>&lt;checkout&gt;/reckon</code> is therefore
+  compared against the disk stamp of <code>&lt;checkout&gt;/..</code> and never
+  matches: <code>moved_checkout</code> answers a move in every checkout,
+  reproduced in this worktree and in the main checkout alike. Every MCP call is
+  then routed to a spawned served child, which answers from the server's own
+  configuration home instead of the caller's — so the five MCP ids fail because
+  the pointer they wrote is not the pointer read, and one of them succeeds in
+  reading a <em>previous test's</em> home. Their fixtures are correct and were
+  not modified. <code>ada13bb60</code> adds a second layer to the same case:
+  the persistent child answers only once warm, and <code>ServedChild.probe()</code>
+  does not wait, so the moved-checkout test's second call falls back to the
+  image's answer and never names a <code>served_by_code_stamp</code>.</p>
+
+  <p><strong>Unattributed.</strong> <code>test_a_stream_past_the_window_launches</code>
+  fails with a live-process refusal. An isolated reproduction of
+  <code>_newest_stream_in_motion</code> over a stream aged three hours answers
+  <code>False</code>, which is the pass the fixture expects, so the test's own
+  path reaches that branch by a route the reproduction does not model. Nothing
+  is claimed about intent for this id, and neither it nor its code was changed.</p>
+
+  <p><strong>Negative control.</strong> The repaired ids were re-run against a
+  <code>git archive</code> extraction whose
+  <code>_widen_folded_disposition</code> drops both the kind test and the
+  node test, so every stored disposition is reported as this run's fold. Both
+  repaired ids fail there and only they do; the folded complete-run and
+  live-worker cases still pass, which is what makes the disposition read — not
+  the widening — the property under test. The log is
+  <code>logs/negative_control.log</code>.</p>
+
+  <p><strong>Left for the plan owner.</strong> The served-code defect is product
+  code outside this node's write fence: <code>reckon/mcp.py</code> passes the
+  checkout root where <code>reckon/checkout_trust.py</code> expects the package
+  directory. Repairing the five MCP ids and the moved-checkout clean case starts
+  there, or at the served child's answer timing, whichever the owner judges the
+  contract requires — both are named in the manifest with the commits that
+  introduced them.</p>
+</article>
+</body>
+</html>
