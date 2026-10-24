@@ -646,7 +646,7 @@ def dependency_row_state(
     """
 
     data = plan if isinstance(plan, Mapping) else {}
-    plan_status = str(data.get("workflow_status") or data.get("status") or "")
+    plan_status = _status(data)
     if not section:
         return plan_status
     if declarations is None:
@@ -1217,6 +1217,101 @@ def plan_level_decisions(
         row
         for row in decisions
         if row["status"] in statuses and not row.get("sections")
+    ]
+
+
+def plan_blocker_state(
+    plan: Mapping[str, Any],
+    *,
+    dependency_blockers: Iterable[Mapping[str, Any]] = (),
+    blockers: Iterable[Mapping[str, Any]] | None = None,
+    sections_map: Mapping[str, Any] | None = None,
+    released: bool = False,
+) -> dict[str, Any]:
+    """The blockers one plan row reports, and the blocked state they give it.
+
+    Every surface that answers "is this plan blocked, and by what" answers it
+    from here. The pass holds the assembly in one place, because two derivations
+    of the same fact drift: a plan held by a plan-level open decision reads
+    blocked through the roadmap and open through a second assembly that consults
+    only gates and dependencies, and nothing compares them.
+
+    ``dependency_blockers`` are the unsatisfied dependency rows the caller
+    resolved, which are the one part of the list a per-plan pass cannot build
+    for itself: resolution needs the project's other rows.
+
+    ``blockers`` is the plan's reported blocker list when the caller has one
+    outside the row, as a discovery row read beside composed sprint items does.
+    Absent, the row's own ``blocking`` list is read. Only the ``explicit`` and
+    ``held`` kinds are taken from either, because the gate and decision blockers
+    are assembled here from the authored state rather than read back from a
+    list that may already carry them.
+
+    ``released`` names a plan whose cleared blockers a probe already released;
+    its persisted ``blocked`` status is then a record of work rather than a
+    wait, so no placeholder blocker is synthesized for it.
+    """
+
+    # The workflow status is the status a plan is held at; a row carrying both
+    # spellings must be read through the same precedence here as in the rest of
+    # the roadmap, or this assembly would rank a plan by one status and report
+    # it by the other.
+    plan_status = _status(dict(plan))
+    reported = (
+        list(blockers) if blockers is not None else list(plan.get("blocking") or [])
+    )
+    reported = [dict(row) for row in reported if isinstance(row, Mapping)]
+    explicit_blockers = [row for row in reported if row.get("kind") == "explicit"]
+    held_blockers = [row for row in reported if row.get("kind") == "held"]
+    gate_blockers, section_gate_blockers = split_unpassed_gates(plan)
+    decisions = _decision_rows(plan, sections_map)
+    plan_holding_decisions = plan_level_decisions(decisions)
+    blocking = [
+        *dependency_blockers,
+        *explicit_blockers,
+        *held_blockers,
+        *gate_blockers,
+        *plan_holding_decisions,
+    ]
+    # A stored blocked status is the open-state spelling for a wait whose rows a
+    # composed list no longer carries; the placeholder keeps it visible instead
+    # of the plan reading deferred while it is stored blocked.
+    if plan_status.strip().lower() == "blocked" and not blocking and not released:
+        explicit_blockers = [{"kind": "persisted", "id": "unrecorded"}]
+        blocking = [*explicit_blockers]
+    closable = is_closable(plan)
+    return {
+        "blocking": blocking,
+        "explicit_blockers": explicit_blockers,
+        "held_blockers": held_blockers,
+        "gate_blockers": gate_blockers,
+        "section_gate_blockers": section_gate_blockers,
+        "decision_blockers": [
+            row for row in decisions if row["status"] in ("open", "gated")
+        ],
+        "deferred_decisions": [row for row in decisions if row["status"] == "deferred"],
+        "plan_holding_decisions": plan_holding_decisions,
+        "closable": closable,
+        "blocked": bool(blocking) and not closable,
+        "effective_status": effective_status(plan_status, blocking),
+    }
+
+
+def recorded_blockers(plan: Mapping[str, Any]) -> list[Any]:
+    """The blockers a plan records, without the assembly's persisted placeholder.
+
+    ``plan_blocker_state`` synthesizes a ``persisted`` row to keep a stored
+    blocked status visible on the surfaces that report it. That row names no
+    recorded hold, so a rule asking whether the status has an explanation must
+    not read it as one — the audit exists to find statuses nothing accounts
+    for, which is exactly the case the placeholder is describing rather than
+    resolving.
+    """
+
+    return [
+        row
+        for row in plan.get("blocking") or []
+        if not (isinstance(row, Mapping) and row.get("kind") == "persisted")
     ]
 
 
@@ -2502,7 +2597,7 @@ def _sprint_status_buckets(
     return (focused or declared_active), open_ids
 
 
-def _plans_released_by_cleared_blockers(
+def plans_released_by_cleared_blockers(
     docs_dir: Path | None,
     project: str,
     sprints: Iterable[Mapping[str, Any]],
@@ -2514,6 +2609,10 @@ def _plans_released_by_cleared_blockers(
     one. The raw sprint record is the one place the hold and its clear stay
     attached to the plan, so the release is read from there; a blocker whose
     resource is missing or still holds keeps its plan out of the set.
+
+    Both surfaces that read a plan's blocked state call this, so a released
+    plan reads released on each rather than one of them synthesizing a
+    placeholder blocker for a hold a probe already cleared.
     """
 
     if docs_dir is None:
@@ -2759,7 +2858,7 @@ def _build_roadmap(
     liveness = (
         sprint_liveness(project, resolved_docs) if resolved_docs is not None else {}
     )
-    released_by_clear = _plans_released_by_cleared_blockers(
+    released_by_clear = plans_released_by_cleared_blockers(
         resolved_docs, project, sprints
     )
     active_sprint_id, open_sprint_ids = _sprint_status_buckets(
@@ -2915,7 +3014,7 @@ def _build_roadmap(
         # explanation even though no live blocker remains.
         if (
             status == "blocked"
-            and not (plan.get("blocking") or [])
+            and not recorded_blockers(plan)
             and slug not in released_by_clear
         ):
             findings.append(
@@ -3393,63 +3492,36 @@ def _build_roadmap(
         section_dependency_blockers = [
             row for row in dependency_blockers if row.get("stage")
         ]
-        explicit_blockers = [
-            row
-            for row in plan.get("blocking") or []
-            if isinstance(row, dict) and row.get("kind") == "explicit"
-        ]
-        held_blockers = [
-            row
-            for row in plan.get("blocking") or []
-            if isinstance(row, dict) and row.get("kind") == "held"
-        ]
         authored = _plan_authored_state(plan, docs_dir, project, slug)
-        gate_blockers, section_gate_blockers = split_unpassed_gates(authored)
         decision_sections_map = _plan_decision_sections(plan, docs_dir, project, slug)
+        # One assembly of this row's blockers and blocked state, shared with the
+        # served view: a held path, an unpassed gate and an unscoped open
+        # decision each hold the plan on both surfaces, from the same rows.
+        blocker_state = plan_blocker_state(
+            authored,
+            dependency_blockers=plan_dependency_blockers,
+            blockers=plan.get("blocking") or [],
+            sections_map=decision_sections_map,
+            released=slug in released_by_clear,
+        )
+        explicit_blockers = blocker_state["explicit_blockers"]
+        held_blockers = blocker_state["held_blockers"]
+        gate_blockers = blocker_state["gate_blockers"]
+        section_gate_blockers = blocker_state["section_gate_blockers"]
+        plan_holding_decisions = blocker_state["plan_holding_decisions"]
+        decision_blockers = blocker_state["decision_blockers"]
+        deferred_decisions = blocker_state["deferred_decisions"]
         decisions = _decision_rows(plan, decision_sections_map)
         open_decisions = [
             decision for decision in decisions if decision["status"] == "open"
         ]
-        # A decision scoped to named sections holds those sections instead of
-        # the plan, so readiness and the derived status consume only the open
-        # decisions with nowhere else to land. The reported sets keep every open
-        # row so the scoped wait stays visible on the sections it governs.
-        plan_holding_decisions = plan_level_decisions(decisions)
-        # A gated decision is held by a transition edge: unsettled, so it stays
-        # reported, but the edge never blocks the plan's own execution.
-        decision_blockers = [
-            decision
-            for decision in decisions
-            if decision["status"] in ("open", "gated")
-        ]
-        # The same rows, carrying what a reader of the wait needs. The surfaces
-        # that list a wait read this list rather than the readiness rows, so a
-        # decision waiting on the lead is visible without opening the plan.
+        # The rows a reader of the wait needs, carrying what the readiness rows
+        # do not. The surfaces that list a wait read this list rather than the
+        # readiness rows, so a decision waiting on the lead is visible without
+        # opening the plan.
         waiting_decisions = unsettled_decisions(
             plan, decision_sections_map, waiting_context=True
         )
-        deferred_decisions = [
-            decision for decision in decisions if decision["status"] == "deferred"
-        ]
-        # The fallback asks whether any blocker the derivation can see explains
-        # a persisted blocked status. A section-scoped decision does not hold
-        # the plan, so it cannot be that explanation: the guard names the same
-        # plan-level list `is_blocked` tests, and a persisted blocked plan whose
-        # only open decision is section-scoped keeps a visible blocker instead
-        # of reading deferred while it is stored blocked. A released plan is
-        # excluded for the same reason from the other side: composition drops
-        # the cleared blocker, so synthesizing here would re-block work the
-        # probe already released.
-        if (
-            status == "blocked"
-            and not explicit_blockers
-            and not held_blockers
-            and not plan_dependency_blockers
-            and not gate_blockers
-            and not plan_holding_decisions
-            and slug not in released_by_clear
-        ):
-            explicit_blockers = [{"kind": "persisted", "id": "unrecorded"}]
         dispatchable, missing_dispatchability = _dispatchability(plan)
         # A soft after edge whose target is observed open ranks the plan later
         # without removing it from the ready set; an unobserved target (external
@@ -3465,28 +3537,18 @@ def _build_roadmap(
         # dispatch, so it leaves the ready set, the blocked set and the critical
         # path whichever blockers it still carries. What stands between it and
         # its close is enumerated by ``closure_blockers`` instead.
-        closable = is_closable(authored)
+        closable = blocker_state["closable"]
         is_ready = (
             dispatchable
             and authorised
-            and not plan_dependency_blockers
-            and not explicit_blockers
-            and not held_blockers
-            and not gate_blockers
-            and not plan_holding_decisions
+            and not blocker_state["blocking"]
             and slug not in cycle_members
             and not closable
         )
-        is_blocked = (
-            bool(
-                plan_dependency_blockers
-                or explicit_blockers
-                or held_blockers
-                or gate_blockers
-                or plan_holding_decisions
-                or slug in cycle_members
-            )
-            and not closable
+        # A dependency cycle is the one hold a single plan row cannot see, so it
+        # joins the assembled blockers here rather than in the assembly.
+        is_blocked = blocker_state["blocked"] or (
+            slug in cycle_members and not closable
         )
         readiness = (
             "closable"
@@ -3523,16 +3585,7 @@ def _build_roadmap(
             "dispatchable": dispatchable,
             "missing_dispatchability": missing_dispatchability,
             "authorised": authorised,
-            "effective_status": effective_status(
-                status,
-                [
-                    *plan_dependency_blockers,
-                    *explicit_blockers,
-                    *held_blockers,
-                    *gate_blockers,
-                    *plan_holding_decisions,
-                ],
-            ),
+            "effective_status": blocker_state["effective_status"],
             "sprint": plan_sprint,
             "roi": plan.get("roi") or "mid",
             "effort": plan.get("effort") or "M",

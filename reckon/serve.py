@@ -149,7 +149,6 @@ from reckon.git_dates import (  # noqa: F401 — the import surface of this modu
     _store_git_last_modified_cache,
 )
 from reckon.lifecycle import (
-    effective_status,
     unresolved_dependencies,
 )
 from reckon.project_state import ProjectStateError
@@ -1742,6 +1741,7 @@ def _discover_plans_uncached(
             inventory,
             composed.get("sprints", []),
             composed.get("blockers", []),
+            docs_dir=docs_dir,
         )
         result = {
             "inventory": inventory,
@@ -1805,7 +1805,9 @@ def _discover_plans_uncached(
             }
         )
 
-    inventory, sprints = _derive_lifecycle(project, inventory, sprints, blockers)
+    inventory, sprints = _derive_lifecycle(
+        project, inventory, sprints, blockers, docs_dir=docs_dir
+    )
     result = {
         "inventory": inventory,
         "sprints": sprints,
@@ -1987,16 +1989,25 @@ def _derive_lifecycle(
     inventory: list[dict],
     sprints: list[dict],
     blockers: list[dict] | None = None,
+    *,
+    docs_dir: Path | None = None,
 ) -> tuple[list[dict], list[dict]]:
-    """Attach derived blockers/effective status and hydrate sprint items."""
+    """Attach derived blockers/effective status and hydrate sprint items.
+
+    ``docs_dir`` is the checkout the rows were inventoried from; it is what the
+    roadmap reads a released hold from, so the served view passes it through
+    rather than resolving a second copy of that set.
+    """
 
     from copy import deepcopy
 
     from reckon._schema import parse_plan_ref
     from reckon.roadmap import (
+        _status,
         closure_blockers,
-        split_unpassed_gates,
-        unsettled_decisions,
+        plan_blocker_state,
+        plans_released_by_cleared_blockers,
+        recorded_blockers,
     )
 
     plans = deepcopy(inventory)
@@ -2023,6 +2034,7 @@ def _derive_lifecycle(
             )
 
     external_cache: dict[tuple[str, str], dict] = {}
+    released = plans_released_by_cleared_blockers(docs_dir, project, sprints)
 
     def resolve(ref: str) -> dict:
         parsed = parse_plan_ref(ref)
@@ -2059,25 +2071,40 @@ def _derive_lifecycle(
 
     for plan in plan_by_slug.values():
         dependencies = [resolve(ref) for ref in plan.get("depends_on", [])]
-        blocking = unresolved_dependencies(dependencies)
-        blocking.extend(
-            {"kind": blocker_kind.get(blocker_id, "explicit"), "id": blocker_id}
-            for blocker_id in dict.fromkeys(
-                explicit_by_slug.get(str(plan.get("slug")), [])
-            )
+        # The blocker assembly is the roadmap's. Resolving a dependency needs the
+        # project's other rows, so those stay here; every hold that is a fact of
+        # this plan — an explicit blocker, a held path, an unpassed gate, an
+        # unscoped open decision — is read by the one function that also answers
+        # for the roadmap, so the served view and the roadmap cannot disagree
+        # about whether a plan is blocked. The released set is the roadmap's too:
+        # a plan whose cleared hold a probe released carries no blocker rows, so
+        # the served view would otherwise synthesize a placeholder for a wait the
+        # roadmap already knows is over.
+        state = plan_blocker_state(
+            plan,
+            dependency_blockers=unresolved_dependencies(dependencies),
+            released=str(plan.get("slug") or "") in released,
+            blockers=(
+                {"kind": blocker_kind.get(blocker_id, "explicit"), "id": blocker_id}
+                for blocker_id in dict.fromkeys(
+                    explicit_by_slug.get(str(plan.get("slug")), [])
+                )
+            ),
         )
-        gate_blockers, section_gate_blockers = split_unpassed_gates(plan)
-        blocking.extend(gate_blockers)
-        workflow_status = str(plan.get("status") or "draft")
+        workflow_status = _status(plan)
         plan["workflow_status"] = workflow_status
-        plan["effective_status"] = effective_status(workflow_status, blocking)
-        plan["blocking"] = blocking
-        plan["section_gate_blockers"] = section_gate_blockers
-        plan["blockers"] = len(blocking)
+        plan["effective_status"] = state["effective_status"]
+        # The assembly's synthesized placeholder explains a stored blocked
+        # status; it records no hold, and this list is what the audit reads to
+        # ask whether a blocked status has one. Publish the recorded rows, and
+        # keep the assembly's blocked answer in the status and the count.
+        plan["blocking"] = recorded_blockers({"blocking": state["blocking"]})
+        plan["section_gate_blockers"] = state["section_gate_blockers"]
+        plan["blockers"] = len(plan["blocking"])
         # Transition gates hold a closure or a choice, not execution, so they
         # leave this list and surface beside it instead.
         plan["closure_blockers"] = closure_blockers(plan)
-        plan["decision_blockers"] = unsettled_decisions(plan)
+        plan["decision_blockers"] = state["decision_blockers"]
 
     hydrated_sprints = deepcopy(sprints)
     for sprint in hydrated_sprints:
