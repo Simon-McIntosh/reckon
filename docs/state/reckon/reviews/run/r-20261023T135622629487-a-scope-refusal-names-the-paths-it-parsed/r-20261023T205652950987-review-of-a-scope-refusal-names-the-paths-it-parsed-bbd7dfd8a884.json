@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:823",
+    "reckon/crew.py:192"
+  ],
+  "completed_at": "2026-10-23T21:52:27.514Z",
+  "dispatched_at": "2026-10-23T21:36:13Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-scope-refusal-names-the-paths-it-parsed-bbd7dfd8a884",
+      "recorded_at": "2026-10-23T22:02:24.938288+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "repair-of-a-scope-refusal-names-the-paths-it-parsed-bbd7dfd8a884",
+      "recorded_at": "2026-10-23T22:02:24.954221+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_manifest_check_command.py",
+      "line": 327,
+      "severity": "blocking",
+      "text": "asserts the unquoted scope finding \"changed paths outside the write scope: docs/plan.html\"; the landed quoting emits \"docs/plan.html\" quoted, so this test is red at the reviewed head and would be red on main once merged."
+    },
+    {
+      "file": "tests/test_a_review_manifest_passes_its_own_check.py",
+      "line": 186,
+      "severity": "blocking",
+      "text": "asserts the unquoted scope finding for an undeclared review path; the landed change quotes each stray path, so the emitted finding carries surrounding double quotes and this assertion fails at the reviewed head."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 2688,
+      "severity": "non-blocking",
+      "text": "plan section 21's deliverable says a joined item splitting into several 'existing or declared' paths is reported as a list reading, but _is_space_separated_scope_item requires every part to lie within the declared scope, so a joined list of existing yet undeclared paths is still refused as one quoted stray."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T135622629487-a-scope-refusal-names-the-paths-it-parsed/gate-head.log",
+      "line": 8,
+      "severity": "non-blocking",
+      "text": "the 29-file head arm stops at 38% with no EXIT line, so the done_when's full-population head result is quoted from an overwritten run rather than recorded in a readable log; the 9-file matched arms are complete and clean."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against base 21b8493c1: reports.py adds _write_scope_findings and _is_space_separated_scope_item, the new test carries four cases, and the evidence fragment is added.",
+    "done_when": "the done_when names tests/test_a_scope_refusal_names_the_paths_it_parsed.py with a space-separated case, a comma-separated case and a quoted stray, and gate-head-focused.log records 197 passed at EXIT=0 with that file included while the negative control records 3 failed at EXIT=1.",
+    "goal": "the node goal is that a space-separated list field is reported as one comma-separation finding instead of a scope finding, and reckon/crew/reports.py:2659 emits that finding while line 2668 withholds the scope finding for a joined in-scope item.",
+    "manifest": "read; it states status complete, 4 of 4 new tests passing, 0 added failures on the 9-file gate arms and names gate-head-matched.log and gate-base-focused.log on disk.",
+    "write_paths": "the manifest declares reckon/crew/reports.py, tests/test_a_scope_refusal_names_the_paths_it_parsed.py and the evidence fragment, and every path in the two reviewed commits lies inside those three."
+  },
+  "justifications": {
+    "durability": "3 of the 4 cases fail at base and the negative control (base reports.py restored) records 3 failed / 1 passed at EXIT=1, so the added assertions redden on the regression they guard.",
+    "evidence": "the done_when population is the 29 test files importing reports.py; the readable arms cover 9 of them (gate-head-matched.log: 193 passed, EXIT=0) while the 29-file head arm gate-head.log:8 stops at 38% with no EXIT line.",
+    "fit": "the helpers follow the surrounding report idiom, path_within_declared_scope is reused, and no name carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/reports.py:2659 emits one comma-separation finding naming changed_paths and the parsed item, and line 2668 withholds the scope finding for a joined in-scope item, which is the goal exactly.",
+    "reuse": "the search over reckon/crew/reports.py for an existing joined-list detector found only _as_list at line 1084, the comma/newline splitter the parse deliberately leaves unchanged; the new predicate is the first owner of the detection.",
+    "scope_discipline": "the two commits touch only reckon/crew/reports.py, tests/test_a_scope_refusal_names_the_paths_it_parsed.py and the declared evidence fragment, though reports.py also carries an unrelated SIM102 fold at line 729."
+  },
+  "project": "reckon",
+  "raw_text": "see review-brief emission",
+  "review_run_id": "r-20261023T205652950987-review-of-a-scope-refusal-names-the-paths-it-parsed-bbd7dfd8a884",
+  "reviewed_base_sha": "21b8493c1be9d5ad88c3ce382ad753c6e3edcd68",
+  "reviewed_head_sha": "bbd7dfd8a8843110c40a74eca70ee36e9b752045",
+  "reviewed_run_id": "r-20261023T135622629487-a-scope-refusal-names-the-paths-it-parsed",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T21:52:30.964818+00:00",
+  "total": 106
+}
