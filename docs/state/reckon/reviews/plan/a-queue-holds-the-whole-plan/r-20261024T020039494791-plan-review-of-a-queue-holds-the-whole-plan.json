@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T02:08:43.894Z",
+  "dispatched_at": "2026-10-24T02:01:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261024T020039494791-plan-review-of-a-queue-holds-the-whole-plan/plan.html:80",
+      "id": "reasoning-1",
+      "reason": "implemented as written, a run that asserted code but whose tree was unreadable at promotion records no revision and is reported landed, so its waiter launches on work that never reached the primary branch; the plan should say the key is absent when promotion could not resolve a revision (shadow or unreadable tree) and keep the ancestry test for every run whose commits are known.",
+      "text": "s8 says \"Promotion leaves that key absent when the run asserted no code, a review for instance, so such a run has landed once its row exists\", but the cited code does the opposite for that example: `_promoted_revision` falls back to the run tree's `HEAD` when the manifest cites no commits (`reckon/crew/promotion_scope.py:307-309`), the guard at `reckon/crew/promotion.py:1479` only drops the key when that resolution returns empty, and the reckon ledger agrees \u2014 all 4240 promoted review rows carry `promoted_revision` (0 of 5968 rows lack it, and 4378 commit-free rows carry one, equal to their `base_sha`). The key is absent only when `_record_tree` finds no readable worktree or repo (`reckon/crew/promotion_release.py:957-973`) or the promotion is a shadow (`reckon/crew/promotion.py:1313`), so s8's \"row exists \u21d2 landed\" branch fires on an unresolvable revision, not on a code-less run",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4a1335fad81454fe2d341d85953b7b3ef130896f58af6e1a314c627bb118276f",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 43,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T02:10:28.175978+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T02:10:28.175978+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v43.json",
+  "review_run_id": "r-20261024T020039494791-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "e9101bcbd1402c688be5fe5af71db199eb717cb1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol and module s8 cites resolves at ad3cc0e5e: `run_path` (`reckon/ledger.py:890`), `RUN_DELIVERED_STATUSES` and `_readiness_rows` (`reckon/crew/queue_admission.py:1023,1056`), `_readiness_by_slug` (`reckon/crew/plan_review.py:3094`), `parse_plan_ref` (`reckon/_schema.py:276`), `MANIFEST_STATUSES`/`TERMINAL_MANIFEST_STATUSES` (`reckon/crew/reports.py:126,138`), and `reckon/crew/node.py`, `reckon/crew_dispatch_commands.py`.",
+    "done_when": "pass \u2014 the done-when carries negative controls: the negative arm declares B's \u00a72 done before queuing and expects the request straight into `queued`, and separate arms close an upstream `blocked` and `failed` and require the waiter never launches.",
+    "evidence_paths": "pass \u2014 s8 names no scratchpad or node-local path; its write paths are repository modules plus a new test file, and its gate logs fall under the run directory per the plan's convention.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol or comment that s8 asks for.",
+    "reasoning": "a finding \u2014 s8 now defines the absence of `promoted_revision` as the no-code case (\"a review for instance\"), but the cited code records a revision for that case and drops the key only when it cannot resolve one.",
+    "single_goal": "pass \u2014 one deliverable, DAG-aware waits across plans and projects; the readiness-assembly factoring and the landed definition are the mechanism of that single goal, not a second one.",
+    "wiring": "pass \u2014 s8's declared depends-on (s2) and the inbound edges from s9 and s15 are present in `plan-section-depends-on`, and the cross-project ref form it introduces resolves through each mounted project's own readiness."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "b686204f7821fa28bedc4126b65b8d044d2f2c8017d2b995adbe341f9caa0d23",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T02:09:47.915872+00:00"
+}
