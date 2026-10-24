@@ -40,6 +40,13 @@ def isolated_home(tmp_path, monkeypatch) -> Path:
 
 
 def _event(number: int) -> dict:
+    """One row the Monitor stream carries, for a probe run of this session.
+
+    The stream carries only a row naming something the coordinator can act on,
+    so a launch or a ``working`` change would never print. A limit reset is one
+    of the carried kinds and draws a pane row, which is what these cases
+    measure: that the follower delivering it is still the image it held.
+    """
     return {
         "project": "proj",
         "event": "transition",
@@ -52,8 +59,8 @@ def _event(number: int) -> dict:
         "model": "model",
         "alias": "model",
         "effort": "medium",
-        "from_state": "starting",
-        "to_state": "working",
+        "from_state": "working",
+        "to_state": "limit-reset",
         "working": 1,
         "blocked": 0,
         "unpromoted": 0,

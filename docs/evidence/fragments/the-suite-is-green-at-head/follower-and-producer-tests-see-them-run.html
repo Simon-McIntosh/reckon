@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s47">
+  <meta name="plan-verdict" content="passed-with-one-blocked-id">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-tags" content="crew,follower,producer,stream,suite-census">
+  <title>Follower and producer tests see their follower and producer run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="follower-and-producer-tests-see-them-run" data-reckon="landed" data-when="2026-10-24">
+  <h2>Follower and producer tests see their follower and producer run</h2>
+
+  <p id="fptsr-reproduction"><strong>Reproduction.</strong> All 11 census ids fail at
+  the node's base revision in a <code>git archive</code> extraction on node-local disk:
+  <code>11 failed in 192.61s</code>, <code>EXIT=1</code>
+  (<code>logs/base-arm.log</code>). They split into two causes, and only one of them is
+  a test that had drifted.</p>
+
+  <p id="fptsr-intended"><strong>Intended changes.</strong> Ten ids fail because the
+  production contract they read changed on purpose, and the test still asserted the
+  superseded one.</p>
+  <p>Commit <code>06467f9da</code> ("fix(crew): the monitor stream carries only
+  actionable lines") made <code>reckon.crew.ticker.stream_carries</code> the single
+  gate between the watch stream and the pane, and it carries only a row naming
+  something the coordinator can act on — a delivery, a halt, a limit reset, a lift, a
+  declared wait. A launch or a <code>working</code> transition is no longer printed.
+  Eight of the ten expose <code>_follow_watch_lines</code> and drive it with a
+  <code>working</code> row, or read the pane without a live producer, so they measured
+  a row the stream is now right to withhold, and a stream read the follower now
+  refuses to perform at all. Each repair keeps the property the test exists to pin —
+  a sweep on cadence however busy the stream is, a raising sweep that does not end the
+  follower, a pane byte-identical with the sweep running, an observed session's rows
+  marked foreign and an owning session's not, a real configuration home left
+  untouched — and re-points the fixture at a carried row, or supplies the live
+  producer the follower requires, or computes the expected pane through
+  <code>crew_follow_commands.follower_row_path</code>, the object the follower feeds,
+  rather than a mirror of it.</p>
+  <p>Commit <code>9a7c6b83d</code> ("feat(crew): project every list view's run rows
+  through one function") leaves a field whose value is empty off the row. The
+  simultaneous-end id read an empty-field row from a healthy run as
+  <code>row["lane_cause"] is None</code>, which is now a <code>KeyError</code>; the
+  repair reads the absence with <code>.get()</code> and adds
+  <code>assert row["recovery"]</code>, so the test still proves the absence is the
+  row's shape rather than a projection that dropped every field.</p>
+
+  <p id="fptsr-blocked"><strong>Blocked id — unintended change.</strong>
+  <code>tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers</code>
+  is not a stale test. <code>reckon/crew/runs.py:_publish_watch_stream</code> sets
+  <code>producer.tick_deferred = True</code> when the flight config will not load
+  (commit <code>a89d8419e</code>, "fix(crew): defer the producer tick when the
+  resolved config will not load"), and every later tick then returns early on
+  <code>if producer.tick_deferred: return False</code>. The deferral's stated contract
+  is that the next tick retries once the config resolves; the code never retries at
+  all, so a producer that meets one broken
+  <code>flight.yaml</code> publishes nothing for the rest of its life. Reproduced
+  independently of the test: with a broken config written, runs created, and the
+  config then unlink'd, the stream still carried only its baseline row and the
+  producer stayed alive (<code>logs/probe_defer.py</code>). The defect is production
+  code outside this node's write paths, so neither that code nor that test was
+  changed; the repair belongs in its own section.</p>
+
+  <p id="fptsr-negative-control"><strong>Negative control.</strong> Ten repaired ids,
+  one arm, production mutated in a <code>git archive</code> extraction carrying the
+  repairs: <code>stream_carries</code> returns <code>False</code>,
+  <code>tests/test_follow_observes_other_sessions.py</code>'s four ids and the sweep's
+  line-traffic and rate-guard ids lose their rows; <code>_sweep_on_cadence</code>
+  returns at its first line, so no sweep runs at attach or on cadence;
+  <code>recovery</code> is popped from every projected run row;
+  and the follower's reload probe no longer compiles the tree before reloading.
+  <code>10 failed in 65.34s</code>, <code>EXIT=1</code>
+  (<code>logs/negative-control.log</code>) — every repaired id fails again, and each
+  fails on the field, message or call it pins. Restoring an old expectation is not
+  used anywhere in the arm.</p>
+
+  <p id="fptsr-head"><strong>At the head.</strong> The five-file gate at
+  <code>4cdd078a5</code> runs <code>1 failed, 29 passed in 108.24s</code>,
+  <code>EXIT=1</code> (<code>logs/head-gate.log</code>): the single failure is the
+  blocked id above, and the 10 repaired ids pass. The node changed no production
+  module, so no unlisted test file imports a module it changed; the arm that could
+  show such a failure is the head gate itself. <code>ruff check</code> and
+  <code>ruff format --check</code> pass on the four staged test paths.</p>
+
+  <p id="fptsr-flake"><strong>Load-sensitive join.</strong> The two follower helpers
+  joined their reader thread on a two- to three-second bound. It failed twice on a
+  loaded node — <code>test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three</code>
+  (<code>logs/post-ruff-follow-observes.log</code>, passing alone next run in 5.06s,
+  <code>logs/retry-owning-and-observed.log</code>) and then the census id
+  <code>test_pane_output_is_unchanged_by_the_sweep</code> — each time on
+  <code>a stopped follower must return</code> rather than on the property under test.
+  Commit <code>4cdd078a5</code> widens that bound to fifteen seconds in both helpers
+  and leaves the bounded join and the aliveness assertion in place, so a follower
+  that never stops still fails.</p>
+</article>
+</body>
+</html>
