@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T20:18:18.450Z",
+  "dispatched_at": "2026-10-24T20:07:07Z",
+  "findings": [
+    {
+      "file": "tests/test_every_edit_path_refuses_one_shape.py",
+      "line": 331,
+      "severity": "non-blocking",
+      "text": "test_every_store_op_verb_names_a_target compares set membership only, so a verb added to TARGET_COMPOSED_VERBS without a matching branch in _op_target_path falls through to the 'return None' at reckon/mcp_edit_plan.py:1354 and the case stays green while the conflict refusal again names no target for that verb, which is the exact defect its docstring says it prevents."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html",
+      "line": 47,
+      "severity": "non-blocking",
+      "text": "The Measure paragraph says both arms are git archive extractions, but logs/head_targeted.log:5 and logs/base_targeted.log:5 record '# cwd:' as the source worktree while the command cds into the /tmp extraction, so the log's own provenance fields disagree; the extraction claim is still supported by the command and by '# module.__file__' naming the /tmp tree, but the cwd line reads as a worktree run; the reader has to reconcile two header lines."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html",
+      "line": 57,
+      "severity": "non-blocking",
+      "text": "The ruff claim (7 pre-existing findings at each arm, format clean) appears in the manifest artifacts line and in the fragment's Measure paragraph but no ruff log exists under logs/, so the receipt the done_when asks for cannot be checked by a later reader."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_every_edit_path_refuses_one_shape.py:272 asserts an unconditional current value against the independent _value_in walk, and negative_control_resolution.log shows that assertion red when the two-part branch is reverted; the verb-table guard at line 326 checks set membership only.",
+    "evidence": "The head arm at c6537fa (63 passed, EXIT=0) and the pre-change arm at 9f5d32b (1 failed, 59 passed, EXIT=1) are logged with revision, tree, command and failure ids, and both negative controls are red (2 failed and 1 failed); the ruff delta the done_when requires is stated but has no log under logs/.",
+    "fit": "reckon/mcp_edit_plan.py:1281 declares TARGET_COMPOSED_VERBS with the reason in a docstring beside _op_target_path and reuses _store._find_by_id, following the module's underscore-helper idiom with no plan, ticket or version identifier in any new name.",
+    "goal_fidelity": "reckon/mcp_edit_plan.py:1260 resolves a two-part list address to the record it names, so the followup-resolve and gate-verdict targets now carry the value the document holds, which is the repair the section's listed id needs.",
+    "reuse": "The search for an existing dotted-address resolver found only reckon/_store.py:2811 _apply_set (write side) and reckon/crew_dispatch_commands.py:470 _config_value_at (a mapping-only flight-config reader), neither of which owns plan-document value resolution, and the addition extends the existing _find_by_id rather than forking it.",
+    "scope_discipline": "The two commits against 3d9a71d change only reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py and docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html, each inside the node's declared write paths, and the second commit is evidence prose alone."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal in the reviewed run's prompt is to repair the production defect behind section 58's listed id; reckon/mcp_edit_plan.py:1260 now resolves a two-part list address so resolve, gate, lock and append targets carry the value the document holds, matching that goal over the two commits gained since the prior review.\nVERDICT done_when: section 58's done_when names tests/test_every_edit_path_refuses_one_shape.py::test_the_refusal_shape_is_identical_across_op_paths, a base arm over every importing test file, a per-mechanism case and a revert control; logs/head_targeted.log ends '63 passed' EXIT=0 and logs/base_targeted.log ends '1 failed, 59 passed' EXIT=1 with that id as the sole failure, and both negative-control logs end EXIT=1 with the listed id among the failures.\nVERDICT write_paths: the review read the declared paths in the reviewed run's prompt (reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py, the every-edit-path-refuses-in-one-shape evidence fragment and its figures directory); every path in the two commits is inside them and no figure directory was written.\nVERDICT manifest: read at the reviewed run's manifest.md; it records status complete, the four commits, the after_suite at c6537fa with failure_count 0 and the baseline at 9f5d32b with the single listed id, plus the four gate logs.\nVERDICT diff: read both commits (c6537fa fix, de65b61 docs) against 3d9a71d; the code commit adds the two-part list branch at reckon/mcp_edit_plan.py:1260, the TARGET_COMPOSED_VERBS table at line 1281 with its membership test, rewrites the shape case to assert current unconditionally and adds two cases, and the docs commit only rewords the evidence fragment.\nCALL_SITES: reckon/mcp_edit_plan.py:_edit_plan (via _attach_changed_targets at lines 1613, 1751 and 1854), reckon/mcp_edit_plan.py:_edit_plan_tool\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_edit_plan.py:1260 resolves the two-part list address that previously reported _ABSENT, so the refusal for a followup resolve or gate verdict now names its target with the value read back.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head_targeted.log and logs/base_targeted.log carry revision, tree, command and EXIT lines with the listed id as the only base failure, but the done_when's ruff receipt has no log under logs/.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three files in c6537fa and de65b61 are all inside the node's declared write paths and the docs commit is evidence prose alone.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_every_edit_path_refuses_one_shape.py:272 reddens when the two-part branch is reverted, as logs/negative_control_resolution.log shows, but the verb-table case at line 331 checks membership and not that _op_target_path composes a target.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp_edit_plan.py:1281 documents the declared verb table beside _store._OP_DISPATCH in the module's own comment idiom and introduces no plan or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: the only other dotted-path readers found are reckon/_store.py:2811 _apply_set and reckon/crew_dispatch_commands.py:470 _config_value_at, neither an owner of plan value resolution, and the change reuses _store._find_by_id at reckon/mcp_edit_plan.py:1261.\nFINDING tests/test_every_edit_path_refuses_one_shape.py:331 non-blocking: the verb-table guard compares membership of two sets, so adding a verb to TARGET_COMPOSED_VERBS without a branch in _op_target_path keeps the case green while reckon/mcp_edit_plan.py:1354 returns None and the verb again answers a conflict with no target.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html:47 non-blocking: the Measure paragraph calls both arms git archive extractions while logs/head_targeted.log:5 and logs/base_targeted.log:5 record '# cwd:' as the source worktree, so the log headers contradict each other; the command and '# module.__file__' still place the run in the extraction.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html:57 non-blocking: the ruff-check and ruff-format delta the section's done_when requires is asserted in the manifest and the fragment but no ruff log exists under logs/, so a later reader cannot verify the receipt.",
+  "review_run_id": "r-20261024T200511902715-review-of-every-edit-path-refuses-in-one-shape-de65b6122783",
+  "reviewed_base_sha": "3d9a71d6bbbf70a32eaf649c7a641978a18f8c02",
+  "reviewed_head_sha": "de65b61227833024a4c2503f96518c8410bc35e7",
+  "reviewed_run_id": "r-20261024T174941474772-every-edit-path-refuses-in-one-shape",
+  "rubric": "review",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T20:23:30.645147+00:00",
+  "total": 104
+}
