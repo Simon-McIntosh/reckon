@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -275,7 +275,10 @@
     <div class="r-comment-body"><p>Section 8 landed at merge <code>6fce240f4</code>: a finished run's scratch is removed by run on every host. Debt: the record names in <code>_run_directory_records_end</code> are literals beside their constants. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s8">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261024T044733940789-review-of-the-retention-sweep-verb-is-maintenance-a50f5823d10a" data-who="reckon-build" data-when="2026-10-24T04:52:30.213Z">
-    <div class="r-comment-body"><p>Reviewed r-20261024T043616104091-the-retention-sweep-verb-is-maintenance at base 778e326d1219b5d5a85f88e01606af3dcdf5b716 and head a50f5823d10ab3479fa19e90e0204b62b4e09b0c: goal_fidelity 20, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 20 (115/120), added_failure_count 0 with no added failure ids; two non-blocking findings on the exemption&#x27;s unasserted reason text (tests/test_skill_contracts.py:1214) and on no check that an exempt key is still a registered verb (tests/test_skill_contracts.py:1213). Nothing blocking.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261024T043616104091-the-retention-sweep-verb-is-maintenance at base 778e326d1219b5d5a85f88e01606af3dcdf5b716 and head a50f5823d10ab3479fa19e90e0204b62b4e09b0c: goal_fidelity 20, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 20 (115/120), added_failure_count 0 with no added failure ids; two non-blocking findings on the exemption's unasserted reason text (tests/test_skill_contracts.py:1214) and on no check that an exempt key is still a registered verb (tests/test_skill_contracts.py:1213). Nothing blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261024T043616104091-the-retention-sweep-verb-is-maintenance" data-who="reckon-build" data-when="2026-10-24T04:46:45.016Z">
+    <div class="r-comment-body"><p>`reckon crew retention-sweep` is now listed in `CREW_VERBS_OUTSIDE_ORCHESTRATION` as an operator-run maintenance surface whose installed timer runs `python -m reckon.crew.gc` rather than the verb and which no orchestrator invokes; `test_every_registered_crew_verb_is_documented_or_exempt` moves from failing to passing — base arm 2 failed / 70 passed, head arm 1 failed / 71 passed with every other case keeping its base result, and the negative control that removes the entry reddens the case again at EXIT=1.</p></div>
 </div>
 </section>
 </main>
