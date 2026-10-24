@@ -1,0 +1,34 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted"
+  ],
+  "completed_at": "2026-10-24T20:04:53.509Z",
+  "dispatched_at": "2026-10-24T19:52:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "1871",
+      "severity": "non-blocking",
+      "text": "non-blocking: preserve_discard_record writes the spool marker before the launch is attempted and never withdraws it if the launch succeeds, so a request discarded mid-pass that nevertheless launches leaves a durable discard record beside a live run; promotion.discard_recorded then answers true for that run and recovery_watch.py:1625 words its later departure as discarded rather than withdrawn. The manifest's outside_scope names the launch-proceeds window but not this side effect; closing it needs dispatch_claims.py, outside this node's write paths."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a discard recorded during an admission pass survives the refused launch's rollback; reckon/crew/promotion.py:1845 adds preserve_discard_record, called at reckon/crew/queue_admission.py:237 immediately before the pointer's request is handed to dispatch, so the departure is durable when the rollback removes the run directory.\nVERDICT done_when: the done_when names tests/test_a_discarded_request_stays_discarded.py passing at head with a base arm and a reverted-repair control; the manifest records base c11e89e83 2 failed / 3 passed EXIT=1 (logs/base-gate.log) and head 300473b4e 5 passed EXIT=0 (logs/head-gate.log), which is the measure the gate asserts.\nVERDICT write_paths: the manifest declares reckon/crew/promotion.py, reckon/crew/queue_admission.py, tests/test_a_discarded_request_stays_discarded.py, docs/evidence/fragments/the-suite-is-green-at-head/a-mid-pass-discard-survives-the-rollback.html and docs/figures/the-suite-is-green-at-head/; git diff c11e89e83..a249ff84c changes only the two source files and the evidence fragment, all inside that set.\nVERDICT manifest: read; it records the probe trace, both git-archive arms, the importer population, the executed negative control, the ruff position and status complete.\nVERDICT diff: read both commits against the base; 300473b4e adds preserve_discard_record (reckon/crew/promotion.py:1845-1872) and its single call (reckon/crew/queue_admission.py:232-237), a249ff84c adds the 57-line evidence fragment, and no test is modified, skipped or weakened.\nCALL_SITES: reckon/crew/queue_admission.py:370, reckon/crew/queue_admission.py:2374, reckon/crew/dispatch.py:538\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1845-1872 copies the run-directory marker into crew_home()/discards before the launch, and the base probe at logs/base-probe-mechanism.log shows the marker removed without that copy and recorded=False afterwards.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-gate.log ends 2 failed, 3 passed EXIT=1 on exactly the two section ids and logs/head-gate.log ends 5 passed EXIT=0; the head population arm logs/head-population.log ends 1 failed, 182 passed and carries one id absent from the base arm, which the manifest and logs/base-overlap-alone.log show failing at base alone.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c11e89e83..a249ff84c touches only reckon/crew/promotion.py, reckon/crew/queue_admission.py and the declared evidence fragment, and the test file the section lists is left unchanged.\nSCORE durability: 19\nJUSTIFICATION durability: the run adds no assertion, and the guard it relies on is disproved-in-reverse rather than assumed: logs/negative-control.log restores both files to the base revision and the two ids fail again (2 failed, EXIT=1), so the pre-existing tests at tests/test_a_discarded_request_stays_discarded.py:69 and :119 redden if preserve_discard_record is removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:235 uses the module's existing function-local import idiom for promotion (compare :832 and :1871) and promotion.py:1845 names the mechanism, with no plan label or version in the symbol, file or docstring.\nSCORE reuse: 18\nJUSTIFICATION reuse: the capability search over reckon/crew found no owner for copying a discard marker into the spool; the new function reuses the existing discard_record_path (promotion.py:1817), discard_spool_path (:1840) and _write_json rather than reimplementing them, and leaves the create-time path in _write_discard_record (:1961) untouched.\nFINDING reckon/crew/promotion.py:1871 non-blocking: preserve_discard_record writes the spool marker before the launch is attempted and never withdraws it if the launch succeeds, so a request discarded mid-pass that nevertheless launches leaves a durable discard record beside a live run, and promotion.discard_recorded (promotion.py:1845) then answers true for it, which recovery_watch.py:1625 reads as a discarded departure; the manifest's outside_scope names the launch-proceeds window but not this side effect.\n",
+  "review_run_id": "r-20261024T194954189081-review-of-a-mid-pass-discard-survives-the-rollback-a249ff84ced1",
+  "reviewed_base_sha": "c11e89e831d73e51d455fbbbfebc7877943c5d43",
+  "reviewed_head_sha": "a249ff84ced11b3dfe4a23bcacb14de5d8101ea9",
+  "reviewed_run_id": "r-20261024T192656650532-a-mid-pass-discard-survives-the-rollback",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T20:11:31.566909+00:00",
+  "total": 112
+}
