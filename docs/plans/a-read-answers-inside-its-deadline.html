@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="526">
+<meta name="plan-version" content="527">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -1412,6 +1412,9 @@
 </div>
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261024T130616441786-review-of-the-served-view-keeps-mains-section-readiness-names-ab929ce63fd6" data-who="reckon-build" data-when="2026-10-24T13:17:12.494Z">
     <div class="r-comment-body"><p>Reviewed r-20261024T124913842763 at 777de1d7b..ab929ce63: the one-line binding at reckon/roadmap.py:3480 makes the merged tree (recomputed here as 8734efe96) NameError-free at 21 passed against 21 passed at base — zero added failures — with the dropped-binding control red at 16 failed; scores 19/17/20/16/18/20 and two non-blocking findings (fragment names build_roadmap for a binding in _build_roadmap; base arm is one origin/main revision behind the head arm, with the gate files unchanged across the gap).</p></div>
+</div>
+<div class="r-comment" data-section="s51" data-id="c-run-r-20261024T124913842763-the-served-view-keeps-mains-section-readiness-names" data-who="reckon-build" data-when="2026-10-24T13:05:29.454Z">
+    <div class="r-comment-body"><p>Restored the plan-level decision hold list as a build_roadmap local beside the other four blocker lists, so main&#x27;s section-verdict block reads it after the merge; merged tree runs tests/test_roadmap_section_verdict.py and tests/test_mcp_audit.py at 21 passed with zero added failures against origin/main&#x27;s 21 passed, and the dropped-binding control fails 16 of 21.</p></div>
 </div>
 <div class="r-comment" data-section="s60" data-id="c-defer-s60" data-who="reckon-build" data-when="2026-10-24T09:00:00Z">
     <div class="r-comment-body"><p>Deferred until §51 lands. Two content reviews of this section, on 2026-10-24, found its design depends on the shape of <code>roadmap.plan_blocker_state</code>. That function exists only in §51's run until §51 lands. Re-plan it then, against the landed function, carrying these points. First, the inventory's blocking rows also carry gate blockers with <code>kind: "gate"</code> (<code>reckon/serve.py</code> near line 2067, row shape in <code>reckon/lifecycle.py</code> near lines 52 to 71). <code>_blocking</code> includes gates today through <code>split_unpassed_gates</code>, so a filter to <code>explicit</code> and <code>held</code> rows drops them. Plan-level open decisions must likewise reach the function. Second, this section and §56 both write <code>reckon/mcp.py</code>, so the re-plan orders them with a section dependency.</p></div>
