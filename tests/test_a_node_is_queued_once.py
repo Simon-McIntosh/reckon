@@ -309,7 +309,7 @@ def test_a_different_node_still_queues(
     }
 
 
-def test_a_different_node_over_a_queued_path_launches(
+def test_a_different_node_over_a_queued_path_launches_the_older_request(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # A queued request holds no worker and no worktree, so its claim on

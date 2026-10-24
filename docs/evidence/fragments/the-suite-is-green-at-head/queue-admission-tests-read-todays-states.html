@@ -8,7 +8,7 @@
   <meta name="artifact-kind" content="evidence">
   <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
   <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s46">
-  <meta name="plan-verdict" content="passed">
+  <meta name="plan-verdict" content="partial">
   <meta name="plan-recorded-at" content="2026-10-24">
   <meta name="plan-tags" content="crew,queue,admission,picker,tests">
   <title>Queue-admission tests read today's admission states | reckon</title>
@@ -26,14 +26,14 @@
   <ul>
     <li id="queue-admission-tests-read-todays-states-yield">
       <code>test_a_dispatch_launches_its_sessions_older_request_and_queues_behind_it</code>,
-      <code>test_a_different_node_over_a_queued_path_launches</code>,
+      <code>test_a_different_node_over_a_queued_path_launches_the_older_request</code>,
       <code>test_a_new_dispatch_over_a_queued_claim_queues_then_launches</code> —
       <em>3006d1fd0</em> made a dispatch yield a free lane slot to its own session's
       oldest queued request and queue itself behind it. The launch keeps the request's
       run id, so the pointer now exists carrying the launched phase; the three tests
       assert that instead of pointer absence or a self-launch.</li>
     <li id="queue-admission-tests-read-todays-states-holds">
-      <code>test_both_dispatch_holds_are_recorded_without_docs</code> —
+      <code>test_every_dispatch_hold_is_recorded_without_docs</code> —
       <em>0ce92aa7a</em> moved the section-waits read ahead of the lane branch, adding the
       third <code>record_picker_hold</code> site. The closed set is re-frozen to three.</li>
     <li id="queue-admission-tests-read-todays-states-congested">
@@ -43,16 +43,18 @@
       <code>queued: true</code> and the zero allowance, instead of exit 75
       <code>lane-paused</code>.</li>
     <li id="queue-admission-tests-read-todays-states-unknown-keys">
-      <code>test_a_schema_refused_override_answers_on_the_dry_run_channel[fences.ghost_key=1-fences.ghost_key]</code>,
-      <code>... [backends.codex.ghost_sub=1-backends.codex.ghost_sub]</code> —
+      <code>test_an_undeclared_override_is_ignored_at_load_and_echoed[undeclared-fence]</code>,
+      <code>...[undeclared-backend-key]</code> —
       <em>78bad3aec</em> made an undeclared flight key ignored at load and reported on
       <code>ResolvedFlight.unknown_keys</code>; only <code>reckon flight --check</code>
       resolves strictly. The dry run completes and still echoes each path's resolution.</li>
     <li id="queue-admission-tests-read-todays-states-worker-alive">
-      <code>test_a_discarded_run_is_not_recreated</code> — the worker stub slept five
-      seconds, so on this node's storage the <code>worker.json</code> read landed after
-      the worker exited, tripping the test's own precondition. The stub now sleeps 30 s,
-      inside <code>MARKER_BOUND</code>, so a live worker is present when the discard runs.</li>
+      <code>test_a_discarded_run_is_not_recreated</code> — the worker stub was given a
+      fixed sleep to outlast, so on this node's storage the <code>worker.json</code> read
+      landed after the worker exited, tripping the test's own precondition. The case now
+      starts the stub in a blocking wait that the case releases itself, so the worker is
+      alive at the discard by construction rather than by a clock that has to beat the
+      storage, and the test spends no fixed seconds.</li>
   </ul>
   <p><strong>Reported blocked, not repaired.</strong></p>
   <ul>
@@ -74,10 +76,21 @@
       the sweep correctly leaves it alone. Making the fixture classify blocked again
       needs a production-visible end-of-attempt, which this node cannot author.</li>
   </ul>
-  <p><strong>Negative control.</strong> Dropping the yield
-  (<code>if False and older_request is not None</code> at <code>dispatch.py:1841</code>)
-  fails the three yielding ids with <code>EXIT=1</code>
+  <p><strong>Negative control, one arm per repaired group.</strong> Each arm reverts
+  the change its group depends on and requires that group's ids to fail; every arm ran
+  against its own <code>git archive</code> extraction
   (<code>logs/negative-control.log</code>).</p>
+  <ul>
+    <li>Dropping the yield (<code>if False and older_request is not None</code>) fails
+      the three yielding ids.</li>
+    <li>Removing the section-waits <code>record_picker_hold</code> call leaves two
+      sites and fails the holds id.</li>
+    <li>Restoring the refusing branch for a held local lane fails both congested-lane
+      ids.</li>
+    <li>Making the load path resolve strictly fails both undeclared-override ids.</li>
+    <li>Restoring the fixed sleep in the worker stub in place of the release wait fails
+      the worker-alive id.</li>
+  </ul>
 </article>
 </body>
 </html>

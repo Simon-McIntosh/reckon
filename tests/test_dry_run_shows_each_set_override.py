@@ -298,8 +298,9 @@ def test_a_held_lane_refusal_carries_each_set_resolution(
         ("fences.ghost_key=1", "fences.ghost_key"),
         ("backends.codex.ghost_sub=1", "backends.codex.ghost_sub"),
     ],
+    ids=["undeclared-fence", "undeclared-backend-key"],
 )
-def test_a_schema_refused_override_answers_on_the_dry_run_channel(
+def test_an_undeclared_override_is_ignored_at_load_and_echoed(
     home: Path, repo: Path, override: str, path: str
 ) -> None:
     """A key the schema does not carry is ignored at load and echoed.
