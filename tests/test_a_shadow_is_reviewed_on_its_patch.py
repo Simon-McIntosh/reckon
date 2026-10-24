@@ -31,6 +31,20 @@ HEAD = "a5985da3f2185f2b0f5d6c2a3b4c5d6e7f8091a2"
 # value the code under test builds.
 NON_SHADOW_IDENTITY = f"Reviewed run: r-plain-run\nReviewed head: {HEAD}\n"
 
+# The review record contract every composed brief carries, spelled here rather
+# than read from the composer for the same reason the identity is: a change to
+# the contract the fleet states must turn this red instead of moving both sides
+# together. It is the block that follows the identity, not one a shadow adds.
+NON_SHADOW_RECORD_CONTRACT = (
+    "Review record contract (run crew check --review --record <path> on each written record before ending):\n"
+    "Required: project, reviewed_run_id, review_run_id, reviewed_base_sha, reviewed_head_sha,\n"
+    "scores (goal_fidelity, evidence, scope_discipline, durability, fit, reuse),\n"
+    "added_failure_count, added_failure_ids, findings, status.\n"
+    "Accepted status values: incomplete, parsed, unparsed.\n"
+    "Use parsed when the rubric produced a readable review; unparsed when it did not;\n"
+    "incomplete when the review has not finished and no verdict can be acted on."
+)
+
 SHADOW_CONTRACT_SENTENCE = (
     "An empty commits list and a head equal to the base are this run's "
     "contract, not a finding."
@@ -101,12 +115,19 @@ def test_the_shadow_block_reads_worktree_and_base_from_the_record(
 
 
 def test_a_run_that_is_not_a_shadow_keeps_todays_brief(tmp_path: Path) -> None:
-    """A non-shadow brief is the rubric plus the identity lines, no block."""
+    """A non-shadow brief is the rubric, the identity, and the record contract."""
     record = _plain_record(tmp_path)
 
     text = recovery_review_subject._review_brief_text(record, HEAD)
 
-    expected = load_review_prompt().rstrip("\n") + "\n\n" + NON_SHADOW_IDENTITY
+    expected = (
+        load_review_prompt().rstrip("\n")
+        + "\n\n"
+        + NON_SHADOW_IDENTITY
+        + "\n"
+        + NON_SHADOW_RECORD_CONTRACT
+        + "\n"
+    )
     assert text == expected
     assert "shadow" not in text
     assert SHADOW_CONTRACT_SENTENCE not in text
