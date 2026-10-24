@@ -1,0 +1,58 @@
+<!-- Evidence anchor: the-retention-sweep-verb-is-maintenance -->
+
+<section id="the-retention-sweep-verb-is-maintenance-evidence">
+  <h2>The retention-sweep verb is named as maintenance, outside orchestration</h2>
+
+  <p id="the-retention-sweep-verb-is-maintenance-change">
+    <code>CREW_VERBS_OUTSIDE_ORCHESTRATION</code> in
+    <code>tests/test_skill_contracts.py</code> gained the entry
+    <code>("crew", "retention-sweep")</code>, whose reason states that the verb is an
+    operator-run maintenance surface &#8212; for a hand-run sweep, or for installing the
+    hourly timer &#8212; that the installed timer runs the module entry point
+    <code>python -m reckon.crew.gc</code> rather than the verb, and that no orchestrator
+    invokes the verb. That is the plan's three claims, and each was checked against the
+    tree rather than copied from the section: the verb is registered at
+    <code>reckon/crew_run_commands.py:1558</code> as <code>crew_retention_sweep</code>;
+    <code>install_retention_timer</code> renders its service with
+    <code>ExecStart</code> = <code>&lt;interpreter&gt; -m reckon.crew.gc --apply</code>
+    (<code>render_retention_service_unit</code>, <code>reckon/crew/gc.py</code>), so the
+    timer reaches <code>gc.main</code> and never the verb; and no file under
+    <code>skills/</code> or in the orchestrator surface names
+    <code>reckon crew retention-sweep</code>. The skill is unchanged, so the exemption
+    is the correct resolution rather than documenting a verb no orchestrator uses.
+  </p>
+
+  <p id="the-retention-sweep-verb-is-maintenance-measure">
+    The gate is <code>tests/test_skill_contracts.py</code> run whole, both arms from
+    <code>git archive</code> extractions, with <code>PYTHONPATH</code> naming each
+    extraction so the extracted <code>reckon</code> package is the one imported. The
+    <strong>base</strong> arm (<code>778e326d1</code>) records <strong>2 failed, 70
+    passed</strong>, the target
+    <code>test_every_registered_crew_verb_is_documented_or_exempt</code> among the
+    failures with <code>AssertionError: reckon crew retention-sweep is registered and
+    the skill never names it</code>. The <strong>head</strong> arm
+    (<code>5f70b98a9</code>) records <strong>1 failed, 71 passed</strong>: the target case
+    passes, and the one remaining failure is the base's other failure,
+    <code>test_review_skill_is_discovered_beside_the_other_reckon_skills</code>
+    (<code>reckon-review</code> body 1506 words against a 1500 bound), which is present at
+    both arms and outside this node's write scope. Every case therefore keeps its base
+    result and the target case flips. <code>ruff check</code> and
+    <code>ruff format --check</code> both exit 0 on the file, adding nothing.
+  </p>
+
+  <p id="the-retention-sweep-verb-is-maintenance-negative">
+    <strong>Negative control.</strong> The declared mutation removes the new entry. The
+    mutation was applied to a <code>git archive</code> extraction of the head and only the
+    target case was run: it fails with
+    <code>AssertionError: reckon crew retention-sweep is registered and the skill never
+    names it</code>, <code>1 failed in 1.95s</code>, <code>EXIT=1</code> &#8212; a failing
+    test id the head arm does not fail.
+  </p>
+
+  <p id="the-retention-sweep-verb-is-maintenance-base">
+    <strong>Base arm, verb check.</strong> At the base revision the verb is already
+    registered and the entry is already absent, so the case reddens on an untouched tree:
+    the defect the entry repairs reproduced before the repair, rather than being inferred
+    from a suite that happened to be green.
+  </p>
+</section>
