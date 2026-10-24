@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T03:15:48.873Z",
+  "dispatched_at": "2026-10-24T03:08:14Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "reasoning-1",
+      "reason": "the node would implement a wait the plan names but its own answering mechanism cannot resolve, so the DAG claim \u00a78 exists to make fails exactly for plan-level dependencies.",
+      "text": "\u00a78 defines a request's waits as the union of its section's refs, its plan's `depends_on`, its section's gates and `--after` refs, then answers every wait through \"one per-section predicate ... reading every hold field the roadmap row carries\", listing `section_readiness`, `section_gate_blockers`, `gate_blockers`, `explicit_blockers` and `held_blockers`; but a plan-level `depends_on` is not among them \u2014 `build_roadmap` computes `plan_dependency_blockers` only to set the plan-level `readiness`/`effective_status` (`reckon/roadmap.py:3359-3362`, `:3438-3448`) and attaches it to no row field, while `section_readiness` is built solely from `section_dependency_blockers` and `decision_section_blockers` (`reckon/roadmap.py:3583-3600`); `after_hold` is the soft `after` edge, not `depends_on` (`reckon/roadmap.py:3426`). s8 also forbids the one place the fact exists (\"A wait is answered per section, never from the plan-level summary\"), and the cycle graph's nodes are fixed as \"sections and requests\", so a plan-level ref has no node to land on and a mutual plan-level dependency is not detectable there. As written, a request whose plan declares an unmet `depends_on` launches anyway, and the union's fourth component is unanswerable",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "reasoning-2",
+      "reason": "the section reintroduces the silent-unreadable-status stall its own evidence names, and one added obligation line (or a move to `blocked-upstream`) is all the mechanism needs.",
+      "text": "\u00a78 says `completed`, `done`, `landed` and `promoted` are refused by `parse_manifest` and that \"a waiter whose upstream manifest uses one of them stays held until the status is repaired\", while the plan raises an owning-session obligation for its sibling case (a row with no `promoted_revision`) and \u00a72 raises one for `blocked-upstream`; the unreadable-manifest hold raises nothing \u2014 `_request_state` catches `ManifestParseError` and returns `PENDING` with no obligation (`reckon/crew/queue_admission.py:1230-1240`), so the request waits silently and the coordinator is never woken. \u00a71's own measured evidence is precisely this failure (\"One unreadable status held the chain for two hours\" until a `crew repair --status complete` released it), and \u00a76's wake list covers only `blocked`/`failed` runs and `blocked-upstream` requests, so no pass ever surfaces it. An upstream run that genuinely delivered but carries one of these words holds its whole downstream chain with no signal",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a80aa458e1d68356871cbf61a435d950d0bb5e8b7abf9afd95d35cac5302f011",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 47,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T03:17:46.152472+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-24T03:18:22.091749+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T03:17:46.152472+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T03:18:22.091749+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v47.json",
+  "review_run_id": "r-20261024T030623713839-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "6282cd156acff231178701c15b1df3832501f960",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every named anchor resolves in the tree: `_readiness_rows` (`reckon/crew/queue_admission.py:1056`), `_readiness_by_slug` (`reckon/crew/plan_review.py:3094`, which does keep one verdict per plan), `RUN_DELIVERED_STATUSES` at `reckon/crew/queue_admission.py:1023` with exactly `(\"complete\", \"completed\", \"done\", \"landed\", \"promoted\")`, `MANIFEST_STATUSES`/`TERMINAL_MANIFEST_STATUSES` in `reckon/crew/reports.py:126-140` (whose union confirms `completed`, `done`, `landed` and `promoted` are outside it and so refused by `parse_manifest`), the promotion-time `ledger.append_run` (`reckon/crew/promotion.py:1631`), `run_path` (`reckon/ledger.py:890`), `sweep_promoted_revisions` with `target_head=\"HEAD\"` and the project-mount checkout (`reckon/crew/promotion.py:1985-2030`), `parse_plan_ref` (`reckon/_schema.py:276`), `TaskNode` (`reckon/crew/node.py:725`) and `reckon/crew_dispatch_commands.py`.",
+    "done_when": "pass \u2014 \u00a78 states a measurable battery with a declared negative arm (\"The negative arm declares B's \u00a72 done before queuing, and the request goes straight to `queued`\") and refusal arms that assert nothing is stored; the two mechanisms that have no arm are raised under `reasoning` rather than as a done-when defect.",
+    "evidence_paths": "pass \u2014 \u00a78's owners name `a new test file` among durable write paths in `reckon/crew/`, and no gate log or artifact is placed on a scratchpad or node-local path.",
+    "naming": "pass \u2014 \u00a78 introduces no plan label, stage name, ticket number or version tag into code, and its prose states mechanisms rather than changelog.",
+    "reasoning": "a finding, twice \u2014 \u00a78 puts `its plan's depends_on` into a request's wait union but the only answering path it defines (a per-section predicate over hold fields the roadmap row carries) cannot see a plan-level dependency, and \u00a78 accepts a silent permanent hold for an unreadable upstream manifest, which is the failure \u00a71 was written to remove.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, a queue whose waits are answered by the work's DAG across plans and projects; the readiness-assembly factoring, the `complete` narrowing and the landed check are all in service of that one verdict.",
+    "wiring": "pass \u2014 \u00a78's declared edge (`s8` \u2192 `a-queue-holds-the-whole-plan#s2`) matches what the section consumes (`_readiness_rows`, `RUN_DELIVERED_STATUSES` and the awaiting-upstream phases all come from \u00a72), and no relationship it needs is missing or points elsewhere."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "686fd18db8075325c4de5a7b10bf49e5363200ec7838423612004a37e2923fa0",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T03:17:00.964270+00:00"
+}
