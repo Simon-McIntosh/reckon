@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T19:05:06.323Z",
+  "dispatched_at": "2026-10-24T18:54:59Z",
+  "findings": [
+    {
+      "file": "tests/test_a_served_checkout_is_not_read_as_moved.py",
+      "line": 67,
+      "severity": "non-blocking",
+      "summary": "the expected stamp is computed with the same function the guard calls, so the case passes under the node's runtime-reverted control",
+      "text": "the expected stamp is computed with the same function the guard calls, so the case passes under the node's runtime-reverted control"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T174146097882-the-served-code-guard-reads-the-packages-own-stamp/manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "summary": "the negative-control note overstates the ids the control reddens and omits one listed id the control never ran",
+      "text": "the negative-control note overstates the ids the control reddens and omits one listed id the control never ran"
+    },
+    {
+      "file": "tests/test_a_served_checkout_is_not_read_as_moved.py",
+      "line": 31,
+      "severity": "non-blocking",
+      "summary": "_committed_checkout duplicates the helper of the same name in two existing test modules",
+      "text": "_committed_checkout duplicates the helper of the same name in two existing test modules"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261024T185155698782-review-of-the-served-code-guard-reads-the-packages-own-stamp-2b1c8165dfd5",
+  "reviewed_base_sha": "dea3758c1582cb7d688d5b2a3d0180bce507e4e6",
+  "reviewed_head_sha": "2b1c8165dfd56120427417e973a73f11313bdceb",
+  "reviewed_run_id": "r-20261024T174146097882-the-served-code-guard-reads-the-packages-own-stamp",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: the node's goal is to repair the production defect behind the seven \u00a754 ids; the diff changes reckon/served_code.py:828-831 so moved_checkout hands source_code_identity the package inside the checkout, which is the mechanism \u00a754 names, and reckon/mcp.py is left untouched.\nVERDICT done_when: \u00a754's done_when asks the seven listed ids to pass at head with base/head arms from git archive extractions and before/after read-path figures; head-gate.log shows 26 passed EXIT=0 at d0535f3a9, base-gate-full.log shows the seven red at dea3758c1, arm-base.log/arm-head.log are archive extractions, and read-path-base/head.log record moved=true served-child 5.4-7.2 s against moved=false in-process 0.021-0.048 s.\nVERDICT write_paths: the diff touches reckon/served_code.py, tests/test_one_check_trusts_a_moved_checkout.py, tests/test_a_served_checkout_is_not_read_as_moved.py and the landing fragment, all inside the declared write paths; the declared reckon/mcp.py and two further test files are untouched.\nVERDICT manifest: read; it records the gate command that matches head-gate.log's header, the archive arms and their single shared failure, the read-path figures and the negative control, but its negative_control_note miscounts the ids the control reddens.\nVERDICT diff: read commit by commit against dea3758c1; 069f4290c carries the 11-line production change and the two test changes, d0535f3a9 adds the 85-line landing fragment, 2b1c8165d retunes three figures in that fragment, and no commit touches product code outside reckon/served_code.py.\nCALL_SITES: reckon/mcp.py:399 _moved_checkout_state, reckon/mcp.py:605, reckon/mcp.py:779 _refuse_when_stale, reckon/mcp.py:727 _current_code_server\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/served_code.py:828-831 reads the identity from the package inside root, so the running stamp recorded at reckon/mcp.py:368 compares equal for an unmoved checkout, as read-path-head.log shows with moved=false and zero child spawns.\nSCORE evidence: 15\nJUSTIFICATION evidence: head-gate.log at d0535f3a9 records 26 passed and EXIT=0 for the literal command the manifest's tests line carries, and base-gate-full.log records the eight reds at dea3758c1, but manifest.md:18 claims six of the seven listed ids fail under the control when negative-control.log reddens five listed ids plus one unlisted id and never runs test_each_run_owns_its_harness_home.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/served_code.py, the two test files, and the fragment at docs/evidence/fragments/the-suite-is-green-at-head/the-served-code-guard-reads-the-packages-own-stamp.html) is inside the declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_served_checkout_is_not_read_as_moved.py:67 derives its expected stamp by calling the same checkout_trust.source_code_identity the guard calls, so it passes under the node's runtime-reverted control, and only the five recovery ids in test_mcp_recovery.py redden there.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/served_code.py:822-831 follows the module's docstring-and-branch idiom and introduces no forbidden name, though the silent fallback to Path(root) at :829-830 would restore the defect quietly if the package directory were named otherwise.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_served_checkout_is_not_read_as_moved.py:22-53 re-implements the _git/_committed_checkout pair that tests/test_one_check_trusts_a_moved_checkout.py:166 and tests/test_mcp_server_serves_current_code.py:291 already own, and warm_the_child at the modified test duplicates tests/test_mcp_server_serves_current_code.py:223.\nFINDING tests/test_a_served_checkout_is_not_read_as_moved.py:67 non-blocking: the expected stamp is computed with the same checkout_trust.source_code_identity the guard calls, so expectation and result move together whenever that function changes, and under the node's own runtime-reverted control the case passes (it is absent from negative-control.log's FAILED list); a literal source revert would redden it, but the guard pins only the argument, not the identity itself.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T174146097882-the-served-code-guard-reads-the-packages-own-stamp/manifest.md:18 non-blocking: the note states six of the seven listed ids fail under the production revert, but negative-control.log records five listed ids plus the unlisted tests/test_mcp_recovery.py::test_resume_of_a_live_process_is_refused_like_the_cli, and tests/test_each_run_owns_its_harness_home.py is not in the control run, so the control's coverage is overstated by one id and unexercised on another.\nFINDING tests/test_a_served_checkout_is_not_read_as_moved.py:31 non-blocking: _committed_checkout duplicates the helper of the same name at tests/test_one_check_trusts_a_moved_checkout.py:166 and tests/test_mcp_server_serves_current_code.py:291 rather than extending it, making three copies of the temp-checkout fixture that will drift apart.\n",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T19:34:27.998187+00:00",
+  "total": 89
+}
