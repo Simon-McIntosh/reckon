@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_plan_read_warns_unparsed.py::test_every_live_plan_under_docs_plans_reads_without_the_warning"
+  ],
+  "completed_at": "2026-10-24T02:17:37.259Z",
+  "dispatched_at": "2026-10-24T02:10:15Z",
+  "findings": [
+    {
+      "file": "tests/test_a_roadmap_read_answers_from_its_snapshot.py",
+      "line": 984,
+      "severity": "non-blocking",
+      "text": "Every fixture file this case writes names a root under tmp_path that was never created (`\"root\": str(tmp_path / f\"gone-{index}\" / \"docs\")`), so all of them are removed by _prune_snapshots' \"its tree is gone\" branch. Deleting the `index >= _SNAPSHOT_KEEP_PER_PROJECT` branch from reckon/roadmap_snapshot.py leaves `assert len(remaining) <= kept` (:990) green, so the keep-count bound the case is named for has no assertion that fails when it is removed. The dead-tree prune (a sibling finding from the review at 280bf2cf5) is genuinely guarded; this half of the same repair is not."
+    },
+    {
+      "file": "manifest.md",
+      "line": 5,
+      "severity": "non-blocking",
+      "text": "The checkpoint attributes the node's one added failing id (tests/test_plan_read_warns_unparsed.py::test_every_live_plan_under_docs_plans_reads_without_the_warning, 303.44 s against a 300 s bound at s50-added-id-rerun.log:9) to this worktree's filesystem under load, citing \"a scratch copy of this revision's content passes the same case in 42 s\" and per-plan read timings of 14.5 s against 14.7 s. The only scratch arm on disk is s50-added-id-base-arm.log, whose tree is /tmp/reckon-crew-scratch/.../tree280 at revision 280bf2cf5 \u2014 the reviewed base, not this head \u2014 and no log under the run directory records either the head scratch arm or the 14.5/14.7 s measurement. The attribution is plausible and the id is correctly reported as added rather than hidden, but the arm that would settle it was not run at the head, so a coordinator cannot check the claim from the evidence."
+    },
+    {
+      "file": "manifest.md",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "baseline_suite.failure_ids reads [\"the base log lists them\"], which is prose rather than the pytest node-id form the reviewed done_when requires of both arms. The 38 ids are recoverable only by parsing /home/ITER/mcintos/.cache/reckon-raid/s50-base-04c10e00c.log, which I did: base has 38 ids, s50-head-population.log has 39, the set difference is exactly the one id recorded in added_failure_ids, and no id present at base is absent at head. The record's numbers are right; the field's shape is what the gate refuses, so the ids that the delta rests on are not in the record that states the delta."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-roadmap-read-answers-from-its-snapshot.html",
+      "line": 174,
+      "severity": "non-blocking",
+      "text": "The landed fragment says the key stats its plan directories \"through the discovery index's own covered_dir_identity, which reuses the observation an open discovery pass has already made\". Both key builds on the read path \u2014 reckon/mcp.py:1802 (before) and :1860 (settled) \u2014 run outside any discovery scope; reckon/metadata_index.discovery_file_scope() is entered only at reckon/mcp.py:1850 around _roadmap_scoped and exited before the second build. So on a cold read the three plan directories are stat'd twice (six stats), and on a warm read three times once, with no reused observation. The source docstring (reckon/roadmap_snapshot.py:_covered_directory_shape) correctly conditions the claim on \"while one is in force\"; the fragment drops the condition and states a saving that this call path does not get."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is a warm roadmap read answered from a snapshot keyed on the project write generation; the two commits gained since the review at 280bf2cf5 carry the coordinator's directed repairs to that key \u2014 8c1692e8c replaces the capped depth-first walk with a directory list named from path_classes.PLAN_HTML_PREFIXES (reckon/roadmap_snapshot.py:146), counts directory stats inside the per-project bound, reads the identity through the public covered_dir_identity (:178), prunes snapshot files whose tree is gone or that exceed _SNAPSHOT_KEEP_PER_PROJECT (:407-:446), and 280bf2cf5's crew-home key and fixture repair are already in the base.\nVERDICT done_when: the reviewed done_when (prompt.txt:106) requires the section-50 population at head and base, judged by delta, with both suites recording failure_ids in pytest node-id form; the manifest records a focused 45-test gate as after_suite (s50-head-gate.log, EXIT=0), the population at base with 38 ids, and the population at head only in s50-head-population.log (39 failed), whose one added id I re-derived id by id myself.\nVERDICT write_paths: the diff touches exactly docs/evidence/fragments/a-read-answers-inside-its-deadline/a-roadmap-read-answers-from-its-snapshot.html, reckon/roadmap_snapshot.py and tests/test_a_roadmap_read_answers_from_its_snapshot.py, the three paths this review's brief names; the run's original prompt.txt:69-75 scope names serve.py, mcp.py and _store.py and not roadmap_snapshot.py, but the module was introduced by e5ca59486 in an earlier increment this same review chain scored without a scope finding, so scope was extended between dispatches.\nVERDICT manifest: read; it records status complete, the six answered findings, the head gate EXIT=0 over 45 tests and the population at 8c1692e8c of 2605 passed / 39 failed / 4 skipped / 1 error with one added id attributed to a worktree filesystem timeout.\nVERDICT diff: read commit by commit against 280bf2cf5; 8c1692e8c carries the named directory set, the counted directory stats, the public identity owner and the pruning, and a41ebcda0 is a docs-only fragment commit \u2014 277 insertions and 41 deletions over three files.\nCALL_SITES: reckon/mcp.py:_roadmap, reckon/mcp.py:_roadmap_snapshot_scope, reckon/serve.py:171-181 (re-export surface)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/roadmap_snapshot.py:146-149 names the covered directories from PLAN_HTML_PREFIXES, so a plan file added under docs/plans moves the key on the production tree rather than only on the fixture.\nSCORE evidence: 13\nJUSTIFICATION evidence: the after_suite at manifest.md:42 is the focused 45-test gate rather than the population the done_when names, and baseline_suite at manifest.md:43 records failure_ids as prose instead of pytest node ids.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff's three files are exactly the three this review's brief names, with no edit to reckon/serve.py or reckon/mcp.py in this increment.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_roadmap_read_answers_from_its_snapshot.py:893 reddens when the capped walk is restored and :896 and :919 redden when either identity digest is made constant, but :984-990 cannot redden when the keep-count branch is deleted.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/roadmap_snapshot.py:143-183 follows the module's existing lazy-import and private-helper idiom, and _plan_directories, _prune_snapshots and _SNAPSHOT_KEEP_PER_PROJECT carry no plan, stage or ticket identifiers.\nSCORE reuse: 18\nJUSTIFICATION reuse: _plan_directories reuses path_classes.PLAN_HTML_PREFIXES and _covered_directory_shape now calls metadata_index.covered_dir_identity, the public owner; I searched reckon/ for an existing directory-pruning helper and found checkout_trust._prune_must_keep (checkout pruning) and fleet_supervisor.SERVICE_LOG_KEEP_BYTES (log byte cap), neither of which is a per-directory keep-newest owner.\nFINDING tests/test_a_roadmap_read_answers_from_its_snapshot.py:984 non-blocking: every fixture file names a nonexistent root, so the keep-count branch is never the reason for a removal and its deletion leaves the case green.\nFINDING manifest.md:5 non-blocking: the added failing id is attributed to worktree filesystem load on a base-revision scratch arm and a timing comparison recorded in no log.\nFINDING manifest.md:43 non-blocking: baseline_suite.failure_ids is prose, not the pytest node-id list the done_when requires.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-roadmap-read-answers-from-its-snapshot.html:174 non-blocking: the fragment claims a reused directory observation, but both key builds run outside any discovery scope.",
+  "review_run_id": "r-20261024T020820436870-review-of-a-roadmap-read-answers-from-its-snapshot-a41ebcda01b0",
+  "reviewed_base_sha": "280bf2cf563039434b55ff3b04f0893a256b965f",
+  "reviewed_head_sha": "a41ebcda01b0cb75abb6406b36f4dd28b19e713f",
+  "reviewed_run_id": "r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T02:19:36.947931+00:00",
+  "total": 99
+}
