@@ -19,8 +19,9 @@
   waiting request. A missing section or a cycle refuses with no pointer left,
   and an open gate on the request's own section holds it upstream. The focused
   repair gate passes 57 tests; reversing the repair while retaining its tests
-  fails all three new refusal and gate cases. The separate batch queue writer
-  still needs to be routed through the dispatch owner in a scoped followup.</p>
+  fails all three new refusal and gate cases. Batch queueing now delegates to the production dispatch writer. The new
+  shared-writer check fails when that owner commit is reversed, and the
+  six-file focused gate passes 72 tests.</p>
   <p>The 353-file importer gate reported 37 failures at the assigned base and
   38 at the repaired head. Its sole head-only id is the stop-before-spawn test,
   outside this node's write grant. That id failed in an earlier base run and
