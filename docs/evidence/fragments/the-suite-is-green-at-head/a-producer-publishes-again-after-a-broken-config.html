@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="A producer that deferred a tick on a broken config publishes again once it loads">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s55">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,producer,flight-config,deferral,retry">
+  <title>A deferred watch tick is retried on the producer's own beat — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-producer-publishes-again-after-a-broken-config" data-reckon="landed" data-when="2026-10-24">
+  <h2>A deferred watch tick is retried on the producer's own beat</h2>
+
+  <p id="a-producer-publishes-again-after-a-broken-config-repro"><strong>Reproduction at the base.</strong> <code>tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers</code> failed at base <code>dea3758c1</code> in 25.05 s: the deferral line printed once and the producer kept delivering rows for <code>node-2</code> and <code>node-3</code>, but the durable stream carried <code>{'r-1'}</code> and never gained <code>{'r-2', 'r-3'}</code> after the layer was repaired.</p>
+
+  <p id="a-producer-publishes-again-after-a-broken-config-mechanism"><strong>Mechanism.</strong> The deferral itself was correct: <code>fleet_transitions</code> raises <code>FlightConfigError</code> from the strict rate read, <code>_publish_watch_transitions</code> catches it, announces once, and commits nothing — the fold's memory and the stream are untouched. The defect is in what was expected to retry it. The stream is written from <code>list_live</code>, and the seat's ticker lists the fleet only when <code>_crew_home_change_token</code> moves — pointers, run directories, handovers and the lift document. A repaired <code>flight.yaml</code> is not one of those documents, so on a fleet that is quiet through the repair no listing follows and the owed transitions are never republished. Instrumenting the child process showed five <code>list_live</code> calls up to the deferral and none in the 25 s after the layer was removed.</p>
+
+  <p id="a-producer-publishes-again-after-a-broken-config-repair"><strong>Repair.</strong> <code>reckon/crew/runs.py</code>: a deferred tick now arms a daemon retry that republishes on the producer's own beat (<code>WATCH_DEFERRAL_RETRY_SECONDS = 1.0</code>) until a tick reads the config cleanly, with the thread stopping at once if the registry no longer maps the project to that producer, and <code>join_watch_sweeps</code> joins it as it joins the obligation sweep. The announce-once rule is preserved by reading the episode flag before setting it. Nothing else in the fold, the strict read or the published rows changed.</p>
+
+  <p id="a-producer-publishes-again-after-a-broken-config-measure"><strong>Measure.</strong> The listed id passes at the head in 5.75 s. Reverting the repair reproduces the base failure (<code>EXIT=1</code>, same id, stream carrying <code>{'r-1'}</code>). The 532 test files that import <code>reckon.crew.runs</code> ran on both arms from <code>git archive</code> extractions on node-local disk.</p>
+</article>
+</body>
+</html>

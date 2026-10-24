@@ -2115,9 +2115,16 @@ class _WatchStreamProducer:
     # down reads as a transition on stdout and in the stream alike.
     seeded_states: dict[str, str] = field(default_factory=dict)
     # Whether the last tick's read was deferred because the resolved config did
-    # not load. Held so the deferral is announced once per episode rather than
-    # on every retry, and cleared the moment a tick reads the config cleanly.
+    # not load. Held so the producer can retry the tick on its own beat, the
+    # deferral is announced once per episode rather than on every retry, and
+    # the flag is cleared the moment a tick reads the config cleanly.
     tick_deferred: bool = False
+    # The thread retrying a deferred tick. A tick whose config does not load
+    # owes transitions it has not published, and a seat whose caller only lists
+    # the fleet when a document it reads has moved would never come back for
+    # them: the repaired config is not one of those documents, so the retry is
+    # armed here rather than left to a later listing that may never arrive.
+    deferred_retry: threading.Thread | None = None
     # The sweep runs off the producer's transition path: a transition is
     # written the moment it is detected, and the derivation the sessions'
     # snapshots are sliced from runs behind it. The lock keeps a trigger that
@@ -2135,6 +2142,13 @@ _WATCH_STREAM_PRODUCERS: dict[str, _WatchStreamProducer] = {}
 # file tree, so the tick is deferred and retried rather than allowed to end the
 # seat; the marker is what a reader greps the producer's log for.
 WATCH_TICK_DEFERRAL_MARKER = "reckon crew watch deferred its tick"
+
+# How often a deferred tick is retried while the resolved config will not load.
+# The retry is a republish of the transitions the deferred tick owed, so it
+# rides the producer's own poll rate: a file corrected a moment later is
+# published within a poll of the repair, and a layer left broken costs one
+# failed read per interval rather than a silent seat.
+WATCH_DEFERRAL_RETRY_SECONDS = 1.0
 
 
 def _watch_stream_snapshots(
@@ -2486,10 +2500,11 @@ def _publish_watch_transitions(
     The tick's own read is fallible: composing a transition prices the run
     against the resolved configuration, and a merge can leave a layer that does
     not validate under a seat that is already armed. A config error is deferred
-    rather than fatal — one dim line names it, and the next tick retries — so a
-    file resolved a moment later costs one fleet observation, not the producer.
-    Nothing is committed until the whole tick succeeds, so a deferred tick
-    neither advances the fold's memory nor drops the transitions it owes.
+    rather than fatal — one dim line names it, and the producer retries the
+    tick on its own beat — so a file resolved a moment later costs one fleet
+    observation, not the producer. Nothing is committed until the whole tick
+    succeeds, so a deferred tick neither advances the fold's memory nor drops
+    the transitions it owes.
 
     Reports whether this sweep appended a transition, which is the event the
     session snapshots republish on.
@@ -2512,6 +2527,11 @@ def _publish_watch_transitions(
     current = _watch_stream_snapshots(records, stall_window=producer.stall_window)
     if not current and not producer.fleet_seen:
         return False
+
+    # Whether this episode's deferral has already been named. Read before the
+    # flag is set, so a retry says nothing and only the first failed tick of a
+    # contiguous broken stretch prints the line.
+    announced_deferral = producer.tick_deferred
 
     try:
         if not producer.fleet_seen:
@@ -2579,10 +2599,10 @@ def _publish_watch_transitions(
         producer.tick_deferred = False
         return bool(lines)
     except FlightConfigError as exc:
-        if producer.tick_deferred:
-            return False
         producer.tick_deferred = True
-        _announce_watch_tick_deferral(exc)
+        _arm_deferred_watch_tick_retry(project, producer)
+        if not announced_deferral:
+            _announce_watch_tick_deferral(exc)
         return False
 
 
@@ -2653,11 +2673,15 @@ def join_watch_sweeps(timeout: float = WATCH_SWEEP_JOIN_SECONDS) -> list[str]:
     """
     stragglers: list[str] = []
     for producer in list(_WATCH_STREAM_PRODUCERS.values()):
-        thread = producer.sweep_thread
-        if thread is not None and thread.is_alive():
-            thread.join(timeout)
-            if thread.is_alive():
-                stragglers.append(thread.name)
+        # The registry is cleared below, which is what stops a deferred tick's
+        # retry: its thread leaves on its next check. It is joined here for the
+        # same reason the sweep is, so a caller that owns the registry returns
+        # with no thread of the producer it dropped still appending.
+        for thread in (producer.sweep_thread, producer.deferred_retry):
+            if thread is not None and thread.is_alive():
+                thread.join(timeout)
+                if thread.is_alive():
+                    stragglers.append(thread.name)
     _WATCH_STREAM_PRODUCERS.clear()
     return stragglers
 
@@ -2731,6 +2755,44 @@ def _publish_obligation_snapshots(project: str, *, transition_fired: bool) -> li
             _announce_watch_tick_deferral(exc)
         return []
     return [str(path) for path in written]
+
+
+def _arm_deferred_watch_tick_retry(
+    project: str, producer: _WatchStreamProducer
+) -> None:
+    """Retry a deferred tick on the producer's own beat until it succeeds.
+
+    The deferral itself is a decision to publish nothing: a transition priced
+    against a layer nobody could read describes a fleet nobody can see. What it
+    cannot be is final, because the tick owes transitions that only a later read
+    can publish — and the caller lists the fleet when a document it reads moves,
+    which a repaired config layer is not. Waiting for that listing therefore
+    leaves the owed transitions unpublished whenever the fleet itself is quiet
+    through the repair, so the retry is armed here and stops on its own when a
+    tick reads the config cleanly or this producer no longer holds the seat.
+    """
+    existing = producer.deferred_retry
+    if existing is not None and existing.is_alive():
+        return
+    thread = threading.Thread(
+        target=_retry_deferred_watch_ticks,
+        args=(project, producer),
+        name=f"reckon-watch-deferred-tick-{project}",
+        daemon=True,
+    )
+    producer.deferred_retry = thread
+    thread.start()
+
+
+def _retry_deferred_watch_ticks(project: str, producer: _WatchStreamProducer) -> None:
+    """Republish the transitions a deferred tick owed, once a tick succeeds."""
+    while producer.tick_deferred:
+        time.sleep(WATCH_DEFERRAL_RETRY_SECONDS)
+        # A producer replaced at the seat owns the project's stream now, and a
+        # retry for the one that lost it would append beside its successor.
+        if _WATCH_STREAM_PRODUCERS.get(project) is not producer:
+            return
+        _publish_watch_stream(project, _list_live_records(project=project))
 
 
 def _announce_watch_tick_deferral(exc: Exception) -> None:
