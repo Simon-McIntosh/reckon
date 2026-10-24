@@ -2003,6 +2003,7 @@ def _derive_lifecycle(
 
     from reckon._schema import parse_plan_ref
     from reckon.roadmap import (
+        _status,
         closure_blockers,
         plan_blocker_state,
         plans_released_by_cleared_blockers,
@@ -2089,9 +2090,7 @@ def _derive_lifecycle(
                 )
             ),
         )
-        workflow_status = str(
-            plan.get("workflow_status") or plan.get("status") or "draft"
-        )
+        workflow_status = _status(plan)
         plan["workflow_status"] = workflow_status
         plan["effective_status"] = state["effective_status"]
         plan["blocking"] = state["blocking"]

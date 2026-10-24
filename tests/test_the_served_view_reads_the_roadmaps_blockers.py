@@ -227,6 +227,23 @@ def test_a_free_plan_reads_open_on_both_surfaces(tmp_path: Path) -> None:
     assert _roadmap_blockers(roadmap["free"]) == {}
 
 
+def test_a_statusless_dependency_row_reads_as_a_draft() -> None:
+    """A row with no status anywhere reports the same status the roadmap ranks by.
+
+    A dependency row built from a plan payload that carries neither status
+    spelling has to answer something, and the answer is the roadmap's own
+    default: a draft plan. Reading the precedence anywhere but ``_status``
+    leaves an empty string here while every other reader of the same row calls
+    it a draft.
+    """
+
+    from reckon.roadmap import dependency_row_state
+
+    assert dependency_row_state({"slug": "plain"}, "") == "draft"
+    assert dependency_row_state({}, "") == "draft"
+    assert dependency_row_state(None, "") == "draft"
+
+
 def test_a_workflow_status_that_differs_from_status_reads_the_same() -> None:
     """A row held at one status and stored at another reads one way.
 
