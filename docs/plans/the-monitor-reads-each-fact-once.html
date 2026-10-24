@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -353,7 +353,10 @@
     <div class="r-comment-body"><p>§6 landed in two nodes: the incremental ingest (merge <code>ef1bc1680</code>, review 111/120) and the classification through the producer's reuse key (head <code>b9196620c</code>, review 111/120), with 0 added failures in both. §7 must call <code>classify_tick</code> from the station's loop. <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s6">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261024T133033152390-the-station-classifies-only-what-moved" data-who="reckon-build" data-when="2026-10-24T13:44:10.066Z">
-    <div class="r-comment-body"><p>StationStore.classify_tick reuses a run&#x27;s stored verdict keyed on recovery_watch._snapshot_reuse_key and re-derives only the stall clock when nothing moved: an unchanged tick runs the classifier 0 times, pointer/stream/manifest/resume moves classify exactly that run once, the process-table probe touches only runs launched on this node, and a worker exit or silence past the window changes the verdict with no file moving (9 cases, 33 passed at head vs 24 at base, 0 added failures).</p></div>
+    <div class="r-comment-body"><p>StationStore.classify_tick reuses a run's stored verdict keyed on recovery_watch._snapshot_reuse_key and re-derives only the stall clock when nothing moved: an unchanged tick runs the classifier 0 times, pointer/stream/manifest/resume moves classify exactly that run once, the process-table probe touches only runs launched on this node, and a worker exit or silence past the window changes the verdict with no file moving (9 cases, 33 passed at head vs 24 at base, 0 added failures).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261024T134522410130-review-of-the-station-classifies-only-what-moved-b9196620c994" data-who="reckon-build" data-when="2026-10-24T13:57:46.806Z">
+    <div class="r-comment-body"><p>Independent review of b9196620c against base 26932a19a: six dimensions scored (goal_fidelity 17, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 18; 0 added failures against baseline_suite 24 passed and after_suite 33 passed), with two non-blocking findings — the evidence fragment mislabels the head arm&#x27;s revision at its table row, and classify_tick has no production caller until the plan&#x27;s station loop is wired.</p></div>
 </div>
 </section>
 </main>

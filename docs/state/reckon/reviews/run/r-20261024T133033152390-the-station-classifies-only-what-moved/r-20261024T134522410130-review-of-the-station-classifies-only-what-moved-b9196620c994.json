@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T13:57:46.806Z",
+  "dispatched_at": "2026-10-24T13:47:27Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-classifies-only-what-moved.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "the head row of the fragment's measurement table records the head arm as \"26932a19a working tree\", which is the base revision, while gate-head.log's own header names revision b9196620c994 (head arm, committed tree) and the manifest's after_suite records b9196620c; the fragment therefore contradicts the log it cites, and a reader comparing the evidence table with the log cannot tell which revision the 33-passed result belongs to."
+    },
+    {
+      "file": "reckon/crew/station_store.py",
+      "line": "597",
+      "severity": "non-blocking",
+      "text": "classify_tick is a standalone method that StationStore.tick (reckon/crew/station_store.py:365) never calls, so no runtime path reaches the reclassification this node adds: the station tick still only ingests pointers and streams. This matches the plan's sequencing, which gives the station process its loop in \u00a77, but until that node lands the goal's subject (\"the station tick reclassifies ...\") is a capability that exists only under test."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the station tick reclassify a run only when recovery_watch._snapshot_reuse_key or its liveness reading moved, and otherwise re-derive only its stall clock; reckon/crew/station_store.py:597 classify_tick does exactly that by delegating to recovery._watch_snapshot with the station's own stored verdicts as the cache, and recovery_watch.py:1349-1361 makes the reuse decision on the key plus the liveness triple, but nothing in production invokes it.\nVERDICT done_when: the done_when is the pytest gate in tests/test_the_station_classifies_only_what_moved.py over a three-run fleet with classify_pointer and the liveness probe counted through patches; the manifest's after_suite records gate-head.log '33 passed in 10.99s' EXIT=0 at b9196620c and baseline_suite records gate-base.log '24 passed in 5.90s' EXIT=0 at 26932a19a, so added_failure_count is 0, and negative-control.log ends EXIT=1 with all three declared mutations red.\nVERDICT write_paths: the node was fenced to reckon/crew/station_store.py, tests/test_the_station_classifies_only_what_moved.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-classifies-only-what-moved.html and a docs/figures directory; git diff --stat 26932a19a b9196620c changes exactly the first three files (508 insertions, 1 deletion) and writes no figure.\nVERDICT manifest: read; it reads complete at revision b9196620c, records that commit and its changed_paths inside the declared scope, names both suite arms with revision, command, exit status, log path and failure ids, records measurement_module and measurement_cwd for the scratch-tree base arm, and its negative_control_log is the bare path negative-control.log whose three arms each end in a red run.\nVERDICT diff: read commit by commit against 26932a19a; the single commit b9196620c adds the classifications table and classify_tick beside _classification_cache, classification_rows, classifications, _write_classification and _drop_absent_classifications in reckon/crew/station_store.py, the nine-case test file, and a 78-line evidence fragment, all inside the declared scope.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/station_store.py:597 implements the reuse-and-quiet-beat behaviour through the owner of the computation, but StationStore.tick at reckon/crew/station_store.py:365 does not call it, so no production path reaches it until \u00a77 wires the station loop.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log and gate-base.log each name their revision, tree and command on the header lines and end EXIT=0, and negative-control.log reddens under all three mutations, but the fragment's head row at docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-classifies-only-what-moved.html:36 mislabels that arm's revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 26932a19a b9196620c is one of the node's declared write paths, and nothing the goal does not imply was edited.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_station_classifies_only_what_moved.py:171 fails if the reuse key is bypassed (negative-control.log's classify-every-run arm reddens it with ['r-one','r-three','r-two']), :208 fails if the key holds only pointer and stream, and :286/:305 fail if the quiet-beat reading is removed.\nSCORE fit: 19\nJUSTIFICATION fit: the new methods follow the module's existing write idiom (connection per operation and commit per write, station_store.py:574-585 as ingest_pointer and ingest_stream do) and every added name states the mechanism rather than a plan or stage label.\nSCORE reuse: 18\nJUSTIFICATION reuse: classify_tick extends recovery_watch._watch_snapshot and _snapshot_reuse_key (recovery_watch.py:1328 and :1029) by supplying its own cache rather than forking the classifier; a capability search for a persisted per-run verdict store found recovery_memo._write_classification_memo (which caches input identities) and live_run_classification.recorded_live_run_classifications (which reads a run's stream events), neither of which owns a reuse-keyed verdict store.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/the-station-classifies-only-what-moved.html:36 non-blocking: the head row records the head arm at 26932a19a working tree, the base revision, while gate-head.log's header names b9196620c994 and the manifest's after_suite records b9196620c, so the evidence table contradicts the log it cites.\nFINDING reckon/crew/station_store.py:597 non-blocking: classify_tick has no production caller, and StationStore.tick at reckon/crew/station_store.py:365 does not invoke it, so the goal's subject is reachable only from the test until the plan's \u00a77 wires the station loop.\n",
+  "review_run_id": "r-20261024T134522410130-review-of-the-station-classifies-only-what-moved-b9196620c994",
+  "reviewed_base_sha": "26932a19a84249d9aa284b123b15509e19d04c11",
+  "reviewed_head_sha": "b9196620c994a82e15dd7eb432c35699968fcfe7",
+  "reviewed_run_id": "r-20261024T133033152390-the-station-classifies-only-what-moved",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T13:57:49.267909+00:00",
+  "total": 111
+}
