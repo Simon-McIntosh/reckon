@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T10:50:32.263Z",
+  "dispatched_at": "2026-10-24T10:38:30Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:179",
+      "id": "done_when-1",
+      "reason": "the node would either write a shrinking fixture that proves nothing about a truncated-and-rewritten stream, or be forced mid-node to change `ingest_stream`'s identity to `file_memo.file_signature` (which already carries size, mtime and ctime) without the plan saying so or declaring a control for it.",
+      "text": "\u00a76 asserts \"a rewritten stream is detected and refolded\", but the mechanism the same section states at line 163 \u2014 \"a stream whose inode changed or that shrank is folded from its start\" \u2014 cannot detect a rewrite that keeps the inode and grows, which `station_store.ingest_stream` (`reckon/crew/station_store.py:419`\u2013`426`, `if row[\"inode\"] == inode and stored <= st_size`) folds from the stale offset: measured in this workspace with a 354-byte stream rewritten in place to 459 bytes, the incremental observation differs from a full fold of the rewritten file (`rewrite_detected_equals_full_fold False`, `rewrite-probe.log`); because none of the five declared controls mutates the rewrite detector (they cover the stored offset, the carried fold state, classify-every-run, a pointer-and-stream-only change key and the quiet-beat reading), a fixture whose rewrite happens to shrink the file passes the measure while the hazard the line claims to close stays open",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9a022f52de73357f803ec1d8d74aae2b6beca589f93fe45be6b7babd1f73399a",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T103724468047-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "270c21fa5f2b4b06c5fbebd91074a53cd61e29d9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery.classify_pointer` (`reckon/crew/recovery.py:142`), `recovery_memo._classification_inputs` (`reckon/crew/recovery_memo.py:450`), `_backends.observe_stream` (`reckon/_backends.py:2900`, the name `station_store` itself imports), `_quiet_beat_snapshots`/`_watch_snapshot`/`_stall_reading` (`reckon/crew/recovery_watch.py:2543`, `:1328`, `:679`), `tests/test_the_station_store_is_node_local.py`, and the two dead wrappers (`reckon/crew/station_store.py:615`, `:620`) all resolve.",
+    "done_when": "a finding \u2014 \u00a76's \"a rewritten stream is detected and refolded\" (line 179) is not forced by any of the section's five negative controls, and the existing ingest it attributes the fold to detects only an inode change or a shrink.",
+    "evidence_paths": "pass \u2014 \u00a76's measures are test-driven in the section's named test files, and its fixtures are copied into a test directory rather than a session scratchpad; no gate log is sited on a node-local temporary path.",
+    "naming": "pass \u2014 \u00a76 introduces no plan labels, gate ids or ticket numbers into any symbol; its references to \u00a75 and to \"\u00a75's review\" are plan-section pointers inside the plan, not code names.",
+    "reasoning": "pass \u2014 the stated mechanism produces the done-when it asserts, with one exception carried by the `done_when` finding at line 179: the fold key (inode and stored offset) cannot see an in-place rewrite that keeps the inode and grows, and the quiet-beat mechanism is otherwise an exact match for the code it cites (`_stall_reading` acts only on `dispatched`/`working` and returns `waiting` under a pause reason, `stalled` otherwise; `_watch_snapshot` calls `classify_pointer` only when the reuse key or the liveness triple moved).",
+    "single_goal": "pass \u2014 \u00a76 carries the ingest and its classification measure as one deliverable; the four \u00a75 review leftovers it absorbs are edits to the same module (`reckon/crew/station_store.py`) and the same test file, not a second goal.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gates `s6` behind `s5`, which is `done`; the open followup `f-tmref-002` recommends `/reckon-build the-monitor-reads-each-fact-once \u00a76` and `s6`'s declaration is `implementable`, so the graph, the narrative and the followup agree."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "375d055e6e020dafdf5aa52318fe9d1861063eae25c3fbde3d054f3fe2cf1454",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T10:55:47.889416+00:00"
+}
