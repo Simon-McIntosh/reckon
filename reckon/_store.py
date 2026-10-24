@@ -289,11 +289,23 @@ def record_write_receipt(
     *,
     version: int,
     digest: str,
+    pending: list[dict[str, Any]] | None = None,
 ) -> None:
-    """Record the version a request id reached, keyed by the ops it carried."""
+    """Record the version a request id reached, keyed by the ops it carried.
+
+    ``pending`` names the plan sprint writes a partial write still owes, each
+    entry carrying the plan's slug and the sprint the move sent it to. A retry
+    reads them and finishes those writes against the index, instead of
+    replaying a batch whose index move has already landed. An empty or absent
+    list means the request left nothing outstanding.
+    """
     path = _receipts_file(project, scope_key)
     receipts = read_write_receipts(project, scope_key)
-    receipts[request_id] = {"version": version, "digest": digest}
+    receipts[request_id] = {
+        "version": version,
+        "digest": digest,
+        "pending": [dict(entry) for entry in pending or []],
+    }
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = json.dumps(receipts, sort_keys=True)
     write_atomically(path, lambda handle: handle.write(payload))

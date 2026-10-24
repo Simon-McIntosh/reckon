@@ -704,6 +704,155 @@ def _partial_plan_write(
     return result
 
 
+def _index_sprint_membership(
+    project: str, root: str | None, plan_slug: str
+) -> str | None:
+    """The sprint the index lists a plan under, or ``None`` for no sprint.
+
+    The index is the authority for which sprint a plan belongs to, so a retried
+    partial move asks it rather than the plan it was unable to write.
+    """
+    data, _ = read_plan(project, "index", root)
+    for sprint in data.get("sprints", []) or []:
+        if not isinstance(sprint, dict):
+            continue
+        for item in sprint.get("items", []) or []:
+            if sprint_item_slug(item) == plan_slug:
+                return str(sprint.get("id") or "")
+    return None
+
+
+def _finish_pending_plan_writes(
+    project: str, root: str | None, pending: list[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Write the plan sprints a partial move still owes, reading the index.
+
+    Returns ``(resolved, still_pending)``. The batch is never re-applied: its
+    index move has landed, and re-applying it would be refused. Each pending
+    entry is decided against the index's current membership:
+
+    * still listed in the sprint the move sent it to, and its own sprint
+      differs — the plan's sprint is written against the plan's current
+      version, so an unrelated edit since the failure does not stop it;
+    * still listed there, and its own sprint already agrees — settled, as after
+      a crash between the plan write and the receipt update;
+    * listed in another sprint, in no sprint, or gone — superseded by the write
+      that got there first, so nothing is written.
+
+    A plan that still cannot be written stays pending.
+    """
+    resolved: list[dict[str, Any]] = []
+    still_pending: list[dict[str, Any]] = []
+    for entry in pending:
+        plan_slug = str(entry.get("slug") or "")
+        to_sprint = str(entry.get("sprint") or "")
+        if not plan_slug or not to_sprint:
+            continue
+        listed = _index_sprint_membership(project, root, plan_slug)
+        if listed != to_sprint:
+            resolved.append(
+                {
+                    "slug": plan_slug,
+                    "sprint": to_sprint,
+                    "outcome": "superseded",
+                    "listed_in": listed,
+                }
+            )
+            continue
+        data, version = read_plan(project, plan_slug, root, artifact_type="plan")
+        if not data:
+            resolved.append(
+                {
+                    "slug": plan_slug,
+                    "sprint": to_sprint,
+                    "outcome": "superseded",
+                    "listed_in": listed,
+                }
+            )
+            continue
+        if data.get("sprint") == to_sprint:
+            resolved.append(
+                {"slug": plan_slug, "sprint": to_sprint, "outcome": "settled"}
+            )
+            continue
+        try:
+            new_version = write_plan(
+                project,
+                plan_slug,
+                {**data, "sprint": to_sprint},
+                version,
+                root,
+                artifact_type="plan",
+            )
+        except (VersionConflict, OpError, OSError, ValueError) as exc:
+            still_pending.append(
+                {"slug": plan_slug, "sprint": to_sprint, "detail": str(exc)}
+            )
+            continue
+        resolved.append(
+            {
+                "slug": plan_slug,
+                "sprint": to_sprint,
+                "outcome": "written",
+                "new_version": new_version,
+            }
+        )
+    return resolved, still_pending
+
+
+def _resume_partial_plan_writes(
+    project: str,
+    slug: str,
+    doc_type: str | None,
+    root: str | None,
+    receipt_scope: str,
+    request_id: str,
+    digest: str,
+    recorded: dict[str, Any],
+) -> dict[str, Any]:
+    """Answer a retry whose receipt still owes plan sprint writes.
+
+    The index batch landed, so the retry finishes those writes rather than
+    replaying the batch. A retry that leaves a plan pending reports the partial
+    write again; one that leaves none returns success naming each plan written,
+    settled or superseded, and records the request as complete so a further
+    retry replays as plain success.
+    """
+    pending = recorded.get("pending") or []
+    resolved, still_pending = _finish_pending_plan_writes(project, root, pending)
+    landed_version = recorded.get("version")
+    base = _edit_success_response(
+        project=project, slug=slug, doc_type=doc_type, new_version=landed_version
+    )
+    base["replayed"] = True
+    base["plan_write_outcomes"] = resolved
+    if still_pending:
+        result = _partial_plan_write(
+            base,
+            [entry for entry in resolved if entry["outcome"] == "written"],
+            still_pending,
+        )
+        result["message"] = (
+            f"A write for request_id already landed at version {landed_version}; "
+            "the plan sprint writes it left pending are still pending."
+        )
+        return result
+    record_write_receipt(
+        project,
+        receipt_scope,
+        request_id,
+        version=landed_version,
+        digest=digest,
+        pending=[],
+    )
+    base["plan_writes"] = resolved
+    base["message"] = (
+        f"A write for request_id already landed at version {landed_version}; "
+        "this retry finished the plan sprint writes it left pending."
+    )
+    return base
+
+
 def _move_sprint_item(
     project: str,
     slug: str,
@@ -1321,6 +1470,20 @@ def _edit_plan(
                     "request_id": request_id,
                     "landed_version": recorded.get("version"),
                 }
+            if recorded.get("pending"):
+                # The index move landed but a plan sprint did not. Replaying the
+                # batch would be refused and would tell the caller the plan kept
+                # a sprint it does not, so the retry finishes those writes.
+                return _resume_partial_plan_writes(
+                    project,
+                    slug,
+                    doc_type,
+                    checkout_path,
+                    receipt_scope,
+                    request_id,
+                    request_digest,
+                    recorded,
+                )
             return _replayed_response(project, slug, doc_type, recorded.get("version"))
     if mode == "text":
         if create:
@@ -1724,9 +1887,12 @@ def _edit_plan(
         data=working,
         created=create,
     )
+    failed_plan_writes: list[dict[str, Any]] = []
     if moved_plan_writes:
-        written, failed = _carry_plan_sprints(project, root, moved_plan_writes)
-        result = _partial_plan_write(result, written, failed)
+        written, failed_plan_writes = _carry_plan_sprints(
+            project, root, moved_plan_writes
+        )
+        result = _partial_plan_write(result, written, failed_plan_writes)
     result["path"] = _written_path(project, slug, root, selected_type)
     if result["path"] is not None:
         written_docs_dir = _docs_dir_for_project(project, root)
@@ -1747,6 +1913,10 @@ def _edit_plan(
             request_id,
             version=new_version,
             digest=request_digest,
+            pending=[
+                {"slug": entry["slug"], "sprint": entry["sprint"]}
+                for entry in failed_plan_writes
+            ],
         )
     return result
 

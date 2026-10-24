@@ -1,0 +1,84 @@
+<section id="a-retried-partial-move-is-not-replayed-landing">
+  <h2>A retried partial sprint move finishes its plan write instead of replaying</h2>
+
+  <p id="a-retried-partial-move-is-not-replayed-defect"><strong>What was wrong.</strong> A
+  sprint move writes the index and then each moved plan's own <code>sprint</code>. When
+  the plan write failed after the index had moved, the call correctly reported
+  <code>partial_write</code> — and still recorded a write receipt reading as plain
+  success. A retry carrying the same <code>request_id</code> was therefore answered
+  <code>replayed</code> with nothing written, telling the caller the move had landed
+  while the plan kept the sprint it came from.</p>
+
+  <p>Reproduced against the unrepaired tree by driving <code>_edit_plan_tool</code> on a
+  temporary project whose plan write is made to raise once:</p>
+
+  <pre><code>first: {'ok': False, 'error': 'partial_write', ...}
+plan sprint after first: S1
+retry: {'ok': True, 'error': None, 'replayed': True, 'message': 'A write for request_id
+        already landed at version 1; this is its recorded result.'}
+plan sprint after retry: S1</code></pre>
+
+  <p id="a-retried-partial-move-is-not-replayed-change"><strong>What changed.</strong> The
+  index is the authority for which sprint a plan belongs to, so a partial write now
+  records on its receipt — beside the version and digest
+  <code>record_write_receipt</code> stores — the plans still owing a sprint write and the
+  sprint each was sent to (<code>reckon/_store.py</code>). A retry that finds such a
+  receipt does not re-apply the batch, whose index move has already landed. It reads the
+  index's current membership for each pending plan
+  (<code>_finish_pending_plan_writes</code> in <code>reckon/mcp_edit_plan.py</code>):
+  still listed where the move sent it and its sprint differs, the plan's sprint is
+  written against the plan's <em>current</em> version; already in agreement, the entry
+  retires as settled; listed elsewhere or nowhere, another write superseded this one and
+  nothing is written. A plan that still cannot be written stays pending, the retry
+  reports the partial write again, and a retry that leaves none returns success naming
+  each plan written, settled or superseded and records the request as complete.</p>
+
+  <p>After the repair the same probe reads
+  <code>plan sprint after retry: S2</code> with the request's receipt carrying
+  <code>"pending": []</code>.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the node's new test file plus the sprint-move, edit-plan, refusal, sprint
+  membership, item-slug, project-state parity, section-field and module-width files, run
+  in the fleet allocation against the repository venv. Each arm is a log whose first line
+  names its revision, tree and command and whose last line reads
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change)</td>
+        <td><code>0409dcbe4</code></td>
+        <td><strong>135 passed, 1 failed</strong>, exit 1</td></tr>
+      <tr><td>base (new test file copied in)</td>
+        <td><code>0409dcbe4</code></td>
+        <td><strong>6 failed</strong>, exit 1</td></tr>
+      <tr><td>negative control (receipt recorded as success on a partial write)</td>
+        <td>mutated head</td>
+        <td><strong>5 failed, 1 passed</strong>, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li id="a-retried-partial-move-is-not-replayed-base-arm"><strong>The measure at the
+    base revision.</strong> The new file's six cases all fail on the unrepaired tree. The
+    first fails at <code>receipt["pending"]</code> with <code>KeyError</code> — the base
+    receipt carries only a version and a digest — and the same run's first-call assertions
+    show the plan still on <code>S1</code>.</li>
+    <li id="a-retried-partial-move-is-not-replayed-negative-control"><strong>The negative
+    control.</strong> Recording the receipt as success on a partial write makes the first
+    case replay success instead of reporting the partial write, and five of the six cases
+    fail. The sixth — the settled case, which needs no pending entry to reach its
+    conclusion — still passes.</li>
+    <li id="a-retried-partial-move-is-not-replayed-outside-scope"><strong>The one head-arm
+    failure is not this change's.</strong>
+    <code>tests/test_a_refused_write_names_the_next_step.py::test_batch_reports_every_refused_op</code>
+    fails identically on an extraction of the base revision with no change applied
+    (<code>KeyError: 'refused_ops'</code>), so it is reported out of scope rather than
+    triaged here.</li>
+    <li><strong>What is not measured here.</strong> The merged result. This gate runs in
+    the node's own worktree; verifying the merged head belongs to a separately dispatched
+    test node.</li>
+  </ul>
+</section>
