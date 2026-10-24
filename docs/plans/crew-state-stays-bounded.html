@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -171,7 +171,7 @@
 
     <h2 id="s9">§9 — The retention-sweep verb is named as maintenance, outside orchestration</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
-<p><strong>Why.</strong> §7 registered <code>reckon crew retention-sweep</code> (<code>crew_retention_sweep</code> in <code>reckon/crew_run_commands.py</code>, landed in <code>81b4ea57e</code>) and no skill names it, so <code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code> has failed on main since. Peer nodes on 2026-10-23 and 2026-10-24 saw it fail at both base and head and left it.</p><p><strong>Change.</strong> The verb is run by the per-user timer that <code>install_retention_timer</code> installs, never by an orchestrator, so it belongs in <code>CREW_VERBS_OUTSIDE_ORCHESTRATION</code> in <code>tests/test_skill_contracts.py</code> with that reason, beside the other verbs that are maintenance rather than orchestration. The reckon-build skill is left as it is.</p><p>Done when: <code>test_every_registered_crew_verb_is_documented_or_exempt</code> passes at the head and fails at the base, and every other case in <code>tests/test_skill_contracts.py</code> keeps its base result. Negative control: removing the new entry makes the case fail again. Write path: <code>tests/test_skill_contracts.py</code>. Every log is under the run directory.</p>
+<p><strong>Why.</strong> §7 registered <code>reckon crew retention-sweep</code> (<code>crew_retention_sweep</code> in <code>reckon/crew_run_commands.py</code>, landed in <code>81b4ea57e</code>) and no skill names it, so <code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code> has failed on main since. Peer nodes on 2026-10-23 and 2026-10-24 saw it fail at both base and head and left it.</p><p><strong>Change.</strong> The verb is an operator-run maintenance surface, for a hand-run sweep or installing the timer: the timer <code>install_retention_timer</code> installs runs the module entry point (<code>python -m reckon.crew.gc</code>, <code>gc.main</code>), not the verb, and no orchestrator invokes it. So it belongs in <code>CREW_VERBS_OUTSIDE_ORCHESTRATION</code> in <code>tests/test_skill_contracts.py</code> with that reason, beside the other verbs that are maintenance rather than orchestration. The reckon-build skill is left as it is.</p><p>Done when: <code>test_every_registered_crew_verb_is_documented_or_exempt</code> passes at the head and fails at the base, and every other case in <code>tests/test_skill_contracts.py</code> keeps its base result. Negative control: removing the new entry makes the case fail again. Write path: <code>tests/test_skill_contracts.py</code>. Every log is under the run directory.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
