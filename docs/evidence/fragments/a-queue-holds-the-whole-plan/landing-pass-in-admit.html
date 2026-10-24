@@ -1,0 +1,31 @@
+<section id="landing-pass-in-admit-landing">
+  <h2>A delivered run lands from the admit loop</h2>
+  <p>The admission service now selects a delivered implementation run only when
+  its stored review describes the manifest's last commit and
+  <code>_review_accepts_promotion</code> accepts it. The pass runs before queued
+  requests are admitted. It invokes <code>crew complete --land</code> through
+  an explicit single-task <code>srun</code> shim step, so promotion uses its
+  existing per-run lease and the merge uses its existing index-lock retry.
+  The service process waits for that step's receipt.</p>
+  <p>A fixture with no coordinator or follower process drives the admit loop:
+  a simulated successful land precedes its downstream request's launch. The
+  request's run wait moves through the real readiness pass and the real queued
+  launch path; faulting either function fails the test. A second
+  fixture drives the real crew land CLI behind a test scheduler shim; the
+  introduced marker reaches the primary branch and bare remote, and the live
+  pointer is removed. A review of an older head is ignored. A below-floor
+  review and a refused land remain unlanded; the owning session's obligation
+  names the guard, and the service never retries the same head silently.
+  An interrupted landing attempt becomes a named refusal and an owning-session
+  duty on the next pass, without a silent retry. A second review dispatch of an
+  unchanged head is refused.</p>
+  <p>The declared negative control bypassed reviewed-head selection. Its
+  older-head test failed with <code>stale review landed</code>, one failing ID
+  and <code>EXIT=1</code>. At the committed implementation, the seven focused
+  landing tests passed before the interruption repair; all eight focused tests
+  pass with that repair and the real downstream path. Ruff check and format
+  check pass on the changed paths.</p>
+  <p id="landing-pass-in-admit-gate">The serial importer comparison's base and
+  head receipts live in the run directory. The node manifest records whether
+  each arm completed and the failure-ID delta the completed receipts support.</p>
+</section>
