@@ -1201,7 +1201,16 @@ def _validated_batch_waits(
         if row is None:
             raise CrewError(f"wait names missing plan {target_project}:{parsed.slug}")
         if parsed.stage:
-            if not _section_status(row, parsed.stage):
+            authored = {
+                normalize_section(identity)
+                for identity, _heading in plan_html_reader.authored_section_headings(
+                    _plan_html(docs.parent, parsed.slug)
+                )
+            }
+            if (
+                not _section_status(row, parsed.stage)
+                and normalize_section(parsed.stage) not in authored
+            ):
                 raise CrewError(f"wait names missing section {ref}")
             return section_key(
                 target_project, parsed.slug, parsed.stage
@@ -1255,9 +1264,25 @@ def _validated_batch_waits(
                 ),
                 None,
             )
-            if own and any(
-                blocker.get("kind") in {"gate", "decision"}
-                for blocker in own.get("blockers") or ()
+            holding_kinds = {
+                blocker.get("kind") for blocker in (own or {}).get("blockers") or ()
+            }
+            explicit_gates = {
+                parsed.stage
+                for ref in refs
+                if ref.startswith(GATE_REF_PREFIX)
+                if (parsed := parse_plan_ref(ref[len(GATE_REF_PREFIX) :])) is not None
+                and parsed.stage
+            }
+            held_gates = {
+                str(blocker.get("id") or blocker.get("gate") or "")
+                for blocker in (own or {}).get("blockers") or ()
+                if blocker.get("kind") == "gate"
+            }
+            if holding_kinds & {"gate", "decision"} and not (
+                held_gates
+                and held_gates <= explicit_gates
+                and "decision" not in holding_kinds
             ):
                 refs.append(
                     f"readiness:{section_key(project, node.plan, node.section)}"
