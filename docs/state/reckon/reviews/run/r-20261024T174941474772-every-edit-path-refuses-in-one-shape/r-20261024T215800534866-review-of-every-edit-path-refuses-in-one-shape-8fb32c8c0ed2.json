@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:_edit_plan (three _attach_changed_targets returns at lines 1699, 1837 and 1940)",
+    "reckon/mcp_edit_plan.py:_attach_changed_targets",
+    "reckon/mcp_edit_plan.py:_edit_plan_tool"
+  ],
+  "completed_at": "2026-10-24T22:15:49.016Z",
+  "dispatched_at": "2026-10-24T22:01:58Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The coordinator's base arm runs the head's changed test files against the base production code, so the move case's failure at the base is measured there.",
+      "recorded_at": "2026-10-24T22:23:36.027425+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_every_edit_path_refuses_one_shape.py",
+      "line": "378",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new move case exists only in the head test file, so logs/base_targeted.log (60 tests) cannot show it failing at the base; the `a case fails at the base` half of the done_when is met by a mutation of the head tree instead, which proves the guard but leaves the base-arm claim unchecked for this mechanism."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": "1343",
+      "severity": "non-blocking",
+      "text": "non-blocking: a move op carrying neither `from` nor `to` now composes no address at all, where `_op_target_path` fell back to \"sprints\", and the read-time version pre-check reaches this before `_apply_move` can refuse the malformed op, so such an op silently disappears from changed_targets."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the two commits gained since the last review: 8a1c4fd adds `_op_target_paths` and the 100-line move case, and 8fb32c8 is evidence prose; 3 files, 151 insertions, 12 deletions.",
+    "done_when": "\u00a758's listed id `test_the_refusal_shape_is_identical_across_op_paths` is recorded FAILED at 9f5d32b (1 failed, 59 passed, EXIT=1) and passing at 8a1c4fd (64 passed, EXIT=0) in logs/base_targeted.log and logs/head_targeted.log; the move mechanism's base-half is shown by logs/negative_control_move_source.log (1 failed, 9 passed, EXIT=1) rather than by the base arm.",
+    "goal": "the gained commit makes a refused sprint move name both sprints: reckon/mcp_edit_plan.py:1332 `_op_target_paths` and reckon/mcp_edit_plan.py:1375 `_changed_targets` now emit both `sprints.<from>` and `sprints.<to>`, which is the capability the prior review's finding said was missing.",
+    "manifest": "read; it records the move repair, head_targeted.log (64 passed, EXIT=0), base_targeted.log (1 failed, 59 passed, EXIT=1), four negative-control logs and four ruff receipts, and lists eight commits.",
+    "write_paths": "the node was fenced to reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py and docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html; both gained commits stay inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_every_edit_path_refuses_one_shape.py:410 pins the exact path list [\"sprints.S1\", \"sprints.S2\"] independently of the module, and logs/negative_control_move_source.log shows that case red (1 failed, 9 passed, EXIT=1) when the repair is not applied.",
+    "evidence": "logs/head_targeted.log and logs/base_targeted.log carry revision, tree, literal command, module.__file__, cwd and a bare EXIT=, and the head arm ran at 8a1c4fd one docs-only commit before the reviewed head, but the base arm runs the base revision's test file, so the new move case has no base-arm failure and rests on logs/negative_control_move_source.log alone.",
+    "fit": "reckon/mcp_edit_plan.py:1332 is an underscore helper beside `_op_target_path` at reckon/mcp_edit_plan.py:1277 with a mechanism docstring, and no added name, comment or fixture carries a plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/mcp_edit_plan.py:1343 names both `from` and `to` sprints for a move, closing the prior review's finding that only the destination was named while reckon/_store.py:3585 `_apply_move` rewrites both.",
+    "reuse": "`_op_target_paths` at reckon/mcp_edit_plan.py:1332 extends the module's own `_op_target_path` by delegating to it for every non-move verb, and a capability search over reckon/ found no other op-address composer.",
+    "scope_discipline": "`git log --stat 0976d76..8fb32c8` shows only reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py and the evidence fragment, all inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained change makes a refused sprint move name both sprints it touches; reckon/mcp_edit_plan.py:1332 `_op_target_paths` composes `sprints.<from>` before `sprints.<to>` and reckon/mcp_edit_plan.py:1375 `_changed_targets` now iterates every path, so \u00a758's one-shape refusal names the source sprint the item leaves as well as the destination it joins.\nVERDICT done_when: \u00a758's gate id `test_the_refusal_shape_is_identical_across_op_paths` is recorded FAILED at 9f5d32b (logs/base_targeted.log, 1 failed, 59 passed, EXIT=1) and passing at 8a1c4fd (logs/head_targeted.log, 64 passed, EXIT=0); the move mechanism's base-half is demonstrated by a mutation of head (logs/negative_control_move_source.log, 1 failed, 9 passed, EXIT=1) rather than by the base arm, whose test file predates the new case.\nVERDICT write_paths: the node's declared paths are reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py and docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html; the two gained commits touch exactly those three and nothing else.\nVERDICT manifest: read; it records the move repair, names head_targeted.log (64 passed, EXIT=0), base_targeted.log (1 failed, 59 passed, EXIT=1), four negative-control logs including the move-source mutation, and four ruff receipts (7 findings at each arm, both format runs EXIT=0).\nVERDICT diff: read 0976d76..8fb32c8 commit by commit; 8a1c4fd adds `_op_target_paths` and routes `_changed_targets` through it, adding a 100-line case that drives a real refused move, and 8fb32c8 is evidence prose only.\nCALL_SITES: reckon/mcp_edit_plan.py:_edit_plan (the three _attach_changed_targets returns at lines 1699, 1837 and 1940), reckon/mcp_edit_plan.py:_attach_changed_targets, reckon/mcp_edit_plan.py:_edit_plan_tool\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_edit_plan.py:1343 names both `from` and `to` sprints for a move, closing the prior review's finding that only the destination was named while reckon/_store.py:3585 `_apply_move` rewrites both.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head_targeted.log and logs/base_targeted.log carry revision, tree, literal command, module.__file__, cwd and a bare EXIT=, and the head arm ran at 8a1c4fd one docs-only commit before the reviewed head, but the base arm runs the base revision's test file, so the new move case has no base-arm failure and rests on logs/negative_control_move_source.log alone.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: `git log --stat 0976d76..8fb32c8` shows only reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py and the evidence fragment, all inside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_edit_path_refuses_one_shape.py:410 pins the exact path list `[\"sprints.S1\", \"sprints.S2\"]` independently of the module, and logs/negative_control_move_source.log shows that case red (1 failed, 9 passed, EXIT=1) when the repair is reverted to destination-only composition.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp_edit_plan.py:1332 is an underscore helper beside `_op_target_path` at reckon/mcp_edit_plan.py:1277 with a mechanism docstring, and no added name, comment or fixture carries a plan, ticket or version identifier; the wrapped line at reckon/mcp_edit_plan.py:1361-1363 reads awkwardly but is inside the module's style.\nSCORE reuse: 20\nJUSTIFICATION reuse: `_op_target_paths` at reckon/mcp_edit_plan.py:1332 extends the module's own `_op_target_path` by delegating to it for every non-move verb, and a capability search over reckon/ found no other op-address composer (only reckon/crew/plan_review.py:521 `_target_path`, a review-record file path).\nFINDING tests/test_every_edit_path_refuses_one_shape.py:378 non-blocking: the new move case exists only in the head test file, so logs/base_targeted.log (60 tests) cannot show it failing at the base; the `a case fails at the base` half of the done_when is met by a mutation of the head tree instead, which proves the guard but leaves the base-arm claim unchecked for this mechanism.\nFINDING reckon/mcp_edit_plan.py:1343 non-blocking: a move op carrying neither `from` nor `to` now composes no address at all, where `_op_target_path` fell back to `\"sprints\"`, and the read-time version pre-check reaches this before `_apply_move` can refuse the malformed op, so such an op silently disappears from changed_targets.\n",
+  "review_run_id": "r-20261024T215800534866-review-of-every-edit-path-refuses-in-one-shape-8fb32c8c0ed2",
+  "reviewed_base_sha": "0976d76a22dc5505f181f60c2369e9f432c365cf",
+  "reviewed_head_sha": "8fb32c8c0ed2b3733651a21c1e24940375881836",
+  "reviewed_run_id": "r-20261024T174941474772-every-edit-path-refuses-in-one-shape",
+  "rubric": "review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T22:23:23.158252+00:00",
+  "total": 110
+}
