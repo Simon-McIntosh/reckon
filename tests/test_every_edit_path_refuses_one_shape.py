@@ -22,6 +22,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, _store
+from reckon import mcp_edit_plan as edit_module
 from reckon.mcp import _edit_plan
 
 PROJECT = "edit-path-fixture"
@@ -209,6 +210,57 @@ def _landing_between_read_and_write(
     monkeypatch.setattr(_store, "_write_state", landing_first)
 
 
+def _seed_index(root: Path) -> Path:
+    """A project index holding one item in the first of two sprints."""
+    path = root / "docs" / "state" / PROJECT / "index.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    envelope = {
+        "updated": "2026-10-01T00:00:00",
+        "project": PROJECT,
+        "doc": "index",
+        "data": {
+            "_version": 0,
+            "active_sprint_id": "S1",
+            "sprints": [
+                {"id": "S1", "status": "active", "items": [{"slug": "i-moved"}]},
+                {"id": "S2", "status": "planned", "items": []},
+            ],
+        },
+    }
+    path.write_text(json.dumps(envelope, indent=2), encoding="utf-8")
+    return path
+
+
+def _landing_index_between_read_and_write(
+    root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Commit an index write inside the edit's own store call.
+
+    The same shape as the plan landing above, aimed at the project index: the
+    write lands after the edit has read the index and passed its read-time
+    version check, so the store raises the conflict being converted.
+    """
+    real_write_plan = edit_module.write_plan
+    landed = {"done": False}
+
+    def landing_first(*args, **kwargs):
+        if not landed["done"] and len(args) > 1 and args[1] == "index":
+            landed["done"] = True
+            state, version = _store.read_plan(
+                PROJECT, "index", root, artifact_type="index"
+            )
+            real_write_plan(
+                PROJECT,
+                "index",
+                {**state, "active_sprint_id": "S1", "sprints": state["sprints"]},
+                version,
+                root,
+            )
+        return real_write_plan(*args, **kwargs)
+
+    monkeypatch.setattr(edit_module, "write_plan", landing_first)
+
+
 def _edit(root: Path, ops: list[dict], expected_version: int) -> dict:
     return _edit_plan(
         PROJECT,
@@ -321,6 +373,54 @@ def test_an_append_of_a_new_record_names_its_path_alone(
     assert outcome["changed_targets"] == [{"index": 0, "path": "sections.s-refused"}], (
         outcome["changed_targets"]
     )
+
+
+def test_a_refused_move_names_both_sprints(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A move leaves one sprint and joins another, so both are named.
+
+    The refused write touches the source sprint's items and the destination's,
+    so an answer naming only the destination sends the caller back to reconcile
+    against a source sprint that also moved.
+    """
+    _seed_index(repository)
+    _state, version = _store.read_plan(
+        PROJECT, "index", repository, artifact_type="index"
+    )
+    assert version == 0
+
+    _landing_index_between_read_and_write(repository, monkeypatch)
+    outcome = _edit_plan(
+        PROJECT,
+        "index",
+        [
+            {
+                "op": "move",
+                "target": "sprint_item",
+                "slug": "i-moved",
+                "from": "S1",
+                "to": "S2",
+            }
+        ],
+        version,
+        checkout_path=str(repository),
+    )
+
+    assert isinstance(outcome, dict), outcome
+    assert outcome["error"] == "version_conflict", outcome
+    # The landing really committed, so the refusal came from the store's own
+    # version check rather than a stale read.
+    assert outcome["current_version"] == 1, outcome
+    targets = outcome.get("changed_targets") or []
+    assert [entry["path"] for entry in targets] == ["sprints.S1", "sprints.S2"], (
+        outcome["changed_targets"]
+    )
+    state_after, _ = _store.read_plan(
+        PROJECT, "index", repository, artifact_type="index"
+    )
+    for entry in targets:
+        assert entry["current"] == _value_in(state_after, entry["path"]), entry
 
 
 def test_every_store_op_verb_names_a_target() -> None:

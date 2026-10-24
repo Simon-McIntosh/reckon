@@ -1329,6 +1329,23 @@ def _op_target_path(op: dict[str, Any]) -> str | None:
     return None
 
 
+def _op_target_paths(op: dict[str, Any]) -> list[str]:
+    """Every address one op touches, the one ``_op_target_path`` composes first.
+
+    A ``move`` takes an item out of one sprint and puts it into another, so the
+    refused write touches two documents' worth of sprint state and a caller must
+    re-read both. Every other verb touches the single target
+    ``_op_target_path`` composes.
+    """
+    if isinstance(op, dict) and op.get("op") == "move":
+        source = op.get("from")
+        destination = op.get("to")
+        paths = [f"sprints.{sprint}" for sprint in (source, destination) if sprint]
+        return list(dict.fromkeys(paths))
+    path = _op_target_path(op)
+    return [path] if path is not None else []
+
+
 def _changed_targets(
     data: dict[str, Any], ops: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
@@ -1338,10 +1355,14 @@ def _changed_targets(
     answer names every target the refused write would touch beside its current
     value: the caller re-reads only what it did not expect to move, instead of
     re-reading the whole plan. Every op kind is answered, so the conflict shape
-    is the same whichever verb the caller chose.
+    is the same whichever verb the caller chose. A ``move`` addresses two
+    sprints — the one its item leaves and the one it joins — and both are named,
+    because a caller that re-read only the destination would reconcile against
+    a source sprint that also moved.
 
     ``current`` is carried whenever the document holds something at the
-    composed address. That is every ``set``, ``close`` and ``move``; every
+    composed address. That is every ``set``, ``close`` and ``move`` (both of a
+    move's sprints); every
     ``resolve``, ``lock``, ``accept``, ``gate``, ``pass`` and ``fail`` whose
     record already exists; and an ``append`` whose collection already holds the
     addressed entry. A verb that inserts a record the document does not hold —
@@ -1351,14 +1372,12 @@ def _changed_targets(
     """
     targets: list[dict[str, Any]] = []
     for index, op in enumerate(ops or []):
-        path = _op_target_path(op)
-        if path is None:
-            continue
-        current = _value_at_path(data, path)
-        entry: dict[str, Any] = {"index": index, "path": path}
-        if current is not _ABSENT:
-            entry["current"] = current
-        targets.append(entry)
+        for path in _op_target_paths(op):
+            current = _value_at_path(data, path)
+            entry: dict[str, Any] = {"index": index, "path": path}
+            if current is not _ABSENT:
+                entry["current"] = current
+            targets.append(entry)
     return targets
 
 
