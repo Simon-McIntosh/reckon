@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T03:43:27.611Z",
+  "dispatched_at": "2026-10-24T03:33:35Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/the-producer-calls-its-seat-decision/docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-producer-calls-its-seat-decision.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "the fragment and the manifest checkpoint assert that \"against the listing arm the same test records ten\" published rows, but no listing-arm log exists under the run's logs/ and no such arm exists in the test, so the guard's sensitivity is claimed rather than shown."
+    },
+    {
+      "file": "reckon/crew/watch_unit.py",
+      "line": "396",
+      "severity": "non-blocking",
+      "text": "the release announcement is printed to stdout, which the watcher unit appends to watch_log_path (watch_unit.py:1007-1015), not to the transition stream watch_stream_path (run_paths.py:31-33) that ticker and follower readers consume, so the section's \"announced once on the stream\" reaches only a reader of the log file."
+    },
+    {
+      "file": "reckon/crew/watch_unit.py",
+      "line": "341",
+      "severity": "non-blocking",
+      "text": "_ANNOUNCED_RELEASES dedupes an announcement that is always followed by sys.exit, so outside tests it never suppresses a second print while adding module-level mutable state that every test must reset."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed run's prompt.txt states the goal as calling watch_unit.producer_start_decision at producer start-up and on each lease renewal; reckon/crew/recovery_watch.py:363 calls release_seat_when_misplaced before the seat is claimed and reckon/crew/runs.py:2989 calls it inside renew_watch_host_lease, both of which take producer_start_decision (watch_unit.py:389).\nVERDICT done_when: section 9's wiring done-when asks one test to drive start-up and one lease renewal against a temporary fleet record naming another node with a run launched there, releasing the seat, printing the announcement once, exiting, and running the unit-disable command only through an injectable runner, with the same test on the fleet node keeping the producer running; tests/test_the_producer_calls_its_seat_decision.py does exactly that and logs/gate-head.log records 2 failed / 56 passed at dbda86022 against 4 failed / 48 passed at base dc3ace589, the head failure set a strict subset.\nVERDICT write_paths: the manifest's orientation_write_paths name seven paths; the diff dc3ace589..5359793a touches seven files, six inside that set, with reckon/crew/fleet_supervisor.py outside it, which section 9's text requires and the manifest declares under outside_scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T220036362628-the-producer-calls-its-seat-decision/manifest.md; status complete, the tests: line carries a literal re-runnable pytest command over twelve files, and after_suite.failure_ids (crashed_producer_reoccupies_the_seat[crash], repeated_crashes_reach_a_reported_limit) now matches logs/gate-head.log exactly, repairing the prior round's blocking contradiction; baseline_suite likewise matches logs/gate-base.log's four ids.\nVERDICT diff: read all five commits against dc3ace589; 12573b255 wires both entry points and adds release_watch_seat/release_seat_when_misplaced in reckon/crew/watch_unit.py:344-400 plus the shared drop_watch_seat teardown at reckon/crew/runs.py:2964, f5c238f9d moves runs_launched_on onto the non-publishing _list_live_records at reckon/crew/watch_unit.py:227-241, dbda86022 is a two-line exists() guard in the seat test, c99a46279 and 5359793a are the evidence fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:363 (_watch_registration, entered at recovery_watch.py:2708 and :2981), reckon/crew/runs.py:2989 (renew_watch_host_lease, called from recovery_watch.py:2687, :2700, :2774 and runs.py:3559, :3580), reckon/crew/watch_unit.py:239 and :297 (_hosts_match), reckon/crew/runs.py:3157 (drop_watch_seat in the claim teardown), reckon/crew/fleet_supervisor.py:_short_hostname\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: both entry points the goal names reach the decision (recovery_watch.py:363 before the claim, runs.py:2989 on every renewal) and release_seat_when_misplaced runs the plan's order \u2014 unit disable, seat teardown, announcement, exit \u2014 at watch_unit.py:392-398.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log and logs/gate-base.log each carry a literal command, a summary line and a bare EXIT=, the head failure ids are a strict subset of the base's, and logs/negative-control.log records the declared mutation, but the fragment's listing-arm figure at docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-producer-calls-its-seat-decision.html:26 has no log.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/crew/fleet_supervisor.py:270-275 is edited although it is not among the node's declared write paths, and every other path in the diff is inside them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_producer_calls_its_seat_decision.py:130-172 fails if either call site is removed (shown in logs/negative-control.log), and :191-215 fails if runs_launched_on drops back to the publishing list_live, though the listing-arm sensitivity figure that test is said to demonstrate is recorded nowhere.\nSCORE fit: 17\nJUSTIFICATION fit: the additions follow the module's existing seams and docstring idiom (watch_unit.py:330-341 mirrors the _UNIT_DISABLE_RUNNER seam of the first node), and no name carries a plan or version label, though _ANNOUNCED_RELEASES at watch_unit.py:341 is process-global mutable state whose dedupe is unreachable in production because the release always exits.\nSCORE reuse: 19\nJUSTIFICATION reuse: the seat teardown the claim already performed is extracted to runs.drop_watch_seat (runs.py:2964) and called by both paths, the host shortener is extended at fleet_supervisor.py:270 rather than re-spelled, and runs_launched_on reuses _list_live_records (runs.py:759).\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-producer-calls-its-seat-decision.html:26 non-blocking: the fragment and the manifest checkpoint assert that \"against the listing arm the same test records ten\" published rows, but no listing-arm log exists under the run's logs/ and no such arm exists in the test, so the guard's sensitivity is claimed rather than shown.\nFINDING reckon/crew/watch_unit.py:396 non-blocking: the release announcement is printed to stdout, which the watcher unit appends to watch_log_path (watch_unit.py:1007-1015), not to the transition stream watch_stream_path (run_paths.py:31-33) that ticker and follower readers consume, so the section's \"announced once on the stream\" reaches only a reader of the log file.\nFINDING reckon/crew/watch_unit.py:341 non-blocking: _ANNOUNCED_RELEASES dedupes an announcement that is always followed by sys.exit, so outside tests it never suppresses a second print while adding module-level mutable state that every test must reset.",
+  "review_run_id": "r-20261024T033048203679-review-of-the-producer-calls-its-seat-decision-5359793a9491",
+  "reviewed_base_sha": "dc3ace589acc6be861e7c36f89c82b3a819e1461",
+  "reviewed_head_sha": "5359793a9491dd17618baac829a43baae7811cb0",
+  "reviewed_run_id": "r-20261023T220036362628-the-producer-calls-its-seat-decision",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T03:49:49.915608+00:00",
+  "total": 103
+}
