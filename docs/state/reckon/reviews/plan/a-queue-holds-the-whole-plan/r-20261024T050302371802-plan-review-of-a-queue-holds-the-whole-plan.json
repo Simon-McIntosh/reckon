@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T05:09:28.437Z",
+  "dispatched_at": "2026-10-24T05:03:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:65",
+      "id": "done_when-1",
+      "reason": "the arm's measure is unchanged once the path is repointed, so this costs the implementing node a look at the record rather than sending it down a wrong mechanism.",
+      "text": "the discriminating arm says it changes \"the brief text stored on the queued pointer\", but the queued pointer's `node.brief` is a path (`_store_brief(directory, source)` reads `Path(source)`, reckon/crew/dispatch_admission.py:2241, and `_brief_record` records it as `source_path`), so the arm names a text field the record does not carry and a node implementing it must first discover that the lever is the path, not the text",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:64",
+      "id": "reasoning-1",
+      "reason": "the node must know which phase a rejected steering file produces, and choosing `queued` instead of `launch-failed` hides the refusal from the views \u00a712 measures.",
+      "text": "a steering file that fails its checks at launch is described as leaving the request `queued` \"as a launch failure does today\", while today's launch failure moves the pointer to `launch-failed` and a later admission pass re-queues it; implemented as written the request would stay in `queued` and be re-checked on every pass with no failure phase recorded, which \u00a712's per-phase failed count and the drain view cannot see",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "64a95b8d00dd88997c138aafe75e802bba3e454d5a6ba260d4429f941e161f92",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 55,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-24T05:11:36.599720+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T05:11:50.384675+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T05:11:36.599720+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T05:11:50.384675+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v55.json",
+  "review_run_id": "r-20261024T050302371802-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "8810840cb8dc7b6200ceb6bbe545743d1ead56f1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every code anchor resolves: `_queued_request_record` at reckon/crew/dispatch.py:229, `queue_dispatch` at reckon/crew/runs.py:546, `_store_brief` and `_brief_digest` at reckon/crew/dispatch_admission.py:2241 and :2204, `_launch_queued` and `_node_from_pointer` at reckon/crew/queue_admission.py:171 and :119, `crew view live --phase` at reckon/crew_run_commands.py:238, `crew discard` at :1978, and `position`/`rank` on the live view via `LIVE_PLACEMENT_FIELDS` in reckon/crew/query.py:88.",
+    "done_when": "a finding \u2014 the discriminating arm at line 65 says it \"changes the brief text stored on the queued pointer\", but a queued pointer stores a path, not text (`TaskNode.as_dict()` gives `\"brief\": self.brief`, reckon/crew/node.py:777, and `_store_brief` reads that value with `Path(source)`, reckon/crew/dispatch.py:1948).",
+    "evidence_paths": "pass \u2014 \u00a75 puts every log under the request's run directory (`~/.config/reckon/crew/runs/<request-id>/`), a durable path a later reader can open, not a scratchpad or node-local temporary directory.",
+    "naming": "pass \u2014 \u00a75's prose names no plan label, stage name, ticket number or version tag, and the three new verbs are named for what they do.",
+    "reasoning": "a finding \u2014 \u00a75 says a steering file that fails its checks at launch \"leaves the request queued with the failure on it, as a launch failure does today\", but today a launch failure moves the pointer to `launch-failed` (reckon/crew/queue_admission.py:47) and only `_requeue_admitted_failures` returns it to `queued`; the two clauses name different ending phases.",
+    "single_goal": "pass \u2014 \u00a75 is one deliverable, a brief that binds at launch and stays editable until then, and its two-node build split is declared inside the section, not carried as two independent goals.",
+    "wiring": "pass \u2014 \u00a75 declares `plan-section-depends-on` on `a-queue-holds-the-whole-plan#s2` only, and s4 and s10 declare their dependence on s5, so every relationship the section needs is present and points at the right node."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "760304ef6824f9942787290d5678fe9a7925aff767dca440cf7ccbfc4383420e",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T05:11:24.213120+00:00"
+}
