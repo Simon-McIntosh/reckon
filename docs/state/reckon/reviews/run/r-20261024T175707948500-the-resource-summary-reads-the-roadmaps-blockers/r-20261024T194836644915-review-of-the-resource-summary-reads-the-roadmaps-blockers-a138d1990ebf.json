@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_views.py:2842",
+    "reckon/mcp_views.py:2862",
+    "reckon/mcp_views.py:3188",
+    "reckon/mcp.py:1435"
+  ],
+  "completed_at": "2026-10-24T20:07:07.022Z",
+  "dispatched_at": "2026-10-24T19:51:22Z",
+  "emission": [
+    "VERDICT goal: The source node goal is to route the MCP plan summary through roadmap.plan_blocker_state with the roadmap's own arguments, including sections_map, and leave the roadmap rule as the one orphaned-blocked-status emitter; this increment keeps that routing and publishes the status that holds a gated or deferred decision in open_decisions at reckon/mcp_views.py:2516-2534, resolving the prior review's finding that a held decision read like a plainly open one.",
+    "VERDICT done_when: The done_when names tests/test_the_resource_summary_reads_the_roadmaps_blockers.py plus tests/test_mcp_views.py staying green; logs/head-gate-gated-decision-status.log records 134 passed EXIT=0 at 17ab0656e across the eight named files, and logs/base-gate.log records 4 failed / 129 passed EXIT=1 at a17c38e4a, so the gate asserts the measure and adds no failure.",
+    "VERDICT write_paths: The manifest declares reckon/mcp.py, reckon/mcp_views.py, tests/test_the_resource_summary_reads_the_roadmaps_blockers.py, tests/test_mcp_views.py, the evidence fragment and a figures directory; 6a1c6f1b0..a138d1990 touches reckon/mcp_views.py, tests/test_mcp_views.py and the fragment, all inside that set.",
+    "VERDICT manifest: Read complete; it records the head gate at 17ab0656e with 134 passed, the base arm with four failing ids, both negative-control arms, and the byte measurements the compactness bound rests on.",
+    "VERDICT diff: Read both commits against 6a1c6f1b0: 17ab0656e adds the held-status map and status field to _open_decisions at reckon/mcp_views.py:2516-2534 and one new test at tests/test_mcp_views.py:276-320; a138d1990 edits only the evidence fragment's prose and changes no code or test.",
+    "CALL_SITES: reckon/mcp_views.py:2842, reckon/mcp_views.py:2862, reckon/mcp_views.py:3188, reckon/mcp.py:1435"
+  ],
+  "findings": [],
+  "item_verdicts": {
+    "diff": "Read both commits against 6a1c6f1b0: 17ab0656e adds the held-status map and status field to _open_decisions at reckon/mcp_views.py:2516-2534 and one new test at tests/test_mcp_views.py:276-320; a138d1990 edits only the evidence fragment's prose and changes no code or test.",
+    "done_when": "The done_when names tests/test_the_resource_summary_reads_the_roadmaps_blockers.py plus tests/test_mcp_views.py staying green; logs/head-gate-gated-decision-status.log records 134 passed EXIT=0 at 17ab0656e across the eight named files, and logs/base-gate.log records 4 failed / 129 passed EXIT=1 at a17c38e4a, so the gate asserts the measure and adds no failure.",
+    "goal": "The source node goal is to route the MCP plan summary through roadmap.plan_blocker_state with the roadmap's own arguments, including sections_map, and leave the roadmap rule as the one orphaned-blocked-status emitter; this increment keeps that routing and publishes the status that holds a gated or deferred decision in open_decisions at reckon/mcp_views.py:2516-2534, resolving the prior review's finding that a held decision read like a plainly open one.",
+    "manifest": "Read complete; it records the head gate at 17ab0656e with 134 passed, the base arm with four failing ids, negative-control arm A at 3 failed / 2 passed and arm B at 1 failed / 4 passed, and the byte measurements the compactness bound rests on.",
+    "write_paths": "The manifest declares reckon/mcp.py, reckon/mcp_views.py, tests/test_the_resource_summary_reads_the_roadmaps_blockers.py, tests/test_mcp_views.py, the evidence fragment and a figures directory; 6a1c6f1b0..a138d1990 touches reckon/mcp_views.py, tests/test_mcp_views.py and the fragment, all inside that set, though the dispatched FENCE list omitted tests/test_mcp_views.py that the done_when itself names."
+  },
+  "justifications": {
+    "durability": "tests/test_mcp_views.py:276-320 writes only a gate with transition decision-lockable and asserts status == 'gated'; deleting the if held.get(key) lines at reckon/mcp_views.py:2532-2533 leaves the entry without a status key and reddens that equality while 'gated' is never passed in, so the guard is independent of the value under test.",
+    "evidence": "logs/head-gate-gated-decision-status.log ends '134 passed' with EXIT=0 at 17ab0656e against logs/base-gate.log's 4 failed / 129 passed EXIT=1, and the only later commit a138d1990 is docs-only, so the recorded gate measures the landed code.",
+    "fit": "reckon/mcp_views.py:2516 imports the owner lazily, matching the split_unpassed_gates imports at reckon/mcp_views.py:2577 and :2636, but it is the module's only import of a private roadmap helper (_decision_rows) where the neighbouring imports are public.",
+    "goal_fidelity": "reckon/mcp_views.py:2516-2534 reads roadmap._decision_rows and adds status only for a gated or deferred decision, so the published open_decisions row no longer reads identically to a plainly open one, which is the prior review's finding.",
+    "reuse": "The added status is read from roadmap._decision_rows at reckon/mcp_views.py:2522, the existing owner that computes the open/gated/deferred/locked state; a search of reckon/roadmap.py found no other assembly that reports it, so the logic extends rather than forks the owner.",
+    "scope_discipline": "Every path in 6a1c6f1b0..a138d1990 is inside the manifest's declared write paths, though the dispatched FENCE recorded in the source prompt omitted tests/test_mcp_views.py that the done_when names."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T194836644915-review-of-the-resource-summary-reads-the-roadmaps-blockers-a138d1990ebf",
+  "reviewed_base_sha": "6a1c6f1b020aaf28a13471bf97db9f74ad71468a",
+  "reviewed_head_sha": "a138d1990ebf06d7249ec3a4fcc67752aa6495cb",
+  "reviewed_run_id": "r-20261024T175707948500-the-resource-summary-reads-the-roadmaps-blockers",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T20:12:12.129177+00:00",
+  "total": 109
+}
