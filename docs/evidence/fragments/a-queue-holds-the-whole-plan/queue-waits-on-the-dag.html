@@ -1,0 +1,21 @@
+<section id="queue-waits-on-the-dag-landing">
+  <h2>Queue waits follow section and request dependencies</h2>
+  <p>Dispatch accepts repeated <code>--after</code> request IDs. Queue validation
+  checks section, plan and request targets before storing a batch, and rejects
+  cycles across sections and requests. Each admission pass reads the roadmap's
+  per-section verdict once per project. A complete upstream request releases
+  its waiter only after the ledger's promoted revision is an ancestor of HEAD
+  in the registered checkout. Unreadable status and missing revision each
+  produce one upstream obligation.</p>
+  <p>The new test file covers cross-project release, direct queueing after a
+  completed section, both cycle shapes, missing targets, blocked and failed
+  upstreams, promoted but unmerged work, a no-commit promotion, rejected
+  manifest status, scoped holds and both gate shapes. The declared mutation
+  that drops cross-project refs fails the cross-project arm.</p>
+  <p>The serial focused base gate reported 68 passed and one pre-existing
+  failure. The product head reported 86 passed and three failures: the same
+  pre-existing failure plus two older request-wait tests whose assertions
+  require a missing request to remain pending and a complete manifest to
+  release a waiter before landing. The older test file is outside this node's
+  write scope, so the zero-added-failures measure remains unmet.</p>
+</section>
