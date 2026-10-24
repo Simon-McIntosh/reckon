@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="The producer calls its seat decision">
+  <meta name="plan-summary" content="The producer asks the seat owner at start-up and on every lease renewal; a misplaced producer disables its unit, gives up the seat, announces once and exits, while the fleet node's own producer keeps running.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s9">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,seat,fleet-node">
+  <title>The producer calls its seat decision — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="the-producer-calls-its-seat-decision-note" class="r-note" data-node="the-producer-calls-its-seat-decision" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="the-producer-calls-its-seat-decision-head">The producer calls its seat decision</h2>
+  <p id="the-producer-calls-its-seat-decision-rule">The start-up decision existed in the seat owner and nothing called it, so a producer on a host that is not the fleet record's node still took the seat: every liveness reading it published for a run launched on the fleet node read unknown, and it held the seat that would let a producer there start. The producer now asks the question at start-up, before it claims any seat, and again on every lease renewal — a reload can leave a producer holding a seat on a host it can no longer serve, so the start-up answer alone would miss that one.</p>
+  <p id="the-producer-calls-its-seat-decision-mechanism">A release runs in this order and ends the process: the unit-disable command the decision composed, through an injectable runner; the seat this process holds is erased through its own handle and unlocked, and its host lease given back, so a producer on the fleet node reads a free seat rather than a foreign one whose stream was just written to; the announcement is printed once, naming both hosts; then the process exits. The descriptor is unlocked rather than closed, because the claim that opened it closes it on the way out. In <code>reckon/crew/fleet_supervisor.py</code> the short-hostname spelling gained an optional name and <code>_hosts_match</code> now shortens both of its names through it, so the two sides of that comparison cannot drift. The real-record assertion in the seat-owner test is guarded by <code>exists()</code> as its before-reading already was.</p>
+  <p id="the-producer-calls-its-seat-decision-gate">Head gate at <code>12573b255</code> over the twelve test files that reach these modules: <b>2 failed, 55 passed in 196.31&nbsp;s</b>, <code>EXIT=1</code>. The same eleven files (the new one does not exist there) at base <code>dc3ace589</code>: <b>4 failed, 48 passed in 197.06&nbsp;s</b>, <code>EXIT=1</code>. The head failure set is a subset of the base one — both arms fail <code>test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]</code> and <code>::test_repeated_crashes_reach_a_reported_limit</code>, which spawn a real <code>reckon crew watch</code> subprocess and report <em>restart limit was not reached</em> at base as well. The head arm adds no failure, and its extra five passes are the new test file.</p>
+  <p id="the-producer-calls-its-seat-decision-arms">The new test drives the two entry points with a temporary fleet record, a temporary configuration home and a temporary seat, and records the unit-disable command and the exit instead of performing either. The foreign-host arm takes up <code>_watch_registration</code> and asserts the exit, the composed <code>systemctl --user disable --now</code> command, a free seat afterwards, and one announcement naming both hosts. The renewal arm starts on the fleet node's own host, holds, then moves the fleet record to another node with a run launched there and calls <code>renew_watch_host_lease</code>: it asserts the same release. The hold arm renews three times on the fleet node's host and asserts no command and no exit. A fourth test records <code>fleet_supervisor._short_hostname</code> and asserts <code>_hosts_match</code> puts both names to it; a fifth proves the account's real fleet record and seat are untouched.</p>
+  <p id="the-producer-calls-its-seat-decision-mutation">Negative control, the declared mutation — remove the call from the producer loop, so the foreign-host arm must then keep the seat and keep running: both call sites in a scratch tree are replaced by <code>pass</code> and the run exits <code>1</code> with <code>test_the_producer_gives_up_its_seat_at_start_up_off_the_fleet_node</code> and <code>test_the_producer_gives_up_the_seat_it_holds_on_a_lease_renewal</code> failing, the other nine passing. Both failing ids pass at head. Log: <code>logs/negative-control.log</code> in the run directory.</p>
+</article>
+</body>
+</html>
