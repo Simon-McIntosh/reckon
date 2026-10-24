@@ -29,11 +29,23 @@
   <code>queued</code> with the failure named and a retry time —
   the same path every other admission refusal already takes. No worker starts.
 
-  <p><strong>One deliberate refinement.</strong> A brief whose source already
-  lies inside the request's own run directory is left where it is rather than
-  copied to a second name: it is already the request's stored copy, and a
-  review's own readers resolve that path. Every other brief is stored as
-  <code>steering.md</code>.
+  <p><strong>One place stores a brief.</strong> <code>runs.store_brief</code>
+  now owns how a brief's bytes reach a run directory — it materializes a brief
+  the launch re-composes, appends the domain-rules block once, and keeps the
+  source's suffix so the copy reads as the document it was.
+  <code>_store_brief</code> in <code>reckon/crew/dispatch_admission.py</code>
+  delegates to it, so the launch and the queue cannot drift apart on how a
+  brief is written.</p>
+
+  <p><strong>Three sources the queue leaves alone.</strong> A brief whose source
+  already lies inside the request's own run directory is not copied: it is
+  already the request's stored copy, and a review's own readers resolve that
+  path. A brief the launch re-composes is not copied either — a run review's
+  <code>review-brief.md</code> carries the head the reviewed tree carries now,
+  so a queue-time copy would freeze a head the run may move past before it
+  launches. A brief the queue cannot read is not copied: the launch is where a
+  coordinator's unreadable brief is refused, and a silent queue-time refusal
+  would hide it. Every other brief is stored as <code>steering.md</code>.</p>
 
   <h3>Measured</h3>
 
@@ -50,12 +62,15 @@
     <thead><tr><th>arm</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>head (this change, committed)</td>
-        <td><strong>367 passed, 7 failed, <code>EXIT=1</code>; the 7 reduce serially to the 5 below, all of which fail at base</strong></td></tr>
-      <tr><td>base (the run's base revision, same command)</td>
-        <td><strong>the same 5 ids, 5 failed, <code>EXIT=1</code> — delta zero</strong></td></tr>
+        <td><strong>373 passed, 4 failed, <code>EXIT=1</code>, serially; every one of the 4 also fails at base</strong></td></tr>
+      <tr><td>base (the run's base revision, the failing ids and their neighbours)</td>
+        <td><strong>5 failed, 2 passed, <code>EXIT=1</code>; the head's 4 are a subset, so the added count is zero</strong></td></tr>
       <tr><td>negative control: <code>_launch_queued</code> restored to pass the
         queue-time brief unchanged</td>
-        <td><strong>2 failed (the replaced-steering and discriminating arms), 4 passed, <code>EXIT=1</code></strong></td></tr>
+        <td><strong>3 failed (the replaced-steering, discriminating and invalid-steering arms), 6 passed, <code>EXIT=1</code></strong></td></tr>
+      <tr><td>skip-removal control: the three <code>_write_steering</code> skips
+        deleted</td>
+        <td><strong>3 failed (the three arms that hold them), 6 passed, <code>EXIT=1</code></strong></td></tr></td>
     </tbody>
   </table>
 
@@ -81,10 +96,30 @@
     failure is named, a retry time is set, and no launcher is called.</li>
     <li><strong>Plan section alone.</strong> No <code>steering.md</code> is
     written and the request launches from its section.</li>
+    <li><strong>A re-composed review brief is not frozen.</strong> A run review's
+    composed brief is queued as the request's brief; no <code>steering.md</code>
+    is written, the reviewed tree gains a commit while the request waits, and the
+    launch composes the brief again — its digest names the new head and differs
+    from the text the earlier composition left.</li>
+    <li><strong>A source inside the request's own run directory.</strong> No
+    second name is written and the source is untouched.</li>
+    <li><strong>An unreadable source.</strong> No <code>steering.md</code> is
+    written; the launch refuses the brief, the request returns to
+    <code>queued</code> with the failure named and a retry time, and no launcher
+    is called.</li>
   </ul>
+
+  <p><strong>Each skip is held by a failing arm without it.</strong> Removing
+  the three skips from <code>_write_steering</code> turns the three arms above
+  red (3 failed, 6 passed) and nothing else, so a later regression that deletes
+  any of them cannot pass unnoticed.</p>
 
   <p><strong>Negative control.</strong> The declared mutation restores
   <code>_launch_queued</code> to pass the queue-time brief from
   <code>_node_from_pointer</code> unchanged. The replaced-steering and
-  discriminating arms fail under it, which is the defect this node closes.</p>
+  discriminating arms fail under it, which is the defect this node closes, and
+  so does the invalid-steering arm, because the removed rebind is also what
+  reads the file the launch must refuse. A second control deletes the three
+  <code>_write_steering</code> skips and turns exactly the three arms that hold
+  them red, so neither the refinement nor its test can be lost unnoticed.</p>
 </section>
