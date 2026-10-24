@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T09:11:53.565Z",
+  "dispatched_at": "2026-10-24T09:02:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-long-lived-crew-process-leaves-nothing-stale.html:40",
+      "id": "reasoning-1",
+      "reason": "the \"removed-pointer case classifies with no session_refusal\" assertion stays red for a reason the plan never names, so a worker implementing this literally would either report a spurious defect or \"fix\" it by editing the refusal text instead of the class branch, which is the one place that must return None.",
+      "text": "\u00a72 says that when no named run has a live pointer the remedy \"returns no remedy, which is the waiting reading\", but `_queued_failure_remedy` (`reckon/crew/recovery_classification.py:255-258`) only `return`s on a non-None helper result; on None it falls through to `_remedy_command_stated_by(text)` (:286), and the recorded D11 text quotes the command `reckon crew dispatch --allow-unreconciled-runs` in `refusals.py:47-50`, so the published next command is a re-dispatch \u2014 reproduced: with the helper patched to return None, `_queued_failure_remedy` returns `next_command: reckon crew dispatch --allow-unreconciled-runs`.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-long-lived-crew-process-leaves-nothing-stale.html:40",
+      "id": "reasoning-2",
+      "reason": "the actionable field is `next_command`, which \u00a72 does redirect to the live run's own reconcile action; the detail is advice a coordinator can weigh, so it does not send the node down a different implementation path.",
+      "text": "the retained remedy detail still ends \"the alternative is to discard the queued run and dispatch again with --allow-unreconciled-runs\" (`recovery_classification.py:194-201`), which is the action \u00a71 states a queued run must never be told to take because it \"discards the request's place\"; the plan's deliverable leaves that sentence in place.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "ab6efa8c3bf38fb41148dc186f7ef827f0bf4f2f203dd389f4f60dacb53dbd44",
+  "plan_slug": "a-long-lived-crew-process-leaves-nothing-stale",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T090144359203-plan-review-of-a-long-lived-crew-process-leaves-nothing-stale",
+  "reviewed_blob_sha": "4b01340c814df3a0aa32ef3ac144764b09bdf716",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_unreconciled_runs_remedy` (`reckon/crew/recovery_classification.py:178`), `_wait_refusal_classes` (:128), `runs.read_pointer` (`reckon/crew/runs.py:831`), `_adopt_launched_workers_from_reexec` (`reckon/crew/dispatch_launch.py:456`), `recovery_liveness._process_children` (`reckon/crew/recovery_liveness.py:358`), `queue_admission.admit_until_stopped` (:2111), `recovery_watch.watch_ticker` (:2632) and `PlanReviewMissingError` (`reckon/crew/node.py:632`) all resolve, the three cited commits `f1181e0e5`, `0a976babc`, `41325f022` resolve to the commits the plan describes, and both extensionless hrefs resolve as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a72 and \u00a73 each name a new test file, a set of measurable classifications/behaviours, and a negative control that fails on the unfixed code (`without the live-pointer check, the removed-pointer case still reports queued-awaiting-session`; `an adoption that skips the child scan leaves the inherited child a zombie`).",
+    "evidence_paths": "pass \u2014 both sections write repo source paths and a test file under `tests/`, and cite `git diff`-style base comparison; no gate log is placed in a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the two new test files are named by behaviour, the change extends existing private names, and no plan label, stage name or ticket number reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a72 changes `_unreconciled_runs_remedy` alone, but its caller `_queued_failure_remedy` falls through to the quoted-command path when that helper returns no remedy, so the duty still publishes a re-dispatch and the section's done-when cannot pass.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable (the live-pointer-aware unreconciled remedy) and \u00a73 one (extend the existing reaper's adoption, add no second reaper).",
+    "wiring": "pass \u2014 the plan declares `plan-blocks the-monitor-reads-each-fact-once#s7` (`docs/plans/a-long-lived-crew-process-leaves-nothing-stale.html:28`), that section exists at `docs/plans/the-monitor-reads-each-fact-once.html:180` and is `implementable`, and `blocks` is a first-class edge (`reckon/serve.py:1542`), so the one-sided declaration points the right way; \u00a72's dependency is on peer commits already landed, not on another open node."
+  },
+  "section_digests": {
+    "_document": "f9cba4df7fbc196039ea8ec82ec7dc2e5db91846ecc923e44a457b5d8afdbd89",
+    "s1": "77bb91ddc14cac13de1d9957253392c537eaaceab9cd7d54a7aee16afb43f2cd",
+    "s2": "752d360b16080b39970e42760257c42b9581a06f79b6a045c00aef60c76d712e",
+    "s3": "3448a928ac3bc63a9fa412b1465626859a0bafdd1b2b1563a93a2a588a271885"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T09:22:24.171417+00:00"
+}
