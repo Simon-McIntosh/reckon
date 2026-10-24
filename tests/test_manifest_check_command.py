@@ -324,7 +324,7 @@ def test_a_path_under_no_declaration_is_reported_from_outside(
 
     assert result.exit_code != 0, result.output
     findings = json.loads(result.output)["findings"]
-    assert findings == ["changed paths outside the write scope: docs/plan.html"]
+    assert findings == ['changed paths outside the write scope: "docs/plan.html"']
     crew_home_watch.assert_untouched()
 
 
