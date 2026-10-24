@@ -409,3 +409,17 @@ def test_scoped_decision_holds_only_its_section(
 def test_after_is_serialized_for_a_brief_only_node() -> None:
     node = TaskNode(id="brief", goal="work", plan="", after=["r-prior"])
     assert node.as_dict()["after"] == ["r-prior"]
+
+
+def test_after_survives_the_queued_pointer_round_trip(
+    projects: tuple[Path, Path],
+) -> None:
+    first, _ = projects
+    _queue(first, _node("prior", "s1"), run_ids={"prior": "r-prior"})
+    _queue(
+        first,
+        _node("waiting", "s2", after=["r-prior"]),
+        run_ids={"waiting": "r-waiting"},
+    )
+    pointer = runs.read_pointer("r-waiting")
+    assert queue_admission._node_from_pointer(pointer).after == ["r-prior"]

@@ -133,6 +133,7 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
         goal=str(node.get("goal") or ""),
         plan=str(node.get("plan") or ""),
         section=str(node.get("section") or ""),
+        after=list(node.get("after") or ()),
         brief=str(node.get("brief") or ""),
         brief_sha256=str(node.get("brief_sha256") or ""),
         brief_path=str(node.get("brief_path") or ""),
