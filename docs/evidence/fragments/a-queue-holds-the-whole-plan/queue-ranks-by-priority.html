@@ -1,0 +1,25 @@
+<section id="queue-ranks-by-priority-landing">
+  <h2>Queued work ranks by its roadmap section and explicit priority</h2>
+  <p><code>admission_order</code> resolves the queued section from the project's
+  roadmap rows and uses the roadmap's shared priority key. A priority set by
+  <code>crew queue reprioritise</code> leads the roadmap key; an aged request
+  leads fresh implementation once it reaches the 30-minute bound. Reviews of
+  delivered runs retain precedence. A request without a resolvable roadmap
+  section stays ordered by arrival and reports that the roadmap priority was
+  unavailable rather than receiving invented signals.</p>
+  <p><code>queued_placements</code> now reports each placed request's project
+  <code>effective_rank</code> and <code>reason</code> beside its existing lane
+  position and session rank. A queued pointer without a readable arrival time
+  still receives no placement, while remaining visible in the live view.</p>
+  <p>The focused gate passed 10 tests. The direct-importer cohort at the base
+  revision passed 150 and failed 4; the final head passed 150 and failed the
+  same 4 ids, for zero added failures. With the override ignored, the declared
+  negative control failed its raised-priority case (1 failed); restoring the
+  source returned that case to passing. Ruff check and format check
+  passed on the changed paths.</p>
+  <p>The ageing test uses the fixed 30-minute bound and checks the preceding
+  second. Raising the implementation threshold by one second made the repaired
+  test fail, while the same mutation passed with the test from the parent of
+  the repair commit. The parent therefore missed the boundary drift that the
+  repaired test detects.</p>
+</section>

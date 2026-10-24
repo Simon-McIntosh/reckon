@@ -1758,7 +1758,7 @@ def queued_placements(
     *,
     now: datetime | None = None,
     lane: str = "",
-) -> dict[str, dict[str, int]]:
+) -> dict[str, dict[str, Any]]:
     """Return each queued request's place in the order the pass admits by.
 
     Every surface that reports where a queued run stands reads its place here
@@ -1769,11 +1769,13 @@ def queued_placements(
     pass ranks, so a request's reported place is the place it will be launched
     at.
 
-    The place is published as two figures, because they answer two questions.
+    The place is published as three figures, because they answer three questions.
     ``position`` is its place among every queued request on the lane, which is
     the figure a dispatch reports when a dispatch is queued. ``rank`` is its
     place among its own session's queued requests, which is what a coordinator
-    reading its own queue wants. ``lane`` narrows the ordering to one backend's
+    reading its own queue wants. ``effective_rank`` is its place within its
+    project, and ``reason`` names the signal that placed it. ``lane`` narrows
+    the ordering to one backend's
     queued requests, matching the narrowing the pass applies to its own queue.
 
     A queued request the snapshot does not carry reads no place, so a caller
@@ -1794,16 +1796,21 @@ def queued_placements(
     ]
     if not queued:
         return {}
-    placements: dict[str, dict[str, int]] = {}
+    placements: dict[str, dict[str, Any]] = {}
     session_rank: dict[str, int] = {}
-    for position, pointer in enumerate(
-        queue_order.admission_order(queued, pointers, now=moment), 1
+    project_rank: dict[str, int] = {}
+    for position, (pointer, reason) in enumerate(
+        queue_order.admission_order_details(queued, pointers, now=moment), 1
     ):
         session = str(pointer.get("session") or "")
+        project = str(pointer.get("project") or "")
         session_rank[session] = session_rank.get(session, 0) + 1
+        project_rank[project] = project_rank.get(project, 0) + 1
         placements[str(pointer.get("run_id") or "")] = {
             "position": position,
             "rank": session_rank[session],
+            "effective_rank": project_rank[project],
+            "reason": reason,
         }
     return placements
 
