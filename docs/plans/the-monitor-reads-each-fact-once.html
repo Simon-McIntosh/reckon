@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -169,8 +169,10 @@
     process table, which no file identity records: a run that goes quiet must read <code>stalled</code>, and a worker can
     exit while its files stay still. So a run whose inputs did not move still takes the quiet-beat reading each
     tick, as <code>recovery_watch._quiet_beat_snapshots</code> does for the producer today: its liveness, for a run
-    launched on this node, and its stall clock are read again, and a verdict that changes is written. The full
-    classifier runs only when inputs move.</p>
+    launched on this node, and its stall clock are read again. The full classifier runs when the run's inputs moved or its
+    liveness reading moved, as <code>_quiet_beat_snapshots</code> calls <code>_watch_snapshot</code> when the liveness
+    triple moved; otherwise only the stall clock is re-derived, which can turn a waiting run <code>stalled</code> and
+    nothing else.</p>
     <p>Done when, replaying the fixture streams of five real runs (copied from the crew home into a test
     directory) in chunks: the station's folded observation equals a single full fold of each stream
     (<code>as_dict()</code> equal); the bytes it parses equal the bytes appended; a rewritten stream is
