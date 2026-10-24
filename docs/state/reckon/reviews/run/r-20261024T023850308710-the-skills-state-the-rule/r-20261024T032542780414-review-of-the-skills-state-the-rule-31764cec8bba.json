@@ -1,0 +1,43 @@
+{
+  "added_failure_basis": "set difference, after_suite.failure_ids minus baseline_suite.failure_ids from the reviewed run's own manifest: base 7a6cd07ca6b93427cc5383a78ef52fd4e62b1993 recorded 2 failures and head 31764cec8bbab4607c504eb74e09cce839a83ff1 recorded the same 2 (tests/test_skill_contracts.py::test_review_skill_is_discovered_beside_the_other_reckon_skills, tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt); gate-base.log and gate-head.log each end EXIT=1 with those ids, so the empty difference is read from the logs",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T03:35:28.188Z",
+  "dispatched_at": "2026-10-24T03:28:02Z",
+  "findings": [
+    {
+      "anchor": "tests/test_skill_contracts.py:147",
+      "id": "skills-walk-forked-from-owner",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added _skill_files (tests/test_skill_contracts.py:147) and test_the_skills_tree_is_walked (:151) duplicate a capability the repository already owns at tests/test_skills_name_no_host_path.py:30 (_skill_files) and :34 (test_the_skills_tree_is_walked): the helper body is the same sorted rglob of files under skills/, and the test carries the same name and the same non-emptiness assertion. The addition duplicates rather than extends or imports the owner, so the two walks drift independently and a fix to one (for example a symlink or encoding skip) leaves the other stale. A shared helper in tests/conftest.py would be the owner-side fix."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 none: the change is test-only and no runtime code reaches it.",
+    "diff": "pass \u2014 read commit by commit: 31764cec8 is the sole commit since 1afc9d628, +32/-12 in tests/test_skill_contracts.py, adding SKILLS_ROOT, CONTINUATION_SKILL_FILES, _skill_files and test_the_skills_tree_is_walked and routing both scans through the helper.",
+    "done_when": "pass \u2014 the done_when asks that the case passes over skills/, that its negative control fails it, and that tests/test_skill_contracts.py adds no failure against base; gate-base.log records 68 passed / 2 failed at 7a6cd07ca and gate-head.log 74 passed / the same 2 at 31764cec8, and negative-control-skill-walk.log records the new vacuity control red at head.",
+    "goal": "pass \u2014 \u00a75's deliverable is that the six teaching skill files state the section-or-prompt rule and that tests/test_skill_contracts.py fails on the retired term in any skill file's prose; the reviewed delta does not add that case but makes its absence claim non-vacuous at tests/test_skill_contracts.py:151, which is the goal's guard measuring what it asserts.",
+    "manifest": "pass \u2014 read; it records status complete, four commits ending at 31764cec8, both suite arms with node-id failure ids, three negative-control logs, and the two pre-existing failures under outside_scope rather than repaired.",
+    "write_paths": "pass \u2014 the node's declared write paths include tests/test_skill_contracts.py, and the reviewed diff (git diff 1afc9d6..31764cec8) touches that file only."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a75's deliverable is that the six teaching skill files state the section-or-prompt rule and that tests/test_skill_contracts.py fails on the retired term in any skill file's prose; the reviewed delta does not add that case but makes its absence claim non-vacuous at tests/test_skill_contracts.py:151, which is the goal's guard measuring what it asserts.\nVERDICT done_when: the done_when asks that the case passes over skills/, that its negative control fails it, and that tests/test_skill_contracts.py adds no failure against base; gate-base.log records 68 passed / 2 failed at 7a6cd07ca and gate-head.log 74 passed / the same 2 at 31764cec8, and negative-control-skill-walk.log records the new vacuity control red at head.\nVERDICT write_paths: the node's declared write paths include tests/test_skill_contracts.py, and the reviewed diff 1afc9d6..31764cec8 touches that file only.\nVERDICT manifest: read; it records status complete, four commits ending at 31764cec8, both suite arms with node-id failure ids, three negative-control logs, and the two pre-existing failures under outside_scope rather than repaired.\nVERDICT diff: read commit by commit: 31764cec8 is the sole commit since 1afc9d628, +32/-12 in tests/test_skill_contracts.py, adding SKILLS_ROOT, CONTINUATION_SKILL_FILES, _skill_files and test_the_skills_tree_is_walked and routing both scans through the helper.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_skill_contracts.py:151 now proves the term scan at :171 walks a tree containing the six files at :137, which is the \u00a75 goal's guard made to measure what it asserts.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log ends EXIT=1 with the same two failure ids as gate-base.log and negative-control-skill-walk.log records the new control red at 31764cec8, so the zero-added claim and the control are read from logs rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only tests/test_skill_contracts.py, a declared write path, and carries nothing beyond the vacuity control and the helper the two scans now share.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_skill_contracts.py:154 reddens when the walk is pointed at an empty tree (negative-control-skill-walk.log:10, EXIT=1) and :157 reddens on a renamed or non-recursively walked file, both compared against the literal list at :137 rather than against anything the test passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the added constants and helper follow the module's existing shape beside RETIRED_DEFERRED_WORK_TERM at tests/test_skill_contracts.py:130, and no added name carries a plan, sprint or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_skill_contracts.py:147 and :151 duplicate the skills-tree walk and vacuity test owned at tests/test_skills_name_no_host_path.py:30 and :34 instead of extending or importing them.\nFINDING tests/test_skill_contracts.py:147 non-blocking: the added _skill_files and test_the_skills_tree_is_walked duplicate the same sorted-rglob walk and same-named vacuity test owned at tests/test_skills_name_no_host_path.py:30 and :34 rather than extending the owner, so the two copies drift independently.\n",
+  "review_run_id": "r-20261024T032542780414-review-of-the-skills-state-the-rule-31764cec8bba",
+  "reviewed_base_sha": "1afc9d6286f1d1cdd3f2adacfc2b52452f34eccb",
+  "reviewed_head_sha": "31764cec8bbab4607c504eb74e09cce839a83ff1",
+  "reviewed_run_id": "r-20261024T023850308710-the-skills-state-the-rule",
+  "rubric": "code-review",
+  "scope": "delta gained since the review recorded at 1afc9d628: exactly one commit, 31764cec8, touching only tests/test_skill_contracts.py",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T03:32:04+00:00",
+  "total": 99
+}
