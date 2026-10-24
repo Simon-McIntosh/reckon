@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T01:53:37.601Z",
+  "dispatched_at": "2026-10-24T01:44:13Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261024T014301456587-plan-review-of-a-queue-holds-the-whole-plan/plan.html:80",
+      "id": "reasoning-1",
+      "reason": "\u00a76 makes landing the only thing that releases a downstream request, so a commitless upstream (an investigate or docs-only node, which promotion accepts) either strands its waiters with no obligation raised or releases them before its work is on the branch; one sentence must say which.",
+      "text": "\u00a78 defines landed as \"that row's recorded head commit is an ancestor of the project's primary branch\", but the row's revision is written only when `promoted_revision` is non-empty (`reckon/crew/promotion.py:1479-1480`) and the comment there states a run that \"asserted no code leaves the key absent\"; `_promoted_revision` otherwise falls back to the worktree's `HEAD` (`reckon/crew/promotion_scope.py:294-314`), which for a commitless run is the base commit and is already an ancestor \u2014 so a `no_commit` promotion either never satisfies the test or satisfies it at promotion, before any merge, and s8's claim that ancestry \"is the fact that changes when `crew land` merges\" is false for it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261024T014301456587-plan-review-of-a-queue-holds-the-whole-plan/plan.html:80",
+      "id": "anchors_resolve-1",
+      "reason": "the row's field exists (`promoted_revision`, `reckon/crew/promotion.py:1480`) and `sweep_promoted_revisions` (`reckon/crew/promotion.py:1985`) already answers exactly this ancestry question; naming them tightens the node but the capability and the measure are unchanged.",
+      "text": "\u00a78 says the landed test reads \"that row's recorded head commit\" through the row \"read through the public `run_ids`\", but `run_ids` (`reckon/ledger.py:1019`) returns only id membership without decoding a row, so the sentence names a reader for a fact it cannot supply",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "7b51975fc9ea7e3fbbb25de463bdaeb10329d7dac6eb4d58759206f3dce1a7c3",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 42,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T01:55:16.264973+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "anchors_resolve-1",
+      "reason": "",
+      "when": "2026-10-24T01:55:39.129550+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T01:55:39.129550+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T01:55:16.264973+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v42.json",
+  "review_run_id": "r-20261024T014301456587-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "30c4ba7dacc850727120c73596f40342eaab0100",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `parse_plan_ref` (`reckon/_schema.py:276`), `_readiness_rows` (`reckon/crew/queue_admission.py:1056`), `_readiness_by_slug` (`reckon/crew/plan_review.py:3094`, which does keep only one verdict per plan), `parse_manifest`/`MANIFEST_STATUSES`/`TERMINAL_MANIFEST_STATUSES` (`reckon/crew/reports.py:126-139`, `:317`), `promotion.py`, `run_ids` (`reckon/ledger.py:1019`), and `TaskNode` (`reckon/crew/node.py:725`). `RUN_DELIVERED_STATUSES` is exactly `(\"complete\", \"completed\", \"done\", \"landed\", \"promoted\")`, and the four non-`complete` members are the words `MANIFEST_STATUSES` excludes, as s8 states.",
+    "done_when": "pass \u2014 s8's measure is a set of chain, cycle and closure arms each of which can fail on its own, and it names a declared negative control (\"The negative arm declares B's \u00a72 done before queuing, and the request goes straight to `queued`\") so the wait is shown to be what held the request rather than a blanket refusal.",
+    "evidence_paths": "pass \u2014 s8 names write paths in `reckon/` and a new test file only; it cites no scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 s8 proposes no symbol carrying a plan label, stage name or ticket number; the one new shared function and the per-section predicate are described by what they do.",
+    "reasoning": "a finding \u2014 the landed definition has no branch for a promoted run that asserts no commit, so the ancestry test does not decide landed for it.",
+    "single_goal": "pass \u2014 the union of waits, the cycle refusal, the readiness assembly and the delivered-status narrowing all serve one goal: a queued request respects the work's DAG across plans and projects.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s8 only `a-queue-holds-the-whole-plan#s2`, which is the section that adds `_readiness_rows` and `RUN_DELIVERED_STATUSES`; both are present in the tree (`reckon/crew/queue_admission.py:1056`, `:1023`), and no other section owns a symbol s8 relies on."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0acdd59fe501bff278de9b0f18486a17876e313cc248d21515b82748039f759b",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T01:54:56.161417+00:00"
+}
