@@ -1174,8 +1174,8 @@ def settle_run_scratch(
     The decision is made from the crew home, which every host shares, and never
     from a project ledger: a directory named for a run whose run directory
     records that the run ended, and that no live pointer names and no process
-    holds, is removed at once with no age wait. §3 retires a finished run's
-    directory after its grace, so a copy can outlive its record; such a copy is
+    holds, is removed at once with no age wait. The run-directory pass retires a
+    finished run's directory after its grace, so a copy can outlive its record; such a copy is
     removed under the same ``SCRATCH_GRACE_SECONDS`` rule the orphan sweep
     applies, after the same holder check. A directory not named for a run is
     left to :func:`garbage_collect_orphan_scratch`.
@@ -1531,9 +1531,9 @@ def retention_sweep(
             offered.append(row)
 
     removed = [row for row in offered if row["removed"]]
-    # The pass settles this host's scratch copies too. §8 makes a run's scratch
-    # leave with the run on every host, and the hourly timer is the one caller
-    # that runs whether or not this host launches a worker. It reads the crew
+    # The pass settles this host's scratch copies too. A run's scratch leaves
+    # with the run on every host that holds one, and the hourly timer is the one
+    # caller that runs whether or not this host launches a worker. It reads the crew
     # home and /proc only, so it keeps the pass's promise of starting no git
     # process.
     settled = settle_run_scratch(apply=apply, now=moment.timestamp())
