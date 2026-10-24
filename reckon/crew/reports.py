@@ -102,7 +102,7 @@ _NONE_VALUES = {"", "none", "n/a", "-", "nil"}
 # audit opens the first log and never reads the rest, and a commit citation
 # resolves the first identifier and hides the second. The rule for membership is
 # that shape — some guard consumes the entries one by one — and the prose list
-# fields (``artifacts``, ``evidence_inputs``, ``follow_ons``, ``blockers``) are
+# fields (``artifacts``, ``evidence_inputs``, ``outside_scope``, ``blockers``) are
 # outside it: a semicolon before a path there is ordinary punctuation rather
 # than a join, so those fields keep the reading they had. ``test_logs`` and
 # ``commits`` are drawn in beside the delivered paths because each is read that
