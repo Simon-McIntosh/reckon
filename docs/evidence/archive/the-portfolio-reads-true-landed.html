@@ -65,6 +65,11 @@
     <p>A sprint move now writes each moved plan's <code>sprint</code> in the same <code>edit_plan</code> call as the two sprint resources, through both move implementers in <code>reckon/mcp_edit_plan.py</code>: the batch <code>move</code> op and <code>_move_sprint_item</code>. Before applying a move it reads each moved plan's version, and refuses the whole call, writing nothing, when a plan cannot be written. A batch moving two plans writes both plans' sprint.</p><p>Run <code>r-20261023T175236866631-a-sprint-move-writes-the-plans-sprint</code>, head <code>d648d001</code>, landed by merge <code>ebbc3070d</code>. The coordinator re-ran the gate from <code>git archive</code> extractions: 122 passed at the head and at its merge with main, and the five new cases fail at the base <code>669f3f5f</code>. Six tests were added. The review scored 110/120. Its one behavioural finding, a retried partial move replayed as success, is §9.</p>
   </section>
 
+  <section id="s9">
+    <h2>§9 — A retried partial sprint move is not replayed as success</h2>
+    <p>Run <code>r-20261024T014730321125-a-retried-partial-move-is-not-replayed</code> landed at merge <code>84ae42efe</code> (head <code>c69a52c49</code>, base <code>0409dcbe4</code>). A sprint move whose plan write fails after the index has moved records the pending plans and their destination on its write receipt. A retry with the same <code>request_id</code> no longer replays success and never re-applies the batch. It reads the index's membership for each pending plan: it writes the plan's sprint where the index still lists the recorded destination, retires the entry as superseded where the index now places the plan elsewhere or nowhere, and as settled where the plan already agrees. It returns success only once nothing is pending.</p><p>The coordinator's arms, run from <code>git archive</code> extractions over the nine gate files, showed 135 passed at the head and at the merge with main (candidate <code>f16a8d2bb</code>). The one failure there, <code>test_batch_reports_every_refused_op</code>, also fails at the base, where the six new cases fail too. Review 110 with two non-blocking findings, exempted: later retries re-report resolved entries, and the gate log's revision header.</p>
+  </section>
+
 </main>
 </body>
 </html>
