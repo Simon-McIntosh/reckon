@@ -1,0 +1,103 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs, since its manifest carries no baseline_suite/after_suite keys: logs/population-final.log (head, f5b7ed9c6) fails 3 ids and logs/base-arm-failures.log + logs/base-arm-spa.log fail the same 3 ids at base 0b9d642cd (2 in the first, 1 in the second), so no failure id is added. The head arm's fourth recorded entry is ERROR tests/conftest.py::test_temp_config_home - fixture 'prefix' not found - a collection artifact of naming tests/conftest.py as a pytest target, not a test reaching code under test.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:_send_project_changes",
+    "reckon/change_streams.py:note_watch_burst",
+    "reckon/change_streams.py:_FleetChangeWatch._fast_tree",
+    "reckon/change_streams.py:_FleetChangeWatch._slow_tree",
+    "reckon/change_streams.py:_FleetChangeWatch._run",
+    "reckon/serve.py:_served_index_rows"
+  ],
+  "completed_at": "2026-10-24T04:40:45.144Z",
+  "dispatched_at": "2026-10-24T04:29:59Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "the-cached-index-absorbs-each-change",
+      "recorded_at": "2026-10-24T04:42:10.822158+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the stale rows are bounded: a recorded subdirectory that vanishes without a named burst moves its parent's identity, the detector's 10 s fast pass marks that parent, and the next read's re-scan drops the vanished directory's files, so the cached build converges within one fast-pass period rather than keeping them",
+      "recorded_at": "2026-10-24T04:42:28.126226+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "the-cached-index-absorbs-each-change",
+      "recorded_at": "2026-10-24T04:42:17.225186+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "the-cached-index-absorbs-each-change",
+      "recorded_at": "2026-10-24T04:42:22.504932+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "380",
+      "severity": "non-blocking",
+      "text": "non-blocking: covered_name restates the index's coverage rule (an HTML file anywhere, or a figure image under the top-level figures directory) that _walk_covered owns inline at reckon/metadata_index.py:1051-1055; the new predicate is not called by the walker, so the two can drift and a marked file could be one the walk never covers. Have _walk_covered call covered_name so the module keeps one definition."
+    },
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "612",
+      "severity": "non-blocking",
+      "text": "non-blocking: _patch_build drops descendants only of a *marked* directory that vanished (removed is built from the mark set at :575-582), so a recorded subdirectory removed by a rename or a checkout whose own name no burst carries keeps its covered files in the cached build, and the next read returns rows a fresh full walk would not. The detector's 10 s fast pass marks the vanished directory and heals it, so the stale window is bounded rather than permanent."
+    },
+    {
+      "file": "docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed evidence fragment says 'The gate is tests/test_the_cached_index_absorbs_each_change.py: 7 passed' while lines 23 and 27 of the same document and the logged head arm (logs/arm-head.log) record 8 passed; the count was not updated when case 8 was added, so the record understates the gate it cites."
+    },
+    {
+      "file": "docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the population paragraph ends the sentence 'The skipped test is not this node's..' - truncated before its noun and closed with a double period, so the record states no fact about which test was skipped or why it is out of scope."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the five commits (2d4932e23, eb5a173af, 86bd51a2c, f5b7ed9c6, f473e161f) against base 0b9d642cd commit by commit: 7 files, +1385/-55, all inside the granted scope; the last commit is docs-only and touches only the evidence fragment.",
+    "done_when": "the done_when names tests/test_the_cached_index_absorbs_each_change.py with seven cases and their own controls, tests/test_every_module_fits_a_worker_window.py and a population showing no added failure; the manifest records all three and the negative-controls log arms nine controls, each failing its own case.",
+    "goal": "the node goal is that the metadata index's process cache keeps its build across every change a source can attribute; reckon/metadata_index.py:363-620 adds TreeChange, mark_tree_paths and _patch_build, and all five declared sources call _invalidate_tree_views with a mark rather than dropping the build.",
+    "manifest": "read runs/r-20261024T030624268974/manifest.md: status complete, gate 8 passed, nine controls green, population 1461 passed with three failures that also fail at the base revision, module window 4 passed, logs named under logs/.",
+    "write_paths": "read the dispatch's FENCE - SCOPE list in runs/r-20261024T030624268974/manifest.md and the diff: every changed path (reckon/metadata_index.py, reckon/change_streams.py, reckon/serve.py, the new test, two granted test files and the evidence fragment) is inside it; docs/figures/... was granted and is untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_the_cached_index_absorbs_each_change.py:350-354 fails the moment a JSON write rebuilds or stats, and each of the nine armed controls reddens the case it names with a distinct failing id in logs/negative-controls.log.",
+    "evidence": "logs/arm-head.log records 8 passed EXIT=0 at f5b7ed9c6 and logs/negative-controls.log arms all nine controls to EXIT=1 with failing ids, but the head arm predates the docs-only f473e161f and the done-when's two-arm live measure is reassigned to the coordinator at merge.",
+    "fit": "reckon/metadata_index.py:250-270 TreeChange follows the module's frozen-dataclass and _LOCK idiom, and no added name carries a plan, stage or version label.",
+    "goal_fidelity": "reckon/metadata_index.py:381 mark_tree_paths keeps the build on an empty TreeChange and only invalidate_tree at :366 drops it, so all five sources in reckon/change_streams.py:197-215, :700, :739 and reckon/serve.py:2856 name paths rather than sweeping.",
+    "reuse": "reckon/metadata_index.py:380 covered_name restates the coverage predicate inline in _walk_covered at :1051-1055 instead of being called by it, so the covered set has two definitions; the rest of the change wraps existing owners.",
+    "scope_discipline": "every path in the diff is inside the dispatch's FENCE - SCOPE, and the three granted test-file edits are only signature adaptations at tests/test_cross_node_writes_refresh_the_index.py:62-68 and tests/test_metadata_index_survives_restart.py:331-334, though the manifest lists them without naming what each pinned."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the metadata index's process cache keeps its build across every change a source can attribute; reckon/metadata_index.py:363-620 adds TreeChange, mark_tree_paths and _patch_build, and all five declared sources call _invalidate_tree_views with a mark rather than dropping the build.\nVERDICT done_when: the done_when names tests/test_the_cached_index_absorbs_each_change.py with seven cases and their own controls, tests/test_every_module_fits_a_worker_window.py and a population showing no added failure; the manifest records all three and the negative-controls log arms nine controls, each failing its own case.\nVERDICT write_paths: read the dispatch's FENCE - SCOPE list in runs/r-20261024T030624268974/manifest.md and the diff: every changed path (reckon/metadata_index.py, reckon/change_streams.py, reckon/serve.py, the new test, two granted test files and the evidence fragment) is inside it; docs/figures/... was granted and is untouched.\nVERDICT manifest: read runs/r-20261024T030624268974/manifest.md: status complete, gate 8 passed, nine controls green, population 1461 passed with three failures that also fail at the base revision, module window 4 passed, logs named under logs/.\nVERDICT diff: read the five commits (2d4932e23, eb5a173af, 86bd51a2c, f5b7ed9c6, f473e161f) against base 0b9d642cd commit by commit: 7 files, +1385/-55, all inside the granted scope; the last commit is docs-only and touches only the evidence fragment.\nCALL_SITES: reckon/serve.py:_send_project_changes, reckon/change_streams.py:note_watch_burst, reckon/change_streams.py:_FleetChangeWatch._fast_tree, reckon/change_streams.py:_FleetChangeWatch._slow_tree, reckon/change_streams.py:_FleetChangeWatch._run, reckon/serve.py:_served_index_rows\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:381 mark_tree_paths keeps the build on an empty TreeChange and only invalidate_tree at :366 drops it, so all five sources in reckon/change_streams.py:197-215, :700, :739 and reckon/serve.py:2856 name paths rather than sweeping.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/arm-head.log records 8 passed EXIT=0 at f5b7ed9c6 and logs/negative-controls.log arms all nine controls to EXIT=1 with failing ids, but the head arm predates the docs-only f473e161f and the done-when's two-arm live measure is reassigned to the coordinator at merge.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the dispatch's FENCE - SCOPE, and the three granted test-file edits are only signature adaptations at tests/test_cross_node_writes_refresh_the_index.py:62-68 and tests/test_metadata_index_survives_restart.py:331-334, though the manifest lists them without naming what each pinned.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_cached_index_absorbs_each_change.py:350-354 fails the moment a JSON write rebuilds or stats, and each of the nine armed controls reddens the case it names with a distinct failing id in logs/negative-controls.log.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/metadata_index.py:250-270 TreeChange follows the module's frozen-dataclass and _LOCK idiom, and no added name carries a plan, stage or version label.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/metadata_index.py:380 covered_name restates the coverage predicate inline in _walk_covered at :1051-1055 instead of being called by it, so the covered set has two definitions; the rest of the change wraps existing owners.\nFINDING reckon/metadata_index.py:380 non-blocking: covered_name restates the index's coverage rule (an HTML file anywhere, or a figure image under the top-level figures directory) that _walk_covered owns inline at reckon/metadata_index.py:1051-1055; the new predicate is not called by the walker, so the two can drift and a marked file could be one the walk never covers. Have _walk_covered call covered_name so the module keeps one definition.\nFINDING reckon/metadata_index.py:612 non-blocking: _patch_build drops descendants only of a *marked* directory that vanished (removed is built from the mark set at :575-582), so a recorded subdirectory removed by a rename or a checkout whose own name no burst carries keeps its covered files in the cached build, and the next read returns rows a fresh full walk would not. The detector's 10 s fast pass marks the vanished directory and heals it, so the stale window is bounded rather than permanent.\nFINDING docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html:26 non-blocking: the landed evidence fragment says 'The gate is tests/test_the_cached_index_absorbs_each_change.py: 7 passed' while lines 23 and 27 of the same document and the logged head arm (logs/arm-head.log) record 8 passed; the count was not updated when case 8 was added, so the record understates the gate it cites.\nFINDING docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html:28 non-blocking: the population paragraph ends the sentence 'The skipped test is not this node's..' - truncated before its noun and closed with a double period, so the record states no fact about which test was skipped or why it is out of scope.\n",
+  "review_run": "r-20261024T042729147961-review-of-the-cached-index-absorbs-each-change-f473e161ffd9",
+  "review_run_id": "r-20261024T042729147961-review-of-the-cached-index-absorbs-each-change-f473e161ffd9",
+  "reviewed_base_sha": "0b9d642cdff1e487204ee41213ecf78101a15823",
+  "reviewed_head_sha": "f473e161ffd9ad43bb1b2529422304250052d9a5",
+  "reviewed_run_id": "r-20261024T030624268974-the-cached-index-absorbs-each-change",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:43:39.458794+00:00",
+  "total": 101
+}
