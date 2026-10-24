@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import queue_admission, runs
+from reckon.crew import queue_admission, recovery, runs
 from reckon.crew.node import TaskNode
 
 PROJECT = "proj"
@@ -303,6 +303,144 @@ def test_an_invalid_steering_file_keeps_the_request_queued(
     pointer = runs.read_pointer("r-invalid")
     assert pointer["phase"] == "queued"
     assert "carries no authority text" in pointer["failure"]
+    assert datetime.fromisoformat(pointer["retry_at"]) > datetime.now(UTC)
+
+
+def _git_head(repository: Path) -> str:
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _advance_head(repository: Path) -> None:
+    (repository / "seed.txt").write_text("seed\nmore\n", encoding="utf-8")
+    _git(repository, "add", "--", "seed.txt")
+    _git(repository, "commit", "-q", "-m", "feat: move the reviewed head")
+
+
+def _live_pointer(record: dict) -> None:
+    path = runs.pointer_path(record["run_id"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record), encoding="utf-8")
+
+
+def test_a_composed_run_review_brief_is_not_copied_and_relaunches_from_its_head(
+    queue_repo: Path,
+) -> None:
+    """A review brief a launch re-composes is never frozen by the queue.
+
+    A run review's brief is derived from the reviewed run's record and the head
+    its tree carries, so a queue-time copy would review the head the tree
+    carried when the request was held. The queued path therefore takes no
+    steering copy of it, and the launch composes it again — the launch's digest
+    names the head the reviewed tree carries now, not the one a previous
+    composition left in the file.
+    """
+    reviewed_id = "r-reviewed"
+    _live_pointer(
+        {
+            "run_id": reviewed_id,
+            "project": PROJECT,
+            "repo": str(queue_repo),
+            "worktree": str(queue_repo),
+            "role": "implement",
+            "session": SESSION,
+            "node": {"id": "reviewed-node", "plan": "plan-a", "section": SECTION},
+        }
+    )
+    composed = runs.run_dir(reviewed_id) / "review-brief.md"
+    recovery._review_dispatch_fields(runs.read_pointer(reviewed_id), delta=None)
+    stale = composed.read_text(encoding="utf-8")
+    head_before = _git_head(queue_repo)
+    assert f"Reviewed head: {head_before}" in stale
+
+    runs.queue_dispatch(
+        _request(
+            queue_repo,
+            node_id="reviewer",
+            run_id="r-reviewer",
+            brief=str(composed),
+            brief_path=str(composed),
+        )
+    )
+
+    assert not _steering("r-reviewer").exists()
+
+    _advance_head(queue_repo)
+    head_after = _git_head(queue_repo)
+    assert head_after != head_before
+    _, resolve = _config_for()
+
+    queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+
+    relaunched = composed.read_text(encoding="utf-8")
+    assert f"Reviewed head: {head_after}" in relaunched
+    launched = runs.read_pointer("r-reviewer")
+    assert (
+        launched["node"]["brief_sha256"]
+        == hashlib.sha256(relaunched.encode("utf-8")).hexdigest()
+    )
+    assert (
+        launched["node"]["brief_sha256"]
+        != hashlib.sha256(stale.encode("utf-8")).hexdigest()
+    )
+
+
+def test_a_brief_inside_the_requests_own_run_directory_is_left_where_it_is(
+    queue_repo: Path,
+) -> None:
+    """A source inside the request's run directory is already its stored copy."""
+    directory = runs.run_dir("r-inside")
+    directory.mkdir(parents=True, exist_ok=True)
+    source = directory / "brief.md"
+    source.write_text("the request's own copy\n", encoding="utf-8")
+
+    runs.queue_dispatch(
+        _request(
+            queue_repo,
+            node_id="inside",
+            run_id="r-inside",
+            brief=str(source),
+            brief_path=str(source),
+        )
+    )
+
+    assert not _steering("r-inside").exists()
+    assert source.read_text(encoding="utf-8") == "the request's own copy\n"
+
+
+def test_an_unreadable_brief_leaves_no_steering_and_the_launch_refuses(
+    queue_repo: Path, tmp_path: Path
+) -> None:
+    """An unreadable source leaves no steering file, so the launch refuses it."""
+    missing = tmp_path / "never-written.md"
+    runs.queue_dispatch(
+        _request(
+            queue_repo,
+            node_id="unreadable",
+            run_id="r-unreadable",
+            brief=str(missing),
+            brief_path=str(missing),
+        )
+    )
+
+    assert not _steering("r-unreadable").exists()
+
+    recorded: list = []
+    _, resolve = _config_for()
+    result = queue_admission.admit_once(
+        config_for=resolve, launcher=_launcher(recorded)
+    )
+
+    assert result["failed"] == ["r-unreadable"]
+    assert recorded == []
+    pointer = runs.read_pointer("r-unreadable")
+    assert pointer["phase"] == "queued"
+    assert pointer["failure"]
     assert datetime.fromisoformat(pointer["retry_at"]) > datetime.now(UTC)
 
 

@@ -2241,27 +2241,19 @@ def _brief_digest(source: str | Path, *, block: str = "") -> str:
 def _store_brief(directory: Path, source: str, *, block: str = "") -> Path:
     """Copy a brief into the run directory and return the stored path.
 
-    The brief is durable authority, so its copy lives beside the run's own
-    record — under the configuration home, never inside the worktree — and the
-    pointer names that copy, because the source path a coordinator handed in
-    may be a scratch file no later reader can open. The suffix is kept so the
-    stored file reads as the document it was.
-
-    ``block`` is the domain-rules block the brief carries, appended to the
-    stored copy so the rules the worker was given are part of the authority
-    that copy is. A source whose bytes already carry the heading is stored
-    unchanged, so the heading is never appended twice.
+    The copy is written by :func:`reckon.crew.runs.store_brief`, which owns how
+    a brief's bytes reach a run directory for both the launch and the queue: it
+    materializes a brief a launch re-composes, appends the domain-rules block
+    once, and keeps the source's suffix so the copy reads as the document it
+    was. A failed write is refused here, where the caller still holds the path
+    it named.
     """
-    destination = directory / f"brief{Path(source).suffix or '.md'}"
+    from reckon.crew import runs
+
     try:
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        data = Path(source).expanduser().read_bytes()
-        if block and not _brief_carries_heading(data):
-            data = data + b"\n\n" + block.encode("utf-8")
-        destination.write_bytes(data)
+        return runs.store_brief(directory, source, block=block)
     except OSError as exc:
         raise CrewError(f"the brief {source!r} could not be stored: {exc}") from exc
-    return destination
 
 
 def _brief_record(
