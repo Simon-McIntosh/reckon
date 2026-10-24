@@ -77,9 +77,21 @@
   discard removed is written back queued, because the rollback took the only record, which is the
   defect that case pins.</p>
 
+  <p><strong>The spool copy on release, and its own case.</strong> Both discard refusals preserve
+  the marker themselves before they raise, so the copy <code>_release_launch_claim</code> makes
+  serves the one path neither of them reaches: a launch refused by a different guard after a
+  discard was recorded. <code>test_a_discard_outlives_a_refusal_by_another_guard</code> records the
+  discard inside the compose span and refuses the launch at the fleet gate, then requires the
+  departure to be readable once the rollback has taken the pointer and the run directory.
+  Deleting that copy from the release fails it
+  (<strong>1 failed, EXIT=1</strong>, <code>logs/negative-control-3.log</code>: the record is gone
+  and the admission restore writes the discarded request back queued). Gate at
+  <code>e2437cbfe</code>: <strong>9 passed, EXIT=0</strong>
+  (<code>logs/gate-head-round3.log</code>).</p>
+
   <p><strong>Scope.</strong> <code>reckon/crew/dispatch.py</code> gains three call lines and one
   re-export; <code>reckon/crew/dispatch_claims.py</code> gains the check and the spool copy on
-  release; <code>tests/test_a_discarded_request_stays_discarded.py</code> gains three cases. No
+  release; <code>tests/test_a_discarded_request_stays_discarded.py</code> gains four cases. No
   existing test is changed, skipped or weakened.
   <code>ruff check</code> passes and <code>ruff format --check</code> reports the three staged
   files already formatted (<code>logs/ruff-check.log</code>,
