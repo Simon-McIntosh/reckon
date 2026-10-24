@@ -1945,10 +1945,67 @@ def _claim_holds_the_dispatch_base(
     return _revision_is_ancestor(worktree, holder_head, base_revision)
 
 
+def stopped_with_terminal_manifest(pointer: Mapping[str, Any]) -> bool:
+    """Whether a live pointer's run has ended and delivered a terminal verdict.
+
+    A claim protects a file only while its holder can still edit it. Once the
+    holder's process has ended and its manifest records a terminal status, the
+    work in its worktree is fixed: a second run landing on the same path cannot
+    lose it, because merging is the orchestrator's job. Both facts are read here
+    at the moment of the question, from the run's own process and its own
+    manifest — never from a field kept on the pointer, which nothing updates
+    when the run ends.
+
+    Liveness is read through :func:`local_liveness`, so a pointer recorded on
+    another host answers "not proven" and keeps protecting its paths rather than
+    being read as dead from a process table that never issued its pid.
+
+    The manifest is read through :func:`_manifest_freshness`, which pairs the
+    file with the pointer's ``manifest_baseline_mtime_ns``: a run resumed or
+    redispatched after its predecessor delivered leaves that predecessor's
+    terminal manifest at the same path until it writes its own, and reading the
+    status alone would treat the earlier attempt's verdict as this attempt's
+    delivery. A manifest older than the current attempt's baseline is not
+    terminal here.
+    """
+    from reckon.crew.recovery_liveness import local_liveness
+    from reckon.crew.reports import TERMINAL_MANIFEST_STATUSES, parse_manifest
+    from reckon.crew.runs import _manifest_freshness
+
+    alive, proven = local_liveness(pointer)
+    if not proven or alive is not False:
+        return False
+    present, fresh = _manifest_freshness(pointer)
+    if not present or not fresh:
+        return False
+    manifest = Path(str(pointer.get("manifest_path") or ""))
+    try:
+        status = str(
+            parse_manifest(
+                manifest.read_text(encoding="utf-8"), path=str(manifest)
+            ).get("status")
+            or ""
+        )
+    except (OSError, ValueError):
+        return False
+    return status.strip().lower() in TERMINAL_MANIFEST_STATUSES
+
+
 def refuse_widen_scope_conflicts(
-    pointer: Mapping[str, Any], added_paths: Iterable[str]
+    pointer: Mapping[str, Any],
+    added_paths: Iterable[str],
+    *,
+    set_aside_run_ids: Iterable[str] = (),
 ) -> None:
-    """Judge added fence paths with the same claim rule as dispatch."""
+    """Judge added fence paths with the same claim rule as dispatch.
+
+    ``set_aside_run_ids`` names claims the caller has already judged to protect
+    nothing — a stopped peer whose manifest is terminal, set aside by a
+    promotion's acceptance. The judgement is made by the caller, because a
+    dispatch onto those same paths still refuses as it always has; only the
+    acceptance that names the path is allowed to walk past the claim.
+    """
+    set_aside = {str(run_id) for run_id in set_aside_run_ids}
     node = pointer.get("node")
     if not isinstance(node, Mapping):
         raise CrewError("the run records no node holding a write scope")
@@ -1983,6 +2040,8 @@ def refuse_widen_scope_conflicts(
             if repository is not None
         ),
     )
+    if set_aside:
+        claims = [claim for claim in claims if claim.run_id not in set_aside]
     # The run doing the widening is the one whose base decides whether a claim it
     # overlaps is one it already carries. A run stacked on a stopped holder has
     # that holder's chain tip as its base, so reading its own base is what keeps a

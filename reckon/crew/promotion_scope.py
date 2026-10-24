@@ -531,12 +531,17 @@ def _accepted_scope_exceptions(
 ) -> list[dict[str, Any]]:
     """Validate deliberate companion paths and return their durable account.
 
-    A live run's claim refuses an acceptance only while it protects something:
-    a path whose change by this run is already behind the integration head is
+    A live run's claim refuses an acceptance only while it protects something.
+    A path whose change by this run is already behind the integration head is
     admitted despite the claim, because what the refusal blocks there is the
-    ledger record of a landing that has happened, not a concurrent edit. The
-    peer's claim and pointer are left untouched.
+    ledger record of a landing that has happened, not a concurrent edit. A
+    claim held by a peer whose process has ended and whose manifest is terminal
+    is admitted too: that peer is editing nothing, its worktree is fixed, and
+    whichever run lands second merges on top. Both admissions are written on
+    the acceptance, and the peer's claim and pointer are left untouched.
     """
+    from reckon.crew.dispatch_claims import stopped_with_terminal_manifest
+
     outside_paths = tuple(str(path) for path in outside)
     supplied = accepted_paths or {}
     if not supplied:
@@ -583,6 +588,8 @@ def _accepted_scope_exceptions(
 
     shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
     integrated_claims: dict[str, list[dict[str, str]]] = {}
+    stopped_claims: dict[str, list[dict[str, str]]] = {}
+    stopped_peers: dict[str, bool] = {}
     path_integrated: dict[str, bool] = {}
     for pointer in list_live():
         peer_run = str(pointer.get("run_id") or "")
@@ -618,6 +625,19 @@ def _accepted_scope_exceptions(
                     # resolves the same list through this same helper.
                     if candidate == claim and path in shared_files:
                         continue
+                    if peer_run not in stopped_peers:
+                        stopped_peers[peer_run] = stopped_with_terminal_manifest(
+                            pointer
+                        )
+                    if stopped_peers[peer_run]:
+                        # A stopped peer with a terminal manifest edits nothing,
+                        # so its claim protects nothing: the acceptance is
+                        # admitted and the claim is named on it, exactly as an
+                        # already-integrated claim is.
+                        stopped_claims.setdefault(path, []).append(
+                            {"run_id": peer_run, "claim": claim.as_posix()}
+                        )
+                        continue
                     if path not in path_integrated:
                         path_integrated[path] = _path_change_reaches_integration_head(
                             repository, commits, path
@@ -647,6 +667,13 @@ def _accepted_scope_exceptions(
             entry["already_integrated"] = True
             entry["peer_claims"] = [
                 {"run_id": peer_run, "claim": claim} for peer_run, claim in peers
+            ]
+        if path in stopped_claims:
+            stopped = sorted(
+                {(row["run_id"], row["claim"]) for row in stopped_claims[path]}
+            )
+            entry["stopped_peer_claims"] = [
+                {"run_id": peer_run, "claim": claim} for peer_run, claim in stopped
             ]
         accepted.append(entry)
     return accepted

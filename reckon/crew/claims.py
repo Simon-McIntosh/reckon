@@ -96,7 +96,11 @@ def widen_claim(
                 added.append(path)
                 declared.append(path)
         if added:
-            refuse_widen_scope_conflicts(pointer, added)
+            refuse_widen_scope_conflicts(
+                pointer,
+                added,
+                set_aside_run_ids=_set_aside_on_acceptance(run_id, acceptance),
+            )
         if not acceptance and isinstance(original, list):
             original.extend(path for path in added if path not in original)
         node["write_paths"] = declared
@@ -182,6 +186,29 @@ def release_claim(
 
 
 # ── internals ────────────────────────────────────────────────────────────────
+
+
+def _set_aside_on_acceptance(run_id: str, acceptance: bool) -> tuple[str, ...]:
+    """The peers whose claims a promotion acceptance may walk past.
+
+    A live claim protects a file from a second concurrent editor. A peer whose
+    process has ended and whose manifest is terminal is editing nothing, so its
+    claim protects nothing: its work in the worktree is fixed, and whichever run
+    lands second merges on top. Only an acceptance is given that reading; a
+    dispatch onto the same paths still refuses, which is why the judgement is
+    made here rather than inside the shared claim check.
+    """
+    if not acceptance:
+        return ()
+    from reckon.crew.dispatch_claims import stopped_with_terminal_manifest
+    from reckon.crew.runs import list_live
+
+    return tuple(
+        str(peer.get("run_id") or "")
+        for peer in list_live()
+        if str(peer.get("run_id") or "") != run_id
+        and stopped_with_terminal_manifest(peer)
+    )
 
 
 def _distinct(values: Iterable[str]) -> list[str]:
