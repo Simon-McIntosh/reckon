@@ -3133,6 +3133,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p>Run <code>r-20261024T140353060421-promotion-result-tests-read-the-returned-result</code> landed at merge <code>770fe65b0</code> (head <code>c1fe38f6a</code>). The ten promotion-result and landing-commit census ids pass, each test reading the result promotion returns now.</p><p>Worker's account: repair round — both findings answered; five production mutations run as controls (7, 7, 1, 1, 1 ids failing); full gate re-run at the final head.</p><p>Coordinator's measure: the coordinator re-ran the gate (6 files) from git archive extractions: head 28 passed in 122.24s (0:02:02), merge with main (candidate a1cf184ad on 6bbba9fdf) 28 passed in 123.94s (0:02:03), main alone 10 failed, 18 passed in 114.21s (0:01:54), base 10 failed, 18 passed in 116.75s (0:01:56); failures the head adds over the base: 0; failures the merge adds over main: 0. Review 114 of 120.</p>
   </section>
 
+  <section id="s48">
+    <h2>§48 landing</h2>
+    <p>Run <code>r-20261024T141459586543-recovery-tests-read-todays-recovery</code> landed at merge <code>10f0ec692</code> (head <code>6a8cdbc75</code>). Two of the nine recovery census ids pass against the retired widening contract; six are blocked on the served-code guard's root mismatch and one is unattributed, each placed as its own repair.</p><p>Worker's account: 2026-10-24T15:17Z. All nine census ids reproduced failing at base and each was read against the commit that changed the behaviour it observes. Two belong to a deliberately retired widening contract: repaired, verified at head, and falsified by a declared negative control. Seven are blocked: six read an unintended product defect in the served-code guard, outside this node's write fence, and one resume id is unattributed. Head arm over the four gate files moved the base's ten failures to eight, exactly the two repaired ids, with no new failure.</p><p>Coordinator's measure: the coordinator re-ran the gate (1 files) from git archive extractions: head 6 passed in 5.94s, merge with main (candidate cb580ab39 on cde12bbfe) 6 passed in 8.75s, main alone 2 failed, 4 passed in 6.52s, base 2 failed, 4 passed in 6.50s; failures the head adds over the base: 0; failures the merge adds over main: 0. Review 106 of 120.</p>
+  </section>
+
 </main>
 </body>
 </html>
