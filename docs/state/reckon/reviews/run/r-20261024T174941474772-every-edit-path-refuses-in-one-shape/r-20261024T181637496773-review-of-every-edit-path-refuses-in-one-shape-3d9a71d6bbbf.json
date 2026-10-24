@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T18:24:35.111Z",
+  "dispatched_at": "2026-10-24T18:18:05Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": 1300,
+      "severity": "non-blocking",
+      "text": "List-backed append/resolve/insert targets are composed as a two-part '<collection>.<id>' address, which _value_at_path cannot resolve (its listed-heads branch at line 1251 requires three parts), so those verbs' changed_targets never carry the current value the docstring promises; only state-set and decision verbs do."
+    },
+    {
+      "file": "tests/test_every_edit_path_refuses_one_shape.py",
+      "line": 210,
+      "severity": "non-blocking",
+      "text": "The 'value read back off disk' assertion is skipped by 'if \"current\" in entry', so of the four op kinds exercised only state-set is actually checked; every dotted or list-backed target passes unverified."
+    },
+    {
+      "file": "tests/test_landing_write_races_every_writer.py",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "This file imports _edit_plan from the changed module but was omitted from both gate arms, so the manifest's and done_when's claim that every importing test file was measured is broader than the gate run; its conflict check is version-only, so it is unlikely to hide an added failure."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": 1273,
+      "severity": "non-blocking",
+      "text": "_op_target_path is a second verb table beside _store._OP_DISPATCH (reckon/_store.py:3671); a verb added to the dispatch silently returns no target here, re-creating the per-path divergence this change removed."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_every_edit_path_refuses_one_shape.py:207 reddens at the reverted base because a non-set verb then yields no targets at all, confirmed by the negative-control log; the current-value assertion at line 212 only runs for state-set.",
+    "evidence": "The base and head arms plus the negative control are recorded with revision, command and EXIT lines, but tests/test_landing_write_races_every_writer.py:43 imports _edit_plan and was left out of both arms.",
+    "fit": "reckon/mcp_edit_plan.py:1273 follows the module's underscore-helper idiom and documents each verb's identifying keys; no plan, ticket or version identifiers appear in the new names or docstrings.",
+    "goal_fidelity": "reckon/mcp_edit_plan.py:1328 now resolves a target for every op verb via _op_target_path, so each op path's refusal carries changed_targets and the listed id passes at head.",
+    "reuse": "No existing function composes an op's document address (searched reckon/_store.py and reckon/mcp_edit_plan.py for target-path resolution), but the new per-verb mapping parallels _store._OP_DISPATCH at reckon/_store.py:3671.",
+    "scope_discipline": "All three changed files (reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py, docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html) are inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (prompt GOAL line) is to repair the production defect behind \u00a758's ids so they pass, reproducing the mechanism first; reckon/mcp_edit_plan.py:1328 _changed_targets now answers every op verb, and the reproduction (changed_targets built from set ops alone) is recorded in the manifest and the landing fragment.\nVERDICT done_when: \u00a758's done_when names the listed id, a base arm for every test file importing the changed module, a red negative control, EXIT-terminated logs and a ruff delta; the manifest records all of these but the arms omit tests/test_landing_write_races_every_writer.py, an importer of _edit_plan.\nVERDICT write_paths: the node's declared paths are reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py, docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html and a figures dir; the two commits touch only the first three.\nVERDICT manifest: read; it states status complete, 53 passed at head, 1 failed 52 passed at base, a negative control of 1 failed 5 passed, and points to the three logs, all of which carry revision, tree, literal command and a bare EXIT line.\nVERDICT diff: read commit by commit against 9f5d32bb: 0aee7d076 adds _op_target_path and routes _changed_targets through it in reckon/mcp_edit_plan.py plus tightens the shape test; 3d9a71d6b adds the 61-line landing fragment; nothing outside the declared paths.\nCALL_SITES: reckon/mcp_edit_plan.py:1667, reckon/mcp_edit_plan.py:1805, reckon/mcp_edit_plan.py:1908\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_edit_plan.py:1328 resolves a target for every verb through _op_target_path, so each op path's refusal now carries changed_targets and the listed id passes at head.\nSCORE evidence: 13\nJUSTIFICATION evidence: the arm logs record revision, command and EXIT for base (1 failed 52 passed), head (53 passed) and the negative control, but tests/test_landing_write_races_every_writer.py:43 imports the changed module and was not among the measured files.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the three changed files are all inside the node's declared write paths; no out-of-scope file appears in either commit.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_every_edit_path_refuses_one_shape.py:207 fails at the reverted production code because non-set verbs return no targets, as the negative-control log shows; the independent-value assertion at line 212 covers only state-set.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp_edit_plan.py:1273 follows the module's underscore-helper idiom and cites each verb's identifying keys, with no plan or ticket identifiers.\nSCORE reuse: 15\nJUSTIFICATION reuse: no existing owner composes an op's document address (searched reckon/_store.py and reckon/mcp_edit_plan.py), but the new mapping duplicates the verb vocabulary of _store._OP_DISPATCH at reckon/_store.py:3671.\nFINDING reckon/mcp_edit_plan.py:1300 non-blocking: list-backed targets use a two-part '<collection>.<id>' address that _value_at_path cannot resolve (line 1251 needs three parts), so those verbs never carry the current value the docstring promises.\nFINDING tests/test_every_edit_path_refuses_one_shape.py:210 non-blocking: the 'if \"current\" in entry' guard leaves the independent-value assertion exercising only state-set, so every dotted or list-backed target is unverified.\nFINDING tests/test_landing_write_races_every_writer.py:43 non-blocking: this importer of _edit_plan was omitted from both gate arms, so the 'every importer measured' claim is broader than the run; its conflict assertion is version-only and unlikely to hide a failure.\nFINDING reckon/mcp_edit_plan.py:1273 non-blocking: _op_target_path is a second verb table beside _store._OP_DISPATCH (reckon/_store.py:3671); a verb added there yields no target here and the per-path divergence returns.\n",
+  "review_run_id": "r-20261024T181637496773-review-of-every-edit-path-refuses-in-one-shape-3d9a71d6bbbf",
+  "reviewed_at": "2026-10-24",
+  "reviewed_base_sha": "9f5d32bb0eb9fb1a02cc8d57e9eee66579ff5e9b",
+  "reviewed_head_sha": "3d9a71d6bbbf70a32eaf649c7a641978a18f8c02",
+  "reviewed_run_id": "r-20261024T174941474772-every-edit-path-refuses-in-one-shape",
+  "rubric": "review",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T18:31:50.068898+00:00",
+  "total": 99
+}
