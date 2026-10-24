@@ -377,12 +377,10 @@ def _claims_review_done_when(run_id: str) -> str:
     )
 
 
-# The name a run review's composed brief is written under, inside the reviewed
-# run's own directory. The reviewed run's directory is the one durable place
-# both consumers of its review already resolve, so keying the brief there lets
-# the printed command and the executed dispatch name one path without sharing a
-# value between them.
-_RUN_REVIEW_BRIEF_NAME = "review-brief.md"
+# The compiled brief names live in ``runs`` beside ``STEERING_FILE``, because
+# that module cannot import this one and the queue's steering copy asks the same
+# question this composition answers. Both readers use ``runs.REBUILT_BRIEF_NAMES``
+# so a name is added in one place and honoured by both.
 
 # Distinguishes a read from the composition that launches a review. The
 # run-review dispatch supplies ``delta`` — the commit delta, or None when the
@@ -598,9 +596,9 @@ def _review_brief_path(record: Mapping[str, Any], *, rubric: str | None = None) 
     without sharing a value between them.
     """
     name = (
-        "figure-review-brief.md"
+        runs.FIGURE_REVIEW_BRIEF_NAME
         if rubric == review_module.FIGURE_REVIEW_RUBRIC
-        else _RUN_REVIEW_BRIEF_NAME
+        else runs.RUN_REVIEW_BRIEF_NAME
     )
     return runs.run_dir(str(record.get("run_id") or "")) / name
 
@@ -631,7 +629,7 @@ def materialize_run_review_brief(source: str | Path) -> bool:
     speaks.
     """
     path = Path(source).expanduser()
-    if path.name not in {_RUN_REVIEW_BRIEF_NAME, "figure-review-brief.md"}:
+    if path.name not in runs.REBUILT_BRIEF_NAMES:
         return False
     run_id = path.parent.name
     if not run_id:
@@ -649,7 +647,7 @@ def materialize_run_review_brief(source: str | Path) -> bool:
         return False
     rubric = (
         review_module.FIGURE_REVIEW_RUBRIC
-        if path.name == "figure-review-brief.md"
+        if path.name == runs.FIGURE_REVIEW_BRIEF_NAME
         else None
     )
     _review_dispatch_fields(record, delta=None, rubric=rubric)
