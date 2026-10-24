@@ -1,0 +1,83 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run records baseline_suite as prose ('not run - the gate is the twelve named targets, judged by delta against the base revision'), so no base arm is readable as JSON; the head arm logs/gate-coordinator.log records 85 passed, 4 failed, EXIT=1 and its four failure ids are the four parametrisations of tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release; the same four ids are the only failures in logs/gate.log (revision bef70cb4) and logs/gate-repair.log (revision 0b80e2208), both earlier revisions of this node's own tree, and the manifest's failure_attribution records them reproduced at the node base with promotion_release.py restored to HEAD content, so none of the four is added by this change",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:798 ensure_worker_scratch calls settle_run_scratch(apply=True) before making a worker's scratch",
+    "reckon/crew/dispatch_launch.py:1134 _STEP_TASK_WRAPPER runs settle_run_scratch(apply=True) before exec for a step-placed worker",
+    "reckon/crew/gc.py:1572 retention_sweep calls settle_run_scratch(apply=apply, now=...) and appends its removals to the retention log",
+    "reckon/crew/promotion.py:1125 complete calls _release_after_promotion, which reaches _write_release_receipt",
+    "reckon/crew/promotion.py:1752 the second promotion path calls _release_after_promotion",
+    "reckon/crew/promotion_records.py:188 calls _release_after_promotion for a record promotion",
+    "reckon/crew_run_commands.py:2590 the crew verb path calls _release_after_promotion"
+  ],
+  "completed_at": "2026-10-24T04:10:57.236Z",
+  "dispatched_at": "2026-10-24T03:58:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html",
+      "line": "134",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate reading is described as 'on the committed tree', but logs/gate-coordinator.log:1 names revision 2abb60a10, whose tree holds 83 cases and not the two this round added, and its mtime (05:22:41 +0200) precedes the commit eee6c4d2b (05:23:34 +0200) that added them; the run was taken on the working tree before the commit, so the 85-count cannot be reconciled with the revision the log names, and the log's first line also carries no tree line, which the node's own done-when requires ('with the revision, tree and command on the log's first line'). I ran the two new cases at the reviewed head and both pass (2 passed, 12 deselected), so the code is sound; a gate re-run at 29ef6788a closes the record defect."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html",
+      "line": "116",
+      "severity": "non-blocking",
+      "text": "non-blocking: the review-route paragraph claims a base arm measured 'with the base revision's tree extracted from 0409dcbe4', and reports that at that base the copy is already removed and the ledger row already carries its release block, so only the receipt distinguishes base from head; no log for that base arm exists under the run directory (logs/ holds gate.log, gate-repair.log, gate-coordinator.log and the two negative controls only), so the claim carries no receipt, against section 8's 'every log is under the run directory, and the evidence fragment quotes each gate's command and summary line'. It also means the plan's base-red clause for the review case ('leaves the scratch and no release block at the base') is not demonstrated by the landed case."
+    },
+    {
+      "file": "reckon/crew/promotion_release.py",
+      "line": "587",
+      "severity": "non-blocking",
+      "text": "non-blocking: moving the receipt onto write_json_atomically answers the earlier reuse finding, but no added assertion reddens if it is reverted to target.write_text(...): the review case at tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:445 asserts the receipt exists and names the host, which a whole-file write satisfies equally. The atomicity half of this commit therefore has no test that fails on its regression."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "1206",
+      "severity": "non-blocking",
+      "text": "non-blocking: the coherent-root rule is now written a second time here in a stricter form (both named, both from the environment, or both at their defaults) while garbage_collect_orphan_scratch keeps its own copy of the same rule at gc.py:1043-1052 (refuse when RECKON_HOME is set and the scratch root is not); neither calls the other and no shared predicate exists, so a later change to one will not move the other."
+    },
+    {
+      "file": "tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py",
+      "line": "325",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new guard case exercises only the root-named-alone branch; the symmetric branch at gc.py:1207-1208 (runs_root named while root is left to the environment) has no assertion, so half of the three-way rule the commit introduced is unguarded."
+    }
+  ],
+  "findings_note": "the earlier review's three findings are addressed in this diff: the guard docstring now states the three-way rule its code applies (gc.py:1183-1188), the receipt is written through write_json_atomically (promotion_release.py:587), and the review case drives promotion.complete rather than the release function (tests:434). The review-route finding is only half answered: the route is now driven end to end, but its base-red differential is the receipt alone and that base arm has no log (finding 2).",
+  "item_verdicts": {
+    "diff": "Read commit by commit against 2abb60a10: eee6c4d2b changes the coherence guard to three explicit cases (gc.py:1206-1213), moves the receipt to write_json_atomically (promotion_release.py:587) and replaces the direct-release review case with one driving promotion.complete (tests:420-449), adding one guard case (tests:325); 29ef6788a updates the fragment only (3 hunks, +27/-5).",
+    "done_when": "The done-when read from the run's prompt fence (prompt.txt, FENCE - EVIDENCE) lists seven behavioural cases plus a promoted review run's scratch being removed by its promotion and a gate over twelve targets; each behavioural case has a case in tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py and the gate is recorded in logs/gate-coordinator.log, but that log names a revision predating the new cases and carries no tree line.",
+    "goal": "The node goal is to remove a finished run's scratch copies on every host by run, through the release and a settling pass on each host; the gained commits harden the settling pass's coherence guard at reckon/crew/gc.py:1206, put the release receipt on the repository's atomic writer at reckon/crew/promotion_release.py:587, and drive a review promotion through reckon/crew/promotion.py's complete route in tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:434.",
+    "manifest": "Read; status complete, its checkpoint names the three repairs of this round, its after_suite prose records 85 passed / 4 failed / EXIT=1 at eee6c4d2b citing logs/gate-coordinator.log, and its negative_control_log names logs/negative-control-repair.log, whose head line names the withdrawn guard and whose last line is EXIT=1 with one failing case.",
+    "write_paths": "The run declared eight write paths (prompt.txt:69-77); the diff 2abb60a10..29ef6788a touches only reckon/crew/gc.py, reckon/crew/promotion_release.py, tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py and the fragment, all inside them, and git status in the reviewed worktree is clean."
+  },
+  "justifications": {
+    "durability": "tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:325 reddens when the guard reverts to the pre-eee6c4d2b form (a root named alone then proceeds and removes the copy), but promotion_release.py:587 has no assertion that fails if the atomic writer is reverted, and gc.py:1207's runs_root-alone branch is unasserted.",
+    "evidence": "logs/gate-coordinator.log:1 names revision 2abb60a10 while reporting 85 passed, a count only the two cases added at eee6c4d2b produce, and there is no log for the base arm the fragment reports at docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html:116.",
+    "fit": "reckon/crew/gc.py:1206 follows the surrounding refusal shape (an early return carrying withheld, the same key and string as gc.py:1052) and promotion_release.py:587 uses the repository's own writer, matching the landing and pointer records; no plan, stage or ticket label appears in the added code, tests or fragment ids.",
+    "goal_fidelity": "reckon/crew/gc.py:1206-1213 now refuses every pairing in which one tree is named and the other read from the environment, which is the destructive mis-scope the settling pass exists to avoid, and promotion_release.py:587 keeps the release receipt durable.",
+    "reuse": "promotion_release.py:587 now extends reckon/_store.py:607 write_json_atomically rather than forking it, but gc.py:1206-1213 re-implements the coherence predicate garbage_collect_orphan_scratch holds at gc.py:1043-1052 without a shared helper.",
+    "scope_discipline": "every path in the diff (gc.py, promotion_release.py, the case file, the fragment) is inside the eight paths declared at prompt.txt:69-77, and the fragment's edits are confined to the paragraphs the round's repairs touch."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to remove a finished run's scratch copies on every host by run, through the release and a settling pass on each host; the gained commits harden the settling pass's coherence guard at reckon/crew/gc.py:1206, put the release receipt on the repository's atomic writer at reckon/crew/promotion_release.py:587, and drive a review promotion through reckon/crew/promotion.py's complete route at tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:434.\nVERDICT done_when: the done-when read from the run's prompt fence (prompt.txt, FENCE - EVIDENCE) lists seven behavioural cases plus a promoted review run's scratch removed by its promotion and a gate over twelve targets; each has a case in tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py, and the gate is recorded in logs/gate-coordinator.log, but that log names a revision predating the new cases and carries no tree line.\nVERDICT write_paths: the run declared eight write paths (prompt.txt:69-77); the diff 2abb60a10..29ef6788a touches only reckon/crew/gc.py, reckon/crew/promotion_release.py, tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py and the fragment, all inside them, and the reviewed worktree is clean.\nVERDICT manifest: read; status complete, its checkpoint names this round's three repairs, its after_suite prose records 85 passed / 4 failed / EXIT=1 at eee6c4d2b citing logs/gate-coordinator.log, and its negative_control_log names logs/negative-control-repair.log, which ends EXIT=1 with test_a_private_home_never_settles_the_host_wide_scratch failing under the withdrawn guard.\nVERDICT diff: two commits against 2abb60a10; eee6c4d2b makes the coherence guard three explicit cases (gc.py:1206-1213), moves the receipt onto write_json_atomically (promotion_release.py:587) and replaces the direct-release review case with one driving promotion.complete (tests:420-449), adding a guard case at tests:325; 29ef6788a updates the fragment only.\nCALL_SITES: reckon/crew/dispatch_launch.py:798 ensure_worker_scratch, reckon/crew/dispatch_launch.py:1134 step wrapper, reckon/crew/gc.py:1572 retention_sweep, reckon/crew/promotion.py:1125 _release_after_promotion, reckon/crew/promotion.py:1752 _release_after_promotion, reckon/crew/promotion_records.py:188 _release_after_promotion, reckon/crew_run_commands.py:2590 _release_after_promotion\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:1206-1213 now refuses every pairing in which one tree is named and the other read from the environment, and promotion_release.py:587 keeps the release receipt durable.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/gate-coordinator.log:1 names revision 2abb60a10 while reporting 85 passed, a count only the eee6c4d2b cases produce, and the base arm reported at docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html:116 has no log on this run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the eight paths declared at prompt.txt:69-77 and the fragment edits stay in the paragraphs this round repairs.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:325 reddens when the guard reverts to its pre-eee6c4d2b form, while promotion_release.py:587 and gc.py:1207's runs_root-alone branch have no assertion that fails on their regression.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/gc.py:1218 returns the same withheld shape and string as gc.py:1052, promotion_release.py:587 uses the repository's own writer, and no plan or stage label appears in the added code, tests or fragment ids.\nSCORE reuse: 15\nJUSTIFICATION reuse: promotion_release.py:587 extends reckon/_store.py:607 write_json_atomically, but gc.py:1206-1213 re-implements the coherence predicate garbage_collect_orphan_scratch holds at gc.py:1043-1052.\nFINDING docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html:134 non-blocking: the gate reading is called 'on the committed tree' but logs/gate-coordinator.log:1 names revision 2abb60a10, which holds 83 cases not the 85 reported, and the log was written before eee6c4d2b existed and carries no tree line, so the record cannot show the committed head was measured.\nFINDING docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html:116 non-blocking: the base arm from 0409dcbe4 is claimed with no log under the run directory, and it reports the base already removing the copy and recording the release block, so the plan's 'no release block at the base' clause for the review case is not demonstrated; only the receipt distinguishes the revisions.\nFINDING reckon/crew/promotion_release.py:587 non-blocking: no added assertion reddens if the atomic write is reverted to target.write_text, because tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:445 asserts only that the receipt exists and names the host.\nFINDING reckon/crew/gc.py:1206 non-blocking: the coherent-root rule is now a second, stricter copy of the predicate at gc.py:1043-1052 with no shared helper, so the two can drift apart.\nFINDING tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:325 non-blocking: only the root-named-alone branch of the new guard is asserted; the runs_root-named-alone branch at gc.py:1207-1208 is untested.",
+  "review_run_id": "r-20261024T035603429773-review-of-a-runs-scratch-is-removed-on-the-host-that-made-it-29ef6788af7a",
+  "reviewed_base_sha": "2abb60a10105ec8a43461b3429b6a0c7079e156f",
+  "reviewed_head_sha": "29ef6788af7a3f80d1c695b0ffd6784cb94a3380",
+  "reviewed_run_id": "r-20261024T014216727662-a-runs-scratch-is-removed-on-the-host-that-made-it",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:15:21.333285+00:00",
+  "total": 99
+}
