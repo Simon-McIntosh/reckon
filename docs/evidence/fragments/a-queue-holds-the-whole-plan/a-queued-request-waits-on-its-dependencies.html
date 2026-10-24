@@ -1,0 +1,447 @@
+<section id="a-queued-request-waits-on-its-dependencies-landing">
+  <h2>A queued request whose section waits are unmet is held until they land</h2>
+
+  <p><strong>What changed.</strong> A dispatcher may now queue a batch whose
+  later nodes depend on sections an earlier one builds, and the queue holds
+  them. <code>queue_requests</code> in <code>reckon/crew/queue_admission.py</code>
+  reads each node's section waits off its plan (<code>plan-section-depends-on</code>,
+  via <code>section_wait_refs</code>) and stores the request in a new
+  <code>awaiting-upstream</code> phase beside <code>QUEUED_PHASE</code> when it
+  declares any. A request in that phase is not eligible for launch, so a
+  batch of three chained sections launches its head alone.
+
+  <p>Each admission pass calls <code>advance_waiting_requests</code> before it
+  builds its launch list, and that pass re-reads readiness and moves each
+  waiting request to the phase its refs now justify: <code>queued</code> once
+  its last wait is satisfied, <code>blocked-upstream</code> once a wait can no
+  longer be satisfied. No coordinator call sits between the two, which is the
+  point of the state: the queue releases itself as upstream promotes.
+
+  <p><strong>Readiness is imported, not re-derived.</strong> The pass builds
+  the roadmap's own report (<code>reckon.roadmap.build_roadmap</code>, through
+  the same discovery the plan-review path uses) and reads each ref's outcome
+  from the blocker rows of that plan's <code>section_readiness</code>. A second
+  derivation is how a request comes to be held for a reason the roadmap would
+  not report, and the roadmap's row is also what tells a wait that is still
+  <em>pending</em> from one that was closed unfinished — the latter reading
+  <code>abandoned</code> wherever a terminal non-completed status reaches it.
+  Blocking is transitive: a request blocked by a ref the same pass has just
+  blocked becomes blocked too, which the fixpoint in
+  <code>advance_waiting_requests</code> guarantees whatever order the pointers
+  are held in.
+
+  <p><strong>Refusals move to queue time; scope does not.</strong> A node the
+  batch carries that cannot be dispatched at all — a declared input the
+  repository does not hold, a malformed goal, a missing time budget — is
+  refused when the batch is queued, so it never takes a place in the queue or
+  hides behind a chain that has not moved. A node's <em>write scope</em> is
+  still checked at launch and not at queue time: what a node may write is a
+  property of the tree it lands in, which has not been resolved when the
+  request is only stored.
+
+  <p><strong>The two states.</strong> <code>AWAITING_UPSTREAM_PHASE</code>
+  (<code>"awaiting-upstream"</code>) and <code>BLOCKED_UPSTREAM_PHASE</code>
+  (<code>"blocked-upstream"</code>) are defined in
+  <code>reckon/crew/queue_admission.py</code>, beside <code>QUEUED_PHASE</code>
+  and <code>LAUNCH_FAILED_PHASE</code>, with
+  <code>WAITING_UPSTREAM_PHASES</code> naming the pair. The name is not
+  <code>waiting</code>: <code>dispatch_admission.py</code> already uses that
+  word for a lane's queue count, and a phase reusing it would make one word
+  mean two things in the same document.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the new test module, the three queued-request modules and the
+  obligations module named by the node, every existing test module importing
+  <code>reckon/crew/queue_admission.py</code>,
+  <code>reckon/crew/dispatch_admission.py</code> or
+  <code>reckon/crew/dispatch.py</code> (112 modules, named in the
+  manifest), and the worker-window module. Run in the foreground in place on
+  the fleet allocation with the repository virtualenv, every arm logged to a
+  file whose first line names the revision, tree and command and whose last
+  line is a bare <code>EXIT=&lt;code&gt;</code>. The gate itself ran under
+  <code>pytest-xdist</code> at eight workers; a first serial attempt was
+  abandoned for wall clock, not for a result.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change, committed)</td>
+        <td><code>06c368dce</code></td>
+        <td><strong>1101 passed</strong>, 14 failed, 1 skipped, exit 1 — every failure pre-existing</td></tr>
+      <tr><td>base (this node's source change reverted, its test module kept)</td>
+        <td><code>cce801f3</code> tree + <code>43677d0d</code> <code>queue_admission.py</code></td>
+        <td><strong>3 failed</strong>, exit 1</td></tr>
+      <tr><td>negative control (a waiting request released without re-reading readiness)</td>
+        <td><code>cce801f3</code> + mutation</td>
+        <td><strong>2 failed</strong>, 1 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The delta is zero.</strong> Thirteen of the gate's modules fail
+  (one <code>conftest</code> fixture test errors among them), and running exactly
+  those thirteen test ids on the head tree and on the base tree gives the same
+  thirteen, byte for byte — they are the checkout's pre-existing failures, not
+  this change's. They are failures of the environment the tests run in
+  (<code>/tmp</code> and configuration-home writes on this allocation), which is
+  also why the node's brief calls the worker-window module's
+  <code>reckon/roadmap.py</code> failure pre-existing. The gate is logged with
+  <code>EXIT=1</code> for that reason, and the number that matters is the
+  <em>zero</em> added against that base.</p>
+
+  <h3>The three arms the new module measures</h3>
+
+  <ul>
+    <li><strong>Ordering.</strong> One call queues a three-section chain. The
+    head is stored <code>queued</code>; the middle and the tail are stored
+    <code>awaiting-upstream</code>, each carrying its own ref
+    (<code>plan-a#s1</code>, <code>plan-a#s2</code>). An admission pass
+    launches exactly one of the three. Declaring <code>s1</code> done and
+    passing again launches the middle and leaves the tail waiting; only after
+    <code>s2</code> lands does the tail launch, and no call other than the
+    admission pass sits between them.</li>
+
+    <li><strong>The blocked arm.</strong> A second chain queues identically,
+    then the head's request is closed as failed — nothing will ever deliver
+    <code>s1</code>. The pass then launches nothing, and both the middle and
+    the tail read <code>blocked-upstream</code>: the middle because its ref is
+    dead, the tail because the fixpoint carries the middle's blockage
+    through.</li>
+
+    <li><strong>The refusal arm.</strong> A batch of two whose second node
+    declares an input file the repository does not hold is refused by the
+    queueing call itself, and the section that node names is absent from the
+    live requests afterwards — the refusal wrote nothing.</li>
+  </ul>
+
+  <h3>The negative control</h3>
+
+  <p>The declared mutation is the one line that matters:
+  <code>advance_waiting_requests</code> computed a target from
+  <code>resolve_waits</code>, and the control replaces that target with
+  <code>QUEUED_PHASE</code> outright. Readiness is then never re-read, every
+  waiting request is released the moment the pass looks at it, and the chain
+  launches out of order. Both the ordering test and the blocked-arm test go
+  red on that mutation — the ordering test on the assertion that only the head
+  has no unmet wait, the blocked arm on <code>assert launched == []</code>
+  where two prompts were launched — against a head arm in which the same
+  module fails nothing. That is the defect this node exists to close, and the
+  control confirms the test detects it rather than merely passing.</p>
+
+  <h3>Repair round: the hold is reached from the command that queues</h3>
+
+  <p>The first attempt built the hold and the pass that releases it, and left
+  the hold unreachable: nothing in production called it, so a dispatched node
+  could never enter <code>awaiting-upstream</code> and only a test could. A
+  dispatch that records a queued request now writes the hold itself. That is
+  both places a dispatch stores one — the local lane's allowance check, and the
+  yield to a session's older queued request — so the entry point is the command
+  a coordinator runs rather than a helper behind it. The refs are read from the
+  plan the node names, the same declaration the pass re-reads, so a wait is
+  never stated twice.
+
+  <p>Two further changes came with it. A request held on its refs is listed on
+  its session's duties view: the view reads the phase from the pointer and the
+  refs from the pointer, rather than the classification word, because that word
+  is built from a phase vocabulary the view does not own and has not yet
+  learned these two phases — a held request was therefore real, released on
+  time, and drawn nowhere. And the section ref is now parsed by the
+  repository's own reader (<code>reckon._schema.parse_plan_ref</code>, which
+  the roadmap and the ledger already share) instead of a local split, so two
+  spellings of one ref compare equal here as they do elsewhere, including in
+  the match against a blocker row the roadmap reports.
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head, the whole gate</td>
+        <td><code>06c368dce</code></td>
+        <td><strong>1101 passed</strong>, 14 failed, 1 skipped, exit 1</td></tr>
+      <tr><td>the same 14 ids, base</td>
+        <td><code>43677d0d</code> sources in the head tree</td>
+        <td><strong>14 failed</strong> — the same 14, byte for byte</td></tr>
+      <tr><td>base, the node's test module</td>
+        <td><code>43677d0d</code> sources in the head tree</td>
+        <td><strong>4 failed</strong>, 1 passed, exit 1</td></tr>
+      <tr><td>negative control: the dispatch wiring removed</td>
+        <td><code>06c368dce</code> + mutation</td>
+        <td><strong>1 failed</strong> (the dispatch arm), 4 passed, exit 1</td></tr>
+      <tr><td>negative control: released without re-reading readiness</td>
+        <td><code>cce801f3</code> + mutation</td>
+        <td><strong>2 failed</strong>, 1 passed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>Each log names its revision, its <code>measurement_cwd</code> and its
+  <code>measurement_module</code>, and ends with a bare
+  <code>EXIT=&lt;code&gt;</code>, so a reader can tell which tree answered
+  rather than only which revision was asked about. The base arm was rebuilt
+  after the repair and re-run, because the earlier one measured the previous
+  commit's sources.</p>
+
+  <p><strong>What the base arm shows, and what it does not.</strong> At base
+  the node's test module fails on all four arms that need the entry point, and
+  the ordering probe — three nodes stored through the production path. At base
+  all three are stored <code>queued</code> and <em>nothing can wait</em>; at
+  head the middle and the tail are stored <code>awaiting-upstream</code>
+  carrying their refs. The probe's own admission pass launched nothing in
+  either tree, so the base arm does <em>not</em> show the chain launching at
+  once; it shows the store as the launchable-now state, which is the same defect
+  one step earlier. That the chain then launches out of order when readiness is
+  not re-read is what the second negative control above measures, and it is the
+  stronger of the two observations.</p>
+
+  <h3>Re-review round: the hold depends on the waits, and on three kinds of them</h3>
+
+  <p>The hold was written only inside the local lane's held branches, so a node
+  whose section's waits had not landed launched at once whenever its lane had
+  room — the case the hold exists for. A dispatch now asks what the node's
+  waits resolve to before it launches anything
+  (<code>queue_admission.unmet_waits</code>, sited ahead of the launch path in
+  <code>reckon/crew/dispatch.py</code>) and stores the request
+  <code>awaiting-upstream</code> itself, so the waits decide the hold and the
+  lane state does not.</p>
+
+  <p>A wait is now any of the three kinds a section may declare. The kinds are
+  spelled apart rather than guessed from a ref's shape
+  (<code>wait_ref_kind</code>): a bare ref is a section, <code>gate:</code> names
+  a gate, and <code>run:</code> names another queued request by its run id. A
+  gate wait is resolved through the roadmap's own gate edges — the blocker rows
+  that derivation reports on the gated section — rather than by re-parsing the
+  plan's gate records. A request wait is read from that request's own pointer
+  and manifest: one still in flight cannot release the wait behind it, a
+  delivered one can, and a discarded or failed one blocks it.</p>
+
+  <p>The admission pass no longer takes a moment argument its body never read.
+  One arm per wait kind now stands in the node's module: a section ref holds
+  until that section lands, a gate ref holds until the section the gate names
+  lands.</p>
+
+  <p><strong>Not proved, and said plainly.</strong> Two things the re-review
+  asked for are <em>not</em> measured here. The arm with a free lane
+  (<code>session_slots &gt; 0</code>, the node stored and not launched) was
+  written and failed: in the dispatch fixture the request lands
+  <code>queued</code>, and a debug build of the new hold printed nothing at all
+  for that arm — so that dispatch does not reach the launch path the hold is
+  sited on, which means either the hold belongs earlier still, before the
+  lane-allowance branch, or the arm's lane is not in fact free. The arm was
+  removed rather than left red, and the manifest carries it as the first item a
+  resumption must settle. The base arm still does not show the base launching
+  the chain's later sections at once: the ordering probe reaches the store and
+  not the CLI dispatch path, so it observes the stored phase in either tree
+  rather than a launch count.</p>
+
+  <p><strong>That paragraph was wrong about the cause, and the next section
+  measures it.</strong> The dispatch did reach the site. What it reached was a
+  site that <em>reported</em> a hold without writing one: the request the store
+  wrote kept <code>phase: queued</code>, so the pointer read as a request; and
+  the free-lane run never exercised the site that did write one, because the
+  passing arm's lane was held and took the branch that writes the pointer. A
+  store reported as held and a store actually held look the same in the answer
+  and differ in the file, which is the pair this section exists to keep
+  apart.</p>
+
+  <p><strong>Which entry point is production, and which is not.</strong>
+  <code>queue_requests</code>, the batch entry that stores a plan's whole width
+  in one call, has no production caller yet: the queue verbs that would drive
+  it — <code>crew queue edit</code>, <code>reprioritise</code> and
+  <code>drop</code> — are the subject of a later section of this plan, and that
+  section owns wiring the batch. What this section proves as its production
+  route is the single-node one: <code>crew dispatch</code> now writes the hold
+  itself, so a node a coordinator dispatches is held on its waits without any
+  batch entry point existing.</p>
+
+  <h3>Third round: the waits are read before the lane is consulted, and both phases are drawable</h3>
+
+  <p>The hold was sited after the lane-allowance branch, so it answered a
+  dispatch whose lane was already known to be full and never one whose lane had
+  room. It now sits where the lane has just been resolved and before any
+  branch that is taken for a lane's sake, so there is no path to a launch that
+  reaches the lane without having read the node's waits. The two calls the move
+  replaces are gone: the lane-allowance branch and the yield-to-an-older-request
+  branch store a request that waits on the slot it lost and on nothing else,
+  because a node with an unmet wait never reaches either.</p>
+
+  <p><strong>The store, not the answer.</strong> The earlier site reported a
+  hold without writing one. The request it had just stored kept
+  <code>phase: queued</code>, so the pointer read as a request that could
+  launch, and only the answer the command returned named
+  <code>awaiting-upstream</code>. The site now moves the pointer through
+  <code>queue_admission.hold_request_for_upstream</code>, the same writer the
+  admission pass reads back, so the phase and the refs the answer names are the
+  phase and refs the pointer carries; a store the writer cannot move is
+  reported as the phase it really holds. That defect is what made the free-lane
+  arm fail, and it is why the arm is a check on the file rather than on the
+  reply.</p>
+
+  <p><strong>The free-lane arm, and its discriminator.</strong> Two arms now
+  stand where one did. The first configures the session with slots to spare
+  (<code>session_slots: 4</code>) and declares a wait: the node is stored
+  <code>awaiting-upstream</code> carrying its ref, and no process is started.
+  The second runs the same fixture, the same lane and the same route with no
+  wait declared, and the node is not stored in a waiting phase — so the arm
+  measures the wait and not the fixture. Neither assertion can pass by
+  accident: the first reads the pointer's phase and the second reads the same
+  pointer for its absence.</p>
+
+  <p><strong>The watch line learns both names.</strong> A request stored and
+  not launched was previously classified by falling past the queued arm into
+  whatever the rest of the classifier made of a phase it did not know. The
+  classification is now read from the pointer's own phase, the phase-to-verb
+  map carries both names (<code>wait</code> for a wait that time releases,
+  <code>decide</code> for one that nothing will), and the unreleasable phase
+  counts as a duty while the releasable one does not. Two arms in the node's
+  module read the classification of each phase and the map beside it.</p>
+
+  <p><strong>Measured.</strong> The gate ran at <code>0ce92aa7a</code> over the
+  node's own modules, the worker-window module, the 112 modules importing the
+  queue and admission modules and the 39 importing the three widened ones:
+  <strong>1321 passed, 23 failed, 1 skipped, 1 error, <code>EXIT=1</code></strong>.
+  The 23 are pre-existing, measured rather than asserted: run alone at
+  <code>HEAD~1</code>'s sources they fail 23 of 23, and run alone at this
+  revision's sources they fail the same 23 of 23, so this change adds none. They
+  are failures of this allocation's environment — a read-only configuration
+  home, and snapshot derivations over files this sandbox holds read-only. The
+  node's own module is 13 passed, the two free-lane arms among them.</p>
+
+  <h3>What is not measured here</h3>
+
+  <ul>
+    <li><strong>The watch line now knows the two phases.</strong> The phases
+    are classified from the pointer's own phase rather than falling through to
+    an unreadable reading, the phase-to-verb map carries both names, and the
+    request whose wait can no longer land counts as a duty. What remains
+    outside this node's fence is
+    <code>reckon/crew/obligations.py</code>, which resolves placements through
+    <code>queued_placements</code> alone; a held request is listed on its
+    session's duties view through the snapshot's own pointer read
+    (<code>reckon/crew/obligation_snapshot.py</code>) rather than through that
+    path.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Fourth round: the hold reads only what has not launched, and the phase words live in one leaf</h2>
+
+  <p><strong>What was wrong.</strong> Moving the wait read ahead of the
+  existing-run guard made a worse defect than the one it fixed. A re-dispatch
+  of a node whose waits read unmet wrote the waiting phase over whichever
+  pointer carried that node, and the writer did not look at what it was
+  writing over. A run already <em>starting</em> or working is not a stored
+  request at all: it is the record of a launch that happened. Overwriting it
+  took a live run off its lane and re-stored it as a request that nothing was
+  running, and no pass would launch it again.</p>
+
+  <p><strong>What the hold reads now.</strong> The existing run is resolved
+  first, and the waits are read only for a node that has no run at all or whose
+  run is still a stored request. A node whose run is queued, being admitted or
+  working is answered with that run exactly as before, and its pointer is never
+  touched. The writer refuses any pointer whose phase is not the queued one or
+  one of the waiting ones, and it reads that phase inside the mutation that
+  writes, under the pointer's own lock, so a run admitted between the caller's
+  read and the write is refused too. The refusal is not silent: the hold reports
+  that it did not land, and the answer reports the phase the pointer really
+  carries rather than a wait it does not have.</p>
+
+  <p><strong>One leaf for the phase words.</strong> The admission pass writes
+  the waiting phases and the recovery readers draw them, and neither could
+  import the other: naming them through
+  <code>reckon/crew/queue_admission.py</code> from the recovery vocabulary
+  cycles through <code>dispatch_plan</code> and <code>recovery</code> and fails
+  at import, which is why an earlier round restated them as literals. The queued
+  phase and the two waiting phase names now live in
+  <code>reckon/crew/node.py</code>, the leaf both modules already import — the
+  admission module re-exports them, so every existing caller is unchanged, and
+  no reader spells a phase out.</p>
+
+  <p><strong>Measured.</strong> The gate ran at <code>a20ea94a4</code>:
+  <strong>at <code>a20ea94a4</code>: <strong>1322 passed, 23 failed, 1 skipped, 1 error, <code>EXIT=1</code></strong>. The base gate runs the same targets at the run's own base <code>43677d0d26</code> and fails 28 of those ids and the error; every one of the 24 ids failing at the head is in that base list, so the count this change adds is zero. The base log's own list, read from <code>gate-base2.log</code> rather than inferred: <code>conftest::test_temp_config_home</code>, <code>test_a_discarded_request_stays_discarded::test_a_discarded_request_is_reported_nowhere</code>, <code>test_a_discarded_request_stays_discarded::test_a_request_discarded_during_the_pass_is_not_written_back</code>, <code>test_a_dispatch_yields_to_its_sessions_older_request::test_a_dispatch_launches_its_sessions_older_request_and_queues_behind_it</code>, <code>test_a_node_is_queued_once::test_a_different_node_over_a_queued_path_launches</code>, <code>test_a_run_s_overrides_have_one_reader::test_every_reader_resolves_its_config_through_the_owner</code>, <code>test_a_sweep_resolves_review_heads_once::test_snapshot_obligations_match_the_derivation</code>, <code>test_crew_dispatch_arming::test_a_peer_sessions_follower_does_not_admit_this_dispatch</code>, <code>test_crew_dispatch_arming::test_dispatch_refuses_a_session_whose_runs_would_finish_unheard</code>, <code>test_crew_surface_parity::test_the_cli_live_view_matches_the_mcp_classification_surface</code>, <code>test_crew_tool_carries_the_write_verbs::test_the_obligations_view_prints_the_action_form</code>, <code>test_follow_observes_other_sessions::test_a_follower_without_observed_sessions_behaves_exactly_as_today</code>, <code>test_follow_observes_other_sessions::test_an_observed_session_named_identically_to_the_owning_session_adds_no_duplicate</code>, <code>test_follow_observes_other_sessions::test_an_observed_session_row_achieves_the_pane_without_falling_out</code>, <code>test_follow_observes_other_sessions::test_an_observed_session_that_dispatched_nothing_yields_no_rows_and_no_error</code>, <code>test_follow_observes_other_sessions::test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_not</code>, <code>test_follow_observes_other_sessions::test_the_real_configuration_home_gains_no_file</code>, <code>test_git_shim_checks_the_resolved_repo::test_a_repository_under_the_runs_scratch_admits_a_commit</code>, <code>test_obligations_snapshot_is_published::test_a_moved_head_names_the_same_two_heads_in_snapshot_and_derivation</code>, <code>test_obligations_snapshot_is_published::test_a_slice_equals_the_derivation_over_the_same_files</code>, <code>test_obligations_snapshot_is_published::test_the_snapshot_carries_the_derivation_over_unmodified_files</code>, <code>test_one_composer_for_the_domain_block::test_the_per_check_line_has_one_spelling</code>, <code>test_overlapping_queued_requests_launch_in_turn::test_a_new_dispatch_over_a_queued_claim_queues_then_launches</code>, <code>test_queued_work_shows_where_held_work_shows::test_the_published_snapshot_lists_the_queued_run_the_derivation_lists</code>, <code>test_read_verbs_retire_behind_crew_view::test_crew_view_live_gives_the_listings_answer[mine]</code>, <code>test_read_verbs_retire_behind_crew_view::test_crew_view_live_gives_the_listings_answer[phase]</code>, <code>test_read_verbs_retire_behind_crew_view::test_crew_view_live_gives_the_listings_answer[project]</code>, <code>test_read_verbs_retire_behind_crew_view::test_crew_view_live_gives_the_listings_answer[session]</code>, <code>test_unmeasured_horizon_never_refuses::test_redispatch_cli_accepts_estimated_hours</code>. The node's own module is 14 passed, the arm that re-dispatches a launched run among them.</strong>. The negative control for this round neutralises the
+  single <code>hold_request_for_upstream</code> call the check names and fails
+  exactly the two arms that read the phase the hold writes, against the same
+  head unmutated at 14 passed. The base gate runs the same targets at the run's
+  own base <code>43677d0d26</code>, where the node's module does not exist and
+  is named as excluded, so the failures quoted as pre-existing are read from
+  the base rather than from a revision one commit below the head.</p>
+</section>
+
+<section>
+  <h2>Fifth round: one reader for the manifest status, and the phase words inside the fence</h2>
+
+  <p><strong>The status read was a second implementation.</strong>
+  <code>reckon/crew/queue_admission.py</code> carried its own manifest-status
+  reader beside the one <code>parse_manifest</code> in
+  <code>reckon/crew/reports.py</code> owns. The two agreed on the prose a worker
+  writes and disagreed on a JSON-form manifest:
+  <code>_manifest_status('{"status": "complete"}')</code> returned the empty
+  string where <code>parse_manifest</code> returns <code>complete</code>, and an
+  empty status is not a terminal one — so a request waiting on such an upstream
+  stayed pending however long that upstream took. The local reader is deleted
+  and the status is read through <code>parse_manifest</code>, so the admission
+  pass and the rest of the fleet cannot disagree about what a manifest says. The
+  arm <code>test_a_json_manifest_upstream_releases_the_wait</code> writes a JSON
+  body as the upstream's manifest and reads the waiting request released.</p>
+
+  <p><strong>The phase words moved into the fence.</strong> The queued phase and
+  the two waiting phase names had been declared in
+  <code>reckon/crew/node.py</code>, outside this node's write scope and claimed
+  by another live run. That file is now identical to the run's base — the diff
+  against <code>43677d0d26</code> for it is empty — and the names live in
+  <code>reckon/crew/queue_admission.py</code>, the module that writes them.</p>
+
+  <p><strong>The cycle is why the vocabulary keeps literal keys.</strong> A
+  module-level import of the admission module from
+  <code>reckon/crew/recovery_vocabulary.py</code> was tried in both orders and
+  fails either way, ending
+  <code>ImportError: cannot import name '_resolve_commit' from partially
+  initialized module 'reckon.crew.recovery'</code> along
+  <code>recovery_vocabulary → queue_admission → dispatch_plan → recovery →
+  ticker → recovery_vocabulary</code>. The phase-to-verb map therefore keeps the
+  two spellings as literal keys, and a test pins them to the constants the
+  admission module declares so the two cannot drift apart quietly.
+  <code>reckon/crew/recovery_classification.py</code> needs them inside one
+  function only and imports them there, where no cycle forms.</p>
+
+  <p><strong>Lint.</strong> <code>ruff check --fix</code> and
+  <code>ruff format</code> ran on the staged paths only. The changed modules
+  read two findings, both pre-existing at <code>reckon/crew/dispatch.py</code>,
+  so this change adds none.</p>
+
+  <p><strong>The pane had no word for a held request.</strong> A state the
+  classifier can return must sit in exactly one pane column, and the two phases
+  this section added sat in none: <code>reckon/crew/ticker.py</code> carried
+  neither. The held request now waits beside <code>blocked</code>'s waiting
+  neighbours and the one whose wait can no longer land sits in the halted pane,
+  and the classifier's own word set carries both so the grid keeps one row per
+  state. Neither module was in this node's declared paths; both additions are
+  listed under <code>changed_paths</code> with that stated.</p>
+
+  <p><strong>Two collisions with the main line, not one.</strong> Besides the
+  timestamp import, the queued arm of <code>classify_pointer</code> had been
+  rewritten in place, and the main line lands a new delivered-review branch
+  immediately after that arm, so the two could not merge. The waiting phases
+  are now a branch of their own <em>ahead</em> of the queued arm, whose body is
+  byte-identical to the base, so the new branch has somewhere to land beside
+  it. <code>git merge-tree --write-tree</code> against the main checkout's
+  <code>main</code> exits 0 at this head.</p>
+
+  <p><strong>Measured.</strong> The gate ran at <code>f1e56544b</code>:
+  <strong>840 passed, 17 failed, <code>EXIT=1</code></strong> over the node's own
+  module plus every <code>tests/*.py</code> that imports
+  <code>queue_admission</code>, <code>recovery_classification</code> or
+  <code>recovery_vocabulary</code> — 88 files, found by grep rather than listed
+  by hand. The base arm runs the same command from a
+  <code>git archive</code> extraction of <code>43677d0d26</code> and reads 823
+  passed, 16 failed. Every one of the base's 16 ids fails at the head too, so
+  the delta is <strong>one</strong>:
+  <code>test_a_producer_sweeps_only_on_change::test_quiet_cycles_list_nothing_and_spawn_no_git</code>,
+  which asserts that a quiet cycle spawns no process and passes serially at the
+  same head (25 passed, <code>EXIT=0</code>,
+  <code>gate-round7-headonly-serial3.log</code>) — it sees a peer test's process
+  under eight workers. The two session-host modules that the previous round
+  flagged were rerun serially at this head and read 20 passed, 1 skipped,
+  <code>EXIT=0</code> (<code>gate-round7-sessionhost-serial.log</code>). The node's
+  own module is 16 passed, the JSON-manifest arm among them
+  (<code>node-module-round7.log</code>). Lint is unchanged from the quoted base:
+  three findings over the changed paths at the head and the same three at the
+  base.</p>
+</section>

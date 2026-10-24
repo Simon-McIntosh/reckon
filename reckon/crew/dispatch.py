@@ -1589,11 +1589,19 @@ def dispatch(
 
     # A node that already has a run — queued, being admitted, or in flight — is
     # answered rather than dispatched a second time. This is read before the
-    # scope check and before any worktree, so a re-dispatch of a queued node
-    # updates that one request in place instead of being refused against the
-    # queued pointer's own write-path claim. A queued copy is a re-queue on any
-    # lane; a run already being admitted or working is answered only on the lane
-    # that queues, where the request would otherwise become a second pointer.
+    # scope check and before any lane-specific branch, so a re-dispatch of a
+    # queued node updates that one request in place instead of being refused
+    # against the queued pointer's own write-path claim, and a node whose run is
+    # admitted, starting or working is answered with that run and never has its
+    # pointer touched. A queued copy is a re-queue on any lane; a run already
+    # being admitted or working is answered only on the lane that queues, where
+    # the request would otherwise become a second pointer.
+    from reckon.crew import queue_admission
+
+    existing: dict[str, Any] | None = None
+    existing_phase = ""
+    member_refuses = False
+    queued_backend_name = backend_name
     if not shadow_lineage:
         existing = existing_node_run(
             project,
@@ -1611,7 +1619,7 @@ def dispatch(
         # refusal outranks the existing-run answer for a run that is admitted or
         # working, so the caller hears the member is busy rather than the lane.
         # A queued copy is still updated in place, where no member refusal applies.
-        member_refuses = bool(member) and existing_phase != "queued"
+        member_refuses = bool(member) and existing_phase != queue_admission.QUEUED_PHASE
         # A request already queued stays on the lane that queued it, which is the
         # lane whose admission launches it. This dispatch's resolved backend may
         # be a different lane — a re-dispatch naming one, or a lift that makes it
@@ -1621,40 +1629,131 @@ def dispatch(
         # waiting request is kept for the re-queue.
         queued_backend_name = (
             str(existing.get("backend") or "").strip()
-            if existing_phase == "queued"
+            if existing_phase == queue_admission.QUEUED_PHASE
             else ""
         ) or backend_name
-        if (
-            existing is not None
-            and not member_refuses
-            and (existing_phase == "queued" or is_local)
-        ):
-            held = _answer_existing_node_run(
-                existing,
-                record=_queued_request_record(
-                    run_id=run_id,
-                    project=project,
-                    node=node,
-                    repo_root=repo_root,
-                    session=session,
-                    backend_name=queued_backend_name,
-                    launch_kind=launch_kind,
-                    lane_allowance=lane_allowance,
-                    dispatch_options=dispatch_options,
-                    queued_at=_utc_now(),
-                ),
-                backend=backend,
+
+    # A node whose waits have not landed is stored and held whatever the lane
+    # state, and ahead of every branch that is taken for a lane's sake: a node
+    # whose upstream has not landed cannot run at any lane occupancy, so a lane
+    # with room must not launch it. The waits are read only for a node that has
+    # no run at all, or one whose run is still only a stored request — a run
+    # that is admitted, starting or working is running, and its pointer is the
+    # record of a launch that happened, so reading its waits and rewriting that
+    # record would take a live run off its lane. The refs are read through the
+    # same readiness the admission pass re-reads and recorded by the same writer
+    # that pass reads back, so a node is held here for exactly the reason the
+    # pass would hold it.
+    stored_request = existing is None or existing_phase in (
+        queue_admission.QUEUED_PHASE,
+        *queue_admission.WAITING_UPSTREAM_PHASES,
+    )
+    waiting = (
+        queue_admission.unmet_waits(node, repo_root=repo_root, project=project)
+        if stored_request and not member_refuses
+        else []
+    )
+    if waiting:
+        queued, position = queue_dispatch(
+            _queued_request_record(
+                run_id=run_id,
+                project=project,
+                node=node,
+                repo_root=repo_root,
+                session=session,
+                backend_name=backend_name,
+                launch_kind=launch_kind,
                 lane_allowance=lane_allowance,
+                dispatch_options=dispatch_options,
+                queued_at=_utc_now(),
+                admitted_from=admitted_from,
+            ),
+            cap=queued_dispatch_cap(_queued_share_cap(backend)),
+        )
+        held_refs = queue_admission.hold_request_for_upstream(
+            str(queued["run_id"]), node=node, repo_root=repo_root
+        )
+        held = LaneHeld(
+            {
+                "detail": "waiting on " + ", ".join(waiting),
+                "reason": "this section's waits have not landed",
+            }
+        )
+        held.queued = {
+            "run_id": str(queued["run_id"]),
+            "position": position,
+            # A request the writer could not move off ``queued`` is reported
+            # as the phase it really holds, so the answer never claims a wait
+            # the pointer does not carry.
+            "phase": (
+                queue_admission.AWAITING_UPSTREAM_PHASE
+                if held_refs
+                else str(queued.get("phase") or queue_admission.QUEUED_PHASE)
+            ),
+            "waits": list(held_refs or waiting),
+            "reason": "this section's waits have not landed",
+        }
+        if held_selection is not None:
+            # The hold that offered the local lane is kept in the outcome
+            # history, marked queued with the run it became, so a reader of the
+            # holds file reads Jev's answer and where it landed.
+            from reckon.crew.picker.outcomes import record_picker_hold
+
+            record_picker_hold(
+                project=project,
+                node=node.id,
+                plan=node.plan,
+                selection=held_selection,
+                reason=_picker_refusal_reasons(held_selection),
+                run_id=str(queued["run_id"]),
+                queued=True,
             )
-            if existing_phase == "queued":
-                _arrange_dispatch_follower(
-                    project,
-                    session,
-                    launch_kind,
-                    watch_required=watch_required,
-                    watch_override=watch_override,
-                )
-            raise held
+        _arrange_dispatch_follower(
+            project,
+            session,
+            launch_kind,
+            watch_required=watch_required,
+            watch_override=watch_override,
+        )
+        raise held
+
+    # A node that already has a run — queued, being admitted, or in flight — is
+    # answered here rather than dispatched a second time, from the resolution
+    # above and before any worktree is made. A queued copy is a re-queue on any
+    # lane; a run already being admitted or working is answered only on the lane
+    # that queues, where the request would otherwise become a second pointer.
+    if (
+        not shadow_lineage
+        and existing is not None
+        and not member_refuses
+        and (existing_phase == queue_admission.QUEUED_PHASE or is_local)
+    ):
+        held = _answer_existing_node_run(
+            existing,
+            record=_queued_request_record(
+                run_id=run_id,
+                project=project,
+                node=node,
+                repo_root=repo_root,
+                session=session,
+                backend_name=queued_backend_name,
+                launch_kind=launch_kind,
+                lane_allowance=lane_allowance,
+                dispatch_options=dispatch_options,
+                queued_at=_utc_now(),
+            ),
+            backend=backend,
+            lane_allowance=lane_allowance,
+        )
+        if existing_phase == "queued":
+            _arrange_dispatch_follower(
+                project,
+                session,
+                launch_kind,
+                watch_required=watch_required,
+                watch_override=watch_override,
+            )
+        raise held
 
     # The lane gate is read before anything is created: a paused gate, one that
     # cannot be answered, or a declared path that differs from the lane
@@ -1688,11 +1787,17 @@ def dispatch(
                 ),
                 cap=queued_dispatch_cap(_queued_share_cap(backend)),
             )
+            from reckon.crew import queue_admission
+
+            # A node whose waits are unmet is held on them above, whatever the
+            # lane state, so what this branch stores is a request the lane had
+            # no room for and it carries no wait.
             held = LaneHeld(lane_allowance)
             held.queued = {
                 "run_id": queued["run_id"],
                 "position": position,
-                "phase": str(queued.get("phase") or "queued"),
+                "phase": str(queued.get("phase") or queue_admission.QUEUED_PHASE),
+                "waits": [],
                 "reason": lane_allowance.get("reason"),
             }
             if held_selection is not None:
@@ -1762,10 +1867,15 @@ def dispatch(
                         "reason": "yielded to this session's older queued request",
                     }
                 )
+                from reckon.crew import queue_admission
+
+                # The waits are answered above, whatever the lane state, so a
+                # request queued here waits only on the slot it yielded.
                 held.queued = {
                     "run_id": str(queued["run_id"]),
                     "position": position,
-                    "phase": str(queued.get("phase") or "queued"),
+                    "phase": str(queued.get("phase") or queue_admission.QUEUED_PHASE),
+                    "waits": [],
                     "reason": "waiting behind this session's older queued request",
                 }
                 _arrange_dispatch_follower(

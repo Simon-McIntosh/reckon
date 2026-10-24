@@ -214,6 +214,8 @@ DISPLAY_HUE = {
 # test binds this set to that classifier vocabulary.
 CLASSIFIER_STATE_WORDS = frozenset(STATE_HUE["light"]) | frozenset(
     {
+        "awaiting-upstream",
+        "blocked-upstream",
         "completed_unpromoted",
         "ended-without-manifest",
         "interrupted",
@@ -288,9 +290,14 @@ PANE_STATES = {
             "limit-reset",
         }
     ),
-    "waiting": frozenset({"waiting", "paused", "wait-aged"}),
+    # A request held on a section it waits for is not working and not halted: it
+    # sits in the waiting pane until its upstream lands, and is never released
+    # by a lane slot. One whose wait can no longer land asks for the decision a
+    # blocked run asks for, so it sits beside blocked.
+    "waiting": frozenset({"waiting", "paused", "wait-aged", "awaiting-upstream"}),
     "halted": frozenset(
         {
+            "blocked-upstream",
             "blocked",
             "needs-help",
             "held",

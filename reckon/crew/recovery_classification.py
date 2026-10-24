@@ -871,7 +871,35 @@ def classify_pointer(
     marker = None
     needs_help_complete_value = None
     session_refusal: dict[str, str] | None = None
-    if phase == "queued":
+    # The request phase vocabulary is owned by the admission module, which
+    # imports the recovery readers at module level; naming it here at import
+    # time would close that loop, so it is named where it is read.
+    from reckon.crew.queue_admission import (
+        BLOCKED_UPSTREAM_PHASE,
+        QUEUED_PHASE,
+        WAITING_UPSTREAM_PHASES,
+    )
+
+    if phase in WAITING_UPSTREAM_PHASES:
+        classification = phase
+        # A request held on a section it waits for is stored, not launched, and
+        # no lane slot will release it: what releases it is the upstream section
+        # landing, which the admission pass reads back from this same pointer.
+        # The two waiting phases are told apart because their remedies differ --
+        # one is released by time, the other never is.
+        waits = [str(ref) for ref in record.get("waits") or ()]
+        waiting_on = ", ".join(waits) or "an upstream section"
+        if phase == BLOCKED_UPSTREAM_PHASE:
+            detail = str(record.get("reason") or "") or (
+                f"a section this request waits on can no longer land: {waiting_on}"
+            )
+            action = f"recover or drop this request: {waiting_on}"
+        else:
+            detail = str(record.get("reason") or "") or (
+                f"waiting for {waiting_on} to land"
+            )
+            action = f"wait for {waiting_on} to land"
+    elif phase == QUEUED_PHASE:
         classification = "queued"
         session_refusal = _queued_failure_remedy(record)
         if session_refusal is not None:
