@@ -45,6 +45,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("repair-completion",): "historical completion measurements missing",
     ("repair",): "a manifest's status word or a review's status",
     ("resume",): "one stopped run, every ready run",
+    ("retention-sweep",): "run directories past their retention window",
     ("review",): "one plan's content, a code neighbourhood or a portfolio",
     ("shadow",): "committed run",
     # `split-runs` is a registered leaf of `crew`, so the census of reachable
