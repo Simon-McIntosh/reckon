@@ -137,7 +137,7 @@ def test_roadmap_sprint_position_precedes_roi(roadmap: None) -> None:
 
 def test_lowest_priority_ages_ahead_of_fresh_high_priority(roadmap: None) -> None:
     queued = [
-        _request("aged-low", age=queue_order.STARVATION_AGE_SECONDS, section="low"),
+        _request("aged-low", age=30 * 60, section="low"),
         _request("fresh-high", age=1, section="high"),
     ]
 
@@ -150,9 +150,27 @@ def test_lowest_priority_ages_ahead_of_fresh_high_priority(roadmap: None) -> Non
     )
 
 
+def test_low_priority_waiting_less_than_thirty_minutes_stays_behind(
+    roadmap: None,
+) -> None:
+    queued = [
+        _request("young-low", age=30 * 60 - 1, section="low"),
+        _request("fresh-high", age=1, section="high"),
+    ]
+
+    assert (
+        queue_order.admission_order(queued, queued, now=NOW)[0]["run_id"]
+        == "fresh-high"
+    )
+    assert (
+        queue_admission.queued_placements(queued, now=NOW)["young-low"]["reason"]
+        != "ageing"
+    )
+
+
 def test_delivered_review_retains_precedence(roadmap: None) -> None:
     queued = [
-        _request("aged-low", age=queue_order.STARVATION_AGE_SECONDS, section="low"),
+        _request("aged-low", age=30 * 60, section="low"),
         _request("raised-high", age=60, section="high"),
         _request("review-of-raised-high", age=1, section="review", role="review"),
     ]
