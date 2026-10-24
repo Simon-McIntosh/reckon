@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:823",
+    "reckon/crew.py:192"
+  ],
+  "completed_at": "2026-10-23T22:18:12.093Z",
+  "dispatched_at": "2026-10-23T22:07:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 2691,
+      "severity": "non-blocking",
+      "text": "_is_space_separated_scope_item requires every part of a joined item to lie within the declared scope, while \u00a721's deliverable also names paths that merely exist; a joined list of existing but undeclared paths is still refused as one quoted stray. Carried from the prior review at bbd7dfd8a and unchanged by cc4c3d191."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T135622629487-a-scope-refusal-names-the-paths-it-parsed/gate-head.log",
+      "line": 8,
+      "severity": "non-blocking",
+      "text": "the 29-file head arm stops at 38% with no EXIT line and is fixed at bbd7dfd8a, so no complete full-population head arm exists at the reviewed head cc4c3d191; the matched 9-file arms are complete and clean."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read cc4c3d191 against bbd7dfd8a: three one-line changes, two assertion literals gaining the surrounding double quotes and one evidence paragraph updated; it leaves the prior non-blocking reports.py:2688 discrepancy and the truncated full-population arm untouched.",
+    "done_when": "\u00a721's done_when names tests/test_a_scope_refusal_names_the_paths_it_parsed.py plus no added failure over the importing files; the reviewed delta's gate is the two repaired files, recorded in gate-repair-after.log as 16 passed EXIT=0 with the negative control at 2 failed EXIT=1.",
+    "goal": "the reviewed run's goal is \u00a721 of docs/plans/a-worker-cannot-write-your-home.html: a space-separated changed_paths value is reported as one comma-separation finding naming the field and the parsed item, strays are quoted; the reviewed delta repairs the two tests that the landed quoting changed, at tests/test_manifest_check_command.py:327 and tests/test_a_review_manifest_passes_its_own_check.py:186.",
+    "manifest": "read; the manifest was repaired to status complete, records the two-file gate at cc4c3d191 with baseline_suite and after_suite pointing at negative-control-repair.log and gate-repair-after.log, and names negative_control_reasoning consistent with those logs.",
+    "write_paths": "the source node declared the evidence fragment and the two test files among its write paths, and cc4c3d191 touches exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "reverting cc4c3d191 restores the unquoted expectations and both named checks fail (negative-control-repair.log), so each repaired assertion reddens on the regression it guards; the CLI assertion uses an independent literal and the review-manifest one guards the quote literals around the fixture path.",
+    "evidence": "gate-repair-after.log records 16 passed at EXIT=0 at cc4c3d191, and negative-control-repair.log records 2 failed / 14 passed at EXIT=1; the 29-file \u00a721 head arm gate-head.log:8 still stops at 38% with no EXIT line, so the full-population evidence is the matched 9-file arms only.",
+    "fit": "both edits keep the surrounding assertion idiom and introduce no new symbol; the evidence paragraph follows the fragment's existing prose shape at docs/evidence/fragments/a-worker-cannot-write-your-home/a-scope-refusal-names-the-paths-it-parsed.html:26.",
+    "goal_fidelity": "the incremental commit updates exactly the two assertions the landed quoting changed, tests/test_manifest_check_command.py:327 and tests/test_a_review_manifest_passes_its_own_check.py:186, and both now expect the quoted form reckon/crew/reports.py:2674 emits.",
+    "reuse": "the commit adds no definition at all, so it forks no capability; the owning predicate path_within_declared_scope and _write_scope_findings in reckon/crew/reports.py:2619 are untouched.",
+    "scope_discipline": "all three paths in cc4c3d191 are inside the source node's declared write paths: the evidence fragment, tests/test_a_review_manifest_passes_its_own_check.py and tests/test_manifest_check_command.py."
+  },
+  "project": "reckon",
+  "raw_text": "see the emission lines in the review reply",
+  "review_run_id": "r-20261023T220447661534-review-of-a-scope-refusal-names-the-paths-it-parsed-cc4c3d191381",
+  "reviewed_base_sha": "bbd7dfd8a8843110c40a74eca70ee36e9b752045",
+  "reviewed_head_sha": "cc4c3d19138123df8ff2a9173c01563ab1b693b4",
+  "reviewed_run_id": "r-20261023T135622629487-a-scope-refusal-names-the-paths-it-parsed",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-23T22:18:17.492180+00:00",
+  "total": 115
+}
