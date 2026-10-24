@@ -11,9 +11,9 @@ Each MCP crew action runs the same verb callback the CLI verb runs, so the two
 surfaces answer one call with one document. The parity is compared rather than
 asserted about either surface.
 
-The negative control removes the launched-request refusal: with that guard
-gone, the three refusal arms below succeed and fail their assertions, which is
-what proves the guard is the thing holding them.
+The negative control makes edit alone skip the launched-request check. Its
+refusal arm then fails while the reprioritise and drop arms still pass, which
+shows that edit's check holds that boundary.
 """
 
 from __future__ import annotations
