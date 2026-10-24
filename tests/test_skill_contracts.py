@@ -129,6 +129,36 @@ def test_fan_out_rule_lands_in_every_skill_a_session_holds() -> None:
 # node, and the term teaches a bucket that no roadmap reads.
 RETIRED_DEFERRED_WORK_TERM = re.compile(r"follow[-_]ons?", re.IGNORECASE)
 
+SKILLS_ROOT = ROOT / "skills"
+
+# The six files that carry the rule for work found beyond a node. The control
+# below asserts the walk reaches them, so an empty or renamed tree cannot
+# report an absence the scan never looked for.
+CONTINUATION_SKILL_FILES = [
+    SKILLS_ROOT / "reckon-build" / "SKILL.md",
+    SKILLS_ROOT / "reckon-build" / "references" / "worker-protocol.md",
+    SKILLS_ROOT / "reckon-build" / "references" / "sprint-orchestration.md",
+    SKILLS_ROOT / "reckon-build" / "references" / "coordinator-reference.md",
+    SKILLS_ROOT / "reckon-build" / "references" / "conditional-guidance.md",
+    SKILLS_ROOT / "reckon-edit" / "SKILL.md",
+]
+
+
+def _skill_files(root: Path = SKILLS_ROOT) -> list[Path]:
+    return sorted(path for path in root.rglob("*") if path.is_file())
+
+
+def test_the_skills_tree_is_walked() -> None:
+    """A scan over an empty tree reports an absence it never looked for."""
+    files = _skill_files()
+    assert files, f"no files found under {SKILLS_ROOT}; the term scan is vacuous"
+    found = set(files)
+    missing = [path for path in CONTINUATION_SKILL_FILES if path not in found]
+    assert missing == [], (
+        "the skill walk never reached the files that teach the rule: "
+        + ", ".join(str(path.relative_to(ROOT)) for path in missing)
+    )
+
 
 def test_no_skill_file_names_the_retired_deferred_work_term() -> None:
     """No skill teaches the retired bucket; the two routes are the whole rule.
@@ -138,9 +168,7 @@ def test_no_skill_file_names_the_retired_deferred_work_term() -> None:
     teaching a third place for that work to sit, which is the thing retired.
     """
     offenders: list[str] = []
-    for path in sorted((ROOT / "skills").rglob("*")):
-        if not path.is_file():
-            continue
+    for path in _skill_files():
         for number, line in enumerate(
             path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
         ):
@@ -158,15 +186,7 @@ def test_every_skill_teaching_continuation_names_the_two_names() -> None:
     ``outside_scope`` is the worker manifest field. A file that states the rule
     but names neither leaves a reader without the word to record it under.
     """
-    files = [
-        ROOT / "skills" / "reckon-build" / "SKILL.md",
-        ROOT / "skills" / "reckon-build" / "references" / "worker-protocol.md",
-        ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md",
-        ROOT / "skills" / "reckon-build" / "references" / "coordinator-reference.md",
-        ROOT / "skills" / "reckon-build" / "references" / "conditional-guidance.md",
-        ROOT / "skills" / "reckon-edit" / "SKILL.md",
-    ]
-    for path in files:
+    for path in CONTINUATION_SKILL_FILES:
         text = normalized(path.read_text(encoding="utf-8").lower())
         assert "plan section" in text, f"{path.name} does not name the section route"
         assert "instruction in the next dispatch" in text, (
