@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "cycle_and_missing_targets": "tests/test_queue_dag_waits.py:234-263 moves the existing literal error and empty-pointer assertions onto ordinary dispatch; they fail if a cycle or missing target is stored or the named refs disappear from the refusal.",
+    "independence": "No newly added assertion compares an observed result to the same value passed to the code under test; expected exit codes, pointer counts, phases, calls, and names are independent literals.",
+    "invalid_wait_refusal": "tests/test_a_queued_request_waits_on_its_dependencies.py:573-574 fails if dispatch accepts either missing or cyclic section wait, or leaves any live pointer behind; the prior-revision reproduction records both cases failing before repair.",
+    "own_gate": "tests/test_a_queued_request_waits_on_its_dependencies.py:600-603 fails if the own-section gate refuses dispatch, stores zero or multiple pointers, or lets the queued pointer leave awaiting-upstream.",
+    "shared_writer": "tests/test_queue_dag_waits.py:217 fails if batch or ordinary dispatch stops calling the common queue writer; reverse-owner-control-complete.log:23 records this assertion failing when the owner repair is reversed."
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1770",
+    "reckon/crew/dispatch.py:1777",
+    "reckon/crew/dispatch.py:358",
+    "reckon/crew/queue_admission.py:2032"
+  ],
+  "completed_at": "2026-10-24T19:07:03Z",
+  "dispatched_at": "2026-10-24T18:58:22Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites",
+    "diff": "read the six commits from c44157ab3c6e813005c71fbc69e5c2505ba631ab to d1e96c89192e871d3e93b387701aaec90395b6e4; dispatch.py:277 centralizes queue writes, queue_admission.py:2017 delegates batch queueing, and the tests and fragment record the repair.",
+    "done_when": "prompt.txt:125 requires production refusal, gate holds, and no added importer failures; tests/test_a_queued_request_waits_on_its_dependencies.py:561 and tests/test_queue_dag_waits.py:229 exercise dispatch, while owner-base-importers.log:2034 and owner-head-importers.log:1985 show a 38-to-37 failure delta.",
+    "goal": "prompt.txt:30 asks for graph waits across plans and projects; dispatch.py:1770 now validates the graph before queue storage and queue_admission.py:1730 retains the per-section verdict.",
+    "manifest": "manifest.md:5-16 names the six post-review commits, five changed paths, 72-pass focused gate, red controls, and completed paired importer receipts.",
+    "write_paths": "manifest.md:3 declares the source run's scope; all five paths changed from c44157a to d1e96c8 appear in its declared or extended grants."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_request_waits_on_its_dependencies.py:561-603 and tests/test_queue_dag_waits.py:205-263 check literal refusal, pointer, phase, and shared-writer outcomes; the recorded reverse controls fail when the repairs are removed.",
+    "evidence": "owner-base-importers.log:2034 and owner-head-importers.log:1985 are completed receipts with 38 and 37 failures, and owner-focused-final.log:7 records 72 passes.",
+    "fit": "reckon/crew/dispatch.py:277 extends the existing queue_dispatch owner in reckon/crew/runs.py:657 and reckon/crew/queue_admission.py:1707 keeps wait derivation beside its validator.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1770 validates ordinary dispatch before storage and reckon/crew/queue_admission.py:1730 reads the graph including the section verdict.",
+    "reuse": "a capability search found the existing queue writer in reckon/crew/runs.py:657 and section verdict in reckon/crew/plan_review.py:3094; the new dispatch.py:277 wrapper and queue_admission.py:1707 path call these owners.",
+    "scope_discipline": "the c44157a..d1e96c8 diff changes only the five scoped files listed in manifest.md:3 and carries the dispatch repair, tests, and evidence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for graph waits across plans and projects; dispatch.py:1770 now validates the graph before queue storage and queue_admission.py:1730 retains the per-section verdict.\nVERDICT done_when: prompt.txt:125 requires production refusal, gate holds, and no added importer failures; tests/test_a_queued_request_waits_on_its_dependencies.py:561 and tests/test_queue_dag_waits.py:229 exercise dispatch, while owner-base-importers.log:2034 and owner-head-importers.log:1985 show a 38-to-37 failure delta.\nVERDICT write_paths: manifest.md:3 declares the source run's scope; all five paths changed from c44157a to d1e96c8 appear in its declared or extended grants.\nVERDICT manifest: manifest.md:5-16 names the six post-review commits, five changed paths, 72-pass focused gate, red controls, and completed paired importer receipts.\nVERDICT diff: read the six commits from c44157ab3c6e813005c71fbc69e5c2505ba631ab to d1e96c89192e871d3e93b387701aaec90395b6e4; dispatch.py:277 centralizes queue writes, queue_admission.py:2017 delegates batch queueing, and the tests and fragment record the repair.\nCALL_SITES: reckon/crew/dispatch.py:1770, reckon/crew/dispatch.py:1777, reckon/crew/dispatch.py:358, reckon/crew/queue_admission.py:2032\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1770 validates ordinary dispatch before storage and reckon/crew/queue_admission.py:1730 reads the graph including the section verdict.\nSCORE evidence: 18\nJUSTIFICATION evidence: owner-base-importers.log:2034 and owner-head-importers.log:1985 are completed receipts with 38 and 37 failures, and owner-focused-final.log:7 records 72 passes.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the c44157a..d1e96c8 diff changes only the five scoped files listed in manifest.md:3 and carries the dispatch repair, tests, and evidence.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_request_waits_on_its_dependencies.py:561-603 and tests/test_queue_dag_waits.py:205-263 check literal refusal, pointer, phase, and shared-writer outcomes; the recorded reverse controls fail when the repairs are removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:277 extends the existing queue_dispatch owner in reckon/crew/runs.py:657 and reckon/crew/queue_admission.py:1707 keeps wait derivation beside its validator.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search found the existing queue writer in reckon/crew/runs.py:657 and section verdict in reckon/crew/plan_review.py:3094; the new dispatch.py:277 wrapper and queue_admission.py:1707 path call these owners.\n",
+  "review_run_id": "r-20261024T185259222732-review-of-queue-waits-on-the-dag-d1e96c89192e",
+  "reviewed_base_sha": "c44157ab3c6e813005c71fbc69e5c2505ba631ab",
+  "reviewed_head_sha": "d1e96c89192e871d3e93b387701aaec90395b6e4",
+  "reviewed_run_id": "r-20261024T143354818465-queue-waits-on-the-dag",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T19:11:38.835048+00:00",
+  "total": 113
+}
