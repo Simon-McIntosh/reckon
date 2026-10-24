@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T02:21:55.463Z",
+  "dispatched_at": "2026-10-24T02:16:28Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261024T021454298730-plan-review-of-a-queue-holds-the-whole-plan/plan.html:80",
+      "id": "done_when-1",
+      "reason": "the paragraph's correction is untested, and the case it corrects (this plan's own review nodes commit nothing) would strand every waiter on a review run while the gate stayed green.",
+      "text": "the revised landed check replaces \"promotion leaves the key absent when the run asserted no code\" with \"a run that committed nothing records its base\" and \"the key is absent only when promotion could not resolve a revision\", but no arm in the done-when exercises either branch: every upstream arm uses a run whose promoted revision needs a merge, so an implementation that recorded no revision for a no-commit run (the previously reviewed defect) or that treated an absent key as landed would pass the section's gate",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e25397d336104f1f954145d582306edb83d14ac02fecf8a18537aacaba12cfff",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 44,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-24T02:23:22.495676+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T02:23:22.495676+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v44.json",
+  "review_run_id": "r-20261024T021454298730-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "ca2e1d295148b59dd314caed2cb50f27b9b307b0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `run_path` (`reckon/ledger.py:890`), `_run_promoted_revision` / `_promoted_revision` (`reckon/crew/promotion_release.py:1013`, `reckon/crew/promotion.py:1313`, `1479-1480`, `reckon/crew/promotion_scope.py:294`), `RUN_DELIVERED_STATUSES` (`reckon/crew/queue_admission.py:1023`), `parse_manifest` and `MANIFEST_STATUSES`/`TERMINAL_MANIFEST_STATUSES` (`reckon/crew/reports.py:317`, `126`, `138`), `_readiness_rows` (`reckon/crew/queue_admission.py:1056`), `_readiness_by_slug` (`reckon/crew/plan_review.py:3094`) and `parse_plan_ref` (`reckon/_schema.py:276`) all resolve as named; the extensionless plan hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 the revised landed check's two new branches (a run that committed nothing, and a row whose `promoted_revision` is absent) have no arm in the done-when, so an implementation could keep the behaviour the previous revision of this paragraph described and still pass.",
+    "evidence_paths": "pass \u2014 s8 declares tests only and puts no gate or evidence log on a scratch or node-local path.",
+    "naming": "pass \u2014 the changed prose names mechanisms (`_run_promoted_revision`, `promoted_revision`, `run_path`) with no plan labels, stage names or ticket numbers.",
+    "reasoning": "pass \u2014 all three checks hold for the changed unit. The stated root cause matches the cited evidence: the key is written only when non-empty (`reckon/crew/promotion.py:1479-1480`) and `_promoted_revision` returns the run tree's `HEAD` when the manifest cites no commits (`reckon/crew/promotion_scope.py:294-315`), which for a run that committed nothing is its base and already an ancestor. The mechanism produces the done-when it asserts, and it runs on the real code path the plan names: `promotion.py:1313` clears the revision for a shadow and `promotion.py:400` resolves it for an ordinary promotion, whose row the landed check reads through the wait-time recorded project.",
+    "single_goal": "pass \u2014 the shared readiness assembly is the means by which one per-section predicate exists, not a second deliverable.",
+    "wiring": "pass \u2014 s8's only declared upstream is s2; s9 and s15 both declare s8, and the cross-project ref form `project:slug#sN` names no node that is missing."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "fafadaacf31f20843ccef3b17d384c420fd05552e9cd7975c8ff011894829218",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T02:22:58.141476+00:00"
+}
