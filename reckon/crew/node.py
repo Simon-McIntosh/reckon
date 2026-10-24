@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+from collections.abc import MutableMapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -1387,7 +1388,11 @@ def _git_output(cwd: Path, *args: str) -> str | None:
     return _git_answer(cwd, *args) or None
 
 
-def repository_identity(path: str | Path) -> Path | None:
+def repository_identity(
+    path: str | Path,
+    *,
+    cache: MutableMapping[str, Path | None] | None = None,
+) -> Path | None:
     """Return the one repository root that a checkout path belongs to.
 
     Every linked worktree of a repository shares its object store, so a path
@@ -1397,8 +1402,26 @@ def repository_identity(path: str | Path) -> Path | None:
     itself, which makes two spellings of one repository compare equal instead of
     reading as two. A plain ``resolve()`` cannot do this — the worktree lives
     outside the checkout it belongs to, under its own directory tree.
+
+    Each answer costs a ``git rev-parse`` subprocess, so a read that resolves
+    many checkouts passes ``cache`` and shares them within itself: two hundred
+    live pointers over two repositories then cost two probes rather than two
+    hundred. The cache is scoped to that read rather than held for the process,
+    because a worktree is created and removed under a long-lived process and a
+    process-lifetime cache would answer for a checkout that is no longer there.
     """
     candidate = Path(str(path)).expanduser()
+    key = str(candidate)
+    if cache is not None and key in cache:
+        return cache[key]
+    resolved = _resolve_repository_identity(candidate)
+    if cache is not None:
+        cache[key] = resolved
+    return resolved
+
+
+def _resolve_repository_identity(candidate: Path) -> Path | None:
+    """Probe git once for one checkout path's repository root."""
     if not candidate.is_dir():
         return None
     common = _git_output(
@@ -1412,13 +1435,17 @@ def repository_identity(path: str | Path) -> Path | None:
     return common_dir.parent if common_dir.name == ".git" else candidate.resolve()
 
 
-def claim_repository(pointer: Mapping[str, Any]) -> Path | None:
+def claim_repository(
+    pointer: Mapping[str, Any],
+    *,
+    cache: MutableMapping[str, Path | None] | None = None,
+) -> Path | None:
     """Resolve the repository whose files one live claim fences."""
     for field_name in _WORKTREE_REPOSITORY_FIELDS:
         value = str(pointer.get(field_name) or "")
         if not value:
             continue
-        resolved = repository_identity(value)
+        resolved = repository_identity(value, cache=cache)
         if resolved is not None:
             return resolved
     return None
