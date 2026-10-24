@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import contextlib
 import copy
+import hashlib
 import os
 import threading
 from collections import OrderedDict
@@ -27,9 +28,11 @@ from typing import Any, Self
 _MAX_ENTRIES = 50_000
 
 _Signature = tuple[int, int, int, int, int]
-_CACHE: OrderedDict[tuple[str, str, Hashable], tuple[_Signature, object]] = (
-    OrderedDict()
-)
+#: A stat signature, or a content digest when the caller opted into
+#: ``by_content``. The two are never compared with each other: one entry's
+#: identity kind follows from the kind its caller asked for.
+_Identity = _Signature | str
+_CACHE: OrderedDict[tuple[str, str, Hashable], tuple[_Identity, object]] = OrderedDict()
 _LOCK = threading.Lock()
 
 # A read-only region in which a memoised value is shared rather than copied.
@@ -304,6 +307,54 @@ def file_revision(stat: os.stat_result) -> str:
     return f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
 
 
+def content_digest(path: Path | str) -> str:
+    """Return a byte digest, sharing an unchanged file's one physical read.
+
+    The row is keyed on the file's bytes rather than its stat identity: a
+    rewrite that restores the same bytes — a checkout or a rebuild that only
+    touches the mtime — reuses the parsed row, while any byte change re-parses
+    it. A shared filesystem also reports a different device number for the same
+    file on each host, which a byte digest is blind to, so the served process
+    and the readers on other hosts share one persisted index instead of each
+    re-parsing the whole project. The process cache is revalidated by the file's
+    full stat identity; a changed file is hashed again.
+
+    A parse keyed on this digest is shared by every path holding byte-identical
+    content, so the same document reached through a second tree costs one hash
+    rather than a second parse. Reading the whole file is dearer than a stat,
+    so only a caller that knows its content repeats across paths asks for it —
+    see ``memoized(..., by_content=True)``.
+
+    An HTML document's decoded text is stored as it is hashed, so a caller that
+    parses the document after keying on this digest decodes the bytes this read
+    already returned rather than reading the file a second time. The text is
+    stored only under the signature its bytes were read at: the signature is
+    taken before the read and checked again before the text is handed over, so
+    a write landing in between makes the store re-read rather than pair one
+    file's bytes with another's stat identity.
+    """
+
+    target = Path(path)
+
+    def read() -> str:
+        signature = file_signature(target)
+        content = target.read_bytes()
+        if target.suffix == ".html":
+
+            def decoded() -> str:
+                try:
+                    if file_signature(target) == signature:
+                        return content.decode("utf-8", errors="replace")
+                    return target.read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    return ""
+
+            memoized("plan_text", target, decoded)
+        return hashlib.sha256(content).hexdigest()
+
+    return memoized("content_digest", target, read)
+
+
 def memoized[T](
     kind: str,
     path: Path | str,
@@ -311,12 +362,17 @@ def memoized[T](
     *,
     variant: Hashable = None,
     mutable: bool = False,
+    by_content: bool = False,
 ) -> T:
     """Return ``compute()`` for ``path``, reusing it while the file is unchanged.
 
     ``kind`` names the parse so two parsers of one file never share an entry;
     ``variant`` distinguishes calls whose arguments change the result. A file
     that cannot be stat'ed is parsed uncached, so its error path is unchanged.
+
+    ``by_content`` swaps the stat identity for the file's content digest, so
+    byte-identical content at two paths is parsed once. Every caller that does
+    not ask for it keeps the stat signature and pays no hash.
 
     Inside a :func:`read_only_region` the value is stat'ed and decoded once and
     handed to the caller as a read-only view of it, so mutating what is read is
@@ -325,16 +381,23 @@ def memoized[T](
     """
 
     region = _REGION.get()
-    key = (kind, os.fspath(path), variant)
+    if by_content:
+        try:
+            identity: _Identity = content_digest(path)
+        except OSError:
+            return compute()
+        key = (kind, f"content:{identity}", variant)
+    else:
+        try:
+            identity = file_signature(path)
+        except OSError:
+            return compute()
+        key = (kind, os.fspath(path), variant)
     if region is not None and key in region:
         return _handout(region[key], mutable)  # type: ignore[return-value]
-    try:
-        signature = file_signature(path)
-    except OSError:
-        return compute()
     with _LOCK:
         entry = _CACHE.get(key)
-        if entry is not None and entry[0] == signature:
+        if entry is not None and entry[0] == identity:
             _CACHE.move_to_end(key)
             value = entry[1]
             if region is not None:
@@ -348,21 +411,25 @@ def memoized[T](
         # second reader of the same document inside the region neither stats nor
         # decodes again, and no caller can change the stored value.
         with _LOCK:
-            _CACHE[key] = (signature, value)
+            _CACHE[key] = (identity, value)
             _CACHE.move_to_end(key)
             while len(_CACHE) > _MAX_ENTRIES:
                 _CACHE.popitem(last=False)
         region[key] = [value, None]
         return _handout(region[key], mutable)  # type: ignore[return-value]
     try:
-        unchanged = file_signature(path) == signature
+        unchanged = (
+            content_digest(path) == identity
+            if by_content
+            else file_signature(path) == identity
+        )
     except OSError:
         unchanged = False
     if unchanged:
         # A write that landed mid-parse leaves the entry unstored, so the
         # next reader parses the new bytes rather than a torn read.
         with _LOCK:
-            _CACHE[key] = (signature, copy.deepcopy(value))
+            _CACHE[key] = (identity, copy.deepcopy(value))
             _CACHE.move_to_end(key)
             while len(_CACHE) > _MAX_ENTRIES:
                 _CACHE.popitem(last=False)

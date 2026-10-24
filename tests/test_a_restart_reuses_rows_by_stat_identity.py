@@ -101,7 +101,7 @@ def _armed_controls(monkeypatch):
         monkeypatch.setattr(metadata_index, "_same_stat_identity", without_mtime)
 
     if _NO_DIGEST in armed:
-        real_digest = metadata_index._content_digest
+        real_digest = file_memo.content_digest
         seen = itertools.count()
 
         def never_settles(path):
@@ -109,7 +109,7 @@ def _armed_controls(monkeypatch):
             # matches and the fallback reuses nothing.
             return f"{real_digest(path)}-{next(seen)}"
 
-        monkeypatch.setattr(metadata_index, "_content_digest", never_settles)
+        monkeypatch.setattr(file_memo, "content_digest", never_settles)
 
     if _WITH_DEVICE in armed:
 
@@ -153,20 +153,20 @@ def docs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 @contextmanager
 def _digest_spy() -> Iterator[list[str]]:
-    """Record every file ``_content_digest`` is asked to read and hash."""
+    """Record every file ``content_digest`` is asked to read and hash."""
 
     asked: list[str] = []
-    real = metadata_index._content_digest
+    real = file_memo.content_digest
 
     def counting(path):
         asked.append(os.fspath(path))
         return real(path)
 
-    metadata_index._content_digest = counting
+    file_memo.content_digest = counting
     try:
         yield asked
     finally:
-        metadata_index._content_digest = real
+        file_memo.content_digest = real
 
 
 @contextmanager

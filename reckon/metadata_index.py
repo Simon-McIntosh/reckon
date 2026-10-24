@@ -26,7 +26,6 @@ change, so a reader that answers from the index — the drain's plan remainder,
 
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
 import logging
@@ -39,12 +38,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 
-from reckon import _plan_html, figures, resources
+from reckon import _plan_html, figures, file_memo, resources
 from reckon._store import _config_home, write_json_atomically
 from reckon.file_memo import (
     file_revision,
     file_signature,
-    memoized,
     signature_from_stat,
 )
 
@@ -285,17 +283,6 @@ _MARKS: dict[str, TreeChange] = {}
 #: entries and flushing at the end of the pass removes that quadratic cost.
 _DISCOVERY_BATCHES: dict[tuple[str, str], dict[str, dict]] = {}
 
-#: A parse of a document's metadata, keyed by its bytes rather than its path.
-#: One promotion reads the same documents from several trees — the main
-#: checkout, the run's worktree and the tip tree — and the path-keyed memo in
-#: parsing then parses each tree's copy of byte-identical content separately.
-#: Keying on the content digest collapses those copies to one parse, while a
-#: file whose bytes changed has a new digest and is parsed again.
-_META_LOCK = threading.Lock()
-_META_BY_DIGEST: dict[tuple[str, str | None], dict] = {}
-_META_HEAD_BY_DIGEST: dict[tuple[str, str | None], dict] = {}
-_META_MAX_ENTRIES = 50_000
-
 
 def clear() -> None:
     """Drop every in-process index, as a process restart would."""
@@ -303,63 +290,6 @@ def clear() -> None:
     with _LOCK:
         _CACHE.clear()
         _MARKS.clear()
-    with _META_LOCK:
-        _META_BY_DIGEST.clear()
-        _META_HEAD_BY_DIGEST.clear()
-
-
-def _digest_memo(
-    cache: dict[tuple[str, str | None], dict],
-    parse: Callable[[Path, str | None], dict],
-    path: Path,
-    slug: str | None,
-) -> dict:
-    """Reuse one parse across trees holding byte-identical copies of a file.
-
-    ``_plan_html``'s parsers memoise per path, so the same document reached
-    through two trees is parsed once per tree. Keying on the file's content
-    digest instead lets a second tree's identical bytes reuse the first tree's
-    parse; a changed file has a new digest and is parsed afresh. A file that
-    cannot be hashed falls back to the path-keyed parse, so an unreadable
-    file's error path is unchanged.
-    """
-
-    try:
-        digest = _content_digest(path)
-    except OSError:
-        return parse(path, slug)
-    key = (digest, slug)
-    with _META_LOCK:
-        cached = cache.get(key)
-        if cached is not None:
-            return copy.deepcopy(cached)
-    value = parse(path, slug)
-    with _META_LOCK:
-        cache[key] = copy.deepcopy(value)
-        while len(cache) > _META_MAX_ENTRIES:
-            cache.pop(next(iter(cache)))
-    return value
-
-
-def parse_meta_shared(path: Path, slug: str | None = None) -> dict:
-    """Parse ``path``'s metadata, reusing a parse of byte-identical content."""
-
-    from reckon import _plan_html
-
-    return _digest_memo(_META_BY_DIGEST, _plan_html.parse_meta, path, slug)
-
-
-def _parse_meta_head_shared(path: Path, slug: str | None = None) -> dict:
-    """Parse ``path``'s head metadata, reusing a parse of identical bytes.
-
-    Identification reads a document's head and nothing else, so it shares the
-    head parse — not the record parse that derives ``impl`` — across the trees
-    holding byte-identical copies of a document.
-    """
-
-    from reckon import _plan_html
-
-    return _digest_memo(_META_HEAD_BY_DIGEST, _plan_html._parse_meta_head, path, slug)
 
 
 def invalidate_tree(docs_dir: Path) -> None:
@@ -657,7 +587,7 @@ def _patch_build(
             _reuse_entry(fresh, fresh_entries, relative, entry)
             continue
         try:
-            digest = _content_digest(path)
+            digest = file_memo.content_digest(path)
         except OSError:
             digest = None
         if (
@@ -892,7 +822,7 @@ def build_index(
                 _reuse_entry(build, entries, relative, entry)
                 continue
         try:
-            digest = _content_digest(path)
+            digest = file_memo.content_digest(path)
         except OSError:
             # A file that cannot be read is still a row, built below with its
             # parse left unknown; a vanished one drops out and the next build
@@ -969,38 +899,6 @@ def _row_is_complete(entry: Mapping) -> bool:
     if fields.get("type") != "plan":
         return True
     return isinstance(entry.get("plan"), Mapping)
-
-
-def _content_digest(path: Path) -> str:
-    """Return a byte digest, sharing an unchanged file's one physical read.
-
-    The row is keyed on the file's bytes rather than its stat identity: a
-    rewrite that restores the same bytes — a checkout or a rebuild that only
-    touches the mtime — reuses the parsed row, while any byte change re-parses
-    it. A shared filesystem also reports a different device number for the same
-    file on each host, which a byte digest is blind to, so the served process
-    and the readers on other hosts share one persisted index instead of each
-    re-parsing the whole project. The process cache is revalidated by the file's
-    full stat identity; a changed file is hashed again.
-    """
-
-    def read() -> str:
-        signature = file_signature(path)
-        content = path.read_bytes()
-        if path.suffix == ".html":
-
-            def decoded() -> str:
-                try:
-                    if file_signature(path) == signature:
-                        return content.decode("utf-8", errors="replace")
-                    return path.read_text(encoding="utf-8", errors="replace")
-                except OSError:
-                    return ""
-
-            memoized("plan_text", path, decoded)
-        return hashlib.sha256(content).hexdigest()
-
-    return memoized("content_digest", path, read)
 
 
 def _cache_key(docs_dir: Path, project: str, with_git: bool) -> tuple[str, str, bool]:
@@ -1399,7 +1297,7 @@ def discovery_state(docs_dir: Path, project: str) -> dict[str, dict]:
             fresh[relative] = dict(discovery)
             continue
         try:
-            digest = _content_digest(path)
+            digest = file_memo.content_digest(path)
         except OSError:
             continue
         if entry.get("digest") == digest:
@@ -1475,7 +1373,7 @@ def record_discovery(docs_dir: Path, project: str, relative: str) -> None:
     if relative not in known:
         return
     try:
-        digest = _content_digest(path)
+        digest = file_memo.content_digest(path)
         if known[relative].get("digest") == digest:
             return
         signature = list(file_signature(path))
