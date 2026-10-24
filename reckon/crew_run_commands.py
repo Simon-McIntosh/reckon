@@ -1580,7 +1580,7 @@ def crew_suite_waive(project, reason, who, checkout_path, pretty):
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_retention_sweep(project, limit, apply, install_timer, pretty):
-    """Retire finished run directories across every mounted project.
+    """Retire run directories past their retention window across every mounted project.
 
     The pass runs the run-directory retention alone, judging each directory
     against the ledger of the project that dispatched it, and removes at most

@@ -45,6 +45,7 @@ from pathlib import Path
 from typing import Any, NoReturn, Self
 
 from reckon import _backends, file_memo, host
+from reckon._timestamps import parse_utc
 from reckon.crew import dispatch_watch, recovery
 from reckon.crew.run_paths import crew_home
 
@@ -217,14 +218,21 @@ def _day_file_name(day: date) -> str:
 
 
 def _day_from_name(name: str) -> date | None:
-    """The UTC day a day file's name encodes, or None for a foreign name."""
+    """The UTC day a day file's name encodes, or None for a foreign name.
+
+    The day is a calendar date, so the shared parser reads the stamp and the
+    name must then be exactly the form that date writes. A stamp carrying a
+    time or a zone parses through the shared parser but does not round-trip,
+    which keeps the accepted names identical to the ones ``_day_file_name``
+    writes rather than widening the domain to every instant.
+    """
     if not name.startswith(DAY_FILE_PREFIX) or not name.endswith(DAY_FILE_SUFFIX):
         return None
     stamp = name[len(DAY_FILE_PREFIX) : -len(DAY_FILE_SUFFIX)]
-    try:
-        return date.fromisoformat(stamp)
-    except ValueError:
+    parsed = parse_utc(stamp)
+    if parsed is None or parsed.date().isoformat() != stamp:
         return None
+    return parsed.date()
 
 
 class StationStore:

@@ -37,6 +37,9 @@ RESOLVED = (
     ("runs", None, RUN, ("crew", "runs", RUN)),
     ("live", None, None, ("crew", "live")),
     ("live", None, RUN, ("crew", "live", f"{RUN}.json")),
+    # A run-keyed kind accepts --project as a cross-check beside --run, and an
+    # unknown run is left to the verb's own refusal, so the pair resolves.
+    ("live", "nova", RUN, ("crew", "live", f"{RUN}.json")),
     ("reviews", "nova", None, ("crew", "reviews", "nova")),
     ("reviews", "nova", RUN, ("crew", "reviews", "nova", f"{RUN}.json")),
 )
@@ -48,7 +51,6 @@ REFUSED = (
     ("reports", None, RUN, "--project only"),
     ("reports", "nova", RUN, "--project only"),
     ("runs", "nova", None, "--run only"),
-    ("live", "nova", RUN, "--run only"),
     ("reviews", None, None, "requires --project"),
     ("reviews", None, RUN, "requires --project"),
 )
@@ -128,6 +130,20 @@ def test_a_selector_a_kind_does_not_take_is_refused(fake_home):
         assert result.exit_code != 0, (where, text)
         assert f"--kind {kind}" in text, (where, text)
         assert refusal in text, (where, text)
+
+    # A run-keyed kind accepts --project as a cross-check beside --run, so the
+    # project it does not take is one that disagrees with the run's own: a
+    # dropped disagreement answers about a different project's run.
+    config_home = fake_home / ".config" / "reckon"
+    pointer = config_home / "crew" / "live" / f"{RUN}.json"
+    pointer.parent.mkdir(parents=True)
+    pointer.write_text(json.dumps({"project": "nova", "run_id": RUN}))
+    result = CliRunner().invoke(
+        main, ["crew", "path", "--kind", "live", "--project", "other", "--run", RUN]
+    )
+    text = _output(result)
+    assert result.exit_code != 0, text
+    assert "--project" in text and "disagrees" in text, text
 
 
 def test_an_unknown_kind_is_refused(fake_home):
