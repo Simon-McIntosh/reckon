@@ -1741,6 +1741,7 @@ def _discover_plans_uncached(
             inventory,
             composed.get("sprints", []),
             composed.get("blockers", []),
+            docs_dir=docs_dir,
         )
         result = {
             "inventory": inventory,
@@ -1804,7 +1805,9 @@ def _discover_plans_uncached(
             }
         )
 
-    inventory, sprints = _derive_lifecycle(project, inventory, sprints, blockers)
+    inventory, sprints = _derive_lifecycle(
+        project, inventory, sprints, blockers, docs_dir=docs_dir
+    )
     result = {
         "inventory": inventory,
         "sprints": sprints,
@@ -1986,13 +1989,24 @@ def _derive_lifecycle(
     inventory: list[dict],
     sprints: list[dict],
     blockers: list[dict] | None = None,
+    *,
+    docs_dir: Path | None = None,
 ) -> tuple[list[dict], list[dict]]:
-    """Attach derived blockers/effective status and hydrate sprint items."""
+    """Attach derived blockers/effective status and hydrate sprint items.
+
+    ``docs_dir`` is the checkout the rows were inventoried from; it is what the
+    roadmap reads a released hold from, so the served view passes it through
+    rather than resolving a second copy of that set.
+    """
 
     from copy import deepcopy
 
     from reckon._schema import parse_plan_ref
-    from reckon.roadmap import closure_blockers, plan_blocker_state
+    from reckon.roadmap import (
+        closure_blockers,
+        plan_blocker_state,
+        plans_released_by_cleared_blockers,
+    )
 
     plans = deepcopy(inventory)
     plan_by_slug = {
@@ -2018,6 +2032,7 @@ def _derive_lifecycle(
             )
 
     external_cache: dict[tuple[str, str], dict] = {}
+    released = plans_released_by_cleared_blockers(docs_dir, project, sprints)
 
     def resolve(ref: str) -> dict:
         parsed = parse_plan_ref(ref)
@@ -2059,10 +2074,14 @@ def _derive_lifecycle(
         # this plan — an explicit blocker, a held path, an unpassed gate, an
         # unscoped open decision — is read by the one function that also answers
         # for the roadmap, so the served view and the roadmap cannot disagree
-        # about whether a plan is blocked.
+        # about whether a plan is blocked. The released set is the roadmap's too:
+        # a plan whose cleared hold a probe released carries no blocker rows, so
+        # the served view would otherwise synthesize a placeholder for a wait the
+        # roadmap already knows is over.
         state = plan_blocker_state(
             plan,
             dependency_blockers=unresolved_dependencies(dependencies),
+            released=str(plan.get("slug") or "") in released,
             blockers=(
                 {"kind": blocker_kind.get(blocker_id, "explicit"), "id": blocker_id}
                 for blocker_id in dict.fromkeys(

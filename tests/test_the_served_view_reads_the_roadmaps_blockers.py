@@ -71,7 +71,55 @@ def _project(tmp_path: Path) -> Path:
         },
     )
     _write_plan(docs, "free", {"section_declarations": {"s1": "implementable"}})
+    _released_project(docs)
     return docs
+
+
+def _released_project(docs: Path) -> None:
+    """A plan stored blocked whose held blocker a probe has already released.
+
+    Composition drops a cleared blocker from the sprint item that named it, so
+    the plan is left stored blocked with no blocker row to explain it. Only the
+    raw sprint record still attaches the hold to the plan, which is where the
+    roadmap reads the release from.
+    """
+
+    from reckon import project_state
+
+    project_state.create_project_state(docs, PROJECT)
+    _write_plan(docs, "released", {"status": "blocked"})
+    project_state.write_resource(
+        docs,
+        PROJECT,
+        "blocker",
+        "waiting",
+        {
+            "kind": "held",
+            "summary": "Waiting for an outcome",
+            "probe": "path-exists",
+            "subject": "research/outcome.html",
+        },
+        0,
+        create=True,
+    )
+    project_state.write_resource(
+        docs,
+        PROJECT,
+        "sprint",
+        "current",
+        {
+            "theme": "Current",
+            "status": "active",
+            "items": [{"slug": "released", "blocked_by": ["waiting"]}],
+        },
+        0,
+        create=True,
+    )
+    subject = docs / "research" / "outcome.html"
+    subject.parent.mkdir(parents=True, exist_ok=True)
+    subject.write_text("arrived", encoding="utf-8")
+    report = project_state.evaluate_held_blocker(docs, PROJECT, "waiting")
+    assert report["status"] == "cleared", report
 
 
 def _served_and_roadmap(docs: Path) -> tuple[dict[str, dict], dict[str, dict]]:
@@ -138,10 +186,11 @@ def _roadmap_blocked(row: dict) -> bool:
 def test_the_served_view_and_the_roadmap_agree_on_every_plan(tmp_path: Path) -> None:
     served, roadmap = _served_and_roadmap(_project(tmp_path))
 
-    assert set(served) == {"deciding", "gated", "free"}
-    assert set(roadmap) == {"deciding", "gated", "free"}
+    expected = {"deciding", "gated", "free", "released"}
+    assert set(served) == expected
+    assert set(roadmap) == expected
 
-    for slug in ("deciding", "gated", "free"):
+    for slug in sorted(expected):
         plan = served[slug]
         row = roadmap[slug]
         assert _served_blockers(plan) == _roadmap_blockers(row), (
@@ -176,3 +225,21 @@ def test_a_free_plan_reads_open_on_both_surfaces(tmp_path: Path) -> None:
     assert not _roadmap_blocked(roadmap["free"])
     assert _served_blockers(served["free"]) == {}
     assert _roadmap_blockers(roadmap["free"]) == {}
+
+
+def test_a_released_hold_reads_open_on_both_surfaces(tmp_path: Path) -> None:
+    """A plan stored blocked whose cleared blocker is released reads the same.
+
+    The released plan carries no blocker row, so the blocker assembly synthesizes
+    a placeholder for a stored blocked status unless the caller says the plan was
+    released. Both surfaces take the released set from the same roadmap read, so
+    neither invents a wait the probe already ended.
+    """
+
+    served, roadmap = _served_and_roadmap(_project(tmp_path))
+
+    assert served["released"]["status"] == "blocked"
+    assert not _blocked(served["released"])
+    assert not _roadmap_blocked(roadmap["released"])
+    assert _served_blockers(served["released"]) == {}
+    assert _roadmap_blockers(roadmap["released"]) == {}

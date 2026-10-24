@@ -2549,7 +2549,7 @@ def _sprint_status_buckets(
     return (focused or declared_active), open_ids
 
 
-def _plans_released_by_cleared_blockers(
+def plans_released_by_cleared_blockers(
     docs_dir: Path | None,
     project: str,
     sprints: Iterable[Mapping[str, Any]],
@@ -2561,6 +2561,10 @@ def _plans_released_by_cleared_blockers(
     one. The raw sprint record is the one place the hold and its clear stay
     attached to the plan, so the release is read from there; a blocker whose
     resource is missing or still holds keeps its plan out of the set.
+
+    Both surfaces that read a plan's blocked state call this, so a released
+    plan reads released on each rather than one of them synthesizing a
+    placeholder blocker for a hold a probe already cleared.
     """
 
     if docs_dir is None:
@@ -2806,7 +2810,7 @@ def _build_roadmap(
     liveness = (
         sprint_liveness(project, resolved_docs) if resolved_docs is not None else {}
     )
-    released_by_clear = _plans_released_by_cleared_blockers(
+    released_by_clear = plans_released_by_cleared_blockers(
         resolved_docs, project, sprints
     )
     active_sprint_id, open_sprint_ids = _sprint_status_buckets(
