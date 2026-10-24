@@ -1,0 +1,52 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T04:50:52.854Z",
+  "dispatched_at": "2026-10-24T04:44:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-1",
+      "reason": "the directive that follows (\"the launch rule applies the session check on every path that releases a launch row\") is unchanged and the third site already applies the check, so the node's work items and its test arm are the same; only the sentence's count is wrong.",
+      "text": "the launch bullet says \"Today `_is_own_start` is consulted only in `_resolve_arrival`\", but `_feed` consults it a second time (reckon/crew/ticker.py:1755, the start whose arrival hold has already gone), so a node that verifies the premise finds it false",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "130933666cff9a59b3135c8fbe39ee3abfe977529b993b369ef381d40febae10",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 66,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T044330031702-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "72efc928d31b85a5decd042cdd52160e7c4dccae",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol resolves at the stated place: `ticker.stream_carries` (:1202), `CARRIED_PANE_WORDS` (:367), `RowPolicy._is_own_start` (:1388), `_resolve_arrival` (:1559), `_release_expired` (:1506), `_observer_exception` (:1521, called from `_feed` at :1827), `transition_class` (:1144), `_display_state`, `PANE_STATES` (:280) and `_watch_transition` (recovery_watch.py:1892); the plan's own anchors `\u00a74`, `\u00a75`, `\u00a77`, `\u00a79` resolve to sections that exist.",
+    "done_when": "pass \u2014 \u00a714's done-when names measurable row sets for three fixtures plus a producer arm calling `recovery_watch._watch_transition`, and each carries a base-revision negative control (\"the same sequences at the base revision print none of the launch, the `in review` row, the landing and the dropped row\"); the no-repeat arm (`complete \u2192 recorded` twice prints one landing) and the flicker/reload arms are additional controls that can fail.",
+    "evidence_paths": "pass \u2014 the section writes no report or gate log to a scratch path; its only outputs are source files and the new test, and the gate log is the run's own durable evidence.",
+    "naming": "pass \u2014 no ticket, plan-stage or version label reaches a symbol or a comment; `in review` and the extended `CARRIED_PANE_WORDS` rule are named by what they do, and \"in review\" fits the ten-column `STATE_WORD` half.",
+    "reasoning": "a finding \u2014 the mechanism paragraph's premise that `_is_own_start` is consulted only in `_resolve_arrival` is false at HEAD (the session check is also applied in `_feed` at ticker.py:1755); the rest of the mechanism holds: `stream_carries` does withhold a launch (`_pane_word` of `dispatched \u2192 working` is `working`, and `transition_class` returns `ROW_OBSERVER`), `_observer_exception` (ticker.py:1521-1534) does drop a settled row for a run whose delivery was shown (`_told`), `_watch_transition` does write the review run's own `run_id`/`node` (recovery_watch.py:1913-1914) and carries no actor, and the cited measurement reproduces: over the stream window 2026-10-16T19:01Z to 2026-10-23T23:00Z in `~/.config/reckon/crew/watch/reckon-18dc8a86709b.events` I count 1,567 `\u2192 recorded` rows across 1,546 runs, 1,439 of them `complete \u2192 recorded`, and the maximum for any one run is exactly 6 \u2014 within 13 rows (0.8%) of the plan's 1,580 / 1,559 / 1,452, with its \"at most six for any one run\" exact.",
+    "single_goal": "pass \u2014 s14 has one deliverable (the stream carries each real state change of a run once); the launch, in-review, landing and dropped rows are arms of that one rule, not separate nodes.",
+    "wiring": "pass \u2014 \u00a714's ordering resolves against the live plan: \u00a79 lists `reckon/crew/recovery_watch.py` among its wiring node's write paths (plan.html:307) and is `done`, \u00a75 and \u00a77 both write `ticker.py` (plan.html:195, :263), and the open followup `f-alwh-004` recommends \u00a714 first on `ticker.py` and `recovery_watch.py`, matching \u00a714's \"after \u00a74, before \u00a75 and \u00a77, and after \u00a79's wiring node\"."
+  },
+  "section_digests": {
+    "_document": "06b6bffb1430e5d0b3aaec84c099dc6755869214442e32f0b25b108c69b81029",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "c9a865797ebfeb76a1768ae28c033ed42a186f2ec3fcd4b6599d9e25692dbb4b",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "607c5ed638bb7fd894caef6e6fd6331649e3d6efcc2df2b48c1528c827010ae5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:53:37.600344+00:00"
+}
