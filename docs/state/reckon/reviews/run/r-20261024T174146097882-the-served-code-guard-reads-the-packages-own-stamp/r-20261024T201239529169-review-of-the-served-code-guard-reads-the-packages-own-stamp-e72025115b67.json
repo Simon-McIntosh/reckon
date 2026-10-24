@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T20:23:13.095Z",
+  "dispatched_at": "2026-10-24T20:13:44Z",
+  "findings": [
+    {
+      "file": "tests/test_a_served_checkout_is_not_read_as_moved.py",
+      "line": 41,
+      "severity": "non-blocking",
+      "summary": "_recorded_stamp rebuilds the child-interpreter environment that tests/test_one_check_trusts_a_moved_checkout.py:193-211 already owns",
+      "text": "_recorded_stamp rebuilds the child-interpreter environment that tests/test_one_check_trusts_a_moved_checkout.py:193-211 already owns"
+    },
+    {
+      "file": "tests/test_a_served_checkout_is_not_read_as_moved.py",
+      "line": 100,
+      "severity": "non-blocking",
+      "summary": "the package-moved case passes under the same reverted production call that reddens the unmoved case, so it guards nothing the repair could break",
+      "text": "the package-moved case passes under the same reverted production call that reddens the unmoved case, so it guards nothing the repair could break"
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261024T201239529169-review-of-the-served-code-guard-reads-the-packages-own-stamp-e72025115b67",
+  "reviewed_base_sha": "2b1c8165dfd56120427417e973a73f11313bdceb",
+  "reviewed_head_sha": "e72025115b6736259a1e51bcf239773e6b5b668f",
+  "reviewed_run_id": "r-20261024T174146097882-the-served-code-guard-reads-the-packages-own-stamp",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: the source node's goal is to repair the production defect behind the seven \u00a754 ids; the two commits this review covers (a49b0cb8b, e72025115) add no production change and instead make the new guard independent and correct the evidence fragment, so the increment serves that goal without altering reckon/served_code.py:811 moved_checkout.\nVERDICT done_when: the source done_when asks the seven listed ids to pass at head with base/head arms from git archive extractions and a negative control that reddens a repaired mechanism; logs/head-gate.log records 27 passed EXIT=0 at a49b0cb8b over the four gate files, logs/arm-base.log and logs/arm-head.log are archive extractions carrying the same single pre-existing failure, and logs/negative-control-gate.log records 7 failed EXIT=1 including tests/test_a_served_checkout_is_not_read_as_moved.py::test_an_unmoved_checkout_reads_as_unmoved.\nVERDICT write_paths: both changed paths (tests/test_a_served_checkout_is_not_read_as_moved.py and docs/evidence/fragments guard fragment) are inside the source node's declared write paths; the declared production and test files the increment does not touch are unchanged in the diff.\nVERDICT manifest: read at the reviewed run's manifest.md; its checkpoint, gate command, test_logs and negative_control_note agree with the logs I opened, and the note now states the two listed ids the runtime control cannot reach instead of claiming every listed id reddens.\nVERDICT diff: read commit by commit against 2b1c8165d; a49b0cb8b rewrites the new case to take its expected stamp from a child interpreter and to import _committed_checkout/_git/_git from the module that already owns them, and e72025115 corrects only prose in the landing fragment, whose every claim I checked against logs/base-gate-full.log, logs/head-gate.log, logs/arm-base.log, logs/arm-head.log and logs/negative-control-gate.log.\nCALL_SITES: reckon/served_code.py:811 moved_checkout, reckon/mcp.py:399 _moved_checkout_state, reckon/mcp.py:605, reckon/mcp.py:779\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_served_checkout_is_not_read_as_moved.py:67-76 now asserts the guard's answer for a stamp a separate interpreter recorded at reckon/mcp.py:368, which is what the node goal's repaired mechanism has to get right.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-gate.log records 27 passed and EXIT=0 at a49b0cb8b for the gate the manifest's tests line carries, and the corrected paragraph at docs/evidence/fragments/the-suite-is-green-at-head/the-served-code-guard-reads-the-packages-own-stamp.html:78-95 matches the FAILED ids in logs/negative-control-gate.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 2b1c8165d..e72025115 touches only tests/test_a_served_checkout_is_not_read_as_moved.py and the node's own landing fragment, both declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control-gate.log fails tests/test_a_served_checkout_is_not_read_as_moved.py::test_an_unmoved_checkout_reads_as_unmoved under the reverted production call, so the assertion reddens on the regression it was added to catch, while the package-moved case at line 100 passes under that same revert and guards only over-correction.\nSCORE fit: 17\nJUSTIFICATION fit: the module keeps the surrounding docstring-and-helper idiom and imports the owner's helpers at tests/test_a_served_checkout_is_not_read_as_moved.py:24-28, a cross-test import pattern used by many modules under tests/, though _recorded_stamp reads the private reckon/mcp.py:368 stamp where no public accessor exists.\nSCORE reuse: 16\nJUSTIFICATION reuse: the repair imports _committed_checkout/_git/_GIT from tests/test_one_check_trusts_a_moved_checkout.py:150-180 instead of copying them, but _recorded_stamp at tests/test_a_served_checkout_is_not_read_as_moved.py:41-64 rebuilds the git-symlinked bin dir, working dir and RECKON_HOME/PYTHONPATH environment that tests/test_one_check_trusts_a_moved_checkout.py:193-211 already owns.\nFINDING tests/test_a_served_checkout_is_not_read_as_moved.py:41 non-blocking: _recorded_stamp rebuilds the child-spawn environment (git-symlinked bin dir, package-free working dir, temp RECKON_HOME, PYTHONPATH, PYTHONDONTWRITEBYTECODE) that tests/test_one_check_trusts_a_moved_checkout.py:193-211 already owns, so an isolation change made to one copy will not reach the other and the divergence is silent until a test reads the wrong tree.\nFINDING tests/test_a_served_checkout_is_not_read_as_moved.py:100 non-blocking: test_a_checkout_whose_package_moved_reads_as_moved passes under the same reverted production call that reddens the unmoved case (logs/negative-control.log and logs/negative-control-gate.log both record it passing), so this assertion names no code change that would fail it and adds no guard over the defect the node repaired; its only value is as an anti-overcorrection complement.\n",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T20:53:23.360977+00:00",
+  "total": 107
+}
