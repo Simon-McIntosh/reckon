@@ -1,0 +1,57 @@
+<section id="a-mid-pass-discard-survives-the-rollback">
+  <h2>a-mid-pass-discard-survives-the-rollback — a discard recorded during an admission pass survives the launch rollback</h2>
+
+  <p><strong>Defect, reproduced first.</strong> A discard records its departure in the run's
+  own directory (<code>_write_discard_record</code>, <code>reckon/crew/promotion.py</code>). The
+  admission pass releases a queued request into the shared dispatch path
+  (<code>_launch_queued</code>, <code>reckon/crew/queue_admission.py</code>), and a refused
+  launch's rollback removes the whole run directory
+  (<code>_release_launch_claim</code>, <code>reckon/crew/dispatch_claims.py</code>). A discard
+  issued in that window therefore went with the directory: the restore read no record, wrote the
+  request back queued, and the first-failure report appended a row for a run the operator had
+  already discarded.</p>
+
+  <p>A trace probe at the base revision recorded the mechanism end to end:
+  <code>discard(r-probe) -&gt; record=…/crew/runs/r-probe/discard.json exists=True</code>, then
+  <code>rmtree(…/crew/runs/r-probe) marker_before=True</code>, then
+  <code>after pass: run_dir_exists=False run_dir_record=False spool_record=False
+  recorded=False</code>. Both listed ids failed at base (<strong>2 failed, 3 passed,
+  EXIT=1</strong>), each on <code>assert promotion.discard_recorded(run_id)</code>.</p>
+
+  <p><strong>Fix, one commit.</strong> <code>preserve_discard_record</code> copies the run
+  directory's discard marker into the shared discards spool, and the admission pass calls it
+  immediately before handing the directory to the launch. The departure is then durable whether
+  or not the rollback removes the directory, so the restore reads it, leaves the pointer absent,
+  and the report stays silent. Nothing is copied when no marker is present, so a request nobody
+  discarded has no spool record and its restore is unchanged; an existing spool record — the
+  older account of the same departure, written when the run had no directory — is left alone.</p>
+
+  <p><strong>Measured, both arms from <code>git archive</code> extractions on node-local
+  disk.</strong> Gate <code>tests/test_a_discarded_request_stays_discarded.py</code>: base
+  <code>c11e89e83</code> <strong>2 failed, 3 passed, EXIT=1</strong>; head <code>300473b4e</code>
+  <strong>5 passed, EXIT=0</strong>. Each repaired id fails at the base and passes at the head.</p>
+
+  <p><strong>Importer population — every test that reaches a changed function</strong>
+  (<code>discard_recorded</code>, <code>_write_discard_record</code>,
+  <code>_launch_queued</code>, <code>admit_once</code>, <code>_discarded_since</code>), 27 files
+  under <code>-n 4</code>: base <strong>2 failed, 181 passed</strong> — the two listed ids and
+  nothing else — head <strong>1 failed, 182 passed</strong>, and that one id,
+  <code>test_the_later_request_launches_once_the_earlier_is_promoted</code>, is flaky in the base
+  arm too: re-run alone it fails at base (<strong>1 failed, 10 passed</strong>) and passes at
+  head (<strong>11 passed</strong>). It is not an added failure.</p>
+
+  <p><strong>Declared negative control, executed and logged.</strong> The repair is reverted in a
+  scratch tree (both files restored byte-for-byte to the base revision): the gate then reports
+  <strong>2 failed, 3 passed, EXIT=1</strong> on
+  <code>test_a_request_discarded_during_the_pass_is_not_written_back</code> and
+  <code>test_a_discarded_request_is_reported_nowhere</code>. Log
+  <code>logs/negative-control.log</code>.</p>
+
+  <p><strong>Scope.</strong> <code>reckon/crew/promotion.py</code> gains
+  <code>preserve_discard_record</code> and <code>reckon/crew/queue_admission.py</code> calls it
+  before the launch; no test is changed, skipped or weakened, and the ordinary discard path
+  (marker in the run directory, spool only when there is no directory) is unchanged.
+  <code>ruff check</code> and <code>ruff format --check</code> report nothing added on the two
+  changed files; the two <code>ruff check</code> findings in <code>promotion.py</code> are
+  pre-existing at the base revision (lines 1666).</p>
+</section>
