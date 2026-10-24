@@ -30,6 +30,11 @@
     <p>Landed from run <code>r-20261024T070437836656-lift-preferring-picker</code> (commit <code>234aa0514</code>). <code>lift_preference</code> in <code>reckon/crew/picker/prompts.py</code> names the one lifted metered lane in scope with window room for a node at or above elevated risk, and <code>reckon/crew/dispatch_picker.py</code> re-asks once with the local lane excluded when an elevated node was routed locally, recording the lift that moved the choice. Five tests; the negative control (the picker ignores lift state) fails the elevated-to-codex arm with <code>'clive' != 'codex'</code>. Independent review total 110. Fragment: <code>docs/evidence/fragments/a-queue-holds-the-whole-plan/lift-preferring-picker.html</code>.</p>
   </section>
 
+  <section id="s6">
+    <h2>§6 — a passing run lands without a coordinator turn</h2>
+    <p>Landed from run <code>r-20261024T082152363036-landing-pass-in-admit</code> (head <code>0b5f554f1</code>, codex). <code>reckon/crew/queue_landing.py</code> adds a landing pass on the admit loop: a delivered implementation run whose stored review read its delivered head and is accepted by <code>_review_accepts_promotion</code> lands through the same land path a coordinator calls; its <code>awaiting-upstream</code> downstream then advances through production code; an interrupted <code>attempting</code> marker is recovered, without repeating a landing that completed, or raised as an obligation; a refused landing names its guard on the owning session's obligations (<code>reckon/crew/obligations.py</code>). Two codex review rounds: 95 (two blocking findings, both fixed) then 104. Coordinator importer arms from node-local worktrees over 76 files: base 20 failing ids, head 21, the one added id a base flake (<code>coordinator-overlap.log</code>, 1 of 2 failing at base, 2 of 2 passing at head).</p>
+  </section>
+
 </main>
 </body>
 </html>
