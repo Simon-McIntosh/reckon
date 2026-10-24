@@ -558,6 +558,51 @@ def test_a_dispatch_holds_on_waits_though_its_lane_has_room(
     assert not pointers[0].get("pid")
 
 
+@pytest.mark.parametrize("upstream", ["missing", "dispatch"])
+def test_dispatch_refuses_invalid_wait_before_storing(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch, upstream: str
+) -> None:
+    _declare_section_wait(
+        dispatch_repo, section="dispatch", refs=[f"{PLAN}#{upstream}"]
+    )
+    hold_tests._configure(dispatch_repo, monkeypatch, session_slots=0)
+    hold_tests._stub_hold(monkeypatch, offered_local=True)
+
+    result = hold_tests._invoke(dispatch_repo, node="invalid-wait")
+
+    assert result.exit_code != 0
+    assert not runs.list_live(project=hold_tests.PROJECT)
+
+
+def test_dispatch_holds_its_own_gated_section(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = dispatch_repo / "docs" / "plans" / f"{PLAN}.html"
+    text = path.read_text(encoding="utf-8")
+    gate = (
+        '<section data-reckon="gates"><div class="r-gate" data-id="approval" '
+        'data-status="open" data-verdict="" data-gated-sections="dispatch">'
+        '<h4 class="r-gate-measure">approve</h4></div></section>'
+    )
+    text = text.replace(
+        "</head>",
+        '<meta name="plan-section-declarations" '
+        'content="{&quot;dispatch&quot;:&quot;implementable&quot;}"></head>',
+    )
+    path.write_text(text.replace("</body>", f"{gate}</body>"), encoding="utf-8")
+    _run(dispatch_repo, "add", "--", str(path.relative_to(dispatch_repo)))
+    _run(dispatch_repo, "commit", "-q", "-m", "chore: gate section")
+    hold_tests._configure(dispatch_repo, monkeypatch, session_slots=0)
+    hold_tests._stub_hold(monkeypatch, offered_local=True)
+
+    result = hold_tests._invoke(dispatch_repo, node="gated-work")
+
+    assert result.exit_code == 0, result.output
+    pointers = runs.list_live(project=hold_tests.PROJECT)
+    assert len(pointers) == 1
+    assert pointers[0]["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
+
+
 def test_a_dispatch_of_a_section_without_waits_launches_on_a_free_lane(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

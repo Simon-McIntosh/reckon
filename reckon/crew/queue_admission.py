@@ -1694,6 +1694,16 @@ def _dispatch_nonrun_wait_state(ref: str, *, project: str, docs_dir: Path) -> st
     return ABANDONED if status in TERMINAL_STATUSES else PENDING
 
 
+def _needs_own_section_verdict(node: TaskNode, *, repo_root: str | Path) -> bool:
+    """Ask the roadmap about the node's section when authored holds can apply."""
+    if not node.plan or not node.section:
+        return False
+    from reckon import _plan_html as plan_html_reader
+
+    state = plan_html_reader.read_state(_plan_html(repo_root, node.plan))
+    return bool(state.get("gates") or state.get("decisions"))
+
+
 def unmet_waits(
     node: TaskNode,
     *,
@@ -1709,20 +1719,11 @@ def unmet_waits(
     pass re-reads, so a node is held for the reason the pass would hold it, and
     a node whose refs have all landed returns nothing and launches as usual.
     """
-    refs = derive_wait_refs(node, repo_root=repo_root)
-    if not refs:
+    own_verdict = _needs_own_section_verdict(node, repo_root=repo_root)
+    if not derive_wait_refs(node, repo_root=repo_root) and not own_verdict:
         return []
     docs_dir = Path(str(repo_root)) / "docs"
     owner_project = project or _project_of_docs_dir(docs_dir)
-    if not any(wait_ref_kind(ref) == "request" for ref in refs):
-        return [
-            ref
-            for ref in refs
-            if _dispatch_nonrun_wait_state(
-                ref, project=owner_project, docs_dir=docs_dir
-            )
-            != SATISFIED
-        ]
     if live is None:
         try:
             live = runs.list_live()
@@ -1734,10 +1735,21 @@ def unmet_waits(
         project=owner_project,
         repo_root=repo_root,
         live=live,
+        read_own_verdict=own_verdict,
     )
     refs = refs_by_run[f"candidate:{node.id}"]
     if not refs:
         return []
+    if not any(wait_ref_kind(ref) == "request" for ref in refs):
+        return [
+            ref
+            for ref in refs
+            if ref.startswith("readiness:")
+            or _dispatch_nonrun_wait_state(
+                ref, project=owner_project, docs_dir=docs_dir
+            )
+            != SATISFIED
+        ]
     cache: dict[str, Any] = {}
     rows, inventory = _readiness_rows(owner_project, docs_dir, cache)
     dead = _dead_sections(live)
@@ -2105,7 +2117,8 @@ def hold_request_for_upstream(
     empty list — a request with nothing to wait for is not held, and no pointer
     is written for it at all.
     """
-    if not derive_wait_refs(node, repo_root=repo_root):
+    own_verdict = _needs_own_section_verdict(node, repo_root=repo_root)
+    if not derive_wait_refs(node, repo_root=repo_root) and not own_verdict:
         return []
     pointer = runs.read_pointer(run_id)
     project = str(pointer.get("project") or "")
@@ -2115,7 +2128,7 @@ def hold_request_for_upstream(
         project=project,
         repo_root=repo_root,
         live=runs.list_live(),
-        read_own_verdict=False,
+        read_own_verdict=own_verdict,
     )
     refs = refs_by_run[run_id]
     if not refs:
