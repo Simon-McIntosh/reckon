@@ -40,7 +40,7 @@
 
   <h3 id="queue-edit-reprioritise-drop-measured">Measured</h3>
 
-  <p><code>tests/test_queue_verbs.py</code> (13 cases) drives every claim
+  <p><code>tests/test_queue_verbs.py</code> (15 cases) drives every claim
   above: the steering file and node fields are replaced; an edit that fails its
   contract is refused and stores nothing; a named route lands as
   <code>named_route</code> beside <code>backend</code>, <code>lane</code> and
@@ -67,30 +67,35 @@
   made to return early for <code>edit</code> alone, exactly one arm fails
   (<code>test_a_launched_request_is_refused_by_every_verb[edit]</code>, which
   then reports the edit landing on a <code>working</code> pointer) and the
-  other twelve pass, so the edit guard is what holds that arm. Removing the
-  guard for all three verbs fails exactly the three refusal arms and leaves the
-  other ten passing. Logs: <code>logs/negative-control-edit-only.log</code> and
-  <code>logs/negative-control.log</code> under the run directory.</p>
+  other fourteen pass, so the edit guard is what holds that arm. Removing the
+  early guard for all three verbs fails the edit and reprioritise arms while
+  drop still refuses, because its check runs inside the removal's lock; and
+  removing that in-lock check in turn fails exactly the launch-race arm, whose
+  own output shows the pointer removed at phase <code>working</code>. Logs: <code>logs/negative-control-edit-only.log</code>,
+  <code>logs/negative-control.log</code> and
+  <code>logs/negative-control-drop-lock.log</code> under the run directory.</p>
 
-  <p><strong>Not reachable through the crew MCP tool yet.</strong> The three
-  actions are registered in <code>reckon/mcp_crew_actions.py</code> and answer
-  correctly through <code>crew_action()</code>, but <code>reckon/mcp.py</code>
-  — outside this node's write scope — still declares the tool's
-  <code>action</code> vocabulary and parameter list, so the tool surface cannot
-  forward them until that file gains the three action names and their
-  parameters.</p>
+  <p><strong>Reachable through the crew MCP tool.</strong> The crew tool
+  declares the three actions and the parameters they take, and forwards them to
+  the same implementation the CLI verb calls. A test calls each one through the
+  tool and compares the answer with the CLI's answer for the same call, so the
+  two surfaces are held together by comparison rather than by an assertion
+  about either.</p>
 
-  <p><strong>Two census suites name the new verbs before their rows exist.</strong>
-  The help census lists every leaf command and the run-verb identity sweep
-  requires a row per single-run verb, so each reports the three new leaves as
-  unregistered: at base the help census names one extra leaf
-  (<code>retention-sweep</code>) and in this branch it names four, and the
-  identity sweep goes from three failures to four, the added one a
-  <code>KeyError</code> where it looks up a verb it has no row for. Both files
-  are outside this change's write scope, so the rows are owed by a follow-up
-  rather than added here. Each verb's first help line already states the
-  condition it acts on, so the census row is a transcription; the sweep needs
-  one entry in its option table and one expected refusal per verb, and a verb
-  refuses a pointer that is not waiting with "not one of queued,
-  awaiting-upstream".</p>
+  <p><strong>Drop's launch race.</strong> The check a drop makes before it reads
+  the queue is not the one that protects the removal: the removal itself takes
+  the phases it will accept and tests the record it re-reads under the pointer's
+  own lock, so a request that launches in between is refused instead of removed.
+  An arm launches the request exactly in that window, and the refusal names the
+  phase it found.</p>
+
+  <p><strong>The census suites are green over the new leaves.</strong> The help
+  census gained one row per new verb, transcribed from each verb's own first
+  help line, so a verb whose wording changes fails the census rather than
+  drifting from it. That census also gained the row
+  <code>retention-sweep</code> was missing, which is why it was already failing
+  at the base revision, so it now passes outright rather than reporting the new
+  leaves beside an older gap. The run-verb identity sweep gained the option
+  entry each verb needs and the refusal each reaches on the sweep's own fixture
+  pointer, which carries no phase, and it passes.</p>
 </section>
