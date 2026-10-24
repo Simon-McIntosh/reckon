@@ -210,7 +210,20 @@ def test_complete_commits_one_run_file_per_promotion(
             assert not worktree.exists()
             row = json.loads(run_file.read_text())
             assert row["run_id"] == run_id
-            assert row["release"] == payload["release"]
+            # The release's own landing check is composed when that commit
+            # lands, after the run file was written, so the returned receipt
+            # carries it and the persisted row cannot.
+            recorded_release = {
+                key: value
+                for key, value in payload["release"].items()
+                if key != "landing_check"
+            }
+            assert row["release"] == recorded_release
+            assert payload["release"]["landing_check"] == {
+                "ok": True,
+                "reversals": [],
+                "mismatched": [],
+            }
             assert row == payload["record"]
             assert run_file.read_text() == ledger.serialize_run(row)
             assert (

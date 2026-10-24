@@ -2,21 +2,19 @@
 
 Promotion writes the landing comment to the plan HTML, then appends the ledger
 row, then commits both stores as one landing. When that landing commit fails —
-a held ``index.lock`` is the measured case — the rollback restores what it can:
-a newly created ledger run file is dropped, but the tracked plan file survives
-the failed rollback because the same lock that blocked the commit also blocks
-``git restore``. The plan comment therefore stays on disk, uncommitted.
+a held ``index.lock`` is the measured case — a refused landing takes back every
+write it made: a newly created ledger run file is dropped, and the tracked plan
+file returns to its committed content even though the same lock that blocked
+the commit also blocks ``git restore``, because the fallback reads HEAD's blob
+through the object store. No landing write survives the refusal.
 
-The next promotion reads that comment back, finds it already recorded with the
-same narrative, and must carry the plan file into its landing commit so the
-checkout is left clean. It does not: the already-recorded branch excluded the
-plan file from the landing commit under the assumption that an idempotent retry
-leaves the plan unchanged, which is false when a passing gate's own earlier
-attempt wrote the comment and could not commit it. The file then stays modified
-until someone commits it by hand.
-
-The fix carries the plan file whenever it differs from HEAD, whether this call
-recorded the comment or found it already recorded. These tests synthesise a
+The next promotion then records the comment again — the plan carries none —
+and carries the plan file into its landing commit, so the checkout is left
+clean. A comment found already recorded is carried on the same rule: the plan
+file joins the landing commit whenever it differs from HEAD, whether this call
+wrote the comment or found it. Excluding it because the comment reads as
+recorded would strand the plan file as modified state until someone committed
+it by hand. These tests synthesise a
 fixture repository and a fixture crew home per case, and assert the real plan
 and crew directories are untouched, because an isolated read does not prove an
 isolated write.
@@ -172,9 +170,10 @@ def test_a_failed_landing_then_a_repromotion_commits_the_recorded_comment(
     """A held index.lock fails the first landing; the retry leaves the plan clean.
 
     The first promotion writes the plan comment, then cannot commit it because
-    ``index.lock`` is held. The comment survives on disk. Releasing the lock and
-    promoting again finds the comment already recorded, and the landing commit
-    must now carry the plan file so ``git status`` reads clean for it.
+    ``index.lock`` is held. A refused landing commit takes back every write it
+    made, so the plan file is restored to HEAD and no comment survives.
+    Releasing the lock and promoting again records the comment and lands it, so
+    ``git status`` reads clean for the plan file.
     """
     run_id = RUN_IDS[0]
     narrative = "the landing the first attempt could not commit"
@@ -188,14 +187,12 @@ def test_a_failed_landing_then_a_repromotion_commits_the_recorded_comment(
     finally:
         lock.unlink()
 
-    # The reproduction: the comment is on disk and the plan file is dirty, an
-    # uncommitted landing write the failed rollback could not reach.
-    assert _dirty(repository, PLAN_RELATIVE), "the plan file should be dirty"
+    # The refusal leaves no uncommitted landing write behind.
+    assert _dirty(repository, PLAN_RELATIVE) == ""
 
     result = _promote(repository, run_id, narrative)
 
     assert result["plan_comment"]["recorded"] is True
-    assert result["plan_comment"]["already_recorded"] is True
     # The measure: the plan file is committed, not left as uncommitted state.
     assert _dirty(repository, PLAN_RELATIVE) == ""
     assert PLAN_RELATIVE in _promotion_commit_files(repository, run_id)

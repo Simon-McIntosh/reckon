@@ -197,7 +197,21 @@ def test_complete_preserves_the_promotion_commit_through_release(
         assert row.get("no_commit_uncommitted_paths", []) == (
             ["keep.txt"] if dirty_worktree else []
         )
-        assert row["release"] == payload["release"]
+        # The release's own landing check is composed when that commit lands,
+        # after the ledger row was written, so the returned receipt carries it
+        # and the persisted row cannot. Compare the row to the recorded release
+        # and assert separately that the check the caller reads is the clean one.
+        recorded_release = {
+            key: value
+            for key, value in payload["release"].items()
+            if key != "landing_check"
+        }
+        assert row["release"] == recorded_release
+        assert payload["release"]["landing_check"] == {
+            "ok": True,
+            "reversals": [],
+            "mismatched": [],
+        }
         assert run_file.read_text() == ledger.serialize_run(row)
         if peer_commit:
             _git(repo, "merge-base", "--is-ancestor", boundary["peer"], "HEAD")
@@ -212,16 +226,26 @@ def test_complete_preserves_the_promotion_commit_through_release(
             path.is_relative_to(config) and path.suffix == ".db" for path in observed
         )
         settled_head = _git(repo, "rev-parse", "HEAD")
+        # A replay re-records the release the row holds. The returned receipt's
+        # landing check describes the commit that already landed, so it is not
+        # part of the recorded release and is not fed back as one.
         replay_release, replay_row = promotion._record_release_on_ledger(
             project="reckon",
             root=repo,
             run_id=run_id,
-            release=payload["release"],
+            release=row["release"],
             checkout=repo,
         )
-        assert replay_release == payload["release"], (
-            "identical release must be a durable no-op"
-        )
+        assert {
+            key: value
+            for key, value in replay_release.items()
+            if key != "landing_check"
+        } == row["release"], "identical release must be a durable no-op"
+        assert replay_release["landing_check"] == {
+            "ok": True,
+            "reversals": [],
+            "mismatched": [],
+        }
         assert replay_row == row
         assert _git(repo, "rev-parse", "HEAD") == settled_head
         assert forbidden == [], f"real config home changed: {forbidden}"

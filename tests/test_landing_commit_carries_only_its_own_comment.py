@@ -1,9 +1,9 @@
 """A landing commit carries the run's own plan comment and nothing else.
 
 An idempotent re-promotion carries the plan file whenever it differs from
-HEAD, because an earlier attempt that recorded the comment and then failed to
-commit it leaves the comment on disk. That rule carried the *whole* file, so
-an unrelated uncommitted edit to the plan was swept into the landing commit.
+HEAD: a plan file the store has written and no commit has taken is the state a
+re-promotion has to settle. That rule carried the *whole* file, so an unrelated
+uncommitted edit to the plan was swept into the landing commit.
 
 Promotion now parses each side as HTML and keeps only the authored content
 outside the store-owned regions. The admitted class is any change confined to
@@ -26,6 +26,7 @@ does not prove an isolated write.
 
 from __future__ import annotations
 
+import html
 import json
 import subprocess
 from pathlib import Path
@@ -158,7 +159,7 @@ def _promotion_commit_files(repository: Path, run_id: str = RUN_ID) -> list[str]
 
 
 def _fail_first_landing(repository: Path, narrative: str) -> None:
-    """Hold index.lock so the first landing's commit fails, comment uncommitted."""
+    """Hold index.lock so the first landing's commit fails and is taken back."""
     lock = repository / ".git" / "index.lock"
     lock.write_text("", encoding="utf-8")
     try:
@@ -166,6 +167,37 @@ def _fail_first_landing(repository: Path, narrative: str) -> None:
             _promote(repository, narrative)
     finally:
         lock.unlink()
+
+
+def _record_comment_without_committing(
+    repository: Path, narrative: str, run_id: str = RUN_ID
+) -> None:
+    """Leave the run's own landing comment in the plan, uncommitted.
+
+    A refused landing commit takes its plan write back, so the uncommitted
+    comment an interrupted landing once left on disk is written here directly,
+    through the same store writer promotion uses.
+    """
+    state, version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
+    comments = {
+        key: list(items) for key, items in (state.get("comments") or {}).items()
+    }
+    comments.setdefault("s2", []).append(
+        {
+            "id": f"c-run-{run_id}",
+            "who": "reckon-build",
+            "when": "2026-09-17T11:05:00Z",
+            "body": f"<p>{html.escape(narrative)}</p>",
+        }
+    )
+    _store.write_plan(
+        PROJECT,
+        PLAN,
+        {**state, "comments": comments},
+        version,
+        repository,
+        artifact_type="plan",
+    )
 
 
 def _plan_comments(repository: Path) -> list[str]:
@@ -181,7 +213,7 @@ def test_a_re_promotion_commits_a_plan_differing_only_by_its_own_comment(
 ) -> None:
     narrative = "a landing whose plan difference is only its own comment"
     _pointer(repository)
-    _fail_first_landing(repository, narrative)
+    _record_comment_without_committing(repository, narrative)
 
     plan_path = repository / PLAN_RELATIVE
     assert _dirty(repository, plan_path), "the plan file should be dirty"
@@ -305,7 +337,7 @@ def test_a_store_written_collapse_of_one_section_lands_as_the_runs_own_bookkeepi
     _git(repository, "commit", "-q", "-m", "test: seed a section landed note")
 
     # The store collapses the section again, rewriting that note and touching no
-    # authored prose, and leaves it uncommitted as a failed landing would.
+    # authored prose, and leaves it uncommitted for the re-promotion to settle.
     plan_path.write_text(
         seeded.replace("the earlier landed note", "the collapse summary for s2"),
         encoding="utf-8",
@@ -388,7 +420,7 @@ def test_a_plan_stored_before_the_writers_canonical_encoding_lands(
     _git(repository, "commit", "-q", "-m", "test: seed a non-canonical comment")
 
     # A store write would canonicalise that entity. Leave the re-encoded copy
-    # uncommitted, as a landing whose commit failed would.
+    # uncommitted, for the re-promotion to settle.
     plan_path.write_text(seeded.replace("&#x27;", "'"), encoding="utf-8")
     assert _dirty(repository, plan_path), "the encoding-only difference must be dirty"
 
