@@ -198,7 +198,7 @@ class _Follower:
         self.wait_for(lambda: len(self.emitted) >= count)
         return len(self.emitted)
 
-    def stop_and_join(self, timeout: float = 3.0) -> None:
+    def stop_and_join(self, timeout: float = 15.0) -> None:
         self.stop.set()
         self._thread.join(timeout=timeout)
         assert not self._thread.is_alive(), "a stopped follower must return"

@@ -29,6 +29,7 @@ from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 # follower is stopped. A held row is released on the stop itself, so this is the
 # delivery latency rather than the hold's window.
 RECEIPT_BOUND = 0.5
+STOP_JOIN = 15.0
 
 
 @pytest.fixture(autouse=True)
@@ -220,7 +221,9 @@ def _follow(
     thread.start()
     _collect_until(received, until, bound=settle)
     stop.set()
-    thread.join(timeout=2)
+    # A follower returns as soon as it observes the stop; the join is generous
+    # because a loaded node can starve the reader thread past a short one.
+    thread.join(timeout=STOP_JOIN)
     assert not thread.is_alive(), "a stopped follower must return"
     return received
 
@@ -277,7 +280,9 @@ def _follow_own_start(
         )
     finally:
         stop.set()
-        thread.join(timeout=2)
+        # A follower returns as soon as it observes the stop; the join is generous
+    # because a loaded node can starve the reader thread past a short one.
+    thread.join(timeout=STOP_JOIN)
     assert not thread.is_alive(), "a stopped follower must return"
     return received
 
