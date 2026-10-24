@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:_edit_plan (three _attach_changed_targets returns at 1613/1751/1854 of the pre-delta file)",
+    "reckon/mcp_edit_plan.py:_edit_plan_tool",
+    "reckon/mcp.py:3567 (the edit_plan MCP tool registration)"
+  ],
+  "completed_at": "2026-10-24T21:24:11.921Z",
+  "dispatched_at": "2026-10-24T21:06:38Z",
+  "findings": [
+    {
+      "file": "tests/test_every_edit_path_refuses_one_shape.py",
+      "line": "356",
+      "severity": "non-blocking",
+      "text": "non-blocking: the representative op carries every key any address branch reads, so the case pins that a branch exists and not that it reads the verb's own identifying key \u2014 a `move` branch reading `op[\"target\"]` instead of `op[\"to\"]` still returns an address and the case stays green."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": "1327",
+      "severity": "non-blocking",
+      "text": "non-blocking: `move` composes only the destination sprint, while `_changed_targets`' docstring at line 1338 promises the answer names every target the refused write would touch \u2014 the source sprint the item is removed from is unnamed, so a caller re-reading only the reported targets can still collide on it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read the two commits gained since the last review (52ea0cf, 0976d76) \u2014 3 files, 52 insertions, 45 deletions: the production change deletes TARGET_COMPOSED_VERBS and its set-membership gate at reckon/mcp_edit_plan.py:1277-1292, the test replaces the set-difference check at tests/test_every_edit_path_refuses_one_shape.py:326-361 with driving every `_store._OP_DISPATCH` verb through `_op_target_path`, and the evidence fragment cites the new lint and verb-branch receipts.",
+    "done_when": "the done_when names tests/test_every_edit_path_refuses_one_shape.py::test_the_refusal_shape_is_identical_across_op_paths as the gate; logs/base_targeted.log records that id FAILED at 9f5d32b (1 failed, 59 passed, EXIT=1) and logs/head_targeted.log records 63 passed at 52ea0cf (EXIT=0), both carrying revision, tree, command, module.__file__ and cwd.",
+    "goal": "the node goal is to repair the production defect behind \u00a758's one id so it passes, reproducing its mechanism first; reckon/mcp_edit_plan.py:1277 `_op_target_path` composes an address for every store verb and reckon/mcp_edit_plan.py:1354 `_changed_targets` uses it, so a version-conflict refusal names its targets whichever verb the caller chose.",
+    "manifest": "read; it records the round-three repairs, names head_targeted.log (63 passed, EXIT=0), base_targeted.log (1 failed, 59 passed, EXIT=1), three negative-control logs and four ruff receipts, and lists the six run: commits.",
+    "write_paths": "the node was fenced to reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py and docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html; every path in de65b6122..0976d76a2 is inside that set."
+  },
+  "justifications": {
+    "durability": "logs/negative_control_verb_case.log shows tests/test_every_edit_path_refuses_one_shape.py:326 red (2 failed, EXIT=1) when the gate/pass/fail branch is deleted, so the case now fails on a real regression, but the single representative op at line 337 satisfies any branch that reads any of its keys, so it cannot catch a branch reading the wrong key for the six verbs the parametrized case does not drive.",
+    "evidence": "logs/head_targeted.log and logs/base_targeted.log record the gate's own arms with revision, tree, command, module.__file__, cwd and a bare EXIT=, though the head arm ran at 52ea0cf, one commit before the reviewed head 0976d76 whose only change is the evidence fragment.",
+    "fit": "reckon/mcp_edit_plan.py:1277-1329 follows the module's underscore-helper idiom with a docstring that states the mechanism, and no new name, comment or fixture string carries a plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/mcp_edit_plan.py:1329 returns None only for a verb with no branch, so no store verb can answer a conflict without a target, and the listed id passes at head where it failed at base.",
+    "reuse": "the search for an existing dotted-address composer found only reckon/crew/plan_review.py:521 `_target_path` (a review-record file path, not a document address) and reckon/mcp_edit_plan.py:1312 `_changes_section_declarations` (a set-only head test), so `_op_target_path` is the first owner and it extends the in-module `_value_at_path` rather than forking one.",
+    "scope_discipline": "the delta touches only the three declared paths \u2014 reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py and docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html \u2014 and the second commit is evidence prose alone."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to repair the production defect behind \u00a758's one id so it passes, reproducing its mechanism first; reckon/mcp_edit_plan.py:1277 `_op_target_path` composes an address for every store verb and reckon/mcp_edit_plan.py:1354 `_changed_targets` uses it, so a version-conflict refusal names its targets whichever verb the caller chose.\nVERDICT done_when: the done_when names tests/test_every_edit_path_refuses_one_shape.py::test_the_refusal_shape_is_identical_across_op_paths as the gate; logs/base_targeted.log records that id FAILED at 9f5d32b (1 failed, 59 passed, EXIT=1) and logs/head_targeted.log records 63 passed at 52ea0cf (EXIT=0), both carrying revision, tree, command, module.__file__ and cwd.\nVERDICT write_paths: the node was fenced to reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py and docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html; every path in de65b6122..0976d76a2 is inside that set.\nVERDICT manifest: read; it records the round-three repairs, names head_targeted.log (63 passed, EXIT=0), base_targeted.log (1 failed, 59 passed, EXIT=1), three negative-control logs and four ruff receipts, and lists the six run: commits.\nVERDICT diff: read the two commits gained since the last review (52ea0cf, 0976d76) \u2014 3 files, 52 insertions, 45 deletions: the production change deletes TARGET_COMPOSED_VERBS and its set-membership gate at reckon/mcp_edit_plan.py:1277-1292, the test replaces the set-difference check at tests/test_every_edit_path_refuses_one_shape.py:326-361 with driving every `_store._OP_DISPATCH` verb through `_op_target_path`, and the evidence fragment cites the new lint and verb-branch receipts.\nCALL_SITES: reckon/mcp_edit_plan.py:_edit_plan (three _attach_changed_targets returns at 1613/1751/1854 of the pre-delta file), reckon/mcp_edit_plan.py:_edit_plan_tool, reckon/mcp.py:3567 (the edit_plan MCP tool registration)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_edit_plan.py:1329 returns None only for a verb with no branch, so no store verb can answer a conflict without a target, and the listed id passes at head where it failed at base.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head_targeted.log and logs/base_targeted.log record the gate's own arms with revision, tree, command, module.__file__, cwd and a bare EXIT=, though the head arm ran at 52ea0cf, one commit before the reviewed head 0976d76 whose only change is the evidence fragment.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches only the three declared paths \u2014 reckon/mcp_edit_plan.py, tests/test_every_edit_path_refuses_one_shape.py and docs/evidence/fragments/the-suite-is-green-at-head/every-edit-path-refuses-in-one-shape.html \u2014 and the second commit is evidence prose alone.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative_control_verb_case.log shows tests/test_every_edit_path_refuses_one_shape.py:326 red (2 failed, EXIT=1) when the gate/pass/fail branch is deleted, so the case now fails on a real regression, but the single representative op at line 337 satisfies any branch that reads any of its keys, so it cannot catch a branch reading the wrong key for the six verbs the parametrized case does not drive.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/mcp_edit_plan.py:1277-1329 follows the module's underscore-helper idiom with a docstring that states the mechanism, and no new name, comment or fixture string carries a plan, ticket or version identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: the search for an existing dotted-address composer found only reckon/crew/plan_review.py:521 `_target_path` (a review-record file path, not a document address) and reckon/mcp_edit_plan.py:1312 `_changes_section_declarations` (a set-only head test), so `_op_target_path` is the first owner and it extends the in-module `_value_at_path` rather than forking one.\nFINDING tests/test_every_edit_path_refuses_one_shape.py:356 non-blocking: the representative op carries every key any address branch reads, so the case pins that a branch exists and not that it reads the verb's own identifying key \u2014 a `move` branch reading `op[\"target\"]` instead of `op[\"to\"]` still returns an address and the case stays green.\nFINDING reckon/mcp_edit_plan.py:1327 non-blocking: `move` composes only the destination sprint, while `_changed_targets`' docstring at line 1338 promises the answer names every target the refused write would touch \u2014 the source sprint the item is removed from is unnamed, so a caller re-reading only the reported targets can still collide on it.",
+  "review_run_id": "r-20261024T210459996155-review-of-every-edit-path-refuses-in-one-shape-0976d76a22dc",
+  "reviewed_base_sha": "de65b61227833024a4c2503f96518c8410bc35e7",
+  "reviewed_head_sha": "0976d76a22dc5505f181f60c2369e9f432c365cf",
+  "reviewed_run_id": "r-20261024T174941474772-every-edit-path-refuses-in-one-shape",
+  "rubric": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T21:30:05.236064+00:00",
+  "total": 112
+}
