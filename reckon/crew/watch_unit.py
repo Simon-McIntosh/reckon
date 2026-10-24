@@ -1,6 +1,7 @@
 # ruff: noqa: I001
 from __future__ import annotations
 
+import contextlib
 import fcntl
 import os
 import re
@@ -356,15 +357,11 @@ def release_watch_seat(project: str) -> bool:
     handle = runs._WATCH_SEAT_HANDLES.get(project)
     lease = runs._WATCH_HOST_LEASES.get(project)
     released = handle is not None or lease is not None
-    if handle is not None:
-        try:
+    with contextlib.suppress(OSError, ValueError):
+        if handle is not None:
             _write_watch_record(handle, {})
-        except (OSError, ValueError):
-            pass
-    try:
+    with contextlib.suppress(OSError, ValueError):
         runs.drop_watch_seat(project, handle)
-    except (OSError, ValueError):
-        pass
     if lease is not None:
         lease.release()
     return released
