@@ -40,86 +40,50 @@
 
   <h3 id="queue-edit-reprioritise-drop-measured">Measured</h3>
 
-  <p><code>tests/test_queue_verbs.py</code> (15 cases) drives every claim
-  above: the steering file and node fields are replaced; an edit that fails its
-  contract is refused and stores nothing; a named route lands as
-  <code>named_route</code> beside <code>backend</code>, <code>lane</code> and
-  <code>model_key</code>; a model outside the named lane is refused; edit,
-  reprioritise and drop each refuse a <code>working</code> pointer; an
-  <code>awaiting-upstream</code> request is still editable and droppable; the
-  priority override and its reason are stored; and each of the three MCP
-  actions returns the document its CLI verb returns for the same call.
+  <p><code>tests/test_queue_verbs.py</code> exercises 14 cases. The current-head
+  gate passes all 14: steering and node fields change together, an invalid
+  edit writes nothing, a named route is recorded, an undeclared lane/model pair
+  is refused, all three verbs refuse a launched request, and both waiting
+  phases can be reprioritised or dropped. A launch between drop's first read
+  and its locked removal is refused.</p>
 
-  <p><strong>The files that import the two modules.</strong> Exactly fourteen
-  test files import <code>reckon/crew_run_commands.py</code> or
-  <code>reckon/mcp_crew_actions.py</code> at base <code>560465a09</code>. Each
-  was run per file in that base tree and in this branch, with the same
-  interpreter and the same caps. Eleven pre-existing failures stand in the
-  base arm — two in <code>test_a_lane_change_keeps_its_waivers.py</code>, four
-  in <code>test_crew_lane_change.py</code>, four in
-  <code>test_read_verbs_retire_behind_crew_view.py</code> and one in
-  <code>test_crew_tool_carries_the_write_verbs.py</code> — and the identical
-  set stands in the branch arm: no failure is added. The new
-  <code>tests/test_queue_verbs.py</code> passes its 15 cases in the same
-  interpreter.
+  <p><strong>Negative control.</strong> A mutation that makes edit alone skip
+  its launched-request check fails
+  <code>test_a_launched_request_is_refused_by_every_verb[edit]</code> while
+  the other 13 cases pass. The failing output shows the edit changing a
+  <code>working</code> request. This is a refusal the positive gate alone could
+  not prove.</p>
 
-  <p><strong>The widened surface the MCP wiring touches.</strong> Because
-  <code>reckon/mcp.py</code> is now edited, the population also covers the
-  tests that read the crew tool's own action and argument surface:
-  <code>test_crew_tool_carries_the_write_verbs.py</code>,
-  <code>test_mcp_tool_names_are_regular.py</code>,
-  <code>test_mcp_tools.py</code>, <code>test_mcp_import_surface.py</code> and
-  <code>test_tool_arguments_accept_a_serialised_list.py</code>. Both trees
-  report the same result, <code>1 failed, 63 passed</code>, the single failure
-  the unchanged
-  <code>test_the_obligations_view_prints_the_action_form</code>
-  (<code>TypeError: … got an unexpected keyword argument 'fields'</code>,
-  raised inside <code>reckon/mcp_views.py</code> by a lambda the test installs),
-  which fails identically at base. So the delta over this surface is also zero.
+  <p><strong>Tool-to-CLI parity.</strong> The three queue actions are rows in
+  the shared crew action table. Each row acts on a real queued fixture request
+  through the CLI and the crew MCP tool and compares their JSON documents.
+  An independent sensitivity check removes each forwarded field in turn:
+  <code>done_when</code>, <code>time_budget</code>, <code>backend</code>,
+  <code>model</code>, <code>priority</code> and <code>brief_path</code> each
+  makes its matching row fail. The edit row uses a shared model name with a
+  named lane whose default is different, so both the backend and model
+  arguments matter to the answer.</p>
 
-  <p><strong>What the 121-file sweep did not settle.</strong> Every test file
-  importing <code>reckon.mcp</code> is 121 files, and sweeping all of them was
-  attempted twice and did not complete inside the attempt's time fence: the
-  parallel form was abandoned because tests here terminate child processes and
-  killed their own workers, and the serial form reached roughly a fifth of the
-  population before the harness stopped it, so neither left a usable arm. The
-  five files above are the subset that exercises the tool surface this branch
-  changes; the rest were not measured, and the zero delta is claimed only over
-  what was run.
+  <p><strong>Identity and help.</strong> The run identity sweep completes
+  without the earlier <code>KeyError</code> for the queue verbs. The help
+  census completes with one failure: <code>retention-sweep</code> is a
+  reachable leaf absent from its table. That unrelated row was removed from
+  this node as directed; the same mismatch exists at the base revision.</p>
 
-  <p><strong>Negative control.</strong> With the launched-request guard
-  made to return early for <code>edit</code> alone, exactly one arm fails
-  (<code>test_a_launched_request_is_refused_by_every_verb[edit]</code>, which
-  then reports the edit landing on a <code>working</code> pointer) and the
-  other fourteen pass, so the edit guard is what holds that arm. Removing the
-  early guard for all three verbs fails the edit and reprioritise arms while
-  drop still refuses, because its check runs inside the removal's lock; and
-  removing that in-lock check in turn fails exactly the launch-race arm, whose
-  own output shows the pointer removed at phase <code>working</code>. Logs: <code>logs/negative-control-edit-only.log</code>,
-  <code>logs/negative-control.log</code> and
-  <code>logs/negative-control-drop-lock.log</code> under the run directory.</p>
+  <p><strong>Base-to-head comparison.</strong> The run directory holds a
+  per-file serial measurement over the 123-file union of tests importing
+  <code>reckon/crew_run_commands.py</code>,
+  <code>reckon/mcp_crew_actions.py</code> or <code>reckon/mcp.py</code>, plus
+  the CLI verb sweeps and the new queue test. Each file has its own revision,
+  tree, command, summary and terminal exit receipt. The manifest names the
+  resulting failing-id delta and any incomplete arm; an absent terminal
+  receipt supports no zero-delta claim.</p>
 
-  <p><strong>Reachable through the crew MCP tool.</strong> The crew tool
-  declares the three actions and the parameters they take, and forwards them to
-  the same implementation the CLI verb calls. A test calls each one through the
-  tool and compares the answer with the CLI's answer for the same call, so the
-  two surfaces are held together by comparison rather than by an assertion
-  about either.</p>
-
-  <p><strong>Drop's launch race.</strong> The check a drop makes before it reads
-  the queue is not the one that protects the removal: the removal itself takes
-  the phases it will accept and tests the record it re-reads under the pointer's
-  own lock, so a request that launches in between is refused instead of removed.
-  An arm launches the request exactly in that window, and the refusal names the
-  phase it found.</p>
-
-  <p><strong>The census suites are green over the new leaves.</strong> The help
-  census gained one row per new verb, transcribed from each verb's own first
-  help line, so a verb whose wording changes fails the census rather than
-  drifting from it. That census also gained the row
-  <code>retention-sweep</code> was missing, which is why it was already failing
-  at the base revision, so it now passes outright rather than reporting the new
-  leaves beside an older gap. The run-verb identity sweep gained the option
-  entry each verb needs and the refusal each reaches on the sweep's own fixture
-  pointer, which carries no phase, and it passes.</p>
+  <p><strong>Ruff baseline.</strong> All nine touched Python paths pass
+  <code>ruff format --check</code>. The check command reports twelve findings
+  in <code>reckon/mcp.py</code> and <code>reckon/crew/promotion.py</code>
+  at both base and head, with no added finding. The four original queue verb
+  paths pass <code>ruff check</code> outright. Clearing the twelve existing
+  findings is a separate style change, so this record does not claim an
+  outright all-path lint pass.</p>
 </section>
