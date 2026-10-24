@@ -28,6 +28,7 @@ from click.testing import CliRunner
 from reckon import cli, crew
 from reckon.crew import recovery, runs
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
+from reckon.crew.node import CrewError
 
 pytestmark = pytest.mark.arms_watch_producer
 
@@ -278,7 +279,7 @@ def test_a_full_unpaused_lane_queues_the_review(
 
 
 def test_a_paused_gate_queues_nothing(
-    tmp_path: Path, isolated_project: tuple[Path, Path]
+    tmp_path: Path, isolated_project: tuple[Path, Path], monkeypatch
 ) -> None:
     config_home, repo = isolated_project
     config = _config(
@@ -286,6 +287,18 @@ def test_a_paused_gate_queues_nothing(
         gate_document=_gate_document(tmp_path, paused=True),
     )
     record = _delivered_pointer(config_home, repo, "r-paused")
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    real_dispatch = dispatch_module.dispatch
+    raised: list[BaseException] = []
+
+    def recording(**kwargs):
+        try:
+            return real_dispatch(**kwargs)
+        except dispatch_module.LanePaused as exc:
+            raised.append(exc)
+            raise
+
+    monkeypatch.setattr(dispatch_module, "dispatch", recording)
     try:
         with runs.follower_claim(PROJECT, SESSION, delivery="stream"):
             report = recovery.dispatch_review_for_run(
@@ -294,13 +307,64 @@ def test_a_paused_gate_queues_nothing(
                 launcher=lambda *a, **k: os.getpid(),
             )
     finally:
+        monkeypatch.setattr(dispatch_module, "dispatch", real_dispatch)
         _release_watcher()
 
+    assert raised, "the shut gate must arrive as a lane hold"
+    assert isinstance(raised[0], dispatch_module.LanePaused)
+    assert not isinstance(raised[0], dispatch_module.LaneHeld), (
+        "a shut gate is a paused lane, not the router holding: " + repr(raised[0])
+    )
     assert report["dispatched"] is False
     assert report["error"] == "lane-paused"
     assert "queued" not in report
     assert _queued_pointers() == []
     assert _review_pointers() == []
+
+
+def test_a_queue_write_that_fails_reports_the_hold_without_propagating(
+    tmp_path: Path, isolated_project: tuple[Path, Path], monkeypatch
+) -> None:
+    config_home, repo = isolated_project
+    config = _config(
+        lane_document=_full_lane_document(tmp_path),
+        gate_document=_gate_document(tmp_path, paused=False),
+    )
+    record = _delivered_pointer(config_home, repo, "r-refused-queue")
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    real_dispatch = dispatch_module.dispatch
+    real_queue = runs.queue_dispatch
+
+    def held_without_a_pointer(**kwargs):
+        settings = (kwargs["config"].get("backends") or {}).get("clive") or {}
+        allowance = dispatch_module._dispatch_lane_allowance(
+            settings, session=kwargs.get("session") or ""
+        )
+        raise dispatch_module.LaneHeld(allowance)
+
+    def refused_queue(*_args, **_kwargs):
+        raise CrewError("the queue refused the request")
+
+    monkeypatch.setattr(dispatch_module, "dispatch", held_without_a_pointer)
+    monkeypatch.setattr(runs, "queue_dispatch", refused_queue)
+    try:
+        with runs.follower_claim(PROJECT, SESSION, delivery="stream"):
+            report = recovery.dispatch_review_for_run(
+                record,
+                config=config,
+                launcher=lambda *a, **k: os.getpid(),
+            )
+    finally:
+        monkeypatch.setattr(dispatch_module, "dispatch", real_dispatch)
+        monkeypatch.setattr(runs, "queue_dispatch", real_queue)
+        _release_watcher()
+
+    assert report["dispatched"] is False
+    assert report["error"] == "lane-paused"
+    assert "queued" not in report
+    assert "could not be queued" in report["reason"]
+    assert "the queue refused the request" in report["reason"]
+    assert _queued_pointers() == []
 
 
 def test_the_cli_queues_the_same_request_at_the_same_position(

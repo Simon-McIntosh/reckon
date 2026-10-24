@@ -622,25 +622,6 @@ def _record_review_dispatch(
         _mutate_pointer(run_id, record)
 
 
-# The gate states that withhold a launch rather than leaving a lane open: a
-# paused gate and one nobody could read. A router hold is neither.
-_GATE_WITHHELD_STATES = frozenset({"paused", "unreadable"})
-
-
-def _router_hold(gate: Mapping[str, Any]) -> bool:
-    """Whether a lane hold is the router granting no worker rather than a shut gate.
-
-    The two arrive as the same exception class and mean different things. A
-    paused or unreadable gate publishes a ``state`` and withholds every launch
-    until it opens, so nothing may be queued behind it. A router hold publishes
-    the allowance it read and a ``held`` decision, and the lane is open: the
-    request waits in the queue the admission pass drains.
-    """
-    if str(gate.get("state") or "") in _GATE_WITHHELD_STATES:
-        return False
-    return gate.get("held") is True or "allowance" in gate
-
-
 def _queue_router_held_review(
     record: Mapping[str, Any],
     *,
@@ -653,15 +634,12 @@ def _queue_router_held_review(
 ) -> dict[str, Any] | None:
     """Store the review as a queued request when the dispatch left none behind.
 
-    The dispatch queues a local hold itself and the pointer rides the exception.
-    A hold that reached this reflex without that pointer is the same hold and
-    gets the same outcome here, written by the dispatch's own record builder and
-    the queue's own writer so the admission pass launches it exactly as it
-    launches one the dispatch stored. A withheld gate queues nothing: only a
-    router hold does, which is the distinction :func:`_router_hold` draws.
+    The dispatch queues a local router hold itself and the pointer rides the
+    exception. A hold that reached this reflex without that pointer is the same
+    hold and gets the same outcome here, written by the dispatch's own record
+    builder and the queue's own writer so the admission pass launches it exactly
+    as it launches one the dispatch stored.
     """
-    if not _router_hold(gate):
-        return None
     from reckon.crew import runs as _runs
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -2621,7 +2599,7 @@ def _dispatch_composed_review(
         return {"run_id": run_id, "dispatched": False, "reason": reason}
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    from reckon.crew.dispatch import BudgetHold, LanePaused
+    from reckon.crew.dispatch import BudgetHold, LaneHeld, LanePaused
     from reckon.crew.node import TaskNode
 
     resolved = _resolved_review_config(project, config)
@@ -2915,25 +2893,40 @@ def _dispatch_composed_review(
             "lane_gate": gate,
             "reason": reason,
         }
-        # A local-lane hold queues the request: the queued pointer launches
-        # later from the brief in the composed run directory, so the report
-        # names the queued run and the caller keeps that directory. The
-        # dispatch normally carries that pointer on the exception, but a hold
-        # that reaches here without one must still leave the review queued
-        # rather than merely held: the run it reviews waits for a slot, not
-        # for this reflex to fire again. The reflex writes the request itself
-        # in that case, through the same writer the dispatch uses.
+        # A router hold on the local lane queues the request: the queued pointer
+        # launches later from the brief in the composed run directory, so the
+        # report names the queued run and the caller keeps that directory. The
+        # dispatch normally carries that pointer on the exception. A hold that
+        # reaches here without one must still leave the review queued rather
+        # than merely held: the run it reviews waits for a slot, not for this
+        # reflex to fire again. A shut gate is the other half of the split —
+        # LanePaused without LaneHeld — and queues nothing.
         queued = getattr(exc, "queued", None)
-        if not queued and on_local_lane:
-            queued = _queue_router_held_review(
-                record,
-                node=node,
-                fields=fields,
-                config=resolved,
-                backend=backend,
-                gate=gate,
-                allow_unreconciled_runs=allow_unreconciled_runs,
-            )
+        if not queued and on_local_lane and isinstance(exc, LaneHeld):
+            try:
+                queued = _queue_router_held_review(
+                    record,
+                    node=node,
+                    fields=fields,
+                    config=resolved,
+                    backend=backend,
+                    gate=gate,
+                    allow_unreconciled_runs=allow_unreconciled_runs,
+                )
+            except (CrewError, OSError) as exc2:
+                # The reflex is a sweep: an automatic caller walks the
+                # delivered records with no handler around it, so a refused or
+                # failed queue write must be reported here rather than ending
+                # the project's whole review pass.
+                reason = f"the held review could not be queued: {exc2}"
+                record_dispatch(
+                    status="lane-paused",
+                    reason=reason,
+                    backend=backend,
+                    reviewed_head=fields["head"],
+                )
+                report["reason"] = reason
+                return report
         if queued:
             report["queued"] = dict(queued)
         return report
