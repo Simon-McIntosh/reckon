@@ -2116,6 +2116,8 @@ def admit_until_stopped(
     lane: str = "",
     interval: float = DEFAULT_ADMIT_INTERVAL_SECONDS,
     once: bool = False,
+    launcher: Callable[..., int] | None = None,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Repeat the admission pass on a cadence until stopped.
 
@@ -2150,7 +2152,7 @@ def admit_until_stopped(
         from reckon.crew.queue_landing import land_once
 
         landing = land_once()
-        result = admit_once(lane=lane)
+        result = admit_once(lane=lane, launcher=launcher, config_for=config_for)
         result["landing"] = landing
         _record_pass_verdicts(result, lane=lane, code_stamp=stamp)
         return result
@@ -2163,7 +2165,7 @@ def admit_until_stopped(
             from reckon.crew.queue_landing import land_once
 
             landing = land_once()
-            admitted = admit_once(lane=lane)
+            admitted = admit_once(lane=lane, launcher=launcher, config_for=config_for)
             admitted["landing"] = landing
             _publish_pass_verdicts(
                 _record_pass_verdicts(admitted, lane=lane, code_stamp=code_stamp)

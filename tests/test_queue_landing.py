@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -26,6 +27,22 @@ from tests.helpers.landing_repository import _write_origin_and_checkout
 PROJECT = "landing-fixture"
 SESSION = "owner"
 RUN = "r-delivered-implementation"
+DISPATCH_CONFIG = {
+    "default_backend": "local",
+    "local_backend": "local",
+    "backends": {
+        "local": {
+            "launch": "cli",
+            "command": "codex",
+            "model": "local-model",
+            "effort": "medium",
+            "sandbox": "worktree-full",
+            "time_budget": "25m",
+        }
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+}
 
 
 def _git(repo: Path, *arguments: str) -> str:
@@ -48,15 +65,44 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str |
     _git(repo, "init", "-q", "-b", "main")
     _git(repo, "config", "user.email", "worker@example.invalid")
     _git(repo, "config", "user.name", "Worker")
+    plan = repo / "docs" / "plans" / "delivery-plan.html"
+    plan.parent.mkdir(parents=True)
+    plan.write_text(
+        '<!doctype html><meta name="docs-project" content="landing-fixture">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="delivery-plan">'
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-section-declarations" '
+        'content="{&quot;s2&quot;: &quot;implementable&quot;}">'
+        '<h2 id="s2">Downstream</h2>\n',
+        encoding="utf-8",
+    )
+    state = repo / "docs" / "state" / PROJECT
+    state.mkdir(parents=True)
+    (state / "index.json").write_text(
+        json.dumps({"project": PROJECT, "data": {"_version": 0}}),
+        encoding="utf-8",
+    )
+    scripts = repo / "skills" / "reckon-build" / "scripts"
+    scripts.mkdir(parents=True)
+    source = Path(__file__).parents[1] / "skills" / "reckon-build" / "scripts"
+    (scripts / "worktree_fleet.py").write_text(
+        (source / "worktree_fleet.py").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    (home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(repo / "docs")}), encoding="utf-8"
+    )
     (repo / "marker.txt").write_text("base\n", encoding="utf-8")
-    _git(repo, "add", "marker.txt")
+    _git(repo, "add", "marker.txt", "docs", "skills")
     _git(repo, "commit", "-q", "-m", "chore: seed fixture")
     base = _git(repo, "rev-parse", "HEAD")
     (repo / "marker.txt").write_text("delivered\n", encoding="utf-8")
     _git(repo, "add", "marker.txt")
     _git(repo, "commit", "-q", "-m", "feat: deliver marker")
     head = _git(repo, "rev-parse", "HEAD")
-    manifest = tmp_path / "manifest.md"
+    manifest = runs.run_dir(RUN) / runs.DEFAULT_MANIFEST_NAME
+    manifest.parent.mkdir(parents=True)
     manifest.write_text(
         f"node: implementation\nstatus: complete\ncommits: [{head}]\n",
         encoding="utf-8",
@@ -111,10 +157,20 @@ def test_accepted_delivery_lands_before_its_downstream_is_admitted(
             "session": SESSION,
             "repo": str(delivery["repo"]),
             "phase": queue_admission.AWAITING_UPSTREAM_PHASE,
-            "waits": [RUN],
+            "waits": [f"run:{RUN}"],
             "backend": "local",
             "queued_at": datetime.now(UTC).isoformat(),
-            "node": {"id": "downstream", "role": "implement", "write_paths": []},
+            "node": {
+                "id": "downstream",
+                "goal": "launch after delivery",
+                "plan": "delivery-plan",
+                "section": "s2",
+                "role": "implement",
+                "done_when": "pytest reports passed for downstream launch",
+                "time_budget": "20m",
+                "spec_level": "exact",
+                "write_paths": ["downstream.txt"],
+            },
         },
     )
     events: list[str] = []
@@ -125,37 +181,25 @@ def test_accepted_delivery_lands_before_its_downstream_is_admitted(
         runs.pointer_path(run_id).unlink()
         return True, ""
 
-    def release_waiters(pointers) -> dict:
+    def launch(_plan, *, log_path, stderr_path, prompt_path) -> int:
         assert not runs.pointer_path(RUN).exists()
-        waiter = next(
-            pointer for pointer in pointers if pointer["run_id"] == downstream
-        )
-        runs._mutate_pointer(
-            downstream,
-            lambda pointer: {**pointer, "phase": queue_admission.QUEUED_PHASE},
-        )
-        waiter["phase"] = queue_admission.QUEUED_PHASE
-        return {"promoted": [downstream], "blocked": []}
-
-    def launch(pointer, **_options) -> dict:
-        assert pointer["run_id"] == downstream
+        assert Path(prompt_path).exists()
         events.append("downstream-launched")
-        runs._mutate_pointer(downstream, lambda record: {**record, "phase": "running"})
-        return {"run_id": downstream, "phase": "running"}
+        return os.getpid()
 
     monkeypatch.setattr(queue_landing, "_land", land)
     monkeypatch.setattr(
         queue_admission, "_dispatch_fleet_gate", lambda: {"state": "open"}
     )
-    monkeypatch.setattr(queue_admission, "advance_waiting_requests", release_waiters)
     monkeypatch.setattr(
         queue_admission, "_session_allowance_read", lambda *a, **k: (1, "fixture")
     )
     monkeypatch.setattr(queue_admission, "_lane_gate_hold", lambda *a, **k: None)
-    monkeypatch.setattr(queue_admission, "_launch_queued", launch)
     monkeypatch.setattr(queue_admission, "_join_admitted_plan_review", lambda *a: "")
     monkeypatch.setattr(queue_admission, "_record_pass_verdicts", lambda *a, **k: None)
-    result = queue_admission.admit_until_stopped(once=True)
+    result = queue_admission.admit_until_stopped(
+        once=True, launcher=launch, config_for=lambda _pointer: DISPATCH_CONFIG
+    )
 
     assert events == ["land", "downstream-launched"]
     assert result["landing"]["landed"] == [RUN]
