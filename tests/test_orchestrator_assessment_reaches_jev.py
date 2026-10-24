@@ -163,6 +163,12 @@ def _stub_picker(monkeypatch: pytest.MonkeyPatch, seen: dict) -> None:
             },
         }
 
+    # The dispatcher hands the pick its own caller, which records the answer on
+    # the result, so the pick never calls a caller supplied here. The client is
+    # the boundary both paths read, and it is the one that sees the state Jev
+    # weighs.
+    monkeypatch.setattr(picker_package.client, "ask", caller)
+
     def stubbed_pick(request, config, **kwargs):
         kwargs.setdefault("snapshotter", snapshotter)
         kwargs.setdefault("caller", caller)

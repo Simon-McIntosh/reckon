@@ -43,6 +43,11 @@ NODE_FIELDS = {
     # instructions name ``node.urgency.seconds_to_due`` as a weighed fact, so the
     # field belongs in the set a drop would fail.
     "urgency",
+    # The lifted metered lane the pick may prefer: a state field carrying the
+    # one lane in scope with room, for work at or above elevated risk. A drop
+    # leaves an elevated node routed locally beside a lifted lane's headroom,
+    # so it belongs in the set a drop would fail.
+    "lift_preference",
 }
 
 #: The candidate facts the routing instructions tell Jev to weigh. A field
