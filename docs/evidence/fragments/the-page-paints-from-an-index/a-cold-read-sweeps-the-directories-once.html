@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="The page paints from an index">
+  <meta name="plan-summary" content="A cold index read runs its cache-miss path in one reader per tree and stamp source, hands the identities the shape check read to the build and the shape record, absorbs marks recorded while the path runs, and keeps a pre-drop build out of the cache.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s17">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="metadata-index,cold-read,concurrency,directory-identity">
+  <title>A cold read sweeps the directories once — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-cold-read-sweeps-the-directories-once" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="a-cold-read-sweeps-the-directories-once-heading">A cold read sweeps the directories once</h2>
+  <p id="a-cold-read-sweeps-the-directories-once-landing">The cache-miss path in <code>index_rows</code>, from <code>_reuse_covered</code> through the build, now runs in one reader at a time per tree and stamp source: <code>_join_cold_path</code> registers a <code>_ColdPath</code> per cache key, a reader that finds one in flight waits on it and then rereads through the cache, and a failed path releases its waiters to read for themselves. <code>_reuse_covered</code> returns the identities it read and <code>build_index</code> and <code>_record_covered_shape</code> consume them, so each recorded directory is statted once and only a directory a re-scan reached for the first time is read again. <code>mark_tree_paths</code> records a mark while a path is in flight for the tree, and <code>_cold_build</code> consumes every mark recorded while it ran before returning; a mark with no cached build and no path in flight is still dropped. <code>invalidate_tree</code> moves the tree's generation, and <code>_store_cold_build</code> refuses a build that started before the drop. Gate <strong>7 passed at head</strong> over <code>tests/test_a_cold_read_sweeps_the_directories_once.py</code>, EXIT=0; the metadata-index and change-stream population <strong>199 passed</strong>, EXIT=0; the armed negative control (all seven mutations) <strong>7 failed</strong>, EXIT=1, with the same seven ids the head arm passes.</p>
+  <p id="a-cold-read-sweeps-the-directories-once-measures">The spy on <code>_dir_identity</code> counts one read per recorded directory for a single cold read (six directories in the fixture), one per directory across six concurrent readers instead of six times the count, and one extra read for the single directory the re-scan reached for the first time after a directory gained a subdirectory. Removing the wait turns the concurrent count into six times the directory count; having the build reread the identities doubles it; having the shape record reread them adds the directory count back.</p>
+</article>
+</body>
+</html>
