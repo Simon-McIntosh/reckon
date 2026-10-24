@@ -307,6 +307,22 @@ def file_revision(stat: os.stat_result) -> str:
     return f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
 
 
+def file_bytes(path: Path | str) -> bytes:
+    """Return ``path``'s bytes, one physical read while its stat is unchanged.
+
+    A reader that decodes a document and a digest, or a digest and then a
+    parse, would otherwise read the file twice. Both reach it here and the
+    second caller is served from the first caller's read.
+    """
+
+    target = Path(path)
+
+    def read() -> bytes:
+        return target.read_bytes()
+
+    return memoized("file_bytes", target, read)
+
+
 def content_digest(path: Path | str) -> str:
     """Return the digest of ``path``'s bytes, sharing one read while unchanged.
 
@@ -315,12 +331,20 @@ def content_digest(path: Path | str) -> str:
     rather than a second parse. Reading the whole file is dearer than a stat,
     so only a caller that knows its content repeats across paths asks for it —
     see ``memoized(..., by_content=True)``.
+
+    An HTML document's decoded text is stored as it is hashed, so a caller that
+    parses the document after keying on its digest decodes the bytes this read
+    already returned rather than reading the file a second time.
     """
 
     target = Path(path)
 
     def read() -> str:
-        return hashlib.sha256(target.read_bytes()).hexdigest()
+        content = file_bytes(target)
+        if target.suffix == ".html":
+            text = content.decode("utf-8", errors="replace")
+            memoized("plan_text", target, lambda: text)
+        return hashlib.sha256(content).hexdigest()
 
     return memoized("content_digest", target, read)
 
