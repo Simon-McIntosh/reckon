@@ -28,7 +28,8 @@ import os
 import threading
 import time
 from collections.abc import Callable, Mapping
-from pathlib import Path
+from contextlib import suppress
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 # Bumped when the key's shape changes in a way a stored snapshot cannot survive:
@@ -142,44 +143,38 @@ def _head_commit_of(git_dir: Path) -> str:
     return ""
 
 
-def _covered_directory_shape(docs_dir: Path, max_dirs: int = 64, depth: int = 2) -> str:
-    """Return the stat identity of the directories a plan read walks.
+def _plan_directories(docs_dir: Path) -> list[Path]:
+    """Return the directories a plan document can live in, from the path classes.
 
-    A document added to the tree is not a write reckon or git made: it moves no
-    staging index, no HEAD and no write counter, so a key built only from those
-    would keep answering from a composition that predates the new document.
-    What a document's arrival does move is the identity of the directory it was
-    written into, so the key carries one stat per covered directory — the docs
-    root, and the subdirectories a plan read descends into, bounded in both
-    depth and count so a deep figure tree cannot turn the key into a walk.
-
-    The result is a string rather than a list so it compares as one key field
-    and serialises into the key's json as a single value.
+    A plan document's arrival is not a write reckon or git made: it moves no
+    staging index, no HEAD and no write counter. It does move the identity of
+    the directory it was written into, so the key carries one stat per plan
+    directory. The list is named by ``PLAN_HTML_PREFIXES`` -- the classes that
+    decide where plan HTML may live -- rather than discovered by walking a tree
+    whose figure directories outnumber its documents by a wide margin.
     """
-    from reckon.metadata_index import _dir_identity
+    from reckon.path_classes import PLAN_HTML_PREFIXES
 
-    readings: list[str] = []
-    pending: list[tuple[Path, str, int]] = [(docs_dir, ".", 0)]
-    while pending and len(readings) < max_dirs:
-        directory, relative, level = pending.pop()
-        identity = _dir_identity(directory)
-        readings.append(f"{relative}={identity}")
-        if level >= depth:
-            continue
-        try:
-            with os.scandir(directory) as scanned:
-                children = sorted(
-                    entry.path
-                    for entry in scanned
-                    if entry.is_dir(follow_symlinks=False)
-                )
-        except OSError:
-            continue
-        pending.extend(
-            (Path(child), f"{relative}/{os.path.basename(child)}", level + 1)
-            for child in reversed(children)
-        )
-    return "|".join(sorted(readings))
+    return [
+        docs_dir.joinpath(*PurePosixPath(prefix).parts[1:])
+        for prefix in PLAN_HTML_PREFIXES
+    ]
+
+
+def _covered_directory_shape(docs_dir: Path) -> str:
+    """Return the stat identity of every directory a plan document can sit in.
+
+    One stat per directory over a fixed handful, so the key stays cheap on a
+    tree of any shape. The identity is the discovery index's own reading of a
+    directory, which reuses the observation an open discovery pass already made
+    and so costs no extra stat while one is in force.
+    """
+    from reckon.metadata_index import covered_dir_identity
+
+    return "|".join(
+        f"{directory.name}={covered_dir_identity(directory)}"
+        for directory in _plan_directories(docs_dir)
+    )
 
 
 def crew_home_identity() -> str:
@@ -201,6 +196,16 @@ def crew_home_identity() -> str:
     return roadmap_docs_identity(home)
 
 
+def _resolved_docs_root(docs_dir: Path | None) -> str:
+    """Return the absolute path a project's docs root resolves to."""
+    if docs_dir is None:
+        return ""
+    try:
+        return str(Path(docs_dir).resolve())
+    except OSError:
+        return str(docs_dir)
+
+
 def roadmap_docs_identity(docs_dir: Path | None) -> str:
     """Return a short digest of the absolute path a project's docs live at.
 
@@ -210,12 +215,9 @@ def roadmap_docs_identity(docs_dir: Path | None) -> str:
     be served across them, so the location and the key both carry this digest
     and two trees with one name never open each other's record.
     """
-    if docs_dir is None:
+    resolved = _resolved_docs_root(docs_dir)
+    if not resolved:
         return "none"
-    try:
-        resolved = str(Path(docs_dir).resolve())
-    except OSError:
-        resolved = str(docs_dir)
     return hashlib.sha256(resolved.encode("utf-8")).hexdigest()[:16]
 
 
@@ -402,6 +404,52 @@ def roadmap_snapshot_key(
     return key, live_states
 
 
+#: How many snapshots one project keeps under the node-local cache. One is
+#: written per resolved docs root, so a workstation that mounts many checkouts
+#: would otherwise accumulate them for trees that no longer exist.
+_SNAPSHOT_KEEP_PER_PROJECT = 8
+
+
+def _prune_snapshots(written: Path) -> None:
+    """Remove this project's snapshot files whose tree is gone, and the oldest.
+
+    A snapshot is filed per resolved docs root, and a tree that is deleted —
+    a removed worktree, a finished run's temporary copy — leaves its file
+    behind with nothing else to remove it. The file records the root it was
+    composed from, so a root that no longer exists names a snapshot no reader
+    can ever match. Beyond that the newest ``_SNAPSHOT_KEEP_PER_PROJECT`` are
+    kept, which bounds a host that mounts and deletes trees continuously. The
+    file just written always survives, whatever its age.
+    """
+    try:
+        siblings = sorted(
+            written.parent.glob("roadmap-snapshot-*.json"),
+            key=lambda path: path.stat().st_mtime_ns,
+            reverse=True,
+        )
+    except OSError:
+        return
+    for index, path in enumerate(siblings):
+        if path == written:
+            continue
+        why = None
+        if index >= _SNAPSHOT_KEEP_PER_PROJECT:
+            why = "over the keep count"
+        else:
+            try:
+                record = json.loads(path.read_text())
+            except (OSError, ValueError):
+                record = None
+            root = record.get("root") if isinstance(record, dict) else None
+            if isinstance(root, str) and not Path(root).exists():
+                why = "its tree is gone"
+            elif record is None:
+                why = "unreadable"
+        if why is not None:
+            with suppress(OSError):
+                path.unlink()
+
+
 def roadmap_snapshot_path(project: str, docs_dir: Path | None) -> Path:
     """Return the node-local file one tree's roadmap snapshot lives in.
 
@@ -461,6 +509,7 @@ def roadmap_snapshot_store(
     record = {
         "version": _ROADMAP_SNAPSHOT_VERSION,
         "key": key,
+        "root": _resolved_docs_root(docs_dir),
         "stored_at": time.time(),
         "payload": payload,
     }
@@ -485,3 +534,4 @@ def roadmap_snapshot_store(
         # read rather than an incorrect one: the answer already served is the
         # composition just computed, and only the cache of it is lost.
         return
+    _prune_snapshots(path)

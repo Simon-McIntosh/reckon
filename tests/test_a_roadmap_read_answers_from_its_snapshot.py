@@ -23,6 +23,8 @@ import time
 from pathlib import Path
 from textwrap import dedent
 
+from reckon import roadmap_snapshot
+
 SOURCE_TREE = Path(__file__).resolve().parents[1]
 DOCUMENT_COUNT = 200
 DIRECTORY_COUNT = 10
@@ -84,6 +86,10 @@ DRIVER = dedent(
                 str(p2_docs)
             ):
                 counts["dirs"] += 1
+            for name, base in (("p1", p1_root), ("p2", p2_root)):
+                if str(resolved).startswith(str(base)):
+                    counts["keys"][name] = counts["keys"].get(name, 0) + 1
+                    break
             return
         if kind == "stat" or kind == "open":
             if str(resolved).startswith(str(p1_docs)) or str(resolved).startswith(
@@ -132,6 +138,7 @@ DRIVER = dedent(
     second = call()
     result["covered_stats_second_call"] = counts["covered"]
     result["key_calls_per_project"] = max(counts["keys"].values(), default=0)
+    result["directory_key_calls"] = counts["dirs"]
     result["equal"] = first == second
 
     # Case: a plan-write moves the key, so the next call recomposes.
@@ -390,6 +397,10 @@ LIVE_DRIVER = dedent(
         except OSError:
             return
         if kind == "dir":
+            for name, base in bases.items():
+                if str(resolved).startswith(str(base)):
+                    counts["keys"][name] = counts["keys"].get(name, 0) + 1
+                    break
             return
         if str(resolved).startswith(str(docs["p1"])) or str(resolved).startswith(str(docs["p2"])):
             counts["covered"] += 1
@@ -596,7 +607,11 @@ def test_a_second_read_walks_no_covered_file(tmp_path: Path) -> None:
     root = _build(tmp_path)
     measured = _run(root, "measure", _driver(tmp_path))
     assert measured["covered_stats_second_call"] == 0, measured
+    # The key's stats and opens per mounted project, directory stats included:
+    # the git index, HEAD's ref, the write counter and the watch stream, then
+    # one per plan directory.
     assert measured["key_calls_per_project"] <= 8, measured
+    assert measured["directory_key_calls"] >= 1, measured
     assert measured["equal"] is True, measured
 
 
@@ -842,3 +857,134 @@ def test_a_reader_never_sees_a_stamp_beside_mounts_from_another_store(
         if mounts is not None and mounts is not resolved_for.get(stamp)
     ]
     assert mixed == [], observations
+
+
+def _write_plan_file(docs: Path, slug: str) -> Path:
+    path = docs / "plans" / f"{slug}.html"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"<html><body><h1>{slug}</h1></body></html>", encoding="utf-8")
+    return path
+
+
+def test_a_plan_added_under_a_large_figure_tree_moves_the_key(tmp_path: Path) -> None:
+    """The key names the plan directories; it does not walk and stop early.
+
+    A real docs tree carries far more figure directories than documents, and
+    they sort ahead of ``plans``: a bounded walk spends its whole budget on them
+    and never reaches the one directory a new plan is written into.
+    """
+    project = "large-tree-sample"
+    docs = tmp_path / "repo" / "docs"
+    for index in range(70):
+        (docs / f"aaa-{index:03d}").mkdir(parents=True)
+    figures = docs / "figures"
+    for index in range(104):
+        (figures / f"figure-{index:03d}").mkdir(parents=True)
+    _write_plan_file(docs, "alpha")
+
+    before = roadmap_snapshot.roadmap_project_generation(project, docs)
+    shape = before[3]
+    assert "plans=" in shape, shape
+    assert "figures" not in shape, shape
+
+    _write_plan_file(docs, "beta")
+    after = roadmap_snapshot.roadmap_project_generation(project, docs)
+
+    assert before != after, "a plan file added to the tree must move the key"
+
+
+def test_two_trees_declaring_one_project_never_share_a_snapshot(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """One project name out of two docs roots is two trees, and two records."""
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path / "runtime"))
+    project = "shared-name-sample"
+    first = tmp_path / "first" / "docs"
+    second = tmp_path / "second" / "docs"
+    for docs in (first, second):
+        _write_plan_file(docs, "alpha")
+
+    first_path = roadmap_snapshot.roadmap_snapshot_path(project, first)
+    second_path = roadmap_snapshot.roadmap_snapshot_path(project, second)
+    assert first_path != second_path, "one file cannot serve two trees"
+
+    roadmap_snapshot.roadmap_snapshot_store(project, first, "key-first", {"plane": 1})
+    served_here = roadmap_snapshot.roadmap_snapshot_load(project, first, "key-first")
+    served_there = roadmap_snapshot.roadmap_snapshot_load(project, second, "key-first")
+
+    assert served_here == {"plane": 1}
+    assert served_there is None, "the other tree was served this tree's snapshot"
+
+
+def test_two_crew_homes_declaring_one_project_never_share_a_snapshot(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The live rows come from one home, so an answer is only valid under it."""
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path / "runtime"))
+    project = "shared-home-sample"
+    docs = tmp_path / "repo" / "docs"
+    _write_plan_file(docs, "alpha")
+    mounts = {project: docs}
+    first_home = tmp_path / "home-one"
+    second_home = tmp_path / "home-two"
+    for home in (first_home, second_home):
+        home.mkdir()
+
+    monkeypatch.setenv("RECKON_HOME", str(first_home))
+    first_key, _ = roadmap_snapshot.roadmap_snapshot_key(project, mounts, "code")
+    roadmap_snapshot.roadmap_snapshot_store(project, docs, first_key, {"plane": 1})
+
+    monkeypatch.setenv("RECKON_HOME", str(second_home))
+    second_key, _ = roadmap_snapshot.roadmap_snapshot_key(project, mounts, "code")
+
+    assert first_key != second_key, "two homes' live rows are two keys"
+    assert roadmap_snapshot.roadmap_snapshot_load(project, docs, second_key) is None
+    monkeypatch.setenv("RECKON_HOME", str(first_home))
+    assert roadmap_snapshot.roadmap_snapshot_load(project, docs, first_key) == {
+        "plane": 1
+    }
+
+
+def test_a_snapshot_whose_tree_is_gone_is_removed_on_the_next_store(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A tree that was deleted leaves a file nothing else would ever remove."""
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path / "runtime"))
+    project = "pruned-sample"
+    docs = tmp_path / "branch" / "docs"
+    _write_plan_file(docs, "alpha")
+    gone = tmp_path / "gone" / "docs"
+    _write_plan_file(gone, "alpha")
+
+    roadmap_snapshot.roadmap_snapshot_store(project, gone, "key-gone", {"plane": 0})
+    gone_snapshot = roadmap_snapshot.roadmap_snapshot_path(project, gone)
+    assert gone_snapshot.exists()
+
+    import shutil
+
+    shutil.rmtree(tmp_path / "gone")
+    roadmap_snapshot.roadmap_snapshot_store(project, docs, "key-live", {"plane": 1})
+
+    assert not gone_snapshot.exists(), "a snapshot for a deleted tree was kept"
+    assert roadmap_snapshot.roadmap_snapshot_path(project, docs).exists()
+
+
+def test_a_project_keeps_at_most_the_named_number_of_snapshots(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A host that mounts and removes trees continuously stays bounded."""
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path / "runtime"))
+    project = "bounded-sample"
+    docs = tmp_path / "repo" / "docs"
+    _write_plan_file(docs, "alpha")
+    kept = roadmap_snapshot._SNAPSHOT_KEEP_PER_PROJECT
+    directory = roadmap_snapshot.roadmap_snapshot_path(project, docs).parent
+    directory.mkdir(parents=True, exist_ok=True)
+    for index in range(kept + 4):
+        stale = directory / f"roadmap-snapshot-{index:016x}.json"
+        stale.write_text(json.dumps({"root": str(tmp_path / f"gone-{index}" / "docs")}))
+
+    roadmap_snapshot.roadmap_snapshot_store(project, docs, "key-live", {"plane": 1})
+
+    remaining = sorted(directory.glob("roadmap-snapshot-*.json"))
+    assert len(remaining) <= kept, remaining
