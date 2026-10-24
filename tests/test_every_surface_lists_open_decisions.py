@@ -20,6 +20,7 @@ import pytest
 import reckon.mcp as mcp_module
 import reckon.serve as serve_module
 from reckon._plan_html import write_state
+from reckon._store import advance_write_generation
 from reckon.mcp_views import roadmap_view
 from reckon.roadmap import build_roadmap, waiting_decision_rows
 from tests.mcp_family_reload import reload_mcp_family
@@ -175,6 +176,14 @@ def _arm(mounted: dict, *, transport_choice: str = "") -> int:
     _write_mounted_plans(
         mounted["docs"], mounted["other"], transport_choice=transport_choice
     )
+    # The fixture writes the plan files directly, while a real decision lock
+    # goes through edit_plan and write_plan and advances the plan-write
+    # generation. A roadmap read answers a warm key from its snapshot, so a
+    # write that moved no generation would be invisible until the revalidation
+    # window expired; advancing it here makes the fixture's write the store
+    # write a lock actually is.
+    for project in (PROJECT, COMPANION):
+        advance_write_generation(project)
     reload_mcp_family()
     serve_module._DISC_CACHE.clear()
     return mounted["port"]

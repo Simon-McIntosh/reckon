@@ -42,7 +42,10 @@ _ROADMAP_SNAPSHOT_VERSION = 2
 _ROADMAP_REVALIDATE_DEFAULT_S = 120.0
 _ROADMAP_SNAPSHOT_LOCK = threading.Lock()
 # In-process reuse, so a hit costs no open beyond the snapshot file itself.
-_ROADMAP_SNAPSHOTS: dict[tuple[str, str], tuple[str, dict[str, Any]]] = {}
+#: Keyed on the project, the docs root and the crew home: a read is answered
+#: from one tree and one home's live pointers, so a record made under any other
+#: of them is a different answer and must not match.
+_ROADMAP_SNAPSHOTS: dict[tuple[str, str, str], tuple[str, dict[str, Any]]] = {}
 
 
 class _MountsMemo:
@@ -177,6 +180,25 @@ def _covered_directory_shape(docs_dir: Path, max_dirs: int = 64, depth: int = 2)
             for child in reversed(children)
         )
     return "|".join(sorted(readings))
+
+
+def crew_home_identity() -> str:
+    """Return a short digest of the crew home this read's live rows came from.
+
+    A live pointer, a run record and a run's stream all live under the crew
+    home, which ``RECKON_HOME`` resolves and a caller may move between reads.
+    Two reads of one project and one docs tree under different homes are
+    answered from different pointers, so a snapshot composed under one home is
+    not a valid answer under another and neither the key nor the in-process
+    memo may match across them.
+    """
+    from reckon.crew import runs as crew_runs
+
+    try:
+        home = crew_runs.crew_home()
+    except OSError:
+        return "none"
+    return roadmap_docs_identity(home)
 
 
 def roadmap_docs_identity(docs_dir: Path | None) -> str:
@@ -369,6 +391,7 @@ def roadmap_snapshot_key(
             "code": code_stamp,
             "project": project,
             "roots": roots,
+            "home": crew_home_identity(),
             "shape": dict(shape or {}),
             "projects": generations,
             "watch": _watch_stream_identity(project),
@@ -407,7 +430,9 @@ def roadmap_snapshot_load(
     moment = time.time()
     candidates: list[dict[str, Any]] = []
     with _ROADMAP_SNAPSHOT_LOCK:
-        served = _ROADMAP_SNAPSHOTS.get((project, roadmap_docs_identity(docs_dir)))
+        served = _ROADMAP_SNAPSHOTS.get(
+            (project, roadmap_docs_identity(docs_dir), crew_home_identity())
+        )
     if served is not None and served[0] == key:
         candidates.append(served[1])
     try:
@@ -440,7 +465,9 @@ def roadmap_snapshot_store(
         "payload": payload,
     }
     with _ROADMAP_SNAPSHOT_LOCK:
-        _ROADMAP_SNAPSHOTS[(project, roadmap_docs_identity(docs_dir))] = (key, record)
+        _ROADMAP_SNAPSHOTS[
+            (project, roadmap_docs_identity(docs_dir), crew_home_identity())
+        ] = (key, record)
     from reckon._store import write_atomically
 
     path = roadmap_snapshot_path(project, docs_dir)
