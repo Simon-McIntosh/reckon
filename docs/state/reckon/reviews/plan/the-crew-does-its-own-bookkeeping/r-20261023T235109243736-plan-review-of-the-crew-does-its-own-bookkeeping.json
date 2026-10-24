@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:59:48.647Z",
+  "dispatched_at": "2026-10-23T23:52:00Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-does-its-own-bookkeeping/r-20261023T235109243736-plan-review-of-the-crew-does-its-own-bookkeeping/plan.html:147",
+      "id": "done_when-1",
+      "reason": "the untested half of the rule's predicate is the ordinary crashed-worker state, and without that case the guard can be widened to every stopped peer and still read green.",
+      "text": "\u00a723's done-when never tests a peer whose process has ended but whose manifest is not terminal, so an implementation that keys the exemption on \"the process has ended\" alone passes every stated case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-does-its-own-bookkeeping/r-20261023T235109243736-plan-review-of-the-crew-does-its-own-bookkeeping/plan.html:147",
+      "id": "reasoning-1",
+      "reason": "without the caller named and its module in scope, the node either stops for a scope extension mid-fix or keys the exemption on a remanent pointer field, and applying the rule unconditionally inside `_raise_repository_scope_conflict` would also release claims at dispatch, which `claim_disposition`'s own docstring measures as protecting work in five of six stopped claims.",
+      "text": "\u00a723's reproduced D12 message is produced on the landing path only by `widen_claim(..., acceptance=True)` (`reckon/crew/claims.py:63`) calling `refuse_widen_scope_conflicts` and then `_raise_repository_scope_conflict` (`reckon/crew/dispatch_claims.py:1578`), the shared function every dispatch claim check also uses; \u00a723 names neither that caller nor `reckon/crew/claims.py` in its write paths, and the only acceptance marker already on the pointer (`accepted_scope_before_widening`) is set once and persists across later plain `crew widen` calls",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "271e18a012bb05e78ebf91a1011fbaa7f99b0f31d5d27b1f7458ebf06422bf25",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T235109243736-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "889f212abc3b421eccde80eac2598029aef6c77f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_accepted_scope_exceptions` with its `cannot accept <path>: live run <peer> claims <claim>` text, the `ScopeConflict` D12 wording, and `claim_disposition`'s `N commit(s) beyond its base that main cannot reach` reason all resolve and read as quoted in `reckon/crew/promotion_scope.py`, `reckon/crew/node.py` and `reckon/crew/dispatch_claims.py`.",
+    "done_when": "a finding \u2014 \u00a723's cases cover a stopped completed peer (exemption applies), a live peer (refused as today) and a negative control, but there is no case for a peer whose process has ended while its manifest is not terminal, which is the other half of the rule's own predicate.",
+    "evidence_paths": "pass \u2014 \u00a723's gate lives in a temporary crew home, its logs are under the run directory, and its new test is a repository path; nothing is placed on node-local scratch.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach \u00a723's symbols, paths or comments.",
+    "reasoning": "a finding \u2014 the refusal \u00a723 reproduces is raised only through `widen_claim(..., acceptance=True)` in `reckon/crew/claims.py`, which \u00a723 neither names nor lists among its write paths, and the function it reaches there is the same one every dispatch claim check uses.",
+    "single_goal": "pass \u2014 \u00a723 carries one mechanism (the acceptance exemption for a stopped, terminal peer) and one done-when for it.",
+    "wiring": "pass \u2014 \u00a723 declares no depends-on, and its two write paths (`reckon/crew/promotion_scope.py`, `reckon/crew/dispatch_claims.py`) are listed by no other section, so nothing needs to sequence it; the cited plan slugs `the-monitor-shows-the-work-it-watches` and `a-coordinator-can-clear-its-own-duties`, and the evidence archive path `docs/evidence/archive/the-crew-does-its-own-bookkeeping-landed.html`, all resolve."
+  },
+  "section_digests": {
+    "_document": "e0f15b540cc46f750bbea43fa3686b6bbc8573c6ac4feeb2e9d0d69d58e65361",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "528ecce7a53f57e54bcf1efa83ff458958c3437b3432895ddecdd835a0e62505",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "738604ff6516e5303088fb5f37ce17d56c02dc7217d2ebd64cdad839f6fd1eb5",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "06480d86b46e7a9341ee21e34c46b8e433993f1917a8f6fdef7660ac34fe2ab4",
+    "s3": "ba6dd9a478bc0199ba62cffc2235c6b7735014d677ac51e4789220cffff43d32",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "9450a2aff439a83861b8a100a49b15e67fd864fa1523edeeafd6c9dd9e0ec5c7",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T00:04:45.762304+00:00"
+}
