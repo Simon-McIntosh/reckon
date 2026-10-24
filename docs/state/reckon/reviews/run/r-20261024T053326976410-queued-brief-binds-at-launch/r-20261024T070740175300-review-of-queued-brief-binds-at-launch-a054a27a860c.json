@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T07:24:59.909Z",
+  "dispatched_at": "2026-10-24T07:11:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 555,
+      "severity": "non-blocking",
+      "summary": "_REBUILT_BRIEF_NAMES re-declares the set of brief names a launch re-composes that recovery_review_subject.materialize_run_review_brief already owns at recovery_review_subject.py:634; a third rebuilt-brief name added to the owner would be missed by is_rebuilt_brief, and the queue would freeze it as a steering copy again, which is the defect this delta fixes."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/queued-brief-binds-at-launch.html",
+      "line": 73,
+      "severity": "non-blocking",
+      "summary": "the skip-removal control's row closes with a stray </td> after its </tr>, so the delivered evidence table carries malformed markup and a parser sees a cell outside any row."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/queued-brief-binds-at-launch.html",
+      "line": 71,
+      "severity": "non-blocking",
+      "summary": "the skip-removal control is reported as measured (3 failed, 6 passed) but no log for it exists under the run directory \u2014 only negative-control.log, which records the launch-rebind mutation \u2014 so a later reader cannot verify the second control's numbers."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T053326976410-queued-brief-binds-at-launch/manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "summary": "the after_suite command is truncated at the nonexistent tests/test_a_jev_hold_queues_placeholder.py and embeds a literal (serial) token, so it is not the command that ran; the gate log's own header carries the full list, but the machine-read block and the receipt differ."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is that a queued request's brief binds at launch from steering.md in its own run directory; the delta keeps reckon/crew/queue_admission.py:_launch_queued rebinding node.brief/brief_path to the steering file and adds reckon/crew/runs.py:596 is_rebuilt_brief so a brief the launch re-composes is never frozen by the launch path.\nVERDICT done_when: the done_when names a new tests/test_queue_steering_binding.py plus zero added failures against the base revision; the delta adds three arms to that module, and I re-ran it at a054a27a in a git-archive scratch tree (review-gate.log: 9 passed, EXIT=0), while the recorded serial head and base arms (gate-head-serial.log 373 passed/4 failed, gate-base-serial.log 364 passed/4 failed) carry the same four failure ids, so the added count is zero.\nVERDICT write_paths: the source node's seven declared paths include reckon/crew/runs.py, reckon/crew/dispatch_admission.py, tests/test_queue_steering_binding.py and the evidence fragment, and every path in git diff --stat 13cc1960a..a054a27a (four files) is one of them.\nVERDICT manifest: read; it records commits ac35abf17 and a054a27a8 plus the earlier three, both suite blocks, the negative control and its three red arms, and a checkpoint recorded at 09:07 before the closing evidence commit, but its after_suite command line is truncated to a placeholder filename (manifest.md:19).\nVERDICT diff: read commit by commit against 13cc1960a; ac35abf17 moves the brief byte-copy into runs.store_brief, has dispatch_admission._store_brief delegate to it, adds is_rebuilt_brief and its skip in runs._write_steering, and adds three test arms; a054a27a8 changes the evidence fragment only, so the code at the reviewed head is ac35abf17's.\nCALL_SITES: reckon/crew/dispatch.py:1948 _store_brief, reckon/crew/dispatch.py:325 queue_dispatch, reckon/crew/dispatch.py:1657 queue_dispatch, reckon/crew/dispatch.py:1774 queue_dispatch, reckon/crew/dispatch.py:1846 queue_dispatch, reckon/crew/queue_admission.py:171 _steering_brief, reckon/crew/queue_admission.py:_launch_queued, reckon/crew/queue_admission.py:1631 runs.queue_dispatch\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:596 is_rebuilt_brief suppresses the queue-time copy only for a brief recovery_review_subject.materialize_run_review_brief re-composes, so the launch still binds its brief at launch and the review-brief case now binds to the head the tree carries then.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate is recorded in gate-head-serial.log and gate-base-serial.log with matching four-id failure sets, but the skip-removal control's numbers at queued-brief-binds-at-launch.html:71 have no retained log and the manifest's after_suite command at manifest.md:19 is truncated.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 13cc1960a..a054a27a lists exactly reckon/crew/runs.py, reckon/crew/dispatch_admission.py, tests/test_queue_steering_binding.py and the evidence fragment, all inside the source node's declared write paths, and nothing else.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_queue_steering_binding.py:309 would redden if runs._write_steering took a steering copy of a composed review brief (its no-steering assertion and its stale-digest inequality), :375 would redden if the inside-run-directory skip were removed, and :402 would error if the OSError guard at runs.py:642 were removed; negative-control.log shows the launch-rebind mutation reddening three arms.\nSCORE fit: 18\nJUSTIFICATION fit: store_brief, is_rebuilt_brief and _REBUILT_BRIEF_NAMES at reckon/crew/runs.py:555 name the mechanism with no plan, stage or ticket reference, and the delegate in reckon/crew/dispatch_admission.py:2244 follows the surrounding lazy-import idiom.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/dispatch_admission.py:2244 now delegates to reckon/crew/runs.py:559 store_brief, resolving the prior duplication of the byte-copy, but reckon/crew/runs.py:555 re-declares the composed-brief name set recovery_review_subject.py:634 already owns.\nFINDING reckon/crew/runs.py:555 non-blocking: _REBUILT_BRIEF_NAMES re-declares the set of brief names a launch re-composes that recovery_review_subject.materialize_run_review_brief already owns at recovery_review_subject.py:634; a third rebuilt-brief name added to the owner would be missed by is_rebuilt_brief, and the queue would freeze it as a steering copy again, which is the defect this delta fixes.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/queued-brief-binds-at-launch.html:73 non-blocking: the skip-removal control's row closes with a stray </td> after its </tr>, so the delivered evidence table carries malformed markup.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/queued-brief-binds-at-launch.html:71 non-blocking: the skip-removal control is reported as measured (3 failed, 6 passed) but no log for it exists under the run directory, so a later reader cannot verify the second control's numbers.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T053326976410-queued-brief-binds-at-launch/manifest.md:19 non-blocking: the after_suite command is truncated at the nonexistent tests/test_a_jev_hold_queues_placeholder.py and embeds a literal (serial) token, so it is not the command that ran.",
+  "review_run_id": "r-20261024T070740175300-review-of-queued-brief-binds-at-launch-a054a27a860c",
+  "reviewed_base_sha": "13cc1960a560e8168a3415071d64aa86ce06e6ab",
+  "reviewed_head_sha": "a054a27a860cab4394846b4041c368b271407c1b",
+  "reviewed_run_id": "r-20261024T053326976410-queued-brief-binds-at-launch",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:31:00+00:00",
+  "total": 103
+}
