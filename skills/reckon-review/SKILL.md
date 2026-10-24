@@ -128,16 +128,12 @@ or a deferred section, not by work. Name which one, and clear it through §Links
 by closing the gate or descoping or moving the section, rather than leaving the
 plan open at 100 %.
 
-A deferred section is open work, so a plan holding one is not finished at 100 %,
-and `close` refuses it. Never close around it or leave it parked. Each deferred
-section either moves to a successor plan or is removed with its reason recorded.
-A section moves with its prose, its open gates and its section waits, and the
-successor says where it came from. A section is removed only when a recorded
-decision says the work would not change a result; cite that decision in the
-close outcome. Fix every gate and comment anchored on a section that leaves:
-narrow the gate, carry it with the section, or re-anchor the comment, so nothing
-names a missing section. Until `a-finished-plan-closes` §4 gives `close` a
-`moved_to` descope, the move is a direct HTML edit. Announce it as a bypass.
+A deferred section is open work: its plan is not finished, and `close` refuses
+it. Move it to a successor plan with its prose, open gates and waits, naming
+where it came from, or remove it citing a recorded decision that the work would
+not change a result. Narrow, carry or re-anchor every gate and comment on a
+section that leaves. Until `a-finished-plan-closes` §4 gives `close` a
+`moved_to` descope, the move is a direct HTML edit; announce it as a bypass.
 
 ## Portfolio
 
