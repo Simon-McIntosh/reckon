@@ -488,7 +488,12 @@ def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
     return "its pointer was discarded with the reason recorded"
 
 
-def _review_in_flight(record: Mapping[str, Any], *, rubric: str | None = None) -> str:
+def _review_in_flight(
+    record: Mapping[str, Any],
+    *,
+    rubric: str | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
+) -> str:
     """The review run already standing for this run at this head, or empty.
 
     Recognition keys on the pair a review stands for — the run it reviews and
@@ -506,6 +511,11 @@ def _review_in_flight(record: Mapping[str, Any], *, rubric: str | None = None) -
     that reads the missing one as a pointer to inspect raises out of the reflex
     rather than recomposing, failing on exactly the case it was written to
     route.
+
+    ``pointers`` lets a caller that has already read the live pointers — a view
+    deriving several duties from one snapshot — pass its own read rather than
+    have this sweep read the directory again per run. Every reader that passes
+    none reads the live pointers itself, so the answer is the same either way.
     """
     fields = _review_dispatch_fields(record, rubric=rubric)
     head = str(fields.get("head") or "")
@@ -529,7 +539,8 @@ def _review_in_flight(record: Mapping[str, Any], *, rubric: str | None = None) -
     if not project:
         return ""
     run_id = str(record.get("run_id") or "")
-    for pointer in list_live(project=project):
+    candidates = list_live(project=project) if pointers is None else pointers
+    for pointer in candidates:
         if not _is_review_run(pointer):
             continue
         pointer_rubric = _review_pointer_rubric(pointer, run_id, head)
