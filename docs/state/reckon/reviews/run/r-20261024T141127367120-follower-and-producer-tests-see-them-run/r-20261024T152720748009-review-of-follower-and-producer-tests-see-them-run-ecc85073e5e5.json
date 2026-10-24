@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T15:41:04.376Z",
+  "dispatched_at": "2026-10-24T15:29:02Z",
+  "findings": [
+    {
+      "failure_scenario": "Revert the omission rule in reckon/crew/query.py:project_run_rows so every row carries lane_cause=None: the assertion at line 136 still passes, so the census id would stay green while the contract it was repaired for is gone.",
+      "file": "tests/test_simultaneous_ends_are_one_lane_event.py",
+      "line": 136,
+      "severity": "non-blocking",
+      "summary": "row.get(\"lane_cause\") is None holds under both the superseded contract (field present with a null value) and the intended one (project_run_rows leaves an empty field off the row), so this assertion cannot fail on the regression the repair exists for; `assert row.get(\"lane_cause\") is None` should be `assert \"lane_cause\" not in row` to pin the projection rule 9a7c6b83d introduced."
+    },
+    {
+      "failure_scenario": "Change PaneRowPath.feed so it emits every transition with no dedup: both sides of `expected == follower.emitted` move together and the test stays green, so the file no longer detects a row-policy regression \u2014 only an extra sweep-emitted row.",
+      "file": "tests/test_follow_sweep_cadence.py",
+      "line": 87,
+      "severity": "non-blocking",
+      "summary": "_expected_emissions derives its expected pane from follower_row_path, the same object the follower under test feeds, so the selection, carriage and dedup rules cancel out of `assert expected == follower.emitted` at line 318; the assertion can only catch a row emitted that did not come from the stream lines, not a wrong row policy, and the policy's own guards live in tests/test_the_stream_carries_only_actionable_lines.py."
+    },
+    {
+      "failure_scenario": "If the arming ever completes before the reader is placed, the one append is skipped and the case fails at its `until` assertion rather than retrying \u2014 a flake introduced where the retry used to absorb it.",
+      "file": "tests/test_follow_observes_other_sessions.py",
+      "line": 153,
+      "severity": "non-blocking",
+      "summary": "The _deliver_own_start docstring still describes a retry loop (\"the retries add no duplicate row\") and the skipped-append race it names, while the body at line 163 appends exactly once and then only sleeps for RECEIPT_BOUND (0.5 s); the race is instead closed by _await_arm in the caller, so the comment names a guard the function no longer has and a reader relying on it would not know a single lost append fails the case."
+    },
+    {
+      "failure_scenario": "A repair node dispatched against the manifest's sentence removes the `if producer.tick_deferred: return False` guard at reckon/crew/runs.py:2582, changes nothing observable, and the producer still never recovers after one broken flight.yaml.",
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T141127367120-follower-and-producer-tests-see-them-run/manifest.md",
+      "line": 27,
+      "severity": "non-blocking",
+      "summary": "The blocked id's stated mechanism \u2014 that _publish_watch_stream sets producer.tick_deferred and every later tick returns early on that flag \u2014 is not what reckon/crew/runs.py does: the flag is consulted only inside the `except FlightConfigError` at line 2582, and the healthy path at line 2579 clears it, so a tick whose config loads again does publish; the no-recovery the probe and logs/prod-single.log show is real but its cause is elsewhere, and a repair section written from this sentence may aim at a line that is not the defect."
+    },
+    {
+      "failure_scenario": "A coordinator or promotion gate reading only the manifest cannot recover the base arm's 11 failure ids or the head arm's 1, so it cannot check the added-failure delta without re-deriving it from logs it was not told which lines of to read.",
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T141127367120-follower-and-producer-tests-see-them-run/manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "summary": "baseline_suite and after_suite are recorded as prose rather than the armed JSON shape (revision, command, exit_status, log_path, completed, failure_count, failure_ids), and measurement_module carries \"tests\" where a base arm run in a git archive extraction owes the absolute path the run printed for the module under test, so neither arm's failure set can be read from the manifest without opening the logs; the header lines of logs/base-arm.log also omit the module.__file__ and resolved-cwd lines the contract asks a scratch-tree arm to print."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 the repaired tests bind to reckon.crew_follow_commands.follower_row_path, reckon.crew.ticker.PaneRowPath, reckon.crew.runs.producer_live, reckon.crew.query.project_run_rows and reckon.crew.recovery.format_watch_transition, each opened at the reviewed head; the diff itself touches no production code, so no runtime path reaches it.",
+    "diff": "pass \u2014 read all three commits against c7f3a84; they change four test files and add one evidence fragment, with no production code, no unrelated edit, and no plan identifier in a symbol, filename or comment.",
+    "done_when": "pass \u2014 the done-when names the 11 ids and the five-file gate; the worker ran exactly that gate at 4cdd078a5 and recorded 1 failed, 29 passed, EXIT=1 in logs/head-gate.log, with the single failure being the id the plan's blocked-id clause lets it report.",
+    "goal": "pass \u2014 the goal is to make the 11 census ids pass by asserting each intended contract or reporting the unintended change; the diff repairs 10 of 11 (tests/test_follow_observes_other_sessions.py, tests/test_follow_sweep_cadence.py, tests/test_follower_reload_is_safe.py, tests/test_simultaneous_ends_are_one_lane_event.py) and reports the eleventh under outside_scope and blockers with commit a89d8419e named.",
+    "manifest": "pass \u2014 manifest.md is present, status complete, and names per-id commits, the blocked id, the negative control, and six logs; two recorded quantities deviate from the declared shape (baseline_suite/after_suite as prose, measurement_module \"tests\"), recorded as a finding above.",
+    "write_paths": "pass \u2014 the declared paths are the four test files plus the evidence fragment; git diff c7f3a84..ecc85073e changes exactly those five files and no production module."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the goal is the 11 census ids of the plan section either repaired or reported; ten are repaired in the four test files and the eleventh (tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers) is reported blocked with commit a89d8419e named in manifest.md:26-27.\nVERDICT done_when: pass \u2014 the done-when names the five-file gate; logs/head-gate.log records 1 failed, 29 passed in 108.24s, EXIT=1 at 4cdd078a5, and the one failure is the reported-blocked id.\nVERDICT write_paths: pass \u2014 the diff c7f3a84..ecc85073e changes only the five declared paths, including docs/evidence/fragments/the-suite-is-green-at-head/follower-and-producer-tests-see-them-run.html.\nVERDICT manifest: pass \u2014 manifest.md:3 lists the declared paths, :23 attributes each id to a commit, :20 records the negative control, and :16 names six logs.\nVERDICT diff: pass \u2014 read c9d822acd, 4cdd078a5 and ecc85073e commit by commit; four test files and one added evidence fragment, no production module, no naming violation.\nCALL_SITES: reckon/crew_follow_commands.py:follower_row_path, reckon/crew/ticker.py:PaneRowPath, reckon/crew/runs.py:producer_live, reckon/crew/query.py:project_run_rows, reckon/crew/recovery.py:format_watch_transition\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: ten of the eleven ids at docs/plans/the-suite-is-green-at-head.html \u00a747 are repaired and the eleventh is reported under outside_scope and blockers in manifest.md:26-27 as the plan's blocked-id clause requires.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base-arm.log (11 failed, EXIT=1), logs/head-gate.log (1 failed, 29 passed, EXIT=1) and logs/negative-control.log (10 failed, EXIT=1) each carry rev, command and a final EXIT= line, but the head gate is red and the base arm records neither its module.__file__ nor its resolved cwd.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat c7f3a84..ecc85073e lists only tests/test_follow_observes_other_sessions.py, tests/test_follow_sweep_cadence.py, tests/test_follower_reload_is_safe.py, tests/test_simultaneous_ends_are_one_lane_event.py and the evidence fragment, all inside manifest.md:3.\nSCORE durability: 15\nJUSTIFICATION durability: logs/negative-control.log mutates four production behaviours and reddens ten repaired ids, which is the right control, but tests/test_simultaneous_ends_are_one_lane_event.py:136 holds under either contract and tests/test_follow_sweep_cadence.py:87 derives its expectation from the object it tests.\nSCORE fit: 16\nJUSTIFICATION fit: the additions follow the file idiom and carry no plan label, but tests/test_follow_observes_other_sessions.py:153 documents a retry that line 163 no longer performs.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_follow_sweep_cadence.py:77 now drives reckon/crew_follow_commands.py:1020 follower_row_path, extending the existing PaneRowPath owner (reckon/crew/ticker.py:1929) instead of keeping the local re-implementation it replaced.\nFINDING tests/test_simultaneous_ends_are_one_lane_event.py:136 non-blocking: row.get(\"lane_cause\") is None passes whether the field is absent under the new projection or present-and-null under the superseded one, so it does not pin the change it was repaired for.\nFINDING tests/test_follow_sweep_cadence.py:87 non-blocking: the expected pane is derived from follower_row_path, the same path the follower feeds, so a row-policy regression moves both sides of the comparison at line 318 together.\nFINDING tests/test_follow_observes_other_sessions.py:153 non-blocking: the docstring names a retry loop and an append race that the single append at line 163 no longer guards, so a lost append now fails the case instead of being absorbed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T141127367120-follower-and-producer-tests-see-them-run/manifest.md:27 non-blocking: the blocked id's stated mechanism contradicts reckon/crew/runs.py:2579-2586, where tick_deferred is cleared on any tick whose config loads, so the repair section written from it may aim at the wrong line.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T141127367120-follower-and-producer-tests-see-them-run/manifest.md:21 non-blocking: baseline_suite and after_suite are prose rather than the armed JSON shape and measurement_module reads \"tests\" rather than an absolute path, so neither arm's failure set is readable from the manifest alone.\n",
+  "review_run_id": "r-20261024T152720748009-review-of-follower-and-producer-tests-see-them-run-ecc85073e5e5",
+  "reviewed_base_sha": "c7f3a84383f02588a177346df48303a1e284c1cb",
+  "reviewed_head_sha": "ecc85073e5e57368d391de6fc561c08ae4d613e7",
+  "reviewed_run_id": "r-20261024T141127367120-follower-and-producer-tests-see-them-run",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T16:49:47.218525+00:00",
+  "total": 104
+}
