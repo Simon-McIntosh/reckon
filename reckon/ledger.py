@@ -1113,9 +1113,19 @@ def _index_directory() -> Path:
 
 
 def _run_index_path(project: str, root: str | Path | None) -> Path:
+    """The index file one checkout's ledger is published into.
+
+    The name carries the projection version, so a reader built at a different
+    version keeps its own file. Many processes on a host run older code — a
+    session server that predates a release, the producer, peer agents — and a
+    shared name would make each version's reader drop and rebuild the other's
+    tables on its first read, seconds of work per switch until every one has
+    restarted. A version-named file lets both read a complete index, and the
+    drop-on-mismatch guard inside a file still refuses a stale one.
+    """
     source = str(ledger_path(project, root).resolve())
     identity = hashlib.sha256(source.encode()).hexdigest()
-    return _index_directory() / f"ledger-{identity}.sqlite"
+    return _index_directory() / f"ledger-{identity}-v{_RUN_INDEX_VERSION}.sqlite"
 
 
 def recorded_ledger_path(index: str | Path) -> str | None:

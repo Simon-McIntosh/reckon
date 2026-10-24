@@ -153,6 +153,65 @@ def test_an_index_from_the_previous_version_is_rebuilt_with_section(
     assert version == ledger._RUN_INDEX_VERSION
 
 
+def _index_state(path: Path) -> tuple[int, int, int]:
+    info = path.stat()
+    return info.st_mtime_ns, info.st_ino, info.st_size
+
+
+def test_two_versions_alternate_without_rebuilding_each_other(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """A host running two versions keeps one index per version.
+
+    A session server and a worker can run different revisions for days. When
+    both name one index file, each read at a version the file does not carry
+    drops the other's tables and rebuilds from every run document, so two
+    alternating readers rebuild on every switch. Counting the rebuilds — a
+    rebuild re-reads each changed run document through ``_read_run`` and
+    replaces the file — shows the second round rebuilding nothing.
+    """
+    root = _build_ledger(tmp_path / "repo")
+    current = ledger._RUN_INDEX_VERSION
+    previous = current - 1
+
+    reads: list[int] = []
+    real_read_run = ledger._read_run
+
+    def counting(source):
+        reads.append(1)
+        return real_read_run(source)
+
+    monkeypatch.setattr(ledger, "_read_run", counting)
+
+    # Round one builds each version's own index; each build is expected.
+    ledger.load(PROJECT, root)
+    current_index = ledger._run_index_path(PROJECT, root)
+    monkeypatch.setattr(ledger, "_RUN_INDEX_VERSION", previous)
+    ledger.load(PROJECT, root)
+    previous_index = ledger._run_index_path(PROJECT, root)
+    assert current_index != previous_index
+    assert current_index.is_file() and previous_index.is_file()
+
+    before = {path: _index_state(path) for path in (current_index, previous_index)}
+    reads.clear()
+
+    # Round two alternates twice; neither index may move or be re-read into —
+    # except the run-directory refresh, which reads only added documents.
+    for version in (current, previous, current, previous):
+        monkeypatch.setattr(ledger, "_RUN_INDEX_VERSION", version)
+        ledger.picker_runs(PROJECT, root)
+
+    after = {path: _index_state(path) for path in (current_index, previous_index)}
+    assert before == after, "an alternating read rebuilt an index it did not own"
+    assert not reads, f"the second round re-read {len(reads)} run documents"
+
+
+def test_the_index_name_carries_its_version() -> None:
+    """The version is in the file name, so two versions cannot collide."""
+    path = ledger._run_index_path(PROJECT, None)
+    assert path.name.endswith(f"-v{ledger._RUN_INDEX_VERSION}.sqlite")
+
+
 def test_the_projection_carries_the_fields_the_grouping_reads() -> None:
     """The six fields the grouping reads are all named by the projection."""
     assert {"role", "run_id", "plan", "section", "gate", "failure_classification"} <= (
