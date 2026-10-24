@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T04:59:39.556Z",
+  "dispatched_at": "2026-10-24T04:53:41Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:64",
+      "id": "reasoning-1",
+      "reason": "as written the guard is evaluated against a run id that does not yet name the request, so a node implementing it literally leaves an orphan `steering.md` per re-dispatch and the \"must never overwrite\" rule is satisfied only by accident; the fix is to resolve the request's id before the copy (the caller at dispatch.py:1733 already holds `existing[\"run_id\"]`) or move the copy after dedup in `reckon/crew/runs.py`, which is not among \u00a75's declared write paths.",
+      "text": "\u00a75 makes `_queued_request_record` (dispatch.py:229) copy `--brief` into `steering.md` \"only when the request's run directory holds no `steering.md` yet\", and says that guard is what stops an in-place re-queue overwriting an edit; but on that arm the builder is called at dispatch.py:1733 with the new dispatch's `run_id`, and the identity match that finds the existing request happens afterwards inside `queue_dispatch` (runs.py:576-584), which then rewrites `record[\"run_id\"] = existing_run_id` (runs.py:616). The directory the builder would test and write is therefore `run_dir(<fresh-id>)`, always empty of `steering.md`, not the queue's `run_dir(<existing-id>)` \u2014 so the guard never sees the edited file, the original `--brief` is copied into an orphan run directory that no pointer names, and the done-when's third arm still passes because launch reads the existing directory.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ad06f0a0a8016eeec33a186003440be567b7bef551cb3ea5f49f49deeda66de7",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 54,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T05:00:41.971862+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T05:00:41.971862+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v54.json",
+  "review_run_id": "r-20261024T045254828595-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "41259b3198eabc21c0871a8f5f1ba3a54be682ef",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every code anchor in \u00a75 resolves (`_queued_request_record` `reckon/crew/dispatch.py:229`, `_launch_queued`/`_node_from_pointer` `reckon/crew/queue_admission.py:171`/`:119`, `_store_brief`/`_brief_digest` `reckon/crew/dispatch_admission.py:2241`/`:2204`, `reckon/mcp_crew_actions.py`), and each plan href resolves to an existing `docs/plans/*.html` target.",
+    "done_when": "pass \u2014 \u00a75's six arms include a declared negative control (the discriminating arm that leaves `steering.md` alone and changes the pointer's brief, which fails on today's copy-at-dispatch code) plus refusal arms for a launched request, an undeclared model and an invalid steering file.",
+    "evidence_paths": "pass \u2014 \u00a75 keeps every log under the request's own run directory (`~/.config/reckon/crew/runs/<request-id>/`, `runs_dir()` in `reckon/crew/runs.py:79`), and \u00a714 writes to `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html`; nothing lands in a scratchpad or node-local `/tmp`.",
+    "naming": "pass \u2014 \u00a75 introduces `steering.md` and `crew queue edit|reprioritise|drop`, all named by what they do; no plan label, ticket number or version tag reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a75 says the copy guard is evaluated inside `_queued_request_record` against \"the request's run directory\", but on the in-place re-queue arm that builder is handed the re-dispatch's fresh run id, which `queue_dispatch` rewrites to the existing request's id only afterwards.",
+    "single_goal": "pass \u2014 \u00a75 is one deliverable (a brief that binds at launch and stays editable until then); the two-node build split is explicitly allowed inside the section and each node's share is named.",
+    "wiring": "pass \u2014 \u00a75's declared `depends-on: [s2]` holds, and every consumer of its verbs (`s4`, and `s10`/`s13`/`s15` through `s4`) is transitively ordered after it; the one external edge (`s14` on `imas-ambix:local-lane-admission-control#s27`) is declared in the direction the plan states."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a03ec4eb27750f93fd9c243833f00bd290736d52a755b4225237d9b0d4186e1d",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T05:00:31.699363+00:00"
+}
