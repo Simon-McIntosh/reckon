@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -160,10 +160,12 @@
     <p>The station's tick stats the live directory and each live pointer and stream. A pointer is parsed only
     when its <code>file_memo.file_signature</code> moved against the stored one. A stream is read only past its stored offset, up to the last whole record,
     and folded by <code>_backends.observe_stream</code> with the stored fold state as <code>state</code>; a
-    stream whose inode changed, that shrank, or whose first 4 KiB no longer match the digest stored beside its
-    offset is folded from its start. The digest is what catches a stream rewritten in place that keeps its inode
-    and grows past its stored offset between two ticks, which neither an inode nor a size test can see;
-    <code>station_store.ingest_stream</code> (§5) checks only inode and size today, so this section adds it. The classifier
+    stream whose inode changed or that shrank is folded from its start. A stream that grew is read from 64 bytes
+    before its stored offset, and those 64 bytes are compared with the copy stored beside the offset; a mismatch
+    means the file was rewritten in place, keeping its inode and growing past the offset between two ticks, and
+    the stream is folded from its start. That is the one case neither an inode nor a size test can see, and the
+    anchor costs 64 bytes per stream that grew and nothing for a stream that did not.
+    <code>station_store.ingest_stream</code> (§5) checks only inode and size today, so this section adds the anchor. The classifier
     (<code>recovery.classify_pointer</code>) runs once per run whose classification inputs changed, keyed on
     <code>recovery_memo._classification_inputs</code>, which covers the pointer, the stream, the manifest, the run
     directory's records, the review-store candidates and the tree head. A worker that finishes by writing its
@@ -179,7 +181,7 @@
     silence and <code>stalled</code> when none does.</p>
     <p>Done when, replaying the fixture streams of five real runs (copied from the crew home into a test
     directory) in chunks: the station's folded observation equals a single full fold of each stream
-    (<code>as_dict()</code> equal); the bytes it parses equal the bytes appended; a stream rewritten in place, keeping its inode and growing past its stored offset, is
+    (<code>as_dict()</code> equal); the bytes it reads from each stream per tick are at most the bytes appended plus 64, and zero for a stream that did not grow; a stream rewritten in place, keeping its inode and growing past its stored offset, is
     detected and refolded, so its observation equals a full fold of the rewritten file. The fold already exists in §5's <code>station_store.ingest_stream</code>; this
     section's new mechanism is the classification, so it is measured directly. Over three ticks of a fixture with
     three live runs, with <code>recovery.classify_pointer</code> and the liveness probe counted through patches:
@@ -190,8 +192,8 @@
     carried fold state must fail the equality test on a stream whose rate depends on earlier records; a tick
     that classifies every run on every pass must fail the unchanged-tick count; a change key on the pointer
     and stream alone must fail the manifest-only tick; a station without the quiet-beat reading must fail
-    the exited-worker and stall cases; and an ingest without the prefix digest must fail the in-place rewrite case.</p>
-    <p>This section is the next to edit <code>reckon/crew/station_store.py</code>, so it also takes the four non-blocking findings of §5's review. It deletes <code>store_at_runtime_root</code> and <code>default_store</code>, which have no caller and duplicate <code>StationStore.at_runtime_root</code>. It closes each day-file connection it opens: <code>sqlite3.Connection</code>'s context manager commits but does not close. And it replaces the assertion in <code>tests/test_the_station_store_is_node_local.py</code> that compares two outputs of the store with one against the fixture's three pointer paths. Done when, beside the measures above, <code>git grep -n "def store_at_runtime_root\|def default_store" reckon/</code> returns nothing, and a test counts the store's open file descriptors before and after writing 50 events and finds them equal.</p>
+    the exited-worker and stall cases; and an ingest without the tail anchor must fail the in-place rewrite case.</p>
+    <p>This section is the next to edit <code>reckon/crew/station_store.py</code>, so it also takes the four non-blocking findings of §5's review. It deletes <code>store_at_runtime_root</code> and <code>default_store</code>, which have no caller and duplicate <code>StationStore.at_runtime_root</code>. It closes each day-file connection it opens: <code>sqlite3.Connection</code>'s context manager commits but does not close. And it replaces the assertion in <code>tests/test_the_station_store_is_node_local.py</code> that compares two outputs of the store with one against the fixture's three pointer paths. Done when, beside the measures above, <code>git grep -n "def store_at_runtime_root\|def default_store" reckon/</code> returns nothing, a test counts the store's open file descriptors before and after writing 50 events and finds them equal, and the replaced assertion compares the incremental store's pointer paths with the fixture's three paths.</p>
 
     <h2 id="s7">§7 — One station per node replaces the per-project producers</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
