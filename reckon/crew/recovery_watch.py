@@ -1908,32 +1908,31 @@ def _reviewed_run_facts(project: str, snapshot: Mapping[str, Any]) -> dict[str, 
     source = round_node_source(node_id, REVIEW_NODE_PREFIX)
     if not source:
         return {}
-    reviewed = _reviewed_run_id(source, project)
+    reviewed = _resolved_reviewed_run(project, node_id)
     return {
         "reviewed_run_id": reviewed,
         "reviewed_node": _reviewed_run_node(reviewed, source),
     }
 
 
-def _reviewed_run_id(source: str, project: str) -> str:
-    """The run a review node id's source names, or the source itself.
+def _resolved_reviewed_run(project: str, node_id: str) -> str:
+    """The run a review node id names, through the resolver that already owns it.
 
-    A source that is already a run id needs no lookup. Otherwise it is matched
-    against the live fleet's node ids. The pointers are read without publishing
-    watcher transitions: this resolution runs inside the transition publisher,
-    so a publishing read would re-enter the very transition it is resolving
-    for, which recursed without end.
+    The shared resolver matches a source against the live fleet and falls back
+    to the durable review rows, so a review whose run has left the fleet still
+    names it. Its fleet read publishes watcher transitions, and this resolution
+    runs inside the transition publisher, so the read is taken with that
+    publication held off: otherwise the publisher re-enters the transition it
+    is resolving for.
     """
-    if source.startswith("r-"):
-        return source
+    from reckon.crew import recovery_review_delivery as delivery
+
+    previous = getattr(runs._SWEEP_LOCAL, "in_sweep", False)
+    runs._SWEEP_LOCAL.in_sweep = True
     try:
-        records = runs._list_live_records(project=project)
-    except Exception:  # noqa: BLE001 — an unreadable fleet names no other run
-        return source
-    for pointer in records:
-        if str((pointer.get("node") or {}).get("id") or "") == source:
-            return str(pointer.get("run_id") or source)
-    return source
+        return delivery._resolved_reviewed_run_id({"node": {"id": node_id}}, project)
+    finally:
+        runs._SWEEP_LOCAL.in_sweep = previous
 
 
 def _reviewed_run_node(run_id: str, fallback: str) -> str:

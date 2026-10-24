@@ -1530,9 +1530,13 @@ class RowPolicy:
         # after a reload, or a producer rewriting the state it had recorded, and
         # neither opens an attempt the reader is watching start. A resume, whose
         # pair leaves a word the pane draws ``halted``, is a launch either way.
-        if kind == START_KIND and run_id and (
-            run_id in self._shown
-            or _remembered_word(self._reported.get(run_id)) == "working"
+        if (
+            kind == START_KIND
+            and run_id
+            and (
+                run_id in self._shown
+                or _remembered_word(self._reported.get(run_id)) == "working"
+            )
         ):
             return None
         stamp = _stamped_moment(event)
@@ -1547,6 +1551,11 @@ class RowPolicy:
                 "run_id": reviewed,
                 "node": str(event.get("reviewed_node") or ""),
                 "to_state": IN_REVIEW_STATE,
+                # The row replaces the reviewed run's first working row, so it
+                # leaves the word the pane last showed for that run rather than
+                # the review's own: a reader drawing the row alone reads the
+                # same transition the grid draws from its memory.
+                "from_state": self._shown.get(reviewed) or event.get("from_state"),
                 "review_run_id": run_id,
                 LAUNCH_FIELD: True,
             }
