@@ -237,6 +237,9 @@ reckon crew member add    reckon crew member list --project <project>
 reckon crew observe --run <id>    reckon crew budget --check --project <project> --role <role>
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
+reckon crew queue edit --run <id> [--brief <file>] [--done-when <measure>] [--write-path <path>] [--time-budget <duration>] [--backend <backend>] [--model <model>] [--project <project>] [--pretty]
+reckon crew queue reprioritise --run <id> --priority <integer> [--reason <why>] [--project <project>] [--pretty]
+reckon crew queue drop --run <id> [--reason <why>] [--project <project>] [--pretty]
 reckon crew recover    reckon crew resume --run <id> --backend <backend> --model <model> --reason <text>
 reckon crew repair --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew repair --review --run <id> --record <path> --set <field=value> --reason <text>

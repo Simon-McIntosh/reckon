@@ -1992,6 +1992,129 @@ def crew_discard(run_id, pretty, project=None):
     _emit_crew_result(result, pretty)
 
 
+@crew.group(name="queue")
+def crew_queue():
+    """A request's own state while it waits to launch.
+
+    A queued or awaiting-upstream request is not yet a run: its steering text,
+    its measure, its scope, its budget and its route are still the
+    coordinator's, and dropping it costs a queue entry rather than a worker.
+    Each verb here refuses a request that has launched.
+    """
+
+
+@crew_queue.command(name="edit")
+@click.option("--run", "run_id", required=True, help="Queued request to change.")
+@click.option(
+    "--brief",
+    "brief_path",
+    default="",
+    help="File whose bytes replace the request's steering text.",
+)
+@click.option(
+    "--done-when",
+    default=None,
+    help="Replacement measure the launched worker is held to.",
+)
+@click.option(
+    "--write-path",
+    "write_paths",
+    multiple=True,
+    help="Replacement exclusive write path; repeat for each.",
+)
+@click.option("--time-budget", default=None, help="Replacement wall-clock allowance.")
+@click.option("--backend", default="", help="Lane the request launches on.")
+@click.option(
+    "--model",
+    default="",
+    help="Model key, model id or alias within the lane named beside it.",
+)
+@click.option(
+    "--project", default=None, help="Project owning the request; cross-checks it."
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_queue_edit(
+    run_id,
+    brief_path,
+    done_when,
+    write_paths,
+    time_budget,
+    backend,
+    model,
+    project,
+    pretty,
+):
+    """Replace a waiting request's steering text, measure, scope, budget or route."""
+    _accept_a_matching_project(run_id, project)
+    from reckon.crew import queue_edit as queue_edit_module
+    from reckon.crew.node import CrewError
+
+    try:
+        result = queue_edit_module.edit(
+            run_id,
+            steering_path_source=brief_path,
+            done_when=done_when,
+            write_paths=list(write_paths) if write_paths else None,
+            time_budget=time_budget,
+            backend=backend,
+            model=model,
+            project=project,
+        )
+    except (CrewError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    except click.ClickException:
+        raise
+    _emit_crew_result(result, pretty)
+
+
+@crew_queue.command(name="reprioritise")
+@click.option("--run", "run_id", required=True, help="Queued request to re-rank.")
+@click.option(
+    "--priority",
+    type=int,
+    required=True,
+    help="Explicit priority override; higher sorts ahead of the roadmap key.",
+)
+@click.option("--reason", default="", help="Why the request is being re-ranked.")
+@click.option(
+    "--project", default=None, help="Project owning the request; cross-checks it."
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_queue_reprioritise(run_id, priority, reason, project, pretty):
+    """Store an explicit priority override on a waiting request."""
+    _accept_a_matching_project(run_id, project)
+    from reckon.crew import queue_edit as queue_edit_module
+    from reckon.crew.node import CrewError
+
+    try:
+        result = queue_edit_module.reprioritise(
+            run_id, priority, reason=reason, project=project
+        )
+    except CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit_crew_result(result, pretty)
+
+
+@crew_queue.command(name="drop")
+@click.option("--run", "run_id", required=True, help="Queued request to withdraw.")
+@click.option("--reason", default="", help="Why the request is being withdrawn.")
+@click.option(
+    "--project", default=None, help="Project owning the request; cross-checks it."
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_queue_drop(run_id, reason, project, pretty):
+    """Remove a queued or awaiting-upstream request before it launches."""
+    _accept_a_matching_project(run_id, project)
+    from reckon.crew import queue_edit as queue_edit_module
+    from reckon.crew.node import CrewError
+
+    try:
+        result = queue_edit_module.drop(run_id, reason=reason, project=project)
+    except CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit_crew_result(result, pretty)
+
+
 def crew_repair_status(run_id, status, reason, pretty):
     """Replace a manifest's status word, keeping the file as delivered."""
     crew_module, _ = _crew_modules()

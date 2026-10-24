@@ -26,7 +26,7 @@ from typing import Any
 
 import click
 
-#: The eight coordinator write actions the crew tool accepts.
+#: The coordinator write actions the crew tool accepts.
 CREW_WRITE_ACTIONS: tuple[str, ...] = (
     "complete",
     "land",
@@ -36,6 +36,9 @@ CREW_WRITE_ACTIONS: tuple[str, ...] = (
     "widen",
     "stop",
     "discard",
+    "queue-edit",
+    "queue-reprioritise",
+    "queue-drop",
 )
 
 #: The parameters each action forwards to its verb's implementation, keyed by
@@ -133,6 +136,27 @@ _PARAM_MAP: dict[str, dict[str, str]] = {
     "discard": {
         "run_id": "run_id",
     },
+    "queue-edit": {
+        "run_id": "run_id",
+        "brief_path": "brief_path",
+        "done_when": "done_when",
+        "write_paths": "write_paths",
+        "time_budget": "time_budget",
+        "backend": "backend",
+        "model": "model",
+        "project": "project",
+    },
+    "queue-reprioritise": {
+        "run_id": "run_id",
+        "priority": "priority",
+        "reason": "reason",
+        "project": "project",
+    },
+    "queue-drop": {
+        "run_id": "run_id",
+        "reason": "reason",
+        "project": "project",
+    },
 }
 
 #: The defaults each action's verb supplies for a parameter the tool omits.
@@ -191,6 +215,17 @@ _PARAM_DEFAULTS: dict[str, dict[str, Any]] = {
     "widen": {"write_paths": ()},
     "stop": {},
     "discard": {},
+    "queue-edit": {
+        "brief_path": "",
+        "done_when": None,
+        "write_paths": (),
+        "time_budget": None,
+        "backend": "",
+        "model": "",
+        "project": None,
+    },
+    "queue-reprioritise": {"reason": "", "project": None},
+    "queue-drop": {"reason": "", "project": None},
 }
 
 #: ``land`` runs the promotion verb with the landing step on, so it takes the
@@ -235,6 +270,12 @@ def _verb_for(action: str) -> tuple[Callable[..., Any], dict[str, Any]]:
         return _verb_callback("reckon.crew_run_commands", "crew_stop"), {}
     if action == "discard":
         return _verb_callback("reckon.crew_run_commands", "crew_discard"), {}
+    if action == "queue-edit":
+        return _verb_callback("reckon.crew_run_commands", "crew_queue_edit"), {}
+    if action == "queue-reprioritise":
+        return _verb_callback("reckon.crew_run_commands", "crew_queue_reprioritise"), {}
+    if action == "queue-drop":
+        return _verb_callback("reckon.crew_run_commands", "crew_queue_drop"), {}
     if action == "answer":
         return _verb_callback("reckon.crew_dispatch_commands", "crew_review"), {}
     raise KeyError(action)

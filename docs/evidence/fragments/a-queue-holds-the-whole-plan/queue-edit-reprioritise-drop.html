@@ -1,0 +1,95 @@
+<section id="queue-edit-reprioritise-drop-landing">
+  <h2>A waiting request can be edited, re-ranked and dropped before it launches</h2>
+
+  <p><strong>What changed.</strong> Three verbs now act on a request that has
+  not launched: <code>reckon crew queue edit</code>,
+  <code>reckon crew queue reprioritise</code> and <code>reckon crew queue
+  drop</code>. The operations live in a new module,
+  <code>reckon/crew/queue_edit.py</code>, so the CLI verb and the MCP action
+  call one implementation rather than two that could drift.
+
+  <p><strong>Edit.</strong> An edit replaces the request's
+  <code>steering.md</code> in its own run directory and any of its
+  <code>done_when</code>, write paths, time budget or route. The edited node is
+  judged by the dispatch's own <code>validate_node</code> — with the decisions
+  the original dispatch recorded as locked and the resolved flight budget
+  ceiling — <em>before</em> anything is
+  written, so a refused edit leaves the request byte-identical. A route is a
+  <em>named</em> route: it passes the same <code>--backend</code> and
+  <code>--model</code> checks a dispatch applies, and a model the named lane
+  does not declare is refused by the catalogue's own resolver. The chosen
+  backend, lane and model key are recorded on the pointer under
+  <code>named_route</code>, with <code>route: deterministic</code> in the
+  request's dispatch options.
+
+  <p><strong>Reprioritise.</strong> The verb stores
+  <code>priority_override</code> (with its reason and the instant it was set)
+  on the request, so every later ranking pass reads the coordinator's intent
+  from the request rather than from a session's memory. The roadmap key the
+  request otherwise ranks by is untouched beside it.
+
+  <p><strong>Drop.</strong> A drop is the discard's own removal path, reached
+  only for a <code>queued</code> or <code>awaiting-upstream</code> request, so
+  the departure is recorded where a later reader looks for it and any worktree
+  a launch left behind is released by the audit a discard uses.
+
+  <p><strong>The launched boundary.</strong> All three verbs refuse a pointer
+  whose phase is no longer waiting, naming the phase it holds. The check runs
+  again under the pointer's own lock immediately before the write, because a
+  request can launch between the first read and the lock, and an edit that
+  slipped in there would change a brief a worker is already reading.
+
+  <h3 id="queue-edit-reprioritise-drop-measured">Measured</h3>
+
+  <p><code>tests/test_queue_verbs.py</code> exercises 15 cases. The current-head
+  gate passes all 15: steering and node fields change together, an invalid
+  edit writes nothing, a named route is recorded, an undeclared lane/model pair
+  is refused, a 35-minute edit is refused under a 25-minute fence, all three
+  verbs refuse a launched request, and both waiting phases can be
+  reprioritised or dropped. The edited measure is compared in full with its
+  replacement, and a launch between drop's first read and its locked removal
+  is refused.</p>
+
+  <p><strong>Negative control.</strong> A mutation that makes edit alone skip
+  its launched-request check fails
+  <code>test_a_launched_request_is_refused_by_every_verb[edit]</code> while
+  the other 14 cases pass. The failing output shows the edit changing a
+  <code>working</code> request. This is a refusal the positive gate alone could
+  not prove.</p>
+
+  <p><strong>Tool-to-CLI parity.</strong> The three queue actions are rows in
+  the shared crew action table. Each row acts on a real queued fixture request
+  through the CLI and the crew MCP tool and compares their JSON documents.
+  An independent sensitivity check removes each forwarded field in turn:
+  <code>done_when</code>, <code>time_budget</code>, <code>backend</code>,
+  <code>model</code>, <code>priority</code> and <code>brief_path</code> each
+  makes its matching row fail. The edit row uses a shared model name with a
+  named lane whose default is different, so both the backend and model
+  arguments matter to the answer.</p>
+
+  <p><strong>Identity and help.</strong> The run identity sweep completes
+  without the earlier <code>KeyError</code> for the queue verbs. The help
+  census completes with one failure: <code>retention-sweep</code> is a
+  reachable leaf absent from its table. That unrelated row was removed from
+  this node as directed; the same mismatch exists at the base revision. The
+  build skill names all three queue verbs, and its full contract file passes
+  72 tests, including the registered-verb and command-family checks.</p>
+
+  <p><strong>Base-to-head comparison.</strong> The coordinator's complete
+  importer arms report 27 failed and 1,712 passed at base, then 30 failed and
+  1,729 passed at the earlier implementation head. Three failing ids were
+  added: the missing registered-verb documentation, now cleared by the
+  72-pass skill gate, and two SPA graph tests. A separate rerun of those SPA
+  cases reports that Chrome never completed navigation on this host. The arm
+  logs and browser rerun are cited in the manifest as comparative evidence;
+  their abbreviated command headers are not presented as rerunnable gate
+  receipts.</p>
+
+  <p><strong>Ruff baseline.</strong> All ten touched Python paths pass
+  <code>ruff format --check</code>. The check command reports twelve findings
+  in <code>reckon/mcp.py</code> and <code>reckon/crew/promotion.py</code>
+  at both base and head, with no added finding. The four original queue verb
+  paths pass <code>ruff check</code> outright. Clearing the twelve existing
+  findings is a separate style change, so this record does not claim an
+  outright all-path lint pass.</p>
+</section>

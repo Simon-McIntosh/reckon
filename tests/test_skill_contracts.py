@@ -1337,6 +1337,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--checkout-path",
         },
         ("crew", "placement"): {"--ensure", "--session", "--project"},
+        ("crew", "queue"): set(),
         ("crew", "recover"): set(),
         ("crew", "repair"): {
             "--run",
