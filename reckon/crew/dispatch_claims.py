@@ -33,6 +33,7 @@ from reckon._timestamps import (
     parse_utc,
 )
 from reckon.crew.node import (
+    ClaimDisposition,
     CrewError,
     ScopeConflict,
     TaskNode,
@@ -121,6 +122,10 @@ class DirectoryClaimConflict(ScopeConflict):
 _UNLAUNCHED_CLAIM_PHASES = frozenset(
     {"starting", "launching", "launcher", "dispatching"}
 )
+
+# Requests in these phases have no worker. Their paths are checked when they
+# leave the queue and reach the launch claim, not against another launch now.
+_WAITING_REQUEST_PHASES = frozenset({"queued", "awaiting-upstream", "held"})
 
 
 @dataclass(frozen=True)
@@ -457,7 +462,14 @@ def _repository_scope_claims(
             identity_cache=identity_cache,
             resolve_checkout=relevant,
         )
-        disposition = claim_disposition(pointer) if relevant else None
+        phase = str(pointer.get("phase") or "")
+        if relevant and phase in _WAITING_REQUEST_PHASES:
+            disposition = ClaimDisposition(
+                binding=False,
+                reason=f"run {pointer.get('run_id')!r} is {phase} and has no launched worker",
+            )
+        else:
+            disposition = claim_disposition(pointer) if relevant else None
         project = str(pointer.get("project") or "")
         run_id = str(pointer.get("run_id") or "unknown")
         node_id = str(node.get("id") or "unknown")
@@ -496,10 +508,10 @@ def _repository_scope_claims(
                     # newcomers as it always has. The launch claim published
                     # before the checks is the only shape that is still
                     # composing, and the phase is what names it.
-                    launched=(
+                    launched=phase not in _WAITING_REQUEST_PHASES
+                    and (
                         bool(pointer.get("worktree") or pointer.get("pid"))
-                        or str(pointer.get("phase") or "")
-                        not in _UNLAUNCHED_CLAIM_PHASES
+                        or phase not in _UNLAUNCHED_CLAIM_PHASES
                     ),
                 )
             )
