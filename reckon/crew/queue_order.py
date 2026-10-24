@@ -21,7 +21,7 @@ def _roadmap_priority_keys(
 ) -> dict[int, tuple[Any, ...]]:
     """Resolve section signals from each project's roadmap once per ordering."""
     from reckon.mcp_discovery import _discover_project, _inventory_row
-    from reckon.roadmap import _sprint_membership, build_roadmap
+    from reckon.roadmap import build_roadmap
 
     keys: dict[int, tuple[Any, ...]] = {}
     projects = {
@@ -39,7 +39,11 @@ def _roadmap_priority_keys(
                 sprints,
                 active_sprint_id=discovered.get("active_sprint_id"),
             )
-            _, sprint_order = _sprint_membership(sprints, project)
+            sprint_order = {
+                str(row["ref"]): int(row["order"]) - 1
+                for row in report.get("sprints") or ()
+                if row.get("ref") and row.get("order")
+            }
             critical = set(report.get("critical_path", {}).get("sections") or ())
             sections = {
                 str(row.get("ref") or ""): row

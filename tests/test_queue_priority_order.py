@@ -41,21 +41,26 @@ def roadmap(monkeypatch: pytest.MonkeyPatch) -> None:
     rows = [
         {
             "ref": f"example#{section}",
-            "sprint": "current",
+            "sprint": sprint,
             "roi": roi,
             "unlocks": [],
             "stuck": False,
             "after_hold": False,
             "remaining_effort_hours": 1.0,
         }
-        for section, roi in (("low", "low"), ("high", "high"), ("review", "mid"))
+        for section, roi, sprint in (
+            ("low", "low", "current"),
+            ("high", "high", "current"),
+            ("review", "mid", "current"),
+            ("later", "high", "later"),
+        )
     ]
     monkeypatch.setattr(
         mcp_discovery,
         "_discover_project",
         lambda project, root: {
             "inventory": [{"slug": "example"}],
-            "sprints": [{"id": "current"}],
+            "sprints": [{"id": "current"}, {"id": "later"}],
         },
     )
     monkeypatch.setattr(mcp_discovery, "_inventory_row", lambda item: item)
@@ -65,6 +70,10 @@ def roadmap(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda *args, **kwargs: {
             "immediate_roadmap": rows,
             "critical_path": {"sections": ["example#high"]},
+            "sprints": [
+                {"ref": "current", "order": 1},
+                {"ref": "later", "order": 2},
+            ],
         },
     )
 
@@ -108,6 +117,22 @@ def test_reprioritised_request_leads_older_roadmap_request(roadmap: None) -> Non
         "effective_rank": 1,
         "reason": "priority override 7",
     }
+
+
+def test_roadmap_sprint_position_precedes_roi(roadmap: None) -> None:
+    queued = [
+        _request("later-high", age=120, section="later"),
+        _request("current-low", age=60, section="low"),
+    ]
+
+    assert (
+        queue_order.admission_order(queued, queued, now=NOW)[0]["run_id"]
+        == "current-low"
+    )
+    assert (
+        queue_admission.queued_placements(queued, now=NOW)["current-low"]["reason"]
+        == "sprint"
+    )
 
 
 def test_lowest_priority_ages_ahead_of_fresh_high_priority(roadmap: None) -> None:
