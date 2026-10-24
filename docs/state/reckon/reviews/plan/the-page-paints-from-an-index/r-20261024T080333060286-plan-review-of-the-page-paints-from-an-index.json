@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T08:11:56.636Z",
+  "dispatched_at": "2026-10-24T08:04:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:281",
+      "id": "done_when-1",
+      "reason": "as written the control proves nothing, so a worker can pass the case without the waiter ever absorbing a mark, which is the one behaviour case (5) exists to prove; the control must name a mutation the design permits that actually loses the row (a waiter answered from the build as it stood before the marks were consumed).",
+      "text": "case (5) records the mark \"while that reader is still held inside the path\" and the deliverable has that same reader consume every mark recorded while it ran before it returns, so the first reader's rows already carry the added file; a waiter handed the leader's rows therefore carries it too, and the declared control cannot redden the case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:281",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 the deliverable scopes its single-reader guarantee to \"the whole cache-miss path in `index_rows`\", but the discovery signature reads the same covered set through `_covered_files` \u2192 `_reuse_covered` (`reckon/metadata_index.py:975-1006`), which is outside that path and outside the in-flight registry, so a `/_discover` read arriving during a cold `/_index` read still stats every recorded directory - WOULD_CHANGE_THE_PLAN: no \u2014 REASON: the section's measure and its write paths are explicitly the `index_rows` path, so nothing a worker is asked to build depends on this; it is recorded so the author can state the exclusion rather than let a reader infer a guarantee the section does not make.",
+      "type": "reasoning",
+      "would_change": null
+    }
+  ],
+  "plan_fingerprint": "dab1223b63952dfee2b12ecf451731250efdfbc725fa23357d028feded70ea97",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 158,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T080333060286-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "725a5bb62ea361e6731dc8db6c8b8d3f8059019b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `covered_dir_identity`/`_dir_identity` (`reckon/metadata_index.py:166`, `:1086`), `mark_tree_paths` (`:342`), `_record_covered_shape` (`:1061`), `_send_project_changes` (`reckon/serve.py:2783`) and `_served_index_rows` (`reckon/serve.py:1286`) all resolve, `tests/test_every_module_fits_a_worker_window.py` exists, and the cited 06:47:04 / 6.10 s / 0.018 s live figures appear in `docs/evidence/archive/the-page-paints-from-an-index-landed.html` \u00a715-live.",
+    "done_when": "a finding \u2014 \u00a717 case (5)'s second control (\"return the leader's rows to waiters without reading again\") cannot fail, because the same case asserts the leader's own rows carry the marked file.",
+    "evidence_paths": "pass \u2014 the gate log, the mutation-arm logs and the coordinator population run are declared under the run directory with a revision header and a trailing `EXIT=`, on the fleet allocation, not a scratchpad or node-local path.",
+    "naming": "pass \u2014 `test_a_cold_read_sweeps_the_directories_once.py` and the described symbols name the mechanism; no plan label, stage name, ticket number or version tag reaches code, and the prose states the mechanism rather than a changelog.",
+    "reasoning": "a finding \u2014 the root cause matches the cited evidence and the cited code exactly, and the callers are named, but the \"however many readers arrive together\" guarantee stops at `index_rows` while `_covered_files` (the discovery signature's reader) reaches `_reuse_covered` on its own.",
+    "single_goal": "pass \u2014 every one of the six cases measures the one deliverable, that the cache-miss path is run by one reader and each recorded directory's identity is read once.",
+    "wiring": "pass \u2014 the head's `plan-section-depends-on` map gives s17 a `the-page-paints-from-an-index#s15` edge (s15 transitively owns s13, s14 and s16 on `reckon/metadata_index.py`), and s18 declares the reverse edge on s17; this plan declares no `informs`/`gates` relations, so none is missing."
+  },
+  "section_digests": {
+    "_document": "537b2ebfce813f8f7b7d224405b55eec65867515605ae7d8caa9502ed08741c1",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "26b13b7e068c0c94f350e7fe989e7ec349d49ef2d3eea2fc683caf118eadee68",
+    "s16": "70d29c1c411d361420b3599becb52551e76417e68d09ea8c20bced8110e54bc0",
+    "s17": "fcc432ae4cfe8ab7215275387d9683fff80a58a4d2251d207a8a39bf6d3e7692",
+    "s18": "bb8a9d028e136b90bea322ed74155b1dbf753a6b476635fc887b0a4e6b9db7a2",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T08:15:24.219118+00:00"
+}
