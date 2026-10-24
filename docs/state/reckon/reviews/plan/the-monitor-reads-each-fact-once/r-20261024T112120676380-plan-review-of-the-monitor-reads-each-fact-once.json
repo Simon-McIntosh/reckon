@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T11:31:00.554Z",
+  "dispatched_at": "2026-10-24T11:22:11Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:184",
+      "id": "done_when-1",
+      "reason": "a bound the stated mechanism cannot meet either fails a correct node at its gate or pushes the worker to weaken the test, and the fix is one clause: state it against the stored offset (64 plus the bytes from offset to EOF) rather than against bytes appended.",
+      "text": "the measure \"the bytes it reads from each stream per tick are at most the bytes appended plus 64, and zero for a stream that did not grow\" omits the unconsumed trailing record: `station_store.ingest_stream` reads to EOF (`handle.read()`, station_store.py:418-419) and advances `consumed` only past whole lines (`_whole_lines`, :181), so a tick that lands mid-record leaves those bytes to be re-read next tick from offset\u221264, making a correct read 64 + unconsumed tail + appended; the section's own rule (\"up to the last whole record\") makes a mid-record tick the normal case for fixture streams replayed \"in chunks\", so the bound fails on the implementation the section specifies",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:163",
+      "id": "reasoning-1",
+      "reason": "the guarantee is narrower than the claim, so a node can implement and test exactly what \u00a76 says and still serve a stale fold for a stream recreated between ticks, which is the defect the section exists to prevent.",
+      "text": "\u00a76 calls the tail anchor the catch for \"the one case neither an inode nor a size test can see\", but the anchor is read only for a stream that grew (so an in-place rewrite that keeps or reduces its size while staying at or above the stored offset is read by nothing) and covers only the bytes in [offset\u221264, offset) (so a rewrite changing earlier bytes only produces a match and no refold); separately, \"a stream ... that shrank\" at :163 cannot be evaluated as written because the `streams` table carries path, inode, consumed, fold_state and observation and no previous size, leaving `ingest_stream`'s `stored <= info.st_size` as the only shrink test",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:310",
+      "id": "wiring-1",
+      "reason": "a surface or coordinator reading the recommended section from the attribute is sent to a landed section, which is the staleness the earlier rewrite of this followup set out to remove and left half-done.",
+      "text": "followup f-tmref-002 still carries `data-recommends-skill=\"/reckon-build the-monitor-reads-each-fact-once \u00a75\"` while its body (\"\u00a76, the ingest and classification, is next\") and its prompt (`/reckon-build ... \u00a76`) both name \u00a76, and \u00a75 is already declared done",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6428c749820d6b13b50a7742ab3c0dc9289ac4c00d09961261dd3c170f5c4842",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T112120676380-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "a96446abdea802c77bf19684948d7e2055f4802e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_backends.observe_stream` (reckon/_backends.py:2900, state-carrying fold), `recovery.classify_pointer` (re-exported from recovery_classification.py:393), `recovery_memo._classification_inputs` (recovery_memo.py:450), `recovery_watch._quiet_beat_snapshots` / `_watch_snapshot` / `_stall_reading` (recovery_watch.py:2543, 1328, 679), `station_store.ingest_stream`, `store_at_runtime_root`, `default_store` and `tests/test_the_station_store_is_node_local.py` all resolve, and the three extensionless hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a76's byte measure (\"at most the bytes appended plus 64, and zero for a stream that did not grow\") is not achievable by the ingest the same section specifies.",
+    "evidence_paths": "pass \u2014 \u00a76's fixtures are copied into a test directory and its measures are unit-test assertions, with no gate log or evidence parked in a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach a symbol; the only \u00a7-references are plan-internal section pointers in plan prose.",
+    "reasoning": "a finding \u2014 \u00a76 claims the 64-byte tail anchor catches \"the one case neither an inode nor a size test can see\", but the anchor is consulted only when a stream grew and reads only the 64 bytes before the offset, while \"a stream ... that shrank\" is not measurable from the stored columns at all.",
+    "single_goal": "pass \u2014 \u00a76 has one deliverable (the station ingests and classifies what moved); the four \u00a75 review items it adopts are one-file cleanups in the same module and each carries its own line in the same done-when.",
+    "wiring": "a finding \u2014 the open followup f-tmref-002 now points its body and prompt at \u00a76 but its data-recommends-skill attribute still names \u00a75; every other relationship resolves (s6 depends-on s5, which is done at c-close-s5; s7 depends-on s6)."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "042de313ce3cbf408555b5602a1b82fd835ead3c61e03222e5b376c2cefc7d44",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "dd8d0ae7cf08232d96c14974ba97890f6515bb487c82feb02f035f1dbc722deb",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T11:33:22.343496+00:00"
+}
