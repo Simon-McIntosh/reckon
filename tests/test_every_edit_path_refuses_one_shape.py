@@ -202,7 +202,19 @@ def test_the_refusal_shape_is_identical_across_op_paths(
         _landing_between_read_and_write(root, monkeypatch)
         outcome = _edit(root, ops, version)
         assert isinstance(outcome, dict), f"{kind} raised {outcome!r}"
-        shapes[kind] = outcome
+        # Every op kind names the targets its own ops address...
+        targets = outcome.get("changed_targets") or []
+        assert targets, f"{kind} refused without naming its changed targets: {outcome}"
+        state_after, _ = _store.read_plan(PROJECT, PLAN, root, artifact_type="plan")
+        for entry in targets:
+            if "current" in entry:
+                # ...with the value read back off disk, not one this test passed.
+                assert entry["current"] == state_after[entry["path"]], entry
+        # The targets themselves differ between kinds by construction, so they
+        # are compared apart from the refusal every path must return alike.
+        shapes[kind] = {
+            key: value for key, value in outcome.items() if key != "changed_targets"
+        }
 
     reference_kind, reference = next(iter(sorted(shapes.items())))
     for kind, shape in shapes.items():

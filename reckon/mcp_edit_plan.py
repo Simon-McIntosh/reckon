@@ -1270,6 +1270,61 @@ def _value_at_path(data: dict[str, Any], path: str) -> Any:
     return current
 
 
+def _op_target_path(op: dict[str, Any]) -> str | None:
+    """The document address one op touches, or ``None`` when it names none.
+
+    Each verb declares its target through its own identifying keys: a ``set``
+    carries an explicit ``path``, an ``append`` a collection plus the record's
+    identity, a decision verb a ``key``, a gate verb an ``id``. Composing the
+    address here means a refusal names every op's own target rather than only
+    the ``set`` ops, so the conflict shape does not depend on which verb the
+    caller chose.
+    """
+    if not isinstance(op, dict):
+        return None
+    verb = op.get("op")
+    if verb == "set":
+        path = op.get("path")
+        return path if isinstance(path, str) and path else None
+    if verb == "append":
+        target = op.get("target")
+        if not isinstance(target, str) or not target:
+            return None
+        item = op.get("item") if isinstance(op.get("item"), dict) else {}
+        if target == "comments":
+            return f"comments.{op.get('section') or '_top'}"
+        if target == "decisions":
+            key = op.get("key")
+            return f"decisions.{key}" if key else target
+        ident = item.get("id") or item.get("slug")
+        return f"{target}.{ident}" if ident else target
+    if verb == "resolve":
+        target = op.get("target")
+        if not isinstance(target, str) or not target:
+            return None
+        ident = op.get("id")
+        return f"{target}.{ident}" if ident else target
+    if verb in ("lock", "accept"):
+        key = op.get("key")
+        return f"decisions.{key}" if key else "decisions"
+    if verb in ("gate", "pass", "fail"):
+        ident = op.get("id")
+        return f"gates.{ident}" if ident else "gates"
+    if verb == "insert_section":
+        ident = op.get("id")
+        return f"sections.{ident}" if ident else "sections"
+    if verb == "append_evidence":
+        anchor = op.get("anchor")
+        return f"evidence.{anchor}" if anchor else "evidence"
+    if verb == "retire_prose":
+        return "prose"
+    if verb == "close":
+        return "status"
+    if verb == "move":
+        return f"sprints.{op.get('to')}" if op.get("to") else "sprints"
+    return None
+
+
 def _changed_targets(
     data: dict[str, Any], ops: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
@@ -1278,14 +1333,13 @@ def _changed_targets(
     A version conflict means the document moved since the caller read it, so the
     answer names every target the refused write would touch beside its current
     value: the caller re-reads only what it did not expect to move, instead of
-    re-reading the whole plan.
+    re-reading the whole plan. Every op kind is answered, so the conflict shape
+    is the same whichever verb the caller chose.
     """
     targets: list[dict[str, Any]] = []
     for index, op in enumerate(ops or []):
-        if not isinstance(op, dict) or op.get("op") != "set":
-            continue
-        path = op.get("path")
-        if not isinstance(path, str) or not path:
+        path = _op_target_path(op)
+        if path is None:
             continue
         current = _value_at_path(data, path)
         entry: dict[str, Any] = {"index": index, "path": path}
