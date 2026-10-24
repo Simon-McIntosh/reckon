@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="additional-work-is-a-section">
+  <meta name="plan-node" content="the-skills-state-the-rule">
+  <meta name="plan-section" content="s5">
+  <title>No skill or source teaches the retired deferred-work term</title>
+</head>
+<body>
+  <main class="plan-doc">
+    <p id="the-skills-state-the-rule-summary">The six skill files that taught a
+    deferred-work bucket now teach the two routes instead: work found beyond a
+    node becomes a plan section, or an instruction in the next dispatch's
+    prompt. Each names the <code>non-blocking</code> review severity and the
+    <code>outside_scope</code> worker manifest field. Two guards keep the
+    retired term out: one over every skill file's prose, one over every comment,
+    docstring and string literal in <code>reckon/</code> and
+    <code>scripts/</code>.</p>
+
+    <h3 id="the-skills-state-the-rule-changed">What changed</h3>
+    <ul>
+      <li id="the-skills-state-the-rule-changed-skills">The six teaching files
+      (<code>skills/reckon-build/SKILL.md</code> and its references
+      <code>worker-protocol.md</code>, <code>sprint-orchestration.md</code>,
+      <code>coordinator-reference.md</code>, <code>conditional-guidance.md</code>,
+      plus <code>skills/reckon-edit/SKILL.md</code>) state the rule and name
+      <code>non-blocking</code> and <code>outside_scope</code>. None carries the
+      retired term in any spelling.</li>
+      <li id="the-skills-state-the-rule-changed-skill-guard">
+      <code>tests/test_skill_contracts.py</code> gains
+      <code>test_no_skill_file_names_the_retired_deferred_work_term</code>,
+      which scans every file under <code>skills/</code>, and
+      <code>test_every_skill_teaching_continuation_names_the_two_names</code>,
+      which holds the six files to the rule and its two names.</li>
+      <li id="the-skills-state-the-rule-changed-source-guard">
+      <code>tests/test_no_source_names_the_retired_field.py</code> reads
+      <code>reckon/</code> and <code>scripts/</code> with <code>ast</code> and
+      <code>tokenize</code>. Only four module-level assignments are exempt: the
+      three <code>RETIRED_</code> constants that map an old record on the way in
+      (<code>RETIRED_OUTSIDE_SCOPE</code>,
+      <code>RETIRED_OUTSIDE_SCOPE_PATHS</code>,
+      <code>RETIRED_FINDING_SEVERITIES</code>) and
+      <code>_DEFERRED_WORK_TERM</code>, the pattern that refuses the term in
+      plan prose.</li>
+      <li id="the-skills-state-the-rule-changed-style">The formatting and one
+      tuple-concatenation finding the contracts test already carried are fixed
+      in their own commit so the wording diff stays readable.</li>
+    </ul>
+
+    <h3 id="the-skills-state-the-rule-measure">Measure</h3>
+    <p id="the-skills-state-the-rule-measure-body">Base arm at
+    <code>7a6cd07ca</code>: <code>tests/test_skill_contracts.py</code> alone ran
+    68 passed, 2 failed. Head arm at the node head ran both files: 73 passed,
+    the same 2 failed, so the change adds no failure. The two failures are
+    pre-existing at base and unrelated to this node:
+    <code>test_review_skill_is_discovered_beside_the_other_reckon_skills</code>
+    (a 1506-word body against a 1500 bound) and
+    <code>test_every_registered_crew_verb_is_documented_or_exempt</code>
+    (<code>reckon crew retention-sweep</code> is registered and undocumented).
+    <code>ruff check</code> and <code>ruff format --check</code> report 0
+    findings on both test files.</p>
+
+    <h3 id="the-skills-state-the-rule-negative-control">Negative control</h3>
+    <ul>
+      <li id="the-skills-state-the-rule-negative-control-skills">Restoring the
+      retired term in one sentence of
+      <code>skills/reckon-build/SKILL.md</code> reddens the skill guard, naming
+      line 394.</li>
+      <li id="the-skills-state-the-rule-negative-control-source">Restoring the
+      retired word in the comment in <code>reckon/crew/reports.py</code> near
+      line 105 reddens the source guard, naming that line.</li>
+    </ul>
+  </main>
+</body>
+</html>
