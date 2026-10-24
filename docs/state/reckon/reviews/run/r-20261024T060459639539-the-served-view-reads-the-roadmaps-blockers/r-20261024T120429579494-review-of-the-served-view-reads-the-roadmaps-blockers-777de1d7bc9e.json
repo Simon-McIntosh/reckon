@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order"
+  ],
+  "call_sites": [
+    "reckon/serve.py:1739 _derive_lifecycle from the served plan route",
+    "reckon/serve.py:1808 _derive_lifecycle from the served plan list",
+    "reckon/mcp_views.py:1229 _derive_lifecycle from the MCP inventory view, which reckon/mcp.py:2983 _audit reads",
+    "reckon/roadmap.py:2984 the orphaned-blocked-status wiring finding built by _build_roadmap",
+    "reckon/mcp.py:3055 the audit's own orphaned-blocked-status rule reading the published blocking list",
+    "docs/ui/shell-plans.jsx:699 the SPA's Blockers chip reading the served blockers count"
+  ],
+  "completed_at": "2026-10-24T12:15:04.335Z",
+  "dispatched_at": "2026-10-24T12:06:25Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": 2103,
+      "severity": "non-blocking",
+      "text": "non-blocking: plan['blockers'] is computed as len(plan['blocking']), the recorded count, so a plan stored blocked with no recorded blocker publishes blockers=0 while effective_status stays 'blocked' (probe on the reviewed head returned effective_status='blocked' blockers_count=0 blocking=[]), contradicting the comment at reckon/serve.py:2099-2100 and the fragment's claim at docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-view-reads-the-roadmaps-blockers.html:25 that 'the status and the count keep the assembly's blocked answer'; before this commit the count was len(state['blocking']) = 1 for that population, and docs/ui/shell-plans.jsx:699 stops rendering the Blockers chip for it."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": 3055,
+      "severity": "non-blocking",
+      "text": "non-blocking: now that the served view publishes recorded rows only, both spellings of the orphaned-blocked-status rule fire for the same plan \u2014 reckon/mcp.py:3053-3060 (category lifecycle) and reckon/roadmap.py:2984-2996 (category dag) \u2014 so one orphaned blocked status is reported twice by reckon audit and finding_counts.by_code double-counts it; a probe on the reviewed head returns both rows at once, and neither the fragment nor any test notes the duplication."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit from e52897014 to 777de1d7b: 4ae9df777 adds roadmap.recorded_blockers at roadmap.py:1269, uses it in the audit rule at roadmap.py:2986 and publishes recorded rows at serve.py:2101 with the count at serve.py:2103; 777de1d7b rewrites two fragment paragraphs with the audit consequence and the new gate numbers.",
+    "done_when": "The done_when (prompt.txt FENCE-EVIDENCE) requires the parity file plus every file exercising _derive_lifecycle and tests/test_every_module_fits_a_worker_window.py, zero added failures at head against the base arm, and both arms logged with revision, literal command and EXIT=; the manifest records base-suite.log (EXIT=1, 5 failed) and head-suite-audit.log (EXIT=1, 2 failed), and reckon.crew.review.added_failures_from_gate_logs over that pair returns 1, the worktree-local browser case the manifest names under outside_scope, so the zero-added clause is missed by exactly that out-of-scope case.",
+    "goal": "The source goal (prompt.txt:30) is that the served view take each plan's blocker list from the roadmap assembly; this delta publishes recorded rows only at reckon/serve.py:2101 so the audit's orphaned-blocked-status rule still sees a stored blocked status with no recorded hold, and the blocked state is unchanged at effective_status.",
+    "manifest": "Read; status complete, commits 4ae9df777 and 777de1d7b present, five controls each with its own log, both arms' gate logs with their EXIT lines, and the retry_failures note about the topbar case is corroborated by head-suite-audit.log.",
+    "write_paths": "The source node's declared write paths (prompt.txt FENCE-SCOPE) are reckon/serve.py, reckon/roadmap.py, the parity test, the evidence fragment and the figure directory; the two gained commits touch only reckon/serve.py, reckon/roadmap.py and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_mcp_audit.py::test_audit_reports_blocked_status_without_a_live_blocker builds a plan whose stored status is blocked with no blocker rows and requires the lifecycle-coded finding, and logs/negative-control-audit-placeholder.log shows it red at EXIT=1 when the placeholder is published again, so it fails on the regression rather than passing beside it.",
+    "evidence": "Both arms' logs are recorded and reduce through added_failures_from_gate_logs to 1 added id, but the fragment at docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-view-reads-the-roadmaps-blockers.html:25 asserts a count behaviour that reckon/serve.py:2103 does not have.",
+    "fit": "The helper sits beside plan_blocker_state at reckon/roadmap.py:1269 in the surrounding style, but reckon/serve.py:2101 fabricates a plan-shaped mapping to reuse it and the comment at 2099-2100 states an invariant line 2103 breaks.",
+    "goal_fidelity": "reckon/serve.py:2101 publishes recorded_blockers while keeping the assembly's effective_status, so the served view no longer masks the orphaned-blocked-status population the audit exists to find.",
+    "reuse": "recorded_blockers at reckon/roadmap.py:1269 becomes the one owner of 'which blockers are recorded' and both readers call it, while reckon/mcp.py:3055 keeps a second spelling of the orphaned-blocked-status rule that the change now relies on without unifying it.",
+    "scope_discipline": "The gained diff changes only reckon/serve.py, reckon/roadmap.py and the evidence fragment, all inside the five declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T120429579494-review-of-the-served-view-reads-the-roadmaps-blockers-777de1d7bc9e",
+  "reviewed_base_sha": "e528970146db92e2533d56dea1d935ff10ea4887",
+  "reviewed_head_sha": "777de1d7bc9e1207e9e53ed408c59f86b31f0047",
+  "reviewed_run_id": "r-20261024T060459639539-the-served-view-reads-the-roadmaps-blockers",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T12:16:45.147545+00:00",
+  "total": 101
+}
