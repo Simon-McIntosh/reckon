@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T07:31:27.559Z",
+  "dispatched_at": "2026-10-24T07:20:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:281",
+      "id": "reasoning-1",
+      "reason": "the deliverable must say the waiter applies the pending mark (or that the single-flight is keyed on a change generation so a pre-invalidation build is not returned to a post-invalidation reader), otherwise the node lands the guarantee \u00a715 removed and no \u00a717 case can see it.",
+      "text": "the deliverable says \"A reader that finds that path in progress waits for it and returns its rows\" and \"This changes neither what the index contains nor when it is validated\", but the change stream runs `_invalidate_tree_views` and then `_served_index_rows` (`reckon/serve.py:2861`), so a stream reader that arrives while another thread is already inside the miss path (`reckon/metadata_index.py:481-509`) is a waiter on a build that began before the change it is about to report; returning that build's rows hands the stream rows that predate its own change, and because `_MARKS` is only drained by a later `_absorb_marked` the page keeps them until some further burst",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:281",
+      "id": "done_when-1",
+      "reason": "a node implementing exactly \"the build records the identities `_reuse_covered` just read\" leaves the third sweep in place for every cold read after downtime that added or removed an entry, and the section's own measure cannot report it.",
+      "text": "case (2) asserts \"A single cold read reads each recorded directory's identity once\" and case (1) the same count across concurrent readers, but both fixtures build a persisted index for an unchanged tree; on a cold read where at least one recorded directory moved, `_reuse_covered` scans it (`reckon/metadata_index.py:752-762`) and `_record_covered_shape` then reads every directory's identity again (`:1182`, loop over all `dirs`), before `build_index` reads them at `:878` \u2014 so the identity count is 2N under the deliverable, not N, and the gate closes green on a fixture that cannot reach the case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:280",
+      "id": "wiring-1",
+      "reason": "s14, s15 and s16 are all `done` and \u00a718 already declares its wait on s17, so the missing edge changes no dispatch order; it is a note for the next re-open.",
+      "text": "the s17 section element declares no `data-depends-on`, yet its mechanism edits the `_reuse_covered` / `build_index` path \u00a715 landed, its Why is \u00a715's own live arm, and \u00a714 and \u00a716 share `reckon/metadata_index.py`",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "69468678fdb8f709bbc0ff0432a2e3ce89bdaada716ae1c478744f3a32f4cb0f",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 151,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T071940032930-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "324196ad4dc3a9e184ee0f4ee2290dfe79b98dce",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `covered_dir_identity` (`reckon/metadata_index.py:168`), `_dir_identity` (`:1188`), `_reuse_covered` (`:707`), `build_index` (`:842`), `_send_project_changes` \u2192 `_served_index_rows` (`reckon/serve.py:2783`, `:1286`), the `/_index` handler (`reckon/serve.py:3394`), `tests/test_every_module_fits_a_worker_window.py`, and the cited live numbers (6.10 s / 0.018 s / re-executed 06:47:04) all resolve in `docs/evidence/archive/the-page-paints-from-an-index-landed.html`.",
+    "done_when": "a finding \u2014 cases (1)-(3) all build on an unchanged persisted tree, so no case can see the second identity sweep `_record_covered_shape` makes on a cold read where a directory moved.",
+    "evidence_paths": "pass \u2014 logs are required under the run directory with a revision header and a trailing `EXIT=`, suites on the fleet allocation, and the test file is a committed repository path.",
+    "naming": "pass \u2014 `tests/test_a_cold_read_sweeps_the_directories_once.py` and the prose name the mechanism (a cold read, one sweep, waiters released) with no plan or ticket label.",
+    "reasoning": "a finding \u2014 the single-flight as written returns a leader's rows to a waiter that arrived after an invalidation, which is the stale-row defect \u00a715 exists to prevent, and the deliverable's claim that validation timing does not move does not hold for that reader.",
+    "single_goal": "pass \u2014 one measure (one `_dir_identity` read per recorded directory per cold read), with the single-flight, the identity threading and the failure release all arms of it.",
+    "wiring": "a finding \u2014 \u00a717 carries no `depends-on` although it rewrites the `_reuse_covered` path \u00a715 landed, cites \u00a715's live head arm as its own evidence, and edits `reckon/metadata_index.py` alongside \u00a714 and \u00a716."
+  },
+  "section_digests": {
+    "_document": "537b2ebfce813f8f7b7d224405b55eec65867515605ae7d8caa9502ed08741c1",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "26b13b7e068c0c94f350e7fe989e7ec349d49ef2d3eea2fc683caf118eadee68",
+    "s16": "70d29c1c411d361420b3599becb52551e76417e68d09ea8c20bced8110e54bc0",
+    "s17": "e5f426d63add11474fb0da2e1afbd4def9c0c8aba11db6f2a567bfb8baf98444",
+    "s18": "bb8a9d028e136b90bea322ed74155b1dbf753a6b476635fc887b0a4e6b9db7a2",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:34:41.028108+00:00"
+}
