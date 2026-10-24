@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp.py:3538 _refuse_when_stale(_roadmap_deadline_tool(), name=\"roadmap\") registers the wrapped read",
+    "reckon/mcp.py:2302 _roadmap_deadline_tool passes stale=_roadmap_stale_answer and stale_present=_roadmap_has_stale_answer",
+    "reckon/mcp.py:2017 _roadmap_stale_answer builds the record through snapshot_module.roadmap_stale_answer",
+    "reckon/mcp_deadlines.py:587 _deadline_tool forwards stale into _read_joining_running",
+    "reckon/mcp_deadlines.py:395 _await_body calls on_timeout and only answers when it returns a value"
+  ],
+  "completed_at": "2026-10-24T08:10:31.361Z",
+  "dispatched_at": "2026-10-24T08:01:32Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-slow-roadmap-read-serves-its-last-snapshot.html",
+      "line": "142",
+      "severity": "non-blocking",
+      "text": "The revert-control counts are not in the logs they cite. guard-revert-control.log and presence-revert-control.log each ran only the one named case and print '1 failed in 4.24s' and '1 failed in 2.87s' with no passed count, while this line and line 147 (and the manifest's negative_control_note) both say '1 failed and 8 passed'. The failing condition is real and recorded; the accompanying count overstates what was run, so a reader comparing the page against its own logs finds a discrepancy."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T054625328204-a-slow-roadmap-read-serves-its-last-snapshot/head-gate.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T054625328204-a-slow-roadmap-read-serves-its-last-snapshot/base-gate.log"
+  },
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read commit by commit. 44b329ebb changes one line of reckon/mcp_deadlines.py:513 to wrap _fallback in _safe_fallback and adds two cases plus one literal SUMMARY_SHAPE to the case file; 61f263835 edits only the evidence fragment. Nothing else is touched.",
+    "done_when": "The done_when's gate is the four-file pytest run; head-gate.log records '41 passed in 32.92s' EXIT=0 at revision 44b329ebb and base-gate.log records '11 failed, 30 passed in 28.12s' EXIT=1 at a 3df04d103 scratch tree, both with the literal -n 8 command. The two new cases at tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:451 and :482 are among the 41; I did not re-run the suite.",
+    "goal": "The node's goal is to store every composition as its tree's and shape's last snapshot and answer a read held past its reserve from it, marked stale. This review covers only the two commits gained since the last review: 44b329ebb makes the timeout fallback go through the same _safe_fallback guard the presence check uses at reckon/mcp_deadlines.py:513, and 61f263835 records it. The goal's behaviour is unchanged and the change closes the known escape, so the goal is met.",
+    "manifest": "Read; it names the two commits, records after_suite 0 failed at 44b329ebb and baseline_suite 11 failed with pytest node ids at 3df04d103, and names guard-revert-control.log as the negative control. Its negative_control_note's '1 failed and 8 passed' does not match that log's own '1 failed in 4.24s'.",
+    "write_paths": "The declared scope for the gained commits is the evidence fragment, reckon/mcp_deadlines.py and the case file; git diff --stat 6a5b1d308..61f263835 lists exactly those three, 120 insertions and 8 deletions."
+  },
+  "justifications": {
+    "durability": "Each added guard has a stated failing condition: reverting the guard reddens test_a_stale_answer_that_cannot_be_built_reports_the_deadline with RuntimeError (guard-revert-control.log) and reverting the presence check reddens test_the_stale_answer_is_built_only_when_the_wait_expires (presence-revert-control.log), while tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:242 now compares stale['shape'] against the independent literal SUMMARY_SHAPE at :53 rather than against _shape().",
+    "evidence": "head-gate.log ('41 passed') and base-gate.log ('11 failed, 30 passed') reconcile with the manifest, but guard-revert-control.log and presence-revert-control.log each contain a single test and no passed count while the evidence page at line 142 says '1 failed and 8 passed'.",
+    "fit": "The guard reuses the existing _safe_fallback helper at reckon/mcp_deadlines.py:454 and the surrounding comment style, though the assigned lambda at :513 needs a '# noqa: E731' where a small def would have read the same and needed none.",
+    "goal_fidelity": "reckon/mcp_deadlines.py:513 now sends the timeout's fallback through _safe_fallback, the same guard the presence check at :505 already used, so a stored answer that cannot be built degrades to the storage-slow report instead of becoming the read's failure.",
+    "reuse": "The change extends the existing _safe_fallback and the on_timeout hook in _await_body (reckon/mcp_deadlines.py:395-399) rather than adding a second guard, and the test's counted wrapper is local to the case file.",
+    "scope_discipline": "git diff --stat 6a5b1d308..61f263835 changes only reckon/mcp_deadlines.py, tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py and the evidence fragment, which are exactly the paths the gained scope names."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T080026263049-review-of-a-slow-roadmap-read-serves-its-last-snapshot-61f263835696",
+  "reviewed_base_sha": "6a5b1d308c482b3b5a881478341020368ca3ac1e",
+  "reviewed_head_sha": "61f263835696ad216cbe663f74134c552cffcc77",
+  "reviewed_run_id": "r-20261024T054625328204-a-slow-roadmap-read-serves-its-last-snapshot",
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: the node's goal is a last-snapshot answer for a held read; the gained commits change only how the timeout's fallback is built, at reckon/mcp_deadlines.py:513, and the goal's behaviour is unchanged and repaired.\nVERDICT done_when: head-gate.log records '41 passed in 32.92s' EXIT=0 at 44b329ebb and base-gate.log '11 failed, 30 passed in 28.12s' EXIT=1 at a 3df04d103 scratch tree, so the gate measures the done_when's delta.\nVERDICT write_paths: git diff --stat 6a5b1d308..61f263835 lists exactly the three declared paths: the evidence fragment, reckon/mcp_deadlines.py and tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py.\nVERDICT manifest: read; baseline_suite/after_suite reconcile with base-gate.log and head-gate.log, but its negative_control_note's '1 failed and 8 passed' does not match guard-revert-control.log's single-test '1 failed in 4.24s'.\nVERDICT diff: read commit by commit; 44b329ebb wraps the timeout fallback in _safe_fallback at reckon/mcp_deadlines.py:513 and adds two cases and SUMMARY_SHAPE to the case file, and 61f263835 edits only the evidence fragment.\nCALL_SITES: reckon/mcp.py:3538, reckon/mcp.py:2302, reckon/mcp.py:2017, reckon/mcp_deadlines.py:587, reckon/mcp_deadlines.py:395\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/mcp_deadlines.py:513 sends the timeout's fallback through the same _safe_fallback guard the presence check at :505 uses, so a stored answer that cannot be built reports the deadline instead of escaping as the read's failure.\nSCORE evidence: 14\nJUSTIFICATION evidence: the head and base gate logs reconcile with the manifest, but docs/evidence/fragments/a-read-answers-inside-its-deadline/a-slow-roadmap-read-serves-its-last-snapshot.html:142 and :147 claim '1 failed and 8 passed' for controls whose logs each ran one test and report no passed count.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 6a5b1d308..61f263835 is one of the three declared paths, and the code change is a single line.\nSCORE durability: 19\nJUSTIFICATION durability: reverting both halves reddens a named case (guard-revert-control.log, presence-revert-control.log), and tests/test_a_slow_roadmap_read_*:242 now compares stale['shape'] against the independent literal SUMMARY_SHAPE at :53 rather than against _shape().\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses _safe_fallback at reckon/mcp_deadlines.py:454 and the surrounding idiom, though the assigned lambda at :513 needs a '# noqa: E731' where a small def would need none.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing _safe_fallback and _await_body's on_timeout hook (reckon/mcp_deadlines.py:395) rather than adding a second guard, and no owner of that capability is forked.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-slow-roadmap-read-serves-its-last-snapshot.html:142 non-blocking: the revert-control counts are not in the logs they cite \u2014 guard-revert-control.log and presence-revert-control.log each ran only the named case and print '1 failed in 4.24s' and '1 failed in 2.87s' with no passed count, while this line and line 147 (and the manifest's negative_control_note) say '1 failed and 8 passed'.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T08:20:00+00:00",
+  "total": 111
+}
