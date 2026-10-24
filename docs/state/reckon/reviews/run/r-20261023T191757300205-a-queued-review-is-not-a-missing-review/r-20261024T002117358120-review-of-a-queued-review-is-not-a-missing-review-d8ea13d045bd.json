@@ -1,0 +1,56 @@
+{
+  "added_failure_basis": "gate-regression-base.log (cd60c0af5, 3 failed/37 passed) against gate-regression-head-after.log (repaired head, 3 failed/45 passed) over the same file set: the two failure sets are the same three test_obligations_snapshot_is_published.py ids, so no failure id is added. Cross-checked against gate-base-focused-view.log (9bc0690f5, 8 failed/55 passed) and gate-head-focused-view.log (cfa064767, 1 failed/62 passed), whose single common id is the pre-existing test_queued_work_shows_where_held_work_shows.py failure.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligations.py:1565",
+    "reckon/crew/obligation_snapshot.py:1023",
+    "reckon/crew/recovery_review_dispatch.py:491",
+    "reckon/hooks/coordinator_obligations.py:1004"
+  ],
+  "completed_at": "2026-10-24T00:27:15.702Z",
+  "dispatched_at": "2026-10-24T00:22:06Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 427,
+      "severity": "non-blocking",
+      "text": "_in_flight_review catches every TypeError from the rule call to detect a one-argument stand-in, so a genuine TypeError raised inside recovery._review_in_flight's body is answered by a retry that re-reads the live directory and can return a different, quieter answer than the faulted call, which contradicts the docstring's claim at obligations.py:418-421 that 'a failure raised inside the rule's body raises again on the retry and surfaces from here'. Inspecting the signature before the call, or catching TypeError only around the keyword-bind, would keep the stand-in support without swallowing a fault."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against be765301a: 121f55d17 makes the builder's snapshot pair optional and routes every recovery._review_in_flight call through _in_flight_review, and d8ea13d04 records the regression and its three-arm gate in the fragment; 50 insertions and 6 deletions across the two declared paths.",
+    "done_when": "The source done_when names a queued arm, a removal arm, no added failures across the tests importing obligations, and clean ruff; the delta's own gate is the three-arm regression pair, whose head-after arm is the reviewed revision's code and reads 3 failed/45 passed against 3 failed/37 at base with the same three pre-existing ids.",
+    "goal": "The source node's goal is to read a queued review run targeting a delivered run as a second source of the review-queued duty; this delta preserves that source while making the duty builder callable again from the obligations snapshot builder, the regression the merge exposed.",
+    "manifest": "Read at the source run directory: status complete, eleven commits, and the regression pair named under test_logs and artifacts; the manifest carries no baseline_suite/after_suite JSON blocks, so the added-failure figures are derived from gate-regression-base.log and gate-regression-head-after.log.",
+    "write_paths": "prompt.txt declares reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py, the fragment under docs/evidence/fragments/a-live-worker-is-never-drawn-halted/ and a figures directory; the delta's diff is reckon/crew/obligations.py and the fragment, both inside the declaration."
+  },
+  "justifications": {
+    "durability": "gate-regression-head-before.log is the regression reinstated and shows 16 failed/32 passed, thirteen added ids including tests/test_review_record_contract.py::test_obligation_names_a_delivered_refusal_and_its_repair, so the optional-pair repair is guarded by assertions that redden when the pair is required again.",
+    "evidence": "gate-regression-head-after.log ends 3 failed/45 passed EXIT=1 against gate-regression-base.log's 3 failed/37 passed over the same file set, the three ids identical, and the after arm's tree (/tmp/reckon-crew-scratch/.../merged-tree) carries an obligations.py byte-identical to d8ea13d04, which I diffed.",
+    "fit": "reckon/crew/obligations.py:414-433 follows the module's own defensive-reader idiom and names no plan, ticket or version identifier, though its blanket except TypeError is broader than the file's usual narrowed catches.",
+    "goal_fidelity": "reckon/crew/obligations.py:849-858 makes the review-duty builder's snapshot pair optional and obligations.py:976-980 reads the pointers and the admission order only when the queued reading needs them, so the two callers that hold their own fleet state answer again while a view still answers every duty from one snapshot.",
+    "reuse": "The recognition still runs through the existing owner reckon/crew/recovery_review_dispatch.py:491 and the ordering through queue_admission.queued_placements; _in_flight_review wraps that owner rather than re-implementing it.",
+    "scope_discipline": "git diff be765301a..d8ea13d04 touches only reckon/crew/obligations.py and docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-queued-review-is-not-a-missing-review.html, both declared write paths of the source node."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to read a queued review run targeting a delivered run as a second source of the review-queued duty; this delta keeps that source and makes the duty builder callable again from the obligations snapshot builder (reckon/crew/obligations.py:849-858, :976-980).\nVERDICT done_when: The source done_when asks for a queued arm, a removal arm, no added failures over the tests importing obligations and clean ruff; the delta's gate is the three-arm regression pair, head-after reading 3 failed/45 passed against base 3 failed/37 passed with the same three pre-existing ids (gate-regression-head-after.log, gate-regression-base.log).\nVERDICT write_paths: prompt.txt declares reckon/crew/obligations.py, tests/test_a_queued_review_is_not_missing.py, the fragment under docs/evidence/fragments/a-live-worker-is-never-drawn-halted/ and a figures directory; the delta touches only the first and the fragment.\nVERDICT manifest: Read; status complete, eleven commits, the regression logs named under test_logs and artifacts, no baseline_suite/after_suite JSON blocks.\nVERDICT diff: Read commit by commit against be765301a: 121f55d17 makes live_pointers and placements optional and routes recovery._review_in_flight through _in_flight_review, d8ea13d04 records the cause, the fix and the three-arm gate in the fragment.\nCALL_SITES: reckon/crew/obligations.py:1565, reckon/crew/obligation_snapshot.py:1023, reckon/crew/recovery_review_dispatch.py:491, reckon/hooks/coordinator_obligations.py:1004\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:849-858 makes the pair optional and :976-980 reads the live pointers and admission order only when the queued reading needs them.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-regression-head-after.log reads 3 failed/45 passed against gate-regression-base.log's 3 failed/37 passed, and the after arm's tree obligations.py is byte-identical to d8ea13d04 by my own diff.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff be765301a..d8ea13d04 touches reckon/crew/obligations.py and the declared fragment only.\nSCORE durability: 18\nJUSTIFICATION durability: gate-regression-head-before.log reinstates the regression and shows thirteen added ids red, including tests/test_review_record_contract.py::test_obligation_names_a_delivered_refusal_and_its_repair, so the repair is guarded by assertions that redden on it.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:414-433 follows the module's defensive-reader idiom and names no plan or ticket identifier, with the blanket except at :427 broader than the file's usual narrowed catches.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/recovery_review_dispatch.py:491 remains the one recognition and queue_admission.queued_placements the one ordering, with _in_flight_review wrapping rather than forking it.\nFINDING reckon/crew/obligations.py:427 non-blocking: _in_flight_review's blanket except TypeError can swallow a genuine fault raised inside recovery._review_in_flight and answer it with a fresh live-directory read, contradicting the docstring's promise at :418-421 that such a fault surfaces from the retry.\n",
+  "review_run_id": "r-20261024T002117358120-review-of-a-queued-review-is-not-a-missing-review-d8ea13d045bd",
+  "reviewed_at": "2026-10-24T00:35:00Z",
+  "reviewed_base_sha": "be765301adbcad5cc22f7e60c94f2b9da57b7848",
+  "reviewed_head_sha": "d8ea13d045bddb24ee5c56a62fbeb76aed3ddf59",
+  "reviewed_run_id": "r-20261023T191757300205-a-queued-review-is-not-a-missing-review",
+  "scope_note": "Covers only the commits the run gained since the review recorded at be765301adbcad5cc22f7e60c94f2b9da57b7848: 121f55d17 (reckon/crew/obligations.py) and d8ea13d04 (the evidence fragment). Earlier commits were reviewed at that record and are not re-scored.",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T00:27:18.487675+00:00",
+  "total": 113
+}
