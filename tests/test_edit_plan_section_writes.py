@@ -179,13 +179,16 @@ def test_unknown_declaration_value_is_refused_with_the_accepted_values(plan) -> 
         },
     )
 
+    detail = (
+        "section declaration must be one of "
+        "['implementable', 'deferred', 'done']; got 'unknown'"
+    )
     assert result == {
         "ok": False,
         "error": "op_error",
-        "detail": (
-            "section declaration must be one of "
-            "['implementable', 'deferred', 'done']; got 'unknown'"
-        ),
+        "detail": detail,
+        "refused_op_index": 0,
+        "refused_ops": [{"index": 0, "reason": detail}],
     }
     assert path.read_text(encoding="utf-8") == before
 

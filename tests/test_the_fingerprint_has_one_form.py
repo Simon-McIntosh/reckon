@@ -208,4 +208,4 @@ def test_collapse_section_is_refused_as_an_unknown_op(project):
     )
     assert result["ok"] is False
     assert result["error"] == "op_error"
-    assert "unknown verb 'collapse_section'" in result["detail"]
+    assert "a plan does not accept the verb 'collapse_section'" in result["detail"]
