@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T04:06:47.989Z",
+  "dispatched_at": "2026-10-24T03:56:55Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261024T035523854120-plan-review-of-a-queue-holds-the-whole-plan/plan.html:80",
+      "id": "reasoning-1",
+      "reason": "without a sentence saying `section_readiness` is produced from the verdict (or removed in its favour), an implementer satisfies the paragraph verbatim and leaves the served roadmap reporting a gate-held section ready while the queue holds it, which is the two-answers-one-fact disagreement \u00a78 exists to remove.",
+      "text": "\u00a78 says \"The roadmap's own section rows and the queue both read it [the new public per-section verdict]\", while the same paragraph's assembly sentence keeps returning rows \"with their per-section `section_readiness`\" \u2014 the conditionally-attached, gate-blind list that `docs/ui/sprint.jsx:173` renders and, when absent, treats as `ready: true`. The change therefore leaves the roadmap row carrying two different per-section answers: the field the plan has just shown omits section-scoped gate holds (reckon/roadmap.py:3598-3611 populates it from dependency and decision blockers only), and the verdict it adds. A gate-held section in the \"gate names that section and leaves another implementable section unnamed\" shape satisfies `is_ready` (reckon/roadmap.py:3438-3448, reproduced: `plan_holding=[] section_gate_blockers=['g1']`) and so stays `ready: true` in `section_readiness`, exactly the reading the new verdict is introduced to correct.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b0d22abe0fc13e4217ec9a2909a234457dc0a391155e6f050b89f176914ea53f",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 50,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T04:07:51.185862+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T04:07:51.185862+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v50.json",
+  "review_run_id": "r-20261024T035523854120-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "327b60865b3611b1cd6707fa1ca5a96ad93f86ff",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `ready_sections_by_plan` (reckon/roadmap.py:2796, :3633), `ready_sections` (:3606), `_readiness_rows` (reckon/crew/queue_admission.py:1056), `_readiness_by_slug` (reckon/crew/plan_review.py:3094), `run_path` (reckon/ledger.py:890), `parse_plan_ref` (reckon/_schema.py:276), `TaskNode` (reckon/crew/node.py:725), `sweep_promoted_revisions` with its `target_head=\"HEAD\"` default (reckon/crew/promotion.py:1985) and `reckon/roadmap.py` as a write path all resolve.",
+    "done_when": "pass \u2014 the changed unit's mechanism now produces both gate shapes its done-when asserts: `split_unpassed_gates` returns `plan_holding=[]` with `section_gate_blockers=['g1']` when a gate names one implementable section and leaves another unnamed, and `plan_holding=['g1']` with an empty section list when it names every implementable section, so \"takes the plan's place in the ready set, then applies \u2026 its section gate holds\" answers both arms.",
+    "evidence_paths": "pass \u2014 the changed unit names no gate log or evidence path; its write paths are repository modules plus a new test file.",
+    "naming": "pass \u2014 the changed text introduces no plan label, stage name, ticket number or version tag into a symbol, file or comment.",
+    "reasoning": "a finding \u2014 the paragraph correctly diagnoses that no single roadmap output answers a section's readiness today, but it adds a second per-section answer without saying the row's existing one is rebuilt from it.",
+    "single_goal": "pass \u2014 the changed paragraph serves \u00a78's one deliverable, a queue that reads the work's cross-plan DAG readiness, and adds no second deliverable.",
+    "wiring": "pass \u2014 s8 declares `plan-section-depends-on` on s2, and s9 and s15 declare s8 in the plan's relationship map, so the node that consumes the per-section verdict is wired to it."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "5339204df681d6dd787033f9e0d6f99ac99f54dfd9dddbc017361958e897ce02",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:07:24.377081+00:00"
+}
