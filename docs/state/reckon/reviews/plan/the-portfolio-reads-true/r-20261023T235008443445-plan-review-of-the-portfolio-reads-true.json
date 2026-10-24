@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-23T23:55:56.080Z",
+  "dispatched_at": "2026-10-23T23:50:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:172",
+      "id": "reasoning-1",
+      "reason": "without a terminal rule for a conflicting pending plan the node implements an unbounded retry loop that reports a failure the portfolio no longer has, replacing \u00a79's \"success on a stale move\" with \"partial forever on a consistent one\", and the done-when's conflict case asserts only that conflict is reported, not that it ever resolves.",
+      "text": "the conflict clause says a plan whose version moved \"stays pending and the retry names it as conflicting\", while \"success is recorded only once no plan is pending\" elsewhere in the same section, so a conflicting entry can never clear: every subsequent retry returns `partial_write` forever even after the other call has left the index and the plan agreeing on the other call's sprint, and the plan states no rule that reconciles or retires the entry",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "3072a940f7bfcfbc3e3018568d757e3a7942ac9f5c0dfb5dc628270bd6dc7b03",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 65,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261023T235008443445-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "0783b89510bf9a6bd52345cd6b4abea2fa70d152",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `partial_write` is set by `_partial_plan_write` (`reckon/mcp_edit_plan.py:688`) and called at `:1729` (the plan's \"near `:1728`\"), the receipt is written at `:1744`, `_replayed_response` is defined at `:1207` and called at `:1324`, `record_write_receipt` is at `reckon/_store.py:285`, and `_apply_move`'s `'{slug}' not found in sprint` is at `reckon/_store.py:3520`; the named test file is a deliverable and correctly does not exist yet.",
+    "done_when": "pass \u2014 \u00a79 names `tests/test_a_retried_partial_move_is_not_replayed.py`, a declared negative control (\"a receipt recorded as success on a partial write must fail the first case\"), and a described induction of the post-pre-read failure, so each clause is a runnable assertion.",
+    "evidence_paths": "pass \u2014 \u00a79 names its write paths and places every log under the crew run directory, a durable path.",
+    "naming": "pass \u2014 \u00a79 introduces no code symbol and describes the receipt fields by what they carry; no plan label, stage name or ticket number reaches a name.",
+    "reasoning": "a finding \u2014 the stated root cause reproduces at head and the mechanism reaches the real replay path, but the newly added conflict clause leaves a receipt pending with no defined terminal state.",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable, that a retried partial sprint move is not replayed as success; the two-plan and conflict cases discriminate that same behaviour rather than adding a second goal.",
+    "wiring": "pass \u2014 \u00a79 declares no `depends-on` and needs none: the \u00a78 pre-read and same-call plan write it repairs are `done` (`s8`), and the plan's only open section wire (`s6 \u2192 s8`) is unrelated."
+  },
+  "section_digests": {
+    "_document": "99c9e3cf9942e999d5740a5fbefff3d49790d2568cd12c6bc07b4892fcca6913",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "3356ae7418443a6853c5f7b227d41fb4b2252c7cb1a166052f201d1e18cf2683"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T00:02:20.902788+00:00"
+}
