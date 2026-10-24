@@ -1,0 +1,67 @@
+<section id="a-discarded-request-is-not-launched">
+  <h2>a-discarded-request-is-not-launched — a request discarded before its worker is spawned is refused, and its record survives</h2>
+
+  <p><strong>Defect, reproduced first.</strong> The admission pass releases a selected request
+  into the shared dispatch path (<code>_launch_queued</code>,
+  <code>reckon/crew/queue_admission.py</code>), which publishes the run's claim
+  (<code>_publish_launch_claim</code>, <code>reckon/crew/dispatch_claims.py</code>) and then
+  composes the launch for several seconds before starting the worker. An operator's
+  <code>crew discard</code> landing inside that span removed the pointer and recorded the
+  departure (<code>discard</code>, <code>reckon/crew/promotion.py</code>), and no step on the
+  launch path read <code>promotion.discard_recorded</code>. The launch wrote the pointer back
+  and spawned a worker, so the discard record sat beside a live run and every reader that takes
+  a recorded discard for an abandoned run (the queue readers in
+  <code>reckon/crew/queue_admission.py</code>, the departure row in
+  <code>reckon/crew/recovery_watch.py</code>) read the new worker as one.</p>
+
+  <p>A new case drove the window through the pass's own seam (the discard issued as
+  <code>_launch_queued</code> is entered) with a launcher that succeeds. At the base revision
+  <code>0ab156b37</code> it failed with the live pointer present and
+  <code>launcher calls: 1</code> (<strong>1 failed, EXIT=1</strong>,
+  <code>logs/base-reproduction.log</code>).</p>
+
+  <p><strong>Fix, one commit</strong> (<code>5f9f2ae3a</code>). <code>dispatch_claims.py</code>
+  gains <code>_refuse_a_discarded_launch</code>, and the two spawn sites in
+  <code>reckon/crew/dispatch.py</code> call it immediately before
+  <code>_start_supervisor</code> and before the caller-supplied <code>launcher</code>. A recorded
+  discard raises a <code>CrewError</code> inside the <code>_claim_released_on_refusal</code>
+  guard the path already holds, so the claim is given back and the ordinary rollback removes the
+  pointer and the run directory. The record is copied to the shared spool
+  (<code>preserve_discard_record</code>) before the refusal is raised, so the rollback cannot
+  remove the only copy of a departure recorded in the run directory.</p>
+
+  <p><strong>Window left open.</strong> <code>_require_fleet_gate_open()</code> runs before the
+  check and a discard it trims away is the largest removal; the check then sits immediately
+  before the fork. What remains is the supervisor start itself — one process creation — after
+  which a discard that lands still arrives against a live run and is refused by
+  <code>discard</code>'s own liveness test rather than by this check.</p>
+
+  <p><strong>Measured, both arms from <code>git archive</code> extractions on node-local
+  disk.</strong> Gate <code>tests/test_a_discarded_request_stays_discarded.py</code> at head
+  <code>5f9f2ae3a</code>: <strong>7 passed, EXIT=0</strong>
+  (<code>logs/gate-head.log</code>). Importer population — the 31 test files that reference a
+  function on the changed path (<code>_claim_released_on_refusal</code>,
+  <code>_publish_launch_claim</code>, <code>_release_launch_claim</code>,
+  <code>_wire_peer_channels</code>, <code>discard_recorded</code>, <code>admit_once</code>,
+  <code>_launch_queued</code>) under <code>-n 4</code>: base <code>0ab156b37</code>
+  <strong>209 passed, EXIT=0</strong>; head <code>5f9f2ae3a</code> <strong>211 passed,
+  EXIT=0</strong>, the two extra being the new cases. No failure is added
+  (<code>logs/arm-base-narrow.log</code>, <code>logs/arm-head-narrow.log</code>). The whole
+  321-file population that imports either module was attempted first and is not reportable:
+  both arms were cut off by a 700 s cap at roughly 43% with no summary line
+  (<code>EXIT=124</code>, <code>logs/arm-base.log</code>, <code>logs/arm-head.log</code>), so it
+  is replaced by the population above.</p>
+
+  <p><strong>Declared negative control, executed and logged.</strong> The repair is reverted in
+  a scratch extraction (the two call sites removed from
+  <code>reckon/crew/dispatch.py</code>; never committed), and both new cases fail:
+  <strong>2 failed, EXIT=1</strong> (<code>logs/negative-control.log</code>).</p>
+
+  <p><strong>Scope.</strong> <code>reckon/crew/dispatch.py</code> gains two call lines and one
+  re-export; <code>reckon/crew/dispatch_claims.py</code> gains the check;
+  <code>tests/test_a_discarded_request_stays_discarded.py</code> gains the two cases. No
+  existing test is changed, skipped or weakened.
+  <code>ruff check</code> passes and <code>ruff format --check</code> reports the three staged
+  files already formatted (<code>logs/ruff-check.log</code>,
+  <code>logs/ruff-format.log</code>).</p>
+</section>
