@@ -2962,7 +2962,14 @@ _WATCH_HOST_LEASES: dict[str, Any] = {}
 
 
 def renew_watch_host_lease(project: str) -> bool:
-    """Keep the producer's claim fresh; stop when another host owns it."""
+    """Keep the producer's claim fresh; stop when another host owns it.
+
+    The seat owner's verdict on this producer is re-taken here. A producer can
+    be reloaded onto a host that is not the fleet record's node after it took
+    the seat, so the start-up answer alone leaves that one renewing a seat whose
+    runs it cannot probe; the release gives the seat up and ends the process.
+    """
+    release_seat_when_misplaced(project)
     lease = _WATCH_HOST_LEASES.get(project)
     return lease is not None and lease.renew()
 
@@ -3672,6 +3679,7 @@ from .watch_unit import (  # noqa: E402
     _reckon_console_script as _reckon_console_script,
     _record_producer_running as _record_producer_running,
     _register_watch_unit as _register_watch_unit,
+    release_seat_when_misplaced as release_seat_when_misplaced,
     _seat_host as _seat_host,
     _seat_names_a_foreign_host as _seat_names_a_foreign_host,
     _seat_project as _seat_project,
