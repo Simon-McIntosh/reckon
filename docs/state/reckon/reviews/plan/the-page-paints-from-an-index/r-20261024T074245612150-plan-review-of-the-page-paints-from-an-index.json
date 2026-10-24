@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T07:54:34.136Z",
+  "dispatched_at": "2026-10-24T07:43:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:281",
+      "id": "done_when-1",
+      "reason": "the section must say the in-flight path makes the tree absorbable (the guard in `mark_tree_paths`), or case (5) must be restated, before a node writes it.",
+      "text": "case (5) requires a covered file \"marked while the first reader is held inside the path\" of a cold read, but `mark_tree_paths` (`reckon/metadata_index.py:353-359`) returns without recording whenever `_CACHE` holds no build for the root; a cold read has no build until the leader's `_build_and_cache` stores one at the end, so the fixture's mark cannot be recorded through the production API and the case either fails on working code or must write `_MARKS` directly, testing a path production never reaches (probe: `cold_marks_after_mark {}`, `warm_marks_after_mark {... ['x.html']}`, report directory `probe-marks.log`)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-page-paints-from-an-index.html:281",
+      "id": "reasoning-1",
+      "reason": "the sentence is a correctness claim a later node will lean on, and either it must be narrowed to the waiting reader, or the cold path must consume the mark at the end of its build.",
+      "text": "the deliverable's conclusion \"a change stream that reports a change and then reads is never handed rows from before its own change\" is not produced by the mechanism it describes: on a cold cache the change stream calls `_build_and_cache` and its mark is discarded by `mark_tree_paths`, and `build_index` reuses any persisted entry whose stat identity is unchanged (`_reuse_entry`, `reckon/metadata_index.py:755-763`), so a change that only moves a document's git commit date \u2014 the case `_patch_build`'s own docstring exists to reach \u2014 never reaches its own pushed rows; the guarantee holds only for a waiter behind an already-running path, which is case (5)'s arm",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ac7f80b50952d747e9e72ffaefbd09aa3b46e7ecca3525f5a2e450ebb088bcf8",
+  "plan_slug": "the-page-paints-from-an-index",
+  "plan_version": 156,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T074245612150-plan-review-of-the-page-paints-from-an-index",
+  "reviewed_blob_sha": "b07c1be2ecc6108644216db4215a8b67cde773bf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `index_rows`, `_reuse_covered`, `build_index`, `_record_covered_shape`, `covered_dir_identity`, `_dir_identity`, `_served_index_rows` and `_send_project_changes` all exist in `reckon/metadata_index.py`/`reckon/serve.py`, and the cited \u00a715 live numbers resolve to the plan comment at `docs/plans/the-page-paints-from-an-index.html:379` and its `#s15-live` evidence anchor.",
+    "done_when": "a finding \u2014 case (5) places a mark while a cold read's path is in flight, but `metadata_index.mark_tree_paths` refuses to record a mark whenever the tree has no cached build, which is exactly the state the fixture creates.",
+    "evidence_paths": "pass \u2014 \"every log sits under the plan's run directory with a revision header and ends in EXIT=\", the house convention already carried by \u00a716, which is durable.",
+    "naming": "pass \u2014 the section names mechanisms (`_reuse_covered`, `_record_covered_shape`, tree generation) and carries no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 the claim that a change stream is never handed rows predating its own change holds only for a reader that waits on a path already in flight; on a cold tree the change stream marks before it reads, the mark is dropped, and its own build reuses the persisted row.",
+    "single_goal": "pass \u2014 one deliverable, \"a cold read sweeps the mechanism once\", and the six cases are arms of that one measure rather than separate deliverables.",
+    "wiring": "pass \u2014 the head's `plan-section-depends-on` gives `s17: [the-page-paints-from-an-index#s15]`, \u00a715 is `done`, and `reckon/roadmap.py:1667` reads the head mapping, so the earlier missing-edge defect is answered."
+  },
+  "section_digests": {
+    "_document": "537b2ebfce813f8f7b7d224405b55eec65867515605ae7d8caa9502ed08741c1",
+    "s1": "a95b5428471cd609ad51720820d976482123aab20f8d5fb34d688aa5b6905f7b",
+    "s10": "17515cc4d212280b53e77d7279aa81e37c7d58f877ada031f77705b31e53d437",
+    "s11": "bb32b98b9a0a5070d5ec6b5387862bef5af3ba37b5956ac7c9d734723c2ac9fa",
+    "s12": "071a3e9ff829e6cc2047658d80b57b5d30603318f0fa4a31084d94b5ed308185",
+    "s13": "c1b191dea15e7b03a3c847c3a5729ac7a4ca2d0492920bd5b273d04a79593d48",
+    "s14": "81d5ac4cc3ec42e5b1f7e8ee9da1f92e89073fdda2bd21fda06046a2d2e15b68",
+    "s15": "26b13b7e068c0c94f350e7fe989e7ec349d49ef2d3eea2fc683caf118eadee68",
+    "s16": "70d29c1c411d361420b3599becb52551e76417e68d09ea8c20bced8110e54bc0",
+    "s17": "2da7870869c2c9d68ffdd0e36960a4473dfab9b95998fc86cf14214e908d7345",
+    "s18": "bb8a9d028e136b90bea322ed74155b1dbf753a6b476635fc887b0a4e6b9db7a2",
+    "s2": "a35498097ded86565b0cd8b7554035df40a89413f5bf572e73124dc1a8649f42",
+    "s3": "eeaabf724382a06e267a3b1e902fce8c3c4909ac83bf1d5493b7957cf3c19104",
+    "s4": "6c6b08637a1940d67285c843996018cab21833352fb1a30b75391613ae6f39ae",
+    "s5": "3444cce49eb796f1a36d4f5272647c422b30f3a4931b9b0fe2fd43ff9597f1a2",
+    "s6": "d3142c84c3071b3e433e7e91b737d869e2257fc492ce4bfca99111b5a04fc7b9",
+    "s7": "048a1031945a098f9a63b70d985d91dd2d9ee2f67f1ac1a2132e4c7d21b89e7e",
+    "s8": "655a2a53cd5c486c56b4715d590b6e4d9c624c4c45c1dd261309c9a0c6b22e8a",
+    "s9": "af3c086d7dca7e0218cc9b216084d2642cc71b208202a9eecaa1488b65f0efd4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:58:10.495818+00:00"
+}
