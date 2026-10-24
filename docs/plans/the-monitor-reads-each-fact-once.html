@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -160,11 +160,14 @@
     <p>The station's tick stats the live directory and each live pointer and stream. A pointer is parsed only
     when its <code>file_memo.file_signature</code> moved against the stored one. A stream is read only past its stored offset, up to the last whole record,
     and folded by <code>_backends.observe_stream</code> with the stored fold state as <code>state</code>; a
-    stream whose inode changed or that shrank is folded from its start. A stream that grew is read from 64 bytes
-    before its stored offset, and those 64 bytes are compared with the copy stored beside the offset; a mismatch
-    means the file was rewritten in place, keeping its inode and growing past the offset between two ticks, and
-    the stream is folded from its start. That is the one case neither an inode nor a size test can see, and the
-    anchor costs 64 bytes per stream that grew and nothing for a stream that did not.
+    stream whose inode changed, or whose current size is below its consumed offset, is folded from its start.
+    Worker streams are append-only JSONL, so a rewrite is a truncate followed by fresh writes; a truncate a tick
+    sees reads as that size test. A rewrite that grows back past the consumed offset between two ticks is caught
+    by a 64-byte tail anchor: a stream that grew is read from 64 bytes before its consumed offset, and those bytes
+    are compared with the copy stored beside the offset, a mismatch folding the stream from its start. The anchor
+    misses a rewrite whose bytes at that position happen to be identical, which timestamped JSONL records make
+    vanishingly unlikely, and it is not consulted for a stream that did not grow. It costs 64 bytes per grown
+    stream.
     <code>station_store.ingest_stream</code> (§5) checks only inode and size today, so this section adds the anchor. The classifier
     (<code>recovery.classify_pointer</code>) runs once per run whose classification inputs changed, keyed on
     <code>recovery_memo._classification_inputs</code>, which covers the pointer, the stream, the manifest, the run
@@ -181,7 +184,8 @@
     silence and <code>stalled</code> when none does.</p>
     <p>Done when, replaying the fixture streams of five real runs (copied from the crew home into a test
     directory) in chunks: the station's folded observation equals a single full fold of each stream
-    (<code>as_dict()</code> equal); the bytes it reads from each stream per tick are at most the bytes appended plus 64, and zero for a stream that did not grow; a stream rewritten in place, keeping its inode and growing past its stored offset, is
+    (<code>as_dict()</code> equal); the bytes it reads from each stream per tick are at most the bytes appended, plus 64, plus the partial record
+    carried from the previous tick, and zero for a stream that did not grow; a stream rewritten in place, keeping its inode and growing past its stored offset, is
     detected and refolded, so its observation equals a full fold of the rewritten file. The fold already exists in §5's <code>station_store.ingest_stream</code>; this
     section's new mechanism is the classification, so it is measured directly. Over three ticks of a fixture with
     three live runs, with <code>recovery.classify_pointer</code> and the liveness probe counted through patches:
@@ -192,7 +196,8 @@
     carried fold state must fail the equality test on a stream whose rate depends on earlier records; a tick
     that classifies every run on every pass must fail the unchanged-tick count; a change key on the pointer
     and stream alone must fail the manifest-only tick; a station without the quiet-beat reading must fail
-    the exited-worker and stall cases; and an ingest without the tail anchor must fail the in-place rewrite case.</p>
+    the exited-worker and stall cases; and an ingest without the tail anchor must fail the case where a stream is truncated and rewritten past its
+    consumed offset between two ticks.</p>
     <p>This section is the next to edit <code>reckon/crew/station_store.py</code>, so it also takes the four non-blocking findings of §5's review. It deletes <code>store_at_runtime_root</code> and <code>default_store</code>, which have no caller and duplicate <code>StationStore.at_runtime_root</code>. It closes each day-file connection it opens: <code>sqlite3.Connection</code>'s context manager commits but does not close. And it replaces the assertion in <code>tests/test_the_station_store_is_node_local.py</code> that compares two outputs of the store with one against the fixture's three pointer paths. Done when, beside the measures above, <code>git grep -n "def store_at_runtime_root\|def default_store" reckon/</code> returns nothing, a test counts the store's open file descriptors before and after writing 50 events and finds them equal, and the replaced assertion compares the incremental store's pointer paths with the fixture's three paths.</p>
 
     <h2 id="s7">§7 — One station per node replaces the per-project producers</h2>
@@ -307,9 +312,15 @@
     <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §4</pre>
     <p class="r-fu-outcome">§4 landed (merge 57e274889, test repair 99e614314); a follower reads 0.10 MB of pointers in 15 s. The station store §5 is next, after the plan's first content and design reviews.</p>
     </article>
-<article class="r-fu" data-id="f-tmref-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-23 13:25" data-recommends-skill="/reckon-build the-monitor-reads-each-fact-once §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tmref-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-23 13:25" data-recommends-skill="/reckon-build the-monitor-reads-each-fact-once §5" data-resolved-at="2026-10-24T11:38:15+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build the station&#x27;s ingest</h4>
     <div class="r-fu-body"><p>§5 landed (merge <code>06079a8a2</code>). §6, the ingest and classification, is next; §7 follows §6.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §6</pre>
+    <p class="r-fu-outcome">§5 landed in merge 06079a8a2. This followup's recommended section attribute could not be repointed in place, so f-tmref-003 carries the §6 invocation.</p>
+    </article>
+<article class="r-fu" data-id="f-tmref-003" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-10-24 13:40" data-recommends-skill="/reckon-build the-monitor-reads-each-fact-once §6" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the station&#x27;s ingest and classification</h4>
+    <div class="r-fu-body"><p>§6 is next: incremental ingest with a tail anchor, and classification keyed on every classification input plus the quiet-beat liveness reading. §7 follows §6.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §6</pre>
     </article>
 </section>
