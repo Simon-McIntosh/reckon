@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="Every edit path reports a refusal in one shape">
+  <meta name="plan-summary" content="A version conflict's changed_targets was built from set ops alone, so an append refusal had a different shape; every op verb now names the targets it addresses.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s58">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="edit-plan,refusal,version-conflict,evidence">
+  <title>Every edit path reports a refusal in one shape | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="every-edit-path-refuses-in-one-shape" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="every-edit-path-refuses-in-one-shape-title">Every edit path reports a refusal in one shape</h2>
+  <p id="every-edit-path-refuses-in-one-shape-change"><strong>Change.</strong>
+  <code>_changed_targets</code> in <code>reckon/mcp_edit_plan.py</code> built the
+  conflict's <code>changed_targets</code> from <code>set</code> ops alone, so a
+  collision met through an <code>append</code>, <code>resolve</code>,
+  <code>lock</code>, <code>accept</code> or gate verb answered without the
+  targets it addressed and its refusal shape depended on the verb the caller
+  chose. The new <code>_op_target_path</code> composes each verb's address from
+  the op's own identifying keys — an explicit <code>path</code>, a
+  collection plus the record id, a decision <code>key</code>, a gate
+  <code>id</code> — and <code>_changed_targets</code> resolves each against the
+  document the store holds. The shape case now compares the refusal across op
+  paths apart from <code>changed_targets</code>, and requires each path to name
+  its own targets with the value read back off disk, because those targets
+  differ between kinds by construction.</p>
+  <p id="every-edit-path-refuses-in-one-shape-measure"><strong>Measure.</strong>
+  The listed id <code>tests/test_every_edit_path_refuses_one_shape.py::test_the_refusal_shape_is_identical_across_op_paths</code>
+  fails at the base arm (<code>1 failed, 52 passed</code>, <code>EXIT=1</code>) and
+  passes at the head arm (<code>53 passed</code>, <code>EXIT=0</code>), both arms
+  extracted with <code>git archive</code> onto node-local disk and run with the
+  same command over the gate, every test file that imports the changed module
+  (<code>reckon.mcp_edit_plan</code>), and the case that pins the conflict
+  contract (
+  <code>test_a_refused_write_names_the_next_step</code>,
+  <code>test_a_lost_race_is_refused_not_raised</code>,
+  <code>test_a_malformed_request_is_refused_before_storage</code>,
+  <code>test_a_retried_partial_move_is_not_replayed</code>,
+  <code>test_an_added_parameter_needs_no_reconnect</code>,
+  <code>test_mcp_server_serves_current_code</code>). No failure is added.
+  <code>ruff check</code> and <code>ruff format --check</code> report nothing
+  added on the two staged paths (7 pre-existing findings at the base arm, 7 at
+  the head).</p>
+  <p id="every-edit-path-refuses-in-one-shape-control"><strong>Negative control.</strong>
+  Declared mutation: revert each repair; its id must fail again. Applied by
+  restoring <code>reckon/mcp_edit_plan.py</code> to the base revision in a copy
+  of the head tree, keeping the head test: the listed id fails,
+  <code>1 failed, 5 passed</code>, <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>
