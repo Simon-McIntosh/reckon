@@ -1967,7 +1967,7 @@ def _dependency_cycles(graph: dict[str, list[str]]) -> list[list[str]]:
 
     for node in sorted(graph):
         visit(node)
-    return [list(cycle) + [cycle[0]] for cycle in sorted(found) if cycle]
+    return [[*cycle, cycle[0]] for cycle in sorted(found) if cycle]
 
 
 def _sprint_membership(
@@ -3320,16 +3320,16 @@ def _build_roadmap(
 
     cycles = _dependency_cycles(dict(local_graph))
     cycle_members = {slug for cycle in cycles for slug in cycle[:-1]}
-    for cycle in cycles:
-        findings.append(
-            _finding(
-                "dependency-cycle",
-                "error",
-                "dependency cycle: " + " -> ".join(cycle),
-                slug=cycle[0],
-                extra={"cycle": cycle},
-            )
+    findings.extend(
+        _finding(
+            "dependency-cycle",
+            "error",
+            "dependency cycle: " + " -> ".join(cycle),
+            slug=cycle[0],
+            extra={"cycle": cycle},
         )
+        for cycle in cycles
+    )
 
     endpoint_rows = _dependency_endpoints(project, plans)
     endpoint_memberships: dict[str, list[dict[str, Any]]] = defaultdict(list)
