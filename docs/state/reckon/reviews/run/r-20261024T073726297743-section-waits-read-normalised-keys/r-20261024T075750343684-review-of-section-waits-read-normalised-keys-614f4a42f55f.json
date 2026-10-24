@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "baseline-suite.log and head-suite.log completed with the same four failure IDs; head adds seven passing cases.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1652 dispatch",
+    "reckon/crew/queue_admission.py:1323 unmet_waits",
+    "reckon/crew/queue_admission.py:1526 advance_waiting_requests",
+    "reckon/crew/queue_admission.py:1666 hold_request_for_upstream"
+  ],
+  "completed_at": "2026-10-24T08:06:58Z",
+  "dispatched_at": "2026-10-24T07:59:50Z",
+  "findings": [
+    {
+      "file": "tests/test_section_waits_read_normalised_keys.py",
+      "line": "48",
+      "severity": "blocking",
+      "text": "blocking: the stored-phase test invokes queue_requests, which has no production caller, so it does not measure the done_when's actual dispatch path storing an s2 or \u00a72 node as awaiting-upstream; add a dispatch-path assertion against the stored pointer before landing."
+    },
+    {
+      "file": "tests/test_section_waits_read_normalised_keys.py",
+      "line": "79",
+      "severity": "non-blocking",
+      "text": "non-blocking: the expected dead-section key repeats the already canonical \u00a71 passed at :76, and the :80 assertion also stays true if _dead_sections reverts to its raw key; fold an alternate-spelling failure case into the same node's repair."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against 995066408256636daf129c402e4cab96fec54abf; c2d9360 adds normalization and seven tests, and 614f4a4 adds only the evidence fragment, for three changed paths total.",
+    "done_when": "the source prompt requires dispatching s2 and \u00a72 fixtures into awaiting-upstream; tests/test_section_waits_read_normalised_keys.py:48 stores them through queue_requests instead, while the base and head suite logs record identical four failure IDs and ruff.log records both checks passing.",
+    "goal": "the source goal in its prompt requires plan waits to survive stored section spelling; reckon/crew/queue_admission.py:1067 normalizes both lookup sides and the production dispatch read at reckon/crew/dispatch.py:1652 reaches it.",
+    "manifest": "the source run's manifest.md reports complete, names commits c2d9360b0ad19f20c32c3989905a3747d0fc34f9 and 614f4a42f55f3e8342c64678a1e96fcbfd0f6390, and carries readable baseline_suite and after_suite receipts with four identical failing IDs.",
+    "write_paths": "the source prompt fences queue_admission.py, the new test, the evidence fragment and a figure directory; the two commits change only the first three declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_section_waits_read_normalised_keys.py:58 and :71 fail under the recorded raw-lookup mutation, but :79 repeats the already canonical section value supplied at :76 and stays green if dead-section normalization is removed.",
+    "evidence": "tests/test_section_waits_read_normalised_keys.py:48 calls queue_requests rather than the production dispatch path, although its two unmet_waits assertions at :61 and the recorded base/head failure delta support the shared lookup.",
+    "fit": "reckon/crew/queue_admission.py:40 imports the existing ledger.normalize_section owner and uses the module's existing helper structure without introducing a prohibited source name.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1067 compares normalized authored and requested section keys, and :1380, :1410 and :1451 apply the same identity through readiness and failed-section checks.",
+    "reuse": "the capability search found reckon/ledger.py:408 normalize_section as the existing section identity owner, and reckon/crew/queue_admission.py:40 imports it rather than adding another normalizer.",
+    "scope_discipline": "the changed paths in the diff are reckon/crew/queue_admission.py, tests/test_section_waits_read_normalised_keys.py and the declared section evidence fragment, all within the source prompt's fence."
+  },
+  "node": "review-of-section-waits-read-normalised-keys-614f4a42f55f",
+  "node:reviewed": "section-waits-read-normalised-keys",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal in its prompt requires plan waits to survive stored section spelling; reckon/crew/queue_admission.py:1067 normalizes both lookup sides and the production dispatch read at reckon/crew/dispatch.py:1652 reaches it.\nVERDICT done_when: the source prompt requires dispatching s2 and \u00a72 fixtures into awaiting-upstream; tests/test_section_waits_read_normalised_keys.py:48 stores them through queue_requests instead, while the base and head suite logs record identical four failure IDs and ruff.log records both checks passing.\nVERDICT write_paths: the source prompt fences queue_admission.py, the new test, the evidence fragment and a figure directory; the two commits change only the first three declared paths.\nVERDICT manifest: the source run's manifest.md reports complete, names commits c2d9360b0ad19f20c32c3989905a3747d0fc34f9 and 614f4a42f55f3e8342c64678a1e96fcbfd0f6390, and carries readable baseline_suite and after_suite receipts with four identical failing IDs.\nVERDICT diff: read both commits against 995066408256636daf129c402e4cab96fec54abf; c2d9360 adds normalization and seven tests, and 614f4a4 adds only the evidence fragment, for three changed paths total.\nCALL_SITES: reckon/crew/dispatch.py:1652 dispatch, reckon/crew/queue_admission.py:1323 unmet_waits, reckon/crew/queue_admission.py:1526 advance_waiting_requests, reckon/crew/queue_admission.py:1666 hold_request_for_upstream\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1067 compares normalized authored and requested section keys, and :1380, :1410 and :1451 apply the same identity through readiness and failed-section checks.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_section_waits_read_normalised_keys.py:48 calls queue_requests rather than the production dispatch path, although its two unmet_waits assertions at :61 and the recorded base/head failure delta support the shared lookup.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the changed paths in the diff are reckon/crew/queue_admission.py, tests/test_section_waits_read_normalised_keys.py and the declared section evidence fragment, all within the source prompt's fence.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_section_waits_read_normalised_keys.py:58 and :71 fail under the recorded raw-lookup mutation, but :79 repeats the already canonical section value supplied at :76 and stays green if dead-section normalization is removed.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_admission.py:40 imports the existing ledger.normalize_section owner and uses the module's existing helper structure without introducing a prohibited source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found reckon/ledger.py:408 normalize_section as the existing section identity owner, and reckon/crew/queue_admission.py:40 imports it rather than adding another normalizer.\nFINDING tests/test_section_waits_read_normalised_keys.py:48 blocking: the stored-phase test invokes queue_requests, which has no production caller, so it does not measure the done_when's actual dispatch path storing an s2 or \u00a72 node as awaiting-upstream; add a dispatch-path assertion against the stored pointer before landing.\nFINDING tests/test_section_waits_read_normalised_keys.py:79 non-blocking: the expected dead-section key repeats the already canonical \u00a71 passed at :76, and the :80 assertion also stays true if _dead_sections reverts to its raw key; fold an alternate-spelling failure case into the same node's repair.\n",
+  "review_run_id": "r-20261024T075750343684-review-of-section-waits-read-normalised-keys-614f4a42f55f",
+  "reviewed_base_sha": "995066408256636daf129c402e4cab96fec54abf",
+  "reviewed_head_sha": "614f4a42f55f3e8342c64678a1e96fcbfd0f6390",
+  "reviewed_run_id": "r-20261024T073726297743-section-waits-read-normalised-keys",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T08:04:44.801814+00:00",
+  "total": 106
+}
