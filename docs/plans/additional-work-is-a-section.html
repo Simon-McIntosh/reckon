@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="additional-work-is-a-section">
   <meta name="plan-title" content="Additional Work Is A Section">
   <meta name="plan-summary" content="Work found beyond a node becomes a plan section or goes into the dispatching prompt; reckon stops writing a deferred-work bucket in reviews, manifests or plans">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-standalone" content="It changes how reviews, worker manifests, plan writes and the skills name work found beyond a node; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;additional-work-is-a-section#s2&quot;,&quot;additional-work-is-a-section#s6&quot;],&quot;s5&quot;:[&quot;additional-work-is-a-section#s2&quot;,&quot;additional-work-is-a-section#s3&quot;,&quot;additional-work-is-a-section#s4&quot;,&quot;additional-work-is-a-section#s6&quot;,&quot;additional-work-is-a-section#s7&quot;],&quot;s7&quot;:[&quot;additional-work-is-a-section#s3&quot;]}">
   <title>Additional Work Is A Section | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="60">
+<meta name="plan-version" content="61">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -81,7 +81,7 @@
     <p>Negative control: remove the check, and the first case is accepted. The gate runs the new test with every test file that drives <code>edit_plan</code>'s create, <code>insert_section</code> or text mode, at base and at head, judged by delta. Write paths: <code>reckon/_store.py</code>, <code>reckon/_store_section_ops.py</code>, <code>reckon/doccheck.py</code>, <code>tests/test_a_plan_write_refuses_the_bucket.py</code>, <code>docs/evidence/fragments/additional-work-is-a-section/a-plan-write-refuses-the-bucket.html</code>.</p>
 
     <h2 id="s5">§5 — No reckon surface teaches or names the retired term</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> The six skill files that teach the bucket teach the rule instead: <code>skills/reckon-build/SKILL.md</code>, its references <code>worker-protocol.md</code>, <code>sprint-orchestration.md</code>, <code>coordinator-reference.md</code> and <code>conditional-guidance.md</code>, and <code>skills/reckon-edit/SKILL.md</code>. Each one states that work found beyond a node becomes a plan section, or an instruction in the next dispatch's prompt. Each one names the <code>non-blocking</code> severity and the <code>outside_scope</code> field from §2 and §3. None carries the old term in prose. <code>tests/test_skill_contracts.py</code> gains a case that fails on the term in any skill file's prose.</p>
     <p><strong>Done when</strong> that case passes over <code>skills/</code>. Its negative control, restoring one old sentence, fails it. <code>tests/test_skill_contracts.py</code> passes at head and adds no failure against base. The same guard covers the source the earlier sections renamed: <code>tests/test_no_source_names_the_retired_field.py</code> fails when any comment, docstring or string literal in <code>reckon/</code> or <code>scripts/</code> names <code>follow_on</code>, <code>follow_ons</code> or <code>follow-on</code>. Two kinds of site keep the term and are exempt, each named in the test. The first is a module constant whose name begins <code>RETIRED_</code>, which maps a record written before the rename on the way in: <code>RETIRED_OUTSIDE_SCOPE</code> (<code>reckon/crew/reports.py</code>, near line 83), <code>RETIRED_OUTSIDE_SCOPE_PATHS</code> (<code>reckon/run_record.py</code>, near line 33) and <code>RETIRED_FINDING_SEVERITIES</code> (<code>reckon/crew/review.py</code>, near line 163). The second is <code>_DEFERRED_WORK_TERM</code> (<code>reckon/doccheck.py</code>, near line 419), the pattern §4 lands to refuse the word in a plan. No other site is exempt. The review of §7 found that nothing guarded a comment it had fixed. Its negative control restores the retired word in that comment (<code>reckon/crew/reports.py</code>, near line 105), and the case fails. §7 owns that comment's fix, so this section dispatches after §7 has landed, and the guard is green at its base. Write paths: the six skill files, <code>tests/test_skill_contracts.py</code>, <code>tests/test_no_source_names_the_retired_field.py</code>, <code>docs/evidence/fragments/additional-work-is-a-section/the-skills-state-the-rule.html</code>. This section runs last, so the skills describe the grammar, the field and the guard as landed.</p>
 
@@ -95,10 +95,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-awias-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build additional-work-is-a-section" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awias-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-22" data-recommends-skill="/reckon-build additional-work-is-a-section" data-resolved-at="2026-10-24T04:43:31+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build the four sections once the plan&#x27;s reviews are answered</h4>
     <div class="r-fu-body"><p>§2 is done. §4 is in review. §6 renames the ledger key first; §3 follows §6, and §7 follows §3. §5 runs last, after §2, §3, §4, §6 and §7.</p></div>
     <pre class="r-fu-prompt">/reckon-build additional-work-is-a-section</pre>
+    <p class="r-fu-outcome"><p>Every section has landed. Plan writes refuse the deferred-work bucket term. Review findings are blocking or non-blocking. Worker manifests and ledger rows carry outside_scope. The skills teach that additional work is a plan section or an instruction in the dispatching prompt, and guards keep the retired term out of skills and source. Done — no followup: the chain closes here.</p></p>
     </article>
 </section>
   
@@ -176,7 +177,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261024T023850308710-the-skills-state-the-rule recorded at reviewed base 31764cec8bbab4607c504eb74e09cce839a83ff1 and reviewed head 691a09335f3d97e537536b274a7c4809a3569ccb: the two gained commits fold the prior review's reuse finding by importing the skill-tree walk from tests/test_skills_name_no_host_path.py and deleting the fork, and refresh the evidence fragment; scores goal_fidelity 18, evidence 19, scope_discipline 20, durability 18, fit 19, reuse 20, with zero added failures and one non-blocking finding that the new comment at tests/test_skill_contracts.py:137 credits the shared walk's control with refusing a renamed tree when it only refuses an empty one.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261024T023850308710-the-skills-state-the-rule" data-who="reckon-build" data-when="2026-10-24T04:02:01Z">
-    <div class="r-comment-body"><p>Retired the deferred-work term from the six teaching skill files, each of which now states that work found beyond a node becomes a plan section or an instruction in the next dispatch&#x27;s prompt and names the non-blocking severity and the outside_scope field; added the skill-prose guard, which takes its file list from the existing skill-tree walk in tests/test_skills_name_no_host_path.py, and the reckon/scripts source guard with the four declared exemptions; head arm 75 passed / 2 failed against base 68 passed / 2 failed, zero added.</p></div>
+    <div class="r-comment-body"><p>Retired the deferred-work term from the six teaching skill files, each of which now states that work found beyond a node becomes a plan section or an instruction in the next dispatch's prompt and names the non-blocking severity and the outside_scope field; added the skill-prose guard, which takes its file list from the existing skill-tree walk in tests/test_skills_name_no_host_path.py, and the reckon/scripts source guard with the four declared exemptions; head arm 75 passed / 2 failed against base 68 passed / 2 failed, zero added.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-24T04:40:00Z">
+    <div class="r-comment-body"><p>§5 landed at merge <code>4365f8fdf</code>. The skills teach the section-or-prompt rule, and both guards refuse the retired term outside the four exempt sites. The focused gate adds 0 failures. <a href="/reckon/evidence/archive/additional-work-is-a-section-landed.html#s5">evidence</a></p></div>
 </div>
 </section>
 </main>
