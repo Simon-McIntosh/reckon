@@ -160,6 +160,46 @@
     <strong>200</strong> documents. With the reuse value replaced by a constant
     the row is identical either side and the case is red.
   </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-repair-tree">
+    <strong>The tree the read covers, by name.</strong> A document added outside
+    reckon and git moves no staging index, no <code>HEAD</code> and no write
+    counter, so the key also carries the identity of the directories a plan can
+    be written into. That list was first a bounded depth-first walk of the docs
+    tree, and on a real tree it never reached the one directory that matters:
+    <code>docs/figures</code> alone holds 104 subdirectories whose names sort
+    ahead of <code>plans</code>, so the 64-entry budget was spent before the
+    walk arrived. The list is now named by <code>path_classes.PLAN_HTML_PREFIXES</code>
+    — <code>plans</code>, <code>evidence</code> and <code>research</code> — one
+    stat per directory through the discovery index's own
+    <code>covered_dir_identity</code>, which reuses the observation an open
+    discovery pass has already made. A case builds a tree with 70 directories
+    sorting before <code>plans</code> and 104 under <code>figures</code>, adds a
+    plan file, and requires the key to move; with the capped walk restored it is
+    red. The bound case now counts directory stats in its per-project budget,
+    which is asserted at 8 or fewer with the directories included.
+  </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-repair-identity">
+    <strong>One name, two trees, two homes.</strong> The snapshot was keyed and
+    filed on the project name alone, so two checkouts — or two temporary trees
+    under one test run — declaring the same project shared one record, and a read
+    under one crew home could be answered with another home's live rows. The
+    key, the in-process memo and the file name now carry a digest of the
+    project's resolved docs root and of the resolved crew home as well as the
+    project. Cases drive two docs trees and two homes under one project name and
+    require each read to get its own snapshot and neither to serve the other;
+    replacing either digest with a constant turns both cases red, and the log is
+    <code>s50-negative-control.log</code>.
+  </p>
+  <p id="a-roadmap-read-answers-from-its-snapshot-repair-prune">
+    <strong>Snapshot files do not accumulate.</strong> One file is written per
+    resolved docs root, and a tree that is deleted — a removed worktree, a
+    finished run's temporary copy — left its file behind with nothing to remove
+    it. Each stored record now names the root it was composed from, and a store
+    prunes the siblings whose root no longer exists, keeping at most
+    <code>_SNAPSHOT_KEEP_PER_PROJECT</code> newest files per project. Two cases
+    cover it: a snapshot for a deleted tree is gone after the next store, and a
+    directory holding more than the keep count is reduced to it.
+  </p>
 </article>
 </body>
 </html>
