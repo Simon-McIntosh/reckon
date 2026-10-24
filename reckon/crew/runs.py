@@ -107,6 +107,24 @@ def run_dir(run_id: str) -> Path:
 #: request waits, and the launch reads whatever that file holds at that moment.
 STEERING_FILE = "steering.md"
 
+#: The name a run review's composed brief is written under, inside the reviewed
+#: run's own directory. The reviewed run's directory is the one durable place
+#: both consumers of its review resolve, so keying the brief there lets the
+#: printed command and the executed dispatch name one path without sharing a
+#: value between them.
+RUN_REVIEW_BRIEF_NAME = "review-brief.md"
+
+#: The name a figure review's brief is composed under, in the same directory.
+FIGURE_REVIEW_BRIEF_NAME = "figure-review-brief.md"
+
+#: The brief names a launch composes afresh from the reviewed run's record
+#: rather than reading as handed in. Declared here because this module cannot
+#: import the review module, and both the queue's steering copy
+#: (``is_rebuilt_brief``) and the composition itself
+#: (``materialize_run_review_brief``) read this one set, so a name added here is
+#: honoured by both readers instead of by whichever one was edited.
+REBUILT_BRIEF_NAMES = frozenset({RUN_REVIEW_BRIEF_NAME, FIGURE_REVIEW_BRIEF_NAME})
+
 
 def pointer_path(run_id: str) -> Path:
     """Path of one run's live pointer."""
@@ -549,12 +567,6 @@ def existing_node_run(
     return None
 
 
-#: The brief names a launch composes afresh from the reviewed run's record
-#: rather than reading as handed in (see ``materialize_run_review_brief``), by
-#: the path a run review's brief is written to.
-_REBUILT_BRIEF_NAMES = frozenset({"review-brief.md", "figure-review-brief.md"})
-
-
 def store_brief(
     directory: Path, source: str | Path, *, block: str = "", name: str = ""
 ) -> Path:
@@ -593,7 +605,7 @@ def is_rebuilt_brief(path: Path) -> bool:
     acts on; this asks the question without composing, because composing for
     the queue would write the same stale text it is meant to avoid.
     """
-    if path.name not in _REBUILT_BRIEF_NAMES:
+    if path.name not in REBUILT_BRIEF_NAMES:
         return False
     try:
         if run_dir(path.parent.name).resolve() != path.parent.resolve():

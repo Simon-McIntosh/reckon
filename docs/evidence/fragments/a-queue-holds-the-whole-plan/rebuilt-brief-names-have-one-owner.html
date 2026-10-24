@@ -1,0 +1,61 @@
+<section id="rebuilt-brief-names-have-one-owner-landing">
+  <h2>The rebuilt brief names have one owner</h2>
+
+  <p><strong>What changed.</strong> Two readers ask whether a brief is one a
+  launch composes afresh: the queue's steering copy (<code>is_rebuilt_brief</code>)
+  asks before it freezes a copy, and the composition
+  (<code>materialize_run_review_brief</code>) asks before it writes. Each used to
+  carry its own answer — <code>_REBUILT_BRIEF_NAMES</code> in
+  <code>reckon/crew/runs.py</code>, and <code>_RUN_REVIEW_BRIEF_NAME</code> plus a
+  literal set inside the composition. A name added to one was honoured by that
+  reader alone, so the queue skipped its copy while the composition left the path
+  untouched and the request launched from a path that was never written.</p>
+
+  <p><strong>One declaration.</strong> <code>reckon/crew/runs.py</code> declares
+  <code>RUN_REVIEW_BRIEF_NAME</code>, <code>FIGURE_REVIEW_BRIEF_NAME</code> and
+  <code>REBUILT_BRIEF_NAMES</code> beside <code>STEERING_FILE</code>, because
+  that module cannot import the review module. <code>is_rebuilt_brief</code>
+  reads the set, and <code>materialize_run_review_brief</code> and
+  <code>_review_brief_path</code> in
+  <code>reckon/crew/recovery_review_subject.py</code> read it through
+  <code>runs</code>, so a name is added in one place and both readers answer for
+  it.</p>
+
+  <p><strong>The test adds a name at runtime.</strong>
+  <code>tests/test_rebuilt_brief_names_have_one_owner.py</code> monkeypatches
+  <code>runs.REBUILT_BRIEF_NAMES</code> with an extra name and requires both
+  readers to answer <code>True</code> for a path carrying it — the composition
+  stub records that it was reached, so an early return cannot pass. A second
+  case requires both readers to answer <code>False</code> for an undeclared
+  name, so the set is what earns the yes rather than the directory the path sits
+  in.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_rebuilt_brief_names_have_one_owner.py</code> — 3
+  passed, <code>EXIT=0</code>. Negative control: the declared mutation (giving
+  <code>materialize_run_review_brief</code> its own literal set again) makes
+  <code>test_a_name_added_to_the_declaration_is_honoured_by_both_readers</code>
+  fail; 1 failed, 2 passed, <code>EXIT=1</code>.</p>
+
+  <p>Delta: the population the brief names — every test file importing
+  <code>reckon/crew/runs.py</code> or
+  <code>reckon/crew/recovery_review_subject.py</code> — resolves to 511 files,
+  and an arm over it did not finish inside the window (<code>EXIT=124</code>
+  from a 560 s bound, no progress line printed). The delta was therefore
+  measured over the brief-surface subset the changed functions serve
+  (<code>test_queue_steering_binding</code>,
+  <code>test_a_queued_plan_review_keeps_its_brief</code>,
+  <code>test_promotion_records_a_brief_runs_owner</code>,
+  <code>test_figure_review</code>,
+  <code>test_a_figure_review_node_names_its_reviewed_run</code>,
+  <code>test_scoring_dispatches_its_review</code>): head 34 passed, base 34
+  passed, added failures 0. Both arms were run serially from
+  <code>/home/ITER/mcintos/Code/reckon/.venv</code>; the base arm ran from a
+  <code>git archive</code> extraction of the base revision and its log names the
+  absolute <code>reckon/crew/runs.py</code> it imported.</p>
+
+  <p><strong>Unfinished.</strong> The full-population delta is the brief's
+  measure and was not produced; it needs a window that fits 511 test files in
+  two serial arms.</p>
+</section>
