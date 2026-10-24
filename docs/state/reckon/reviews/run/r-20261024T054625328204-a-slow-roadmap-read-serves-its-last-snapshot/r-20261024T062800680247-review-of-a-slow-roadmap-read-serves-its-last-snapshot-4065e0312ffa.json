@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp.py:3503 roadmap tool registration calls _roadmap_deadline_tool",
+    "reckon/mcp.py:2027 _roadmap loads the stored snapshot for the call's shape",
+    "reckon/mcp.py:2058 _roadmap stores its composition for the call's shape"
+  ],
+  "completed_at": "2026-10-24T06:47:04.734Z",
+  "dispatched_at": "2026-10-24T06:30:23Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "1982",
+      "severity": "blocking",
+      "text": "blocking: _roadmap_stale_answer passes kwargs.get(\"checkout_path\") to _roadmap_snapshot_target, while the tool body it stands in for resolves checkout_path = _run_scoped_read_root(project) at reckon/mcp.py:2307. A process carrying RECKON_RUN_ID for this project, as every crew worker's MCP server does, composes from its worktree with no snapshot scope, yet its slow read is answered from the mounted main checkout's stored composition and marked stale, so plan state from the wrong tree is served as the read's own answer."
+    },
+    {
+      "file": "reckon/roadmap_snapshot.py",
+      "line": "445",
+      "severity": "non-blocking",
+      "text": "non-blocking: _SNAPSHOT_KEEP_PER_PROJECT stays 8 while the files it counts are now one per docs root and per request shape, so a node serving several worktrees of one project can prune a live tree's last snapshot for a shape, and the fallback then silently degrades to a numeric deadline report."
+    },
+    {
+      "file": "reckon/mcp_deadlines.py",
+      "line": "501",
+      "severity": "non-blocking",
+      "text": "non-blocking: the availability pre-check calls _safe_fallback at the start of every roadmap read, building the whole stale answer (payload plus stale block) only to discard it, so every fast read pays a full snapshot load and serialisation and a slow read pays it twice; a presence check would answer the same question."
+    },
+    {
+      "file": "tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py",
+      "line": "131",
+      "severity": "non-blocking",
+      "text": "non-blocking: at base every one of the seven cases fails at _tool() on the missing _roadmap_deadline_tool, so the two cases the plan calls pre-existing regression guards never exercise the existing deadline and _read_joining_running paths at base, and the manifest's claim that all seven fail for the per-shape store, the held flag and the fallback is not what base-gate.log shows."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T054625328204-a-slow-roadmap-read-serves-its-last-snapshot/head-gate.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T054625328204-a-slow-roadmap-read-serves-its-last-snapshot/base-gate.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified three production call sites; the fallback is reached only through reckon/mcp.py:3503 registering _roadmap_deadline_tool, and the load/store pair only through reckon/mcp.py:2027 and :2058 in _roadmap.",
+    "diff": "Read commit by commit (one commit, 3df04d103..4065e0312, five files): roadmap_snapshot.py gains roadmap_snapshot_last/roadmap_stale_answer and a per-shape record, mcp_deadlines.py gains the reserve and an on_timeout answer, mcp.py stores held-or-not and registers _roadmap_deadline_tool, beside the new test file and the fragment.",
+    "done_when": "The done_when names tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py plus three existing files under the literal -n 8 command; head-gate.log records '37 passed in 52.73s' and EXIT=0, base-gate.log '7 failed, 30 passed' and EXIT=1, and negative-control.log 3 failed / 4 passed with EXIT=1, so the gate the worker ran does assert the measure.",
+    "goal": "The goal is to store every composition as its tree's and shape's last snapshot and answer a read held past its reserve from it, marked stale; reckon/roadmap_snapshot.py:609 roadmap_snapshot_store now stores every composition with a held flag, and reckon/mcp_deadlines.py:497-505 shortens the wait and returns the fallback, so the goal is met for reads whose checkout_path resolves to None.",
+    "manifest": "Read; it names commit 4065e0312ffa4de02d9063e958d913d19e2cb348, the three gate logs, STALE_SNAPSHOT_RESERVE_SECONDS = 1.0 with its RECKON_ROADMAP_STALE_RESERVE_SECONDS override, and the per-shape record fields; its evidence_inputs sentence attributing all seven base failures to absent behaviour is imprecise, as the finding at the test file line 131 records.",
+    "write_paths": "The declared paths are reckon/roadmap_snapshot.py, reckon/mcp_deadlines.py, reckon/mcp.py, the new test file and one evidence fragment; git diff 3df04d103..4065e0312 changes exactly those five files."
+  },
+  "justifications": {
+    "durability": "tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:213-218 asserts the answer is composition 1 and not storage-slow, and negative-control.log shows that case reddening when the fallback is removed, though :279 compares stale['shape'] against the same module function the code under test called.",
+    "evidence": "The head arm ends '37 passed' with EXIT=0 and the base arm '7 failed, 30 passed', but all seven base failures are an AttributeError from the new helper at tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:131, so the delta measures that helper's absence as much as the behaviour.",
+    "fit": "The additions follow the surrounding style of reckon/roadmap_snapshot.py:374-411 and reckon/mcp_deadlines.py:469-482, and no added symbol carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/roadmap_snapshot.py:609 and reckon/mcp_deadlines.py:497-505 implement the store-and-answer behaviour the goal states, but reckon/mcp.py:1982 takes the fallback's tree from the raw kwargs, so a run-scoped read is answered from another tree.",
+    "reuse": "A capability search over reckon/ found no other owner of a last-stored-answer-with-age mechanism; the fallback extends the snapshot module and reuses _read_joining_running and _INFLIGHT_READS at reckon/mcp_deadlines.py:487 rather than adding a second registry.",
+    "scope_discipline": "git diff 3df04d103..4065e0312 touches only the five declared paths, and the _roadmap_snapshot_scope rename stays inside reckon/mcp.py:1926."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T062800680247-review-of-a-slow-roadmap-read-serves-its-last-snapshot-4065e0312ffa",
+  "reviewed_base_sha": "3df04d103d2995617cf20c3f990764b3ea45031d",
+  "reviewed_head_sha": "4065e0312ffa4de02d9063e958d913d19e2cb348",
+  "reviewed_run_id": "r-20261024T054625328204-a-slow-roadmap-read-serves-its-last-snapshot",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: The goal is to store every composition as its tree's and shape's last snapshot and answer a read held past its reserve from it, marked stale; reckon/roadmap_snapshot.py:609 roadmap_snapshot_store now stores every composition with a held flag, and reckon/mcp_deadlines.py:497-505 shortens the wait and returns the fallback, so the goal is met for reads whose checkout_path resolves to None.\nVERDICT done_when: The done_when names tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py plus three existing files under the literal -n 8 command; head-gate.log records '37 passed in 52.73s' and EXIT=0, base-gate.log '7 failed, 30 passed' and EXIT=1, and negative-control.log 3 failed / 4 passed with EXIT=1, so the gate the worker ran does assert the measure.\nVERDICT write_paths: The declared paths are reckon/roadmap_snapshot.py, reckon/mcp_deadlines.py, reckon/mcp.py, the new test file and one evidence fragment; git diff 3df04d103..4065e0312 changes exactly those five files.\nVERDICT manifest: Read; it names commit 4065e0312ffa4de02d9063e958d913d19e2cb348, the three gate logs, STALE_SNAPSHOT_RESERVE_SECONDS = 1.0 with its RECKON_ROADMAP_STALE_RESERVE_SECONDS override, and the per-shape record fields; its evidence_inputs sentence attributing all seven base failures to absent behaviour is imprecise, as the finding at the test file line 131 records.\nVERDICT diff: Read commit by commit (one commit, 3df04d103..4065e0312, five files): roadmap_snapshot.py gains roadmap_snapshot_last/roadmap_stale_answer and a per-shape record, mcp_deadlines.py gains the reserve and an on_timeout answer, mcp.py stores held-or-not and registers _roadmap_deadline_tool, beside the new test file and the fragment.\nCALL_SITES: reckon/mcp.py:3503 (roadmap tool registration calls _roadmap_deadline_tool), reckon/mcp.py:2027 (_roadmap loads the stored snapshot for the call's shape), reckon/mcp.py:2058 (_roadmap stores its composition for the call's shape)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/roadmap_snapshot.py:609 and reckon/mcp_deadlines.py:497-505 implement the store-and-answer behaviour the goal states, but reckon/mcp.py:1982 takes the fallback's tree from the raw kwargs, so a run-scoped read is answered from another tree.\nSCORE evidence: 16\nJUSTIFICATION evidence: The head arm ends '37 passed' with EXIT=0 and the base arm '7 failed, 30 passed', but all seven base failures are an AttributeError from the new helper at tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:131, so the delta measures that helper's absence as much as the behaviour.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 3df04d103..4065e0312 touches only the five declared paths, and the _roadmap_snapshot_scope rename stays inside reckon/mcp.py:1926.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:213-218 asserts the answer is composition 1 and not storage-slow, and negative-control.log shows that case reddening when the fallback is removed, though :279 compares stale['shape'] against the same module function the code under test called.\nSCORE fit: 18\nJUSTIFICATION fit: The additions follow the surrounding style of reckon/roadmap_snapshot.py:374-411 and reckon/mcp_deadlines.py:469-482, and no added symbol carries a plan, sprint or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: A capability search over reckon/ found no other owner of a last-stored-answer-with-age mechanism; the fallback extends the snapshot module and reuses _read_joining_running and _INFLIGHT_READS at reckon/mcp_deadlines.py:487 rather than adding a second registry.\nFINDING reckon/mcp.py:1982 blocking: blocking: _roadmap_stale_answer passes kwargs.get(\"checkout_path\") to _roadmap_snapshot_target, while the tool body it stands in for resolves checkout_path = _run_scoped_read_root(project) at reckon/mcp.py:2307. A process carrying RECKON_RUN_ID for this project, as every crew worker's MCP server does, composes from its worktree with no snapshot scope, yet its slow read is answered from the mounted main checkout's stored composition and marked stale, so plan state from the wrong tree is served as the read's own answer.\nFINDING reckon/roadmap_snapshot.py:445 non-blocking: non-blocking: _SNAPSHOT_KEEP_PER_PROJECT stays 8 while the files it counts are now one per docs root and per request shape, so a node serving several worktrees of one project can prune a live tree's last snapshot for a shape, and the fallback then silently degrades to a numeric deadline report.\nFINDING reckon/mcp_deadlines.py:501 non-blocking: non-blocking: the availability pre-check calls _safe_fallback at the start of every roadmap read, building the whole stale answer (payload plus stale block) only to discard it, so every fast read pays a full snapshot load and serialisation and a slow read pays it twice; a presence check would answer the same question.\nFINDING tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:131 non-blocking: non-blocking: at base every one of the seven cases fails at _tool() on the missing _roadmap_deadline_tool, so the two cases the plan calls pre-existing regression guards never exercise the existing deadline and _read_joining_running paths at base, and the manifest's claim that all seven fail for the per-shape store, the held flag and the fallback is not what base-gate.log shows.\n",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T08:42:00+00:00",
+  "total": 104
+}
