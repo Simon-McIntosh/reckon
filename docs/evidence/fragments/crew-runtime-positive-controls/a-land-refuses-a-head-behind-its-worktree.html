@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A land refuses a head behind the run's worktree before it merges">
+  <meta name="plan-summary" content="crew complete --land now compares the reviewed head it is about to merge with the head of the run's worktree, while that tree is still on disk. When the worktree head is neither the merged head nor an ancestor of it, the land is refused before anything is merged or pushed, naming both revisions and the reckon crew merge command for the worktree's head. An absent worktree has nothing to compare, so a released tree merges as before.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A land refuses a head behind the run's worktree before it merges | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A land refuses a head behind the run's worktree before it merges</h1>
+
+    <section id="a-land-refuses-a-head-behind-its-worktree-anchor">
+      <h2>What changed</h2>
+      <p><code>_land_a_promoted_run</code> in <code>reckon/crew_run_commands.py</code>
+        now reads the head of the run's worktree before it calls
+        <code>merge.land</code>. The worktree path comes from the record the
+        promotion wrote, falling back to the live pointer captured before the
+        promotion deleted it. When the tree is still a directory and its head
+        is neither the reviewed head being merged nor an ancestor of it, the
+        land is refused: nothing is merged, nothing is pushed, and
+        <code>steps.land</code> names both revisions alongside the
+        <code>reckon crew merge</code> command for the worktree's head, which is
+        the revision a reader can land instead. The check reuses the release
+        step's own instrument — <code>merge._is_ancestor</code> against
+        <code>HEAD</code> — so the two read one reachability fact rather than
+        two definitions of "behind".</p>
+      <p>The release step already read that fact, but only after the merge and
+        its push. In the landing this section exists for, the land merged
+        <code>956b6e5d</code> while the run's worktree sat at
+        <code>7ffee8b2</code>, and the commit the worktree held reached no
+        reader. Reading the same comparison one step earlier is what turns a
+        post-hoc report into a refusal.</p>
+      <p>An absent worktree has no head to compare, so the guard is silent and
+        the land proceeds unchanged; a worktree whose head cannot be resolved
+        is likewise left to the release step's existing verdict rather than
+        refused on a guess.</p>
+      <h2>Gate</h2>
+      <p><code>tests/test_a_land_refuses_a_head_behind_its_worktree.py</code> —
+        3 passed, 0 failed at <code>3b95dc020</code>. The fixture is a temporary
+        repository with a linear chain of four commits and a run worktree at
+        the fourth, driven through the real <code>crew complete --land</code>
+        entry point. Cases: a land of the third commit while the worktree is at
+        the fourth is refused, the refusal names both revisions and the merge
+        command for the fourth, the remote still names the seed commit, the
+        branch carries no third-commit file, and the worktree is left on disk;
+        a land whose head equals the worktree's head merges and pushes as
+        today; a land whose worktree has already been released merges the
+        third commit as today, its release step still withholding a tree it
+        cannot find. An autouse guard searches the operator's real crew home
+        for this module's run id before and after every case.</p>
+      <p>Population: the 14 test files importing
+        <code>reckon/crew_run_commands.py</code> at the dispatched base, found
+        with <code>grep -rln 'crew_run_commands' tests/</code> and recorded in
+        the run directory. Both arms are git exports under the run's scratch
+        and ran in place on the fleet node with <code>pytest -n 8</code>.
+        Baseline <code>8d5f2f918</code>: 1 failed, 373 passed,
+        <code>EXIT=1</code>. Head <code>3b95dc020</code>: 1 failed, 373 passed,
+        <code>EXIT=1</code>. The one id is the same in both arms —
+        <code>test_crew_tool_carries_the_write_verbs.py::test_the_obligations_view_prints_the_action_form</code>,
+        a <code>TypeError</code> in <code>reckon/mcp_views.py</code> outside this
+        node's scope — so the delta is zero.
+        <code>tests/test_every_module_fits_a_worker_window.py</code> at head:
+        4 passed in the same gate run, <code>EXIT=0</code>.
+        <code>ruff check</code> and <code>ruff format --check</code> report no
+        finding on either changed path, and the base blob of
+        <code>reckon/crew_run_commands.py</code> is equally clean, so the change
+        adds none.</p>
+      <h2>Negative control</h2>
+      <p>Applied alone to the head tree and run under pytest with the default
+        short summary; the log is <code>negative-control.log</code> under the
+        run directory. Removing the pre-merge worktree comparison:
+        <code>1 failed, 2 passed</code>, <code>EXIT=1</code> — the third-commit
+        land case merges and pushes the third commit and fails on the remote
+        assertion. The other two cases still pass, so the mutation reddens
+        exactly the case that measures the comparison.</p>
+      <h2>What this does not do</h2>
+      <p>The check lives in the land step of <code>crew complete</code>. The
+        standalone <code>reckon crew merge</code> verb still merges the head it
+        is given without consulting any worktree, because it is handed a
+        revision rather than a run. Promotion's own choice of revision is a
+        different section's repair; this node assumes the promotion reached it
+        with a head and stops that head from being merged ahead of work the run
+        still holds.</p>
+    </section>
+  </main>
+</body>
+</html>
