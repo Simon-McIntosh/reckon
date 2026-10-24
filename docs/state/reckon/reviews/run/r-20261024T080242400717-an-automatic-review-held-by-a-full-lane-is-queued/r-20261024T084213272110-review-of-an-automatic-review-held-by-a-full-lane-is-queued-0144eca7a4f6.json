@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:3125 the continuous reflex calls dispatch_review_for_run with prefer_local=True, which reaches _dispatch_composed_review and the new except-branch",
+    "reckon/crew/recovery_review_acceptance.py:498 calls dispatch_review_for_run from the acceptance sweep",
+    "reckon/crew_dispatch_commands.py:2712 calls recovery.dispatch_review_for_run for a requested run review",
+    "reckon/crew/recovery.py:225 and :257 re-export _dispatch_composed_review and dispatch_review_for_run to those callers"
+  ],
+  "completed_at": "2026-10-24T08:58:38.514Z",
+  "dispatched_at": "2026-10-24T08:43:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "630",
+      "severity": "non-blocking",
+      "text": "non-blocking: _router_hold re-implements a distinction the repository already owns as the exception subclass LaneHeld (reckon/crew/dispatch_admission.py:1187) and duplicates the withheld-state set _LANE_GATE_WAITING_STATES (dispatch_admission.py:1153) as _GATE_WITHHELD_STATES at recovery_review_dispatch.py:627; it duplicates rather than extends the owner, and isinstance(exc, LaneHeld) answers the same question without a second copy of the gate vocabulary that can drift from the dispatch's own."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "639",
+      "severity": "non-blocking",
+      "text": "non-blocking: the withheld-state exclusion is not exercised by any added assertion. A paused or unreadable gate carries no held and no allowance key, so _router_hold already returns False for it on line 641 and test_a_paused_gate_queues_nothing passes with lines 639-640 deleted; the branch the comment at :625 says protects a shut gate has no test that reddens when it is removed."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2927",
+      "severity": "non-blocking",
+      "text": "non-blocking: the queue write runs unguarded inside the except LanePaused block, while its only automatic caller loops over records with no try/except (reckon/crew/recovery_watch.py:3125), so a CrewError race raised by reckon/crew/runs.py:645 or an OSError from the write ends the whole review sweep for that project instead of recording a hold; the sibling reflex helper _discard_stranded_review catches exactly this class of failure for the same reason."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued/manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite carry angle-bracket placeholders in their command values (<the 26 test files importing recovery_review_dispatch, excluding the new test> at :19 and <the same 26 importers> at :20) rather than the literal command that ran, so the gate receipt cannot be re-run from the record; the literal text survives only in the logs' own # command: headers (logs/gate-base.log, logs/gate-head.log), which promotion falls back to, so the evidence stands but the record field does not."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued/logs/gate-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued/logs/gate-base.log"
+  },
+  "item_verdicts": {
+    "diff": "read commit by commit against f299a724: one commit adds _GATE_WITHHELD_STATES, _router_hold and _queue_router_held_review plus a fallback in the except LanePaused branch at :2927, a 356-line test file with three cases, and a 24-line evidence fragment that states the separating condition.",
+    "done_when": "the done_when names tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py with three cases plus a delta gate; the manifest records 3 passed in logs/cases-at-head.log and 2 pre-existing failures identical in both arms in logs/gate-base.log and logs/gate-head.log, giving zero added failures.",
+    "goal": "the node's goal is that an automatic review held by a full unpaused local lane leaves a queued review run; reckon/crew/recovery_review_dispatch.py:2927-2936 now queues it through dispatch's own _queued_request_record and runs.queue_dispatch when the hold reached the reflex with no pointer.",
+    "manifest": "read; it names commit 0144eca7a4f679b95c83ceb4dd0ea96710aa3399, the three-case gate, the negative control at logs/negative-control.log and both suite arms, and its dispatch-record fields carry unsubstituted placeholders (recorded as a non-blocking finding).",
+    "write_paths": "read the manifest's declared paths and git diff --stat f299a724..0144eca7; the three changed paths are reckon/crew/recovery_review_dispatch.py, tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-automatic-review-held-by-a-full-lane-is-queued.html, all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log reproduces the recorded production shape and fails the new case with EXIT=1, but the withheld-state exclusion at recovery_review_dispatch.py:639 is unverified and case 3 asserts only position 1 on the CLI side, never comparing it with the reflex's position despite its name.",
+    "evidence": "logs/gate-base.log and logs/gate-head.log both end EXIT=1 with the same two failing ids (tests/test_a_sweep_resolves_review_heads_once.py::test_snapshot_obligations_match_the_derivation, tests/test_partition_live_runs_recorded.py::test_recorded_classification_is_used_without_observing_logs) so the delta is zero, but the evidence fragment's named condition is asserted rather than shown: dispatch.py:1773-1826 already queues a local allowance hold with a queued pointer under the same predicate the reflex uses for on_local_lane, so which resolution differed is left unexplained.",
+    "fit": "the fallback follows the surrounding except-branch idiom and its names carry no plan, ticket or author reference, though :665 adds a redundant local `from reckon.crew import runs as _runs` where the module already imports runs at line 22, and the docstring at :633 claims the two holds arrive as the same exception class when LaneHeld subclasses LanePaused.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:2937-2938 reports the queued run and :685 stores the pointer the admission pass launches, and the guarded branch at :2927 leaves a paused gate queueing nothing.",
+    "reuse": "_queue_router_held_review extends the owners it should (dispatch._queued_request_record at :671, runs.queue_dispatch at :685, _composed_review_options at :680), but _router_hold duplicates the LaneHeld distinction (dispatch_admission.py:1187) and the withheld-state set (dispatch_admission.py:1153) instead of extending them.",
+    "scope_discipline": "git diff --stat f299a724..0144eca7 changes only the three declared paths and adds nothing the goal does not imply, leaving dispatch.py and dispatch_sessions.py untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that an automatic review held by a full unpaused local lane leaves a queued review run; reckon/crew/recovery_review_dispatch.py:2927-2936 now queues it through dispatch's own _queued_request_record and runs.queue_dispatch when the hold reached the reflex with no pointer.\nVERDICT done_when: the done_when names tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py with three cases plus a delta gate; the manifest records 3 passed in logs/cases-at-head.log and 2 pre-existing failures identical in both arms in logs/gate-base.log and logs/gate-head.log, giving zero added failures.\nVERDICT write_paths: read the manifest's declared paths and git diff --stat f299a724..0144eca7; the three changed paths are reckon/crew/recovery_review_dispatch.py, tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-automatic-review-held-by-a-full-lane-is-queued.html, all inside the declared scope.\nVERDICT manifest: read; it names commit 0144eca7a4f679b95c83ceb4dd0ea96710aa3399, the three-case gate, the negative control at logs/negative-control.log and both suite arms, and its dispatch-record fields carry unsubstituted placeholders (recorded as a non-blocking finding).\nVERDICT diff: read commit by commit against f299a724: one commit adds _GATE_WITHHELD_STATES, _router_hold and _queue_router_held_review plus a fallback in the except LanePaused branch at :2927, a 356-line test file with three cases, and a 24-line evidence fragment that states the separating condition.\nCALL_SITES: reckon/crew/recovery_watch.py:3125 the continuous reflex calls dispatch_review_for_run with prefer_local=True, which reaches _dispatch_composed_review and the new except-branch, reckon/crew/recovery_review_acceptance.py:498 calls dispatch_review_for_run from the acceptance sweep, reckon/crew_dispatch_commands.py:2712 calls recovery.dispatch_review_for_run for a requested run review, reckon/crew/recovery.py:225 and :257 re-export _dispatch_composed_review and dispatch_review_for_run to those callers\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:2937-2938 reports the queued run and :685 stores the pointer the admission pass launches, and the guarded branch at :2927 leaves a paused gate queueing nothing.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate-base.log and logs/gate-head.log both end EXIT=1 with the same two failing ids (tests/test_a_sweep_resolves_review_heads_once.py::test_snapshot_obligations_match_the_derivation, tests/test_partition_live_runs_recorded.py::test_recorded_classification_is_used_without_observing_logs) so the delta is zero, but the evidence fragment's named condition is asserted rather than shown: dispatch.py:1773-1826 already queues a local allowance hold with a queued pointer under the same predicate the reflex uses for on_local_lane, so which resolution differed is left unexplained.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat f299a724..0144eca7 changes only the three declared paths and adds nothing the goal does not imply, leaving dispatch.py and dispatch_sessions.py untouched.\nSCORE durability: 15\nJUSTIFICATION durability: logs/negative-control.log reproduces the recorded production shape and fails the new case with EXIT=1, but the withheld-state exclusion at recovery_review_dispatch.py:639 is unverified and case 3 asserts only position 1 on the CLI side, never comparing it with the reflex's position despite its name.\nSCORE fit: 16\nJUSTIFICATION fit: the fallback follows the surrounding except-branch idiom and its names carry no plan, ticket or author reference, though :665 adds a redundant local `from reckon.crew import runs as _runs` where the module already imports runs at line 22, and the docstring at :633 claims the two holds arrive as the same exception class when LaneHeld subclasses LanePaused.\nSCORE reuse: 5\nJUSTIFICATION reuse: _queue_router_held_review extends the owners it should (dispatch._queued_request_record at :671, runs.queue_dispatch at :685, _composed_review_options at :680), but _router_hold duplicates the LaneHeld distinction (dispatch_admission.py:1187) and the withheld-state set (dispatch_admission.py:1153) instead of extending them.\nFINDING reckon/crew/recovery_review_dispatch.py:630 non-blocking: _router_hold re-implements a distinction the repository already owns as the exception subclass LaneHeld (reckon/crew/dispatch_admission.py:1187) and duplicates the withheld-state set _LANE_GATE_WAITING_STATES (dispatch_admission.py:1153) as _GATE_WITHHELD_STATES at recovery_review_dispatch.py:627; it duplicates rather than extends the owner.\nFINDING reckon/crew/recovery_review_dispatch.py:639 non-blocking: the withheld-state exclusion is not exercised by any added assertion; a paused gate carries no held and no allowance key, so test_a_paused_gate_queues_nothing passes with lines 639-640 deleted.\nFINDING reckon/crew/recovery_review_dispatch.py:2927 non-blocking: the queue write runs unguarded inside the except LanePaused block, while its only automatic caller loops over records with no try/except (reckon/crew/recovery_watch.py:3125), so a raise from reckon/crew/runs.py:645 ends the whole review sweep instead of recording a hold.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued/manifest.md:19 non-blocking: baseline_suite and after_suite carry angle-bracket placeholders in their command values rather than the literal command that ran, so the gate receipt cannot be re-run from the record; the literal text survives only in the logs' own # command: headers.\n",
+  "review_run_id": "r-20261024T084213272110-review-of-an-automatic-review-held-by-a-full-lane-is-queued-0144eca7a4f6",
+  "reviewed_base_sha": "f299a724e7932cae7b38b34865da7df6396b448d",
+  "reviewed_head_sha": "0144eca7a4f679b95c83ceb4dd0ea96710aa3399",
+  "reviewed_run_id": "r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T10:56:00+00:00",
+  "total": 89
+}
