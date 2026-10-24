@@ -274,6 +274,36 @@ _CACHE: dict[tuple[str, str, bool], IndexBuild] = {}
 #: file costs a read of that file and nothing else.
 _MARKS: dict[str, TreeChange] = {}
 
+
+class _ColdPath:
+    """One cache-miss rebuild in progress, which other readers wait on.
+
+    ``done`` is set when the build either stored its result or failed, so a
+    reader that found the path in flight can read again through the cache. A
+    path that fails sets ``failed`` and carries its ``error``, so the waiting
+    readers can read for themselves rather than inheriting the failure.
+    ``generation`` is the tree generation the path started against: a drop
+    recorded while the path runs moves the tree's generation, which keeps that
+    path's build out of the cache.
+    """
+
+    __slots__ = ("done", "error", "failed", "generation")
+
+    def __init__(self, generation: int) -> None:
+        self.done = threading.Event()
+        self.error: BaseException | None = None
+        self.failed = False
+        self.generation = generation
+
+
+#: The cache-miss path in flight per cache key — one rebuild at a time per tree
+#: and stamp source. A reader that arrives while one runs waits for it instead
+#: of sweeping the same directories again.
+_INFLIGHT: dict[tuple[str, str, bool], _ColdPath] = {}
+#: Each tree's current generation, keyed by its resolved root. A drop moves it,
+#: so a build that started before the drop cannot store the rows it read.
+_GENERATIONS: dict[str, int] = {}
+
 #: Discovery batches in flight, keyed by (resolved docs dir, project). A batch
 #: holds the persisted entries as loaded when it opened; :func:`record_discovery`
 #: updates them in memory, and one :func:`flush_discovery` writes the store, so a
@@ -288,8 +318,12 @@ def clear() -> None:
     """Drop every in-process index, as a process restart would."""
 
     with _LOCK:
+        roots = {key[1] for key in _CACHE} | set(_MARKS) | set(_GENERATIONS)
+        roots |= {key[1] for key in _INFLIGHT}
         _CACHE.clear()
         _MARKS.clear()
+        for root in roots:
+            _GENERATIONS[root] = _GENERATIONS.get(root, 0) + 1
 
 
 def invalidate_tree(docs_dir: Path) -> None:
@@ -297,11 +331,13 @@ def invalidate_tree(docs_dir: Path) -> None:
 
     This is the fallback for a change no source could attribute: an event
     queue overflow, a commit that cannot be resolved, a rewritten history. The
-    next read pays the full sweep.
+    next read pays the full sweep, and a cache-miss path already running keeps
+    its build out of the cache rather than storing rows read before the drop.
     """
 
     root = str(Path(docs_dir).resolve())
     with _LOCK:
+        _GENERATIONS[root] = _GENERATIONS.get(root, 0) + 1
         for key in [key for key in _CACHE if key[1] == root]:
             del _CACHE[key]
         _MARKS.pop(root, None)
@@ -342,17 +378,24 @@ def covered_name(relative: str) -> bool:
 def mark_tree_paths(docs_dir: Path, change: TreeChange) -> None:
     """Record the paths a source named for the next read to absorb.
 
-    A tree with no cached build has nothing to absorb: its next read builds
-    anyway, and the persisted shape already tells it which directories moved. A
-    change that names nothing covered is not recorded, so a write the index
-    does not read costs neither a stat nor a rebuild.
+    A tree with a cached build absorbs the mark on its next read. A tree with
+    no cached build absorbs it too while a cache-miss path is in flight: the
+    path consumes every mark recorded while it ran before it returns, so a
+    change that lands after its walk passed a directory still reaches its rows.
+    A mark is dropped when there is neither a cached build nor a path in flight,
+    because the next read builds anyway and the persisted shape already tells it
+    which directories moved. A change that names nothing covered is not
+    recorded, so a write the index does not read costs neither a stat nor a
+    rebuild.
     """
 
     if not change:
         return
     root = str(Path(docs_dir).resolve())
     with _LOCK:
-        if not any(key[1] == root for key in _CACHE):
+        if not any(key[1] == root for key in _CACHE) and not any(
+            key[1] == root for key in _INFLIGHT
+        ):
             return
         recorded = _MARKS.get(root)
         _MARKS[root] = change if recorded is None else recorded | change
@@ -409,34 +452,224 @@ def index_rows(
     """
 
     key = _cache_key(docs_dir, project, repo_dir is not None)
-    if not revalidate:
+    while True:
+        if not revalidate:
+            with _LOCK:
+                build = _CACHE.get(key)
+            if build is not None:
+                absorbed = _absorb_marked(
+                    docs_dir, project, key, repo_dir, git_first, git_last
+                )
+                if absorbed is not None:
+                    return [dict(row) for row in absorbed.rows]
+                # The sources named paths this cached build cannot absorb,
+                # which happens when its persisted shape is unusable; the
+                # rebuild below is the honest answer to a mark that cannot be
+                # applied.
+        flight = _join_cold_path(key)
+        if flight is None:
+            return [
+                dict(row)
+                for row in _run_cold_path(
+                    key,
+                    docs_dir,
+                    project,
+                    repo_dir=repo_dir,
+                    git_first=git_first,
+                    git_last=git_last,
+                ).rows
+            ]
+        if not _await_flight(flight):
+            # The path failed: each waiting reader reads for itself.
+            return [
+                dict(row)
+                for row in _run_cold_path(
+                    key,
+                    docs_dir,
+                    project,
+                    repo_dir=repo_dir,
+                    git_first=git_first,
+                    git_last=git_last,
+                ).rows
+            ]
+        rows = _read_after_flight(key, docs_dir, project, repo_dir, git_first, git_last)
+        if rows is not None:
+            return rows
+        # The path's build never reached the cache, because a drop moved the
+        # tree's generation while it ran; read again for ourselves.
+        revalidate = False
+
+
+def _join_cold_path(key: tuple[str, str, bool]) -> _ColdPath | None:
+    """Return the cache-miss path in flight for ``key``, or become its owner.
+
+    A reader that finds none open registers one before it sweeps, so every
+    later reader of the same key waits rather than repeating the sweep. A
+    reader that finds one open gets it back and waits; it never registers a
+    second.
+    """
+
+    with _LOCK:
+        flight = _INFLIGHT.get(key)
+        if flight is not None:
+            return flight
+        _INFLIGHT[key] = _ColdPath(_GENERATIONS.get(key[1], 0))
+        return None
+
+
+def _await_flight(flight: _ColdPath) -> bool:
+    """Wait for a cache-miss path; whether its result reached the cache."""
+
+    flight.done.wait()
+    return not flight.failed
+
+
+def _read_after_flight(
+    key: tuple[str, str, bool],
+    docs_dir: Path,
+    project: str,
+    repo_dir: Path | None,
+    git_first: Mapping[str, int] | None,
+    git_last: Mapping[str, int] | None,
+) -> list[dict] | None:
+    """Read the cache once a waited-for path finished, absorbing its marks.
+
+    A path consumes the marks recorded while it ran before it returns, but a
+    change can land between that and this read. Absorbing here is what keeps a
+    waiting reader from being handed rows from before that change. ``None``
+    means the path left no cached build — a drop moved the tree's generation
+    while it ran — so the caller reads for itself.
+    """
+
+    with _LOCK:
+        build = _CACHE.get(key)
+    if build is None:
+        return None
+    absorbed = _absorb_marked(docs_dir, project, key, repo_dir, git_first, git_last)
+    if absorbed is None:
+        return None
+    return [dict(row) for row in absorbed.rows]
+
+
+def _run_cold_path(
+    key: tuple[str, str, bool],
+    docs_dir: Path,
+    project: str,
+    *,
+    repo_dir: Path | None,
+    git_first: Mapping[str, int] | None,
+    git_last: Mapping[str, int] | None,
+) -> IndexBuild:
+    """Sweep one tree, store the build, and release every reader waiting on it.
+
+    The build is stored against the generation the path started with, so a drop
+    recorded while it ran keeps its result out of the cache. A failing path
+    records its error and releases its waiters rather than handing them the
+    failure; they read for themselves.
+    """
+
+    with _LOCK:
+        flight = _INFLIGHT.get(key)
+        if flight is None:
+            # A reader running its own sweep after a failed path owns no
+            # registered flight; it still needs a generation to store against.
+            flight = _ColdPath(_GENERATIONS.get(key[1], 0))
+    try:
+        return _cold_build(
+            key,
+            docs_dir,
+            project,
+            generation=flight.generation,
+            repo_dir=repo_dir,
+            git_first=git_first,
+            git_last=git_last,
+        )
+    except BaseException as exc:
+        flight.error = exc
+        flight.failed = True
+        raise
+    finally:
         with _LOCK:
-            build = _CACHE.get(key)
-        if build is not None:
-            absorbed = _absorb_marked(
-                docs_dir, project, key, repo_dir, git_first, git_last
-            )
-            if absorbed is not None:
-                return [dict(row) for row in absorbed.rows]
-            # The sources named paths this cached build cannot absorb, which
-            # happens when its persisted shape is unusable; the rebuild below
-            # is the honest answer to a mark that cannot be applied.
-    covered: list[tuple[str, Path]] | None = None
-    dirs: dict[str, Path] | None = None
-    reused = _reuse_covered(docs_dir, project)
-    if reused is not None:
-        covered, dirs = reused
-    build = _build_and_cache(
-        key,
-        docs_dir,
-        project,
-        repo_dir=repo_dir,
-        git_first=git_first,
-        git_last=git_last,
-        covered=covered,
-        dirs=dirs,
-    )
-    return [dict(row) for row in build.rows]
+            if _INFLIGHT.get(key) is flight:
+                _INFLIGHT.pop(key, None)
+        flight.done.set()
+
+
+def _cold_build(
+    key: tuple[str, str, bool],
+    docs_dir: Path,
+    project: str,
+    *,
+    generation: int,
+    repo_dir: Path | None,
+    git_first: Mapping[str, int] | None,
+    git_last: Mapping[str, int] | None,
+) -> IndexBuild:
+    """Build one tree's rows, consuming every mark recorded while it ran.
+
+    The identities :func:`_reuse_covered` read are handed to the build and to
+    the shape it records, so the cold path stats each recorded directory once
+    rather than once per reader that needs it. A mark recorded while the build
+    ran is applied to the rows before they are returned, and the marks are
+    taken before the build is published: a reader entering while the path runs
+    must not find a build without them, because taking them there would leave
+    this path answering from rows written before the change it recorded.
+    """
+
+    build: IndexBuild | None = None
+    for _attempt in range(2):
+        covered: list[tuple[str, Path]] | None = None
+        dirs: dict[str, Path] | None = None
+        identities: dict[str, list[int]] | None = None
+        reused = _reuse_covered(docs_dir, project)
+        if reused is not None:
+            covered, dirs, identities = reused
+        build = build_index(
+            docs_dir,
+            project,
+            repo_dir=repo_dir,
+            git_first=git_first,
+            git_last=git_last,
+            covered=covered,
+            dirs=dirs,
+            identities=identities,
+        )
+        # Take the marks first. Storing the build before consuming them lets a
+        # reader that enters in the gap answer from, and consume the marks of,
+        # a build this path is about to patch, leaving this path's own rows
+        # without a change recorded while it ran.
+        change = _pop_marks(key[1])
+        if change is None:
+            _store_cold_build(key, build, generation)
+            return build
+        patched = _patch_build(
+            docs_dir, project, build, change, repo_dir, git_first, git_last
+        )
+        if patched is None:
+            # The marked paths name a shape this build cannot absorb; the marks
+            # are consumed, so one clean rebuild is the honest answer.
+            continue
+        _store_cold_build(key, patched, generation)
+        return patched
+    assert build is not None
+    return build
+
+
+def _pop_marks(root: str) -> TreeChange | None:
+    """Take the marks a tree's sources recorded, consuming them."""
+
+    with _LOCK:
+        return _MARKS.pop(root, None)
+
+
+def _store_cold_build(
+    key: tuple[str, str, bool], build: IndexBuild, generation: int
+) -> None:
+    """Cache a cold path's build unless a drop moved the tree's generation."""
+
+    with _LOCK:
+        if _GENERATIONS.get(key[1], 0) == generation:
+            _CACHE[key] = build
 
 
 def _absorb_marked(
@@ -636,7 +869,7 @@ def _patch_build(
 
 def _reuse_covered(
     docs_dir: Path, project: str
-) -> tuple[list[tuple[str, Path]], dict[str, Path]] | None:
+) -> tuple[list[tuple[str, Path]], dict[str, Path], dict[str, list[int]]] | None:
     """Return the persisted file set, scanning only the directories that moved.
 
     A reader with no change watch checks every covered file to revalidate, and
@@ -648,6 +881,10 @@ def _reuse_covered(
     together with any subdirectory found in one that the tree did not have
     before. A recorded directory that no longer exists drops its files and its
     descendants. An absent index returns ``None``, so the caller walks.
+
+    The identities it read are returned with the file set, so a caller that
+    goes on to build the index gets these directories' stats from this pass
+    rather than statting every one of them again.
 
     A shape that moved is recorded here, before the caller reaches whatever it
     does with the file set, because the readers that want only the file set
@@ -668,11 +905,13 @@ def _reuse_covered(
     covered: dict[str, Path] = {}
     dirs: dict[str, Path] = {}
     moved: list[Path] = []
+    identities: dict[str, list[int]] = {}
     for relative, identity in stamps.items():
         path = docs_dir / relative
         observed = covered_dir_identity(path)
         if observed is None:
             continue
+        identities[relative] = observed
         if observed == identity:
             dirs[relative] = path
             for file_relative in by_dir.get(relative, ()):
@@ -686,11 +925,16 @@ def _reuse_covered(
         # Record the scan here rather than leaving it to the build that may
         # follow: a reader that only wants the file set never reaches one, so a
         # scan left unrecorded is a scan the next reader in the same read
-        # repeats.
-        _record_covered_shape(
-            docs_dir, project, sorted(covered.items()), sorted(dirs.items())
+        # repeats. The recorded directories keep the identities read above, so
+        # only the ones the re-scan reached for the first time are statted.
+        identities = _record_covered_shape(
+            docs_dir,
+            project,
+            sorted(covered.items()),
+            sorted(dirs.items()),
+            identities,
         )
-    return sorted(covered.items()), dirs
+    return sorted(covered.items()), dirs, identities
 
 
 def plan_derivations(docs_dir: Path, project: str) -> list[dict]:
@@ -778,13 +1022,16 @@ def build_index(
     git_last: Mapping[str, int] | None = None,
     covered: list[tuple[str, Path]] | None = None,
     dirs: dict[str, Path] | None = None,
+    identities: Mapping[str, list[int]] | None = None,
 ) -> IndexBuild:
     """Build one project's rows, re-parsing only what its bytes changed.
 
     ``covered`` and ``dirs`` let a caller that has already established the
     tree's shape — by comparing the recorded directory identities — hand the
     file set in instead of walking the tree to rediscover it. With ``covered``
-    absent the walk runs and both are derived from it.
+    absent the walk runs and both are derived from it. ``identities`` carries
+    the directory stats the caller's shape check already read, so the build
+    records their shape from those and stats only a directory it has not seen.
 
     A persisted row whose recorded stat identity still matches the file is
     reused without reading the file, so the first build after a restart costs a
@@ -805,7 +1052,9 @@ def build_index(
         dirs = dirs or {}
     build = IndexBuild(project=project, docs_dir=docs_dir)
     for relative, path in dirs.items():
-        identity = covered_dir_identity(path)
+        identity = identities.get(relative) if identities is not None else None
+        if identity is None:
+            identity = covered_dir_identity(path)
         if identity is not None:
             build.dir_stamps[relative] = identity
     entries: list[dict] = []
@@ -1063,7 +1312,8 @@ def _record_covered_shape(
     project: str,
     files: list[tuple[str, Path]],
     dirs: list[tuple[str, Path]],
-) -> None:
+    identities: Mapping[str, list[int]] | None = None,
+) -> dict[str, list[int]]:
     """Persist the file set and directory identities one walk observed.
 
     Each covered file keeps the entry the index already holds for it, so a
@@ -1071,16 +1321,25 @@ def _record_covered_shape(
     seen keeps only its path and is parsed by the next index build. A file that
     left the tree drops out. Recording the shape keeps the walk-skip reusable
     without the parse a full index build performs.
+
+    ``identities`` carries the stats a caller has already read, keyed by
+    docs-relative directory. A directory it covers is recorded from that
+    reading; only one the re-scan reached for the first time is statted here.
+    The full set is returned, so a caller that goes on to build gets its
+    directories' identities without reading them again.
     """
 
     known = _load_persisted(docs_dir, project)
     entries = [known.get(relative) or {"path": relative} for relative, _path in files]
     stamps: dict[str, list[int]] = {}
     for relative, path in dirs:
-        identity = covered_dir_identity(path)
+        identity = identities.get(relative) if identities is not None else None
+        if identity is None:
+            identity = covered_dir_identity(path)
         if identity is not None:
             stamps[relative] = identity
     _store_persisted(docs_dir, project, entries, stamps)
+    return stamps
 
 
 def _dir_identity(path: Path) -> list[int] | None:
