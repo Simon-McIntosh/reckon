@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s52">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-tags" content="crew,hooks,guards,sync,census">
+  <title>The walk-guard sync test pins the guard where the sync path resolves it</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="hook-tests-read-the-checkout-under-test-landed" data-node="hook-tests-read-the-checkout-under-test" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="hook-tests-read-the-checkout-under-test-heading">The walk-guard sync test pins the guard where the sync path resolves it</h2>
+  <p id="hook-tests-read-the-checkout-under-test-landing">The census id <code>tests/test_a_worker_cannot_walk_the_crew_home.py::test_the_sync_installer_binds_the_walk_guard_behind_the_git_guard_flag</code> failed at base <code>19af48b2b</code> with <code>1 failed, 19 passed</code>: the composed sync command named the installed guard at the main checkout's path, while the assertion compared it with the importing module's own directory, and only in the main checkout do those coincide.</p>
+  <p id="hook-tests-read-the-checkout-under-test-verdict">The behaviour read is intended. The operator sync path resolves every crew guard through one resolver, which selects an executable copy of the installed package found on <code>sys.path</code>, and the walk guard was bound to that same resolver (commit <code>aafc95889</code>: "The sync path resolves the walk guard's path the way it resolves every other guard script and passes it to the installer beside the git guard's"). The resolver itself came from <code>e196e009b</code>, whose subject is installing the packaged executable. The test's equality against <code>installer.worker_walk_guard_script_path()</code> was never a stated contract; it held only while the two resolutions agreed.</p>
+  <p id="hook-tests-read-the-checkout-under-test-repair">The repaired assertion keeps the property the test exists to pin and drops the unstated path equality. It drives the operator path <code>cli._configure_crew_guards(include_git_guard=True)</code> and requires one walk group per matcher in <code>WALK_GUARD_MATCHERS</code>; each command names a path laid out as a checkout interpreter, checked through <code>interpreter_bootstrap.is_checkout_interpreter</code> rather than against the resolver's own answer, and a script named <code>worker_walk_guard.py</code> inside a <code>reckon/hooks</code> directory that carries <code>worker_git_guard.py</code> beside it, the shell splitter the guard loads from the checkout it is launched beside; and it requires the git guard group to be installed by the same flag. This matches the contract the git guard's own sync test pins against <code>cli._worker_git_guard_path()</code>.</p>
+  <p id="hook-tests-read-the-checkout-under-test-arms">At the repaired head <code>f7d31f304</code> the gate file reports <code>20 passed</code> where the base arm reports <code>1 failed, 19 passed</code>. The negative control mutates the production call the test reads, replacing <code>include_walk_guard=include_git_guard</code> with <code>include_walk_guard=False</code> in a scratch copy of <code>reckon/cli_entry.py</code>, and the id fails with the two walk groups absent. Both arms and the control run from <code>git archive</code> extractions on node-local disk; their logs are held under the run directory.</p>
+</article>
+</body>
+</html>

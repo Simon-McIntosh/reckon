@@ -376,10 +376,17 @@ def test_the_sync_installer_binds_the_walk_guard_behind_the_git_guard_flag(
     matchers are asserted, because the guard reads a Bash command's text and the
     Grep/Glob tools' target, and a wiring that bound only one would leave the
     other reachable.
+
+    The sync path resolves each guard script through the shared resolver that
+    finds an executable copy of the installed package. That copy may be a
+    checkout other than the one running this test — a worktree sharing the main
+    checkout's environment sees both on ``sys.path`` — so the bound command is
+    checked against the properties the guard needs: a ``worker_walk_guard.py``
+    shipped inside a ``reckon/hooks`` directory beside the git guard's shell
+    splitter, launched by that checkout's own interpreter.
     """
     target = tmp_path / "settings.json"
     groups = _configured_groups(target)
-    walk_script = installer.worker_walk_guard_script_path()
 
     installed = [
         group for group in groups if installer.is_worker_walk_guard_group(group)
@@ -388,13 +395,20 @@ def test_the_sync_installer_binds_the_walk_guard_behind_the_git_guard_flag(
         installer.WALK_GUARD_MATCHERS
     )
     for group in installed:
-        command = group["hooks"][0]["command"]
-        assert Path(shlex.split(command)[0]).name.startswith("python")
-        assert Path(shlex.split(command)[-1]).resolve() == walk_script.resolve()
+        interpreter, script_path = map(Path, shlex.split(group["hooks"][0]["command"]))
+        script = script_path.resolve()
+        assert script.name == "worker_walk_guard.py"
+        assert script.parent.name == "hooks"
+        assert script.parent.parent.name == "reckon"
+        assert script.is_file()
+        # The guard loads the git guard's shell splitter from beside itself.
+        assert (script.parent / "worker_git_guard.py").is_file()
+        # Independent of the resolver's own arithmetic: the command must name a
+        # path laid out as a checkout interpreter, ".venv/bin/python".
+        assert installer.interpreter_bootstrap.is_checkout_interpreter(str(interpreter))
     assert any(installer.is_worker_git_guard_group(group) for group in groups), (
         "the git guard is installed by the same flag"
     )
-    assert walk_script.is_file()
 
 
 def test_the_sync_installer_removes_the_walk_guard_groups_again(
