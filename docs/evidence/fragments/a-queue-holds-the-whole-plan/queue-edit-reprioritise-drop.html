@@ -54,21 +54,22 @@
   test files import <code>reckon/crew_run_commands.py</code> or
   <code>reckon/mcp_crew_actions.py</code> at base <code>560465a09</code>. Each
   was run per file in that base tree and in this branch, with the same
-  interpreter and the same caps. Twelve pre-existing failures stand in the
+  interpreter and the same caps. Eleven pre-existing failures stand in the
   base arm — two in <code>test_a_lane_change_keeps_its_waivers.py</code>, four
   in <code>test_crew_lane_change.py</code>, four in
-  <code>test_read_verbs_retire_behind_crew_view.py</code>, one in
-  <code>test_crew_help_names_its_state.py</code> and one in
+  <code>test_read_verbs_retire_behind_crew_view.py</code> and one in
   <code>test_crew_tool_carries_the_write_verbs.py</code> — and the identical
   set stands in the branch arm: no failure is added. The new
   <code>tests/test_queue_verbs.py</code> passes its 13 cases in the same
   interpreter.
 
   <p><strong>Negative control.</strong> With the launched-request guard
-  replaced by a no-op, exactly the three refusal arms fail
-  (<code>test_a_launched_request_is_refused_by_every_verb[edit]</code>,
-  <code>[drop]</code>, <code>[reprioritise]</code>) and the other ten pass, so
-  the guard is what holds those assertions. Log:
+  made to return early for <code>edit</code> alone, exactly one arm fails
+  (<code>test_a_launched_request_is_refused_by_every_verb[edit]</code>, which
+  then reports the edit landing on a <code>working</code> pointer) and the
+  other twelve pass, so the edit guard is what holds that arm. Removing the
+  guard for all three verbs fails exactly the three refusal arms and leaves the
+  other ten passing. Logs: <code>logs/negative-control-edit-only.log</code> and
   <code>logs/negative-control.log</code> under the run directory.</p>
 
   <p><strong>Not reachable through the crew MCP tool yet.</strong> The three
