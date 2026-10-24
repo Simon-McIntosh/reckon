@@ -1,0 +1,113 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T20:34:51.659Z",
+  "dispatched_at": "2026-10-24T20:23:30Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:100",
+      "id": "wiring-1",
+      "reason": "without the edge a \u00a713 node can dispatch as soon as \u00a716 lands and must either cite commands that do not resolve (failing its declared gate) or drop the steering verbs silently.",
+      "text": "\u00a713's done-when requires the build and edit skills to name `crew queue hold` and `release`, which \u00a710 (line 88) owns; `reckon crew queue --help` today lists only `drop`, `edit` and `reprioritise`, and `tests/test_cited_commands_exist.py` resolves every `reckon` command cited under `skills/**/*.md` against the real CLI, so a literal implementation fails its own skill-contract gate unless \u00a710 has landed \u2014 yet no s13\u2192s10 edge is declared.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:112",
+      "id": "done_when-1",
+      "reason": "the node's closing verdict depends on which verbs the phrase covers, and one reading makes the measure unachievable at the node's declared position.",
+      "text": "\u00a716's measure \u201ceach queue verb is named once\u201d names no list, so it cannot be scored: read as every queue verb it demands `hold`/`release` from \u00a710, which is not upstream and does not exist, and read as the verbs \u00a716's body names (`edit`, `reprioritise`, `drop`) it omits the two \u00a713 adds.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:112",
+      "id": "reasoning-1",
+      "reason": "the node would finish its named edits and fail its own measure, or narrow the grep to the named files and leave the roadmap skill still telling coordinators to act every beat.",
+      "text": "\u00a716's mechanism rewrites four skill files plus `AGENTS.md`, but its done-when greps all of `skills/` for \u201cno instruction to dispatch section by section on every beat\u201d, and `skills/reckon-roadmap/SKILL.md:114` states \u201c`reckon-build` acts on this set every beat\u201d; that file is not in \u00a716's change set, so the grep as written cannot come back clean.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "9148baa93eab4cdfa8c94f6eff1ea008c21662eb7abb0730eddfcc3cc7b80609",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 99,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-24T20:39:19.932321+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-24T20:39:47.890522+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T20:40:13.510024+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-24T20:39:47.890522+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-24T20:40:13.510024+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-24T20:39:19.932321+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v99.json",
+  "review_run_id": "r-20261024T202052205477-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "8a1e8fee975d922bb96503c78c4403e64793fb47",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `QUEUED_DISPATCH_CAP_FLOOR`/`CEILING` (`reckon/crew/runs.py:391-392`), `reckon/mcp_deadlines.py` (READ_DEADLINE_SECONDS = 30.0), `a-coordinator-can-clear-its-own-duties` \u00a72 and every named `skills/` file resolve; extensionless hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a716's done-when measures \u201ceach queue verb is named once\u201d without naming which verbs, and at \u00a716's declared position (\u00a73 upstream only) the queue verbs `hold`/`release` that \u00a710 owns do not yet exist.",
+    "evidence_paths": "pass \u2014 the changed units gate on in-repo greps and `tests/test_skill_contracts.py` / `tests/test_cited_commands_exist.py`, and the plan's durable record is `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html` (\u00a714), not a scratchpad.",
+    "naming": "pass \u2014 the changed units introduce no plan labels, ticket numbers or version tags into code or symbols; the one new config key, `queue.max_requests`, names its mechanism.",
+    "reasoning": "a finding \u2014 \u00a716 names four skill files as its change set, but the grep its own done-when runs over `skills/` also reaches `skills/reckon-roadmap/SKILL.md:114`, which carries the per-beat dispatch instruction \u00a716 exists to remove.",
+    "single_goal": "pass \u2014 s3 (one project-scoped depth bound with its read deadline), s13 (build/edit steering instructions) and s16 (full-width load and section-linking instructions) each carry one deliverable.",
+    "wiring": "a finding \u2014 s13 declares depends-on s9, s11, s12, s15 and s16 (meta line 22) but no edge to s10, while its done-when requires the build and edit skills to name `crew queue hold` and `release`, verbs that only \u00a710 (line 88) defines and that do not exist in the CLI today."
+  },
+  "section_digests": {
+    "_document": "987a63745858cb2a9a40af434bae9ebcd63481bacb3e1a789338ad700ddcf4f0",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "91701502bec3aa2108300d5daa2f9bb156a04469ab0f9af8826fa43ad01c6c83",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "a219e322e1bcf2ce66191086135c3dd848321a94793049c00090ff056a877fed",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T20:38:48.191964+00:00"
+}
