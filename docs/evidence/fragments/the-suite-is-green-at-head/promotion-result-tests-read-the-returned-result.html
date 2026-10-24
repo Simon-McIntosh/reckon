@@ -65,6 +65,16 @@
     grant, and asserts the refusal for the record that is not there.</li>
   </ul>
 
+  <p id="promotion-result-tests-read-the-returned-result-repair"><strong>Repair.</strong> Two review findings
+  changed this record. The first: the node's earlier controls restored the base test file rather
+  than mutating the production code the assertions pin, so each failed on the assertion text the
+  repair had replaced and demonstrated nothing about durability. Every control below mutates the
+  module instead. The second: the bookkeeping case asserted a path it had computed through the
+  production record-path helper and passed in, so the assertion held whatever that helper
+  returned. It now requires the declared path to be read as head-keyed rather than as naming no
+  head, and pins the location the refusal reports to the reviewed run's own record directory,
+  beside the record the passing arm stored.</p>
+
   <p id="promotion-result-tests-read-the-returned-result-measure"><strong>Measure.</strong> All ten ids pass at the node head, and the full gate
   (<code>tests/test_bookkeeping_follows_the_run.py</code>,
   <code>tests/test_landing_commit_carries_only_its_own_comment.py</code>,
@@ -73,11 +83,54 @@
   <code>tests/test_promotion_stages_its_one_run_file.py</code>,
   <code>tests/test_repromotion_commits_its_recorded_comment.py</code>) adds no failure
   against the base arm; both arms are <code>git archive</code> extractions under the
-  run's node-local scratch. The negative control reverts each repair and its id fails
-  again. No production module changed, so no further test file imports a changed
-  module.</p>
+  run's node-local scratch. No production module changed, so no further test file
+  imports a changed module.</p>
 
-  <p id="promotion-result-tests-read-the-returned-result-files"><strong>Files changed.</strong> The six test files above; no production code.</p>
+  <h3 id="promotion-result-tests-read-the-returned-result-controls">Controls that mutate the code, not the tests</h3>
+
+  <p id="promotion-result-tests-read-the-returned-result-controls-intro">Each control takes the
+  node head, applies <strong>one</strong> literal edit to the production module the assertion
+  pins, and runs the ids that module serves. The tests are untouched, so a failing id fails on
+  the behaviour and not on old assertion text; the harness refuses to run a control whose edit
+  text is absent, so an unapplied mutation cannot be reported as one. Going the other way —
+  restoring the base test file — is not a control: it fails on the expectation that was replaced
+  and says nothing about whether these tests would notice the production change.</p>
+
+  <ul id="promotion-result-tests-read-the-returned-result-controls-list">
+    <li><strong><code>reckon/crew/promotion_release.py</code> — the release's landing check is
+    never attached</strong> to the returned release (<code>if landing_check:</code> loses its
+    body). The seven landing-check ids fail: <code>test_complete_preserves_the_promotion_commit_through_release</code>
+    at all four parametrisations, <code>test_promotion_releases_only_the_integrated_clean_case</code>,
+    and <code>test_complete_commits_one_run_file_per_promotion</code> at both. Log
+    <code>negative-control-landing-check.log</code>, 7 failed.</li>
+    <li><strong><code>reckon/crew/promotion_release.py</code> — the landing check is written into
+    the persisted ledger row.</strong> One call re-records the row with the returned release
+    after the attach. The same seven ids fail on the row carrying a key the row cannot have,
+    which is the fact the filtered comparison and the separate check exist to keep apart. Log
+    <code>negative-control-landing-check-row.log</code>, 7 failed.</li>
+    <li><strong><code>reckon/crew/promotion_scope.py</code> — the already-recorded branch drops
+    its differs-from-HEAD test.</strong> A comment found recorded then excludes the plan file
+    unconditionally, leaving the file modified. <code>test_a_re_promotion_commits_a_plan_differing_only_by_its_own_comment</code>
+    fails; the clean idempotent boundary still passes, so the mutation separates the two cases.
+    Log <code>negative-control-landing-comment.log</code>, 1 failed, 1 passed.</li>
+    <li><strong><code>reckon/crew/promotion_scope.py</code> — a refused landing restores
+    nothing</strong> (<code>_restore_landing_writes</code> iterates an empty sequence). The
+    comment stays on disk, and <code>test_a_failed_landing_then_a_repromotion_commits_the_recorded_comment</code>
+    fails on the plan file still being modified after the refusal. Log
+    <code>negative-control-repromotion.log</code>, 1 failed.</li>
+    <li><strong><code>reckon/crew/recovery_review_delivery.py</code> — a review's declared
+    head-keyed record path is never found</strong> (<code>_declared_head_keyed_record</code>
+    returns <code>None</code>). The stored-review arm is refused for naming no head, and
+    <code>test_a_review_runs_outcome_defaults_to_its_stored_review</code> fails on the condition
+    the repair distinguishes. Log <code>negative-control-bookkeeping.log</code>, 1 failed.</li>
+  </ul>
+
+  <p id="promotion-result-tests-read-the-returned-result-controls-cover">The five mutations cover
+  every one of the ten census ids, and each log ends in a non-zero <code>EXIT</code>.</p>
+
+  <p id="promotion-result-tests-read-the-returned-result-files"><strong>Files changed.</strong> The six test files above; no production code. Every
+  production edit named here was applied to a scratch copy under the run's node-local
+  <code>$TMPDIR</code> and never to the repository.</p>
 </article>
 </body>
 </html>
