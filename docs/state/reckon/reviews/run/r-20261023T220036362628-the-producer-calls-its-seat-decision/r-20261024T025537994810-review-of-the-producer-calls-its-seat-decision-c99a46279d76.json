@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T03:08:32.784Z",
+  "dispatched_at": "2026-10-24T02:57:10Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T220036362628-the-producer-calls-its-seat-decision/manifest.md",
+      "line": "18",
+      "severity": "blocking",
+      "text": "after_suite.failure_ids names tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash], which does not occur anywhere in the cited logs/gate-head.log, and omits tests/test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count, which that log's summary line does name; the same claim is repeated at docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-producer-calls-its-seat-decision.html:25, so the head arm's measured failure set is recorded as something its own log contradicts."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T220036362628-the-producer-calls-its-seat-decision/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "baseline_suite.command and after_suite.command carry angle-bracket placeholders, which the manifest contract declares unreadable for an arm's command; the literal text survives only in the tests: line at manifest.md:11 and each log's '# command:' header."
+    },
+    {
+      "file": "reckon/crew/watch_unit.py",
+      "line": "339",
+      "severity": "non-blocking",
+      "text": "release_watch_seat re-implements the seat teardown that reckon/crew/runs.py:3136-3151 already performs over the same three per-seat registries and host lease."
+    },
+    {
+      "file": "reckon/crew/watch_unit.py",
+      "line": "233",
+      "severity": "non-blocking",
+      "text": "runs_launched_on reaches list_live, which publishes the watch stream and may start an obligations sweep; renewal runs every 5.0 s (reckon/crew/host_lease.py:14), so a foreign producer with no run on the fleet node scans and publishes every five seconds."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T220036362628-the-producer-calls-its-seat-decision/manifest.md",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "the done_when's ruff item is recorded as a figure with no log under test_logs; reviewer re-measured 4 findings at head and 4 at base on the staged paths, format clean."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the producer calls watch_unit.producer_start_decision at start-up and on each lease renewal and gives up the seat on a release; reckon/crew/recovery_watch.py:363 calls release_seat_when_misplaced(project) inside _watch_registration before any seat is claimed, reckon/crew/runs.py:2972 calls the same on every renewal inside renew_watch_host_lease, and reckon/crew/watch_unit.py:368 composes the unit-disable command, releases the seat, announces once and exits.\nVERDICT done_when: the section's done-when for this wiring node asks a test to drive start-up and one renewal against a temporary fleet record naming another node with a run launched there, releasing the seat, printing the announcement once, exiting, and running the unit-disable command only through an injectable runner, with the same test on the fleet node keeping the producer running; tests/test_the_producer_calls_its_seat_decision.py does exactly that and its five tests pass at head c99a46279 (reviewer re-ran the file: 5 passed in 3.65s), while logs/gate-head.log records 2 failed / 55 passed at 12573b255 and logs/gate-base.log 4 failed / 48 passed at dc3ace589, the head set a strict subset.\nVERDICT write_paths: the manifest's orientation_write_paths name reckon/crew/recovery_watch.py, reckon/crew/runs.py, reckon/crew/watch_unit.py, tests/test_the_producer_calls_its_seat_decision.py, tests/test_a_producer_off_the_fleet_node_gives_up_its_seat.py, the evidence fragment and the figures directory; the diff of 12573b255 changes six files, five inside that set and reckon/crew/fleet_supervisor.py outside it, which the plan does require and the manifest declares under outside_scope.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T220036362628-the-producer-calls-its-seat-decision/manifest.md; status complete, the tests: line carries a literal re-runnable pytest command over twelve files, test_logs names gate-head.log, gate-base.log and negative-control.log each ending in a bare EXIT= line, and checkpoint records the ruff delta; the baseline_suite and after_suite blocks record the right headline figures but their command values carry angle-bracket placeholders and after_suite.failure_ids contradicts logs/gate-head.log.\nVERDICT diff: read commit by commit against dc3ace589; 12573b255 adds release_watch_seat and release_seat_when_misplaced plus the two seams at reckon/crew/watch_unit.py:323-400 and wires them at reckon/crew/recovery_watch.py:363 and reckon/crew/runs.py:2972, gives _short_hostname an optional name at reckon/crew/fleet_supervisor.py:270 and routes _hosts_match through it at reckon/crew/watch_unit.py:193-196, adds the 238-line test file and guards one before/after stat in the seat-owner test; c99a46279 adds only the landing fragment, 30 lines, inside scope.\nCALL_SITES: reckon/crew/recovery_watch.py:2708, reckon/crew/recovery_watch.py:2981, reckon/crew/recovery_watch.py:2774, reckon/crew/runs.py:3545, reckon/crew/runs.py:3566\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:363 and reckon/crew/runs.py:2972 put producer_start_decision on both entry points the goal names, and reckon/crew/watch_unit.py:368-397 runs the decision's release in the order the section fixes before exiting.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log and logs/gate-base.log record literal commands, summary lines and failure ids whose head set is a subset of the base one, and the negative control is logged, but the manifest's after_suite.failure_ids at line 18 contradicts the head log it cites and the done_when's ruff item is recorded as a figure with no log beside it.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: reckon/crew/fleet_supervisor.py:270-277 is outside the declared write paths and is the one file the manifest's own check reports, although the section requires the optional-name change and the manifest declares it under outside_scope.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control.log reinstates the regression by replacing both call sites at reckon/crew/recovery_watch.py:363 and reckon/crew/runs.py:2972 with pass and shows the two foreign-host arms reddening while the other nine pass, so the guard is proved by the defect it prevents; the once-only announcement guard at reckon/crew/watch_unit.py:394 is never exercised twice because the first release exits.\nSCORE fit: 16\nJUSTIFICATION fit: the module-level seams and lazy imports at reckon/crew/watch_unit.py:323-336 follow the shapes already used by the neighbouring registration code at reckon/crew/watch_unit.py:573, and every added name describes its mechanism.\nSCORE reuse: 14\nJUSTIFICATION reuse: the change extends the short-hostname owner at reckon/crew/fleet_supervisor.py:270 rather than re-spelling the split, but reckon/crew/watch_unit.py:339 release_watch_seat re-implements the seat teardown that reckon/crew/runs.py:3136-3151 already performs over the same three per-seat registries.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T220036362628-the-producer-calls-its-seat-decision/manifest.md:18 blocking: after_suite.failure_ids names tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash], which does not occur anywhere in the cited logs/gate-head.log, and omits tests/test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count, which that log's summary line does name; the same claim is repeated at docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-producer-calls-its-seat-decision.html:25 (\"both arms fail ... [crash]\"), so the head arm's measured failure set is recorded as something its own log contradicts. added_failure_count is unaffected (the head set is still a strict subset of the base one) but the field a later reader derives it from is wrong.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T220036362628-the-producer-calls-its-seat-decision/manifest.md:17 non-blocking: baseline_suite.command and after_suite.command carry angle-bracket placeholders (\"<11 test files, base arm set>\" and \"<the same 11 test files plus tests/test_the_producer_calls_its_seat_decision.py>\"), which the manifest contract declares unreadable for an arm's command; the literal text survives only in the tests: line at manifest.md:11 and in each log's own '# command:' header.\nFINDING reckon/crew/watch_unit.py:339 non-blocking: release_watch_seat re-implements the seat teardown that reckon/crew/runs.py:3136-3151 already performs, popping the same three registries (_WATCH_SEAT_HANDLES, _WATCH_HOST_LEASES, _WATCH_STREAM_PRODUCERS), unlocking the same descriptor and releasing the same host lease, so the two copies of that ordering must be kept in step and a fourth per-seat registry added to the claim would leak here.\nFINDING reckon/crew/watch_unit.py:233 non-blocking: runs_launched_on reaches list_live(project=project), which at reckon/crew/runs.py:815-817 publishes the watch stream and may start an obligations sweep; because reconcile renewals run every LEASE_RENEW_SECONDS (reckon/crew/host_lease.py:14, 5.0 s), a producer on a foreign host with no run launched on the fleet node holds and re-runs that pointer scan and publication every five seconds for as long as it lives.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T220036362628-the-producer-calls-its-seat-decision/manifest.md:6 non-blocking: the done_when's ruff item is recorded only as a figure in the checkpoint line and no ruff log is kept under test_logs, so the run's own record cannot show it; the reviewer re-measured it on the staged paths and found 4 findings at head and 4 at base, all four in reckon/crew/recovery_watch.py and none on the added lines, with ruff format --check clean over the six files.\n",
+  "review_run_id": "r-20261024T025537994810-review-of-the-producer-calls-its-seat-decision-c99a46279d76",
+  "reviewed_base_sha": "dc3ace589acc6be861e7c36f89c82b3a819e1461",
+  "reviewed_head_sha": "c99a46279d761daf95f6e44cd1cc858fadba4842",
+  "reviewed_run_id": "r-20261023T220036362628-the-producer-calls-its-seat-decision",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T03:05:28Z",
+  "total": 96
+}
