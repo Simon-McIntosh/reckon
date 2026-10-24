@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -458,7 +458,10 @@
     <div class="r-comment-body"><p>§12 closed. A full queue, or another run's scope or directory claim, reads as a wait, not as something the session must clear. Review 114; population zero over 140 files. <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s12">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261024T013835492228-review-of-a-full-queue-is-a-wait-not-a-refusal-21fed0c18bd7" data-who="reckon-build" data-when="2026-10-24T01:50:19.549Z">
-    <div class="r-comment-body"><p>Reviewed r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal at head 21fed0c18 against base f56407c1; the repair walks the ScopeConflict class family and the new test arms fail at base and under the negative control, so the change is durable, with 0 added failures from the gate logs and one non-blocking finding on the subclass walk&#x27;s implicit import dependency.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal at head 21fed0c18 against base f56407c1; the repair walks the ScopeConflict class family and the new test arms fail at base and under the negative control, so the change is durable, with 0 added failures from the gate logs and one non-blocking finding on the subclass walk's implicit import dependency.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261024T004234132824-a-full-queue-is-a-wait-not-a-refusal" data-who="reckon-build" data-when="2026-10-24T01:36:56Z">
+    <div class="r-comment-body"><p>A queued request refused by QueueFull or by any ScopeConflict claim kind now reads as a wait rather than a session refusal, so it keeps run-queued and its retry back-off; the new file gives 8 passed at head, 4 failed at base and 6 failed of 8 under the negative control.</p></div>
 </div>
 </section>
 </main>
