@@ -325,39 +325,46 @@ def _descendant_commit(run_tree: Path, presented: Sequence[str]) -> str:
 
     Each entry is resolved to the canonical object id its spelling names, so an
     abbreviation, a full sha and a branch name for one commit collapse to one
-    candidate. An entry naming no commit cannot be placed in the history, so it
-    takes no part in the comparison and is left for the citation check that
-    reports it. The remaining candidates are compared with git, and the one
+    candidate. Every entry must resolve: a citation that names no commit cannot
+    be placed in the history, and leaving it out would let the remaining
+    candidates agree on a tip the run never reached while this promotion
+    recorded that tip as the revision the run's work ended at. So such a
+    citation refuses the promotion, naming it and the tree it was read in, and
+    never takes part in a comparison that would go on without it. The resolver
+    runs strict, so a git that ran out of its bound or could not start raises as
+    the instrument fault it is rather than reading as a citation that names
+    nothing. The resolved candidates are then compared with git, and the one
     that every other candidate is an ancestor of is the run's tip. A set whose
     commits have no such single member is refused, naming every presented
     commit, because the revision the run's work reached cannot be told from the
     list and any pick would be a guess recorded as the promoted revision.
     """
     entries: list[str] = []
-    resolvable: list[str] = []
     seen: set[str] = set()
     for entry in presented:
         text = str(entry).strip()
         if not text:
             continue
-        canonical = _commit_canonical_id(run_tree, text)
-        value = canonical or text
-        if value in seen:
+        canonical = _resolve_commit(run_tree, text, strict=True)
+        if not canonical:
+            raise CrewError(
+                f"the citation {text!r} presented for this promotion names no "
+                f"commit in the run's tree {run_tree}, so the revision the run's "
+                "work reached cannot be chosen while it still has to be placed "
+                "in the history. Present the commit the run's work ended at"
+            )
+        if canonical in seen:
             continue
-        seen.add(value)
-        entries.append(value)
-        if canonical:
-            resolvable.append(value)
-    if len(entries) == 1:
-        return entries[0]
-    if not resolvable:
-        return entries[-1]
+        seen.add(canonical)
+        entries.append(canonical)
+    if not entries:
+        return ""
     descendants = [
         candidate
-        for candidate in resolvable
+        for candidate in entries
         if all(
             other == candidate or _revision_is_ancestor(run_tree, other, candidate)
-            for other in resolvable
+            for other in entries
         )
     ]
     if len(descendants) == 1:
@@ -1241,7 +1248,9 @@ def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
         declared = parse_manifest(Path(manifest_path).read_text(encoding="utf-8"))
     except (OSError, KeyError, ValueError):
         return []
-    return [str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()]
+    return [
+        str(sha).strip() for sha in (declared.get("commits") or []) if str(sha).strip()
+    ]
 
 
 def _declared_manifest_landing(record: Mapping[str, Any]) -> str:
@@ -1282,14 +1291,18 @@ def _worker_authored_landing_record(
     revisions = [str(sha).strip() for sha in commits if str(sha).strip()]
     if not revisions:
         return False
-    plan_file = _store._resolve_html_file(project, plan, root=tree, artifact_type="plan")
+    plan_file = _store._resolve_html_file(
+        project, plan, root=tree, artifact_type="plan"
+    )
     if plan_file is None:
         return False
     try:
         relative = plan_file.resolve().relative_to(tree.resolve())
     except ValueError:
         return False
-    shown = _git(tree, "show", f"{revisions[-1]}:{'/'.join(relative.parts)}", check=False)
+    shown = _git(
+        tree, "show", f"{revisions[-1]}:{'/'.join(relative.parts)}", check=False
+    )
     return shown.returncode == 0 and f'data-id="{comment_id}"' in shown.stdout
 
 
@@ -1698,9 +1711,7 @@ def _plan_comment_store_path(
     return [plan_file]
 
 
-def _restore_landing_writes(
-    checkout: Path, paths: Sequence[Path]
-) -> dict[str, bool]:
+def _restore_landing_writes(checkout: Path, paths: Sequence[Path]) -> dict[str, bool]:
     """Best-effort reversal of a refused landing's uncommitted store writes.
 
     Each path promotion wrote returns to its committed state: tracked paths
@@ -2412,7 +2423,6 @@ def _commit_landing_writes(
     }
 
 
-
 def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
     """Report whether ``revision`` is an ancestor of ``target`` in ``checkout``.
 
@@ -2434,7 +2444,6 @@ def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
         f"git could not compare {revision} against {target} in {checkout}: "
         f"{result.stderr.strip() or result.stdout.strip() or result.returncode}"
     )
-
 
 
 from reckon.crew.merge import _run_waiting_out_a_held_index_lock

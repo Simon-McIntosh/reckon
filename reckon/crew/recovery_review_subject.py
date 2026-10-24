@@ -198,7 +198,7 @@ def _reviewed_run_head(record: Mapping[str, Any]) -> str:
     return head
 
 
-def _resolve_commit(tree: Path, candidate: str) -> str:
+def _resolve_commit(tree: Path, candidate: str, *, strict: bool = False) -> str:
     """The canonical object id ``candidate`` names in ``tree``, or empty.
 
     ``--verify`` refuses a value that names no commit rather than echoing it
@@ -206,6 +206,16 @@ def _resolve_commit(tree: Path, candidate: str) -> str:
     from being read as an option, so a caller can tell a revision that
     resolved from one merely written down. The query is bounded so a
     repository on a stalled filesystem cannot hold a caller open.
+
+    A caller that is choosing which revision a promotion asserts opts into
+    ``strict``, because there an empty answer is not a verdict but a licence to
+    leave the citation out of the comparison and promote among the rest. Under
+    ``strict`` a git that ran out of its bound or could not be started raises:
+    that is the instrument failing, not the citation naming nothing. Only a git
+    query that ran and reported the revision as naming no commit still returns
+    the empty string, so the two are told apart by their answers. A caller that
+    does not opt in reduces this to a truth value about a citation and keeps an
+    empty answer for every failure.
     """
     if not candidate:
         return ""
@@ -225,8 +235,22 @@ def _resolve_commit(tree: Path, candidate: str) -> str:
             check=False,
             timeout=10,
         )
-    except (OSError, subprocess.SubprocessError):
-        return ""
+    except subprocess.TimeoutExpired as expired:
+        if not strict:
+            return ""
+        raise CrewError(
+            f"the commit resolver timed out after {expired.timeout}s reading "
+            f"{candidate!r} in {tree}: git did not answer, so this is an "
+            "instrument fault rather than a revision that names no commit"
+        ) from expired
+    except (OSError, subprocess.SubprocessError) as failure:
+        if not strict:
+            return ""
+        raise CrewError(
+            f"the commit resolver could not start git to read {candidate!r} in "
+            f"{tree}: {failure}; this is an instrument fault rather than a "
+            "revision that names no commit"
+        ) from failure
     sha = completed.stdout.strip()
     if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", sha):
         return ""
