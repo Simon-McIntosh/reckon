@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:3125 calls dispatch_review_for_run from the continuous reflex sweep, which reaches the new queueing branch",
+    "reckon/crew/recovery_review_acceptance.py:498 calls dispatch_review_for_run from the acceptance sweep",
+    "reckon/crew_dispatch_commands.py:2712 calls recovery.dispatch_review_for_run for a requested run review",
+    "reckon/crew/recovery.py:225 re-exports _dispatch_composed_review",
+    "reckon/crew/recovery.py:257 re-exports dispatch_review_for_run"
+  ],
+  "completed_at": "2026-10-24T09:45:50.246Z",
+  "dispatched_at": "2026-10-24T09:37:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "634",
+      "severity": "non-blocking",
+      "summary": "stale optional return annotation after the early return was removed",
+      "text": "non-blocking: the return annotation ``dict[str, Any] | None`` can no longer be None after _router_hold's early return was deleted, so the caller's ``if queued:`` guard at :2925 reads as defending a state the function cannot produce."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued/logs/gate-base.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "summary": "base-arm log header contradicts its own revision and names no module path or cwd",
+      "text": "non-blocking: the base arm's header names base revision f299a724 and also describes itself as 'base arm: recovery_review_dispatch.py at HEAD', and records neither the imported module path nor the cwd, so the record does not establish that the base arm measured the pre-fix module."
+    },
+    {
+      "file": "tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py",
+      "line": "279",
+      "severity": "non-blocking",
+      "summary": "the plan-named negative control for the queued case is no longer recorded",
+      "text": "non-blocking: the plan's declared negative control for this node is no longer the artifact on disk; logs/negative-control.log now holds only the widened-to-LanePaused run against the paused case, so no log shows the first case reddening on the regression it guards."
+    }
+  ],
+  "gate_sources": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued/logs/gate-head.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued/logs/gate-base.log",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued/logs/negative-control.log"
+  },
+  "item_verdicts": {
+    "diff": "read commit by commit over 0144eca7..ea25e552; the delta deletes _GATE_WITHHELD_STATES and _router_hold, narrows the queue branch to isinstance(exc, LaneHeld), guards the write with CrewError/OSError, adds a fourth case and rewrites three evidence paragraphs.",
+    "done_when": "the done_when names tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py with three cases and a base-versus-head delta; the manifest records four cases in the head suite arm and the same two failing node ids in both arms (logs/gate-base.log, logs/gate-head.log), so the delta is zero.",
+    "goal": "the goal is that an automatic review held by a full unpaused local lane leaves a queued review run; reckon/crew/recovery_review_dispatch.py:2896-2920 now stores that request through dispatch's own _queued_request_record builder and runs.queue_dispatch when the hold reached the reflex with no pointer, which is exactly what this commit's delta adds.",
+    "manifest": "read; it records commit ea25e552f63be1521c49d5a29fe002c575348419, the isinstance(exc, LaneHeld) queue condition, the guarded queue write, the widened-condition negative control at logs/negative-control.log and literal baseline_suite/after_suite commands.",
+    "write_paths": "the manifest declares five exclusive paths; the second commit touches only reckon/crew/recovery_review_dispatch.py, tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-automatic-review-held-by-a-full-lane-is-queued.html, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:325-334 reddens if the CrewError guard at reckon/crew/recovery_review_dispatch.py:2903 is removed, and the recorded negative control reddens the paused case if the isinstance(exc, LaneHeld) condition is widened to LanePaused.",
+    "evidence": "logs/gate-base.log and logs/gate-head.log both end EXIT=1 with the identical pair of failing ids, giving zero added failures, but the base arm's own header (logs/gate-base.log:1) labels itself \"recovery_review_dispatch.py at HEAD\" while naming base revision f299a724 and records neither the imported module path nor the cwd.",
+    "fit": "the branch follows the surrounding except-branch idiom and its names carry no plan, ticket or author reference, but the signature at reckon/crew/recovery_review_dispatch.py:634 still advertises ``dict[str, Any] | None`` after the early return that was its only None path was deleted.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:2900-2920 queues the router hold on the local lane and leaves a paused gate unqueued at :2920, so a delivered run waits for a slot rather than for the reflex to fire again.",
+    "reuse": "the commit deletes the duplicate _router_hold and _GATE_WITHHELD_STATES and now asks the owner's own reckon/crew/dispatch_admission.py:1187 LaneHeld subclass, while the queue write reuses dispatch._queued_request_record and runs.queue_dispatch rather than re-implementing either.",
+    "scope_discipline": "the delta touches three files, each inside the manifest's declared write paths, and leaves reckon/crew/dispatch.py and reckon/crew/dispatch_sessions.py untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that an automatic review held by a full unpaused local lane leaves a queued review run; reckon/crew/recovery_review_dispatch.py:2896-2920 now stores that request through dispatch's own _queued_request_record builder and runs.queue_dispatch when the hold reached the reflex with no pointer, which is exactly what this commit's delta adds.\nVERDICT done_when: the done_when names tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py with three cases and a base-versus-head delta; the manifest records four cases in the head suite arm and the same two failing node ids in both arms (logs/gate-base.log, logs/gate-head.log), so the delta is zero.\nVERDICT write_paths: the manifest declares five exclusive paths; the second commit touches only reckon/crew/recovery_review_dispatch.py, tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/an-automatic-review-held-by-a-full-lane-is-queued.html, all inside them.\nVERDICT manifest: read; it records commit ea25e552f63be1521c49d5a29fe002c575348419, the isinstance(exc, LaneHeld) queue condition, the guarded queue write, the widened-condition negative control at logs/negative-control.log and literal baseline_suite/after_suite commands.\nVERDICT diff: read commit by commit over 0144eca7..ea25e552; the delta deletes _GATE_WITHHELD_STATES and _router_hold, narrows the queue branch to isinstance(exc, LaneHeld), guards the write with CrewError/OSError, adds a fourth case and rewrites three evidence paragraphs.\nCALL_SITES: reckon/crew/recovery_watch.py:3125, reckon/crew/recovery_review_acceptance.py:498, reckon/crew_dispatch_commands.py:2712, reckon/crew/recovery.py:225, reckon/crew/recovery.py:257\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:2900-2920 queues the router hold on the local lane and leaves a paused gate unqueued at :2920, so a delivered run waits for a slot rather than for the reflex to fire again.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-base.log and logs/gate-head.log both end EXIT=1 with the identical pair of failing ids, giving zero added failures, but the base arm's own header (logs/gate-base.log:1) labels itself \"recovery_review_dispatch.py at HEAD\" while naming base revision f299a724 and records neither the imported module path nor the cwd.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta touches three files, each inside the manifest's declared write paths, and leaves reckon/crew/dispatch.py and reckon/crew/dispatch_sessions.py untouched.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:325-334 reddens if the CrewError guard at reckon/crew/recovery_review_dispatch.py:2903 is removed, and the recorded negative control reddens the paused case if the isinstance(exc, LaneHeld) condition is widened to LanePaused.\nSCORE fit: 17\nJUSTIFICATION fit: the branch follows the surrounding except-branch idiom and its names carry no plan, ticket or author reference, but the signature at reckon/crew/recovery_review_dispatch.py:634 still advertises ``dict[str, Any] | None`` after the early return that was its only None path was deleted.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit deletes the duplicate _router_hold and _GATE_WITHHELD_STATES and now asks the owner's own reckon/crew/dispatch_admission.py:1187 LaneHeld subclass, while the queue write reuses dispatch._queued_request_record and runs.queue_dispatch rather than re-implementing either.\nFINDING reckon/crew/recovery_review_dispatch.py:634 non-blocking: the return annotation ``dict[str, Any] | None`` can no longer be None after _router_hold's early return was deleted, so the caller's ``if queued:`` guard at :2925 reads as defending a state the function cannot produce and a future reader cannot use the annotation to know the queue write always yields a record.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued/logs/gate-base.log:1 non-blocking: the base arm's header both names base revision f299a724e7932cae7b38b34865da7df6396b448d and describes itself as \"base arm: recovery_review_dispatch.py at HEAD\", and the run names neither the module path it imported nor the working directory it resolved from, so a reader cannot tell from the record whether the base arm measured the pre-fix module or the fixed one; the zero-added-failure conclusion survives regardless because only tests were added and both failures sit in modules this node did not change.\nFINDING tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py:279 non-blocking: the plan's declared negative control for this node \u2014 restore the branch that raises without queueing and the first case finds no queued pointer \u2014 is no longer the artifact on disk, because logs/negative-control.log was rewritten by this commit to hold only the widened-to-LanePaused run against the paused case, so the record carries no log showing test_a_full_unpaused_lane_queues_the_review reddening on the regression it guards.\n",
+  "review_run_id": "r-20261024T093532083248-review-of-an-automatic-review-held-by-a-full-lane-is-queued-ea25e552f63b",
+  "reviewed_base_sha": "0144eca7a4f679b95c83ceb4dd0ea96710aa3399",
+  "reviewed_head_sha": "ea25e552f63be1521c49d5a29fe002c575348419",
+  "reviewed_run_id": "r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T09:46:51.752473+00:00",
+  "total": 109
+}
