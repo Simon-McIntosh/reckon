@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="Every edit path reports a refusal in one shape">
+  <meta name="plan-summary" content="A version conflict's changed_targets was built from set ops alone and a two-part list address did not resolve, so an append refusal had a different shape; every op verb now names its target with the value the document holds.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s58">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="edit-plan,refusal,version-conflict,evidence">
+  <title>Every edit path reports a refusal in one shape | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="every-edit-path-refuses-in-one-shape" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="every-edit-path-refuses-in-one-shape-title">Every edit path reports a refusal in one shape</h2>
+  <p id="every-edit-path-refuses-in-one-shape-change"><strong>Change.</strong>
+  <code>_changed_targets</code> in <code>reckon/mcp_edit_plan.py</code> built the
+  conflict's <code>changed_targets</code> from <code>set</code> ops alone, so a
+  collision met through an <code>append</code>, <code>resolve</code>,
+  <code>lock</code>, <code>accept</code> or gate verb answered without the
+  targets it addressed and its refusal shape depended on the verb the caller
+  chose. <code>_op_target_path</code> now composes each verb's address from the
+  op's own identifying keys — an explicit <code>path</code>, a collection plus
+  the record id, a decision <code>key</code>, a gate <code>id</code> — and a
+  <code>move</code> names both sprints it touches, the one the item leaves and
+  the one it joins, because the refused write changes both — and
+  <code>_value_at_path</code> resolves a two-part list address to the record it
+  names, so the value the document holds is read back for every verb whose
+  target exists. A case calls <code>_op_target_path</code> for every verb in
+  <code>_store._OP_DISPATCH</code>, passing one representative op that carries
+  every key any address branch reads, and requires a target for each, so a verb
+  with no branch falls through to nothing and fails the case.</p>
+  <p id="every-edit-path-refuses-in-one-shape-measure"><strong>Measure.</strong>
+  The listed id
+  <code>tests/test_every_edit_path_refuses_one_shape.py::test_the_refusal_shape_is_identical_across_op_paths</code>
+  fails at the base arm (<code>1 failed, 59 passed</code>, <code>EXIT=1</code>)
+  and passes at the head arm (<code>64 passed</code>, <code>EXIT=0</code>). The
+  case drives one op per addressing family — comment append, decision lock,
+  followup resolve, gate verdict and state set — each naming a target the
+  seeded document holds, and checks the <code>current</code> value back against
+  the document unconditionally; a separate case pins the documented rule that
+  an insert of a new record names its path alone; a further case drives a refused
+  sprint move and requires both <code>sprints.S1</code> and
+  <code>sprints.S2</code>, each with the value the index holds. Both arms are
+  <code>git archive</code> extractions on node-local disk run with the same
+  command over the gate, every test file that imports the changed module
+  (<code>reckon.mcp_edit_plan</code>: <code>test_a_lost_race_is_refused_not_raised</code>,
+  <code>test_a_malformed_request_is_refused_before_storage</code>,
+  <code>test_a_retried_partial_move_is_not_replayed</code>,
+  <code>test_an_added_parameter_needs_no_reconnect</code>,
+  <code>test_mcp_server_serves_current_code</code>), the case that pins the
+  conflict contract (<code>test_a_refused_write_names_the_next_step</code>) and
+  the writer-race case (<code>test_landing_write_races_every_writer</code>). No
+  failure is added. <code>ruff check</code> and
+  <code>ruff format --check</code> report nothing added on the two staged paths:
+  the receipts name their revisions and read 7 findings at the base arm
+  (<code>logs/ruff_check_base.log</code>, <code>ruff_format_base.log</code>) and
+  7 at the head (<code>logs/ruff_check_head.log</code>,
+  <code>ruff_format_head.log</code>), with both format runs
+  <code>EXIT=0</code>.</p>
+  <p id="every-edit-path-refuses-in-one-shape-control"><strong>Negative control.</strong>
+  Declared mutation: revert each repair; its failing case must go red again.
+  Four mutations, each applied to a copy of the head tree with the rest of the
+  head left intact: composing targets from <code>set</code> ops alone
+  (<code>2 failed, 7 passed</code>, <code>EXIT=1</code>, the listed id among
+  them), dropping the two-part list address so no verb carries a current value
+  (<code>1 failed, 8 passed</code>, <code>EXIT=1</code>, the listed id),
+  deleting the <code>gate</code>/<code>pass</code>/<code>fail</code> branch
+  from <code>_op_target_path</code> so a store verb falls through to no target
+  (<code>logs/negative_control_verb_case.log</code>: <code>2 failed, 7
+  passed</code>, <code>EXIT=1</code>, the listed id and the verb case), and
+  composing only a move's destination
+  (<code>logs/negative_control_move_source.log</code>: <code>1 failed, 9
+  passed</code>, <code>EXIT=1</code>, the failure being the move case). The
+  mutation is declared before the run and the failure is attributed to it: each
+  extraction is the head tree with one repair reverted, so the case that goes
+  red is the one that repair holds.</p>
+</article>
+</body>
+</html>
