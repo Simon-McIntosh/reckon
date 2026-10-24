@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-long-lived-crew-process-leaves-nothing-stale">
+  <meta name="plan-title" content="A reconciled refusal reads as waiting">
+  <meta name="plan-evidence-for" content="reckon:a-long-lived-crew-process-leaves-nothing-stale">
+  <meta name="plan-verifies" content="reckon:a-long-lived-crew-process-leaves-nothing-stale#s2">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,queue,recovery,refusal">
+  <title>A reconciled refusal reads as waiting — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-reconciled-refusal-reads-as-waiting-landed" data-node="a-reconciled-refusal-reads-as-waiting" data-reckon="landed" data-when="2026-10-24">
+  <h2>A reconciled refusal reads as waiting</h2>
+  <p id="a-reconciled-refusal-reads-as-waiting-change">A queued request whose stored refusal is <code>UnreconciledRuns</code> is now read against the live pointers it names. The remedy publishes the first named run that still has a live pointer, because promotion removes the pointer. When none of the named runs is live the refusal has already been answered: <code>_queued_failure_remedy</code> returns no remedy, the request classifies as <code>queued</code> with no <code>session_refusal</code>, and the obligations derivation lists it as <code>run-queued</code> rather than <code>queued-awaiting-session</code>. That branch returns instead of falling through to the text search, so the refusal's quoted <code>--allow-unreconciled-runs</code> dispatch is never published as the next command. The detail drops its closing advice to discard the queued run and dispatch it again.</p>
+  <p id="a-reconciled-refusal-reads-as-waiting-measure">Measure: <code>tests/test_a_queued_run_is_never_told_to_redispatch.py</code> passes 4 of 4 at this change, against 3 failures at the base revision. Negative control — the live-pointer check dropped — fails <code>test_a_named_run_whose_pointer_is_gone_reads_as_waiting</code> and <code>test_two_named_runs_are_read_for_the_one_still_live</code>, with <code>EXIT=1</code>.</p>
+  <ul id="a-reconciled-refusal-reads-as-waiting-cases">
+    <li id="a-reconciled-refusal-reads-as-waiting-case-live">A named run whose pointer is live keeps the queued request on that run's own command, and the obligations view lists it as <code>queued-awaiting-session</code>.</li>
+    <li id="a-reconciled-refusal-reads-as-waiting-case-gone">The same refusal with that run's pointer removed carries no <code>session_refusal</code> and is listed as <code>run-queued</code>.</li>
+    <li id="a-reconciled-refusal-reads-as-waiting-case-second">With two runs named and only the second live, the remedy names the second.</li>
+    <li id="a-reconciled-refusal-reads-as-waiting-case-review">A <code>PlanReviewMissingError</code> refusal keeps its quoted <code>reckon crew review</code> command.</li>
+    <li id="a-reconciled-refusal-reads-as-waiting-case-dispatch">No case publishes a <code>reckon crew dispatch</code> command or a detail advising a re-dispatch.</li>
+  </ul>
+</article>
+</body>
+</html>
