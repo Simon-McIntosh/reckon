@@ -161,7 +161,32 @@ def test_a_named_run_whose_pointer_is_gone_reads_as_waiting(
     _assert_no_redispatch(duties[0])
 
 
-def test_two_named_runs_are_read_for_the_one_still_live(mounted_home: Path) -> None:
+def test_a_named_pointer_that_cannot_be_read_keeps_the_duty(
+    mounted_home: Path,
+) -> None:
+    """An unparseable pointer is not evidence that the run was reconciled.
+
+    Only an absent pointer says the run has been settled. One that is still on
+    disk but holds invalid JSON leaves the run unreconciled as far as anything
+    read here can tell, so the duty stands and the run's action is published.
+    """
+    action = "reckon crew complete --run run-unreadable"
+    unreadable = runs.pointer_path("run-unreadable")
+    unreadable.parent.mkdir(parents=True, exist_ok=True)
+    unreadable.write_text("{not json", encoding="utf-8")
+    record = _write_queued_pointer(_unreconciled_text([("run-unreadable", action)]))
+
+    row = _classify(record)
+
+    refusal = row["session_refusal"]
+    assert isinstance(refusal, dict)
+    assert refusal["next_command"] == action
+    _assert_no_redispatch(row)
+
+
+def test_two_named_runs_are_read_for_the_one_still_live(
+    mounted_home: Path,
+) -> None:
     first_action = "reckon crew complete --run run-promoted-first"
     second_action = "reckon crew complete --run run-still-open"
     _write_live_pointer("run-still-open")

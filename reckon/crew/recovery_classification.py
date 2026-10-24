@@ -187,18 +187,24 @@ def _unreconciled_runs_remedy(text: str) -> dict[str, str] | None:
     longer owed and the next named run that is still live is read instead. When
     none of them is live the refusal has been answered by the time this is
     read, and no remedy stands: the queued request keeps its waiting reading
-    and admission re-tests it on its next pass. Publishing the action anyway
-    would keep raising a duty for a run that no longer needs it, because the
-    remedy composes nothing from a pointer that is not there.
+    and admission re-tests it on its next pass.
+
+    An absent pointer is the only evidence that a run has been reconciled. A
+    pointer that is there but cannot be read — invalid JSON, or a value that is
+    not an object — says nothing of the sort: the run is still on disk and its
+    reconciliation may still be owed, so it keeps the duty and its action is
+    published exactly as it was before. The question is whether the pointer
+    exists, not whether it parses.
     """
-    from reckon.crew.runs import read_pointer
+    from reckon.crew.runs import pointer_path, read_pointer
 
     for named in _UNRECONCILED_RUN_LINE.finditer(text):
         run_id, action = named.group(1), named.group(2).strip()
         try:
             read_pointer(run_id)
         except CrewError:
-            continue
+            if not pointer_path(run_id).exists():
+                continue
         return {
             "detail": (
                 f"the queued launch was refused because the project holds "
