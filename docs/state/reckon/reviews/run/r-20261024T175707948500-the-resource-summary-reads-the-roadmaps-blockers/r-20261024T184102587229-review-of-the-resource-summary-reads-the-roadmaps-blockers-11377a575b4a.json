@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp.py:1700",
+    "reckon/mcp_views.py:2781",
+    "reckon/mcp_views.py:3150",
+    "reckon/roadmap.py:3504",
+    "reckon/serve.py:2086"
+  ],
+  "completed_at": "2026-10-24T18:59:11.669Z",
+  "dispatched_at": "2026-10-24T18:46:36Z",
+  "findings": [
+    {
+      "file": "tests/test_mcp_views.py",
+      "line": "278",
+      "severity": "non-blocking",
+      "text": "the summary compactness bound is relaxed from 0.60 to 0.70 of the raw read to fit the newly published decision row (748 bytes against the 670-byte 0.60 budget), which permanently widens a size guard by 10 points to accommodate one row; the manifest measures the cause honestly, but the guard now tolerates roughly 110 bytes of future growth instead of failing on it, and the alternatives it names (trimming duplicated question/status/choice fields from the row) would keep the bound."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against a17c38e4a: ccf9655c2 rewrites the plan branch at reckon/mcp.py:1700, adds _plan_blocker_state at 1750, adds _assembled_blocking at reckon/mcp_views.py:2572 and the stated_status path at 2781, and adds the 363-line test; 9f4bc8ad2 refreshes five expectations in tests/test_mcp_views.py; 11377a575 edits only the evidence fragment.",
+    "done_when": "The done_when names tests/test_the_resource_summary_reads_the_roadmaps_blockers.py over a temporary home with seven held plans plus an unrecorded blocked one; logs/base-gate.log records 4 failed / 129 passed EXIT=1 at a17c38e4a and logs/head-gate-after-pin-refresh.log records 133 passed EXIT=0 at 9f4bc8ad2, and logs/negative-control.log shows arm A 3 failed and arm B 1 failed, so the gate asserts the measure and adds no failure.",
+    "goal": "The node goal is to route the MCP plan summary through roadmap.plan_blocker_state with the roadmap's own arguments including sections_map and to leave the roadmap rule as the one orphaned-blocked-status emitter; reckon/mcp.py:1700 fills BLOCKER_STATE_KEY from _plan_blocker_state, which passes sections_map at reckon/mcp.py:1784, and the copy in _audit_read is gone so reckon/roadmap.py:3025 is the only emitter left.",
+    "manifest": "Read complete; it records commits ccf9655c2/9f4bc8ad2/11377a575, the base and head suites with their failure ids, both negative-control arms, the measurement_module and cwd, and the compactness-bound relaxation with the byte measurements behind it.",
+    "write_paths": "The manifest declares reckon/mcp.py, reckon/mcp_views.py, tests/test_the_resource_summary_reads_the_roadmaps_blockers.py, tests/test_mcp_views.py and the evidence fragment; a17c38e4a..11377a575 touches exactly those five paths, and the dispatched fence did not carry tests/test_mcp_views.py but the coordinator's widen granted it in resume-1-advice.txt before 9f4bc8ad2."
+  },
+  "justifications": {
+    "durability": "The three-way comparison at tests/test_the_resource_summary_reads_the_roadmaps_blockers.py:270 fails if the summary reverts to _blocking (arm A reddens three cases, including the decision-held plan) and the audit case at line 330 reddens if the deleted mcp.py emitter returns (arm B), so the guard is demonstrated by reinstating each regression rather than by observing green.",
+    "evidence": "logs/head-gate-after-pin-refresh.log ends 133 passed EXIT=0 at 9f4bc8ad2 against logs/base-gate.log 4 failed / 129 passed EXIT=1 at a17c38e4a, and logs/negative-control.log records ARM_A 3 failed and ARM_B 1 failed, so the measured delta is recorded rather than claimed.",
+    "fit": "reckon/mcp.py:1772 uses the function-local import idiom the file already uses at 1305 and 2689, and the new BLOCKER_STATE_KEY at reckon/mcp_views.py:59 follows the module's documented-constant style; the helper name _plan_blocker_state sits one underscore away from the roadmap owner it wraps, which is legible but easy to confuse at a call site.",
+    "goal_fidelity": "reckon/mcp.py:1784 passes sections_map=_plan_decision_sections(...) and released=plans_released_by_cleared_blockers(...), matching the roadmap's own call at reckon/roadmap.py:3504, and the summary publishes the assembled effective_status instead of re-deriving it at reckon/mcp_views.py:2781.",
+    "reuse": "The change extends the existing owner roadmap.plan_blocker_state (reckon/roadmap.py:1223) rather than forking it, and the only new projection, _assembled_blocking at reckon/mcp_views.py:2572, publishes rows in the summary's established shape for which no existing helper exists; the served view's recorded_blockers publication at reckon/serve.py:2104 answers a different question and is not duplicated.",
+    "scope_discipline": "Every path in the range is one of the five the manifest declares, and the one path outside the dispatched fence (tests/test_mcp_views.py) is covered by the coordinator's widen recorded in resume-1-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to route the MCP plan summary through roadmap.plan_blocker_state with the roadmap's own arguments including sections_map and leave the roadmap rule as the one orphaned-blocked-status emitter; reckon/mcp.py:1700 fills BLOCKER_STATE_KEY from _plan_blocker_state, which passes sections_map at reckon/mcp.py:1784, and the copy in _audit_read is gone so reckon/roadmap.py:3025 is the only emitter left.\nVERDICT done_when: the done_when names tests/test_the_resource_summary_reads_the_roadmaps_blockers.py over a temporary home with seven held plans plus an unrecorded blocked one; logs/base-gate.log records 4 failed / 129 passed EXIT=1 at a17c38e4a and logs/head-gate-after-pin-refresh.log records 133 passed EXIT=0 at 9f4bc8ad2, and logs/negative-control.log shows arm A 3 failed and arm B 1 failed, so the gate asserts the measure and adds no failure.\nVERDICT write_paths: the manifest declares reckon/mcp.py, reckon/mcp_views.py, tests/test_the_resource_summary_reads_the_roadmaps_blockers.py, tests/test_mcp_views.py and the evidence fragment; a17c38e4a..11377a575 touches exactly those five paths, and the dispatched fence did not carry tests/test_mcp_views.py but the coordinator's widen granted it in resume-1-advice.txt before 9f4bc8ad2.\nVERDICT manifest: read complete; it records commits ccf9655c2/9f4bc8ad2/11377a575, the base and head suites with their failure ids, both negative-control arms, the measurement_module and cwd, and the compactness-bound relaxation with the byte measurements behind it.\nVERDICT diff: read commit by commit against a17c38e4a: ccf9655c2 rewrites the plan branch at reckon/mcp.py:1700, adds _plan_blocker_state at 1750, adds _assembled_blocking at reckon/mcp_views.py:2572 and the stated_status path at 2781, and adds the 363-line test; 9f4bc8ad2 refreshes five expectations in tests/test_mcp_views.py; 11377a575 edits only the evidence fragment.\nCALL_SITES: reckon/mcp.py:1700, reckon/mcp_views.py:2781, reckon/mcp_views.py:3150, reckon/roadmap.py:3504, reckon/serve.py:2086\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:1784 passes sections_map=_plan_decision_sections(...) and released=plans_released_by_cleared_blockers(...), matching the roadmap's own call at reckon/roadmap.py:3504, and the summary publishes the assembled effective_status instead of re-deriving it at reckon/mcp_views.py:2781.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-gate-after-pin-refresh.log ends 133 passed EXIT=0 at 9f4bc8ad2 against logs/base-gate.log 4 failed / 129 passed EXIT=1 at a17c38e4a, and logs/negative-control.log records ARM_A 3 failed and ARM_B 1 failed, so the measured delta is recorded rather than claimed.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the range is one of the five the manifest declares, and the one path outside the dispatched fence (tests/test_mcp_views.py) is covered by the coordinator's widen recorded in resume-1-advice.txt.\nSCORE durability: 18\nJUSTIFICATION durability: the three-way comparison at tests/test_the_resource_summary_reads_the_roadmaps_blockers.py:270 fails if the summary reverts to _blocking (arm A reddens three cases, including the decision-held plan) and the audit case at line 330 reddens if the deleted mcp.py emitter returns (arm B), so the guard is demonstrated by reinstating each regression rather than by observing green.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/mcp.py:1772 uses the function-local import idiom the file already uses at 1305 and 2689, and the new BLOCKER_STATE_KEY at reckon/mcp_views.py:59 follows the module's documented-constant style; the helper name _plan_blocker_state sits one underscore away from the roadmap owner it wraps, which is legible but easy to confuse at a call site.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends the existing owner roadmap.plan_blocker_state (reckon/roadmap.py:1223) rather than forking it, and the only new projection, _assembled_blocking at reckon/mcp_views.py:2572, publishes rows in the summary's established shape for which no existing helper exists; the served view's recorded_blockers publication at reckon/serve.py:2104 answers a different question and is not duplicated.\nFINDING tests/test_mcp_views.py:278 non-blocking: the summary compactness bound is relaxed from 0.60 to 0.70 of the raw read to fit the newly published decision row (748 bytes against the 670-byte 0.60 budget), which permanently widens a size guard by 10 points to accommodate one row; the manifest measures the cause honestly, but the guard now tolerates roughly 110 bytes of future growth instead of failing on it, and the alternatives it names (trimming duplicated question/status/choice fields from the row) would keep the bound.",
+  "review_run_id": "r-20261024T184102587229-review-of-the-resource-summary-reads-the-roadmaps-blockers-11377a575b4a",
+  "reviewed_base_sha": "a17c38e4a4a04f7e3e8412bd25a419713da1e981",
+  "reviewed_head_sha": "11377a575b4a968be339c070bf949f5f27e25f2f",
+  "reviewed_run_id": "r-20261024T175707948500-the-resource-summary-reads-the-roadmaps-blockers",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T19:05:38.345509+00:00",
+  "total": 109
+}
