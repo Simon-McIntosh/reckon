@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:1278"
+  ],
+  "completed_at": "2026-10-24T00:34:35.947Z",
+  "dispatched_at": "2026-10-24T00:28:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "line": 105,
+      "severity": "non-blocking",
+      "text": "at the reviewed head this comment still lists `follow_ons` among the prose list fields (`git show 4aeebb15b:reckon/crew/reports.py`), so the earlier review's stale-name finding is unaddressed at the revision this record names; the fix lives only in d2f4a09b8, a child of the reviewed head that this record does not cover and that the reviewed run's manifest commits list does not name"
+    },
+    {
+      "file": "tests/test_routing_evidence_fields.py",
+      "line": 196,
+      "severity": "non-blocking",
+      "text": "`assert ledger.outside_scope_paths_from_entries(entries) == entries` compares the extractor's result against the same list the test itself passed in, so it stays true for any implementation that returns its input unchanged and cannot redden if path extraction regresses; the line is inherited through the call-site rename rather than added here, but it must not be counted as coverage of the extractor"
+    },
+    {
+      "file": "docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html",
+      "line": 50,
+      "severity": "non-blocking",
+      "text": "the arms table and the manifest record a base/head failure delta but no ruff log, so the done-when's 'ruff check and ruff format --check add no findings on the staged paths' clause still rests on the manifest's self-reported counts (9 findings at head against 10 at base, one unformatted file at both revisions) with nothing a reader can open"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified one production call site for the renamed extractor",
+    "diff": "two commits read against 8c4e10c5b: efd409b03 renames the ledger extractor, deletes reckon/crew/promotion.py's call to the old name, deletes the uncalled run_record.outside_scope_paths helper and its ledger re-export, repoints the three test call sites and adds two hasattr cases; 4aeebb15b rewrites the evidence fragment's ledger-scope paragraph and arm table",
+    "done_when": "the done-when asks four cases in tests/test_every_derived_manifest_carries_the_outside_scope_field.py plus a base/head delta over the importing test files and a ruff clause; the file now holds six cases, the two arms are recorded at 67cba14e6 (33 failed) and efd409b03 (25 failed, ids a strict subset), the six new cases fail at base and pass at head, and the ruff clause has counts in the manifest but no log",
+    "goal": "the source node's goal is docs/plans/additional-work-is-a-section.html section 7: the three derived sites write and list outside_scope and no ledger docstring keeps the retired spelling; the gained commits rename the extractor to outside_scope_paths_from_entries at reckon/ledger.py:650, delete the uncalled run_record.outside_scope_paths helper and point promotion at the new name, so no identifier keeps the retired word",
+    "manifest": "read the live manifest.md; it records both arm revisions and counts, the negative control at negative-control.log, the ten head setup errors attributed as 300 s fixture timeouts, and outside_scope; it is status in-progress because attempt 3 is still working, and its commits list stops at 8c4e10c5b efd409b03 4aeebb15b so the later d2f4a09b8 is unrecorded",
+    "write_paths": "the gained diff touches seven files; five are in the plan's and the manifest's declared list, and the two outside the printed fence \u2014 reckon/run_record.py and tests/test_routing_evidence_fields.py \u2014 were explicitly widened and accepted in the run's resume-1-advice.txt:4 and resume-2-advice.txt:1, so nothing is unaccounted for"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is docs/plans/additional-work-is-a-section.html section 7, that the derived sites write and list outside_scope and no ledger docstring keeps the retired spelling; the gained commits rename the extractor to outside_scope_paths_from_entries at reckon/ledger.py:650 and delete the uncalled run_record helper, so no identifier keeps the retired word.\nVERDICT done_when: the done-when asks four cases plus a base/head delta and a ruff clause; tests/test_every_derived_manifest_carries_the_outside_scope_field.py now holds six cases, the arms are recorded at 67cba14e6 (33 failed) and efd409b03 (25 failed, a strict subset), the six new cases fail at base and pass at head, and the ruff clause is counted in the manifest but has no log.\nVERDICT write_paths: the gained diff touches seven files; five are declared and two (reckon/run_record.py, tests/test_routing_evidence_fields.py) were widened and accepted in resume-1-advice.txt:4 and resume-2-advice.txt:1, so every path is accounted for.\nVERDICT manifest: read the live manifest.md; it records both arm revisions and counts, the negative control log, the ten head setup errors as attributed timeouts and outside_scope, is status in-progress because attempt 3 is still running, and its commits list omits d2f4a09b8.\nVERDICT diff: two commits read against 8c4e10c5b; efd409b03 renames the extractor, repoints reckon/crew/promotion.py:1278, deletes the uncalled run_record reader and its ledger re-export, and adds two hasattr cases, and 4aeebb15b rewrites the evidence fragment's ledger paragraph and arm table.\nCALL_SITES: reckon/crew/promotion.py:1278\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:650 and reckon/crew/promotion.py:1278 now carry the current name and reckon/run_record.py:33 keeps only the deliberate retired-key constant, so the plan's stated intent that the extractor stop naming the retired field is met.\nSCORE evidence: 16\nJUSTIFICATION evidence: the arms recorded at baseline_suite and after_suite recompute to 33 and 25 failures with an empty added-id set, and the fragment's table at line 50 matches, but no ruff log exists and the head arm runs at efd409b03 rather than the reviewed head, both of which a reader must take on trust.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two commits touch only docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html, reckon/ledger.py, reckon/crew/promotion.py, reckon/run_record.py and the three test files, each declared or widened in the run's resume advice.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_every_derived_manifest_carries_the_outside_scope_field.py:121 and :129 redden if either retired name returns, and reckon/crew/promotion.py:1278 raises AttributeError if the rename regresses, but the inherited assertion at tests/test_routing_evidence_fields.py:196 cannot fail.\nSCORE fit: 19\nJUSTIFICATION fit: the two added cases follow the repository's hasattr idiom (used in 20 test files) and reckon/ledger.py:650 keeps the module's existing docstring shape, with no plan label or version suffix in any added name.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change removes a duplicated reader rather than adding one \u2014 reckon/run_record.py now has a single mapping, normalize_outside_scope_paths \u2014 and a search for an owner of a module-API rename guard found only tests/test_old_names_resolve.py, which owns catalogue alias resolution and not this capability.\nFINDING reckon/crew/reports.py:105 non-blocking: at the reviewed head this comment still lists `follow_ons` among the prose list fields, so the earlier stale-name finding is unaddressed at the revision this record names; the fix lives only in d2f4a09b8, a child of the reviewed head this record does not cover and the manifest's commits list does not name.\nFINDING tests/test_routing_evidence_fields.py:196 non-blocking: the assertion compares the extractor's result against the same list the test passed in, so it holds for any implementation that returns its input and cannot redden if path extraction regresses; it is inherited through the rename rather than added here.\nFINDING docs/evidence/fragments/additional-work-is-a-section/every-derived-manifest-carries-the-outside-scope-field.html:50 non-blocking: the arms table records the failure delta but no ruff log, so the done-when's ruff clause rests on the manifest's self-reported counts with nothing a reader can open.\n",
+  "review_run_id": "r-20261024T002717287186-review-of-every-derived-manifest-carries-the-outside-scope-field-4aeebb15bb07",
+  "reviewed_base_sha": "8c4e10c5b83dafae2e7888cd50f5ad62e7d73d38",
+  "reviewed_head_sha": "4aeebb15bb07ffea7589ace45c380a6bb2b06868",
+  "reviewed_run_id": "r-20261023T191636578395-every-derived-manifest-carries-the-outside-scope-field",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T00:35:47.846244+00:00",
+  "total": 110
+}
