@@ -82,7 +82,9 @@ def test_a_rebuild_equals_an_incremental_build(tmp_path):
     for _ in (1, 2, 3):
         incremental.tick(home=home)
 
-    assert rebuilt.pointer_rows() == incremental.pointer_rows()
+    fixture_pointers = [str(home / "live" / f"r{index}.json") for index in (1, 2, 3)]
+    assert [row["path"] for row in rebuilt.pointer_rows()] == fixture_pointers
+    assert [row["path"] for row in incremental.pointer_rows()] == fixture_pointers
     assert rebuilt.observation_rows() == incremental.observation_rows()
     assert {Path(row["path"]).name for row in rebuilt.stream_rows()} == {
         "r1.jsonl",

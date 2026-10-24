@@ -37,9 +37,9 @@ refusal, so it joins no entry of :data:`reckon.crew.refusals.DISPATCH_REFUSAL_RE
 from __future__ import annotations
 
 import json
-import os
 import sqlite3
 from collections.abc import Iterable, Mapping
+from contextlib import closing
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, NoReturn, Self
@@ -52,6 +52,11 @@ DATABASE_NAME = "station.sqlite3"
 DAY_DIRECTORY = "events"
 DAY_FILE_PREFIX = "events-"
 DAY_FILE_SUFFIX = ".sqlite3"
+
+# How many bytes before a stream's consumed offset are kept as its tail anchor.
+# A stream that grows is re-read from here, so a rewrite whose leading bytes
+# changed while its offset stayed put is recognised rather than missed.
+ANCHOR_BYTES = 64
 
 # How many UTC days of events the store keeps. A configuration value: the
 # station reads it once and hands it to the store.
@@ -78,6 +83,8 @@ CREATE TABLE IF NOT EXISTS streams (
     path        TEXT PRIMARY KEY,
     inode       TEXT NOT NULL,
     consumed    INTEGER NOT NULL,
+    size        INTEGER NOT NULL DEFAULT -1,
+    anchor      BLOB,
     fold_state  TEXT NOT NULL,
     observation TEXT NOT NULL
 );
@@ -178,6 +185,18 @@ def _read_pointer_record(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _read_range(path: Path, offset: int, limit: int | None = None) -> bytes:
+    """Read ``limit`` bytes at ``offset``, or to end of file when ``limit`` is None.
+
+    Every byte the store reads from a stream passes through here, so the volume
+    it reads per tick is one named step a test can count rather than an
+    emergent property of the code below.
+    """
+    with path.open("rb") as handle:
+        handle.seek(offset)
+        return handle.read() if limit is None else handle.read(limit)
+
+
 def _whole_lines(payload: bytes) -> tuple[list[str], int]:
     """Split ``payload`` up to its last whole record, with the bytes consumed."""
     end = payload.rfind(b"\n")
@@ -255,10 +274,25 @@ class StationStore:
         connection.execute("PRAGMA journal_mode=WAL")
         connection.execute("PRAGMA synchronous=NORMAL")
         connection.executescript(_SCHEMA)
+        self._ensure_stream_columns(connection)
         connection.commit()
         self._connection = connection
         self._ensure_station_identity()
         return connection
+
+    @staticmethod
+    def _ensure_stream_columns(connection: sqlite3.Connection) -> None:
+        """Add the columns a store written before them lacks, keeping its rows."""
+        columns = {
+            str(row["name"])
+            for row in connection.execute("PRAGMA table_info(streams)").fetchall()
+        }
+        if "size" not in columns:
+            connection.execute(
+                "ALTER TABLE streams ADD COLUMN size INTEGER NOT NULL DEFAULT -1"
+            )
+        if "anchor" not in columns:
+            connection.execute("ALTER TABLE streams ADD COLUMN anchor BLOB")
 
     def close(self) -> None:
         if self._connection is not None:
@@ -403,44 +437,71 @@ class StationStore:
         connection.commit()
 
     def ingest_stream(self, path: Path) -> None:
-        """Fold one stream from its stored offset, storing the new observation."""
+        """Fold one stream from its stored offset, storing the new observation.
+
+        A stream whose size has not moved since the last read is not read at
+        all, so a trailing partial record waits for the bytes that complete it
+        rather than being re-read every tick. A grown stream is checked against
+        the tail anchor stored beside its offset before the new bytes are read;
+        a stream whose inode changed, whose size is below its consumed offset
+        or below its stored last-read size, or whose anchor no longer matches
+        is folded from its start, so a rewrite is refolded rather than folded
+        on top of bytes that no longer exist.
+        """
         try:
             info = path.stat()
         except OSError:
             return
         connection = self.connect()
         row = connection.execute(
-            "SELECT inode, consumed, fold_state FROM streams WHERE path = ?",
+            "SELECT inode, consumed, size, anchor, fold_state FROM streams "
+            "WHERE path = ?",
             (str(path),),
         ).fetchone()
         inode = str(info.st_ino)
+        size = int(info.st_size)
         consumed = 0
         state: Mapping[str, Any] | None = None
+        prefix = b""
         if row is not None and str(row["inode"]) == inode:
-            stored = int(row["consumed"])
-            if stored <= info.st_size:
-                consumed = stored
-                state = json.loads(str(row["fold_state"])) or None
-        with path.open("rb") as handle:
-            handle.seek(consumed)
-            payload = handle.read()
+            stored_consumed = int(row["consumed"])
+            stored_size = int(row["size"])
+            stored_anchor = bytes(row["anchor"] or b"")
+            if size == stored_size:
+                return
+            if size >= stored_consumed and size >= stored_size:
+                prefix = self._anchor_before(path, stored_consumed)
+                if prefix == stored_anchor:
+                    consumed = stored_consumed
+                    state = json.loads(str(row["fold_state"])) or None
+        payload = _read_range(path, consumed) if size > consumed else b""
         lines, advanced = _whole_lines(payload)
         observation = self._fold_stream(path, lines, state)
+        new_consumed = consumed + advanced
+        anchor = (prefix + payload[:advanced])[-ANCHOR_BYTES:]
         connection.execute(
-            "INSERT INTO streams (path, inode, consumed, fold_state, observation) "
-            "VALUES (?, ?, ?, ?, ?) "
+            "INSERT INTO streams (path, inode, consumed, size, anchor, fold_state, "
+            "observation) VALUES (?, ?, ?, ?, ?, ?, ?) "
             "ON CONFLICT(path) DO UPDATE SET inode = excluded.inode, "
-            "consumed = excluded.consumed, fold_state = excluded.fold_state, "
+            "consumed = excluded.consumed, size = excluded.size, "
+            "anchor = excluded.anchor, fold_state = excluded.fold_state, "
             "observation = excluded.observation",
             (
                 str(path),
                 inode,
-                consumed + advanced,
+                new_consumed,
+                size,
+                anchor,
                 json.dumps(observation.stream_state, sort_keys=True),
                 json.dumps(observation.as_dict(), sort_keys=True),
             ),
         )
         connection.commit()
+
+    def _anchor_before(self, path: Path, offset: int) -> bytes:
+        """The bytes immediately before ``offset``, up to one anchor's length."""
+        start = max(0, offset - ANCHOR_BYTES)
+        return _read_range(path, start, offset - start)
 
     def _fold_stream(
         self, path: Path, lines: Iterable[str], state: Mapping[str, Any] | None
@@ -478,7 +539,7 @@ class StationStore:
         rows = (
             self.connect()
             .execute(
-                "SELECT path, inode, consumed, fold_state, observation "
+                "SELECT path, inode, consumed, size, fold_state, observation "
                 "FROM streams ORDER BY path"
             )
             .fetchall()
@@ -527,7 +588,7 @@ class StationStore:
         day = moment.date()
         counter = self.connect()
         next_id = int(self.station_value(EVENT_COUNTER_KEY) or "0") + 1
-        with self._open_day(day) as day_connection:
+        with closing(self._open_day(day)) as day_connection:
             day_connection.execute(
                 "INSERT INTO events (id, time, project, audience, run, kind, from_state, "
                 "to_state, detail, duty) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -610,13 +671,3 @@ def _code_identity() -> str:
     from reckon import __version__
 
     return f"{__version__}:{Path(__file__).resolve()}"
-
-
-def store_at_runtime_root(**kwargs: Any) -> StationStore:
-    """Convenience wrapper over :meth:`StationStore.at_runtime_root`."""
-    return StationStore.at_runtime_root(**kwargs)
-
-
-def default_store(**kwargs: Any) -> StationStore:
-    """The store at this node's runtime root with the environment's root order."""
-    return StationStore.at_runtime_root(environ=os.environ, **kwargs)
