@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite at b60e0b947 failed 2 ids (test_the_served_count_includes_the_assembled_placeholder, test_the_orphan_rule_reports_a_status_with_no_recorded_hold_in_lifecycle), after_suite at head failed 0 of 93, so no failure id is added; both baseline ids are the new file's own discriminating tests and are green at head. An independent head arm run for this review at 6297f5c4976b, with the module path resolved to the reviewed tree and the head marker present, reproduced 93 passed EXIT=0 (review-head-arm.log).",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/serve.py:1742",
+    "reckon/serve.py:1811",
+    "reckon/mcp_views.py:1229",
+    "reckon/roadmap.py:2815",
+    "reckon/mcp.py:2275",
+    "reckon/serve.py:1865",
+    "reckon/mcp_discovery.py:330"
+  ],
+  "completed_at": "2026-10-24T17:36:05.938Z",
+  "dispatched_at": "2026-10-24T17:26:40Z",
+  "findings": [
+    {
+      "file": "reckon/roadmap.py",
+      "line": "3024",
+      "severity": "non-blocking",
+      "text": "non-blocking: with the roadmap's orphan copy now in category lifecycle, reckon/mcp.py:3223 still emits its own orphaned-blocked-status in category lifecycle with a different message, and the audit's merge dedupes on (code, slug, message), so a stored-blocked plan with no recorded blocker is reported twice in one category between this node and its sibling; the worker records this under outside_scope as the section's other node, but the landed state alone doubles a finding a reader of the audit acts on."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T171240691523-the-served-count-and-the-orphan-rule-read-the-assembly/gate-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm's revision header names b60e0b94707de619d18d41ac8cbf4f4f84775968 rather than the head sha 6297f5c49, so the log alone cannot be told apart from a run at base; this review re-ran the same gate at 6297f5c4976b with the import resolved to the reviewed tree and reproduced 93 passed EXIT=0 (review-head-arm.log)."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T171240691523-the-served-count-and-the-orphan-rule-read-the-assembly/manifest.md",
+      "line": "artifacts",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires ruff check and ruff format --check to add no findings on the staged paths; the record states '19 findings at base vs 19 at head, ruff format --check clean' in artifacts with no log path among test_logs, so that receipt cannot be re-read the way the pytest arms can."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/serve.py:1742 and reckon/serve.py:1811 (the served discovery's two _derive_lifecycle calls), reckon/mcp_views.py:1229 (its import-time caller), reckon/roadmap.py:2815 build_roadmap into _build_roadmap reached from reckon/mcp.py:2275, reckon/mcp.py:3343, reckon/serve.py:1865 and reckon/flight.py:2635, and reckon/mcp_discovery.py:330 which copies the plan row's blockers count into the discovery payload.",
+    "diff": "read commit 6297f5c49 against b60e0b947: +234/-3 over four files, of which the production change is one expression in reckon/serve.py:2106 plus a keyword-only category parameter and one call argument in reckon/roadmap.py:1583/3028, the rest being a 200-line test file and a 27-line evidence fragment.",
+    "done_when": "the node's evidence fence names tests/test_the_served_count_and_the_orphan_rule_read_the_assembly.py in a temporary home with every environment-resolved directory on a temporary path, and the manifest records that file plus the six named files at '93 passed in 36.94s' EXIT=0 against a base arm of '2 failed, 91 passed' EXIT=1, so the gate asserts the measure it was given.",
+    "goal": "the node goal is to make the served blocker count include the assembled placeholder and give the roadmap orphan rule the lifecycle category, the first of section 60's two nodes; reckon/serve.py:2106 count state[\"blocking\"] and reckon/roadmap.py:3028 passes category=\"lifecycle\", so both halves are present.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T171240691523-the-served-count-and-the-orphan-rule-read-the-assembly/manifest.md; status complete, commit 6297f5c49, tests line is the literal gate command, baseline_suite and after_suite carry revision/command/exit_status/completed/failure_ids, and negative_control_log is a bare path.",
+    "write_paths": "read the manifest's declared paths (reckon/serve.py, reckon/roadmap.py, the new test, the evidence fragment and an unused figures directory); git diff b60e0b947..6297f5c49 changes exactly the four non-figure paths and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_served_count_and_the_orphan_rule_read_the_assembly.py:163 fails if plan[\"blockers\"] counts the recorded list again (base arm reddens it by name) and :187 fails if the orphan finding keeps the dag category, both independently of the value the test supplies; :197's empty-list assertion fails if the worker had published the placeholder into plan[\"blocking\"], although the released-plan case at :205 passes at base and therefore guards only the pre-existing exemption.",
+    "evidence": "the reviewed manifest records the literal gate command over the new file and the six named files with head '93 passed in 36.94s' EXIT=0 and base arm '2 failed, 91 passed in 31.08s' EXIT=1 (gate-head.log, gate-base.log), and negative-control.log '2 failed, 1 passed' EXIT=1 on the same two ids, which is the done_when's zero-added-failure delta measured; the gap is the ruff receipt, which is a manifest claim ('19 findings at base vs 19 at head, ruff format --check clean') with no log path in test_logs to re-read.",
+    "fit": "reckon/roadmap.py:1583 adds a keyword-only parameter with the existing value as its default and reckon/serve.py:2106 changes one expression at the call site, matching the surrounding comment-then-assign idiom of reckon/serve.py:2103; no plan, ticket or version identifier appears in the changed names or comments.",
+    "goal_fidelity": "both halves of the goal are in the landed diff: reckon/serve.py:2106 sets plan[\"blockers\"] = len(state[\"blocking\"]) so the synthesized persisted placeholder is counted, and reckon/roadmap.py:3028 passes category=\"lifecycle\" to the roadmap's orphaned-blocked-status finding, while reckon/roadmap.py:1583 makes category a keyword-only parameter defaulting to dag so every other finding keeps its category.",
+    "reuse": "the change adds no definition: it consumes roadmap.plan_blocker_state (reckon/roadmap.py:1223), recorded_blockers and roadmap._finding (reckon/roadmap.py:1571), the owners the repository already has for the assembly, the recorded-list filter and finding construction, and a search over reckon/ for another assembled-blocker count found only reckon/mcp_views.py:_blocking, which this node was not scoped to route (recorded by the worker under outside_scope).",
+    "scope_discipline": "git diff b60e0b947..6297f5c49 lists four files \u2014 reckon/serve.py, reckon/roadmap.py, tests/test_the_served_count_and_the_orphan_rule_read_the_assembly.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-count-and-the-orphan-rule-read-the-assembly.html \u2014 all inside the declared write paths, with the declared docs/figures/ directory unused and no plan edit."
+  },
+  "node": "review-of-the-served-count-and-the-orphan-rule-read-the-assembly-6297f5c4976b",
+  "node:reviewed": "the-served-count-and-the-orphan-rule-read-the-assembly",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the served blocker count include the assembled placeholder and give the roadmap orphan rule the lifecycle category, the first of section 60's two nodes; reckon/serve.py:2106 counts state[\"blocking\"] and reckon/roadmap.py:3028 passes category=\"lifecycle\", so both halves are present.\nVERDICT done_when: the node's evidence fence names tests/test_the_served_count_and_the_orphan_rule_read_the_assembly.py in a temporary home with every environment-resolved directory on a temporary path, and the manifest records that file plus the six named files at '93 passed in 36.94s' EXIT=0 against a base arm of '2 failed, 91 passed' EXIT=1, so the gate asserts the measure it was given.\nVERDICT write_paths: read the manifest's declared paths (reckon/serve.py, reckon/roadmap.py, the new test, the evidence fragment and an unused figures directory); git diff b60e0b947..6297f5c49 changes exactly the four non-figure paths and nothing outside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T171240691523-the-served-count-and-the-orphan-rule-read-the-assembly/manifest.md; status complete, commit 6297f5c49, tests line is the literal gate command, baseline_suite and after_suite carry revision/command/exit_status/completed/failure_ids, and negative_control_log is a bare path.\nVERDICT diff: read commit 6297f5c49 against b60e0b947: +234/-3 over four files, of which the production change is one expression in reckon/serve.py:2106 plus a keyword-only category parameter and one call argument in reckon/roadmap.py:1583/3028, the rest being a 200-line test file and a 27-line evidence fragment.\nCALL_SITES: reckon/serve.py:1742, reckon/serve.py:1811, reckon/mcp_views.py:1229, reckon/roadmap.py:2815 build_roadmap reached from reckon/mcp.py:2275 and reckon/serve.py:1865, reckon/mcp_discovery.py:330\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: both halves of the goal are in the landed diff: reckon/serve.py:2106 sets plan[\"blockers\"] = len(state[\"blocking\"]) so the synthesized persisted placeholder is counted, and reckon/roadmap.py:3028 passes category=\"lifecycle\" to the roadmap's orphaned-blocked-status finding, while reckon/roadmap.py:1583 makes category a keyword-only parameter defaulting to dag so every other finding keeps its category.\nSCORE evidence: 17\nJUSTIFICATION evidence: the reviewed manifest records the literal gate command over the new file and the six named files with head '93 passed in 36.94s' EXIT=0 and base arm '2 failed, 91 passed in 31.08s' EXIT=1 (gate-head.log, gate-base.log), and negative-control.log '2 failed, 1 passed' EXIT=1 on the same two ids, which is the done_when's zero-added-failure delta measured; the gap is the ruff receipt, which is a manifest claim with no log path in test_logs to re-read.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff b60e0b947..6297f5c49 lists four files \u2014 reckon/serve.py, reckon/roadmap.py, tests/test_the_served_count_and_the_orphan_rule_read_the_assembly.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-count-and-the-orphan-rule-read-the-assembly.html \u2014 all inside the declared write paths, with the declared docs/figures/ directory unused and no plan edit.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_served_count_and_the_orphan_rule_read_the_assembly.py:163 fails if plan[\"blockers\"] counts the recorded list again (base arm reddens it by name) and :187 fails if the orphan finding keeps the dag category, both independently of the value the test supplies, although the released-plan case at :205 passes at base and guards only the pre-existing exemption.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/roadmap.py:1583 adds a keyword-only parameter with the existing value as its default and reckon/serve.py:2106 changes one expression at the call site, matching the surrounding comment-then-assign idiom of reckon/serve.py:2103, with no plan, ticket or version identifier in the changed names or comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and consumes roadmap.plan_blocker_state (reckon/roadmap.py:1223), recorded_blockers and roadmap._finding (reckon/roadmap.py:1571), the owners the repository already has, and a search over reckon/ for another assembled-blocker count found only reckon/mcp_views.py:_blocking, which this node was not scoped to route and recorded under outside_scope.\nFINDING reckon/roadmap.py:3024 non-blocking: with the roadmap's orphan copy now in category lifecycle, reckon/mcp.py:3223 still emits its own orphaned-blocked-status in category lifecycle with a different message, and the audit's merge dedupes on (code, slug, message), so a stored-blocked plan with no recorded blocker is reported twice in one category between this node and its sibling; the worker records this under outside_scope as the section's other node, but the landed state alone doubles a finding a reader of the audit acts on.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T171240691523-the-served-count-and-the-orphan-rule-read-the-assembly/gate-head.log:1 non-blocking: the head arm's revision header names b60e0b94707de619d18d41ac8cbf4f4f84775968 rather than the head sha 6297f5c49, so the log alone cannot be told apart from a run at base; this review re-ran the same gate at 6297f5c4976b with the import resolved to the reviewed tree and reproduced 93 passed EXIT=0 (review-head-arm.log).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T171240691523-the-served-count-and-the-orphan-rule-read-the-assembly/manifest.md:artifacts non-blocking: the done_when requires ruff check and ruff format --check to add no findings, and the record states 19 vs 19 and clean in artifacts with no log path among test_logs, so that receipt cannot be re-read the way the pytest arms can.",
+  "review_run_id": "r-20261024T172521061717-review-of-the-served-count-and-the-orphan-rule-read-the-assembly-6297f5c4976b",
+  "reviewed_base_sha": "b60e0b94707de619d18d41ac8cbf4f4f84775968",
+  "reviewed_head_sha": "6297f5c4976b023dfd9f86550b6720c9c3737636",
+  "reviewed_run_id": "r-20261024T171240691523-the-served-count-and-the-orphan-rule-read-the-assembly",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T17:40:00+00:00",
+  "total": 115
+}
