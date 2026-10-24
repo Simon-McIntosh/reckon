@@ -1959,17 +1959,26 @@ def stopped_with_terminal_manifest(pointer: Mapping[str, Any]) -> bool:
     Liveness is read through :func:`local_liveness`, so a pointer recorded on
     another host answers "not proven" and keeps protecting its paths rather than
     being read as dead from a process table that never issued its pid.
+
+    The manifest is read through :func:`_manifest_freshness`, which pairs the
+    file with the pointer's ``manifest_baseline_mtime_ns``: a run resumed or
+    redispatched after its predecessor delivered leaves that predecessor's
+    terminal manifest at the same path until it writes its own, and reading the
+    status alone would treat the earlier attempt's verdict as this attempt's
+    delivery. A manifest older than the current attempt's baseline is not
+    terminal here.
     """
     from reckon.crew.recovery_liveness import local_liveness
     from reckon.crew.reports import TERMINAL_MANIFEST_STATUSES, parse_manifest
+    from reckon.crew.runs import _manifest_freshness
 
     alive, proven = local_liveness(pointer)
     if not proven or alive is not False:
         return False
-    manifest_value = str(pointer.get("manifest_path") or "")
-    if not manifest_value:
+    present, fresh = _manifest_freshness(pointer)
+    if not present or not fresh:
         return False
-    manifest = Path(manifest_value)
+    manifest = Path(str(pointer.get("manifest_path") or ""))
     try:
         status = str(
             parse_manifest(
@@ -1979,7 +1988,7 @@ def stopped_with_terminal_manifest(pointer: Mapping[str, Any]) -> bool:
         )
     except (OSError, ValueError):
         return False
-    return status.strip() in TERMINAL_MANIFEST_STATUSES
+    return status.strip().lower() in TERMINAL_MANIFEST_STATUSES
 
 
 def refuse_widen_scope_conflicts(

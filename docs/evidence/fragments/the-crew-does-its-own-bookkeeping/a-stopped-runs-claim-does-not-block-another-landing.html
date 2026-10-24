@@ -13,7 +13,10 @@
   <code>_raise_repository_scope_conflict</code> is unchanged, so a dispatch over the same paths
   still refuses. Stoppedness is read at the acceptance from
   <code>local_liveness(pointer)</code> (host-gated) and from the peer's own manifest through
-  <code>parse_manifest</code>, never from a field kept on the pointer.</p>
+  <code>parse_manifest</code>, never from a field kept on the pointer. The manifest is read
+  through the repository's own <code>_manifest_freshness</code> pairing with the pointer's
+  <code>manifest_baseline_mtime_ns</code>, so a predecessor's terminal manifest left at the
+  same path by a resumed or redispatched attempt is not read as this attempt's delivery.</p>
 
   <p id="a-stopped-runs-claim-does-not-block-another-landing-reproduction"><strong>The refusal,
   reproduced before the repair.</strong> A temporary crew home held two stopped runs with
@@ -27,20 +30,26 @@
   succeeded; the reproduction is only valid once both runs record the same repository root.</p>
 
   <p id="a-stopped-runs-claim-does-not-block-another-landing-measure"><strong>Measure.</strong>
-  <code>tests/test_a_stopped_runs_claim_does_not_block_another_landing.py</code>, <strong>4
+  <code>tests/test_a_stopped_runs_claim_does_not_block_another_landing.py</code>, <strong>5
   passed</strong>: a stopped peer with a <code>complete</code> manifest admits the acceptance and
   the landing row names <code>{run_id: r-stopped-peer, claim: declared-b.txt}</code>; a peer whose
   process is alive is refused; a peer whose process ended with an <code>in-progress</code> manifest
-  is refused; a dispatch over the stopped peer's path raises <code>ScopeConflict</code>. Each case
-  re-reads the peer's pointer file and finds it byte-identical. Head gate over the new file and the
-  twenty named neighbour files: <strong>361 passed, EXIT=0</strong>.</p>
+  is refused; a peer whose <code>complete</code> manifest predates its current attempt's
+  <code>manifest_baseline_mtime_ns</code> is refused; a dispatch over the stopped peer's path
+  raises <code>ScopeConflict</code>. Each case re-reads the peer's pointer file and finds it
+  byte-identical. Head gate over the new file and the twenty named neighbour files:
+  <strong>361 passed, EXIT=0</strong> (re-run on the review round below).</p>
 
   <p id="a-stopped-runs-claim-does-not-block-another-landing-negative-control"><strong>Declared
-  negative control, executed and logged.</strong> With
-  <code>stopped_with_terminal_manifest</code> returning <code>False</code> — every live claim
-  treated as protecting — the stopped-peer case is refused with the D12 dispatch wording
-  (<em>“write scope 'declared-b.txt' conflicts with live claim … held by run 'r-stopped-peer'”</em>)
-  and the file reports <strong>1 failed, 3 passed, EXIT=1</strong>, the failure being
-  <code>test_stopped_peer_claim_is_recorded_on_the_acceptance</code>. Log:
-  <code>negative_control.log</code> in the run directory.</p>
+  negative control, executed and logged.</strong> With the manifest read without the freshness
+  rule (<code>present, fresh = True, True</code>) the stale-manifest case is admitted and the file
+  reports <strong>1 failed, 4 passed, EXIT=1</strong>, the failure being
+  <code>test_manifest_from_a_previous_attempt_still_refuses</code>. The earlier control, with
+  <code>stopped_with_terminal_manifest</code> returning <code>False</code> and every live claim
+  treated as protecting, refused the stopped-peer case with the D12 dispatch wording (<em>“write
+  scope 'declared-b.txt' conflicts with live claim … held by run 'r-stopped-peer'”</em>) and
+  reported <strong>1 failed, 4 passed, EXIT=1</strong> on
+  <code>test_stopped_peer_claim_is_recorded_on_the_acceptance</code>. Logs:
+  <code>negative_control.log</code> and <code>negative_control_freshness.log</code> in the run
+  directory.</p>
 </section>

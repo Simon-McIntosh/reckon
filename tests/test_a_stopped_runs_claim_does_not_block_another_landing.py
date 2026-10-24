@@ -275,6 +275,38 @@ def test_ended_peer_without_a_terminal_manifest_still_refuses(
     assert peer_record() == peer_before
 
 
+def test_manifest_from_a_previous_attempt_still_refuses(
+    repository: Path, tmp_path: Path
+) -> None:
+    _, ours_head = build_pair(
+        repository, tmp_path, peer_pid=dead_pid(), peer_status="complete"
+    )
+    stale = json.loads(peer_record())
+    manifest = Path(stale["manifest_path"])
+    # A resumed attempt writes a baseline after its predecessor's delivery, so
+    # the terminal manifest still sitting at this path belongs to the run that
+    # came before and is not this attempt's verdict.
+    stale["manifest_baseline_mtime_ns"] = manifest.stat().st_mtime_ns + 1_000_000_000
+    _write_json(pointer_path(PEER), stale)
+    peer_before = peer_record()
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            *complete_arguments(ours_head),
+            "--accept-path",
+            ACCEPTED,
+            "companion of a peer whose manifest predates its attempt",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert PEER in result.output
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(OURS).is_file()
+    assert peer_record() == peer_before
+
+
 def test_a_dispatch_over_the_stopped_peers_path_still_refuses(
     repository: Path, tmp_path: Path
 ) -> None:
