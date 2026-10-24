@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="520">
+<meta name="plan-version" content="521">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -1373,6 +1373,9 @@
 </div>
 <div class="r-comment" data-section="s56" data-id="c-close-s56" data-who="reckon-build" data-when="2026-10-24T10:35:00Z">
     <div class="r-comment-body"><p>§56 landed at merge <code>9baa2155d</code>. Every composition is stored as its tree and shape's last snapshot, and a read past its reserve answers from it, marked stale. The population adds 0 failures. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s56">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s56" data-id="c-live-s56" data-who="reckon-build" data-when="2026-10-24T10:40:00Z">
+    <div class="r-comment-body"><p>Live measurement after §45 and §56 landed, on 2026-10-24 at <code>2b9cc79a2</code> (<code>~/.cache/reckon-raid/live-timing-after-s45-s56.log</code>). Two fresh processes each made two in-process <code>reckon.mcp._roadmap(project="reckon")</code> calls: 96.8 s then 25.6 s, and 40.8 s then 19.5 s. The 96.8 s call rebuilt the ledger index under its new version-named file, which happens once per host. The node-local cache now holds a snapshot file, 1.08 MB, written while the fleet was busy. Under §50's settled-key rule none was ever written. These are composition times. Through the MCP tool, a read still composing at its deadline less the reserve now answers from that snapshot, marked stale, instead of timing out.</p></div>
 </div>
 <div class="r-comment" data-section="s57" data-id="c-run-r-20261024T063452012608-review-of-one-cache-owns-a-plan-files-parse-161083d24362" data-who="reckon-build" data-when="2026-10-24T06:48:09.466Z">
     <div class="r-comment-body"><p>review-of-one-cache-owns-a-plan-files-parse-161083d24362 — parsed review of r-20261024T060654985930-one-cache-owns-a-plan-files-parse at 9608e78d5..161083d24362, scores goal_fidelity 19 / evidence 18 / scope_discipline 19 / durability 17 / fit 18 / reuse 5, 0 added failures (base and after suites both record failure_ids []), two non-blocking findings (a stale plan_text store in file_memo.content_digest, and file_memo.content_digest duplicating metadata_index._content_digest)</p></div>
