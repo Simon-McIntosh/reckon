@@ -29,6 +29,16 @@
     </tbody>
   </table>
   <p>Declared decision: the index row compared here is the row the index's builder produces, because <code>ROW_FIELDS</code> is the index endpoint's declared payload shape and <code>tests/test_metadata_index_survives_restart.py</code> pins it, so the narrowing sits at the store boundary. <code>path</code> is a <code>Path</code>, which the persisted row could not carry.</p>
+  <h3 id="one-reader-owns-each-row-repair">Repair round</h3>
+  <p>The first landing read plan state through <code>read_state_and_text_file</code> without checking that the candidate existed. That reader answers an absent file with an empty parse rather than raising, so a plan kept at the docs root or in <code>docs/plans/archive</code> read as <code>('', None)</code>: reproduced at <code>454795d4</code> against an archive-only plan whose base answer is <code>('archive', 5.5)</code>. Each candidate is now stat'ed before it is parsed, and the regex head fallback fills a copy so it cannot write into the memoised parse a later reader receives (a <code>read_only_region</code> hands out a read-only view, where that write would raise). Two cases join the file: both other plan locations, and a fallback that leaves the memoised parse untouched.</p>
+  <table id="one-reader-owns-each-row-repair-measures">
+    <tbody>
+      <tr><th scope="row">Repair commit</th><td><code>7c5da81b</code></td></tr>
+      <tr><th scope="row">Repair gate</th><td>290 passed, EXIT=0</td></tr>
+      <tr><th scope="row">Repair control</th><td>the two location cases fail against <code>454795d4</code>'s <code>serve.py</code>, EXIT=1</td></tr>
+      <tr><th scope="row">Shared-parse case</th><td>passes at <code>454795d4</code> too — <code>memoized</code> hands out a per-call copy outside a read-only region — so the copy is required only for the region handout, not for the plain path</td></tr>
+    </tbody>
+  </table>
 </article>
 </body>
 </html>
