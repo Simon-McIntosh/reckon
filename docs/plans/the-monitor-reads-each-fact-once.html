@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -195,13 +195,13 @@
     three live runs, with <code>recovery.classify_pointer</code> and the liveness probe counted through patches:
     a tick where nothing changed classifies no run; a tick where one run's pointer or stream moved classifies
     exactly that run, once; a tick where only one run's manifest moved classifies exactly that run, once; a tick where a run's resume writes a new <code>resume-1.jsonl</code> beside its original stream classifies that run; a run launched on this node whose worker exits while every file stays still reads its new verdict on the next
-    tick, while a run launched on another node is reclassified only when its files move, its liveness being read by
-    the station on its own node; a working run silent past its stall window reads <code>stalled</code> without any file moving, and one whose silence a pause reason explains reads <code>waiting</code>; and the liveness probe is called only for runs whose pointer's
+    tick, while a run launched on another node is never probed, so its verdict moves only with its files or its stall
+    clock, its liveness being read by the station on its own node; a working run silent past its stall window reads <code>stalled</code> without any file moving, and one whose silence a pause reason explains reads <code>waiting</code>; and the liveness probe is called only for runs whose pointer's
     <code>launcher_host</code> is this node, so a run launched on another host is classified without a probe.
     Negative controls: an ingest that ignores the stored offset must fail the bytes test; one that drops the
     carried fold state must fail the equality test on a stream whose rate depends on earlier records; a tick
     that classifies every run on every pass must fail the unchanged-tick count; a change key on the pointer
-    and stream alone must fail the manifest-only tick; a change key on <code>_classification_inputs</code> alone must fail the resume tick; a station without the quiet-beat reading must fail
+    and stream alone must fail the manifest-only tick;  a station without the quiet-beat reading must fail
     the exited-worker and stall cases; and an ingest without the tail anchor must fail the case where a stream is truncated and rewritten past its
     consumed offset between two ticks.</p>
     <p>This section is the next to edit <code>reckon/crew/station_store.py</code>, so it also takes the four non-blocking findings of §5's review. It deletes <code>store_at_runtime_root</code> and <code>default_store</code>, which have no caller and duplicate <code>StationStore.at_runtime_root</code>. It closes each day-file connection it opens: <code>sqlite3.Connection</code>'s context manager commits but does not close. And it replaces the assertion in <code>tests/test_the_station_store_is_node_local.py</code> that compares two outputs of the store with one against the fixture's three pointer paths. Done when, beside the measures above, <code>git grep -n "def store_at_runtime_root\|def default_store" reckon/</code> returns nothing, a test counts the store's open file descriptors before and after writing 50 events and finds them equal, and the replaced assertion compares the incremental store's pointer paths with the fixture's three paths.</p>
