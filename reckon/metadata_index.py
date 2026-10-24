@@ -377,6 +377,22 @@ def invalidate_tree(docs_dir: Path) -> None:
         _MARKS.pop(root, None)
 
 
+_COVERED_SUFFIXES = (".html", *_FIGURE_SUFFIXES)
+
+
+def _may_be_covered(name: str) -> bool:
+    """Whether a file name could be covered, decided from the name alone.
+
+    The walk visits every entry in a directory and most of them are not
+    covered, so it rejects by suffix before it builds a path or resolves one
+    against the docs root. The suffixes here are the ones
+    :func:`covered_name` accepts, so this is a rejection that can never drop a
+    file the rule would keep.
+    """
+
+    return name.endswith(_COVERED_SUFFIXES)
+
+
 def covered_name(relative: str) -> bool:
     """Whether a docs-relative path is one the index builds a row for.
 
@@ -385,14 +401,12 @@ def covered_name(relative: str) -> bool:
     this same rule to decide which of them the index can absorb.
     """
 
+    if not _may_be_covered(relative):
+        return False
     if relative.endswith(".html"):
         return True
     parts = PurePosixPath(relative).parts
-    return (
-        len(parts) > 1
-        and parts[0] == _FIGURE_DIR
-        and relative.endswith(_FIGURE_SUFFIXES)
-    )
+    return len(parts) > 1 and parts[0] == _FIGURE_DIR
 
 
 def mark_tree_paths(docs_dir: Path, change: TreeChange) -> None:
@@ -1046,6 +1060,8 @@ def _walk_covered(
                         pending.append(entry.path)
                         continue
                 except OSError:
+                    continue
+                if not _may_be_covered(entry.name):
                     continue
                 path = Path(entry.path)
                 try:

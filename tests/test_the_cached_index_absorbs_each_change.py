@@ -35,6 +35,9 @@ case it names must fail against:
 * ``RECKON_TEST_INDEX_COVERAGE_DRIFT`` widens ``covered_name`` to accept a
   ``.png`` anywhere, which the walk then follows — the drift the one rule
   exists to prevent.
+* ``RECKON_TEST_INDEX_NO_SUFFIX_PRECHECK`` removes the walk's suffix rejection,
+  so every entry in a scanned directory is resolved against the docs root
+  before it is judged.
 """
 
 from __future__ import annotations
@@ -66,6 +69,7 @@ _DROP_ON_SLOW = "RECKON_TEST_INDEX_DROP_ON_SLOW"
 _DROP_ON_STREAM_WAKE = "RECKON_TEST_INDEX_DROP_ON_STREAM_WAKE"
 _WHOLESALE_RELOAD = "RECKON_TEST_INDEX_WHOLESALE_RELOAD"
 _COVERAGE_DRIFT = "RECKON_TEST_INDEX_COVERAGE_DRIFT"
+_NO_SUFFIX_PRECHECK = "RECKON_TEST_INDEX_NO_SUFFIX_PRECHECK"
 _CONTROLS = (
     _DROP_ON_BURST,
     _IGNORE_HTML,
@@ -77,6 +81,7 @@ _CONTROLS = (
     _DROP_ON_STREAM_WAKE,
     _WHOLESALE_RELOAD,
     _COVERAGE_DRIFT,
+    _NO_SUFFIX_PRECHECK,
 )
 
 _GIT_ENV = {
@@ -218,6 +223,9 @@ def _armed_controls(monkeypatch, request):
             "covered_name",
             lambda relative: relative.endswith(".png") or real_name(relative),
         )
+
+    if _NO_SUFFIX_PRECHECK in armed:
+        monkeypatch.setattr(metadata_index, "_may_be_covered", lambda name: True)
 
 
 @pytest.fixture()
@@ -747,12 +755,14 @@ def test_a_change_folded_into_an_absorbing_write_still_fires(
 
 
 def test_the_walk_covers_exactly_what_the_rule_accepts(tree) -> None:
-    """The walk and ``covered_name`` answer the same question the same way.
+    """The walk returns exactly the covered set, checked against a literal.
 
     A tree with HTML at depth, a figure image below the top-level figures
-    directory, an image outside it and a file neither rule covers. The walk
-    must return every covered file and nothing else, and the rule must accept
-    every file the walk returned, so the two cannot drift apart.
+    directory, an image outside it and a file the rule does not cover. The walk
+    must return every covered file and nothing else. The expected set is
+    written out rather than computed with the rule, because the walk decides
+    coverage by that same rule: an expectation derived from it would hold for
+    any mutation of it and could not fail.
     """
 
     docs, _repo = tree
@@ -770,7 +780,50 @@ def test_the_walk_covers_exactly_what_the_rule_accepts(tree) -> None:
         "notes/alpha.html",
         "notes/beta.html",
         "notes/inner/gamma.html",
-    }, "the walk's covered set is not the set the rule accepts"
-    assert all(metadata_index.covered_name(relative) for relative in walked), (
-        "the walk returned a file the rule does not cover"
+    }, "the walk returned a set the rule does not accept, or missed one it does"
+
+
+def test_a_non_covered_entry_is_rejected_before_its_path_is_built(tree) -> None:
+    """A file the rule rejects costs a suffix check, not a resolved path.
+
+    A marked directory such as the state tree is re-scanned on absorbing reads,
+    and it holds mostly JSON the index does not cover. Every such entry used to
+    be resolved against the docs root before it was judged, on the warm path
+    this section exists to make cheap, so the walk now rejects by suffix first.
+    The spy records every path the walk resolves; no rejected file may appear,
+    and the covered files must all be there, so the rejection cannot be a
+    filter that drops work as well as cost.
+    """
+
+    docs, _repo = tree
+    (docs / "state" / "reckon" / "runs").mkdir(parents=True)
+    for index in range(4):
+        (docs / "state" / "reckon" / "runs" / f"run{index}.json").write_text(
+            "{}", encoding="utf-8"
+        )
+
+    resolved: list[str] = []
+
+    class _Recording(Path):
+        def relative_to(self, other, *args, **kwargs):
+            resolved_path = super().relative_to(other, *args, **kwargs)
+            resolved.append(resolved_path.as_posix())
+            return resolved_path
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(metadata_index, "Path", _Recording)
+        files, directories = metadata_index._walk_covered(docs)
+
+    covered = {relative for relative, _ in files}
+    walked_directories = {relative for relative, _ in directories}
+
+    assert covered == {
+        "figures/plot.svg",
+        "notes/alpha.html",
+        "notes/beta.html",
+        "notes/inner/gamma.html",
+    }
+    assert not any(path.endswith(".json") for path in resolved), (
+        "a path was resolved for an entry the rule rejects"
     )
+    assert set(resolved) <= covered | walked_directories
