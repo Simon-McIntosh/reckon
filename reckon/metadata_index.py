@@ -1383,7 +1383,13 @@ def _row_for(
     """
 
     if path.suffix in _FIGURE_SUFFIXES:
-        return _figure_index_row(path, docs_dir, project, signature, stamp), None, None
+        row = _figure_index_row(path, docs_dir, project, signature, stamp)
+        if row is None:
+            return None, None, None
+        # A figure row is derived whole by ``figures``; the index stores and
+        # serves its declared shape, so the narrowing happens here, at the
+        # boundary, rather than inside the builder of the row.
+        return {field: row[field] for field in ROW_FIELDS if field in row}, None, None
     return _resource_row(path, docs_dir, project, signature, stamp)
 
 
@@ -1699,14 +1705,15 @@ def _figure_index_row(
     signature: list[int],
     stamp: StampFn,
 ) -> dict | None:
-    """Return one figure's index row, built by :func:`reckon.figures.figure_row`.
+    """Return one figure's index row: the figures row plus the index-only fields.
 
-    The builder owns every field a figure row derives from its path, so a
-    title, a kind, a dimension or a href is derived once for both the index and
-    the Figures inventory. This adds only what the index alone carries — the
-    file's ``created`` and ``edited`` stamps, its ``revision``, and the empty
-    ``status``, ``sprint`` and ``archived`` a figure row serves — and projects
-    the result onto :data:`ROW_FIELDS`.
+    :func:`reckon.figures.figure_row` owns every field a figure row derives from
+    its path — the same builder the Figures inventory reads — so the index takes
+    that row whole rather than rebuilding it and adds only what the index alone
+    carries: the file's ``created`` and ``edited`` stamps, its ``revision``, and
+    the empty ``status``, ``sprint`` and ``archived`` a figure row serves. What
+    the index endpoint serves is :data:`ROW_FIELDS`, applied where the row is
+    stored.
     """
 
     row = figures.figure_row(path, docs_dir, project)
@@ -1723,7 +1730,7 @@ def _figure_index_row(
             "revision": _figure_revision(path),
         }
     )
-    return {field: row[field] for field in ROW_FIELDS if field in row}
+    return row
 
 
 def _stat_stamps(path: Path, signature: list[int]) -> tuple[int, str]:

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="One reader owns each figure row and each plan parse">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s52">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <title>One reader owns each figure row and each plan parse — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="one-reader-owns-each-row-landing" data-node="one-reader-owns-each-row" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="one-reader-owns-each-row-title">One reader owns each figure row and each plan parse</h2>
+  <p><code>reckon.figures.figure_row</code> now renders the <code>dims</code> string beside the numeric width and height, so a figure's row is derived whole in one place. <code>figure_rows</code> narrows that row to the shape the Figures inventory serves, and <code>metadata_index._figure_index_row</code> takes the builder's row as-is and adds only the comment status fields, the stamps and the revision. Over the 537 figures under <code>docs/figures</code>, the index row carried none of <code>caption</code>, <code>dims</code>, <code>download</code>, <code>for_plan</code> or <code>path</code> before this change and carries all of them at equal values now. The index endpoint's declared <code>ROW_FIELDS</code> shape is applied where the row is stored rather than inside the row builder.</p>
+  <p><code>serve._crew_plan_state</code> reads a referenced plan's parse from <code>_plan_html.read_state_and_text_file</code>, which owns and memoises it, keeping the regex head fallback for a plan that declares neither sprint nor effort. <code>_read_crew_plan_state</code> is deleted, so a plan the memoised reader has already parsed is opened no second time by a crew row read.</p>
+  <table id="one-reader-owns-each-row-measures">
+    <tbody>
+      <tr><th scope="row">Reproduction at base</th><td><code>test_the_index_figure_row_carries_every_key_figures_gives</code> fails with <code>assert not {'caption', 'dims', 'download', 'for_plan', 'path'}</code>; <code>test_a_crew_plan_read_opens_no_parsed_plan_again</code> fails with the plan opened once</td></tr>
+      <tr><th scope="row">Head arm</th><td>284 passed, EXIT=0</td></tr>
+      <tr><th scope="row">Base arm</th><td>285 passed, 2 failed — exactly the two new cases, EXIT=1</td></tr>
+      <tr><th scope="row">Negative control</th><td>index row projected inside <code>_figure_index_row</code> and <code>_crew_plan_state</code> opening the plan itself: 2 failed, EXIT=1, ids the head arm passes</td></tr>
+    </tbody>
+  </table>
+  <p>Declared decision: the index row compared here is the row the index's builder produces, because <code>ROW_FIELDS</code> is the index endpoint's declared payload shape and <code>tests/test_metadata_index_survives_restart.py</code> pins it, so the narrowing sits at the store boundary. <code>path</code> is a <code>Path</code>, which the persisted row could not carry.</p>
+  <h3 id="one-reader-owns-each-row-repair">Repair round</h3>
+  <p>The first landing read plan state through <code>read_state_and_text_file</code> without checking that the candidate existed. That reader answers an absent file with an empty parse rather than raising, so a plan kept at the docs root or in <code>docs/plans/archive</code> read as <code>('', None)</code>: reproduced at <code>454795d4</code> against an archive-only plan whose base answer is <code>('archive', 5.5)</code>. Each candidate is now stat'ed before it is parsed, and the regex head fallback fills a copy so it cannot write into the memoised parse a later reader receives (a <code>read_only_region</code> hands out a read-only view, where that write would raise). Two cases join the file: both other plan locations, and a fallback that leaves the memoised parse untouched.</p>
+  <table id="one-reader-owns-each-row-repair-measures">
+    <tbody>
+      <tr><th scope="row">Repair commit</th><td><code>7c5da81b</code></td></tr>
+      <tr><th scope="row">Repair gate</th><td>290 passed, EXIT=0</td></tr>
+      <tr><th scope="row">Repair control</th><td>the two location cases fail against <code>454795d4</code>'s <code>serve.py</code>, EXIT=1</td></tr>
+      <tr><th scope="row">Shared-parse case</th><td>passes at <code>454795d4</code> too — <code>memoized</code> hands out a per-call copy outside a read-only region — so the copy is required only for the region handout, not for the plain path</td></tr>
+    </tbody>
+  </table>
+</article>
+</body>
+</html>
