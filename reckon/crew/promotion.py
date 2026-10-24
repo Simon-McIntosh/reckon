@@ -1842,6 +1842,36 @@ def discard_spool_path(run_id: str) -> Path:
     return discard_spool_dir() / f"{run_id}.json"
 
 
+def preserve_discard_record(run_id: str) -> str | None:
+    """Copy a run directory's discard marker into the shared spool.
+
+    A discard records its departure in the run's own directory when there is
+    one, but the run directory is not always a run's: an admission pass hands a
+    queued request's directory to the shared launch path, whose refusal rollback
+    removes it. The marker written there goes with it, the restore then reads no
+    discard, and the request an operator discarded is written back queued. So
+    the pass copies the marker into the shared spool before the directory is
+    handed over, where a reader finds it after the directory is gone.
+
+    Nothing is copied when no marker is present — a request nobody discarded has
+    no departure to preserve — and an existing spool marker is left as it is,
+    because the spool record is the one written when the run had no directory
+    and is the older account of the same departure.
+    """
+    marker = discard_record_path(run_id)
+    spool = discard_spool_path(run_id)
+    try:
+        if spool.is_file() or not marker.is_file():
+            return None
+        payload = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    _write_json(spool, payload)
+    return str(spool)
+
+
 def discard_recorded(run_id: str) -> bool:
     """Whether a deliberate discard has been recorded for this run.
 

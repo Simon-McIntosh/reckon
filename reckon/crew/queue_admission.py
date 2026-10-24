@@ -226,6 +226,15 @@ def _launch_queued(
     # to re-publish under its own identity.
     with contextlib.suppress(FileNotFoundError):
         runs.pointer_path(str(pointer["run_id"])).unlink()
+    # An operator may discard the request this pass is holding, and the launch
+    # below hands the request's run directory to the shared dispatch path, whose
+    # refusal rollback removes it. A discard marker already in that directory
+    # would be removed with it, leaving the restore to write back a request
+    # nobody holds any more, so the departure is copied to the shared spool
+    # first — durable whatever the launch does to the directory.
+    from reckon.crew.promotion import preserve_discard_record
+
+    preserve_discard_record(str(pointer["run_id"]))
     config = (
         config_for(pointer) if config_for is not None else _resolve_lane_config(pointer)
     )
