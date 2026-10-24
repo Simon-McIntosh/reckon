@@ -1578,9 +1578,10 @@ def _finding(
     *,
     slug: str | None = None,
     extra: dict[str, Any] | None = None,
+    category: str = "dag",
 ) -> dict[str, Any]:
     result: dict[str, Any] = {
-        "category": "dag",
+        "category": category,
         "code": code,
         "severity": severity,
         "message": message,
@@ -3011,7 +3012,9 @@ def _build_roadmap(
                 )
         # A plan whose recorded hold has cleared is released, not orphaned: its
         # blocker resource exists and carries the clear, so the status has an
-        # explanation even though no live blocker remains.
+        # explanation even though no live blocker remains. The finding is about
+        # the plan's lifecycle rather than its wiring, so it carries the
+        # lifecycle category, which is the one the audit's readers group by.
         if (
             status == "blocked"
             and not recorded_blockers(plan)
@@ -3023,6 +3026,7 @@ def _build_roadmap(
                     "warn",
                     f"{slug}: persisted blocked status has no recorded blocker",
                     slug=slug,
+                    category="lifecycle",
                 )
             )
 

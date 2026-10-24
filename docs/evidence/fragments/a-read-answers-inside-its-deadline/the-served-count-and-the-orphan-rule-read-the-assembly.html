@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s60">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <title>The served count and the orphan rule read the assembly | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-served-count-and-the-orphan-rule-read-the-assembly-landing" data-node="the-served-count-and-the-orphan-rule-read-the-assembly" data-reckon="landed" data-when="2026-10-24">
+  <h2>The served count reads the assembled blocker list, and the orphan rule speaks in lifecycle</h2>
+  <p id="the-served-count-and-the-orphan-rule-read-the-assembly-count">A plan stored <code>blocked</code> with no recorded blocker row is held by a wait nothing has written down. <code>roadmap.plan_blocker_state</code> assembles that state and synthesizes a <code>persisted</code> placeholder so the plan does not read open, but the served view counted only the rows <code>recorded_blockers</code> returns. The plan therefore reported <code>effective_status</code> <strong>blocked</strong> beside <code>blockers</code> <strong>0</strong>: a reader of the count saw no wait at all. Reproduced before the change on a temporary project — <code>effective_status: blocked</code>, <code>blocking: []</code>, <code>blockers count: 0</code>.</p>
+  <p id="the-served-count-and-the-orphan-rule-read-the-assembly-fix"><code>reckon/serve.py</code> now counts the assembled list, <code>len(state["blocking"])</code>, at the call site, so the placeholder is in the count while <code>plan["blocking"]</code> still publishes the recorded rows — the list the audit reads to ask whether a blocked status has an explanation. Counting the placeholder there instead would have hidden the finding this node's other half reports.</p>
+  <p id="the-served-count-and-the-orphan-rule-read-the-assembly-orphan">The roadmap's <code>orphaned-blocked-status</code> finding now carries the <strong>lifecycle</strong> category rather than the <code>dag</code> default that <code>roadmap._finding</code> gave every finding it built. The category is a keyword argument with the old default, so every other roadmap finding keeps <code>dag</code>, and the orphan rule keeps its released-plan exemption: a stored-blocked plan whose cleared blocker a probe released has no live hold and is not orphaned. Before the change the same probe reported the finding with <code>category: "dag"</code>.</p>
+  <p id="the-served-count-and-the-orphan-rule-read-the-assembly-evidence"><code>tests/test_the_served_count_and_the_orphan_rule_read_the_assembly.py</code> builds a temporary project in a temporary home — <code>RECKON_HOME</code> covering the configuration home, the crew home and the cache, plus <code>RECKON_STATE_ROOT</code> and <code>RECKON_MOUNTS_PATH</code> — with one plan stored blocked and nothing recorded, and one plan stored blocked whose held blocker a probe cleared. It holds that the first reports a non-zero served count while its recorded list stays empty, that the roadmap reports exactly one orphaned finding for it in category <code>lifecycle</code>, and that the released plan gets none and counts zero.</p>
+  <p id="the-served-count-and-the-orphan-rule-read-the-assembly-gate">The head gate over the new file with <code>tests/test_mcp_audit.py</code>, <code>tests/test_roadmap.py</code>, <code>tests/test_cleared_hold_releases_a_blocked_plan.py</code>, <code>tests/test_the_served_view_reads_the_roadmaps_blockers.py</code>, <code>tests/test_page_paints_from_the_index.py</code> and <code>tests/test_every_module_fits_a_worker_window.py</code> reads <strong>93 passed</strong> (<code>EXIT=0</code>). The base arm, the same command over the same test files in a scratch archive of <code>b60e0b947</code>, reads <strong>2 failed, 91 passed</strong> (<code>EXIT=1</code>), the two failures being this node's own count and category tests, so both halves discriminate. Under the declared negative control — counting the recorded list again, and restoring the <code>dag</code> category — the new file reads <strong>2 failed, 1 passed</strong> (<code>EXIT=1</code>) on the same two test ids. <code>ruff check</code> reads 19 findings over the two product paths against 19 at base, and <code>ruff format --check</code> is clean: no added findings.</p>
+</article>
+</body>
+</html>
