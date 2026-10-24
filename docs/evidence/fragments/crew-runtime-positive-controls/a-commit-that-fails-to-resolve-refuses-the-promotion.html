@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A commit that fails to resolve refuses the promotion rather than being dropped">
+  <meta name="plan-summary" content="Choosing the revision a promotion asserts no longer drops a citation the resolver could not answer for. The resolver gains an opt-in strict mode that raises on a timeout or a failure to start git and returns the empty string only for a revision that names no commit; the chooser uses it, so a citation that names nothing refuses the promotion naming it and the tree it was read in, instead of leaving it out of the comparison and promoting among the rest. The single-citation and no-citation shortcuts that returned a citation as written are gone.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A commit that fails to resolve refuses the promotion rather than being dropped | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A commit that fails to resolve refuses the promotion rather than being dropped</h1>
+
+    <section id="a-commit-that-fails-to-resolve-refuses-the-promotion-anchor">
+      <h2>What changed</h2>
+      <p><code>_resolve_commit</code> in
+        <code>reckon/crew/recovery_review_subject.py</code> gains an opt-in
+        <code>strict</code> mode. A git that ran out of its ten-second bound or
+        could not be started raises a <code>CrewError</code> naming the
+        revision and the tree, because there the instrument failed rather than
+        the citation naming nothing; only a query that ran and reported the
+        revision as naming no commit still answers the empty string. Every
+        existing caller reduces the answer to a truth value or an optional id
+        and does not opt in, so its behaviour is unchanged — in particular
+        <code>reports._commit_resolves_in</code> and
+        <code>promotion_evidence._commit_canonical_id</code>, which read the
+        same function through their own wrappers.</p>
+      <p><code>_descendant_commit</code> in <code>reckon/crew/promotion_scope.py</code>
+        now resolves every citation strictly before it takes part in the
+        comparison, and refuses the promotion naming the citation and the run's
+        tree when one names no commit. That closes the defect the incident on
+        2026-10-23 exposed: an unresolved citation was dropped, the remaining
+        citations agreed on an earlier tip, and the promotion recorded that tip
+        as the revision the run reached. The two branches that returned a
+        citation that had not resolved — the single-entry shortcut that
+        returned the text as written, and the last-entry fallback for a list in
+        which none resolved — are gone. A presentation whose citations have no
+        single descendant is still refused as before.</p>
+      <p>Gate: <code>tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py</code>
+        — 8 passed, 0 failed at <code>587bd5f60</code>. The fixture is a
+        temporary repository with a linear chain of four commits, a run
+        worktree at the fourth and a record citing all four; every case runs the
+        real <code>crew complete</code> path, and the injected fault fires only
+        inside <code>_descendant_commit</code>, so each case states the
+        disagreement it is about: the citation resolved when the landing check
+        read it and did not when the revision was chosen. Cases: the fourth
+        commit is promoted when every citation resolves; a timeout on the
+        fourth refuses, naming it and stating the resolver timed out, with no
+        promoted revision recorded; the refusal for a citation that names no
+        commit is worded differently from the timeout refusal; the strict
+        resolver still answers empty for a revision naming no commit; a
+        citation that stops resolving at the choice refuses rather than being
+        dropped; a single citation and a list none of whose citations resolve
+        are each refused naming the citation. An autouse guard searches the
+        operator's real crew home for the run ids this module mints before and
+        after every case.</p>
+      <p>Population of test files importing <code>reckon/crew/promotion_scope.py</code>,
+        <code>reckon/crew/recovery_review_subject.py</code>, or any module under
+        <code>reckon/</code> naming <code>_resolve_commit</code> — 15 modules at
+        the dispatched base, 569 test files, found with
+        <code>grep -rln '_resolve_commit' reckon/</code> and recorded in the run
+        directory — run with <code>-n 8</code> from git exports under the run's
+        scratch. Baseline <code>c1473d669</code>: 67 failed, 5047 passed,
+        1 skipped, 8 errors, <code>EXIT=1</code>. Head <code>587bd5f60</code>:
+        66 failed, 5056 passed, 1 skipped, 8 errors, <code>EXIT=1</code>. The
+        base is red, so the measure is the delta: three ids fail at head and not
+        at base, all in the watch/follower family this change does not touch —
+        <code>test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch</code>,
+        <code>test_crew_session_delivery.py::test_a_scoped_follower_receives_only_the_runs_its_session_dispatched</code>
+        and <code>test_follow_observes_other_sessions.py::test_a_follower_without_observed_sessions_behaves_exactly_as_today</code>
+        — and each of the three passes when re-run alone in the head tree
+        (3 passed in 8.19s), so they are load-dependent and not this change's.
+        Four ids fail at base and not at head, from the same family.
+        <code>tests/test_every_module_fits_a_worker_window.py</code> at head:
+        4 passed, <code>EXIT=0</code>.</p>
+      <h2>Negative controls</h2>
+      <p>Each applied alone to the head tree and run under pytest with the
+        default short summary; the log is <code>negative-control.log</code>
+        under the run directory.</p>
+      <ul>
+        <li>Restoring the empty-string answer for a timeout in the strict
+          resolver: <code>1 failed, 7 passed</code>,
+          <code>EXIT=1</code> — the timeout case fails.</li>
+        <li>Restoring the drop of an unresolved entry in
+          <code>_descendant_commit</code>: <code>2 failed, 6 passed</code>,
+          <code>EXIT=1</code> — the names-nothing-at-choice case and the
+          wording case fail.</li>
+        <li>Restoring the single-citation shortcut that returns the citation as
+          written: <code>1 failed, 7 passed</code>, <code>EXIT=1</code> — the
+          single-commit case fails.</li>
+      </ul>
+      <h2>What this does not do</h2>
+      <p>The land's own comparison of the revision it merges against the head of
+        the run's worktree is a separate section, so a promotion that is
+        reached with a correct revision still merges it without that check.</p>
+    </section>
+  </main>
+</body>
+</html>
