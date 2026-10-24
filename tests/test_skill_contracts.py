@@ -531,8 +531,18 @@ def test_worker_protocol_owns_the_backend_independent_contract() -> None:
 # always len(NODE_PROPERTIES); this map is only the presentation conversion to
 # the word form the documents use ("all eight hold", not "all 8 hold").
 _CARDINAL_WORDS = {
-    1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six",
-    7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven", 12: "twelve",
+    1: "one",
+    2: "two",
+    3: "three",
+    4: "four",
+    5: "five",
+    6: "six",
+    7: "seven",
+    8: "eight",
+    9: "nine",
+    10: "ten",
+    11: "eleven",
+    12: "twelve",
 }
 
 
@@ -988,7 +998,9 @@ def test_ship_persists_the_dag_build_section_classification() -> None:
 def test_ship_ticks_a_landed_section_as_done() -> None:
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
 
-    assert "After ticking a section, its `section_declarations` entry reads `done`" in ship
+    assert (
+        "After ticking a section, its `section_declarations` entry reads `done`" in ship
+    )
     assert "records a landed node, not completion" in ship
     assert "and tick it too" in ship
 
@@ -1025,7 +1037,10 @@ def test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer() -> None:
     # its evidence anchor -- and never the shared index, sprint state or another
     # plan.
     assert "Workers author their own landing record in the same beat" in ship
-    assert "Write your landing record to your own fragment path and never to the plan: your evidence anchor to your scope's fragment under docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:` line in your manifest in place of a plan edit." in reference
+    assert (
+        "Write your landing record to your own fragment path and never to the plan: your evidence anchor to your scope's fragment under docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:` line in your manifest in place of a plan edit."
+        in reference
+    )
     assert "Never mutate the shared project index, sprint state" in ship
     assert "Never mutate the shared project index, sprint state" in reference
 
@@ -1202,7 +1217,7 @@ def _registered_leaf_paths(
     return [
         leaf
         for name, sub in sorted(commands.items())
-        for leaf in _registered_leaf_paths(sub, path + (name,))
+        for leaf in _registered_leaf_paths(sub, (*path, name))
     ]
 
 
@@ -1312,7 +1327,14 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         },
         ("crew", "placement"): {"--ensure", "--session", "--project"},
         ("crew", "recover"): set(),
-        ("crew", "repair"): {"--run", "--status", "--review", "--record", "--set", "--reason"},
+        ("crew", "repair"): {
+            "--run",
+            "--status",
+            "--review",
+            "--record",
+            "--set",
+            "--reason",
+        },
         ("crew", "resume"): {
             "--run",
             "--advice",
@@ -1486,7 +1508,11 @@ def _producer_follower_paragraphs() -> list[str]:
     raw = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     section = raw.split("One producer for the project, one follower", 1)[1]
     section = section.split("Concurrency", 1)[0]
-    return [normalized(paragraph) for paragraph in section.split("\n\n") if paragraph.strip()]
+    return [
+        normalized(paragraph)
+        for paragraph in section.split("\n\n")
+        if paragraph.strip()
+    ]
 
 
 def test_the_session_host_paragraph_precedes_the_fallback_rearm_guidance() -> None:
@@ -1765,7 +1791,10 @@ def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
     assert "reckon sync" not in ship
     # A refusal the caller cannot read is indistinguishable from silence.
     assert "answers with a json document on stdout" in ship
-    assert '"error": "dispatch-refused"' in (ROOT / "reckon" / "crew_dispatch_commands.py").read_text()
+    assert (
+        '"error": "dispatch-refused"'
+        in (ROOT / "reckon" / "crew_dispatch_commands.py").read_text()
+    )
     assert "commit the plan before dispatching" in ship
     assert "before creating a worktree" in ship
     assert "`--no-watch`" in ship
