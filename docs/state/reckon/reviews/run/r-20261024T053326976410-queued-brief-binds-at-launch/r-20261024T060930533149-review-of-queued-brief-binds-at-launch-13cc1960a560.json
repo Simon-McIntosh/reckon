@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted",
+    "tests/test_the_fleet_gate_holds_dispatch.py::test_review_reflex_holds_and_admits_under_the_fleet_gate"
+  ],
+  "completed_at": "2026-10-24T06:26:13.968Z",
+  "dispatched_at": "2026-10-24T06:10:21Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T053326976410-queued-brief-binds-at-launch/manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "summary": "the after_suite block records the -n 8 arm's seven failure ids while the delta-zero result the evidence fragment reports comes from the serial arm (gate-head-delta-serial.log, five ids, the same five as base), so the summary and the machine-read block disagree; promotion computes added = after - base = the two ids the manifest attributes as scaffolding, so this node lands only with a waiver or with the serial arm recorded as after_suite."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 552,
+      "severity": "non-blocking",
+      "summary": "the steering copy freezes a composed run review's brief, because a dispatch whose brief is the reviewed run's review-brief.md now copies those bytes into the queued request's steering.md and the launch's materialize_run_review_brief returns False for that name, so a review queued after a previous review left review-brief.md names the head the file carried at queue time rather than the head the reviewed tree carries now, which is the stale-brief case tests/test_a_review_receives_its_rubric.py:398 exists to prevent."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 552,
+      "severity": "non-blocking",
+      "summary": "_write_steering duplicates the read-bytes, mkdir and write-bytes copy that reckon/crew/dispatch_admission.py:2241 _store_brief owns, rather than extending it, so two places now decide how a brief's bytes reach a run directory; the import direction forces the helper's home in runs.py and the remedy is for _store_brief to delegate to it."
+    },
+    {
+      "file": "tests/test_queue_steering_binding.py",
+      "line": 172,
+      "severity": "non-blocking",
+      "summary": "the six arms never exercise the skip at reckon/crew/runs.py:574 for a brief source already inside the request's own run directory, nor the OSError refusal at runs.py:585, so a regression deleting either is caught by no test."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a queued request's brief binds at launch from steering.md in its own run directory; reckon/crew/runs.py:685 writes that file from the dispatch brief under the request's resolved id, and reckon/crew/queue_admission.py:215 rebinds node.brief and node.brief_path to it inside _launch_queued, and reckon/crew/dispatch_plan.py:832 then recomputes brief_sha256 from node.brief_path, so the digest covers the launch-time file.\nVERDICT done_when: the done_when names six arms in a new tests/test_queue_steering_binding.py; all six exist at lines 172, 190, 220, 250, 280 and 309, and the manifest records them as 6 passed in the gate log and 2 of them red under the declared negative control.\nVERDICT write_paths: the manifest declares seven write paths; git diff --stat 560465a09..13cc1960a shows four changed files, reckon/crew/queue_admission.py, reckon/crew/runs.py, tests/test_queue_steering_binding.py and the evidence fragment, all inside them, with reckon/crew/dispatch.py, reckon/crew/dispatch_admission.py and the figures directory declared but not written.\nVERDICT manifest: read; it records commits 1fb4be137, 6f2781c94 and 13cc1960a, both suite blocks with node ids, the negative control and its two red arms, the scaffolding attribution for the two extra parallel-arm failures, and a note that crew check --manifest could not resolve the run for lack of a live pointer.\nVERDICT diff: read commit by commit against the base; 1fb4be137 adds STEERING_FILE, _write_steering and its call in queue_dispatch plus _steering_brief and the rebind in _launch_queued with the new test module, 6f2781c94 makes the queue-time copy tolerate an unreadable source, and 13cc1960a changes three lines of the evidence fragment alone, so no production code differs between the 6f2781c94 head arm and the reviewed head.\nCALL_SITES: reckon/crew/runs.py:queue_dispatch, reckon/crew/dispatch.py:_answer_existing_node_run, reckon/crew/dispatch.py:1657 dispatch, reckon/crew/dispatch.py:_launch_yielded_queued_request, reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:_await_moved_launch\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:205-220 rebinds the node to the steering file before dispatch() and dispatch_plan.py:832 re-digests node.brief_path, so the recorded digest is the launch-time text the plan asks for.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_queue_steering_binding.py covers all six done_when arms and both arms' logs open with revision, tree and command and close with EXIT=, but the manifest's after_suite block names gate-head.log's seven-id parallel arm while the delta-zero claim rests on gate-head-delta-serial.log's five, so promotion's set difference reads two added failures.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff --stat 560465a09..13cc1960a is one of the manifest's declared write paths, and the change carries nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control.log shows the declared mutation of reckon/crew/queue_admission.py:215-219 turning tests/test_queue_steering_binding.py:220 and :250 red while the other four pass, and each of those two asserts a digest computed in the test from its own literal text; the is_relative_to skip at runs.py:574 and the OSError refusal at runs.py:585 are unexercised.\nSCORE fit: 19\nJUSTIFICATION fit: STEERING_FILE and _write_steering at reckon/crew/runs.py:108 and :552 are mechanism names with no plan, stage or ticket reference, and the docstrings state the mechanism rather than the plan item.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/runs.py:552 re-implements the byte-copy that reckon/crew/dispatch_admission.py:2241 _store_brief already owns for a brief destined for a run directory, though the fixed-name, never-overwrite, mutable authority file it writes has no prior owner and dispatch_admission.py:66 imports runs, so reuse in place would be a cycle.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T053326976410-queued-brief-binds-at-launch/manifest.md:18 non-blocking: the after_suite block records the -n 8 arm's seven failure ids while the delta-zero result the evidence fragment reports comes from the serial arm (gate-head-delta-serial.log, five ids, the same five as base), so the summary and the machine-read block disagree; promotion computes added = after - base = the two ids the manifest attributes as scaffolding, so this node lands only with a waiver or with the serial arm recorded as after_suite.\nFINDING reckon/crew/runs.py:552 non-blocking: the steering copy freezes a composed run review's brief, because a dispatch whose brief is the reviewed run's review-brief.md now copies those bytes into the queued request's steering.md and the launch's materialize_run_review_brief returns False for that name, so a review queued after a previous review left review-brief.md names the head the file carried at queue time rather than the head the reviewed tree carries now, which is the stale-brief case tests/test_a_review_receives_its_rubric.py:398 exists to prevent.\nFINDING reckon/crew/runs.py:552 non-blocking: _write_steering duplicates the read-bytes, mkdir and write-bytes copy that reckon/crew/dispatch_admission.py:2241 _store_brief owns, rather than extending it, so two places now decide how a brief's bytes reach a run directory; the import direction forces the helper's home in runs.py and the remedy is for _store_brief to delegate to it.\nFINDING tests/test_queue_steering_binding.py:172 non-blocking: the six arms never exercise the skip at reckon/crew/runs.py:574 for a brief source already inside the request's own run directory, nor the OSError refusal at runs.py:585, so a regression deleting either is caught by no test.",
+  "review_run_id": "r-20261024T060930533149-review-of-queued-brief-binds-at-launch-13cc1960a560",
+  "reviewed_base_sha": "560465a09476d7064ab602f9734bfcaa8e2c57fc",
+  "reviewed_head_sha": "13cc1960a560e8168a3415071d64aa86ce06e6ab",
+  "reviewed_run_id": "r-20261024T053326976410-queued-brief-binds-at-launch",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T06:20:56.538297+00:00",
+  "total": 101
+}
