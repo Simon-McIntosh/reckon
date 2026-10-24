@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 10,
+  "added_failure_ids": [
+    "tests/test_page_paints_from_the_index.py::test_a_reported_change_refreshes_the_served_index",
+    "tests/test_page_paints_from_the_index.py::test_a_served_revalidation_keeps_the_derived_flow_drawn",
+    "tests/test_page_paints_from_the_index.py::test_the_crew_view_refreshes_the_schedule_from_its_own_route",
+    "tests/test_page_paints_from_the_index.py::test_two_change_streams_recompute_discovery_once",
+    "tests/test_project_state.py::test_concurrent_recovery_readers_restore_once_without_errors",
+    "tests/test_project_state.py::test_concurrent_same_resource_writers_have_one_winner",
+    "tests/test_project_state.py::test_concurrent_sprint_status_updates_both_succeed",
+    "tests/test_project_state.py::test_static_build_writes_projection_without_touching_canonical_index",
+    "tests/test_roadmap_endpoints.py::test_graph_endpoint_rows_equal_the_project_roadmap_rows",
+    "tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order"
+  ],
+  "call_sites": [
+    "reckon/serve.py:1739 _derive_lifecycle from the served plan route",
+    "reckon/serve.py:1808 _derive_lifecycle from the served plan list",
+    "reckon/mcp_views.py:1229 _derive_lifecycle from the MCP inventory view",
+    "reckon/roadmap.py:1515 dependency_row_state into a dependency row's status",
+    "reckon/mcp.py:1818 dependency_row_state into the MCP dependency row's status"
+  ],
+  "completed_at": "2026-10-24T11:15:31.050Z",
+  "dispatched_at": "2026-10-24T10:57:05Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-view-reads-the-roadmaps-blockers.html",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "non-blocking: the paragraph says the workflow-status precedence now has one spelling and only roadmap._status's body carries it, but reckon/followup_pointers.py:117 (_host_complete) still spells the same workflow_status-or-status precedence; the dedup of reckon/serve.py:2093 is real and the worked point stands, the 'only' claim does not."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T060459639539-the-served-view-reads-the-roadmaps-blockers/manifest.md",
+      "line": 13,
+      "severity": "non-blocking",
+      "text": "non-blocking: retry_failures says the topbar case 'passed ... in the final head gate', but logs/head-suite-final.log ends EXIT=1 and lists FAILED tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order; the manifest's own after_suite and artifacts record that failure, so the field contradicts the log it cites."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-view-reads-the-roadmaps-blockers.html",
+      "line": 25,
+      "severity": "non-blocking",
+      "text": "non-blocking: the cited head arm (logs/head-suite-final.log) carries 11 failures, and reckon.crew.review.added_failures_from_gate_logs reduces the base/head pair to 10 added ids, of which the node's own logs/head-suite-rerun.log clears 9 at the same head; only the worktree-local browser case survives, so the derived added_failure_count of 10 overstates a change that added no code-caused failure \u2014 the topbar case is worktree-local and the coordinator's to adjudicate."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "The two commits gained since the review at f3ef1412 were read commit by commit: 5541be6fc changes reckon/serve.py:2093 to _status(plan) and adds the statusless dependency-row case; e52897014 corrects the fragment's ruff count to 19 and rewrites the rule and gate paragraphs.",
+    "done_when": "The done_when requires the parity file, a parity negative control, and base and head gate logs each naming a revision and ending EXIT=; the manifest records base-suite.log (368 passed, 5 failed, EXIT=1) and head-suite-final.log (revision 5541be6fc, EXIT=1 at its last line), and the gained commit adds logs/negative-control-dependency-row.log, which shows the new case failing under the reinstated inline precedence.",
+    "goal": "The node goal is the served view taking each plan's blockers from the roadmap's assembly (section 51); the two gained commits close the previous review's two defects instead: reckon/serve.py:2093 now calls roadmap._status rather than spelling the precedence, and tests/test_the_served_view_reads_the_roadmaps_blockers.py:230 pins the statusless dependency-row default.",
+    "manifest": "Read; it records status complete, the parity file green at 7 public tests, the four declared controls, both gate logs with their EXIT lines, and the retry_failures note, which contradicts head-suite-final.log as a finding records.",
+    "write_paths": "The node's declared write paths are reckon/serve.py, reckon/roadmap.py, tests/test_the_served_view_reads_the_roadmaps_blockers.py and the evidence fragment; the gained diff touches only reckon/serve.py, the test file and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "The assertion at tests/test_the_served_view_reads_the_roadmaps_blockers.py:242 compares against the literal 'draft' and reddens at EXIT=1 when the inline precedence is reinstated, per logs/negative-control-dependency-row.log.",
+    "evidence": "The gate logs are recorded and reduce to a readable delta, but head-suite-final.log's 11 failures yield 10 added ids of which 9 clear only on the node's separate rerun, so the evidence is real but not a clean measure.",
+    "fit": "Importing the private _status follows the existing import at reckon/graph_target.py:326, and no name in the diff carries a plan or ticket label.",
+    "goal_fidelity": "Both defects the previous review named are closed in the gained diff against the reviewed head: reckon/serve.py:2093 delegates to roadmap._status and the new case at the test file guards the dependency row.",
+    "reuse": "The change deletes the last copy of the precedence in the served view and calls its owner, roadmap._status at reckon/roadmap.py:626; no added definition forks a capability the repository owns.",
+    "scope_discipline": "The gained diff changes only the three files listed and all three sit inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T105457670991-review-of-the-served-view-reads-the-roadmaps-blockers-e528970146db",
+  "reviewed_base_sha": "f3ef141205c3a5474c12430dad361464d9e33e4e",
+  "reviewed_head_sha": "e528970146db92e2533d56dea1d935ff10ea4887",
+  "reviewed_run_id": "r-20261024T060459639539-the-served-view-reads-the-roadmaps-blockers",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T11:17:25.476631+00:00",
+  "total": 108
+}
