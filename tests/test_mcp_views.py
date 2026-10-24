@@ -273,6 +273,50 @@ def test_typed_plan_defaults_to_small_human_summary(setup):
     assert compact_size(response_without_provenance) <= compact_size(raw) * 0.60
 
 
+def test_a_gated_decision_states_its_hold_beside_the_open_ones(setup):
+    """A decision held by a transition edge must not read as a plainly open one.
+
+    A gated decision waits for an edge rather than for the whole plan, so it
+    raises no blocker; the list a reader acts on is ``open_decisions``, and that
+    is where its status has to appear.
+    """
+
+    docs_dir, project = setup
+    path = _plan(docs_dir, "readable")
+
+    from reckon._plan_html import read_state, write_state
+
+    state = read_state(path.read_text(encoding="utf-8"))
+    state["gates"] = [
+        {
+            "id": "lock-open-choice",
+            "transition": "decision-lockable",
+            "decision": "open-choice",
+            "verdict": "",
+            "status": "open",
+        }
+    ]
+    path.write_text(
+        write_state(path.read_text(encoding="utf-8"), state),
+        encoding="utf-8",
+    )
+
+    result = mcp_module._read_plan(
+        resource={"project": project, "type": "plan", "id": "readable"}
+    )
+
+    assert result["open_decisions"] == [
+        {
+            "key": "open-choice",
+            "question": "Choose a route",
+            "options": ["a", "b"],
+            "status": "gated",
+        }
+    ]
+    assert result["blocking"] == []
+    assert result["state"]["effective_status"] == "active"
+
+
 def test_version_view_returns_only_identity_and_concurrency_token(setup):
     docs_dir, project = setup
     _plan(docs_dir, "readable")

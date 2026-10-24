@@ -2502,17 +2502,36 @@ def _paged_findings(
 
 
 def _open_decisions(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Decisions a reader can act on, with the status that holds each one.
+
+    A decision that records a choice is settled and is left out. What remains is
+    published by key, question and options, and — when the roadmap holds it
+    rather than leaving it plainly open — the status that holds it, so a gated
+    or deferred decision does not read like an open one. A plainly open decision
+    states no status, which is what makes the field worth reading: its presence
+    is the news. A plan-level gated decision raises no blocker, so the blocker
+    list is not where a reader can see it.
+    """
+
+    from reckon.roadmap import _decision_rows
+
+    held = {
+        str(row.get("id") or ""): str(row.get("status") or "")
+        for row in _decision_rows(data)
+        if row.get("status") in {"gated", "deferred"}
+    }
     decisions: list[dict[str, Any]] = []
     for key, value in (data.get("decisions") or {}).items():
         if not isinstance(value, dict) or value.get("choice"):
             continue
-        decisions.append(
-            {
-                "key": key,
-                "question": value.get("title", ""),
-                "options": list(value.get("choices") or []),
-            }
-        )
+        entry = {
+            "key": key,
+            "question": value.get("title", ""),
+            "options": list(value.get("choices") or []),
+        }
+        if held.get(key):
+            entry["status"] = held[key]
+        decisions.append(entry)
     return decisions
 
 
@@ -2579,10 +2598,11 @@ def _assembled_blocking(state: Mapping[str, Any]) -> list[Any]:
     placeholder standing for a stored blocked status — keeps its row and is told
     apart by its ``kind``.
 
-    An open decision is the exception: the summary publishes its question,
-    status and choice under ``open_decisions``, so listing the same fields again
-    here would only grow the payload. The blocker list carries a reference to
-    the decision instead, and the roadmap keeps publishing the full row. The
+    An open decision is the exception: the summary publishes its question and
+    options under ``open_decisions`` (and, when a transition edge or a recorded
+    rationale holds it, the status that holds it), so listing the same fields
+    again here would only grow the payload. The blocker list carries a reference
+    to the decision instead, and the roadmap keeps publishing the full row. The
     reference names no plan because every plan-level hold in this list belongs
     to the plan the summary is about, which the ``resource`` block already
     names — the same reason an explicit blocker is published as a bare id.
