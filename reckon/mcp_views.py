@@ -2575,15 +2575,33 @@ def _assembled_blocking(state: Mapping[str, Any]) -> list[Any]:
     A reader of the summary already knows two row shapes: an explicit blocker is
     its bare id, and a resolved dependency is a ``ref``/``found``/``status`` row.
     Those stay as they were, so a summary pinned on them does not change, and
-    every other hold the assembly reports — a held path, an unpassed gate, an
-    open decision, the placeholder standing for a stored blocked status — keeps
-    its row and is told apart by its ``kind``.
+    every other hold the assembly reports — a held path, an unpassed gate, the
+    placeholder standing for a stored blocked status — keeps its row and is told
+    apart by its ``kind``.
+
+    An open decision is the exception: the summary publishes its question,
+    status and choice under ``open_decisions``, so listing the same fields again
+    here would only grow the payload. The blocker list carries a reference to
+    the decision instead, and the roadmap keeps publishing the full row. The
+    reference names no plan because every plan-level hold in this list belongs
+    to the plan the summary is about, which the ``resource`` block already
+    names — the same reason an explicit blocker is published as a bare id.
     """
+
+    decision_reference = ("kind", "id")
 
     published: list[Any] = []
     for row in state.get("blocking") or []:
         if not isinstance(row, Mapping):
             published.append(row)
+        elif row.get("kind") == "decision":
+            published.append(
+                {
+                    key: row[key]
+                    for key in decision_reference
+                    if row.get(key) is not None
+                }
+            )
         elif row.get("kind") == "explicit":
             if row.get("id"):
                 published.append(row.get("id"))
