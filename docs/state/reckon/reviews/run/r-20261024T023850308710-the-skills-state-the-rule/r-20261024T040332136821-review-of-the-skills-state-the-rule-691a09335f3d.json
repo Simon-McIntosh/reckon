@@ -1,0 +1,52 @@
+{
+  "added_failure_basis": "set difference, after_suite.failure_ids minus baseline_suite.failure_ids from the reviewed run's own manifest: base 7a6cd07ca6b93427cc5383a78ef52fd4e62b1993 recorded 2 failures and head 691a09335f3d97e537536b274a7c4809a3569ccb recorded the same 2 (tests/test_skill_contracts.py::test_review_skill_is_discovered_beside_the_other_reckon_skills, tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt); gate-base.log and gate-head.log each end EXIT=1 with those ids, so the empty difference is read from the logs",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-10-24T04:12:15.792Z",
+  "dispatched_at": "2026-10-24T04:07:02Z",
+  "findings": [
+    {
+      "anchor": "tests/test_skill_contracts.py:137",
+      "id": "shared-walk-control-renaming-claim",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new comment at tests/test_skill_contracts.py:137 says the shared walk's control 'refuses an empty or renamed tree', but tests/test_skills_name_no_host_path.py:34-39 only asserts the walk is non-empty and that some file is named SKILL.md; a renamed skill directory beside any surviving SKILL.md passes it, so the comment credits a control with a guarantee only the separate six-path read in test_every_skill_teaching_continuation_names_the_two_names actually provides."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 none: the delta is test-only and documentation-only, so no runtime code reaches it.",
+    "diff": "pass \u2014 read commit by commit: 487cd07a9 replaces the forked walk with the owner's import and deletes the duplicate control (+4/-19 in tests/test_skill_contracts.py); 691a0933 refreshes the fragment's walk sentence and head figures (+8/-2).",
+    "done_when": "pass \u2014 the done_when asks for zero added failures against base; gate-head.log at 691a0933 records 75 passed / 2 failed against gate-base.log's 68 passed / 2 failed, the same two ids, so zero added.",
+    "goal": "pass \u2014 the two gained commits fold the prior review's reuse finding: tests/test_skill_contracts.py:17 imports the owner's _skill_files from tests/test_skills_name_no_host_path.py and the forked helper and duplicate control are deleted.",
+    "manifest": "pass \u2014 read; it records status complete, six commits ending at 691a0933, both suite arms with node-id failure ids, and the skills and source negative-control logs.",
+    "write_paths": "pass \u2014 the delta touches only tests/test_skill_contracts.py and docs/evidence/fragments/additional-work-is-a-section/the-skills-state-the-rule.html, both inside the node's declared write paths."
+  },
+  "justifications": {
+    "durability": "the retired-term scan still reddens on a planted term (negative-control-skills.log, EXIT=1 naming test_no_skill_file_names_the_retired_deferred_work_term) and test_every_skill_teaching_continuation_names_the_two_names still reads the six paths directly, though the deleted local control's specific six-file assertion is not restated in the shared walk.",
+    "evidence": "gate-head.log at 691a0933 ends '2 failed, 75 passed' and EXIT=1 against gate-base.log's '2 failed, 68 passed', the same two node ids, so the zero-added claim is read from the logs rather than claimed.",
+    "fit": "the cross-test-module import at tests/test_skill_contracts.py:17 follows an established idiom in this suite and adds no plan, sprint or ticket label.",
+    "goal_fidelity": "tests/test_skill_contracts.py:17 imports the owner's _skill_files and the forked copy plus its duplicate control are deleted, which is exactly the prior review's reuse finding folded.",
+    "reuse": "the delta removes the duplicate and consumes tests/test_skills_name_no_host_path.py:30 as the single owner of the skills-tree walk.",
+    "scope_discipline": "the two gained commits touch only tests/test_skill_contracts.py (+4/-19) and docs/evidence/fragments/additional-work-is-a-section/the-skills-state-the-rule.html (+8/-2), both declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the two gained commits fold the prior review's reuse finding; tests/test_skill_contracts.py:17 imports _skill_files from tests/test_skills_name_no_host_path.py and the forked helper and its duplicate control are deleted.\nVERDICT done_when: the done_when asks for zero added failures against base; gate-head.log at 691a0933 records 75 passed / 2 failed against gate-base.log's 68 passed / 2 failed, the same two ids, so zero added.\nVERDICT write_paths: the delta touches only tests/test_skill_contracts.py and docs/evidence/fragments/additional-work-is-a-section/the-skills-state-the-rule.html, both inside the node's declared write paths.\nVERDICT manifest: read; it records status complete, six commits ending at 691a0933, both suite arms with node-id failure ids, and the skills and source negative-control logs.\nVERDICT diff: read commit by commit \u2014 487cd07a9 replaces the forked walk with the owner's import and deletes the duplicate control (+4/-19 in tests/test_skill_contracts.py), 691a0933 refreshes the fragment's walk sentence and head figures (+8/-2).\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_skill_contracts.py:17 imports the owner's _skill_files and the forked copy plus its duplicate control are deleted, which is exactly the prior review's reuse finding folded.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log at 691a0933 ends '2 failed, 75 passed' and EXIT=1 against gate-base.log's '2 failed, 68 passed', the same two node ids, so the zero-added claim is read from the logs rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two gained commits touch only tests/test_skill_contracts.py (+4/-19) and docs/evidence/fragments/additional-work-is-a-section/the-skills-state-the-rule.html (+8/-2), both declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-skills.log reddens the retired-term scan with a planted term (EXIT=1 naming test_no_skill_file_names_the_retired_deferred_work_term) and tests/test_skill_contracts.py:167 still reads the six paths directly, though the deleted local control's six-file assertion is not restated in the shared walk.\nSCORE fit: 19\nJUSTIFICATION fit: the cross-test-module import at tests/test_skill_contracts.py:17 follows an idiom already used across this suite and adds no plan, sprint or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta removes the duplicate walk and consumes tests/test_skills_name_no_host_path.py:30 as the single owner of that capability.\nFINDING tests/test_skill_contracts.py:137 non-blocking: the comment says the shared walk's control refuses 'an empty or renamed tree', but tests/test_skills_name_no_host_path.py:34-39 asserts only non-emptiness and any SKILL.md, so a renamed skill directory beside a surviving SKILL.md passes it.",
+  "review_run_id": "r-20261024T040332136821-review-of-the-skills-state-the-rule-691a09335f3d",
+  "reviewed_base_sha": "31764cec8bbab4607c504eb74e09cce839a83ff1",
+  "reviewed_head_sha": "691a09335f3d97e537536b274a7c4809a3569ccb",
+  "reviewed_run_id": "r-20261024T023850308710-the-skills-state-the-rule",
+  "rubric": "code-review",
+  "scope": "delta gained since the review recorded at 31764cec8: two commits, 487cd07a9 and 691a09335, touching only tests/test_skill_contracts.py and docs/evidence/fragments/additional-work-is-a-section/the-skills-state-the-rule.html",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:19:00+00:00",
+  "total": 114
+}
