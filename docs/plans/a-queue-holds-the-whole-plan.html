@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="71">
+<meta name="plan-version" content="72">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -211,6 +211,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-24T07:55:00Z">
     <div class="r-comment-body"><p>§7 landed: the picker prefers a lifted metered lane with room for elevated work and records the lift (commit <code>234aa0514</code>); review 110, negative control red. <a href="/reckon/evidence/archive/a-queue-holds-the-whole-plan-landed.html#s7">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-s12-waiting-is-not-a-duty" data-who="reckon-42" data-when="2026-10-24T09:00:00Z">
+    <div class="r-comment-body"><p><strong>Found while loading this plan's own width, 24 October 2026.</strong> Each request correctly parked <code>awaiting-upstream</code> appears on the owning session's obligations as <code>run-queued</code>, and the Stop hook refuses to end the turn until every one is acknowledged. With five requests waiting that took one acknowledgement each; with a week of queued work it would make every turn end in an acknowledgement sweep. A request waiting on an upstream that has not landed is not a duty the coordinator owes, so the obligations view should leave it out, or roll the waiting requests into one informational line, and keep only <code>blocked-upstream</code>, a refusal or an hour-long stall as obligations. A second friction, for §11: <code>crew widen</code> on a running run is refused when a request that is only queued claims the same path, although a queued request's claims are checked at launch; and a widen made while the worker process is still alive returns no error and changes nothing.</p></div>
 </div>
 </section>
 </main>
