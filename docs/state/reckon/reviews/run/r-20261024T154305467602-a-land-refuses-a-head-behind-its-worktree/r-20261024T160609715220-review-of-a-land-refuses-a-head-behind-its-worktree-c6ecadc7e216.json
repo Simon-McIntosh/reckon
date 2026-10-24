@@ -1,0 +1,25 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T16:15:22.736Z",
+  "dispatched_at": "2026-10-24T16:07:25Z",
+  "findings": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make crew complete --land refuse, before it merges, a head behind the run's worktree; reckon/crew_run_commands.py:2692-2705 reads the worktree head and refuses before merge.land runs.\nVERDICT done_when: the done_when lists three cases, a negative control, base/head population arms and ruff cleanliness; the manifest and the logs under the run directory record each, with base and head failing on the same single pre-existing id.\nVERDICT write_paths: the manifest declares reckon/crew_run_commands.py, tests/test_a_land_refuses_a_head_behind_its_worktree.py and docs/evidence/fragments/crew-runtime-positive-controls/a-land-refuses-a-head-behind-its-worktree.html; every path in the two commits is one of these.\nVERDICT manifest: read; it reports 3 cases at 3b95dc020, the negative control red, base and head arms at 1 failed/373 passed with one shared id, and names gate-head.log, base-arm.log, head-arm.log and negative-control.log.\nVERDICT diff: read both commits against 8d5f2f918; 3b95dc020 adds the pre-merge comparison and its three-case test, c6ecadc7e adds the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:2600 (_land_a_promoted_run under crew complete --land), reckon/crew/queue_landing.py:_land_once (invokes crew complete --land through _land_command), reckon/crew/merge.py:_is_ancestor and _rev_parse (reused, not redefined)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2687-2705 refuses with the reviewed head, worktree head and merge command before merge_module.land is called, matching the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log ends EXIT=0 with 7 passed, base-arm.log and head-arm.log both end EXIT=1 with the identical single failing id, and negative-control.log ends EXIT=1 on the third-commit case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only the three declared write paths; the 16 deleted lines in reckon/crew_run_commands.py are the inline resume_merge moved into _merge_command.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_land_refuses_a_head_behind_its_worktree.py:129-149 fails when the guard is removed, as negative-control.log records, and its remote assertion is independent of the input revision.\nSCORE fit: 19\nJUSTIFICATION fit: the guard follows the surrounding step-reporting idiom at reckon/crew_run_commands.py:2653-2710 and names nothing by plan, ticket or version.\nSCORE reuse: 20\nJUSTIFICATION reuse: the guard reuses reckon/crew/merge.py:_is_ancestor and _rev_parse rather than adding a second reachability definition, and no existing merge-command builder was found, so _merge_command only factors the inline construction.\n",
+  "review_run_id": "r-20261024T160609715220-review-of-a-land-refuses-a-head-behind-its-worktree-c6ecadc7e216",
+  "reviewed_base_sha": "8d5f2f918a07f4e5a34a20ccb3e2741107113196",
+  "reviewed_head_sha": "c6ecadc7e2160b43f05d21e50e4868ce03bfa7f0",
+  "reviewed_run_id": "r-20261024T154305467602-a-land-refuses-a-head-behind-its-worktree",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T16:15:40.534822+00:00",
+  "total": 115
+}
