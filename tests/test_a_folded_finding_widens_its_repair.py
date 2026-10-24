@@ -8,9 +8,12 @@ disposed as folded back into the run's own node. That finding is the run's to
 repair, and the repair resume is the only moment the boundary can be moved for
 it -- but the grant has to reach the run before the resume, because after it the
 run reads ``working`` and a widening refuses a live worker. This module covers
-that door: the fold naming the run's own node admits the widening and the grant
-names the disposition; a dimension exempted instead of folded, and a fold over a
-worker that is still running, are both refused.
+that door: the fold over a stopped worker admits the widening and the grant names
+the disposition, whatever phase or manifest status the run ended in. The
+disposition is the grant's own report, not its permission: a dimension exempted
+instead of folded, and a fold naming some other node, widen the fence without
+naming a disposition for this run, because neither leaves this run a scope
+decision. A fold over a worker that is still running is refused.
 
 The world a case reads from is synthesised inside a temporary config home: a
 live pointer whose manifest reports ``complete``, the run's own review record
@@ -345,44 +348,59 @@ def test_the_folded_grant_carries_every_other_recorded_field_unchanged(
     crew_home_watch.assert_untouched()
 
 
-def test_an_exempted_finding_does_not_widen_a_complete_run(
+def test_an_exempted_finding_does_not_name_a_disposition(
     exempted_finding_run: dict, crew_home_watch: CrewHomeWatch
 ) -> None:
-    """Only a fold sends the finding back, so only a fold moves the boundary."""
-    before = _tree_bytes(pointer_path(EXEMPTED_RUN_ID).parent)
+    """Only a fold sends the finding back, so only a fold is reported as one.
+
+    A stopped worker's fence moves whatever the run's manifest says, so the
+    exempted run widens like its folded sibling. What separates them is the
+    disposition the grant names: exempting the finding answers it here, so
+    nothing was sent back to this node and the grant reports no fold for it.
+    A reader that took the widening itself as the fold would resume this run
+    for work it does not owe.
+    """
+    before = _read_pointer(EXEMPTED_RUN_ID)
 
     result = _widen(EXEMPTED_RUN_ID, MISSING)
 
-    assert result.exit_code != 0, result.output
-    assert "in its own manifest" in result.output
-    assert MISSING not in result.output
-    assert _read_pointer(EXEMPTED_RUN_ID)["node"]["write_paths"] == [DECLARED]
-    assert _tree_bytes(pointer_path(EXEMPTED_RUN_ID).parent) == before
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["added"] == [MISSING]
+    assert payload["folded_disposition"] is None
+    after = _read_pointer(EXEMPTED_RUN_ID)
+    assert after["node"]["write_paths"] == [DECLARED, MISSING]
+    assert {key: value for key, value in after.items() if key != "node"} == {
+        key: value for key, value in before.items() if key != "node"
+    }
     crew_home_watch.assert_untouched()
 
 
-def test_a_fold_naming_another_node_does_not_widen_the_run(
+def test_a_fold_naming_another_node_names_no_disposition_for_this_run(
     folded_finding_naming_another_node: dict, crew_home_watch: CrewHomeWatch
 ) -> None:
     """A fold is this run's only when it names this run's own node.
 
-    The disposition is the same kind and answers the same dimension, so the
-    read that stops at the kind would admit this run; the finding was folded
-    into a different node, which carries it, and this run's boundary must not
-    move for work that is not its own. The refusal is asserted on the reply, on
-    the pointer's write paths and on the pointer directory's bytes, because a
-    command that refuses in name while still rewriting the record would leave a
-    coordinator believing the fence had moved.
+    The disposition is the same kind and answers the same dimension, so a read
+    that stopped at the kind would report it as this run's; the finding was
+    folded into a different node, which carries it. The widening still moves --
+    the worker is stopped, which is all the fence asks -- but the grant names no
+    disposition, because this run has no scope decision outstanding and a resume
+    driven by one would repair work that is another node's.
     """
-    before = _tree_bytes(pointer_path(ELSEWHERE_RUN_ID).parent)
+    before = _read_pointer(ELSEWHERE_RUN_ID)
 
     result = _widen(ELSEWHERE_RUN_ID, MISSING)
 
-    assert result.exit_code != 0, result.output
-    assert "in its own manifest" in result.output
-    assert MISSING not in result.output
-    assert _read_pointer(ELSEWHERE_RUN_ID)["node"]["write_paths"] == [DECLARED]
-    assert _tree_bytes(pointer_path(ELSEWHERE_RUN_ID).parent) == before
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["added"] == [MISSING]
+    assert payload["folded_disposition"] is None
+    after = _read_pointer(ELSEWHERE_RUN_ID)
+    assert after["node"]["write_paths"] == [DECLARED, MISSING]
+    assert {key: value for key, value in after.items() if key != "node"} == {
+        key: value for key, value in before.items() if key != "node"
+    }
     crew_home_watch.assert_untouched()
 
 
