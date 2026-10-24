@@ -1,12 +1,14 @@
 # ruff: noqa: I001
 from __future__ import annotations
 
+import contextlib
 import fcntl
 import os
 import re
 import shlex
 import shutil
 import socket
+import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Mapping
@@ -189,8 +191,10 @@ def _hosts_match(host: str, node: str) -> bool:
     where this producer runs, and an absent fleet record must never read as a
     foreign host.
     """
-    left = str(host or "").split(".")[0]
-    right = str(node or "").split(".")[0]
+    from reckon.crew.fleet_supervisor import _short_hostname
+
+    left = _short_hostname(str(host or ""))
+    right = _short_hostname(str(node or ""))
     return bool(left) and bool(right) and left == right
 
 
@@ -223,11 +227,15 @@ def runs_launched_on(project: str, node: str) -> list[str]:
     """
     if not node:
         return []
-    from reckon.crew.runs import list_live
+    from reckon.crew.runs import _list_live_records
 
+    # The pointers are read, not listed through ``list_live``: that one
+    # publishes the watcher stream and can start an obligations sweep, and this
+    # question is asked on every lease renewal — a misplaced producer would
+    # scan and publish the fleet every renewal to answer it.
     return [
         str(record.get("run_id") or "")
-        for record in list_live(project=project)
+        for record in _list_live_records(project=project)
         if _hosts_match(str(record.get("launcher_host") or ""), node)
     ]
 
@@ -318,6 +326,78 @@ def producer_start_decision(
             f"{node}; exiting"
         ),
     }
+
+
+# The unit-disable command and the process exit are seams rather than direct
+# calls: a test drives the producer's decision without the service manager that
+# would stop the test's own session, and records the command instead of running
+# it. Production resolves both to the real thing.
+_UNIT_DISABLE_RUNNER: Callable[[list[str]], Any] = subprocess.run
+_EXIT_PROCESS: Callable[[int], None] = sys.exit
+
+# The projects whose release this process has already announced. A producer is
+# asked the question at start-up and again on every renewal, and the answer is
+# news on the first asking only.
+_ANNOUNCED_RELEASES: set[str] = set()
+
+
+def release_watch_seat(project: str) -> bool:
+    """Give up the producer seat this process holds, and its registration.
+
+    Returns whether anything was held here to release. The record is erased
+    through the held handle before the lock is dropped, and the host lease is
+    given back, so a producer on the fleet node reads a free seat rather than a
+    foreign one whose transition stream was just written to — freshness is
+    otherwise the evidence that keeps it waiting. The descriptor is left open
+    and only unlocked: the claim that opened it closes it on the way out, and
+    closing it here would make that teardown fail on a descriptor already gone.
+    """
+    from reckon.crew import runs
+
+    handle = runs._WATCH_SEAT_HANDLES.get(project)
+    lease = runs._WATCH_HOST_LEASES.get(project)
+    released = handle is not None or lease is not None
+    with contextlib.suppress(OSError, ValueError):
+        if handle is not None:
+            _write_watch_record(handle, {})
+    with contextlib.suppress(OSError, ValueError):
+        runs.drop_watch_seat(project, handle)
+    if lease is not None:
+        lease.release()
+    return released
+
+
+def release_seat_when_misplaced(
+    project: str,
+    *,
+    host: str | None = None,
+    environ: Mapping[str, str] | None = None,
+    runner: Callable[[list[str]], Any] | None = None,
+    exit_process: Callable[[int], None] | None = None,
+) -> dict[str, Any]:
+    """Take the producer's own verdict on its seat, and act on a release.
+
+    A hold is returned to the caller, which stays at work. A release-and-exit
+    first disables the unit that would restart this producer, so a restart
+    policy cannot bring the same misplaced producer back, then gives up the
+    seat, announces the release once naming both hosts, and ends the process.
+
+    Called at start-up and on every lease renewal: a producer can be reloaded
+    onto another host after it has taken the seat, so the start-up answer alone
+    would leave that one holding a seat it cannot serve.
+    """
+    verdict = producer_start_decision(project, host=host, environ=environ)
+    if verdict["action"] != "release-and-exit":
+        return verdict
+    command = verdict["unit_disable_command"]
+    if command:
+        (runner if runner is not None else _UNIT_DISABLE_RUNNER)(command)
+    release_watch_seat(project)
+    if project not in _ANNOUNCED_RELEASES:
+        _ANNOUNCED_RELEASES.add(project)
+        print(verdict["announcement"], flush=True)
+    (exit_process if exit_process is not None else _EXIT_PROCESS)(0)
+    return verdict
 
 
 def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:

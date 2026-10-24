@@ -44,6 +44,7 @@ from reckon.crew.runs import (
 )
 from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
 from reckon.crew.watch_unit import (
+    release_seat_when_misplaced,
     seat_names_a_live_foreign_producer,
     watch_state,
 )
@@ -353,7 +354,13 @@ def _watch_registration(
     taking it the moment the claim succeeds — the foreign producer's stream
     having gone stale, or its seat released. Any other held seat is yielded as
     before, so a caller's existing handling of a watcher-live seat is unchanged.
+
+    Before any seat is claimed, the seat owner's start-up verdict is taken: a
+    producer on a host that is not the fleet record's node, whose project has a
+    run launched on that node, gives the seat up and exits rather than keeping
+    it warm while every liveness reading it publishes for that run is unknown.
     """
+    release_seat_when_misplaced(project)
     while True:
         with _project_watch_claim(project, stall_window) as (acquired, watcher):
             if acquired:

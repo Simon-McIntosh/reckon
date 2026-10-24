@@ -175,7 +175,12 @@ def test_the_real_fleet_record_and_seat_are_untouched(
     _write_run(PROJECT, RUN_ID, FLEET_NODE)
     _decision(FOREIGN_HOST, environ={watch_unit.WATCH_UNIT_ENV: UNIT})
 
-    assert real_fleet.stat().st_mtime_ns == real_fleet_before
+    # Guarded like the before-readings above: a host with no fleet record has
+    # none to have left alone, and an unguarded stat fails the test on a
+    # machine that never ran a fleet.
+    assert (real_fleet.stat().st_mtime_ns if real_fleet.exists() else None) == (
+        real_fleet_before
+    )
     assert (
         real_fleet.read_bytes() if real_fleet.exists() else None
     ) == real_digest_before

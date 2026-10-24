@@ -267,8 +267,14 @@ def _utc_now() -> str:
     return datetime.now(tz=UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
-def _short_hostname() -> str:
-    return socket.gethostname().split(".")[0]
+def _short_hostname(name: str | None = None) -> str:
+    """This host's short name, or the short form of a name given to it.
+
+    The fleet record publishes a short hostname and the decision that compares a
+    producer's host to it needs to shorten the other side the same way, so the
+    one spelling of the split lives here rather than in each caller.
+    """
+    return (socket.gethostname() if name is None else str(name)).split(".")[0]
 
 
 def log(message: str) -> None:
