@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s54">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-24">
+  <meta name="evidence-commit" content="069f4290c">
+  <title>Read the served checkout's identity from its package | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-served-code-guard-reads-the-packages-own-stamp">
+  <h2>Read the served checkout's identity from its package</h2>
+
+  <p><strong>Mechanism.</strong> The stale-code guard asks, on every MCP call,
+  whether the checkout's code has moved behind the running image.
+  <code>reckon/mcp.py:_import_root()</code> returns the checkout root
+  (<code>Path(__file__).resolve().parent.parent</code>) and
+  <code>reckon/served_code.py:moved_checkout</code> passed that root to
+  <code>checkout_trust.source_code_identity(package_dir)</code>, which
+  identifies the <em>package</em> directory and derives the source root from
+  <code>package_dir.parent</code>. The package's committed identity was
+  therefore compared against the stamp of the directory above the checkout and
+  never matched, so every checkout read as moved and the guard routed every
+  call to the served child.</p>
+
+  <p><strong>Reproduction at the base.</strong> The seven ids fail at
+  <code>dea3758c1</code> and the first failure prints the guard's own refusal:
+  <code>{"ok": false, "error": "stale_server_code", ... "code stamp 7c2e16eef187
+  to fd365f2f4ab0"}</code> for a tree that has not moved. The production
+  <code>crew</code> read measured below reports <code>moved: true</code> at the
+  base and is answered by the served child from the second call on.</p>
+
+  <p><strong>Fix.</strong> <code>moved_checkout</code> reads the identity from
+  the package inside the checkout (<code>root / "reckon"</code>), the way the
+  running stamp is read at import, so an unmoved checkout reads as unmoved. The
+  trust check is unchanged and unchanged in its argument: it already takes the
+  checkout root. One test change follows from the intended contract the
+  sibling case already documents: the persistent child is warmed by its
+  readiness probe, and a call made while it is cold is served by the running
+  image, so the clean moved-checkout case now waits for the probe before
+  asserting the answer the current code served. Its assertions are unchanged.
+  A new case asks the same guard two questions and asserts its answers: an
+  untouched committed checkout reads as unmoved, and a checkout whose package
+  a commit has changed reads as moved. The expected stamp is not recomputed
+  here — a child interpreter imports the package from the checkout and prints
+  the stamp a server records at start, so the case compares the guard's answer
+  against a stamp the guard did not produce.</p>
+
+  <p><strong>Measure: how an ordinary MCP read is answered.</strong> The same
+  <code>crew(project="reckon", view="flight")</code> read, three times in one
+  process, in a tree with no other change. <code>served-child</code> means the
+  answer carried <code>served_by_code_stamp</code>; <code>in-process</code>
+  means the image answered it.</p>
+
+  <table>
+    <thead><tr><th>call</th><th>base <code>dea3758c1</code></th><th>head <code>069f4290c</code></th></tr></thead>
+    <tbody>
+      <tr><td>state</td><td><code>moved: true</code></td><td><code>moved: false</code></td></tr>
+      <tr><td>1</td><td>in-process, 5.142 s</td><td>in-process, 0.048 s</td></tr>
+      <tr><td>2</td><td>served-child, 5.449 s</td><td>in-process, 0.021 s</td></tr>
+      <tr><td>3</td><td>served-child, 7.205 s</td><td>in-process, 0.021 s</td></tr>
+      <tr><td>child spawns</td><td>1</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Gate.</strong> The three listed files plus the new case in one
+  foreground run on the fleet node: 27 passed. The base and head arms, from
+  <code>git archive</code> extractions on node-local disk, run every test file
+  that imports <code>reckon.served_code</code> together with the listed files;
+  the head arm is two cases larger and both arms carry the same single
+  pre-existing failure.</p>
+
+  <p><strong>Negative control.</strong> Reverting only the production call —
+  the root handed to the identity check — at runtime, with the running stamp
+  already read, reddens five of the seven listed ids, the new unmoved-checkout
+  case, and one unlisted id that also failed at the base: 7 failed in one run
+  over the four gate files. Two listed ids do not redden:
+  <code>test_a_fenced_worker_edits_its_worktree_and_is_refused_on_the_main_checkout</code>
+  (in <code>tests/test_each_run_owns_its_harness_home.py</code>) and
+  <code>test_a_clean_moved_checkout_answers_on_the_current_code</code> (in
+  <code>tests/test_one_check_trusts_a_moved_checkout.py</code>). Both drive the
+  guard in a server they spawn as a subprocess, which does not inherit a
+  runtime patch applied to the parent process. Both fail at the base and pass
+  at the head, so the repair covers them; this control cannot reach into them,
+  and the run's manifest records that split rather than claiming every listed
+  id reddens.</p>
+
+  <p>Logs, under the run directory: <code>logs/base-gate-full.log</code>,
+  <code>logs/head-gate.log</code>, <code>logs/new-case-head.log</code>,
+  <code>logs/read-path-base.log</code>, <code>logs/read-path-head.log</code>,
+  <code>logs/arm-base.log</code>, <code>logs/arm-head.log</code>,
+  <code>logs/negative-control-gate.log</code>,
+  <code>logs/negative-control.log</code>.</p>
+</section>
+</main>
+</body>
+</html>
