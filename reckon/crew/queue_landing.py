@@ -13,6 +13,8 @@ from typing import Any
 from reckon.crew import recovery, runs
 from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
 
+_run_srun = subprocess.run
+
 
 def _record_attempt(run_id: str, *, head: str, guard: str, status: str) -> None:
     """Keep a refusal on the live run so another pass cannot retry silently."""
@@ -57,7 +59,7 @@ def _land(run_id: str) -> tuple[bool, str]:
     environment["PYTHONPATH"] = os.pathsep.join(
         part for part in (source, environment.get("PYTHONPATH", "")) if part
     )
-    finished = subprocess.run(
+    finished = _run_srun(
         _land_command(run_id),
         capture_output=True,
         text=True,

@@ -8,10 +8,20 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
+from reckon import cli as cli_module
 from reckon.crew import obligations, queue_admission, queue_landing, runs
 from reckon.crew import review as review_module
 from reckon.crew.recovery_review_dispatch import _dispatch_text_review_for_run
+from tests.helpers.git import git as fixture_git
+from tests.helpers.landing_repository import (
+    PLAN as LANDING_PLAN,
+)
+from tests.helpers.landing_repository import (
+    PROJECT as LANDING_PROJECT,
+)
+from tests.helpers.landing_repository import _write_origin_and_checkout
 
 PROJECT = "landing-fixture"
 SESSION = "owner"
@@ -245,7 +255,7 @@ def test_land_invokes_the_shared_path_through_the_scheduler_shim(
         captured.update(command=command, options=options)
         return subprocess.CompletedProcess(command, 0, json.dumps({"ok": True}), "")
 
-    monkeypatch.setattr(queue_landing.subprocess, "run", run)
+    monkeypatch.setattr(queue_landing, "_run_srun", run)
     assert queue_landing._land(RUN) == (True, "")
     command = captured["command"]
     assert Path(command[0]).name == "srun"
@@ -262,3 +272,89 @@ def test_land_invokes_the_shared_path_through_the_scheduler_shim(
     assert captured["options"]["env"]["PYTHONPATH"].split(":")[0] == str(
         Path(queue_landing.__file__).resolve().parents[2]
     )
+
+
+def test_accepted_delivery_uses_the_real_crew_land_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    origin, repository = _write_origin_and_checkout(tmp_path)
+    (home / "mounts.json").write_text(
+        json.dumps({LANDING_PROJECT: str(repository / "docs")}), encoding="utf-8"
+    )
+    base = fixture_git(repository, "rev-parse", "HEAD")
+    worktree = tmp_path / "worker-tree"
+    fixture_git(repository, "worktree", "add", "--detach", str(worktree), "HEAD")
+    (worktree / "reviewed.txt").write_text("accepted delivery\n", encoding="utf-8")
+    fixture_git(worktree, "add", "reviewed.txt")
+    fixture_git(worktree, "commit", "-q", "-m", "feat: deliver accepted marker")
+    head = fixture_git(worktree, "rev-parse", "HEAD")
+    gate_log = tmp_path / "gate.log"
+    gate_log.write_text(
+        f"# revision: {head}\n# tree: {worktree}\n# command: true\nEXIT=0\n",
+        encoding="utf-8",
+    )
+    manifest = tmp_path / "manifest.md"
+    manifest.write_text(
+        f"node: implementation\nstatus: complete\ncommits: [{head}]\n"
+        f"changed_paths: [reviewed.txt]\ntests: true\n"
+        f"test_logs: [{gate_log}]\n",
+        encoding="utf-8",
+    )
+    run_id = "r-20261024T090000000000-accepted-delivery"
+    runs._write_json(
+        runs.pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "project": LANDING_PROJECT,
+            "session": "owner",
+            "repo": str(repository),
+            "worktree": str(worktree),
+            "process_alive": False,
+            "launch": "in-harness",
+            "role": "implement",
+            "backend": "native",
+            "created_at": "2026-10-24T09:00:00Z",
+            "base_sha": base,
+            "manifest_path": str(manifest),
+            "node": {
+                "id": "implementation",
+                "plan": LANDING_PLAN,
+                "section": "s1",
+                "write_paths": ["reviewed.txt"],
+            },
+        },
+    )
+    review = review_module.parse_review(
+        "\n".join(
+            f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+        )
+    )
+    review.update(
+        {
+            "project": LANDING_PROJECT,
+            "reviewed_run_id": run_id,
+            "review_run_id": "review-of-accepted-delivery",
+            "reviewed_base_sha": base,
+            "reviewed_head_sha": head,
+        }
+    )
+    review_module.store_review(review)
+
+    def run_in_shim(command, **_options):
+        assert Path(command[0]).name == "srun"
+        assert command[1:3] == ["--overlap", "--ntasks=1"]
+        result = CliRunner().invoke(cli_module.main, command[6:])
+        return subprocess.CompletedProcess(command, result.exit_code, result.output, "")
+
+    monkeypatch.setattr(queue_landing, "_run_srun", run_in_shim)
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [run_id], result
+    assert fixture_git(repository, "show", "main:reviewed.txt") == "accepted delivery"
+    assert fixture_git(origin, "rev-parse", "main") == fixture_git(
+        repository, "rev-parse", "main"
+    )
+    assert not runs.pointer_path(run_id).exists()
