@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s57">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-tags" content="crew,resume,refusal,hold,sweep">
+  <title>A resumed run's fresh refusal is the hold the sweep waits on | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-re-refused-resume-waits-for-its-new-hold-landed" data-node="a-re-refused-resume-waits-for-its-new-hold" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="a-re-refused-resume-waits-for-its-new-hold-title">A resumed run's fresh refusal is the hold the sweep waits on</h2>
+  <p id="a-re-refused-resume-waits-for-its-new-hold-cause"><strong>Cause.</strong>
+  <code>sweep</code> in <code>reckon/crew/resumption.py</code> treated a pointer as a
+  resume candidate only when <code>classify_pointer</code> called it
+  <code>blocked</code>. A resume replaces the pointer's stream with the new attempt's,
+  and the classifier deliberately defers a freshly resumed attempt to that attempt's
+  own clock before it will read it as halted — its word for a run in that window is
+  <code>running</code>, with the detail <em>the run's current attempt has recorded no
+  process and no end of its own yet</em>. So an attempt that was refused again was
+  dropped by the candidate gate before <code>hold_state</code> was ever asked, and the
+  sweep reported nothing: not <code>hold-in-force</code>, not a duplicate stamp, no
+  entry at all. The one-resume-per-hold guarantee therefore held only until the next
+  attempt started.</p>
+  <p id="a-re-refused-resume-waits-for-its-new-hold-repro"><strong>Reproduction.</strong>
+  The listed id at the base revision <code>dea3758c1</code>, run from a
+  <code>git archive</code> extraction on node-local disk, fails at
+  <code>tests/test_crew_recover.py:297</code>:
+  <code>assert [] == ['hold-in-force']</code> — the second sweep's
+  <code>skipped</code> list is empty. Instrumented at the gate, the resumed pointer
+  classifies as <code>running</code> with the deferral detail quoted above, which is
+  the mechanism.</p>
+  <p id="a-re-refused-resume-waits-for-its-new-hold-fix"><strong>Fix.</strong> The gate
+  now keeps a run whose attempt's end is observed (<code>_observed_end_refusal</code>
+  answers <code>None</code>) even when the classifier has not caught up with it. The
+  refusal it judges is read from the attempt's own stream, so a refused attempt's own
+  end is exactly the evidence the hold rests on. A live process, a non-CLI launch and a
+  worker whose end nothing observed still stay out of the sweep's candidates, which is
+  what the gate was doing for those cases — the live-process case is pinned by
+  <code>tests/test_dry_run_predicts_the_launcher.py</code> and passes.</p>
+  <p id="a-re-refused-resume-waits-for-its-new-hold-test"><strong>Test change.</strong>
+  One assertion in the same file was repaired, for a reason the reproduction shows:
+  <code>test_a_stopped_run_with_no_session_anywhere_still_reads_discardable</code>
+  pinned "the advice offers no resume" with <code>"resume" not in next_action</code>,
+  and <code>next_action</code> embeds the worktree path. Under this node's own worktree
+  — a path containing <code>refused-resume</code> — the substring was found in the path
+  and the test failed with no code defect behind it; it fails that way at the base arm
+  too. The advice's own verbs are now pinned either side of the unchanged full-sentence
+  assertion, so the property is unchanged and no longer reads the filesystem path.</p>
+  <p id="a-re-refused-resume-waits-for-its-new-hold-measure"><strong>Measure.</strong>
+  Logs are under the run directory's <code>logs/</code>. Base arm (revision
+  <code>dea3758c1</code>, extraction, command literal in the manifest) over the listed
+  files plus every test file importing <code>reckon.crew.resumption</code>:
+  <code>11 failed, 235 passed</code>, the listed id among them. Head arm over the same
+  set: <code>2 failed, 244 passed</code> — both remaining failures are base-arm
+  failures too (<code>test_a_stream_past_the_window_launches</code>, which is §60's own
+  id, and the path-artifact case above), so no failure is added. The gate
+  (<code>tests/test_crew_recover.py</code>) at head: <code>21 passed</code>,
+  <code>EXIT=0</code>. Negative control, the candidate gate restored to
+  classify-alone: the listed id fails again, <code>EXIT=1</code>.</p>
+  <p id="a-re-refused-resume-waits-for-its-new-hold-commit"><strong>Landed.</strong>
+  <code>be04247c6</code> — <code>reckon/crew/resumption.py</code> and
+  <code>tests/test_crew_recover.py</code>.</p>
+</article>
+</body>
+</html>

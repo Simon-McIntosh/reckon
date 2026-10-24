@@ -823,7 +823,12 @@ def test_a_stopped_run_with_no_session_anywhere_still_reads_discardable(
     assert row["next_action"] == (
         f"inspect the worktree at {record['worktree']} and discard when safe"
     )
-    assert "resume" not in row["next_action"]
+    # The advice's own verbs are pinned either side of the worktree path it
+    # names: a substring search for "resume" over the whole sentence reads the
+    # path, and a worktree under a directory called *resume* would fail a test
+    # about the advice.
+    assert row["next_action"].startswith("inspect the worktree at ")
+    assert row["next_action"].endswith(" and discard when safe")
     assert not (_real_crew_home(monkeypatch) / "live" / f"{run_id}.json").exists()
 
 

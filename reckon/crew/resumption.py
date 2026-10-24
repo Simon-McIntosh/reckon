@@ -1866,7 +1866,19 @@ def sweep(
                 "terminated; a rewritten waiting manifest creates a new condition"
             )
         else:
-            if str(classify_pointer(pointer).get("classification") or "") != "blocked":
+            # The refusal is read from the attempt's own stream, so a run the
+            # classifier still calls something other than "blocked" can be one
+            # whose attempt has demonstrably ended: the classifier defers a
+            # freshly resumed attempt to its own clock before it will read it
+            # as halted, and gating on the word alone would skip the very
+            # refusal a resumed turn recorded. A run that has not ended — a
+            # live process, a worker whose end nothing observed — stays out of
+            # the sweep's candidates as before.
+            settled = _observed_end_refusal(pointer) is None
+            if (
+                str(classify_pointer(pointer).get("classification") or "") != "blocked"
+                and not settled
+            ):
                 continue
             entry = {"run_id": run_id, "backend": refusal.get("backend")}
             hold = hold_state(pointer, refusal, policy_block=policy_block, now=now)
