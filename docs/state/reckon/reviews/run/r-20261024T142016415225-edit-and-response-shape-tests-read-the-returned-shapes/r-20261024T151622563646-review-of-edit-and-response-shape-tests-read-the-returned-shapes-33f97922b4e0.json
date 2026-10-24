@@ -1,0 +1,85 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The manifest records no baseline_suite or after_suite arm, and gate-base.log stops mid-progress with no failing ids and no EXIT= line, so no paired delta is derivable. The head arm is readable: gate-partial.log reports 2 failures (tests/test_every_edit_path_refuses_one_shape.py::test_the_refusal_shape_is_identical_across_op_paths and tests/test_roadmap_reports_section_edges.py::test_the_gate_edge_holds_only_the_named_section) and gate-ledger-id.log shows the ledger id passing alone (EXIT=0). Both failing ids live in test files the node did not modify in 99e92fe..33f97922b, so the landed change adds no failure; the count is derived from the diff rather than from a base arm, which the evidence finding records.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp.py:396",
+    "reckon/mcp.py:2034",
+    "reckon/mcp_edit_plan.py:1793",
+    "reckon/_store.py:330",
+    "reckon/crew/query.py:392",
+    "reckon/crew/runs.py:3302"
+  ],
+  "completed_at": "2026-10-24T15:28:29.978Z",
+  "dispatched_at": "2026-10-24T15:17:51Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 23,
+      "text": "blocking: baseline_suite and after_suite are empty, so neither the per-id base reproduction nor the done-when's \"adds no failure against a base arm\" is recorded; gate-base.log stops at 40 percent with no failing ids and no EXIT= line, leaving no readable base arm."
+    },
+    {
+      "file": "negative-control.log",
+      "line": 1,
+      "text": "blocking: the control drops refused_ops and shows three ids red, but section 49 requires a negative control for each repaired id; the unknown crew view, the four response-budget cases and the unknown-op-verb wording have none, so six of nine repairs rest on a green assertion alone."
+    },
+    {
+      "file": "manifest.md",
+      "line": 17,
+      "text": "non-blocking: the tests line names the eight-file gate command, but the result it cites is gate-partial.log's seven-file subset with test_ledger.py excluded, and the one attempt at the full eight-file gate (gate-head.log) is truncated with no EXIT= line, so the receipt cannot be reconciled with the log."
+    },
+    {
+      "file": "manifest.md",
+      "line": 27,
+      "text": "non-blocking: the four response-budget ids and the unknown-crew-view id name no commit read (\"served-code guard\", \"unified view refusal\"), contrary to the done-when's \"for each id the manifest names the commit read\"; the commits are discoverable but not recorded."
+    },
+    {
+      "file": "tests/test_roadmap_reports_section_edges.py",
+      "line": 151,
+      "text": "non-blocking: the id is left red on a request for a coordinator decision, but the commit it reads (d8d4f0cc4, a roadmap feature) is an intended change, and the plan's rule for intended changes is to re-freeze the test to the new contract; a decision request is the branch the plan reserves for unintended changes."
+    },
+    {
+      "file": "manifest.md",
+      "line": 26,
+      "text": "non-blocking: the done-when requires ruff check and ruff format --check to add no findings on the staged paths and the manifest records no ruff result; re-measured here the delta is clean (15 findings on the touched files are all on untouched lines and no added line is unformatted), so the obligation is met but unrecorded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "CALL_SITES: reckon/mcp.py:396, reckon/mcp.py:2034, reckon/mcp_edit_plan.py:1793, reckon/_store.py:330, reckon/crew/query.py:392, reckon/crew/runs.py:3302",
+    "diff": "VERDICT diff: read 66426d306 and 33f97922b against 99e92fe; the first changes six census test files to read the shapes the tools return now, the second adds the evidence fragment recording nine re-read ids and the two left; no production module is touched by either commit.",
+    "done_when": "VERDICT done_when: the done_when requires the listed ids to pass, a base arm showing no added failure, one negative control per repaired id, and a manifest naming each id's commit read; the recorded gate is a seven-file subset plus one id alone, the manifest's baseline_suite and after_suite are empty, negative-control.log covers three of the nine repaired ids, and four ids name no commit.",
+    "goal": "VERDICT goal: section 49's goal is to make the 11 census ids pass by asserting each intended contract or reporting the unintended change; at head nine pass (gate-partial.log: 79 passed, 2 failed across the seven-file subset, plus the ledger id alone in gate-ledger-id.log: 1 passed, EXIT=0), the conflict-shape id is reported as an unintended product gap in reckon/mcp_edit_plan.py, and the roadmap gate-edge id is left on a decision request instead of the plan's intended-change branch.",
+    "manifest": "VERDICT manifest: read; it reports nine of eleven ids passing, records gate-partial.log (79 passed, 2 failed, EXIT=1), gate-ledger-id.log (1 passed, EXIT=0) and negative-control.log (3 failed, EXIT=1), names the two remaining ids with the reason each was left, leaves baseline_suite and after_suite empty, and was repaired from status blocked to complete by status-repair.json without any other field changing.",
+    "write_paths": "VERDICT write_paths: the manifest declares eight test files plus the evidence fragment docs/evidence/fragments/the-suite-is-green-at-head/edit-and-response-shape-tests-read-the-returned-shapes.html and a figures directory; git diff --stat 99e92fe..33f97922b changes six test files and the evidence fragment, every path inside that set and nothing outside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_refused_write_names_the_next_step.py:197 fails if the store is reached and refused_ops attached, and negative-control.log shows the refused_ops assertions redden when the attach is dropped, but no control exists for the crew-view, four response-budget or unknown-op-verb repairs.",
+    "evidence": "gate-partial.log records the seven-file run and gate-ledger-id.log the ledger id alone, but manifest.md:23 leaves baseline_suite and after_suite empty and gate-base.log stops mid-progress with no EXIT= line, so the base arm the done_when requires is unrecorded and unreadable.",
+    "fit": "the new autouse fixture at tests/test_mcp_response_budget.py:25 follows the per-module MovedCheckout pins already used in tests/test_a_moved_checkout_serves_every_call.py:184, and the new case name tests/test_a_refused_write_names_the_next_step.py:182 states the behaviour, with no plan or sprint label.",
+    "goal_fidelity": "nine of the eleven ids named in the node's done_when pass at head per gate-partial.log and gate-ledger-id.log, and the roadmap id at tests/test_roadmap_reports_section_edges.py:151 is left red on a decision request rather than the re-frozen contract the plan's intended-change branch requires.",
+    "reuse": "searched tests/conftest.py and every tests/ module for a shared pin of the moved-checkout seam and found none, so no owner exists for this test fixture; the addition extends reckon/mcp.py:396, the production seam all five existing private copies patch.",
+    "scope_discipline": "every path in 66426d306 and 33f97922b is one of the eight test files or the evidence fragment declared in the manifest's write paths, with no production file and no figure directory touched."
+  },
+  "node": "review-of-edit-and-response-shape-tests-read-the-returned-shapes-33f97922b4e0",
+  "node:reviewed": "edit-and-response-shape-tests-read-the-returned-shapes",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 49's goal is to make the 11 census ids pass by asserting each intended contract or reporting the unintended change; at head nine pass (gate-partial.log: 79 passed, 2 failed across the seven-file subset, plus the ledger id alone in gate-ledger-id.log: 1 passed, EXIT=0), the conflict-shape id is reported as an unintended product gap in reckon/mcp_edit_plan.py, and the roadmap gate-edge id is left on a decision request instead of the plan's intended-change branch.\nVERDICT done_when: the done_when requires the listed ids to pass, a base arm showing no added failure, one negative control per repaired id, and a manifest naming each id's commit read; the recorded gate is a seven-file subset plus one id alone, the manifest's baseline_suite and after_suite are empty, negative-control.log covers three of the nine repaired ids, and four ids name no commit.\nVERDICT write_paths: the manifest declares eight test files plus the evidence fragment docs/evidence/fragments/the-suite-is-green-at-head/edit-and-response-shape-tests-read-the-returned-shapes.html and a figures directory; git diff --stat 99e92fe..33f97922b changes six test files and the evidence fragment, every path inside that set and nothing outside it.\nVERDICT manifest: read; it reports nine of eleven ids passing, records gate-partial.log (79 passed, 2 failed, EXIT=1), gate-ledger-id.log (1 passed, EXIT=0) and negative-control.log (3 failed, EXIT=1), names the two remaining ids with the reason each was left, leaves baseline_suite and after_suite empty, and was repaired from status blocked to complete by status-repair.json without any other field changing.\nVERDICT diff: read 66426d306 and 33f97922b against 99e92fe; the first changes six census test files to read the shapes the tools return now, the second adds the evidence fragment recording nine re-read ids and the two left; no production module is touched by either commit.\nCALL_SITES: reckon/mcp.py:396, reckon/mcp.py:2034, reckon/mcp_edit_plan.py:1793, reckon/_store.py:330, reckon/crew/query.py:392, reckon/crew/runs.py:3302\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: nine of the eleven ids named in the node's done_when pass at head per gate-partial.log and gate-ledger-id.log, and the roadmap id at tests/test_roadmap_reports_section_edges.py:151 is left red on a decision request rather than the re-frozen contract the plan's intended-change branch requires.\nSCORE evidence: 8\nJUSTIFICATION evidence: gate-partial.log records the seven-file run and gate-ledger-id.log the ledger id alone, but manifest.md:23 leaves baseline_suite and after_suite empty and gate-base.log stops mid-progress with no EXIT= line, so the base arm the done_when requires is unrecorded and unreadable.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 66426d306 and 33f97922b is one of the eight test files or the evidence fragment declared in the manifest's write paths, with no production file and no figure directory touched.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_refused_write_names_the_next_step.py:197 fails if the store is reached and refused_ops attached, and negative-control.log shows the refused_ops assertions redden when the attach is dropped, but no control exists for the crew-view, four response-budget or unknown-op-verb repairs.\nSCORE fit: 18\nJUSTIFICATION fit: the new autouse fixture at tests/test_mcp_response_budget.py:25 follows the per-module MovedCheckout pins already used in tests/test_a_moved_checkout_serves_every_call.py:184, and the new case name tests/test_a_refused_write_names_the_next_step.py:182 states the behaviour, with no plan or sprint label.\nSCORE reuse: 20\nJUSTIFICATION reuse: searched tests/conftest.py and every tests/ module for a shared pin of the moved-checkout seam and found none, so no owner exists for this test fixture; the addition extends reckon/mcp.py:396, the production seam all five existing private copies patch.\nFINDING manifest.md:23 blocking: baseline_suite and after_suite are empty, so neither the per-id base reproduction nor the done-when's \"adds no failure against a base arm\" is recorded; gate-base.log stops at 40 percent with no failing ids and no EXIT= line, leaving no readable base arm.\nFINDING negative-control.log:1 blocking: the control drops refused_ops and shows three ids red, but section 49 requires a negative control for each repaired id; the unknown crew view, the four response-budget cases and the unknown-op-verb wording have none, so six of nine repairs rest on a green assertion alone.\nFINDING manifest.md:17 non-blocking: the tests line names the eight-file gate command, but the result it cites is gate-partial.log's seven-file subset with test_ledger.py excluded, and the one attempt at the full eight-file gate (gate-head.log) is truncated with no EXIT= line, so the receipt cannot be reconciled with the log.\nFINDING manifest.md:27 non-blocking: the four response-budget ids and the unknown-crew-view id name no commit read (\"served-code guard\", \"unified view refusal\"), contrary to the done-when's \"for each id the manifest names the commit read\"; the commits are discoverable but not recorded.\nFINDING tests/test_roadmap_reports_section_edges.py:151 non-blocking: the id is left red on a request for a coordinator decision, but the commit it reads (d8d4f0cc4, a roadmap feature) is an intended change, and the plan's rule for intended changes is to re-freeze the test to the new contract; a decision request is the branch the plan reserves for unintended changes.\nFINDING manifest.md:26 non-blocking: the done-when requires ruff check and ruff format --check to add no findings on the staged paths and the manifest records no ruff result; re-measured here the delta is clean (15 findings on the touched files are all on untouched lines and no added line is unformatted), so the obligation is met but unrecorded.",
+  "review_run_id": "r-20261024T151622563646-review-of-edit-and-response-shape-tests-read-the-returned-shapes-33f97922b4e0",
+  "reviewed_base_sha": "99e92fe8628e7b647558d859a2e3364d5f310170",
+  "reviewed_head_sha": "33f97922b4e0a3e196899feac306018dce7bebe6",
+  "reviewed_run_id": "r-20261024T142016415225-edit-and-response-shape-tests-read-the-returned-shapes",
+  "scores": {
+    "durability": 12,
+    "evidence": 8,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:26:52.435681+00:00",
+  "total": 92
+}
