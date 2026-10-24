@@ -1,0 +1,78 @@
+<section id="the-station-classifies-only-what-moved">
+  <h2>The station re-derives a verdict only when what a verdict depends on moved</h2>
+
+  <p><strong>What changed.</strong> <code>StationStore.classify_tick</code> classifies
+  the crew home's live runs through <code>recovery._watch_snapshot</code> with the
+  station's stored verdicts as its reuse cache, so a run is classified afresh only when
+  <code>recovery_watch._snapshot_reuse_key</code> moved — the pointer, the manifest, the
+  stream, the run directory's own records, the review-store candidates, the tree head, the
+  newest stream a resume writes beside the original, and the promotion ledger row — or
+  when the liveness triple read from the process table moved. Every other run on a tick
+  takes only the quiet-beat reading: its silence recomputed from the stream instant already
+  recorded on the verdict and the clock, through <code>_stall_reading</code>. The verdicts
+  live in a new <code>classifications</code> table keyed by run id, so a restarted station
+  serves them exactly as the producer's in-memory cache does. A run whose pointer names
+  another node is never probed: the liveness gate in
+  <code>recovery_liveness.local_liveness</code> keeps that host's process table out of the
+  reading and carries the stored answer unproven.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the two test files that import
+  <code>reckon/crew/station_store.py</code> plus the new classification test, one arm per
+  revision. Each arm's log names its revision, tree, imported module path and command on
+  its header lines and ends with a bare <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th></tr>
+    </thead>
+    <tbody>
+      <tr id="the-station-classifies-only-what-moved-base">
+        <td>base</td><td><code>26932a19a</code></td>
+        <td>24 passed, exit 0</td>
+      </tr>
+      <tr id="the-station-classifies-only-what-moved-head">
+        <td>head</td><td><code>26932a19a</code> working tree</td>
+        <td><strong>33 passed</strong>, exit 0 — no added failure id</td>
+      </tr>
+      <tr id="the-station-classifies-only-what-moved-negative">
+        <td>negative control, three declared mutations</td>
+        <td>mutated head</td>
+        <td>all three arms red — classify-every-run, pointer-and-stream key,
+          no quiet-beat reading</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="the-station-classifies-only-what-moved-cases">The nine counts</h3>
+
+  <ul>
+    <li id="the-station-classifies-only-what-moved-unchanged">A tick where nothing moved
+      classifies no run (0 full classifier calls after the first tick).</li>
+    <li id="the-station-classifies-only-what-moved-pointer">A pointer rewrite classifies
+      exactly that run, once.</li>
+    <li id="the-station-classifies-only-what-moved-stream">An appended stream classifies
+      exactly that run, once.</li>
+    <li id="the-station-classifies-only-what-moved-manifest">A manifest that appears with
+      pointer and stream still classifies exactly that run — the case a key on those two
+      alone misses.</li>
+    <li id="the-station-classifies-only-what-moved-resume">A resume writing
+      <code>resume-1.jsonl</code> beside the original stream classifies that run.</li>
+    <li id="the-station-classifies-only-what-moved-liveness">The process-table probe is
+      called only for the two runs whose <code>launcher_host</code> is this node; the
+      foreign run is never probed.</li>
+    <li id="the-station-classifies-only-what-moved-exit">A live worker that exits with
+      every file still reads its new verdict on the next tick, and is classified once.</li>
+    <li id="the-station-classifies-only-what-moved-stall">A working run whose silence
+      grows past its window between two ticks reads <code>stalled</code> with no file
+      moving and no classifier call.</li>
+    <li id="the-station-classifies-only-what-moved-waiting">The same silence explained by
+      a bounded wait in the stream reads <code>waiting</code> with no file moving.</li>
+  </ul>
+
+  <p><strong>Not measured here.</strong> The ingest half of the section — the tail anchor,
+  the carried fold state and the per-tick byte budget — landed with the previous node and
+  its own gate; this node's diff is the classification only. The merged result is verified
+  by a separately dispatched test node.</p>
+</section>
