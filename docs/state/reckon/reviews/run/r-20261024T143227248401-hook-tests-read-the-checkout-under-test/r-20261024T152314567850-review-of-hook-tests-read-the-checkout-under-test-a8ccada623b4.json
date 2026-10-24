@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: after_suite (a8ccada62) failure_ids [] against baseline_suite (19af48b2b) failure_ids [tests/test_a_worker_cannot_walk_the_crew_home.py::test_the_sync_installer_binds_the_walk_guard_behind_the_git_guard_flag], so the head adds no failure the base did not already carry; both arms completed: true and end in EXIT= (gate-after.log EXIT=0, gate-base.log EXIT=1).",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/cli_entry.py:345 (_configure_crew_guards)",
+    "reckon/cli_entry.py:341 (_worker_walk_guard_path)",
+    "reckon/hooks/install.py:421 (worker_walk_guard_groups)",
+    "reckon/hooks/install.py:445 (is_worker_walk_guard_group, which applies interpreter_bootstrap.is_checkout_interpreter at :460)"
+  ],
+  "completed_at": "2026-10-24T15:31:00.054Z",
+  "dispatched_at": "2026-10-24T15:24:38Z",
+  "findings": [
+    {
+      "file": "tests/test_a_worker_cannot_walk_the_crew_home.py",
+      "line": "408",
+      "text": "non-blocking: 'assert installer.interpreter_bootstrap.is_checkout_interpreter(str(interpreter))' cannot fail for any group that reaches the loop. The loop iterates 'installed', filtered at :391-393 by installer.is_worker_walk_guard_group, which at reckon/hooks/install.py:460 already requires interpreter_bootstrap.is_checkout_interpreter(command[0]) on the same shlex tokens; the assertion is therefore a restatement of the filter predicate, and a group whose interpreter failed the predicate never enters the loop. The same is true of :400-401 (script name and 'hooks' parent are part of the recogniser at :472-473); :402, :403 and :405 are the assertions in this loop that can actually redden. The prior review's resolver-circularity defect is still caught, but by the matcher-list assertion at :394 (negative-control-interpreter-fixed.log reddens there), not by this line."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/hook-tests-read-the-checkout-under-test.html",
+      "line": "23",
+      "text": "non-blocking: the fragment credits the interpreter independence to the assertion at tests/test_a_worker_cannot_walk_the_crew_home.py:408 ('checked through interpreter_bootstrap.is_checkout_interpreter rather than against the resolver's own answer'), but that line cannot fire; the mutation it names is caught by the walk-group filter emptying 'installed' and the matcher-list assertion at :394 failing, as negative-control-interpreter-fixed.log shows. The same overstatement is in the manifest's negative_control_note (manifest.md:16). The evidence should name :394 as the guard rather than a line that cannot fail."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commits 02587f281 and a8ccada62 against the previous reviewed head 2ab641a85: 4 insertions and 2 deletions across tests/test_a_worker_cannot_walk_the_crew_home.py:403-408 (equality replaced by is_checkout_interpreter) and the fragment's repair paragraph; no production source changed.",
+    "done_when": "\u00a752's done_when names the census id, a base arm and ruff cleanliness; the manifest records after_suite '20 passed' at a8ccada62 and baseline_suite '1 failed, 19 passed' at 19af48b2b carrying the target id, both logs end in EXIT=, and the manifest reports ruff All checks passed at both revisions.",
+    "goal": "\u00a752's node goal is that the one listed census id passes at the head while asserting the intended contract; the reviewed range swaps the bound-interpreter assertion at tests/test_a_worker_cannot_walk_the_crew_home.py:403-408 and keeps the id green at 20 passed.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T143227248401-hook-tests-read-the-checkout-under-test/manifest.md; status complete, commits f7d31f304 2ab641a85 02587f281 a8ccada62, baseline_suite exit 1 with the target id, after_suite exit 0 with no failures, negative_control_log named; its negative_control_note credits the repaired assertion for a failure the log records at :394.",
+    "write_paths": "the manifest declares tests/test_a_worker_cannot_walk_the_crew_home.py, docs/evidence/fragments/the-suite-is-green-at-head/hook-tests-read-the-checkout-under-test.html and a figures directory; the diff's two files are inside that set and the figures directory is untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_cannot_walk_the_crew_home.py:394 (matcher list) and :402-405 (reckon/hooks layout, file present, splitter beside it) redden on a broken sync path, but the changed line :408 restates the filter predicate at :391-393 and cannot fail, so the reviewed range adds no guard of its own.",
+    "evidence": "gate-after.log ('20 passed', EXIT=0 at a8ccada62) and gate-base.log ('1 failed, 19 passed', EXIT=1 at 19af48b2b) measure \u00a752's clauses and record the target id; negative-control-interpreter-fixed.log reddens the file under the resolver mutation, though at :394 rather than the assertion the fragment credits.",
+    "fit": "tests/test_a_worker_cannot_walk_the_crew_home.py:408 reaches interpreter_bootstrap through the installer's namespace where tests/test_one_function_names_the_interpreter.py:16 imports it directly, and its comment at :406-407 claims an independence the surrounding filter has already applied.",
+    "goal_fidelity": "tests/test_a_worker_cannot_walk_the_crew_home.py:394-405 still requires both walk matchers, a worker_walk_guard.py inside reckon/hooks with worker_git_guard.py beside it, and the git guard installed by the same flag, so the id passes while the intended contract remains asserted.",
+    "reuse": "tests/test_a_worker_cannot_walk_the_crew_home.py:408 reuses the repository's owner of the layout check (reckon/hooks/interpreter_bootstrap.py:24) instead of re-implementing it, and adds no definition; the inertness comes from reusing it a second time after the recogniser already applied it.",
+    "scope_discipline": "git diff --stat 2ab641a85..a8ccada62 changes only tests/test_a_worker_cannot_walk_the_crew_home.py (+2/-1) and docs/evidence/fragments/the-suite-is-green-at-head/hook-tests-read-the-checkout-under-test.html (+1/-1), both declared write paths."
+  },
+  "node": "review-of-hook-tests-read-the-checkout-under-test-a8ccada623b4",
+  "node:reviewed": "hook-tests-read-the-checkout-under-test",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a752's node goal is that the one listed census id passes at the head while asserting the intended contract; the reviewed range swaps the bound-interpreter assertion at tests/test_a_worker_cannot_walk_the_crew_home.py:403-408 and keeps the id green at 20 passed.\nVERDICT done_when: \u00a752's done_when names the id, a base arm and ruff cleanliness; gate-after.log records '20 passed' EXIT=0 at a8ccada62, gate-base.log records '1 failed, 19 passed' EXIT=1 at 19af48b2b carrying the target id, and the manifest reports ruff All checks passed at both revisions.\nVERDICT write_paths: the manifest declares tests/test_a_worker_cannot_walk_the_crew_home.py, docs/evidence/fragments/the-suite-is-green-at-head/hook-tests-read-the-checkout-under-test.html and a figures directory; git diff --stat 2ab641a85..a8ccada62 touches only the first two (+2/-1 and +1/-1), both declared, and no figure.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T143227248401-hook-tests-read-the-checkout-under-test/manifest.md; status complete, commits f7d31f304 2ab641a85 02587f281 a8ccada62, baseline_suite exit 1 carrying the target id, after_suite exit 0 with no failures, negative_control_log named; its negative_control_note credits the repaired assertion for a failure the log records at :394.\nVERDICT diff: read 02587f281 and a8ccada62 against the previous reviewed head 2ab641a85: the equality at tests/test_a_worker_cannot_walk_the_crew_home.py:406 becomes an is_checkout_interpreter check plus its comment, and the fragment's repair paragraph is reworded; no production source changed.\nCALL_SITES: reckon/cli_entry.py:345 (_configure_crew_guards), reckon/cli_entry.py:341 (_worker_walk_guard_path), reckon/hooks/install.py:421 (worker_walk_guard_groups), reckon/hooks/install.py:445 (is_worker_walk_guard_group, which applies interpreter_bootstrap.is_checkout_interpreter at :460)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_a_worker_cannot_walk_the_crew_home.py:394-405 still requires both walk matchers, a worker_walk_guard.py inside reckon/hooks with worker_git_guard.py beside it, and the git guard installed by the same flag, so the id passes while the intended contract remains asserted.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-after.log ('20 passed', EXIT=0 at a8ccada62) and gate-base.log ('1 failed, 19 passed', EXIT=1 at 19af48b2b) measure \u00a752's clauses and record the target id, but negative-control-interpreter-fixed.log reddens at :394 while the fragment credits the assertion at :408.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2ab641a85..a8ccada62 changes only tests/test_a_worker_cannot_walk_the_crew_home.py (+2/-1) and its declared evidence fragment (+1/-1).\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_worker_cannot_walk_the_crew_home.py:394 and :402-405 redden on a broken sync path, but the changed line :408 restates the filter predicate at :391-393 and cannot fail, so the reviewed range adds no guard of its own.\nSCORE fit: 15\nJUSTIFICATION fit: tests/test_a_worker_cannot_walk_the_crew_home.py:408 reaches interpreter_bootstrap through the installer's namespace where tests/test_one_function_names_the_interpreter.py:16 imports it directly, and its comment at :406-407 claims an independence the surrounding filter already applied.\nSCORE reuse: 17\nJUSTIFICATION reuse: tests/test_a_worker_cannot_walk_the_crew_home.py:408 reuses reckon/hooks/interpreter_bootstrap.py:24 rather than re-implementing the layout check and adds no definition, though the recogniser at reckon/hooks/install.py:460 already applied it to the same tokens.\nFINDING tests/test_a_worker_cannot_walk_the_crew_home.py:408 non-blocking: 'assert installer.interpreter_bootstrap.is_checkout_interpreter(str(interpreter))' cannot fail for any group reaching the loop, because :391-393 filters on is_worker_walk_guard_group, which requires the same predicate at reckon/hooks/install.py:460 on the same shlex tokens; :400-401 are likewise restatements of the recogniser at :472-473, and the resolver mutation is caught by the matcher-list assertion at :394.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/hook-tests-read-the-checkout-under-test.html:23 non-blocking: the fragment credits the interpreter independence to the assertion at :408, which cannot fire; the mutation it names reddens the matcher-list assertion at :394, and the manifest's negative_control_note (manifest.md:16) carries the same overstatement.\n",
+  "review_run_id": "r-20261024T152314567850-review-of-hook-tests-read-the-checkout-under-test-a8ccada623b4",
+  "reviewed_base_sha": "2ab641a8554841219c57eaf856e4a5b886fcb15e",
+  "reviewed_head_sha": "a8ccada623b425c194c9d44481e9460fbca0d6d2",
+  "reviewed_run_id": "r-20261024T143227248401-hook-tests-read-the-checkout-under-test",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:40:00+00:00",
+  "total": 98
+}
