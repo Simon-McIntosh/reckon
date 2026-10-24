@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_crew.py::test_dispatch_override_records_and_promotes_the_waived_backlog",
+    "tests/test_ledger.py::test_committed_runs_measure_or_explain_every_duration",
+    "tests/test_spa_graph_authority.py::test_the_detail_draws_one_card_per_closure_member_at_both_widths"
+  ],
+  "added_failures_note": "Computed directly from the completed importer-final-head.log FAILED IDs minus importer-final-base.log FAILED IDs: 29 failures in each arm, with three added and three removed. The source manifest attributes the added IDs to a transient PID observation and ledger SQLite timeouts outside the changed queue paths; the raw added count remains three.",
+  "completed_at": "2026-10-24T12:19:57Z",
+  "dispatched_at": "2026-10-24T12:13:59Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T053457115337-queue-edit-reprioritise-drop/manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "summary": "The completed head suite has three failure IDs absent from the completed base suite, so the literal zero-added-failures measure is not met by the raw logs. The source run identifies a transient PID observation and two ledger timeouts outside the changed queue paths. Disposition: exempted because these host-state failures do not exercise the reviewed edit change; retain the raw added IDs in this record."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit 4792f390c77ae78d98c86cc69019abc2b6739d05 for the ceiling validation and test assertions, then 902c863e3b7d8b9502f05de72e33c9b162faa69d for the matching evidence fragment; only three declared paths changed.",
+    "done_when": "The source prompt.txt:99 requires the queue cases, a refusal for invalid edits, CLI/MCP and help coverage, no added importer failures, and ruff checks; logs/queue-verbs-repair-final.log records 15 passed and the completed importer arms record three added raw failure IDs.",
+    "goal": "The source prompt.txt:30 requires queue edit, reprioritise and drop with matching MCP actions; this increment repairs edit's missing budget check at reckon/crew/queue_edit.py:174 without altering the already callable verbs.",
+    "manifest": "The source manifest.md:5-20 is complete and names the focused, mutation and paired importer logs, with completed baseline_suite and after_suite receipts at revisions 560465a09 and 902c863e3 respectively.",
+    "write_paths": "The source manifest.md:3 declares the three paths changed by 8d9c9aa79..902c863e3, and git diff --stat shows no path outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:30 requires queue edit, reprioritise and drop with matching MCP actions; this increment repairs edit's missing budget check at reckon/crew/queue_edit.py:174 without altering the already callable verbs.\nVERDICT done_when: The source prompt.txt:99 requires the queue cases, a refusal for invalid edits, CLI/MCP and help coverage, no added importer failures, and ruff checks; logs/queue-verbs-repair-final.log records 15 passed and the completed importer arms record three added raw failure IDs.\nVERDICT write_paths: The source manifest.md:3 declares the three paths changed by 8d9c9aa79..902c863e3, and git diff --stat shows no path outside them.\nVERDICT manifest: The source manifest.md:5-20 is complete and names the focused, mutation and paired importer logs, with completed baseline_suite and after_suite receipts at revisions 560465a09 and 902c863e3 respectively.\nVERDICT diff: Read commit 4792f390c77ae78d98c86cc69019abc2b6739d05 for the ceiling validation and test assertions, then 902c863e3b7d8b9502f05de72e33c9b162faa69d for the matching evidence fragment; only three declared paths changed.\nCALL_SITES: reckon/crew_run_commands.py:crew_queue_edit, reckon/crew/queue_edit.py:edit, reckon/mcp_crew_actions.py:_verb_for, reckon/mcp.py:_crew_write_action\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_edit.py:174 now sends the resolved project time ceiling to the same validate_node call dispatch uses, closing the reported 35m-under-25m gap.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/queue-verbs-repair-final.log records 15 passed at 902c863e3, while manifest.md:15-16 and its completed importer logs yield three added raw failure IDs despite unchanged absolute failure counts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two-commit diff changes only reckon/crew/queue_edit.py, tests/test_queue_verbs.py and the node's evidence fragment, all declared in manifest.md:3.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_queue_verbs.py:238-241 reddens when the ceiling argument is removed, and :218-220 reddens when the pointer's done_when assignment is removed, as the two completed mutation logs show.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_edit.py:167-175 reuses dispatch's resolved_time_ceiling and validate_node pattern from reckon/crew/dispatch_plan.py:728-756, with no new source name carrying a forbidden label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found the ceiling owner in reckon/crew/routing.py:510 and dispatch's use in reckon/crew/dispatch_plan.py:728-756; the edit path extends those owners rather than defining another ceiling mechanism.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T053457115337-queue-edit-reprioritise-drop/manifest.md:16 non-blocking: The completed head suite has three failure IDs absent from the completed base suite, so the literal zero-added-failures measure is not met by the raw logs. The source run identifies a transient PID observation and two ledger timeouts outside the changed queue paths. Disposition: exempted because these host-state failures do not exercise the reviewed edit change; retain the raw added IDs in this record.\n",
+  "review_run_id": "r-20261024T121155807603-review-of-queue-edit-reprioritise-drop-902c863e3b7d",
+  "reviewed_base_sha": "8d9c9aa79baec3b2653559fdc3376f2a40fef2bc",
+  "reviewed_head_sha": "902c863e3b7d8b9502f05de72e33c9b162faa69d",
+  "reviewed_run_id": "r-20261024T053457115337-queue-edit-reprioritise-drop",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T12:20:33.540594+00:00",
+  "total": 110
+}
