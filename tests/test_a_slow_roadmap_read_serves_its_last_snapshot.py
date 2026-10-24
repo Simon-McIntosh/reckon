@@ -47,6 +47,17 @@ RUN_ID = "r-a-slow-read-scope-case"
 SHORT_DEADLINE = 1.0
 SHORT_RESERVE = 0.4
 
+# The request shape a plain summary read of PROJECT asks for, written out
+# rather than read back from the module: a defect in the shape a read composes
+# or files under has to show up against a value this file owns.
+SUMMARY_SHAPE = {
+    "sprint": None,
+    "max_paths": 5,
+    "view": "summary",
+    "cursor": None,
+    "limit": None,
+}
+
 
 def _plan_html(slug: str) -> str:
     return (
@@ -228,7 +239,7 @@ def test_a_read_past_its_reserve_answers_from_the_last_snapshot(
     assert answered["composition"] == 1, "the answer is not the stored composition"
     stale = answered["stale"]
     assert stale["key"] == stored["key"]
-    assert stale["shape"] == _shape()
+    assert stale["shape"] == SUMMARY_SHAPE
     assert stale["reason"] == mcp_module._ROADMAP_STALE_REASON
     assert stale["age_seconds"] >= SHORT_RESERVE / 2, stale
     assert elapsed < SHORT_DEADLINE, f"answered after its deadline: {elapsed:.3f}s"
@@ -435,6 +446,79 @@ def test_a_run_scoped_read_is_not_answered_from_the_mounted_tree(
 
     assert answered.get("error") == STORAGE_SLOW, answered
     assert "stale" not in answered
+
+
+def test_a_stale_answer_that_cannot_be_built_reports_the_deadline(
+    home: Home, composer: Composer, loop, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A stored answer that raises at the timeout degrades to storage-slow.
+
+    The record's presence is what earns the reserve, and the answer is built
+    when the shortened wait expires. If building it fails, the read has no
+    answer rather than a failure: it reports its deadline as a read with
+    nothing stored does, and the exception never reaches the caller.
+    """
+    monkeypatch.setenv(DEADLINE_ENV, "0.5")
+    monkeypatch.setenv(RESERVE_ENV, "0.1")
+    tool = _tool()
+
+    assert _call(loop, tool)["composition"] == 1
+    assert _last(home) is not None, "the composition was not stored"
+
+    def broken(record, reason):
+        raise RuntimeError("the stored composition cannot be rebuilt")
+
+    monkeypatch.setattr(roadmap_snapshot, "roadmap_stale_answer", broken)
+
+    advance_write_generation(PROJECT)
+    composer.gate.clear()
+    answered = _call(loop, tool)
+    composer.gate.set()
+
+    assert answered.get("error") == STORAGE_SLOW, answered
+    assert "stale" not in answered
+
+
+def test_the_stale_answer_is_built_only_when_the_wait_expires(
+    home: Home, composer: Composer, loop, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Nothing is built while the read can still answer itself.
+
+    The up-front question is whether a stored answer exists, not what is in it.
+    A read that finishes inside its deadline builds none, and the one whose
+    shortened wait expires builds exactly one.
+    """
+    monkeypatch.setenv(DEADLINE_ENV, str(SHORT_DEADLINE))
+    monkeypatch.setenv(RESERVE_ENV, str(SHORT_RESERVE))
+    built: list[dict] = []
+    build = mcp_module._roadmap_stale_answer
+
+    def counted(kwargs):
+        built.append(dict(kwargs))
+        return build(kwargs)
+
+    monkeypatch.setattr(mcp_module, "_roadmap_stale_answer", counted)
+    tool = _tool()
+
+    assert _call(loop, tool)["composition"] == 1
+    assert built == [], "a composition answered in time built a stale answer"
+    assert _last(home) is not None, "the composition was not stored"
+
+    advance_write_generation(PROJECT)
+    fresh = _call(loop, tool)
+
+    assert "stale" not in fresh
+    assert built == [], "a recompute inside the deadline built a stale answer"
+
+    # Move the key again, so this read has to recompose, and hold that
+    # recompose past the shortened deadline.
+    advance_write_generation(PROJECT)
+    composer.gate.clear()
+    answered = _call(loop, tool)
+    composer.gate.set()
+
+    assert answered.get("stale") is not None, answered
+    assert len(built) == 1, f"the timeout built {len(built)} stale answers"
 
 
 def test_two_reads_during_one_held_recompute_start_one_recompute(

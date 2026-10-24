@@ -507,7 +507,10 @@ async def _read_joining_running(
             has_stored = _safe_fallback(_fallback) is not None
         if has_stored:
             wait_limit = max(0.0, limit - _stale_reserve_seconds())
-            on_timeout = _fallback
+            # Built only now, and through the same guard the presence check
+            # uses: a stored answer that cannot be built is no answer, so the
+            # read reports its deadline rather than failing on the look-up.
+            on_timeout = lambda: _safe_fallback(_fallback)  # noqa: E731
     key = _read_join_key(label, kwargs)
     inflight = _INFLIGHT_READS.get(key)
     join_started: float | None = None
