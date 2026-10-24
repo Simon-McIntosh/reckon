@@ -1,9 +1,11 @@
 """The plan-review settle window is retired from the flight layer.
 
 The window gated the plan sweep, which no longer exists, so the layer declares
-no such key. A layer spelling it is refused as an undeclared key while the
-change threshold beside it still resolves, so a stale brake is surfaced rather
-than silently ignored.
+no such key. A layer spelling it is refused as an undeclared key by the strict
+authoring read, while the change threshold beside it still resolves, so a stale
+brake is surfaced rather than silently ignored. An ordinary read ignores the
+key, because a running reader must keep working beside a layer written by a
+newer image.
 
 The retired key's name is assembled from its parts rather than written whole,
 so the name the layer no longer carries appears nowhere in the tree to be
@@ -21,7 +23,7 @@ RETIRED_KEY = "plan_" + "settle_seconds"
 
 def test_a_layer_declaring_the_settle_window_is_refused():
     with pytest.raises(flight.FlightConfigError, match=RETIRED_KEY):
-        flight.validate_layer({"review": {RETIRED_KEY: 600}}, "test")
+        flight.validate_layer({"review": {RETIRED_KEY: 600}}, "test", strict=True)
 
 
 def test_the_change_threshold_beside_it_still_resolves():

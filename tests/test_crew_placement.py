@@ -140,7 +140,9 @@ def test_a_placement_that_names_no_scheduler_is_refused() -> None:
 
 def test_a_placement_field_outside_the_declared_set_is_refused() -> None:
     # The scheduler is named, so the misspelling is the only defect and the
-    # refusal has to be the unknown key rather than a missing required one.
+    # refusal has to be the unknown key rather than a missing required one. The
+    # authoring read is the strict one: a running reader ignores an undeclared
+    # key so it keeps working beside a newer writer.
     with pytest.raises(flight.FlightConfigError) as refused:
         flight.validate_layer(
             {
@@ -152,6 +154,7 @@ def test_a_placement_field_outside_the_declared_set_is_refused() -> None:
                 }
             },
             "probe.yaml",
+            strict=True,
         )
     assert "schduler" in str(refused.value)
 

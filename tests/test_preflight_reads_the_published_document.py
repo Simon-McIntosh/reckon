@@ -1,6 +1,6 @@
 """The production pre-flight reads the published headroom document.
 
-The production callers -- ``reckon crew preflight`` and the MCP ``budget`` view
+The production callers -- ``reckon crew budget --check`` and the MCP ``budget`` view
 -- always inject a window reading of their own from what earlier runs recorded,
 and they also name the published headroom document. ``budget.preflight`` merges
 the two per backend: the document speaks for a backend it carries a reading for
@@ -252,8 +252,8 @@ def test_the_cli_and_mcp_paths_agree_on_every_backend(
 ) -> None:
     """Both production callers name the default document and read it the same.
 
-    Each caller resolves its own flow -- the CLI through ``crew preflight`` and
-    the MCP through the ``budget`` view -- against one installed document and
+    Each caller resolves its own flow -- the CLI through ``crew budget --check``
+    and the MCP through the ``budget`` view -- against one installed document and
     one stubbed flight config. Agreement is asserted on the per-backend source
     map and each group's five-hour clock, which is what a reader of either
     surface reads. Both callers inject recorded windows and find none, so every
@@ -278,7 +278,9 @@ def test_the_cli_and_mcp_paths_agree_on_every_backend(
         flight, "resolve", lambda *args, **kwargs: SimpleNamespace(config=CONFIG)
     )
 
-    invoked = CliRunner().invoke(cli.main, ["crew", "preflight", "--project", "demo"])
+    invoked = CliRunner().invoke(
+        cli.main, ["crew", "budget", "--check", "--project", "demo"]
+    )
     assert invoked.exit_code == 0, invoked.output
     from_cli = json.loads(invoked.output)
 

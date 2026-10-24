@@ -1,13 +1,15 @@
 """A follower survives a configuration layer a merge left momentarily malformed.
 
-A merge that lands a key the running image's schema does not yet know — or one
-the image's schema has just retired — leaves every ``flight.resolve()`` call in
-that process raising ``FlightConfigError`` until the layer is repaired. The
-follower calls the quota-rate reader from its per-tick path: the baseline it
-derives through ``watch_stream_cursor`` carries each run's notional cost, and
-that figure is read from the resolved configuration. So a config file a merge
-broke under a running follower used to end the pane, for a file the follower
-does not own and cannot repair.
+A merge that leaves a declared key holding a value the schema refuses — a
+threshold written as a word, a shape half-landed — leaves every
+``flight.resolve()`` call in that process raising ``FlightConfigError`` until
+the layer is repaired. An undeclared key is not that case: the loader ignores
+it so a reader older than the layer keeps working. The follower calls the
+quota-rate reader from its per-tick path: the baseline it derives through
+``watch_stream_cursor`` carries each run's notional cost, and that figure is
+read from the resolved configuration. So a config file a merge broke under a
+running follower used to end the pane, for a file the follower does not own and
+cannot repair.
 
 Two repairs carry the node. The rate reader returns an empty, all-unpriced
 reading instead of raising, so both the follower and the producer that share it
@@ -17,11 +19,10 @@ deferral line, and retries on the next tick rather than exiting — so the pane
 lives through the merge window and resumes delivering on the tick after the
 read stops raising.
 
-Every test here is red at the base revision: the reader raises, and the raised
-error ends the follower. The declared mutation restores the reader's raise, and
-both arms go red — the reader arm because it raises again, the follower arm
-because the per-tick read it depends on never stops raising, so the pane never
-delivers.
+Both arms pass only while the reader degrades instead of raising. The declared
+mutation restores the reader's raise and both arms go red — the reader arm
+because it raises again, the follower arm because the per-tick read it depends
+on never stops raising, so the pane never delivers.
 """
 
 from __future__ import annotations
@@ -62,15 +63,19 @@ def home(tmp_path, monkeypatch):
 
 
 def _break_the_config(home: Path, monkeypatch) -> Path:
-    """Point the host layer at a key the running schema refuses.
+    """Point the host layer at a declared key holding a value the schema refuses.
 
-    The value is irrelevant: the schema rejects the key itself, which is the
-    shape a merge leaves behind when it lands a slot the running image's schema
-    predates. Every resolve in this process then raises until the layer is
+    The key is one the schema declares, so this is a shape error rather than an
+    undeclared key: an undeclared key is ignored at load so a reader older than
+    the layer keeps working, while a declared key's wrong value is still
+    refused. Every resolve in this process then raises until the layer is
     repaired, exactly as in the merged checkout the node repairs.
     """
     path = home / "flight.yaml"
-    path.write_text("an_unknown_flight_config_key: 7\n", encoding="utf-8")
+    path.write_text(
+        "review:\n  tiers:\n    light_changed_lines: not-a-number\n",
+        encoding="utf-8",
+    )
     monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(path))
     return path
 
@@ -188,8 +193,10 @@ def test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error(
     read has stopped raising — the delivery below is therefore evidence the
     loop survived the error, not evidence it was restarted.
     """
-    _break_the_config(home, monkeypatch)
-    # The run holds a seat while the config is broken. What it is doing is not
+    # The error is injected at the per-tick read, standing for a layer a merge
+    # broke under this image. The layer itself stays readable, so the tick after
+    # the injection stops is a real read that delivers.
+    # The run holds a seat while the read is failing. What it is doing is not
     # what the pane owes a reader; the blocked transition it makes after the
     # arming is where the pane gets it, and that row is held for the settle
     # window and released when the arming ends.
@@ -213,7 +220,7 @@ def test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error(
             raise FlightConfigError(
                 "<merged layer>",
                 "backends",
-                "an unknown key the running schema rejects",
+                "a declared value the running schema rejects",
             )
         return real_cursor(project, **kwargs)
 
