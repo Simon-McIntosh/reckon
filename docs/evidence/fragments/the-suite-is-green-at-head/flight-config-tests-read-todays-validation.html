@@ -110,10 +110,18 @@
   extraction: <code>git archive</code> hung on this node for two attempts, and the worktree's
   <code>git status --porcelain</code> at the copy held only this fragment, which the copy drops.</p>
 
-  <p id="flight-config-tests-read-todays-validation-control"><strong>Negative control.</strong> The
-  declared string is applied: each repair is reverted to the base test content at the head revision, and
-  all five repaired ids fail again — <strong>5 failed, EXIT=1</strong>, in
-  <code>logs/negative-control.log</code>. The blocked id's repair is not attempted, so it has no
+  <p id="flight-config-tests-read-todays-validation-control"><strong>Negative control.</strong> Each repaired id is
+  checked against the production contract it pins: the head tests are kept and one contract is mutated
+  at a time, and the id reddens in every case — six arms, each <strong>1 failed, EXIT=1</strong>, in
+  <code>logs/negative-control.log</code>. The strict authoring read stops refusing an undeclared key
+  (<code>reckon/flight.py</code>), reddening the placement case; the same read stops refusing the
+  retired settle window, reddening that case; the rate reader stops degrading an unreadable layer
+  (<code>reckon/crew/quota_weight.py</code>); the review router stops reading the excluded-lane list
+  (<code>reckon/crew/recovery_review_dispatch.py</code>); the budget check stops naming the published
+  document (<code>reckon/crew_dispatch_commands.py</code>); and the follow loop stops catching a config
+  error per tick (<code>reckon/crew_follow_commands.py</code>), reddening the deferral case. Reverting
+  the repaired fixtures to their base content is <em>not</em> a control: it shows the ids failed
+  before, not that they guard the contract now. The blocked id's repair is not attempted, so it has no
   control.</p>
 
   <p id="flight-config-tests-read-todays-validation-logs"><strong>Logs.</strong> Under the run directory's
