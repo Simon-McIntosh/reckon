@@ -561,7 +561,10 @@ def _write_steering(run_id: str, brief: str) -> Path | None:
 
     A brief whose source already lies inside the request's own run directory
     is already the request's stored copy, so there is nothing for a second
-    name to shadow; it is left where it is.
+    name to shadow; it is left where it is. A source the coordinator's own
+    dispatch will read is the one the launch refuses over, so an unreadable
+    source here leaves no steering file rather than refusing the queue: the
+    request is held, and the same absence is reported when it launches.
     """
     source = str(brief or "").strip()
     if not source:
@@ -576,11 +579,11 @@ def _write_steering(run_id: str, brief: str) -> Path | None:
     if destination.exists():
         return destination
     try:
-        data = Path(source).expanduser().read_bytes()
+        data = source_path.read_bytes()
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(data)
-    except OSError as exc:
-        raise CrewError(f"the brief {source!r} could not be stored: {exc}") from exc
+    except OSError:
+        return None
     return destination
 
 
