@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="a-seat-held-elsewhere-is-not-restarted">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -282,7 +282,7 @@
     duty if its wording table lives elsewhere, and the new test.</p>
 
     <h2 id="s9">§9 — A producer off the fleet node gives up its seat</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p>The fleet record <code>~/.local/state/fleet/record.json</code> names the node every worker runs on.
     A producer whose host is not that node cannot probe a worker pid, so every liveness reading it publishes
     is unknown, and it still holds the seat that would let a producer on the fleet node start. At start and
@@ -381,6 +381,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261024T033048203679-review-of-the-producer-calls-its-seat-decision-5359793a9491" data-who="reckon-build" data-when="2026-10-24T03:43:27.611Z">
     <div class="r-comment-body"><p>Review of r-20261023T220036362628-the-producer-calls-its-seat-decision read at base dc3ace589acc6be861e7c36f89c82b3a819e1461 to head 5359793a9491dd17618baac829a43baae7811cb0, stored at review-records/r-20261023T220036362628-the-producer-calls-its-seat-decision.json with its at-5359793a9491 twin: status parsed, six dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 14, durability 18, fit 17, reuse 19), added_failure_count 0 with no added failure ids, three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-24T04:20:00Z">
+    <div class="r-comment-body"><p>§9 closed. A producer off the fleet node gives up its seat and disables its unit, at start-up and on every renewal, without a per-renewal scan. The decision node is <code>a0f4e9a49</code>; the wiring node is reviewed at 103 with population delta zero over 566 files. <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s9-wiring">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261023T165016085496-review-of-a-resumed-attempt-is-read-through-its-own-records-0231ca112322" data-who="reckon-build" data-when="2026-10-23T17:17:16.786Z">
     <div class="r-comment-body"><p>the review of r-20261023T154506367282 is stored at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261023T154506367282-a-resumed-attempt-is-read-through-its-own-records/review-records/r-20261023T154506367282-a-resumed-attempt-is-read-through-its-own-records.at-0231ca112322d2f02e565eca140525b503a819cc.json, scoring 18/15/16/16/16/5 for goal, evidence, scope, durability, fit and reuse with four non-blocking findings</p></div>
