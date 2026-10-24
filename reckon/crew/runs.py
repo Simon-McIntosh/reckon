@@ -102,6 +102,12 @@ def run_dir(run_id: str) -> Path:
     return runs_dir() / run_id
 
 
+#: The authority text a queued request is launched from. It lives in the
+#: request's own run directory so a coordinator can replace it while the
+#: request waits, and the launch reads whatever that file holds at that moment.
+STEERING_FILE = "steering.md"
+
+
 def pointer_path(run_id: str) -> Path:
     """Path of one run's live pointer."""
     return live_dir() / f"{run_id}.json"
@@ -543,6 +549,41 @@ def existing_node_run(
     return None
 
 
+def _write_steering(run_id: str, brief: str) -> Path | None:
+    """Copy a request's brief into its run directory as the launch-time text.
+
+    A queued dispatch never reaches ``_store_brief`` — every queueing hold
+    raises before it — so the queued path stores the steering copy itself,
+    under the request's final run id. An existing ``steering.md`` is never
+    overwritten: an in-place re-queue of the same node must leave the text a
+    coordinator has since edited in place, because that file is what the
+    launch reads.
+
+    A brief whose source already lies inside the request's own run directory
+    is already the request's stored copy, so there is nothing for a second
+    name to shadow; it is left where it is.
+    """
+    source = str(brief or "").strip()
+    if not source:
+        return None
+    directory = run_dir(str(run_id))
+    source_path = Path(source).expanduser()
+    if source_path.is_absolute() and source_path.resolve().is_relative_to(
+        directory.resolve()
+    ):
+        return None
+    destination = directory / STEERING_FILE
+    if destination.exists():
+        return destination
+    try:
+        data = Path(source).expanduser().read_bytes()
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(data)
+    except OSError as exc:
+        raise CrewError(f"the brief {source!r} could not be stored: {exc}") from exc
+    return destination
+
+
 def queue_dispatch(
     record: dict[str, Any], *, cap: int | None = None
 ) -> tuple[dict[str, Any], int | None]:
@@ -638,6 +679,10 @@ def queue_dispatch(
                 run_id = str(record["run_id"])
                 with _pointer_lock(run_id):
                     _write_json(pointer_path(run_id), record)
+            _write_steering(
+                str(record["run_id"]),
+                str(dict(record.get("node") or {}).get("brief") or ""),
+            )
             from reckon.crew.queue_order import admission_order
 
             live = _list_live_records(project=str(record["project"]))
