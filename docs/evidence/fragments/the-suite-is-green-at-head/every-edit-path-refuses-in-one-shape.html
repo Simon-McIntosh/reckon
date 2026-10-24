@@ -31,10 +31,10 @@
   the record id, a decision <code>key</code>, a gate <code>id</code> — and
   <code>_value_at_path</code> resolves a two-part list address to the record it
   names, so the value the document holds is read back for every verb whose
-  target exists. The composed table is declared in
-  <code>TARGET_COMPOSED_VERBS</code> and a case compares it with
-  <code>_store._OP_DISPATCH</code>, so a verb added to the store cannot quietly
-  lose its target.</p>
+  target exists. A case calls <code>_op_target_path</code> for every verb in
+  <code>_store._OP_DISPATCH</code>, passing one representative op that carries
+  every key any address branch reads, and requires a target for each, so a verb
+  with no branch falls through to nothing and fails the case.</p>
   <p id="every-edit-path-refuses-in-one-shape-measure"><strong>Measure.</strong>
   The listed id
   <code>tests/test_every_edit_path_refuses_one_shape.py::test_the_refusal_shape_is_identical_across_op_paths</code>
@@ -55,15 +55,23 @@
   conflict contract (<code>test_a_refused_write_names_the_next_step</code>) and
   the writer-race case (<code>test_landing_write_races_every_writer</code>). No
   failure is added. <code>ruff check</code> and
-  <code>ruff format --check</code> report nothing added on the two staged paths
-  (7 pre-existing findings at the base arm, 7 at the head).</p>
+  <code>ruff format --check</code> report nothing added on the two staged paths:
+  the receipts name their revisions and read 7 findings at the base arm
+  (<code>logs/ruff_check_base.log</code>, <code>ruff_format_base.log</code>) and
+  7 at the head (<code>logs/ruff_check_head.log</code>,
+  <code>ruff_format_head.log</code>), with both format runs
+  <code>EXIT=0</code>.</p>
   <p id="every-edit-path-refuses-in-one-shape-control"><strong>Negative control.</strong>
-  Declared mutation: revert each repair; its id must fail again. Two mutations,
-  each applied to a copy of the head tree with the head test kept, and each
-  turning the listed id red: composing targets from <code>set</code> ops alone
-  (<code>2 failed, 7 passed</code>, <code>EXIT=1</code>) and dropping the
+  Declared mutation: revert each repair; its id must fail again. Three
+  mutations, each applied to a copy of the head tree with the head test kept,
+  and each turning the listed id red: composing targets from <code>set</code>
+  ops alone (<code>2 failed, 7 passed</code>, <code>EXIT=1</code>), dropping the
   two-part list address so no verb carries a current value
-  (<code>1 failed, 8 passed</code>, <code>EXIT=1</code>).</p>
+  (<code>1 failed, 8 passed</code>, <code>EXIT=1</code>), and deleting the
+  <code>gate</code>/<code>pass</code>/<code>fail</code> branch from
+  <code>_op_target_path</code> so a store verb falls through to no target
+  (<code>logs/negative_control_verb_case.log</code>: <code>2 failed, 7
+  passed</code>, <code>EXIT=1</code>, with the verb case among the failures).</p>
 </article>
 </body>
 </html>
