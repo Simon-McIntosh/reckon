@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T04:34:12.833Z",
+  "dispatched_at": "2026-10-24T04:27:32Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:329",
+      "id": "reasoning-1",
+      "reason": "the node would extend `stream_carries` for launches and trust the stated consequence, and the pane would then draw other sessions' launches from the two release paths, a defect the plan's own done-when has no arm to catch; the section must name those release paths as also gated by the own-session limit, or add an arm that feeds an expired arrival for a peer session.",
+      "text": "\u00a714 now says \"The own-session limit is applied in `RowPolicy` \u2026 A stale arrival opener released for another session's run therefore still prints no launch\", but `RowPolicy` applies `_is_own_start` at only one place, `_resolve_arrival` (reckon/crew/ticker.py:1585); an arrival hold that never resolves is released by `_release_expired` (ticker.py:1506-1511), and a run that moves without a `dispatched` left side releases its opener at ticker.py:1723 \u2014 both before any session test, for any session's run \u2014 so an arrival opener (`(None,\"dispatched\")`, pane word `working`) qualifies as \"the first row of an attempt that reaches the `working` pane word\" and would print a peer session's launch once `stream_carries` carries launches",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:345",
+      "id": "wiring-1",
+      "reason": "the next coordinator follows the followup's prompt, so a driver naming a done section either redispatches landed work or has to be reinterpreted by hand; the close of \u00a79 needed to resolve `f-alwh-003` and open the \u00a714 driver in its place.",
+      "text": "the open followup `f-alwh-003` recommends `/reckon-build a-live-worker-is-never-drawn-halted \u00a79` and says \u00a79's wiring node \"comes first\", while `plan-section-declarations` records `s9: done` and the section's own close comment (2026-10-24T04:20Z) records it landed and reviewed \u2014 so the plan's only open driver dispatches a closed section",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "e2cf89cad9a00d82a118874c1d4c3be9644275a61df670f6991f57c71315a58f",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 64,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T042608705205-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "ebd0ace4f5c949542fdcde7835ac68c5ee3c6521",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a714 names exists at HEAD (`stream_carries`, `CARRIED_PANE_WORDS`, `transition_class`, `RowPolicy._observer_exception`, `_feed`, `_told`, `_display_state`, `_watch_transition`), and the one claim about existing behaviour is exact: `_watch_transition` writes the snapshot's own `run_id` and `node` (reckon/crew/recovery_watch.py:1923-1924).",
+    "done_when": "pass \u2014 \u00a714's done-when names a measurable stream row set per fixture arm, a producer arm for the reviewed-run id, and a base-revision negative control that would print none of the launch, in-review, landing or dropped rows (I confirmed at HEAD that `stream_carries` rejects all four: `(working,discarded)` and `(complete,recorded)` are not in `COORDINATOR_KINDS`, and `landed`/`dropped` are absent from `CARRIED_PANE_WORDS`).",
+    "evidence_paths": "pass \u2014 each arm's evidence is the run's gate log, and no temporary or session-scratch path is named.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or changelog prose reach a symbol, path or comment.",
+    "reasoning": "a finding \u2014 the newly added sentence placing the own-session limit in `RowPolicy` is right about the owner, but states as a consequence that a stale arrival opener for another session \"still prints no launch\", which the release paths do not provide: `_release_expired` and the stale-arrival branch append the opener without consulting `_is_own_start`, so carriage by pane word would print a peer's opener.",
+    "single_goal": "pass \u2014 one deliverable: the row policy carries each real state change of a run once, with the `recovery_watch.py` edit as the enabling half of the review row.",
+    "wiring": "a finding \u2014 \u00a714's ordering against \u00a75, \u00a77, \u00a713 and \u00a79's wiring node is consistent, but the open followup `f-alwh-003` (:345) still recommends building \u00a79, which the plan declares done and closes at 04:20Z."
+  },
+  "section_digests": {
+    "_document": "06b6bffb1430e5d0b3aaec84c099dc6755869214442e32f0b25b108c69b81029",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "610931812a37c820cda726cef833b2c576b4cccb6b67fcf896ed6fe09f117cc5",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "607c5ed638bb7fd894caef6e6fd6331649e3d6efcc2df2b48c1528c827010ae5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:39:08.550303+00:00"
+}
