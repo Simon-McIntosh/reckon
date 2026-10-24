@@ -277,6 +277,51 @@ LIFT_STATES = frozenset({LIFT_GRANTED, LIFT_IN_FORCE, LIFT_ENDED, LIMIT_RESET})
 LIFT_STAGE = "lift"
 LIMIT_STAGE = "limit"
 
+# What a limit-reset row says, in place of the transition it maps to. A reset
+# is a broadcast about a budget group rather than a state change of a run, and
+# the pane word it lands on — ``working`` — carries none of what a reader needs:
+# ``limit <group> new → working`` gives no sign that the row is a usage-limit
+# reset or that it asks a stopped session to continue. The row is drawn as its
+# own clause instead — what it is, the group, the clock it resets, and what it
+# asks of the session — with the announcer's reason after it when the record
+# carries one.
+RESET_HEADLINE = f"{LIMIT_STAGE} reset"
+RESET_INSTRUCTION = "orchestrator sessions may continue"
+
+# The facts the clause reads out of the sentence the producer composes. That
+# sentence names the group, the clock, the instant, who announced it and why,
+# and rides the row's free-text field, which the renderer drops for every other
+# row because no other row needs it. The clock is printed beside the group and
+# the announcer's reason at the end, so the pane reads those two facts apart
+# from the sentence. A sentence matching no pattern costs the row neither of
+# them silently: the headline, the group and the instruction come from the
+# row's own fields, so an unrecognised sentence narrows the new clause rather
+# than blanking the row.
+RESET_CLOCK_CLAUSE = re.compile(r"\([^()]*,\s*(?P<clock>[^(),]+)\)")
+RESET_REASON_CLAUSE = re.compile(r"announced by [^:]*:\s*(?P<reason>[^;]+)")
+
+
+def limit_reset_text(event: Mapping[str, Any]) -> str:
+    """One limit-reset row as the single clause a reader acts on.
+
+    The group is the row's own ``node``: a broadcast row carries no run, and the
+    producer puts the budget group there.
+    """
+    clause = str(event.get("detail") or "")
+    parts = [RESET_HEADLINE]
+    group = str(event.get("node") or "").strip()
+    if group:
+        parts.append(group)
+    clock = RESET_CLOCK_CLAUSE.search(clause)
+    if clock:
+        parts.append(clock.group("clock").strip())
+    parts.append(RESET_INSTRUCTION)
+    reason = RESET_REASON_CLAUSE.search(clause)
+    if reason:
+        parts.append(reason.group("reason").strip())
+    return " · ".join(part for part in parts if part)
+
+
 # The internal state the row policy writes onto a review run's launch row, so
 # the pane draws the reviewed run as being in review. It is a pane word of its
 # own rather than a producer state: the reviewed run's own state never changes
@@ -2793,14 +2838,19 @@ class Ticker:
             # rather than against its own alone.
             self._shown_wait[run_id] = wait_facts(event)
 
+        # A reset is drawn as a clause of its own rather than as the transition
+        # its pane word would make: what it is, the group, the clock, and what
+        # it asks. Its pane word is still recorded above, so the pane's memory
+        # of the group reads as it does for every other row.
+        if raw_to_state == LIMIT_RESET:
+            return self._reset_line(event)
+
         # A broadcast row carries no run and so no role: its stage names the
         # broadcast, and its job cell names the budget group it concerns. A
-        # reset is not a lift, so it takes its own stage word rather than
-        # claiming the lift's — the row reads as what it is.
+        # lift keeps its own stage word here; a reset is drawn above, as the
+        # clause it is, so the two families stay readable apart.
         stage = (
-            LIMIT_STAGE
-            if raw_to_state == LIMIT_RESET
-            else LIFT_STAGE
+            LIFT_STAGE
             if raw_to_state in LIFT_STATES
             else _display_role(event.get("role"))
         )
@@ -2873,6 +2923,40 @@ class Ticker:
             cells[-1] = (text.rstrip(), style)
         # A shadow will never merge, so the row says so about itself end to end
         # rather than spending a column on an identifier a reader cannot use.
+        shadow = is_shadow(event)
+        return "".join(
+            self._paint(text, "dim" if shadow and style is not None else style)
+            for text, style in cells
+        )
+
+    def _reset_line(self, event: Mapping[str, Any]) -> str:
+        """One limit reset as a clause, in place of the transition's two words.
+
+        The clause takes the room the stage, job and transition columns give it,
+        and the elapsed cell and the counters keep their places after it, so a
+        reset row lines up with the fleet rows beneath it. It is the one row
+        carrying free text, so it is cut to the pane like every other cell: the
+        cut is what keeps a long reason from wrapping the row, which would cost
+        a quarter of the visible history.
+        """
+        spend = self._spend_cells(event, LIMIT_RESET)
+        stats = self._stats(event)
+        tail = (
+            GAP
+            + sum(len(text) for text, _ in spend)
+            + GAP
+            + sum(len(text) for text, _ in stats)
+        )
+        room = self._grid_width() - CLOCK - GAP - tail
+        cells: list[tuple[str, Any]] = [
+            (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
+            (" " * GAP, None),
+            (elide(limit_reset_text(event), room), None),
+            (" " * GAP, None),
+            *spend,
+            (" " * GAP, None),
+            *stats,
+        ]
         shadow = is_shadow(event)
         return "".join(
             self._paint(text, "dim" if shadow and style is not None else style)
