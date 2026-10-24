@@ -1,0 +1,150 @@
+<!-- Evidence anchor: a-runs-scratch-is-removed-on-the-host-that-made-it -->
+
+<section id="a-runs-scratch-is-removed-on-the-host-that-made-it-evidence">
+  <h2>A run's scratch leaves with the run, on every host that holds a copy</h2>
+
+  <p id="a-runs-scratch-is-removed-on-the-host-that-made-it-change">
+    A directory named for a run is that run's scratch on whichever host it sits, and node-local
+    scratch is not shared between hosts, so the rule is now kept by run rather than by host.
+    <code>remove_worker_scratch</code> names the host that removed each copy
+    (<code>scratch_host</code>) and reports <code>scratch_absent</code> when the host it runs on
+    holds nothing, so a receipt can no longer be read as describing a copy elsewhere.
+    <code>reckon.crew.gc.settle_run_scratch</code> is a pass of its own, not the
+    <code>garbage_collect_scratch</code> survey: it reads each run-named directory under the scratch
+    root, and removes it at once — no age wait — when its run has no live pointer, no process holds
+    it, and the run directory in the shared crew home records that the run ended
+    (<code>exit.json</code>, an <code>attempt-N-exit.json</code>, or the discard marker). A copy whose
+    run has neither a pointer nor a run directory waits for <code>SCRATCH_GRACE_SECONDS</code>, after
+    the same holder check. It runs from three callers: <code>ensure_worker_scratch</code>, which the
+    launch, resume and lane-change paths all reach before a new worker's scratch is made; the
+    step wrapper <code>_STEP_TASK_WRAPPER</code>, for a node that only runs steps and never launches;
+    and §7's hourly <code>retention_sweep</code>, which now calls it and appends its removals to the
+    same rotating log. The pass removes nothing when the state home and the scratch root are
+    not both known to it — a caller that sets <code>RECKON_HOME</code> alone leaves the
+    host-wide default root in place, where the copies belong to runs whose live pointers that
+    private home cannot see, and the holder scan does not reach a worker sitting in its
+    worktree between turns. The two trees are taken together — both named as arguments, both
+    taken from the environment, or both left at their defaults — so one named and the other
+    read from the environment withdraws every removal. That rule lives in one predicate,
+    <code>scratch_root_pairs_with_state_home</code>, which both this pass and
+    <code>garbage_collect_orphan_scratch</code> call. It withholds with
+    <code>state and scratch roots differ</code>, the same guard the orphan sweep applies.
+    The release receipt is also written beside the run's own record
+    (<code>release.json</code>) before the ledger write, because the ledger write is not durable on
+    its own — see the route named below.
+  </p>
+
+  <p id="a-runs-scratch-is-removed-on-the-host-that-made-it-routes">
+    <strong>The routes, and the records they were read from.</strong> Every ledger row under every
+    mounted project's <code>docs/state/&lt;project&gt;/runs/</code> was joined against the scratch
+    directories on this host and against <code>~/.config/reckon/crew/live/</code>. Of the 105
+    run-named directories here, 42 belong to live pointers and were left alone; the remaining 63
+    split into four shapes, and each shape names a different route:
+  </p>
+  <ul id="a-runs-scratch-is-removed-on-the-host-that-made-it-route-list">
+    <li id="a-runs-scratch-is-removed-on-the-host-that-made-it-route-a">
+      <strong>33 rows record <code>scratch_removed: true</code>, naming the run's own path in
+      <code>scratch_removed_paths</code>, and the directory is still here.</strong> The receipt is
+      true about the host that ran it and silent about this one: both hosts spell the path
+      identically (<code>/tmp/reckon-crew-scratch/&lt;run&gt; reports</code>), so the release removed
+      the same-named path on the promoting host while the worker's copy on this host was never in its
+      reach. Examples: <code>r-20261020T202608740663-shc-gap-docs-regen</code>,
+      <code>r-20261020T202606397921-scg-name-domain-writer</code>. This is the route §8 exists for,
+      and it is closed by <code>settle_run_scratch</code> running on this host.
+    </li>
+    <li id="a-runs-scratch-is-removed-on-the-host-that-made-it-route-b">
+      <strong>16 rows record <code>scratch_removed: false</code>.</strong> The release ran on a host
+      holding no copy, so it had nothing to remove and withheld the reason — e.g.
+      <code>r-20261020T212940955037-review-of-ssog-anchor-rerun-wall-recomb-jev-b032b1c48f66</code>.
+      Here too the surviving copy is on the worker's own node.
+    </li>
+    <li id="a-runs-scratch-is-removed-on-the-host-that-made-it-route-c">
+      <strong>14 review and plan-review rows carry no release block at all
+      (<code>release: null</code>).</strong> Two effects put them there. Where the release's own
+      ledger commit could not stage, <code>_commit_landing_writes</code>
+      (<code>reckon/crew/promotion_scope.py</code>) restores every path it wrote to HEAD before
+      refusing, so the receipt is erased with the commit: the run directory of
+      <code>r-20261022T165107694120-review-of-the-claude-account-is-read-from-their-own-record</code>
+      carries eleven <code>stage_retry</code> entries and a final <code>stage</code> refusal in its
+      <code>landing.json</code>, and its committed row has <code>release: null</code>. Where the
+      receipt's commit short-circuited, the row keeps the schema default and no
+      <code>release(...)</code> commit exists for the run —
+      <code>r-20261023T093727181057-review-of-a-plans-coordinator-is-derived-from-the-ledger-4fed6ea3963c</code>
+      has one <code>landing.json</code> entry (its landing commit, 10:10:50Z) and no release entry,
+      while a peer promoted minutes earlier carries one. The route is therefore the release receipt
+      depending on a landing commit that is not durable, not a promotion path that skips the release:
+      every promotion path calls <code>_release_after_promotion</code> before
+      <code>_record_release_on_ledger</code> (<code>reckon/crew/promotion.py:1752</code> and
+      <code>:1125</code>). This node makes the receipt durable beside the run record, and
+      <code>settle_run_scratch</code> removes those copies whether or not a receipt ever landed.
+    </li>
+    <li id="a-runs-scratch-is-removed-on-the-host-that-made-it-route-d">
+      <strong>The survivors that fit none of the three records above: two, and both are rows absent
+      from every mounted ledger.</strong> <code>r-20261021T073526532476-jt60sa-2023-shot-census</code>
+      and
+      <code>r-20261023T181108111637-review-of-a-disposition-after-promotion-reaches-the-reflex-afd3f6e5bd8b</code>
+      have a scratch copy here and no row under any project in <code>mounts.json</code>, so the
+      release recorded nowhere these records could be read. Their copies are the "no run directory or
+      no row" case the settling pass takes under the grace, after the holder check. (The plan counts
+      four; reading the same records at 01:5xZ today finds these two still surviving, the other two
+      having since been reclaimed, so the class is named by its route rather than by a fixed count.)
+    </li>
+  </ul>
+
+  <p id="a-runs-scratch-is-removed-on-the-host-that-made-it-measure">
+    In a temporary crew home and a temporary scratch root, <code>remove_worker_scratch</code> removes
+    this host's copy and its timestamp-stem sibling, records <code>scratch_removed: true</code> and
+    names the host; the same call with no copy present records <code>scratch_absent: true</code> and
+    removes nothing. On a second host, <code>ensure_worker_scratch</code> and, separately,
+    <code>retention_sweep</code> each remove a finished run's fresh copy — its ctime is well inside
+    <code>SCRATCH_GRACE_SECONDS</code>, so no age wait applies. A copy under a live pointer, and a
+    copy a process holds open, are both left. A run-named copy whose run has neither a pointer nor a
+    run directory is left at its own ctime and removed once past the grace. A private home that
+    leaves the scratch root to this process's environment removes nothing, and names
+    <code>state and scratch roots differ</code>; a scratch root named alone with a private home
+    does the same, a runs root named alone does the same, and a caller that names both trees is
+    settled as usual. The receipt is asserted to go through
+    <code>write_json_atomically</code> — the writer the landing and pointer records use — so a
+    plain <code>write_text</code> in its place fails the case. The step wrapper, run
+    under <code>bash</code> with the wrapper's own environment, removes a finished run's copy. A
+    review run's release removes its scratch and names the host, and its receipt survives a landing
+    commit that is refused.
+  </p>
+
+  <p id="a-runs-scratch-is-removed-on-the-host-that-made-it-route-entry">
+    <strong>The production route, driven end to end.</strong> A review run is promoted by the same
+    function every other run goes through: <code>reckon crew complete</code> calls
+    <code>reckon.crew.promotion.complete</code>, which folds the record, calls
+    <code>_release_after_promotion</code> and then records the release on the ledger row. The case
+    builds a temporary crew home with a committed repository, a parsed head-keyed review record, a
+    review-role pointer and the run's exit record, and calls that function — not the release function
+    behind it. The case file was run against a <code>git archive</code> extraction of the base
+    revision <code>0409dcbe4</code>, with the head's case file and the head's
+    <code>reckon/crew/gc.py</code> copied in so the module imports while
+    <code>promotion.py</code> and <code>promotion_release.py</code> stay at the base; the log is
+    <code>logs/review-route-base.log</code> and it ends <code>EXIT=1</code>. What it shows is that the
+    base removes the copy and records a release block — that part of the route predates this node —
+    but the block names no host: the case fails on <code>KeyError: 'scratch_host'</code>, which is
+    exactly the fact this node added, because a receipt that does not name its host cannot be told
+    apart from one describing a copy elsewhere. At the head the copy is gone, the row carries a
+    release block naming this host, and the same receipt sits beside the run record.
+  </p>
+
+  <p id="a-runs-scratch-is-removed-on-the-host-that-made-it-negative">
+    <strong>Negative control.</strong> The declared mutation makes the settling pass keep the orphan
+    sweep's age wait: the run-ended branch additionally requires
+    <code>age &gt;= SCRATCH_GRACE_SECONDS</code>. Under it the second-host case fails, together with
+    the retention-pass and step cases, and the head arm fails none of them. Run against the committed tree, the
+    mutation finished with <code>EXIT=1</code> and three failing test ids.
+  </p>
+
+  <p id="a-runs-scratch-is-removed-on-the-host-that-made-it-gate">
+    <strong>Gate.</strong> <code>PYTHONPATH=. python -m pytest -p no:cacheprovider -q</code> over the
+    new case file and the eleven named suites, on the committed tree: 85 passed, 4 failed,
+    0:02:14, <code>EXIT=1</code>. The
+    four failures are <code>tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release</code>
+    in all four parametrisations, and they fail identically with
+    <code>reckon/crew/promotion_release.py</code> restored to its HEAD content, so they are
+    pre-existing on the base revision and outside this node's change.
+  </p>
+</section>

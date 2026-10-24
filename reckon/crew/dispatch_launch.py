@@ -1,12 +1,15 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
+import contextlib
 import ctypes
 import dataclasses
 import json
 import os
 import re
+import shlex
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import threading
@@ -780,7 +783,19 @@ def tree_size_bytes(path: Path, *, limit: int | None = None) -> int:
 
 
 def ensure_worker_scratch(run_id: str) -> Path:
-    """Create the run's scratch directory if it is absent and return it."""
+    """Create the run's scratch directory if it is absent and return it.
+
+    Before the directory is made, this host settles the copies of finished runs
+    it is holding. A launch, a resume and a lane change all reach here, so a
+    host that only ever composes work still clears what earlier runs left on it
+    at the one moment it is about to add to the same tree. The pass is
+    best-effort: a settling failure must never cost a worker its scratch.
+    """
+    from reckon.crew.gc import settle_run_scratch
+
+    # A settling failure must never cost a worker its scratch.
+    with contextlib.suppress(Exception):
+        settle_run_scratch(apply=True)
     path = worker_scratch_dir(run_id)
     path.mkdir(parents=True, exist_ok=True)
     return path
@@ -861,6 +876,11 @@ def remove_worker_scratch(
         "scratch_withheld": reason,
         "scratch_bytes": None,
         "scratch_removed_paths": [],
+        # Which host removed what. Node-local scratch is not shared, so a
+        # receipt that does not name its host cannot be told apart from one
+        # describing a copy elsewhere, and a reader cannot tell which of a
+        # run's hosts still holds one.
+        "scratch_host": socket.gethostname(),
     }
     if path is None and reason != "scratch directory is no longer present":
         return result
@@ -880,6 +900,10 @@ def remove_worker_scratch(
             and not child.is_symlink()
         )
     if not targets:
+        # No copy on this host is not a failed removal: a release on a host that
+        # never ran the worker has nothing to take. It is reported as absent so
+        # a reader can tell "removed here" from "there is nothing here".
+        result["scratch_absent"] = True
         return result
     sizes = {target: tree_size_bytes(target) for target in targets}
     result["scratch_bytes"] = sum(sizes.values())
@@ -1098,7 +1122,19 @@ _STEP_TASK_WRAPPER = (
     f"(set -f; IFS=:; mkdir -p -- ${STEP_NODE_DIRS_ENV}) || exit 1; fi && "
     "start=$(awk '{print $22}' \"/proc/$$/stat\") && "
     'printf "%s %s %s %s\\n" "$SLURM_JOB_ID" "$SLURM_STEP_ID" "$$" "$start" '
-    '> "$RECKON_STEP_RECORD" && exec "$@"'
+    '> "$RECKON_STEP_RECORD" && '
+    # A node that only runs steps never launches a worker, so this is the one
+    # moment it can settle the scratch copies earlier runs left on it. The
+    # pass is best-effort: a step must start whatever the state of the temp
+    # tree, so a failure here is swallowed rather than allowed to end the step.
+    "("
+    + shlex.quote(sys.executable)
+    + " -c "
+    + shlex.quote(
+        "from reckon.crew.gc import settle_run_scratch; settle_run_scratch(apply=True)"
+    )
+    + " >/dev/null 2>&1 || true) && "
+    'exec "$@"'
 )
 
 
