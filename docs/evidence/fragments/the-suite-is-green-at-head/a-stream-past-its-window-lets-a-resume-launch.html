@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s60">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-tags" content="crew,resume,stream,attempt-claim,liveness">
+  <title>A stream past its window lets a resume launch | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-stream-past-its-window-lets-a-resume-launch-landed" data-node="a-stream-past-its-window-lets-a-resume-launch" data-reckon="landed" data-when="2026-10-24">
+  <h2 id="a-stream-past-its-window-lets-a-resume-launch-title">A stream past its window lets a resume launch</h2>
+  <p id="a-stream-past-its-window-lets-a-resume-launch-cause"><strong>Cause.</strong>
+  The route the section left unknown is the resume's own attempt claim.
+  <code>_resume</code> reserves <code>attempt-N.claim</code> before it composes
+  anything, and the claim's <code>at</code> stamp dates the current attempt.
+  <code>_observed_end_refusal</code> then asks how long the run has been silent,
+  and <code>_run_stream_quiet_seconds</code> caps the newest stream's silence at
+  that attempt clock. So the claim the door itself had just taken made a
+  three-hour-old stream read as one second old. <code>_newest_stream_in_motion</code>
+  answered true, and the door refused the resume that had reserved the attempt a
+  moment earlier, reporting a live process that no stream showed. The commit that
+  introduced it is <code>718b6fba4</code>, which dates an attempt from its claim
+  so a just-resumed run is not drawn halted. That reading is right for the pane;
+  it is wrong for the dry-run and launcher doors, which ask about the worker that
+  wrote the stream.</p>
+  <p id="a-stream-past-its-window-lets-a-resume-launch-repro"><strong>Reproduction.</strong>
+  The listed id at the base revision <code>3c79a6d38</code>, run from a
+  <code>git archive</code> extraction on node-local disk, fails at
+  <code>reckon/crew/dispatch_sessions.py:1311</code> with
+  <code>reckon.crew.CrewError: run 'r-stream-quiet' still has a live process;
+  observe or stop it before resuming</code>. Instrumented at that guard on the
+  same fixture, the attempt clock reads one second from the claim, the newest
+  stream's own silence reads 10800&nbsp;s against a 900&nbsp;s window, and the
+  capped reading <code>min(10800, 1)</code> is what the refusal is made on.</p>
+  <p id="a-stream-past-its-window-lets-a-resume-launch-fix"><strong>Fix.</strong>
+  The end reading now measures the stream's own silence.
+  <code>_newest_stream_in_motion</code> gains <code>from_stream_alone</code>, and
+  <code>_stream_reading_refusal</code> and <code>_newest_stream_ended</code> pass
+  it; both live in <code>reckon/crew/resumption.py</code> and both callers of the
+  door read the same helper, so the dry-run prediction and the launcher still
+  refuse identically. The attempt-capped clock keeps deciding the stall and pane
+  readings, so the window <code>718b6fba4</code> exists to fill is untouched.
+  The test file needed no change: it already pins the contract, and nothing in
+  the reproduction showed it asserting something no commit intended.</p>
+  <p id="a-stream-past-its-window-lets-a-resume-launch-measure"><strong>Measure.</strong>
+  Logs are under the run directory's <code>logs/</code>. Base arm
+  (<code>3c79a6d38</code>, extraction, command literal in the manifest) over the
+  listed file plus every test file importing a changed module:
+  <code>7 failed, 272 passed</code>, the listed id among them. Head arm over the
+  same set: <code>6 failed, 273 passed</code> — the six are the base arm's own
+  <code>tests/test_mcp_recovery.py</code> ids, so no failure is added. Gate
+  (<code>tests/test_a_resume_never_launches_beside_another_node.py</code>) at
+  <code>b3ca6cdcb</code>: <code>5 passed</code>, <code>EXIT=0</code>.</p>
+  <p id="a-stream-past-its-window-lets-a-resume-launch-negative"><strong>Negative control.</strong>
+  Both repairs reverted — <code>reckon/crew/resumption.py</code> and
+  <code>reckon/crew/recovery_liveness.py</code> restored to <code>3c79a6d38</code>
+  in a head extraction — and the listed id fails again with the same
+  <em>still has a live process</em> refusal: <code>1 failed</code>,
+  <code>EXIT=1</code>.</p>
+  <p id="a-stream-past-its-window-lets-a-resume-launch-commit"><strong>Landed.</strong>
+  <code>b3ca6cdcb</code> — <code>reckon/crew/resumption.py</code> and
+  <code>reckon/crew/recovery_liveness.py</code>.</p>
+</article>
+</body>
+</html>
