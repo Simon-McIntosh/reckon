@@ -1221,6 +1221,11 @@ def plan_blocker_state(
     wait, so no placeholder blocker is synthesized for it.
     """
 
+    # The workflow status is the status a plan is held at; a row carrying both
+    # spellings must be read through the same precedence here as in the rest of
+    # the roadmap, or this assembly would rank a plan by one status and report
+    # it by the other.
+    plan_status = _status(dict(plan))
     reported = (
         list(blockers) if blockers is not None else list(plan.get("blocking") or [])
     )
@@ -1240,11 +1245,7 @@ def plan_blocker_state(
     # A stored blocked status is the open-state spelling for a wait whose rows a
     # composed list no longer carries; the placeholder keeps it visible instead
     # of the plan reading deferred while it is stored blocked.
-    if (
-        str(plan.get("status") or "").strip().lower() == "blocked"
-        and not blocking
-        and not released
-    ):
+    if plan_status.strip().lower() == "blocked" and not blocking and not released:
         explicit_blockers = [{"kind": "persisted", "id": "unrecorded"}]
         blocking = [*explicit_blockers]
     closable = is_closable(plan)
@@ -1261,9 +1262,7 @@ def plan_blocker_state(
         "plan_holding_decisions": plan_holding_decisions,
         "closable": closable,
         "blocked": bool(blocking) and not closable,
-        "effective_status": effective_status(
-            str(plan.get("status") or "draft"), blocking
-        ),
+        "effective_status": effective_status(plan_status, blocking),
     }
 
 

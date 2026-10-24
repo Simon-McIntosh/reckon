@@ -2089,7 +2089,9 @@ def _derive_lifecycle(
                 )
             ),
         )
-        workflow_status = str(plan.get("status") or "draft")
+        workflow_status = str(
+            plan.get("workflow_status") or plan.get("status") or "draft"
+        )
         plan["workflow_status"] = workflow_status
         plan["effective_status"] = state["effective_status"]
         plan["blocking"] = state["blocking"]

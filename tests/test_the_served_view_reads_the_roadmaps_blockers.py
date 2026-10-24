@@ -227,6 +227,50 @@ def test_a_free_plan_reads_open_on_both_surfaces(tmp_path: Path) -> None:
     assert _roadmap_blockers(roadmap["free"]) == {}
 
 
+def test_a_workflow_status_that_differs_from_status_reads_the_same() -> None:
+    """A row held at one status and stored at another reads one way.
+
+    A plan can carry a workflow status beside the status its file records: a
+    stored ``blocked`` whose work has since reopened is the live case. The
+    roadmap reads the workflow status first, so the shared blocker assembly
+    reads it from the same place — otherwise it would rank the plan by one
+    status and report it by the other.
+    """
+
+    from reckon.roadmap import build_roadmap
+    from reckon.serve import _derive_lifecycle
+
+    row = {
+        "slug": "moved",
+        "title": "Moved",
+        "type": "plan",
+        "status": "blocked",
+        "workflow_status": "active",
+        "section_declarations": {"s1": "implementable"},
+    }
+    served_rows, _ = _derive_lifecycle(PROJECT, [dict(row)], [])
+    served = served_rows[0]
+    roadmap = {
+        candidate["slug"]: candidate
+        for bucket in ("ready_now", "blocked", "deferred")
+        for candidate in build_roadmap(PROJECT, [dict(row)], []).get(bucket, [])
+    }["moved"]
+
+    assert served["workflow_status"] == "active", served["workflow_status"]
+    assert roadmap["status"] == "active", roadmap["status"]
+    assert _served_blockers(served) == _roadmap_blockers(roadmap), (
+        f"served {_served_blockers(served)} vs roadmap {_roadmap_blockers(roadmap)}"
+    )
+    assert not _blocked(served), (
+        f"served effective_status {served['effective_status']} "
+        f"vs roadmap readiness {roadmap['readiness']}"
+    )
+    assert not _roadmap_blocked(roadmap), (
+        f"roadmap readiness {roadmap['readiness']} "
+        f"vs served effective_status {served['effective_status']}"
+    )
+
+
 def test_a_released_hold_reads_open_on_both_surfaces(tmp_path: Path) -> None:
     """A plan stored blocked whose cleared blocker is released reads the same.
 
