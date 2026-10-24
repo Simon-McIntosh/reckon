@@ -24,6 +24,7 @@ import shlex
 from pathlib import Path
 
 import pytest
+import yaml
 from click.testing import CliRunner
 
 import reckon.mcp as mcp_module
@@ -162,13 +163,143 @@ CASES = [
     ),
     ("stop", ["stop", "--run", "run-missing"], {"run_id": "run-missing"}),
     ("discard", ["discard", "--run", "run-missing"], {"run_id": "run-missing"}),
+    (
+        "queue-edit",
+        [
+            "queue",
+            "edit",
+            "--run",
+            "r-queued",
+            "--brief",
+            "@brief@",
+            "--done-when",
+            "pytest reports 2 passed.",
+            "--write-path",
+            "reckon/mcp.py",
+            "--time-budget",
+            "30m",
+            "--backend",
+            "codex",
+            "--model",
+            "sol",
+        ],
+        {
+            "run_id": "r-queued",
+            "brief_path": "@brief@",
+            "done_when": "pytest reports 2 passed.",
+            "write_paths": ["reckon/mcp.py"],
+            "time_budget": "30m",
+            "backend": "codex",
+            "model": "sol",
+        },
+    ),
+    (
+        "queue-reprioritise",
+        ["queue", "reprioritise", "--run", "r-queued", "--priority", "7"],
+        {"run_id": "r-queued", "priority": 7},
+    ),
+    (
+        "queue-drop",
+        ["queue", "drop", "--run", "r-queued"],
+        {"run_id": "r-queued"},
+    ),
 ]
 
 
+def _queued_request(home: Path) -> None:
+    """Seed one valid waiting request for both sides of a parity case."""
+    run_id = "r-queued"
+    node = {
+        "id": "queue-fixture",
+        "goal": "Steer one request.",
+        "plan": "sample-plan",
+        "section": "§5",
+        "brief": "",
+        "brief_sha256": "",
+        "brief_path": "",
+        "role": "implement",
+        "spec_level": "exact",
+        "done_when": "pytest reports 1 passed.",
+        "write_paths": ["reckon/crew/queue_edit.py"],
+        "time_budget": "20m",
+        "manifest_path": str(home.parent / "manifest.md"),
+        "negative_control": "none: the node writes no check",
+        "estimated_hours": 1.0,
+        "requires_decisions": [],
+        "peer_scopes": {},
+        "regenerate_paths": [],
+        "images": [],
+        "inputs": [],
+        "compares_with": "",
+    }
+    pointer = {
+        "run_id": run_id,
+        "project": PROJECT,
+        "plan": "sample-plan",
+        "section": "§5",
+        "repo": str(home.parent / "repo"),
+        "session": "session-1",
+        "node": node,
+        "backend": "claude",
+        "launch": "cli",
+        "local": False,
+        "phase": "queued",
+        "queued_at": "2026-10-24T05:00:00+00:00",
+        "created_at": "2026-10-24T05:00:00+00:00",
+        "dispatch_options": {"locked_decisions": []},
+    }
+    (home / "crew" / "live" / f"{run_id}.json").write_text(
+        json.dumps(pointer), encoding="utf-8"
+    )
+
+
 @pytest.mark.parametrize("action,argv,kwargs", CASES, ids=[c[0] for c in CASES])
-def test_each_action_matches_its_cli_verb(config_home, action, argv, kwargs) -> None:
+def test_each_action_matches_its_cli_verb(
+    config_home, monkeypatch, action, argv, kwargs
+) -> None:
     """The tool action and its CLI verb answer one call with one document."""
+    if action.startswith("queue-"):
+        flight = {
+            "default_backend": "claude",
+            "local_backend": "claude",
+            "backends": {
+                "claude": {"launch": "cli", "lane": "claude", "model_key": "sol"},
+                "codex": {"launch": "cli", "lane": "codex", "model_key": "luna"},
+            },
+            "lanes": {
+                "claude": {
+                    "default_model": "sol",
+                    "models": {"sol": {"model": "claude-sol"}},
+                },
+                "codex": {
+                    "default_model": "luna",
+                    "models": {
+                        "sol": {"model": "gpt-6-sol"},
+                        "luna": {"model": "gpt-6-luna"},
+                    },
+                },
+            },
+        }
+        catalogue = config_home.parent / "models.yaml"
+        catalogue.write_text(
+            yaml.safe_dump({"version": 1, "lanes": flight["lanes"], "aliases": {}}),
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("RECKON_MODEL_CATALOGUE", str(catalogue))
+        monkeypatch.setattr(
+            crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: flight
+        )
+        brief = config_home.parent / "replacement.md"
+        brief.write_text("replacement steering text", encoding="utf-8")
+        argv = [str(brief) if value == "@brief@" else value for value in argv]
+        kwargs = {
+            key: str(brief) if value == "@brief@" else value
+            for key, value in kwargs.items()
+        }
+        _queued_request(config_home)
     cli = _cli_answer(argv)
+    if action.startswith("queue-"):
+        _queued_request(config_home)
     tool = mcp_module._crew(action=action, **kwargs)
 
     assert tool == cli, (

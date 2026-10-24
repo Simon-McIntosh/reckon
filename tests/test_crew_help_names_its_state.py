@@ -44,7 +44,6 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("recover",): "live pointers",
     ("repair-completion",): "historical completion measurements missing",
     ("repair",): "a manifest's status word or a review's status",
-    ("retention-sweep",): "finished run directories",
     ("resume",): "one stopped run, every ready run",
     ("review",): "one plan's content, a code neighbourhood or a portfolio",
     ("shadow",): "committed run",

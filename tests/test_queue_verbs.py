@@ -401,33 +401,6 @@ def test_each_mcp_action_returns_its_cli_verb_document(home: Path) -> None:
         assert tool == cli, f"{action}: tool {tool} != cli {cli}"
 
 
-def test_each_crew_tool_action_returns_its_cli_verb_document(home: Path) -> None:
-    """The crew MCP tool forwards every verb and answers the CLI's document."""
-    from reckon import mcp as mcp_module
-
-    cases = [
-        (
-            ["queue", "reprioritise", "--run", "r-missing", "--priority", "3"],
-            "queue-reprioritise",
-            {"run_id": "r-missing", "priority": 3},
-        ),
-        (
-            ["queue", "drop", "--run", "r-missing"],
-            "queue-drop",
-            {"run_id": "r-missing"},
-        ),
-        (
-            ["queue", "edit", "--run", "r-missing", "--time-budget", "30m"],
-            "queue-edit",
-            {"run_id": "r-missing", "time_budget": "30m"},
-        ),
-    ]
-    for argv, action, kwargs in cases:
-        cli = _answer(CliRunner().invoke(CREW, argv))
-        tool = mcp_module._crew(PROJECT, action=action, **kwargs)
-        assert tool == cli, f"{action}: tool {tool} != cli {cli}"
-
-
 def test_a_request_that_launches_before_the_discard_is_refused(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
