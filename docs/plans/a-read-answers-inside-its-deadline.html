@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="470">
+<meta name="plan-version" content="471">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -1301,6 +1301,9 @@
 </div>
 <div class="r-comment" data-section="s50" data-id="c-run-r-20261024T023646234848-review-of-a-roadmap-read-answers-from-its-snapshot-e3333a4855cc" data-who="reckon-build" data-when="2026-10-24T02:46:10.157Z">
     <div class="r-comment-body"><p>Independent review of run r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot at head e3333a4855cc2fa43e6af95f10fc4da7ef2280c6, covering the commit it gained since the review at a41ebcda01b0cb75abb6406b36f4dd28b19e713f. Scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 19, fit 18, reuse 20; added_failure_count 0; two non-blocking findings on the evidence records. The gained commit repairs the two findings the prior review raised against the keep-count test and the fragment, and the keep-count case now fails under its negative control.</p></div>
+</div>
+<div class="r-comment" data-section="s50" data-id="c-run-r-20261023T145257555333-a-roadmap-read-answers-from-its-snapshot" data-who="reckon-build" data-when="2026-10-24T02:35:53Z">
+    <div class="r-comment-body"><p>The key that answers a warm roadmap read carries, per live run of the project, the crew watcher&#x27;s fresh liveness reading, the run&#x27;s declared wait read as overdue or not, and its composition key, beside the watcher&#x27;s own state. The state is recomputed from the files a run owns, the liveness reading is the moment&#x27;s process-table probe, and the declared wait is read at the moment the key is taken, because the reduction&#x27;s stored snapshot refreshes only the silence for a later moment: a run waiting at one read is overdue at the next, and the read says so. The composition key is read back from the store the reduction just wrote rather than computed a second time, so each of the run&#x27;s records is stat&#x27;d once per read, and the counter behind the section&#x27;s bound counts every read the key makes, Path reads included. All of it lives in reckon/roadmap_snapshot.py, which is what brings serve.py under the worker-window bound; the mounts memo lives there too, so serve.py keeps the three global statements it had at base.</p></div>
 </div>
 </section>
 </main>
