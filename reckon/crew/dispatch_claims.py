@@ -36,6 +36,7 @@ from reckon.crew.node import (
     CrewError,
     ScopeConflict,
     TaskNode,
+    WAITING_REQUEST_PHASES,
     claim_disposition,
     claim_repository,
     repository_identity,
@@ -112,12 +113,9 @@ class DirectoryClaimConflict(ScopeConflict):
         )
 
 
-# The phases a live claim carries while its worker is still being composed.
-# A pointer in any other phase — working, running, waiting, or anything a
-# future writer adds — describes a run that has already passed its own
-# admission, so its claim refuses newcomers however the registration times
-# compare. An absent phase is read the same way: a claim that cannot be shown
-# to be still composing is treated as established rather than quietly outranked.
+# These phases mark a launch claim still being composed. An established claim
+# is never outranked by a later registration. Waiting requests are judged
+# nonbinding by claim_disposition before this racing order is considered.
 _UNLAUNCHED_CLAIM_PHASES = frozenset(
     {"starting", "launching", "launcher", "dispatching"}
 )
@@ -457,6 +455,7 @@ def _repository_scope_claims(
             identity_cache=identity_cache,
             resolve_checkout=relevant,
         )
+        phase = str(pointer.get("phase") or "")
         disposition = claim_disposition(pointer) if relevant else None
         project = str(pointer.get("project") or "")
         run_id = str(pointer.get("run_id") or "unknown")
@@ -496,10 +495,10 @@ def _repository_scope_claims(
                     # newcomers as it always has. The launch claim published
                     # before the checks is the only shape that is still
                     # composing, and the phase is what names it.
-                    launched=(
+                    launched=phase not in WAITING_REQUEST_PHASES
+                    and (
                         bool(pointer.get("worktree") or pointer.get("pid"))
-                        or str(pointer.get("phase") or "")
-                        not in _UNLAUNCHED_CLAIM_PHASES
+                        or phase not in _UNLAUNCHED_CLAIM_PHASES
                     ),
                 )
             )
