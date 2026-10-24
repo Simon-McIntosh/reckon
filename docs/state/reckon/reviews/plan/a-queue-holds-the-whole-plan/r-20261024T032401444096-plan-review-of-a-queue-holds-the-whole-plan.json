@@ -1,0 +1,112 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T03:32:19.856Z",
+  "dispatched_at": "2026-10-24T03:25:18Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "done_when-1",
+      "reason": "without a discriminating arm the gate passes on the wrong field the paragraph names, so the defect it would expose ships unmeasured.",
+      "text": "the added arm \"A waiter on a section whose plan's `depends_on` names an unshipped plan stays `awaiting-upstream`\" is satisfied by any of three readings of the row \u2014 the `depends_on` rows with `satisfied` false, the composite `dependency_ready`, or the row's `ready` \u2014 because an unshipped dependency makes all three false (reckon/roadmap.py:3359-3361, 3438-3448); the arm therefore cannot show that the mechanism reads the `depends_on` answer, and no arm covers a section the roadmap reports ready under a plan whose only open decision is scoped to another section.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "reasoning-1",
+      "reason": "the sentence names the wrong field for the test it claims to make, so the shared predicate would answer a plan-level summary instead of the per-section reading the same paragraph requires, and the added done-when arm cannot tell the two apart.",
+      "text": "\u00a78 defines `dependency_ready` as the field that \"answers the plan's `depends_on`\", but it is computed as `\"dependency_ready\": is_ready` (reckon/roadmap.py:3540, copied onto section rows at :3750), and `is_ready` (:3438-3448) is the conjunction of dispatchable, authorised, no plan dependency, no explicit/held/gate blocker, no plan-holding decision, not a cycle member and not closable \u2014 it is the row's plan-level summary verdict, identical to `ready` (:3531), which the same paragraph has just forbidden a wait to read (\"A wait is answered per section, never from the plan-level summary\"). The field that answers a plan's `depends_on` is `depends_on` itself (:3514), the dependency rows whose `satisfied` is computed at :3356-3361. A worker following the sentence implements the predicate against the summary the paragraph forbids and leaves the `depends_on` rows unread.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:80",
+      "id": "reasoning-2",
+      "reason": "a predicate built from this list over-holds sections the roadmap reports ready, so queued work stalls on a decision the plan intends to scope to one section.",
+      "text": "\u00a78 lists `decision_blockers` among the fields the per-section predicate reads, but that row list is every decision in state `open` or `gated` (reckon/roadmap.py:3389, reported at :3527), including the section-scoped decisions the roadmap deliberately keeps out of the plan verdict (`plan_holding_decisions`, :3385, feeds `is_ready`/`is_blocked` at :3445/:3455) and the `gated` ones the adjacent comment says \"never blocks the plan's own execution\"; the section-scoped wait reaches the section through `section_readiness`'s blockers instead (:3586-3603). Reading `decision_blockers` per section would hold every section of a plan whose open decision is scoped to a different section, diverging from the roadmap derivation \u00a78 says it reuses rather than restates, and would leave those sections `awaiting-upstream` with no arm in the done-when to show it.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "935def0562dbacd1c6d369e82760623e1946bac2e8fc717d0ca6848a74cad60b",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 48,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-24T03:34:47.467934+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T03:35:20.466552+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-24T03:35:52.141671+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T03:34:47.467934+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T03:35:20.466552+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T03:35:52.141671+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v48.json",
+  "review_run_id": "r-20261024T032401444096-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "0691a2dbea3c93231716d1bff1a5556c23436dfd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `parse_manifest`/`MANIFEST_STATUSES` (reckon/crew/reports.py:126,138), `run_path` (reckon/ledger.py:890), `sweep_promoted_revisions` with its `target_head=\"HEAD\"` default (reckon/crew/promotion.py:1985), `_readiness_rows` (reckon/crew/queue_admission.py:1056), `_readiness_by_slug` (reckon/crew/plan_review.py:3094), `parse_plan_ref` (reckon/_schema.py:276), `TaskNode` (reckon/crew/node.py:725) and `reckon/crew_dispatch_commands.py` all resolve; `RUN_DELIVERED_STATUSES` (reckon/crew/queue_admission.py:1023) is the five-tuple the plan quotes.",
+    "done_when": "a finding \u2014 the newly added `depends_on` arm passes whichever of `depends_on`, `dependency_ready` or the row's plan-level readiness the predicate reads, and no arm exercises a section the roadmap reports ready under a plan carrying a section-scoped or gated decision.",
+    "evidence_paths": "pass \u2014 \u00a78 names no scratchpad or node-local path; its write paths are repository modules and a test file, and the run-directory convention governs its logs.",
+    "naming": "pass \u2014 \u00a78 introduces no symbol, file or comment carrying a plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 the paragraph lists two plan-level fields as per-section holds, and both misstate the roadmap's derivation: `dependency_ready` is the plan's composite readiness, not the `depends_on` answer, and `decision_blockers` includes decisions the roadmap deliberately does not let hold the plan.",
+    "single_goal": "pass \u2014 the cycle check, the shared readiness assembly and the landed test all serve the one goal of the queue respecting the work's DAG.",
+    "wiring": "pass \u2014 \u00a78 declares its wait on \u00a72, and the sections that consume it (s9, s15) declare \u00a78; the named code anchors resolve in the tree."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "799922f923112d420b8c0bbc8e008305f53b80ea84ff813502d601b2bfa0f31f",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T03:34:24.463303+00:00"
+}
