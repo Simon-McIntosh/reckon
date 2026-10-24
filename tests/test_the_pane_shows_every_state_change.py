@@ -15,7 +15,6 @@ from __future__ import annotations
 import json
 
 from reckon.crew import recovery_watch, ticker
-from reckon.crew_follow_commands import _seed_ticker_memory
 
 SESSION = "s-own"
 PEER = "s-peer"
@@ -109,11 +108,13 @@ def test_an_implement_run_and_its_review_print_each_state_change_once() -> None:
 def test_the_in_review_row_renders_on_the_reviewed_run() -> None:
     """The row's own line reads ``delivered -> in review`` under the reviewed run.
 
-    The line is drawn from the row alone, with the pane's memory holding the
-    word it last showed for the reviewed run, so the assertion is about the row
-    the policy released rather than about whatever a grid had accumulated. The
-    row names the review run beside the reviewed run's node, which is the pair
-    of facts a reader needs to follow a review off the delivery it reads.
+    The left word comes from the run's real last word: the row the policy
+    released before it is fed through the same painter, so nothing is written
+    into the painter's memory by the test. A control feeds a halt instead, and
+    the same row then reads ``halted -> in review``, which is what shows the
+    left word is the run's own rather than a constant of the row. The row names
+    the review run beside the reviewed run's node, the pair of facts a reader
+    needs to follow a review off the run it reads.
     """
     printed = _print(
         [
@@ -125,19 +126,24 @@ def test_the_in_review_row_renders_on_the_reviewed_run() -> None:
             (90.0, _review_row("starting", "working")),
         ]
     )
+    delivery = next(row for row in printed if ticker._pane_word(row) == "delivered")
     in_review = next(row for row in printed if ticker._pane_word(row) == "in review")
-    assert any(
-        ticker._pane_word(row) == "delivered" for row in printed
-    ), "the pane drew the delivery before it went into review"
 
     painter = ticker.Ticker(width=180, color=False, model_aliases=())
-    _seed_ticker_memory(painter, {IMPL: "completed_unpromoted"})
+    painter.render(delivery, with_session=True)
     drawn = painter.render(in_review, with_session=True)
 
     assert f"delivered {ticker.ARROW} in review" in drawn, drawn
     assert IMPL_NODE in drawn, drawn
     assert in_review.get("run_id") == IMPL, in_review.get("run_id")
     assert in_review.get("review_run_id") == REVIEW, in_review.get("review_run_id")
+
+    halted = ticker.Ticker(width=180, color=False, model_aliases=())
+    halted.render(_row(IMPL, "working", "blocked"), with_session=True)
+    control = halted.render(in_review, with_session=True)
+
+    assert f"halted {ticker.ARROW} in review" in control, control
+    assert "delivered" not in control, control
 
 
 def test_a_discarded_run_prints_its_launch_and_one_dropped_row() -> None:
