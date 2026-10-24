@@ -10,12 +10,15 @@
   <p>The new test file covers cross-project release, direct queueing after a
   completed section, both cycle shapes, missing targets, blocked and failed
   upstreams, promoted but unmerged work, a no-commit promotion, rejected
-  manifest status, scoped holds and both gate shapes. The declared mutation
-  that drops cross-project refs fails the cross-project arm.</p>
-  <p>The serial focused base gate reported 68 passed and one pre-existing
-  failure. The product head reported 86 passed and three failures: the same
-  pre-existing failure plus two older request-wait tests whose assertions
-  require a missing request to remain pending and a complete manifest to
-  release a waiter before landing. The older test file is outside this node's
-  write scope, so the zero-added-failures measure remains unmet.</p>
+  manifest status, scoped holds and both gate shapes. Dispatch preflight reads
+  authored section and gate declarations without scanning unrelated scope
+  claims, and the landing fixture records a promoted revision already in its
+  checkout's HEAD. The declared mutation that drops cross-project refs fails
+  the cross-project arm; the focused four-file gate passes 51 tests.</p>
+  <p>The 353-file importer gate reported 37 failures at the assigned base and
+  38 at the repaired head. Its sole head-only id is the stop-before-spawn test,
+  outside this node's write grant. That id failed in an earlier base run and
+  passed in the corresponding earlier head run; in isolation it fails at the
+  assigned base and passes at the repaired head. The raw importer delta still
+  contains one added failure id, so this gate remains unmet.</p>
 </section>
