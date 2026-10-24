@@ -119,6 +119,16 @@ _SESSION_SUBJECT_REFUSALS = frozenset({"_FollowerAdmissionUnmet", "WatcherRequir
 # work is admitted. No amount of arming a follower clears it.
 _UNRECONCILED_RUNS_REFUSAL = "UnreconciledRuns"
 
+# Refusals that are the queue telling a request to wait, not a condition the
+# session must clear. The session is already holding its share of queued
+# dispatches, or a live run claims a write path the request needs; a lane slot
+# or that run's end releases either one, and nothing the session arms does.
+# Both name the session and quote commands as their own guidance, so neither is
+# legible from its text alone, and both keep the retry back-off they are stored
+# with -- which is why they are named here rather than folded into the lane
+# hold test the admission pass uses to skip the back-off.
+_WAIT_REFUSALS = frozenset({"QueueFull", "ScopeConflict"})
+
 # One run's line inside that refusal, as ``node.UnreconciledRuns`` renders each
 # of them: ``- <run_id>: <next action>``. The action is that run's own remedy,
 # read from the refusal rather than composed again here.
@@ -188,9 +198,14 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     neither the live view nor the obligations view read it.
 
     A lane hold is told apart by its own message: it is the lane speaking and
-    is left to the waiting reading. Any other refusal is surfaced, and the
-    remedy is the one the refusal itself states. Whose refusal it is comes from
-    the exception class the admission pass stamps at the head of the stored
+    is left to the waiting reading. A ``QueueFull`` refusal says the session
+    already holds its share of queued dispatches, and a ``ScopeConflict`` says
+    a live run claims a write path the request needs; each clears when a slot
+    opens or that run ends, so each keeps the waiting reading too, and the
+    class stamp is what tells them apart from the refusals below. Any other
+    refusal is surfaced, and the remedy is the one the refusal itself states.
+    Whose refusal it is comes from the exception class the admission pass
+    stamps at the head of the stored
     failure, never from a search of its whole text — a refusal quotes the
     commands that clear it, and a quoted command can carry this session's id
     without the session being its subject. A follower condition keeps the
@@ -217,6 +232,8 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
         return None
     text = _failure_text(failure)
     refusal_class = _stamped_refusal_class(text)
+    if refusal_class in _WAIT_REFUSALS:
+        return None
     if refusal_class == _UNRECONCILED_RUNS_REFUSAL:
         remedy = _unreconciled_runs_remedy(text)
         if remedy is not None:
