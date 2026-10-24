@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline_suite (revision 99e92fe8628e7b647558d859a2e3364d5f310170, gate-base-arm.log, EXIT=1, 15 failed / 162 passed) and after_suite (revision 492c920b923a8cd5932fc247ab99940f1b6348e9, gate-head-arm.log, EXIT=1, 3 failed / 175 passed). The three head failing ids are a subset of the fifteen base failing ids, so no failing id is added against the base arm. Verified against the two logs directly, not from the manifest text: grep '^FAILED' returns 15 ids in gate-base-arm.log and 3 in gate-head-arm.log, and each of the three head ids appears in the base list.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:2034 (_roadmap)",
+    "reckon/roadmap.py:3693 (row section_readiness/ready_sections/blocked_sections composition)",
+    "reckon/mcp_views.py:1147 (roadmap detail view copies the three keys)",
+    "reckon/crew/queue_admission.py:1237 (consumes section_readiness)"
+  ],
+  "completed_at": "2026-10-24T16:16:11.738Z",
+  "dispatched_at": "2026-10-24T16:07:42Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 23,
+      "text": "non-blocking: after_suite records revision 492c920b923a8cd5932fc247ab99940f1b6348e9 rather than the reviewed head a452fe8136940c0ac24f1b59d21ab6001a2d5e92; the head commit touches only the evidence fragment so the test result carries, but the arm revision and the governed head differ and the arm alone does not say so."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "VERDICT diff: read commit by commit from 33f97922b to a452fe813 \u2014 492c920b9 declares the fixture's sections and gates and re-reads the section readiness the row reports, a452fe813 updates the evidence table and summary \u2014 35 insertions and 11 deletions across two files, both inside the declared write paths.",
+    "done_when": "VERDICT done_when: the done_when requires the listed ids to pass at head with no added failure against a base arm from git archive extractions; manifest.md records the base arm at 15 failed / 162 passed (gate-base-arm.log, EXIT=1) and the head arm at 3 failed / 175 passed (gate-head-arm.log, EXIT=1), and the head failures are a strict subset of the base failures.",
+    "goal": "VERDICT goal: the node's goal is to make section 49's eleven census ids pass by asserting each intended contract or reporting the unintended change; in the reviewed range 492c920b9 repairs the roadmap gate-edge id at tests/test_roadmap_reports_section_edges.py:160-176 and a452fe813 refreshes docs/evidence/fragments/the-suite-is-green-at-head/edit-and-response-shape-tests-read-the-returned-shapes.html, so ten of the eleven now pass and the conflict-shape id remains reported as an unintended product gap in reckon/mcp_edit_plan.py.",
+    "manifest": "VERDICT manifest: read in full; it records the four commits, a commit read per census id, populated baseline_suite and after_suite objects with their log paths, and a five-arm negative-control log whose roadmap arm reddens test_the_gate_edge_holds_only_the_named_section (negative-control.log:365-403, EXIT=1) with a post-revert green confirmation at negative-control.log:407-410.",
+    "write_paths": "VERDICT write_paths: the node is fenced to eight test files plus the evidence fragment and its figure; both paths in the reviewed diff, tests/test_roadmap_reports_section_edges.py and docs/evidence/fragments/the-suite-is-green-at-head/edit-and-response-shape-tests-read-the-returned-shapes.html, are inside that declared list."
+  },
+  "justifications": {
+    "durability": "tests/test_roadmap_reports_section_edges.py:170-176 fails if a gate hold is attributed to sections it does not declare, and the negative control at negative-control.log:368-401 reinstates exactly that spread and shows the test red before it was reverted.",
+    "evidence": "the armed records are real and readable \u2014 gate-base-arm.log:15 and gate-head-arm.log:15 are bare EXIT= lines and their FAILED sets give 15 base against 3 head \u2014 but the head arm ran at 492c920b923a8cd5932fc247ab99940f1b6348e9 rather than the reviewed head a452fe8136940c0ac24f1b59d21ab6001a2d5e92.",
+    "fit": "the fixture extension reuses the existing _write_plan keyword and _section_gate(**extra) idiom at tests/test_roadmap_reports_section_edges.py:55-139 and the added comment states the mechanism, with no plan, ticket or version identifier in any added name.",
+    "goal_fidelity": "the reviewed commits land the last actionable census repair, tests/test_roadmap_reports_section_edges.py:168-176 reading the section readiness reckon/roadmap.py:3723-3730 emits, and the remaining id stays reported under outside_scope rather than silently dropped.",
+    "reuse": "no production definition is added; the change reads the existing section-readiness composer at reckon/roadmap.py:3693 and the existing write_state and _section_gate helpers, so no capability is forked.",
+    "scope_discipline": "both changed paths, tests/test_roadmap_reports_section_edges.py and docs/evidence/fragments/the-suite-is-green-at-head/edit-and-response-shape-tests-read-the-returned-shapes.html, are named in the node's declared write paths and the diff carries nothing else."
+  },
+  "node": "review-of-edit-and-response-shape-tests-read-the-returned-shapes-a452fe813694",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make section 49's eleven census ids pass by asserting each intended contract or reporting the unintended change; in the reviewed range 492c920b9 repairs the roadmap gate-edge id at tests/test_roadmap_reports_section_edges.py:160-176 and a452fe813 refreshes docs/evidence/fragments/the-suite-is-green-at-head/edit-and-response-shape-tests-read-the-returned-shapes.html, so ten of the eleven now pass and the conflict-shape id remains reported as an unintended product gap in reckon/mcp_edit_plan.py.\nVERDICT done_when: the done_when requires the listed ids to pass at head with no added failure against a base arm from git archive extractions; manifest.md records the base arm at 15 failed / 162 passed (gate-base-arm.log, EXIT=1) and the head arm at 3 failed / 175 passed (gate-head-arm.log, EXIT=1), and the head failures are a strict subset of the base failures.\nVERDICT write_paths: the node is fenced to eight test files plus the evidence fragment and its figure; both paths in the reviewed diff, tests/test_roadmap_reports_section_edges.py and docs/evidence/fragments/the-suite-is-green-at-head/edit-and-response-shape-tests-read-the-returned-shapes.html, are inside that declared list.\nVERDICT manifest: read in full; it records the four commits, a commit read per census id, populated baseline_suite and after_suite objects with their log paths, and a five-arm negative-control log whose roadmap arm reddens test_the_gate_edge_holds_only_the_named_section (negative-control.log:365-403, EXIT=1) with a post-revert green confirmation at negative-control.log:407-410.\nVERDICT diff: read commit by commit from 33f97922b to a452fe813 \u2014 492c920b9 declares the fixture's sections and gates and re-reads the section readiness the row reports, a452fe813 updates the evidence table and summary \u2014 35 insertions and 11 deletions across two files, both inside the declared write paths.\nCALL_SITES: reckon/mcp.py:2034 (_roadmap), reckon/roadmap.py:3693, reckon/mcp_views.py:1147, reckon/crew/queue_admission.py:1237\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the reviewed commits land the last actionable census repair, tests/test_roadmap_reports_section_edges.py:168-176 reading the section readiness reckon/roadmap.py:3723-3730 emits, and the remaining id stays reported under outside_scope rather than silently dropped.\nSCORE evidence: 17\nJUSTIFICATION evidence: the armed records are real and readable \u2014 gate-base-arm.log and gate-head-arm.log each end in a bare EXIT= line and their FAILED sets give 15 base against 3 head \u2014 but the head arm ran at 492c920b923a8cd5932fc247ab99940f1b6348e9 rather than the reviewed head a452fe8136940c0ac24f1b59d21ab6001a2d5e92.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both changed paths, tests/test_roadmap_reports_section_edges.py and docs/evidence/fragments/the-suite-is-green-at-head/edit-and-response-shape-tests-read-the-returned-shapes.html, are named in the node's declared write paths and the diff carries nothing else.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_roadmap_reports_section_edges.py:170-176 fails if a gate hold is attributed to sections it does not declare, and the negative control at negative-control.log:368-401 reinstates exactly that spread and shows the test red before it was reverted.\nSCORE fit: 19\nJUSTIFICATION fit: the fixture extension reuses the existing _write_plan keyword and _section_gate(**extra) idiom at tests/test_roadmap_reports_section_edges.py:55-139 and the added comment states the mechanism, with no plan, ticket or version identifier in any added name.\nSCORE reuse: 20\nJUSTIFICATION reuse: no production definition is added; the change reads the existing section-readiness composer at reckon/roadmap.py:3693 and the existing write_state and _section_gate helpers, so no capability is forked.\nFINDING manifest.md:23 non-blocking: after_suite records revision 492c920b923a8cd5932fc247ab99940f1b6348e9 rather than the reviewed head a452fe8136940c0ac24f1b59d21ab6001a2d5e92; the head commit touches only the evidence fragment so the test result carries, but the arm revision and the governed head differ and the arm alone does not say so.",
+  "review_run_id": "r-20261024T160618547688-review-of-edit-and-response-shape-tests-read-the-returned-shapes-a452fe813694",
+  "reviewed_assertions": [
+    "tests/test_roadmap_reports_section_edges.py:168 asserts row['blocked_sections'] == ['s1', 's2']; it reddens if a plan waiting on another plan's section still reports a dispatchable section \u2014 the production path at reckon/roadmap.py:3726-3730 derives blocked_sections from the per-section ready flag.",
+    "tests/test_roadmap_reports_section_edges.py:169 asserts row['ready_sections'] == []; it reddens if an undeclared or waiting plan reports a ready section, the defect the prior review recorded at the base revision.",
+    "tests/test_roadmap_reports_section_edges.py:170-176 asserts the per-section gate holds read from row['section_readiness'] equal {'s1': [], 's2': ['rebank-after-rung-a']}; it reddens if a section-named gate is spread to every section, which is the mutation negative-control.log:368-401 applies and which reddens it."
+  ],
+  "reviewed_base_sha": "33f97922b4e0a3e196899feac306018dce7bebe6",
+  "reviewed_head_sha": "a452fe8136940c0ac24f1b59d21ab6001a2d5e92",
+  "reviewed_node": "edit-and-response-shape-tests-read-the-returned-shapes",
+  "reviewed_run_id": "r-20261024T142016415225-edit-and-response-shape-tests-read-the-returned-shapes",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T16:30:00+00:00",
+  "total": 114
+}
