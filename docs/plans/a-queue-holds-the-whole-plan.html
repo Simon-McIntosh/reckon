@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="75">
+<meta name="plan-version" content="76">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -169,6 +169,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261024T081206153359-rebuilt-brief-names-have-one-owner" data-who="reckon-build" data-when="2026-10-24T08:48:28.383Z">
     <div class="r-comment-body"><p>declared the rebuilt brief names once in reckon/crew/runs.py beside STEERING_FILE — RUN_REVIEW_BRIEF_NAME, FIGURE_REVIEW_BRIEF_NAME and REBUILT_BRIEF_NAMES — and both is_rebuilt_brief and materialize_run_review_brief read that one declaration; gate 3 passed, negative control 1 failed / 2 passed, brief-surface delta 34 head / 34 base with 0 added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261024T105655262150-review-of-queue-edit-reprioritise-drop-8d9c9aa79bae" data-who="reckon-build" data-when="2026-10-24T11:07:26Z">
+    <div class="r-comment-body"><p>Parsed review of 560465a09476d7064ab602f9734bfcaa8e2c57fc..8d9c9aa79baec3b2653559fdc3376f2a40fef2bc scores all six dimensions 15/7/19/10/16/5 and records three added failures in the prior comparative arm, with three blocking and two non-blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261023T124219597651-review-of-a-queued-request-waits-on-its-dependencies-1b2713f29e3f" data-who="reckon-build" data-when="2026-10-23T13:01:57.694Z">
     <div class="r-comment-body"><p>An independent review of run r-20261023T112727139233-a-queued-request-waits-on-its-dependencies (base 43677d0d2697ae3d8841b6d19addcdb77cc572be, head 1b2713f29e3f8e1569c688953e757ec6144305c1) is stored parsed: scores goal_fidelity 8, evidence 12, scope_discipline 18, durability 18, fit 17, reuse 13; added failures 0; one blocking finding and four non-blocking ones (queue_requests at reckon/crew/queue_admission.py:1338 has no production caller, so no dispatched node can enter awaiting-upstream; the base arm fails on AttributeError rather than on the ordering the done_when claims; the manifest's tests line is prose and does not reconcile with gate-main.log's EXIT=1; the duties view does not read the two new phases; _parse_section_ref at :1109 re-implements reckon/_schema.py:276 parse_plan_ref).</p></div>

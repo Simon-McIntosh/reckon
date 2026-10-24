@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+    "tests/test_spa_graph_authority.py::test_an_unnamed_endpoint_renders_the_same_detail_without_a_ship_target",
+    "tests/test_spa_graph_authority.py::test_the_inventory_only_fallback_renders_no_progress_figure"
+  ],
+  "added_failures_note": "Derived as head.log FAILED ids minus base.log FAILED ids: base 27, comparative head 30 at 0c52369ff. These are the reviewed run's own artifact logs, not completed baseline_suite/after_suite fields; the final 8d9c9aa79 head has a focused 72-pass skill-contract gate but no paired full-population arm, so final-head added failures cannot be established from these receipts.",
+  "completed_at": "2026-10-24T11:07:26Z",
+  "dispatched_at": "2026-10-24T10:59:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": 168,
+      "severity": "blocking",
+      "summary": "The edit contract calls validate_node without budget_ceiling; tests/test_queue_verbs.py:208 and :212 accept 35m although CONFIG's fence is 25m, leaving a request that dispatch later refuses. Pass the resolved ceiling and assert the over-ceiling edit is refused."
+    },
+    {
+      "file": "tests/test_queue_verbs.py",
+      "line": 218,
+      "severity": "blocking",
+      "summary": "The done_when assertion checks only a prefix shared by the original and replacement values, so removing the assignment in queue_edit.py:262 leaves the test green. Compare against the independently stated full replacement."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T053457115337-queue-edit-reprioritise-drop/manifest.md",
+      "line": 15,
+      "severity": "blocking",
+      "summary": "baseline_suite and after_suite are empty; the broad head.log is at 0c52369ff and adds three failures over base.log, so the zero-added-failures done-when has no final-head paired receipt. The 72-pass final skill gate clears one of those ids but does not measure the full population."
+    },
+    {
+      "file": "tests/test_queue_verbs.py",
+      "line": 224,
+      "severity": "non-blocking",
+      "summary": "The stored digest is compared with the digest returned by the same edit call; both can be wrong together. Hash the replacement file independently to guard digest correctness. Disposition: folded into the queue edit test repair node."
+    },
+    {
+      "file": "tests/test_queue_verbs.py",
+      "line": 374,
+      "severity": "non-blocking",
+      "summary": "The missing-run parity case repeats the capability owned by tests/test_crew_tool_carries_the_write_verbs.py:256; the existing owner now has real queued-request rows, so this duplicate adds no forwarding protection. Disposition: exempted because it can remain as a narrow missing-run routing check without holding this node."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:crew_queue_edit, reckon/crew_run_commands.py:crew_queue_reprioritise, reckon/crew_run_commands.py:crew_queue_drop, reckon/mcp.py:_crew, reckon/mcp_crew_actions.py:_verb_for, reckon/crew/queue_admission.py:_launch_queued, reckon/crew/promotion.py:discard",
+    "diff": "Read twelve commits from 15e64a0b5 through 8d9c9aa79 against base 560465a09: the source and test additions, MCP forwarding, discard lock, parity census and documentation touch twelve declared paths.",
+    "done_when": "The source done-when in prompt.txt:99 requires the queue cases, CLI/MCP parity, help census, zero added importer failures and ruff; manifest.md:11-18 records 14, 25 and 72 focused passes, while its baseline_suite and after_suite fields are empty and the comparative head.log is at 0c52369ff with three added failures.",
+    "goal": "The source goal in prompt.txt:30 requires three queue verbs and matching MCP actions for waiting requests; reckon/crew_run_commands.py:1995-2117 and reckon/mcp.py:2234-2448 expose them, but queue_edit.py:168 skips the time-budget ceiling check before accepting an edit.",
+    "manifest": "The reviewed manifest.md:5-19 is complete and names final-head skill-contracts-final-head.log (72 passed, EXIT=0), but its baseline_suite and after_suite fields are empty and its broader comparative head arm predates the reviewed head.",
+    "write_paths": "The manifest.md:3 widened write-path list contains all twelve paths in the 560465a09..8d9c9aa79 diff; the changed fragment, command and test files stay within that declaration."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in prompt.txt:30 requires three queue verbs and matching MCP actions for waiting requests; reckon/crew_run_commands.py:1995-2117 and reckon/mcp.py:2234-2448 expose them, but queue_edit.py:168 skips the time-budget ceiling check before accepting an edit.\nVERDICT done_when: The source done-when in prompt.txt:99 requires the queue cases, CLI/MCP parity, help census, zero added importer failures and ruff; manifest.md:11-18 records 14, 25 and 72 focused passes, while its baseline_suite and after_suite fields are empty and the comparative head.log is at 0c52369ff with three added failures.\nVERDICT write_paths: The manifest.md:3 widened write-path list contains all twelve paths in the 560465a09..8d9c9aa79 diff; the changed fragment, command and test files stay within that declaration.\nVERDICT manifest: The reviewed manifest.md:5-19 is complete and names final-head skill-contracts-final-head.log (72 passed, EXIT=0), but its baseline_suite and after_suite fields are empty and its broader comparative head arm predates the reviewed head.\nVERDICT diff: Read twelve commits from 15e64a0b5 through 8d9c9aa79 against base 560465a09: the source and test additions, MCP forwarding, discard lock, parity census and documentation touch twelve declared paths.\nCALL_SITES: reckon/crew_run_commands.py:crew_queue_edit, reckon/crew_run_commands.py:crew_queue_reprioritise, reckon/crew_run_commands.py:crew_queue_drop, reckon/mcp.py:_crew, reckon/mcp_crew_actions.py:_verb_for, reckon/crew/queue_admission.py:_launch_queued, reckon/crew/promotion.py:discard\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/queue_edit.py:168 accepts a 35m edit under the test fixture's 25m fence, so the time-budget contract part of the goal is incomplete despite the three verbs being callable.\nSCORE evidence: 7\nJUSTIFICATION evidence: manifest.md:15-16 has no completed baseline_suite or after_suite receipts at 8d9c9aa79, while logs/coordinator-arms/head.log reports three added failures at earlier 0c52369ff.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: The twelve changed files in the base-to-head diff are all listed in manifest.md:3, including the later MCP and skill-contract scope extensions.\nSCORE durability: 10\nJUSTIFICATION durability: tests/test_queue_verbs.py:313 reddens when the launched guard is removed, but :218 also passes if edit leaves the original done_when untouched and :224 compares two outputs of the same digest calculation.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/queue_edit.py:255-288 uses the existing pointer lock and write pattern, and the added source and test names carry no forbidden plan labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_edit.py:335-355 wraps the existing discard owner, but tests/test_queue_verbs.py:374-401 duplicates the action parity capability owned by tests/test_crew_tool_carries_the_write_verbs.py:256-309.\nFINDING reckon/crew/queue_edit.py:168 blocking: The edit contract calls validate_node without budget_ceiling; tests/test_queue_verbs.py:208 and :212 accept 35m although CONFIG's fence is 25m, leaving a request that dispatch later refuses. Pass the resolved ceiling and assert the over-ceiling edit is refused.\nFINDING tests/test_queue_verbs.py:218 blocking: The done_when assertion checks only a prefix shared by the original and replacement values, so removing the assignment in queue_edit.py:262 leaves the test green. Compare against the independently stated full replacement.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T053457115337-queue-edit-reprioritise-drop/manifest.md:15 blocking: baseline_suite and after_suite are empty; the broad head.log is at 0c52369ff and adds three failures over base.log, so the zero-added-failures done-when has no final-head paired receipt. The 72-pass final skill gate clears one of those ids but does not measure the full population.\nFINDING tests/test_queue_verbs.py:224 non-blocking: The stored digest is compared with the digest returned by the same edit call; both can be wrong together. Hash the replacement file independently to guard digest correctness. Disposition: folded into the queue edit test repair node.\nFINDING tests/test_queue_verbs.py:374 non-blocking: The missing-run parity case repeats the capability owned by tests/test_crew_tool_carries_the_write_verbs.py:256; the existing owner now has real queued-request rows, so this duplicate adds no forwarding protection. Disposition: exempted because it can remain as a narrow missing-run routing check without holding this node.\n",
+  "review_run_id": "r-20261024T105655262150-review-of-queue-edit-reprioritise-drop-8d9c9aa79bae",
+  "reviewed_base_sha": "560465a09476d7064ab602f9734bfcaa8e2c57fc",
+  "reviewed_head_sha": "8d9c9aa79baec3b2653559fdc3376f2a40fef2bc",
+  "reviewed_run_id": "r-20261024T053457115337-queue-edit-reprioritise-drop",
+  "scores": {
+    "durability": 10,
+    "evidence": 7,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T11:08:16.683382+00:00",
+  "total": 72
+}
