@@ -3,11 +3,13 @@
 A queued request's launch is retried on every pass, and the retry can be
 refused because the session already holds its share of queued dispatches
 (``QueueFull``) or because a live run claims a write path the request needs
-(``ScopeConflict``). Both refusals name the session, and the scope refusal
-quotes the commands that lead to its own retry, so a reader that judged the
-failure by its text published "arm the follower" as the remedy for a wait no
-follower can clear. Each clears when a lane slot opens or the claiming run
-ends, so each keeps the waiting reading and the request stays a queued run.
+(``ScopeConflict``), or that anchor run's directory claim, which is the same
+refusal in a looser claim kind (``DirectoryClaimConflict``). Each names the
+session or quotes the commands that lead to its own retry, so a reader that
+judged the failure by its text published "arm the follower" or a bare dispatch
+as the remedy for a wait nothing the session arms can clear. Each clears when a
+lane slot opens or the claiming run ends, so each keeps the waiting reading and
+the request stays a queued run.
 
 The follower condition is the case the session does owe, and it must keep
 reading that way. The retry back-off the admission pass stamps on a failed
@@ -26,6 +28,7 @@ from typing import Any
 import pytest
 
 from reckon.crew import queue_admission, recovery, runs
+from reckon.crew.dispatch_claims import DirectoryClaimConflict
 from reckon.crew.dispatch_watch import _FollowerAdmissionUnmet
 from reckon.crew.node import ScopeConflict
 from reckon.crew.runs import QueueFull
@@ -119,6 +122,19 @@ def _scope_conflict() -> str:
     )
 
 
+def _directory_claim_conflict() -> str:
+    """A looser claim kind's refusal, which is the same wait on a live run."""
+    return _failure_of(
+        DirectoryClaimConflict(
+            run_id=PEER_RUN,
+            node_id="a-peer-holds-the-path",
+            candidate_path="docs/figures",
+            claimed_path="docs/figures/a-peer/a-figure.svg",
+            alternatives=["docs/figures/a-peer/a-figure.svg"],
+        )
+    )
+
+
 def _unregistered_follower() -> str:
     """The refusal a follower condition gives, which the session must clear."""
     return _failure_of(
@@ -149,6 +165,7 @@ def _duty_kind(run_id: str) -> str:
     [
         ("r-queue-full", _queue_full),
         ("r-scope-conflict", _scope_conflict),
+        ("r-directory-claim", _directory_claim_conflict),
     ],
 )
 def test_a_wait_refusal_keeps_the_queued_reading(
@@ -162,11 +179,19 @@ def test_a_wait_refusal_keeps_the_queued_reading(
     assert row["next_action"] == "wait for a local lane slot", row["next_action"]
 
 
-@pytest.mark.parametrize("run_id", ["r-queue-full", "r-scope-conflict"])
-def test_a_wait_refusal_lists_as_a_queued_run(repository: Path, run_id: str) -> None:
+@pytest.mark.parametrize(
+    ("run_id", "failure"),
+    [
+        ("r-queue-full", _queue_full),
+        ("r-scope-conflict", _scope_conflict),
+        ("r-directory-claim", _directory_claim_conflict),
+    ],
+)
+def test_a_wait_refusal_lists_as_a_queued_run(
+    repository: Path, run_id: str, failure: Any
+) -> None:
     """The obligations view lists it under the wait, not under the session."""
-    failure = _queue_full() if run_id == "r-queue-full" else _scope_conflict()
-    _write_queued(run_id, failure=failure)
+    _write_queued(run_id, failure=failure())
     assert _duty_kind(run_id) == obligations_module.QUEUED_RUN_DUTY_KIND
 
 
