@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: after_suite (gate-head.log, revision 0c40d5545, completed, 0 failures) minus baseline_suite (gate-base.log, revision de788d103, completed, 10 failures); no id fails at head that passes at base.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/promotion.py:234",
+    "reckon/crew/promotion_release.py:678",
+    "reckon/crew/promotion_checks.py:1573",
+    "reckon/crew/recovery_review_delivery.py:375",
+    "reckon/crew/recovery_review_delivery.py:393",
+    "reckon/crew/promotion_scope.py:1664",
+    "reckon/crew/promotion_scope.py:1701"
+  ],
+  "completed_at": "2026-10-24T15:47:13.462Z",
+  "dispatched_at": "2026-10-24T15:38:26Z",
+  "findings": [
+    {
+      "file": "tests/test_bookkeeping_follows_the_run.py",
+      "line": "264",
+      "text": "non-blocking: 'assert str(missing_review) in message' compares the path the test itself computed through the production helper review_module.review_path and then supplied as write_paths against the refusal message, so it holds whatever that helper returns and cannot catch a wrong record location; the durability of the id does not rest on it - lines 261-262 assert the refusal condition against literals and negative-control-bookkeeping.log reddens the id by making _declared_head_keyed_record return None."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140353060421-promotion-result-tests-read-the-returned-result/gate-head.log",
+      "line": "1",
+      "text": "non-blocking: the done-when asks for the revision, tree and command on the gate log's first line, but the log carries the revision on line 1, the mutation note on line 2, the tree on line 3 and the literal command on line 4, so a reader or receipt parser taking only line 1 gets the revision alone; the evidence stays re-runnable from the manifest tests line and the identical header shape appears in gate-base.log."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the landed change is test-only, so no production code reaches it; the runtime owners the assertions pin were read at c1fe38f6a and verified: reckon/crew/promotion.py:234 complete, reckon/crew/promotion_release.py:678 _record_release_on_ledger's landing_check attach, reckon/crew/promotion_checks.py:1573 the review delivery refusal, reckon/crew/recovery_review_delivery.py:375 and :393 the head-keyed condition and detail, reckon/crew/promotion_scope.py:1664 and :1701 the plan-comment store path and the landing-write restore.",
+    "diff": "read 3111d232d, b63b3c857, e44cb5e8c, 0c40d5545 and c1fe38f6a against de788d103: six test files (+265/-37) changing the release comparisons, replacing the landing-comment fixture with a store write, asserting the refused landing leaves nothing dirty, and reading the named delivery refusal, plus one 136-line evidence fragment; no production source changed.",
+    "done_when": "the measure names the ten ids, per-id commit attribution, a base-arm differential, a foreground gate and ruff; the manifest names 881bf6b6f, 5c17c07f4 and e3010ebb3 as intended and covering all ten ids, records baseline_suite 10 failed against after_suite 0 failed, and the control logs cover the ten ids; ruff check and ruff format --check add nothing (the same two files are unformatted at base and head).",
+    "goal": "the node goal is to make the ten section 45 census ids pass by asserting each intended contract or reporting the unintended change; the landed tests re-pin the release-with-landing_check contract, the refused-landing rollback and the named review delivery refusal, and gate-head.log shows all ten green with no id reported blocked.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140353060421-promotion-result-tests-read-the-returned-result/manifest.md; status complete, commits 3111d232d b63b3c857 e44cb5e8c 0c40d5545 c1fe38f6a, negative_control_log names negative-control-landing-check.log (7 failed, EXIT=1), and after_suite matches gate-head.log's 28 passed EXIT=0.",
+    "write_paths": "the manifest declares six tests/ paths plus docs/evidence/fragments/the-suite-is-green-at-head/promotion-result-tests-read-the-returned-result.html and the figures directory; git diff de788d103..c1fe38f6a changes exactly the six tests and the one fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "Every one of the ten ids reddens under a production mutation the node recorded: negative-control-landing-check.log fails the seven landing-check ids with KeyError 'landing_check' when reckon/crew/promotion_release.py:678-679 is emptied, negative-control-landing-check-row.log fails the same seven when the check is written into the row, negative-control-landing-comment.log fails tests/test_landing_commit_carries_only_its_own_comment.py:215 when reckon/crew/promotion_scope.py:1664 drops its differs-from-HEAD test, negative-control-repromotion.log fails tests/test_repromotion_commits_its_recorded_comment.py:193 when the restore at reckon/crew/promotion_scope.py:1701 does nothing, and negative-control-bookkeeping.log fails tests/test_bookkeeping_follows_the_run.py:261 when reckon/crew/recovery_review_delivery.py:103 returns None.",
+    "evidence": "gate-head.log ends '28 passed' / EXIT=0 at revision 0c40d5545 and gate-base.log ends '10 failed, 18 passed' / EXIT=1 at de788d103, and the five negative-control logs each name the production mutation, print module.__file__ and cwd, and end EXIT=1 with the expected failing ids; the only shortfall is that the done-when asks for revision, tree and command on the log's first line and the gate logs spread them over header lines 1-4.",
+    "fit": "The additions follow the surrounding idiom - _record_comment_without_committing sits beside the existing _fail_first_landing at tests/test_landing_commit_carries_only_its_own_comment.py:161 and writes through the store writer the file already uses, comments state the mechanism rather than a ticket or phase, and no plan, sprint or version label appears in the diff.",
+    "goal_fidelity": "All ten census ids are re-pinned to the contracts three named production commits created, for example tests/test_promotion_never_amends_its_commit.py:211-215 compares the persisted row to the returned release less landing_check and pins the check as {\"ok\": True, \"reversals\": [], \"mismatched\": []}, which is the value reckon/crew/promotion_release.py:678-679 now attaches; none of the ten is left failing or reported blocked, and gate-head.log records 28 passed at the head.",
+    "reuse": "No added definition forks a production capability: the one new helper, tests/test_landing_commit_carries_only_its_own_comment.py:172 _record_comment_without_committing, calls the same reckon/_store.write_plan the file already imports, and a search of tests/ for a shared plan-comment writer found only per-file idioms (tests/test_a_run_comment_earns_no_plan_review.py:89, tests/test_landing_append_is_commutative.py:81), so there is no test-side owner to extend.",
+    "scope_discipline": "git diff de788d1031ee7588cb2f202961c4b072ffabcef7..c1fe38f6a58bc615807c3e2a70c9a9d93a2ddcfb touches only the six declared tests/ files plus docs/evidence/fragments/the-suite-is-green-at-head/promotion-result-tests-read-the-returned-result.html, every one a declared write path, and no production module or concurrent-node path."
+  },
+  "node": "review-of-promotion-result-tests-read-the-returned-result-c1fe38f6a58b",
+  "node:reviewed": "promotion-result-tests-read-the-returned-result",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the ten section 45 census ids pass by asserting each intended contract or reporting the unintended change, and the landed tests re-pin all ten to the contracts three named production commits created, for example tests/test_promotion_never_amends_its_commit.py:211-215 compares the persisted row to the returned release less landing_check and pins the check separately, matching reckon/crew/promotion_release.py:678-679.\nVERDICT done_when: the measure names the ten ids, per-id commit attribution, a base-arm differential, a foreground gate and ruff; gate-head.log ends '28 passed' EXIT=0 at 0c40d5545 against gate-base.log '10 failed, 18 passed' EXIT=1 at de788d103, the manifest names an intended commit for every id, and the five control logs cover all ten, with the only shortfall that the log header spreads revision, tree and command over lines 1-4 rather than the first line alone.\nVERDICT write_paths: git diff de788d103..c1fe38f6a touches only the six declared tests/ files plus docs/evidence/fragments/the-suite-is-green-at-head/promotion-result-tests-read-the-returned-result.html, all inside the manifest's declared grant.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140353060421-promotion-result-tests-read-the-returned-result/manifest.md; status complete, commits 3111d232d b63b3c857 e44cb5e8c 0c40d5545 c1fe38f6a, negative_control_log names negative-control-landing-check.log (7 failed, EXIT=1), after_suite matches gate-head.log.\nVERDICT diff: read all five commits against de788d103: six test files (+265/-37) changing the release comparisons, replacing the landing-comment fixture with a store write, asserting the refused landing leaves nothing dirty, and reading the named delivery refusal, plus one 136-line evidence fragment; no production source changed.\nCALL_SITES: reckon/crew/promotion.py:234, reckon/crew/promotion_release.py:678, reckon/crew/promotion_checks.py:1573, reckon/crew/recovery_review_delivery.py:375, reckon/crew/recovery_review_delivery.py:393, reckon/crew/promotion_scope.py:1664, reckon/crew/promotion_scope.py:1701\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all ten ids assert the contracts the named production commits created, for example tests/test_promotion_never_amends_its_commit.py:215 pins the returned landing_check as {\"ok\": True, \"reversals\": [], \"mismatched\": []}, the value reckon/crew/promotion_release.py:678-679 attaches, and none is left failing or reported blocked.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log ends '28 passed' EXIT=0 at 0c40d5545 against gate-base.log '10 failed, 18 passed' EXIT=1 at de788d103 and the five control logs each name their production mutation and end EXIT=1, but the log's first line carries only the revision rather than the revision, tree and command the done-when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff de788d103..c1fe38f6a touches only the six declared tests/ files plus docs/evidence/fragments/the-suite-is-green-at-head/promotion-result-tests-read-the-returned-result.html, with no production module and no concurrent-node path.\nSCORE durability: 19\nJUSTIFICATION durability: every one of the ten ids reddens under a recorded production mutation, for example negative-control-landing-check.log fails the seven landing-check ids with KeyError 'landing_check' when the attach at reckon/crew/promotion_release.py:678-679 is emptied and negative-control-bookkeeping.log fails tests/test_bookkeeping_follows_the_run.py:261 when reckon/crew/recovery_review_delivery.py:103 returns None.\nSCORE fit: 19\nJUSTIFICATION fit: the one new helper, tests/test_landing_commit_carries_only_its_own_comment.py:172, sits beside the existing _fail_first_landing at line 161 and follows the file's module-level-fixture idiom, and no plan, sprint, issue or version label appears in the diff.\nSCORE reuse: 19\nJUSTIFICATION reuse: no added definition forks a production capability, since tests/test_landing_commit_carries_only_its_own_comment.py:172 writes through the reckon/_store.write_plan the file already imports and a search of tests/ found only per-file comment-writing idioms (tests/test_a_run_comment_earns_no_plan_review.py:89) and no shared owner to extend.\nFINDING tests/test_bookkeeping_follows_the_run.py:264 non-blocking: the assertion compares the path the test computed through production review_module.review_path and supplied as write_paths against the refusal message, so it holds whatever that helper returns; lines 261-262 and negative-control-bookkeeping.log carry the actual guard.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140353060421-promotion-result-tests-read-the-returned-result/gate-head.log:1 non-blocking: the done-when asks for the revision, tree and command on the gate log's first line, but they occupy header lines 1-4, so a parser reading line 1 alone gets only the revision; the manifest tests line keeps the run re-runnable.",
+  "review_run_id": "r-20261024T153711542171-review-of-promotion-result-tests-read-the-returned-result-c1fe38f6a58b",
+  "reviewed_base_sha": "de788d1031ee7588cb2f202961c4b072ffabcef7",
+  "reviewed_head_sha": "c1fe38f6a58bc615807c3e2a70c9a9d93a2ddcfb",
+  "reviewed_run_id": "r-20261024T140353060421-promotion-result-tests-read-the-returned-result",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:58:00+00:00",
+  "total": 114
+}
