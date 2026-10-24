@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the head arm logs/gate-round4.log (header revision 3149f9b6f, written 06:28:35 +0200 after the 06:26:40 commit) reports 87 passed, 4 failed, EXIT=1, and its four ids are the four parametrisations of tests/test_promotion_never_amends_its_commit.py::test_complete_preserves_the_promotion_commit_through_release; I extracted the base revision 0409dcbe4 into a scratch tree and ran that file there, and the same four ids fail at the base (4 failed, 1 passed), so zero failures are added by this change; the run's baseline_suite field is prose rather than the armed JSON shape, so the base arm is my own run rather than a stored log",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:798 ensure_worker_scratch calls settle_run_scratch(apply=True) before creating a worker's scratch",
+    "reckon/crew/dispatch_launch.py:1134 the _STEP_TASK_WRAPPER settles this host before exec for a step-placed worker",
+    "reckon/crew/gc.py:1576 retention_sweep calls settle_run_scratch and appends its removals to the retention log",
+    "reckon/crew/promotion.py:1125 complete calls _release_after_promotion then _record_release_on_ledger, which writes the receipt",
+    "reckon/crew/promotion.py:1752 the second promotion path calls _release_after_promotion then _record_release_on_ledger",
+    "reckon/crew/promotion_records.py:188 a record promotion calls _release_after_promotion",
+    "reckon/crew_run_commands.py:2590 and :2599 the crew verb path calls _release_after_promotion then _record_release_on_ledger"
+  ],
+  "completed_at": "2026-10-24T04:43:42.245Z",
+  "dispatched_at": "2026-10-24T04:33:16Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html",
+      "line": "143",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Gate paragraph reports '85 passed, 4 failed, 0:02:14, EXIT=1 ... on the committed tree', but the reviewed head's own gate log logs/gate-round4.log names revision 3149f9b6f and reports 87 passed, 4 failed, 0:01:42; the 85 figure is gate-coordinator.log's, whose header names 2abb60a10, a revision that does not hold the two cases added after it. The command quoted is also abbreviated ('PYTHONPATH=. python -m pytest ...') rather than the literal twelve-target command the log records, so the plan's 'the evidence fragment quotes each gate's command and summary line' is not met for the head gate. The code is not in doubt \u2014 the head gate exists and passes \u2014 but the record points a reader at the wrong reading."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html",
+      "line": "137",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Negative control paragraph says the mutation was run 'against the committed tree', while logs/negative-control.log's own header names revision bef70cb4, an earlier revision of this node's tree; the mutated run-ended branch (reckon/crew/gc.py:1216-1219) is unchanged at the head, so the result transfers, but the sentence as written is not what the log records and a reader cannot tell whether the control was re-applied to the code being promoted."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T014216727662-a-runs-scratch-is-removed-on-the-host-that-made-it/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: negative_control_log names logs/negative-control-repair.log, whose mutation withdraws the coherence guard (1 failed, 10 deselected), not the declared control 'a settling pass that keeps the orphan sweep's age wait ... the second-host case must fail', whose log is logs/negative-control.log (3 failing ids including the second-host case). Admission still reads a red log with a failing id the head arm does not fail, so the record is not refused, but the field names a log that does not answer the control the node declared."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "1171",
+      "severity": "non-blocking",
+      "text": "non-blocking: _run_directory_records_end writes the record names as literals ('exit.json', 'discard.json') although reckon/crew/dispatch_launch.py:1741 defines EXIT_RECORD_NAME and reckon/crew/promotion.py:1798 defines DISCARD_RECORD_NAME; a rename of either record leaves the settling pass reading a name nothing writes and silently treating finished runs as unended."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read 29ef6788a..3149f9b6f commit by commit (one commit, three files) and the node's full source diff 0409dcbe4..3149f9b6f; the commit replaces two inline copies of the coherent-root rule with scratch_root_pairs_with_state_home (reckon/crew/gc.py:1031, called at gc.py:1066 and gc.py:1214) and adds the symmetric guard case (tests:340) and the atomic-writer case (tests:469), changing no other behaviour apart from the orphan sweep adopting the stricter pairing.",
+    "done_when": "the done-when read from prompt.txt:104 and docs/plans/crew-state-stays-bounded.html:170 has a case for each behavioural clause in tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py, and the head gate log names the reviewed revision and its summary line; the fragment's own gate paragraph still quotes the previous round's figure.",
+    "goal": "the node goal is to remove a finished run's scratch copies on every host by run, through the release and a settling pass on each host; the landed change does that \u2014 reckon/crew/dispatch_launch.py:876 makes remove_worker_scratch name its host and report scratch_absent, reckon/crew/gc.py:1178 is the settling pass reaching three callers, and reckon/crew/promotion_release.py:587 keeps the release receipt beside the run record.",
+    "manifest": "read at the run's manifest.md: status complete, after_suite prose records 87 passed / 4 failed / 0:01:42 / EXIT=1 at 3149f9b6f citing logs/gate-round4.log, which I opened and which carries that revision, that summary and a bare EXIT=1; its negative_control_log names a different control from the declared one.",
+    "write_paths": "the run declared eight paths at prompt.txt:69-77; the diff 0409dcbe4..3149f9b6f touches five files \u2014 reckon/crew/dispatch_launch.py, reckon/crew/gc.py, reckon/crew/promotion_release.py, the case file and the fragment \u2014 every one inside them, and the declared-but-unneeded promotion.py, promotion_records.py and crew_run_commands.py are untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:496 reddens when _write_release_receipt is reverted to write_text \u2014 I applied that mutation in a scratch extraction and got 1 failed \u2014 and tests:340 reddens when the state_runs_root half of reckon/crew/gc.py:1031 is dropped.",
+    "evidence": "logs/gate-round4.log:1 names revision 3149f9b6f and its last lines report 87 passed, 4 failed, EXIT=1, written after that commit, and I reproduced the same four ids at base 0409dcbe4 \u2014 but docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html:143 still quotes 85 passed / 0:02:14.",
+    "fit": "reckon/crew/gc.py:1031 states the rule in the surrounding refusal shape, the commit subject names the mechanism rather than a plan section, and no plan, stage or ticket label appears in the added code, tests or fragment ids.",
+    "goal_fidelity": "reckon/crew/gc.py:1178 removes a finished run's copy at once from the launch, step and retention callers, and reckon/crew/dispatch_launch.py:876 names the host that removed each copy, which are the goal's two halves.",
+    "reuse": "reckon/crew/gc.py:1031 is now the single owner of the coherent-root rule and both passes call it, but the record names at gc.py:1171-1173 repeat literals that reckon/crew/dispatch_launch.py:1741 and reckon/crew/promotion.py:1798 already declare.",
+    "scope_discipline": "every path in the diff 0409dcbe4..3149f9b6f is one of the eight declared at prompt.txt:69-77."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to remove a finished run's scratch copies on every host by run, through the release and a settling pass on each host; the landed change does that \u2014 reckon/crew/dispatch_launch.py:876 makes remove_worker_scratch name its host and report scratch_absent, reckon/crew/gc.py:1178 is the settling pass reaching three callers, and reckon/crew/promotion_release.py:587 keeps the release receipt beside the run record.\nVERDICT done_when: the done-when read from prompt.txt:104 and docs/plans/crew-state-stays-bounded.html:170 has a case for each behavioural clause in tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py, and the head gate log names the reviewed revision and its summary line; the fragment's own gate paragraph still quotes the previous round's figure.\nVERDICT write_paths: the run declared eight paths at prompt.txt:69-77; the diff 0409dcbe4..3149f9b6f touches five files \u2014 reckon/crew/dispatch_launch.py, reckon/crew/gc.py, reckon/crew/promotion_release.py, the case file and the fragment \u2014 every one inside them, and the declared-but-unneeded promotion.py, promotion_records.py and crew_run_commands.py are untouched.\nVERDICT manifest: read at the run's manifest.md: status complete, after_suite prose records 87 passed / 4 failed / 0:01:42 / EXIT=1 at 3149f9b6f citing logs/gate-round4.log, which I opened and which carries that revision, that summary and a bare EXIT=1; its negative_control_log names a different control from the declared one.\nVERDICT diff: read 29ef6788a..3149f9b6f commit by commit (one commit, three files) and the node's full source diff 0409dcbe4..3149f9b6f; the commit replaces two inline copies of the coherent-root rule with scratch_root_pairs_with_state_home (reckon/crew/gc.py:1031, called at gc.py:1066 and gc.py:1214) and adds the symmetric guard case (tests:340) and the atomic-writer case (tests:469), changing no other behaviour apart from the orphan sweep adopting the stricter pairing.\nCALL_SITES: reckon/crew/dispatch_launch.py:798 ensure_worker_scratch, reckon/crew/dispatch_launch.py:1134 _STEP_TASK_WRAPPER, reckon/crew/gc.py:1576 retention_sweep, reckon/crew/promotion.py:1125 complete, reckon/crew/promotion.py:1752 second promotion path, reckon/crew/promotion_records.py:188 record promotion, reckon/crew_run_commands.py:2590 crew verb path\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:1178 removes a finished run's copy at once from the launch, step and retention callers, and reckon/crew/dispatch_launch.py:876 names the host that removed each copy, which are the goal's two halves.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-round4.log:1 names revision 3149f9b6f and its last lines report 87 passed, 4 failed, EXIT=1, written after that commit, and I reproduced the same four ids at base 0409dcbe4 \u2014 but docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html:143 still quotes 85 passed / 0:02:14.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff 0409dcbe4..3149f9b6f is one of the eight declared at prompt.txt:69-77.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py:496 reddens when _write_release_receipt is reverted to write_text \u2014 I applied that mutation in a scratch extraction and got 1 failed \u2014 and tests:340 reddens when the state_runs_root half of reckon/crew/gc.py:1031 is dropped.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/gc.py:1031 states the rule in the surrounding refusal shape, the commit subject names the mechanism rather than a plan section, and no plan, stage or ticket label appears in the added code, tests or fragment ids.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/gc.py:1031 is now the single owner of the coherent-root rule and both passes call it, but the record names at gc.py:1171-1173 repeat literals that reckon/crew/dispatch_launch.py:1741 and reckon/crew/promotion.py:1798 already declare.\nFINDING docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html:143 non-blocking: the Gate paragraph reports 85 passed / 4 failed / 0:02:14 on the committed tree, but the head's own gate log logs/gate-round4.log names revision 3149f9b6f and reports 87 passed / 4 failed / 0:01:42; the 85 figure belongs to gate-coordinator.log at 2abb60a10, a revision that does not hold the two cases added later, and the quoted command is abbreviated rather than the literal twelve-target command.\nFINDING docs/evidence/fragments/crew-state-stays-bounded/a-runs-scratch-is-removed-on-the-host-that-made-it.html:137 non-blocking: the negative-control paragraph says the mutation ran against the committed tree, but logs/negative-control.log's header names revision bef70cb4, an earlier revision of this node's tree; the mutated branch is unchanged at the head so the result transfers, but the claim does not match the log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T014216727662-a-runs-scratch-is-removed-on-the-host-that-made-it/manifest.md:17 non-blocking: negative_control_log names logs/negative-control-repair.log, whose mutation withdraws the coherence guard, not the declared orphan-age mutation whose log is logs/negative-control.log with three failing ids including the second-host case.\nFINDING reckon/crew/gc.py:1171 non-blocking: _run_directory_records_end writes 'exit.json' and 'discard.json' as literals although reckon/crew/dispatch_launch.py:1741 and reckon/crew/promotion.py:1798 already define EXIT_RECORD_NAME and DISCARD_RECORD_NAME, so a rename of either record leaves the settling pass treating finished runs as unended.",
+  "review_run_id": "r-20261024T043054370881-review-of-a-runs-scratch-is-removed-on-the-host-that-made-it-3149f9b6f200",
+  "reviewed_base_sha": "29ef6788af7a3f80d1c695b0ffd6784cb94a3380",
+  "reviewed_head_sha": "3149f9b6f2000a353f872e1a09dace816c02eb55",
+  "reviewed_run_id": "r-20261024T014216727662-a-runs-scratch-is-removed-on-the-host-that-made-it",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:45:09.273104+00:00",
+  "total": 111
+}
