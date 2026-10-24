@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:1032",
+    "reckon/crew/promotion_checks.py:929",
+    "reckon/crew/promotion.py:2244"
+  ],
+  "completed_at": "2026-10-24T22:18:04.103Z",
+  "dispatched_at": "2026-10-24T22:02:33Z",
+  "findings": [
+    {
+      "file": "tests/test_promotion_reads_the_review_tier.py",
+      "line": 471,
+      "severity": "non-blocking",
+      "text": "the refusal-text assertion matches the substring \"integer\" taken from the schema constraint message, so a schema reword reddens the test with no promotion behaviour changed; asserting the stable key_path alone, or the constraint through a named attribute, would still catch a swallowed refusal and survive a message change."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 read against 18d24c35f; one commit, 7d705112d, 99 insertions and 10 deletions over the test file and the evidence fragment, with production code untouched.",
+    "done_when": "pass \u2014 the done_when names both behaviours and the gate file, and logs/gate-head.log records 11 passed EXIT=0 while logs/base-arm.log records 11 passed EXIT=0 and I re-ran both new cases at 2 passed EXIT=0.",
+    "goal": "pass \u2014 the goal replaces one promotion case with a named-refusal case and a direct-fallback case, and both are present at tests/test_promotion_reads_the_review_tier.py:439 and :474.",
+    "manifest": "pass \u2014 read; it records head and base arms green, the base reproduction at 1 failed, and both negative controls red, with log paths that exist and end in EXIT lines.",
+    "write_paths": "pass \u2014 the declared paths are the test file, the evidence fragment and a figures directory; the diff writes the first two and no path outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_promotion_reads_the_review_tier.py:495 reddens when the try/except at reckon/crew/promotion_checks.py:938 is removed, which the run's negative controls demonstrate, while :471 asserts on schema prose rather than behaviour.",
+    "evidence": "logs/gate-head.log records 11 passed with a bare EXIT=0 at head and logs/base-arm.log records 11 passed at 18d24c35f, but both headers name revision 18d24c35f, so the revision field alone does not identify the head measured.",
+    "fit": "tests/test_promotion_reads_the_review_tier.py:21 imports the private helper, matching the existing idiom at tests/test_a_plan_review_promotes_without_a_typed_outcome.py:35.",
+    "goal_fidelity": "tests/test_promotion_reads_the_review_tier.py:439 and :474 replace the single fallback case with the two cases the goal names, one per asserted behaviour.",
+    "reuse": "the change adds no production definition; it exercises the existing reckon/crew/promotion_checks.py:929 owner and reuses flight.DEFAULT_LIGHT_CHANGED_LINES rather than restating the ceiling.",
+    "scope_discipline": "git diff 18d24c35f 7d705112d touches only tests/test_promotion_reads_the_review_tier.py and the declared evidence fragment under docs/evidence/fragments/the-suite-is-green-at-head/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the goal replaces one promotion case with a named-refusal case and a direct-fallback case, and both land at tests/test_promotion_reads_the_review_tier.py:439 and :474.\nVERDICT done_when: pass \u2014 the done_when names both behaviours plus the gate file; logs/gate-head.log records 11 passed and EXIT=0, logs/base-arm.log 11 passed and EXIT=0, and logs/base-repro.log records the 1 failed reproduction.\nVERDICT write_paths: pass \u2014 the declared paths are the test file, the evidence fragment and a figures directory, and the diff writes only the first two.\nVERDICT manifest: pass \u2014 read; it states both new cases pass and both negative controls red, names each log path, and every named log exists and ends in a bare EXIT line.\nVERDICT diff: pass \u2014 read against 18d24c35f; one commit, 7d705112d, 99 insertions and 10 deletions over tests/test_promotion_reads_the_review_tier.py and the evidence fragment, with no production change.\nCALL_SITES: reckon/crew/promotion_checks.py:1032, reckon/crew/promotion_checks.py:929, reckon/crew/promotion.py:2244\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_promotion_reads_the_review_tier.py:439 and :474 are the two cases the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head.log records 11 passed and a bare EXIT=0, but its header names revision 18d24c35f while the measured tree carried the change committed as 7d705112d.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 18d24c35f 7d705112d is inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_promotion_reads_the_review_tier.py:495 fails if the try/except at reckon/crew/promotion_checks.py:938 no longer swallows the config error.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_promotion_reads_the_review_tier.py:21 imports the private helper, matching the existing idiom at tests/test_a_plan_review_promotes_without_a_typed_outcome.py:35.\nSCORE reuse: 20\nJUSTIFICATION reuse: no production definition is added; reckon/crew/promotion_checks.py:929 stays the single owner of the ceiling read.\nFINDING tests/test_promotion_reads_the_review_tier.py:471 non-blocking: the assertion matches schema wording rather than behaviour, so a message reword reddens it while a swallowed refusal is caught only by the key_path line.",
+  "review_run_id": "r-20261024T212410678175-review-of-an-unresolvable-config-refuses-promotion-by-name-7d705112d31d",
+  "reviewed_base_sha": "18d24c35f3c00ecd3aba5bf96bf56e0997b691d1",
+  "reviewed_head_sha": "7d705112d31df6347ac000a612b625fd952f38cf",
+  "reviewed_run_id": "r-20261024T210423068042-an-unresolvable-config-refuses-promotion-by-name",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T22:53:59.715708+00:00",
+  "total": 113
+}
