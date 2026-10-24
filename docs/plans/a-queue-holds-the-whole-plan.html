@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="72">
+<meta name="plan-version" content="73">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -160,6 +160,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261024T072735850974-review-of-queue-edit-reprioritise-drop-92412b282fca" data-who="reckon-build" data-when="2026-10-24T07:42:43.398Z">
     <div class="r-comment-body"><p>reviewed r-20261024T053457115337-queue-edit-reprioritise-drop at 92412b282 against 622ab7a64 and stored a parsed record: goal_fidelity 19, evidence 8, scope_discipline 15, durability 14, fit 16, reuse 5, added_failure_count 0 over the run's own two arms; one blocking finding, that the reviewed manifest's artifacts line cites a 13-passed log for its 15 cases and calls a 4-failed log "all passing".</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261024T085000086706-review-of-rebuilt-brief-names-have-one-owner-22d4eac8a1ae" data-who="reckon-build" data-when="2026-10-24T09:02:45.153Z">
+    <div class="r-comment-body"><p>review of r-20261024T081206153359-rebuilt-brief-names-have-one-owner at head 22d4eac8a1ae: the brief names are declared once at reckon/crew/runs.py:126 and both readers consume it, so goal_fidelity 20, reuse 20, scope_discipline 19, fit 19, durability 18; evidence is 12 because the done_when&#x27;s 511-file delta was never produced and only a 6-file brief-surface subset was measured 34/34; two non-blocking findings record the substitute population and the head arm&#x27;s log header naming the base revision.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261023T124219597651-review-of-a-queued-request-waits-on-its-dependencies-1b2713f29e3f" data-who="reckon-build" data-when="2026-10-23T13:01:57.694Z">
     <div class="r-comment-body"><p>An independent review of run r-20261023T112727139233-a-queued-request-waits-on-its-dependencies (base 43677d0d2697ae3d8841b6d19addcdb77cc572be, head 1b2713f29e3f8e1569c688953e757ec6144305c1) is stored parsed: scores goal_fidelity 8, evidence 12, scope_discipline 18, durability 18, fit 17, reuse 13; added failures 0; one blocking finding and four non-blocking ones (queue_requests at reckon/crew/queue_admission.py:1338 has no production caller, so no dispatched node can enter awaiting-upstream; the base arm fails on AttributeError rather than on the ordering the done_when claims; the manifest's tests line is prose and does not reconcile with gate-main.log's EXIT=1; the duties view does not read the two new phases; _parse_section_ref at :1109 re-implements reckon/_schema.py:276 parse_plan_ref).</p></div>

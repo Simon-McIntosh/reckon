@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_source": {
+    "after": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T081206153359-rebuilt-brief-names-have-one-owner/logs/gate-head-subset.log",
+    "baseline": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T081206153359-rebuilt-brief-names-have-one-owner/logs/gate-base-subset.log",
+    "note": "the reviewed run's manifest baseline_suite and after_suite fields are empty, so the count is derived from the two gate logs themselves: base 34 passed EXIT=0, head 34 passed EXIT=0, no failing id in either, hence 0 added failures."
+  },
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/runs.py:_write_steering",
+    "reckon/crew/runs.py:store_brief",
+    "reckon/crew/dispatch_admission.py:_store_brief",
+    "reckon/crew/dispatch_admission.py:materialize_run_review_brief caller",
+    "reckon/crew/recovery_review_subject.py:_review_brief_path"
+  ],
+  "completed_at": "2026-10-24T09:02:45.153Z",
+  "dispatched_at": "2026-10-24T08:53:14Z",
+  "findings": [
+    {
+      "file": "logs/gate-head-subset.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the head arm's header names 106481c, the base revision, because f0c2fb2e0 was committed at 08:38:19Z after that 196 s run finished, so neither arm's log ties its result to the landed commit; the tree path and the 34-passed line distinguish them, but a reader reconciling revision from the header reads both arms as base."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/rebuilt-brief-names-have-one-owner.html",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "the brief's named measure, a delta over all 511 test files importing the two modules, was never produced (logs/gate-head.log EXIT=124); the 34/34 delta is over a 6-file substitute population, so the done-when is evidenced by a subset the brief did not name."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/runs.py:_write_steering, reckon/crew/runs.py:store_brief, reckon/crew/dispatch_admission.py:_store_brief, reckon/crew/dispatch_admission.py:dispatch path calling materialize_run_review_brief, reckon/crew/recovery_review_subject.py:_review_brief_path",
+    "diff": "read commit by commit across f0c2fb2e0 and 22d4eac8a: the refactor moves the two names and the set into reckon/crew/runs.py and rewires both readers, and the docs commit adds the evidence fragment; no unrelated change.",
+    "done_when": "the brief's measure is a two-arm delta over the 511 test files importing reckon/crew/runs.py or reckon/crew/recovery_review_subject.py; logs/gate-head.log records EXIT=124 (the arm did not finish) and only a 6-file brief-surface subset was measured 34 passed head vs 34 passed base.",
+    "goal": "the goal is that the rebuilt brief names a launch recomposes have one owner read by both the queue's steering copy and the run-review materializer; reckon/crew/runs.py:126 declares REBUILT_BRIEF_NAMES and both readers, reckon/crew/runs.py:608 and reckon/crew/recovery_review_subject.py:632, read it.",
+    "manifest": "read; it records 3 gate tests passed (EXIT=0), a red negative control (1 failed, 2 passed), the 34/34 brief-surface delta, and names the population arm unpaid in outside_scope.",
+    "write_paths": "the diff touches reckon/crew/runs.py, reckon/crew/recovery_review_subject.py, tests/test_rebuilt_brief_names_have_one_owner.py and the evidence fragment, all inside the manifest's declared paths; the declared docs/figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_rebuilt_brief_names_have_one_owner.py:71 reddens when the composition keeps a private literal set, as logs/negative-control.log shows, and line 87 is the negative arm that refuses an undeclared name.",
+    "evidence": "The done_when names a delta over all 511 importing test files; logs/gate-head.log records EXIT=124 for that population and only the 6-file subset in logs/gate-head-subset.log and logs/gate-base-subset.log was measured.",
+    "fit": "reckon/crew/runs.py:110-126 places the three constants beside STEERING_FILE in the module's existing constant block, with the module's docstring style and no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/crew/runs.py:126 declares REBUILT_BRIEF_NAMES and reckon/crew/runs.py:608 and reckon/crew/recovery_review_subject.py:632 both read it, so the queue's steering copy and the materializer answer from one declaration.",
+    "reuse": "A search over reckon/ for existing brief-name owners found only reckon/project_brief.py:31 (a character budget) and reckon/crew/prompts.py:201 (contract prose), so the declaration at reckon/crew/runs.py:126 is the first owner and the diff removes the two prior private copies rather than adding a third.",
+    "scope_discipline": "All four paths in the diff are inside the manifest's declared write paths and nothing the goal does not imply landed; the declared docs/figures directory was simply not used."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the brief names a launch re-composes have one owner read by both the queue's steering copy and the run-review materializer; reckon/crew/runs.py:126 declares REBUILT_BRIEF_NAMES and both readers, reckon/crew/runs.py:608 and reckon/crew/recovery_review_subject.py:632, read it.\nVERDICT done_when: the brief's quantitative measure is a two-arm delta over the 511 test files importing reckon/crew/runs.py or reckon/crew/recovery_review_subject.py; logs/gate-head.log records EXIT=124 for that population and only a 6-file brief-surface subset was measured, 34 passed head against 34 passed base.\nVERDICT write_paths: the diff touches reckon/crew/runs.py, reckon/crew/recovery_review_subject.py, tests/test_rebuilt_brief_names_have_one_owner.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/rebuilt-brief-names-have-one-owner.html, all inside the manifest's declared write paths; the declared docs/figures directory carries no change.\nVERDICT manifest: read at the reviewed run's manifest.md; it records 3 gate tests passed (EXIT=0), a negative control at 1 failed / 2 passed (EXIT=1), the 34/34 brief-surface delta with 0 added failures, and names the population arm as unfinished under outside_scope.\nVERDICT diff: read commit by commit across f0c2fb2e0 and 22d4eac8a against base 106481caf; the refactor moves the two brief names and their set into reckon/crew/runs.py and rewires is_rebuilt_brief, materialize_run_review_brief and _review_brief_path, and the docs commit adds the evidence fragment; nothing unrelated landed.\nCALL_SITES: reckon/crew/runs.py:_write_steering, reckon/crew/runs.py:store_brief, reckon/crew/dispatch_admission.py:_store_brief, reckon/crew/dispatch_admission.py:materialize_run_review_brief caller, reckon/crew/recovery_review_subject.py:_review_brief_path\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:126 holds the one declaration and reckon/crew/runs.py:608 and reckon/crew/recovery_review_subject.py:632 both read it, so the queue and the materializer answer from one owner.\nSCORE evidence: 12\nJUSTIFICATION evidence: the done_when names a 511-file delta, logs/gate-head.log records EXIT=124 for it, and the recorded 34/34 result in logs/gate-head-subset.log is over a 6-file subset.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/runs.py, reckon/crew/recovery_review_subject.py, the new test, the evidence fragment) is inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_rebuilt_brief_names_have_one_owner.py:71 reddens when the composition keeps its own literal set, as logs/negative-control.log records, and line 87 refuses an undeclared name so a always-True reader cannot pass.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/runs.py:110-126 sits the three constants beside STEERING_FILE in the existing constant block with the module's docstring style and no plan or ticket identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search over reckon/ for another brief-name owner found none (only reckon/project_brief.py:31 and reckon/crew/prompts.py:201, unrelated), and the diff deletes the two prior private copies at recovery_review_subject.py:385 and runs.py:555 rather than forking a third.\nFINDING logs/gate-head-subset.log:1 non-blocking: the head arm's header names 106481c, the base revision, because f0c2fb2e0 was committed at 08:38:19Z after that 196 s run finished, so neither arm's log ties its result to the landed commit; the tree path and the 34-passed line distinguish them, but a reader reconciling revision from the header reads both arms as base.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/rebuilt-brief-names-have-one-owner.html:58 non-blocking: the brief's named measure, a delta over all 511 test files importing the two modules, was never produced (logs/gate-head.log EXIT=124); the 34/34 delta is over a 6-file substitute population, so the done-when is evidenced by a subset the brief did not name.\n",
+  "review_run_id": "r-20261024T085000086706-review-of-rebuilt-brief-names-have-one-owner-22d4eac8a1ae",
+  "reviewed_base_sha": "106481cafeaeff4768af0b6d10046b4e452d14cb",
+  "reviewed_head_sha": "22d4eac8a1ae73364799de7233af1af502b5cf41",
+  "reviewed_run_id": "r-20261024T081206153359-rebuilt-brief-names-have-one-owner",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T09:05:06.440910+00:00",
+  "total": 108
+}
