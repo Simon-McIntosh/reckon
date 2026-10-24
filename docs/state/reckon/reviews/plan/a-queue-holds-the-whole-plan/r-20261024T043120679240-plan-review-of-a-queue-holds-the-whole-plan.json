@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T04:40:22.397Z",
+  "dispatched_at": "2026-10-24T04:32:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html:64",
+      "id": "reasoning-1",
+      "reason": "the binding node as scoped cannot make its own arm's first step possible, and an implementer discovering this mid-node either exceeds its write paths or reverts to the dispatch-time copy the section exists to replace.",
+      "text": "s5 says \"Dispatch writes it from `--brief`\" and that the first arm \"queues a request with a brief, replaces its `steering.md` before launch\", but no code on the queued path writes that file: `_store_brief` is called only at `reckon/crew/dispatch.py:1948`, while every queueing hold raises earlier (`dispatch.py:1676` for unmet waits, `:1795` and `:1826` for a lane hold), so a queued request's run directory is never created and holds no `steering.md`; the fix needs a writer in `dispatch.py` (or `runs.queue_dispatch`, `reckon/crew/runs.py:546`), and neither module is among s5's declared write paths (`dispatch_admission.py`, `queue_admission.py`, `crew_run_commands.py`, `mcp_crew_actions.py`, a new test file)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "549ca1319cf12c0ff9b9beda2e287c8a3228010676f982358df2e4122b0252ab",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 52,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T04:41:49.336563+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T04:41:49.336563+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v52.json",
+  "review_run_id": "r-20261024T043120679240-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "32916f1c4c15fa88b6a1b7573408c3831385b2de",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_store_brief` and `_brief_digest` resolve at `reckon/crew/dispatch_admission.py:2241` and `:2204`, `_launch_queued` and `_node_from_pointer` at `reckon/crew/queue_admission.py:171` and `:119`; `crew view live --phase queued` is real (`--phase` at `reckon/crew_run_commands.py:238`, and `LIVE_PLACEMENT_FIELDS = (\"position\", \"rank\")` at `reckon/crew/query.py:88` backs the claim that queued rows already carry both); `crew discard` exists at `reckon/crew_run_commands.py:1978`; `crew_run_commands.py` and `mcp_crew_actions.py` both exist. Each extensionless href (`a-held-dispatch-waits-its-fair-turn`, `a-coordinator-can-clear-its-own-duties`, `a-review-is-sized-to-its-risk`, `the-crew-does-its-own-bookkeeping`) resolves as `<path>.html`.",
+    "done_when": "pass \u2014 s5's discriminating arm is a genuine negative control: leaving `steering.md` alone and changing the brief the queued pointer names makes today's copy-at-dispatch code (`reckon/crew/dispatch.py:1948` calls `_store_brief`) fail the arm, and the edit-verb arm is now split from the direct-replacement arm so each build node carries its own measure.",
+    "evidence_paths": "pass \u2014 s5 places every log \"under the run directory\", i.e. the request's own directory under the configuration home, which survives the run; the plan-level evidence target `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html` exists in the repository.",
+    "naming": "pass \u2014 s5 introduces `steering.md`, `crew queue edit/reprioritise/drop` and no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 s5's mechanism never says who writes `steering.md` at queue time, and the only brief-store call site is unreachable on the queued path, so the binding arm's first step has no file to replace.",
+    "single_goal": "pass \u2014 the section now states it is built as two nodes, launching-binding and verbs, and closes when both land; the earlier finding on this point was declined with that reasoning and the changed unit makes it explicit.",
+    "wiring": "pass \u2014 s5's declared `plan-section-depends-on` edge (s5 -> s2) names a node that exists, `s4 -> s5` and `s10 -> s4, s5` agree with the build order followup f-aqhwp-002 gives, and the cross-project edge `imas-ambix:local-lane-admission-control#s27` resolves to a live section that carries the reciprocal `reckon:a-queue-holds-the-whole-plan#s4` link."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "8bf7388579b6eee5084cd7937843613786a1ff06812013224cfced1081eb1f6d",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:41:37.942246+00:00"
+}
