@@ -1,0 +1,154 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T04:21:13.167Z",
+  "dispatched_at": "2026-10-24T04:14:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:22",
+      "id": "wiring-1",
+      "reason": "\u00a76's landing pass is inoperative without \u00a722, and the graph is what an orchestrator dispatches from, so an undeclared prerequisite sends the node out unable to succeed.",
+      "text": "\u00a76 (line 69) says it \"consumes\" `the-crew-does-its-own-bookkeeping` \u00a722, which owns the classification that a review run exiting 0 after filing a parsed review reads complete, but no edge declares it; \u00a73 (line 53) likewise moves the review exemption from `a-coordinator-can-clear-its-own-duties` \u00a72 with no edge \u2014 so a \u00a76 node can be dispatched and hold every landing on a classification another plan has not landed",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:65",
+      "id": "done_when-1",
+      "reason": "the followup's build order is what a coordinator dispatches, and as written one of the two parallel nodes carries a gate it cannot pass.",
+      "text": "\u00a75's first arm reads \"a test queues a request with a brief, replaces its steering text with `crew queue edit`, and the launched worker's recorded digest matches the edited text\", so the launch-time-binding measurement cannot run without the edit verb, yet followup f-aqhwp-002 (line 120) prescribes \"\u00a75, as two parallel nodes (launch-time steering binding; the edit, reprioritise and drop verbs)\" \u2014 the split as written leaves the binding node's gate unsatisfiable",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:62",
+      "id": "single_goal-1",
+      "reason": "a section carrying two deliverables cannot be closed on one verdict, and the plan's declared build order already contradicts the section's shape.",
+      "text": "\u00a75 declares two deliverables in one section, \"the brief binds at launch\" and \"editable until then\" with three new verbs, and its six-arm done-when joins both under one verdict; the plan's own followup confirms the split",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:54",
+      "id": "done_when-2",
+      "reason": "the section is still measurable by its own positive arms, so a missing control costs confidence in the guard rather than sending a node the wrong way.",
+      "text": "\u00a73 is the one section whose done-when declares no negative arm: the 200-request and 30 s MCP-read arms are assertions that hold whenever the change works, and the only refusal arm (the 501st) exercises the new project bound rather than showing the retired 2\u20138 clamp is gone",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:35",
+      "id": "anchors_resolve-1",
+      "reason": "the figures are historical observations that no downstream section resolves through, so a reader cannot check them but no node is steered by whether they are exact.",
+      "text": "\u00a71's motivating measurements (30 worker slots, 17 live runs, five sessions, 247 code reviews against 143 implementations, ~95 % of a million-token context) carry no evidence path, in a plan whose \u00a714 measures its outcome from ledger and verdict records",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "f63cc92e2eb27be976337a8e76e0558647b2c73f7d8d63a4c2b47040fba3b412",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 51,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "wiring-1",
+      "reason": "both consumed sections are already done: the-crew-does-its-own-bookkeeping s22 is declared done and a-coordinator-can-clear-its-own-duties is shipped with s2 done, so an edge would order nothing",
+      "when": "2026-10-24T04:23:00.067084+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-24T04:23:30.511819+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "single_goal-1",
+      "reason": "section 5 is one deliverable, a brief that binds at launch and stays editable until then; the 60-minute fence is why it is built as two nodes, and v52 makes the binding arm measurable without the verbs so each node passes its share and the section closes when both land",
+      "when": "2026-10-24T04:23:58.197798+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "done_when-2",
+      "reason": "the reviewer marks it as needing no change: section 3 is measured by its 200-request, deduplication, 501st-refusal and MCP-deadline arms",
+      "when": "2026-10-24T04:24:39.067676+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "anchors_resolve-1",
+      "reason": "the reviewer marks it as needing no change: section 1's figures are historical observations that no downstream section gates on",
+      "when": "2026-10-24T04:25:12.795703+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "the reviewer marks it as needing no change: section 1's figures are historical observations that no downstream section gates on",
+      "when": "2026-10-24T04:25:12.795703+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T04:23:30.511819+00:00"
+    },
+    "done_when-2": {
+      "action": "declined",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "the reviewer marks it as needing no change: section 3 is measured by its 200-request, deduplication, 501st-refusal and MCP-deadline arms",
+      "when": "2026-10-24T04:24:39.067676+00:00"
+    },
+    "single_goal-1": {
+      "action": "declined",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "section 5 is one deliverable, a brief that binds at launch and stays editable until then; the 60-minute fence is why it is built as two nodes, and v52 makes the binding arm measurable without the verbs so each node passes its share and the section closes when both land",
+      "when": "2026-10-24T04:23:58.197798+00:00"
+    },
+    "wiring-1": {
+      "action": "declined",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "both consumed sections are already done: the-crew-does-its-own-bookkeeping s22 is declared done and a-coordinator-can-clear-its-own-duties is shipped with s2 done, so an edge would order nothing",
+      "when": "2026-10-24T04:23:00.067084+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v51.json",
+  "review_run_id": "r-20261024T041328926567-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "00d6908f9c790fb81b7134d833341ae93812b7ea",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited file, symbol and href resolves: `QUEUED_DISPATCH_CAP_FLOOR/CEILING` (runs.py:367-368), `_store_brief` (dispatch_admission.py:2241), `admit_once` (queue_admission.py:1767), `QUEUED_PHASE`/`LAUNCH_FAILED_PHASE` (:46-47), `_readiness_rows` (:1056, two callers), `RUN_DELIVERED_STATUSES` (:1023), `_priority_key` (roadmap_ranking.py:196), `STARVATION_AGE_SECONDS` (queue_order.py:13), `_dispatch_lane_allowance` (dispatch_plan.py:1565), `REVIEW_ACCEPTANCE_FLOOR`/`_review_accepts_promotion` (recovery_review_acceptance.py:24,29), `parse_manifest`/`MANIFEST_STATUSES`/`TERMINAL_MANIFEST_STATUSES` (reports.py:317,138,126), `run_path` (ledger.py:890), `sweep_promoted_revisions` (promotion.py:1985), `parse_plan_ref` (_schema.py:276), `TaskNode` (node.py:725), `PlanReviewMissingError` (routing.py:2450), `crew admit` (crew_run_commands.py:3581), the `drain` view name (mcp_views.py:3705), `crew view` `--phase` (:217-238), and every `/reckon/plans/\u2026` href; the extensionless hrefs resolve as `.html`.",
+    "done_when": "a finding \u2014 \u00a75's launch-time binding arm is measured through `crew queue edit`, so the two-node split its own open followup prescribes leaves the binding node unable to pass its share.",
+    "evidence_paths": "pass \u2014 \u00a714 records to `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html` (exists, cumulative), and \u00a72/\u00a73/\u00a75 put their logs under the request's run directory; neither is a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the new vocabulary (`awaiting-upstream`, `blocked-upstream`, `held`, `unloaded`, `plan-review-owed`, `queue.max_requests`) names mechanism rather than a plan item, and no stage, ticket or version tag reaches code.",
+    "reasoning": "pass \u2014 the root cause matches \u00a71's evidence (coordinator context and a per-section feed, not lane capacity, supported by the 95 %-context and 30-slot/17-run readings), each section's mechanism can produce its own done-when, and each mechanism names a production caller: \u00a75's `_launch_queued` \u2192 `dispatch()` (queue_admission.py:171), \u00a78's `_readiness_rows` (two live callers at :1302 and :1448), \u00a76's driver `crew admit` and its srun shim (dispatch_launch.py srun placement), \u00a715's precise claim that `_dispatch_lane_allowance` returns early unless the backend declares a `lane_document` (dispatch_plan.py:1579-1581).",
+    "single_goal": "a finding \u2014 \u00a75 carries two deliverables (launch-time steering binding; the edit/reprioritise/drop verb set) and its followup f-aqhwp-002 says so outright by proposing to build it as two nodes.",
+    "wiring": "a finding \u2014 \u00a76 consumes `the-crew-does-its-own-bookkeeping` \u00a722 and \u00a73 consumes `a-coordinator-can-clear-its-own-duties` \u00a72, both named in prose but absent from `plan-section-depends-on`, while a cross-plan ref is demonstrably expressible (s14 declares `imas-ambix:local-lane-admission-control#s27`)."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "53bd9fc1d3f0dbbd181feb41c011dcd67a67461e888be626dbaf20cfabf33e82",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:22:24.609585+00:00"
+}
