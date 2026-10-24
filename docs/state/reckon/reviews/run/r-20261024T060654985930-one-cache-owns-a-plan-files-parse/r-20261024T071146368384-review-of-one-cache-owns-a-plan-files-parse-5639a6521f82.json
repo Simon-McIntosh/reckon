@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/resources.py:286 (file_memo.memoized by_content=True)",
+    "reckon/resources.py:334 (_identify_meta from identify_resource)",
+    "reckon/metadata_index.py:590 (_patch_build)",
+    "reckon/metadata_index.py:825 (build_index)",
+    "reckon/metadata_index.py:1300 (discovery_state)",
+    "reckon/metadata_index.py:1376 (record_discovery)",
+    "reckon/file_memo.py:386 (memoized by_content identity)",
+    "reckon/file_memo.py:422 (memoized post-compute recheck)"
+  ],
+  "completed_at": "2026-10-24T07:27:04.832Z",
+  "dispatched_at": "2026-10-24T07:13:02Z",
+  "findings": [
+    {
+      "file": "tests/test_a_restart_reuses_rows_by_stat_identity.py",
+      "line": "104",
+      "severity": "non-blocking",
+      "text": "non-blocking: this file is outside the node's declared write paths (plan section 57 lists neither this file nor the figure test), yet the delta edits it to repoint the digest monkeypatch at the moved owner; the edit is mechanically required to keep the file importable, and the manifest records it under outside_scope."
+    },
+    {
+      "file": "tests/test_a_figure_revision_is_fetched_once.py",
+      "line": "195",
+      "severity": "non-blocking",
+      "text": "non-blocking: this file is outside the node's declared write paths; the edit only repoints one digest reference to the moved owner and is required to keep the file importable, and the manifest records it under outside_scope."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/resources.py:286 (memoized by_content=True), reckon/resources.py:334 (_identify_meta), reckon/metadata_index.py:590, 825, 1300 and 1376 (four index build and discovery callers), reckon/file_memo.py:386 and 422 (the by_content identity and its recheck), all read at 5639a6521.",
+    "diff": "read commit by commit from 161083d24: c92841c31 deletes metadata_index._content_digest and file_memo.file_bytes, repoints the four index call sites and the three test references to file_memo.content_digest, and restores the pre-read stat signature check around the plan_text store at reckon/file_memo.py:344-351; 5639a6521 changes only the evidence fragment to record the single owner and the guard.",
+    "done_when": "the done_when's measures are asserted by the gate the run recorded: the five index cache names grep 0 at head, tests/test_resource_identity_reads_the_digest_index.py and tests/test_one_cache_owns_a_plan_files_parse.py pass in the head arm (232 passed, EXIT=0) against the base tree's 227 passed EXIT=0, and logs/negative-control-guard.log shows the digest guard's removal reddening the race case at 'Alpha' != 'Alpha edited' with EXIT=1.",
+    "goal": "the node's goal is to delete the metadata index's private parse cache and route its callers through file_memo.memoized; the two gained commits complete it by moving the last digest owner out of the index: git grep at 5639a6521 finds one 'def content_digest' in reckon/file_memo.py:310 and none in reckon/metadata_index.py, whose four call sites (lines 590, 825, 1300, 1376) now call file_memo.content_digest.",
+    "manifest": "read; it reports status complete, commits ec5289558 e6ee194bc 3dbb57655 161083d24 c92841c31 and 5639a6521, baseline_suite at revision 19daa104ef and after_suite at c92841c31 both completed true with failure_count 0 and failure_ids [], and negative_control_log pointing at logs/negative-control-guard.log.",
+    "write_paths": "the plan section 57 declares six paths and the manifest lists those plus a figures directory; the delta 161083d24..5639a6521 changes seven files, of which five are inside that list and two (tests/test_a_restart_reuses_rows_by_stat_identity.py and tests/test_a_figure_revision_is_fetched_once.py) are outside it, which the manifest records under outside_scope."
+  },
+  "justifications": {
+    "durability": "tests/test_one_cache_owns_a_plan_files_parse.py:157 fails when reckon/file_memo.py:347's signature re-check is dropped: logs/negative-control-guard.log records that reinstated defect serving 'Alpha' instead of 'Alpha edited' with EXIT=1.",
+    "evidence": "logs/head-arm.log ends '232 passed' with EXIT=0 at revision c92841c31 and logs/base-arm.log '227 passed' EXIT=0, and the guard control's red log exists at logs/negative-control-guard.log, though the head arm predates the docs-only 5639a6521.",
+    "fit": "reckon/file_memo.py:311-355 keeps the module's docstring and memoised-kind idiom, ruff check and ruff format --check pass clean on both product files at head, and no added name or comment carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/file_memo.py:310 is the only content-digest definition in reckon/ at the reviewed head and reckon/metadata_index.py calls it at four sites, so the duplicated owner the previous review named is gone.",
+    "reuse": "the delta removes the duplicate rather than adding one and file_memo owns the capability its module exists for; a search of reckon/ found only reckon/crew/obligation_snapshot.py:425 _source_content_digest (a per-tick crew stamp digest with its own stat-keyed dict) and reckon/resources.py:159's provenance digest, neither of which the delta re-implements.",
+    "scope_discipline": "two of the delta's seven files (tests/test_a_restart_reuses_rows_by_stat_identity.py:104, tests/test_a_figure_revision_is_fetched_once.py:195) lie outside the plan's and the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T071146368384-review-of-one-cache-owns-a-plan-files-parse-5639a6521f82",
+  "reviewed_base_sha": "161083d24",
+  "reviewed_head_sha": "5639a6521f82f59e8ab0778399dc2040929f80a1",
+  "reviewed_run_id": "r-20261024T060654985930-one-cache-owns-a-plan-files-parse",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: the node's goal is to delete the metadata index's private parse cache and route its callers through file_memo.memoized; the two gained commits complete it by moving the last digest owner out of the index: git grep at 5639a6521 finds one 'def content_digest' in reckon/file_memo.py:310 and none in reckon/metadata_index.py, whose four call sites (lines 590, 825, 1300, 1376) now call file_memo.content_digest.\nVERDICT done_when: the done_when's measures are asserted by the gate the run recorded: the five index cache names grep 0 at head, tests/test_resource_identity_reads_the_digest_index.py and tests/test_one_cache_owns_a_plan_files_parse.py pass in the head arm (232 passed, EXIT=0) against the base tree's 227 passed EXIT=0, and logs/negative-control-guard.log shows the digest guard's removal reddening the race case at 'Alpha' != 'Alpha edited' with EXIT=1.\nVERDICT write_paths: the plan section 57 declares six paths and the manifest lists those plus a figures directory; the delta 161083d24..5639a6521 changes seven files, of which five are inside that list and two (tests/test_a_restart_reuses_rows_by_stat_identity.py and tests/test_a_figure_revision_is_fetched_once.py) are outside it, which the manifest records under outside_scope.\nVERDICT manifest: read; it reports status complete, commits ec5289558 e6ee194bc 3dbb57655 161083d24 c92841c31 and 5639a6521, baseline_suite at revision 19daa104ef and after_suite at c92841c31 both completed true with failure_count 0 and failure_ids [], and negative_control_log pointing at logs/negative-control-guard.log.\nVERDICT diff: read commit by commit from 161083d24: c92841c31 deletes metadata_index._content_digest and file_memo.file_bytes, repoints the four index call sites and the three test references to file_memo.content_digest, and restores the pre-read stat signature check around the plan_text store at reckon/file_memo.py:344-351; 5639a6521 changes only the evidence fragment to record the single owner and the guard.\nCALL_SITES: reckon/resources.py:286 (file_memo.memoized by_content=True), reckon/resources.py:334 (_identify_meta from identify_resource), reckon/metadata_index.py:590 (_patch_build), reckon/metadata_index.py:825 (build_index), reckon/metadata_index.py:1300 (discovery_state), reckon/metadata_index.py:1376 (record_discovery), reckon/file_memo.py:386 (memoized by_content identity), reckon/file_memo.py:422 (memoized post-compute recheck)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/file_memo.py:310 is the only content-digest definition in reckon/ at the reviewed head and reckon/metadata_index.py calls it at four sites, so the duplicated owner the previous review named is gone.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-arm.log ends '232 passed' with EXIT=0 at revision c92841c31 and logs/base-arm.log '227 passed' EXIT=0, and the guard control's red log exists at logs/negative-control-guard.log, though the head arm predates the docs-only 5639a6521.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: two of the delta's seven files (tests/test_a_restart_reuses_rows_by_stat_identity.py:104, tests/test_a_figure_revision_is_fetched_once.py:195) lie outside the plan's and the manifest's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_one_cache_owns_a_plan_files_parse.py:157 fails when reckon/file_memo.py:347's signature re-check is dropped: logs/negative-control-guard.log records that reinstated defect serving 'Alpha' instead of 'Alpha edited' with EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/file_memo.py:311-355 keeps the module's docstring and memoised-kind idiom, ruff check and ruff format --check pass clean on both product files at head, and no added name or comment carries a plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta removes the duplicate rather than adding one and file_memo owns the capability its module exists for; a search of reckon/ found only reckon/crew/obligation_snapshot.py:425 _source_content_digest (a per-tick crew stamp digest with its own stat-keyed dict) and reckon/resources.py:159's provenance digest, neither of which the delta re-implements.\nFINDING tests/test_a_restart_reuses_rows_by_stat_identity.py:104 non-blocking: non-blocking: this file is outside the node's declared write paths (plan section 57 lists neither this file nor the figure test), yet the delta edits it to repoint the digest monkeypatch at the moved owner; the edit is mechanically required to keep the file importable, and the manifest records it under outside_scope.\nFINDING tests/test_a_figure_revision_is_fetched_once.py:195 non-blocking: non-blocking: this file is outside the node's declared write paths; the edit only repoints one digest reference to the moved owner and is required to keep the file importable, and the manifest records it under outside_scope.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:32:14.094771+00:00",
+  "total": 109
+}
