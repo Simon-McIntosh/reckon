@@ -1000,9 +1000,10 @@ def _walk_covered(
 ) -> tuple[list[tuple[str, Path]], list[tuple[str, Path]]]:
     """Return the covered files and every visited directory, from one walk.
 
-    The files are ``(docs-relative posix path, path)`` for every HTML file
-    anywhere in the tree plus figure images under the top-level figures
-    directory. The directories are ``(docs-relative posix path, path)`` for
+    The files are ``(docs-relative posix path, path)`` for every file
+    :func:`covered_name` accepts, so the walk and the sources that report paths
+    decide coverage by one rule. The directories are ``(docs-relative posix
+    path, path)`` for
     every directory the walk reached, including ones that held no covered
     file: a directory's stat identity moves when an entry is added to or
     removed from it, so recording the set lets a later read tell whether the
@@ -1018,7 +1019,6 @@ def _walk_covered(
     have before and is read in full.
     """
 
-    figures_root = os.path.join(os.fspath(docs_dir), _FIGURE_DIR)
     found: dict[str, Path] = {}
     directories: dict[str, Path] = {}
     pending = [os.fspath(root) for root in (roots or [docs_dir])]
@@ -1047,17 +1047,12 @@ def _walk_covered(
                         continue
                 except OSError:
                     continue
-                name = entry.name
-                is_figure = name.endswith(_FIGURE_SUFFIXES) and (
-                    directory == figures_root
-                    or directory.startswith(figures_root + os.sep)
-                )
-                if not (name.endswith(".html") or is_figure):
-                    continue
                 path = Path(entry.path)
                 try:
                     relative = path.relative_to(docs_dir).as_posix()
                 except ValueError:
+                    continue
+                if not covered_name(relative):
                     continue
                 found[relative] = path
     return sorted(found.items()), sorted(directories.items())

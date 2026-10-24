@@ -32,6 +32,9 @@ case it names must fail against:
 * ``RECKON_TEST_INDEX_WHOLESALE_RELOAD`` adopts the reloaded directory stamps
   wholesale, so a change folded into an absorbing write's own shape is never
   reported.
+* ``RECKON_TEST_INDEX_COVERAGE_DRIFT`` widens ``covered_name`` to accept a
+  ``.png`` anywhere, which the walk then follows — the drift the one rule
+  exists to prevent.
 """
 
 from __future__ import annotations
@@ -62,6 +65,7 @@ _KEEP_UNATTRIBUTED = "RECKON_TEST_INDEX_KEEP_UNATTRIBUTED"
 _DROP_ON_SLOW = "RECKON_TEST_INDEX_DROP_ON_SLOW"
 _DROP_ON_STREAM_WAKE = "RECKON_TEST_INDEX_DROP_ON_STREAM_WAKE"
 _WHOLESALE_RELOAD = "RECKON_TEST_INDEX_WHOLESALE_RELOAD"
+_COVERAGE_DRIFT = "RECKON_TEST_INDEX_COVERAGE_DRIFT"
 _CONTROLS = (
     _DROP_ON_BURST,
     _IGNORE_HTML,
@@ -72,6 +76,7 @@ _CONTROLS = (
     _DROP_ON_SLOW,
     _DROP_ON_STREAM_WAKE,
     _WHOLESALE_RELOAD,
+    _COVERAGE_DRIFT,
 )
 
 _GIT_ENV = {
@@ -204,6 +209,14 @@ def _armed_controls(monkeypatch, request):
             change_streams,
             "merge_dir_stamps",
             lambda tree, held, fresh: dict(fresh),
+        )
+
+    if _COVERAGE_DRIFT in armed:
+        real_name = metadata_index.covered_name
+        monkeypatch.setattr(
+            metadata_index,
+            "covered_name",
+            lambda relative: relative.endswith(".png") or real_name(relative),
         )
 
 
@@ -728,3 +741,36 @@ def test_a_change_folded_into_an_absorbing_write_still_fires(
         "the pass reported a change without marking the directory it saw"
     )
     assert "gamma" in _slugs(_read(docs, repo))
+
+
+# ── (9) one rule for the covered set ──────────────────────────────────────
+
+
+def test_the_walk_covers_exactly_what_the_rule_accepts(tree) -> None:
+    """The walk and ``covered_name`` answer the same question the same way.
+
+    A tree with HTML at depth, a figure image below the top-level figures
+    directory, an image outside it and a file neither rule covers. The walk
+    must return every covered file and nothing else, and the rule must accept
+    every file the walk returned, so the two cannot drift apart.
+    """
+
+    docs, _repo = tree
+    (docs / "notes" / "pic.png").write_bytes(b"an image outside the figures tree")
+    (docs / "notes" / "prose.txt").write_text("not a document", encoding="utf-8")
+    (docs / "figures" / "deep").mkdir()
+    (docs / "figures" / "deep" / "inner.svg").write_text("<svg/>", encoding="utf-8")
+
+    files, _directories = metadata_index._walk_covered(docs)
+    walked = {relative for relative, _ in files}
+
+    assert walked == {
+        "figures/deep/inner.svg",
+        "figures/plot.svg",
+        "notes/alpha.html",
+        "notes/beta.html",
+        "notes/inner/gamma.html",
+    }, "the walk's covered set is not the set the rule accepts"
+    assert all(metadata_index.covered_name(relative) for relative in walked), (
+        "the walk returned a file the rule does not cover"
+    )
