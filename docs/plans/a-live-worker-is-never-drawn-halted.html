@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="a-seat-held-elsewhere-is-not-restarted">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="50">
+<meta name="plan-version" content="51">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -309,7 +309,7 @@
     
 
     <h2 id="s10">§10 — A wait nothing can lift says it needs the coordinator</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p>A worker may end its turn while it holds a declared wait, and the recovery sweep then resumes it when the wait's condition probe reports a terminal state. When the probe cannot answer, the sweep never will. The row still reads <code>waiting</code>, and its next action still promises "the recovery sweep will resume … when the condition test reports a terminal state". Measured on imas-efit <code>r-20261023T065106939911-cbl-render-step-routine</code>: attempt 1 exited 07:50:51Z holding a wait on build 1293562. At 08:09:50Z the row read <code>wait-aged</code> with "condition probe did not answer successfully" and that promise. The coordinator found the stall by hand and resumed it at 08:33Z. A declared wait whose worker has an exit record for the current attempt and whose probe did not answer is classified with a halted word. Its next action names the resume command and says the probe could not answer. A wait whose worker is still live, or whose probe answers non-terminal, is unchanged.</p><p>Done when a test builds a fixture run with a declared wait, a current-attempt exit record and a probe that exits non-zero. It classifies to a pane word <code>halted</code>, with a next action containing <code>reckon crew resume</code> and not <code>the recovery sweep will resume</code>. The same fixture with a live worker, or with a probe answering non-terminal, stays <code>waiting</code>. Negative control: the first fixture at the base revision stays <code>waiting</code> with the sweep promise, recorded in the gate log. The tests importing <code>recovery_classification</code> add no failures against the base. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/recovery_classification.py</code>, whose wait arm composes "the recovery sweep will resume run … when the condition …" (about line 1000), and the new test. It runs after §3, which writes the same file.</p>
 
     <h2 id="s11">§11 — The census finds no live worker drawn halted</h2>
@@ -432,6 +432,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261023T235759148417-review-of-a-wait-nothing-can-lift-needs-the-coordinator-8861becdd2d7" data-who="reckon-build" data-when="2026-10-24T00:04:19.129Z">
     <div class="r-comment-body"><p>Independent review of r-20261023T220123081008-a-wait-nothing-can-lift-needs-the-coordinator, delta base feb4b8e08 to head 8861becdd: parsed record at review-records/, scores goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 19, reuse 20; added_failure_count 0, added_failure_ids []; two non-blocking findings (recovery_classification.py:689 builds the exception-arm observation without `answered`, so a fault escaping the probe reader now reads as an answer and the halted arm cannot fire there; logs/head-gate.log:1 names revision feb4b8e08 while the tested tree held the repair, so the logged revision cannot reproduce its 5-passed result, though a re-run at 8861becdd does) — no blocking defect, the delta can land.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-24T00:30:00Z">
+    <div class="r-comment-body"><p>§10 closed. A wait whose worker ended and whose probe cannot answer is drawn as needing the coordinator, with the resume command. Review 114; population zero over 80 files. <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s10">evidence</a></p></div>
 </div>
 </section>
 </main>
