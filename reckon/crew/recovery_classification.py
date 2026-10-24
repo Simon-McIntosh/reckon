@@ -690,6 +690,7 @@ def classify_pointer(
             wait_observation = {
                 "state": "unknown",
                 "observed": "unavailable",
+                "answered": False,
                 "detail": f"condition probe could not answer: {exc}",
             }
     # A live worker may hold no written verdict yet, because the reader caught

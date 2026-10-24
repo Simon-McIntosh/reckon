@@ -44,6 +44,7 @@ RUN_IDS = (
     "r-wait-probe-flag-reworded-detail-failed",
     "r-wait-probe-flag-reworded-detail-answered",
     "r-wait-superseded-exit-record",
+    "r-wait-probe-raised-over-ended-worker",
 )
 
 
@@ -343,3 +344,32 @@ def test_a_superseded_attempts_exit_record_keeps_the_wait_waiting() -> None:
     assert row["recovery_classification"] == "waiting"
     assert _pane_word(row) == "waiting"
     assert "the recovery sweep will resume" in row["next_action"]
+
+
+def test_a_probe_that_raises_over_an_ended_worker_needs_the_coordinator() -> None:
+    """A probe that raised produced no answer, so nothing can lift the wait.
+
+    A condition test is untrusted external input, so a raise is caught and the
+    observation becomes unknown. Unknown alone does not say whether the probe
+    answered, and an observation built without the flag reads as one: the run
+    would keep the sweep promise over a worker that has ended. The caught fault
+    is no answer, so the arm must fire here exactly as it does for a non-zero
+    exit.
+    """
+    run = _waiting_run(
+        RUN_IDS[6],
+        probe=["test", "-e", "/nonexistent/raise-subject"],
+        exit_record=True,
+    )
+
+    def _raising_condition_test(_pointer, _wait):
+        raise RuntimeError("the scheduler query blew up")
+
+    row = _row(run, condition_test=_raising_condition_test)
+
+    assert row["wait_condition_state"] == "unknown"
+    assert row["exit_record"] is not None
+    assert _pane_word(row) == "halted", row["recovery_classification"]
+    assert "reckon crew resume" in row["next_action"]
+    assert "the recovery sweep will resume" not in row["next_action"]
+    assert "did not answer" in row["detail"]
