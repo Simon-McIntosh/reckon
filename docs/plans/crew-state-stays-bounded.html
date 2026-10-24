@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s7&quot;:[&quot;crew-state-stays-bounded#s3&quot;],&quot;s8&quot;:[&quot;crew-state-stays-bounded#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -170,7 +170,7 @@
     <p>Done when: in a temporary crew home and scratch root, a release on its own host removes that host's copy and its timestamp-stem sibling and records <code>scratch_removed: true</code> naming the host; a release on a host holding no copy reports nothing removed; on a second host a worker launch, and separately a <code>retention_sweep</code> pass, remove the copy of a run that has no live pointer and whose run directory records its end, whatever the copy's age; a copy of a run that still has a live pointer, or that a process holds, is left; a run-named copy whose run has no live pointer and no run directory is removed by the settling pass once its ctime passes the orphan grace, and left before then; a step starting on a third host removes a finished run's copy there; the fragment names, with the record paths it read, the route that let review promotions skip the release and the route of each of the four unexplained survivors, and a case drives a review promotion through the named route, which leaves the scratch and no release block at the base and removes it with a release block at the head; and a promoted review run's scratch is removed by its promotion. Negative control: a settling pass that keeps the orphan sweep's age wait leaves the fresh copy of a finished run in place and must fail the second-host case. Write paths: <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/promotion.py</code>, <code>reckon/crew/promotion_release.py</code>, <code>reckon/crew/promotion_records.py</code>, <code>reckon/crew_run_commands.py</code>, <code>reckon/crew/gc.py</code> and <code>tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py</code>. A skipping route found in any other module is named in the fragment and reported as a blocker rather than worked around. Every log is under the run directory, and the evidence fragment quotes each gate's command and summary line.</p>
 
     <h2 id="s9">§9 — The retention-sweep verb is named as maintenance, outside orchestration</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> §7 registered <code>reckon crew retention-sweep</code> (<code>crew_retention_sweep</code> in <code>reckon/crew_run_commands.py</code>, landed in <code>81b4ea57e</code>) and no skill names it, so <code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code> has failed on main since. Peer nodes on 2026-10-23 and 2026-10-24 saw it fail at both base and head and left it.</p><p><strong>Change.</strong> The verb is an operator-run maintenance surface, for a hand-run sweep or installing the timer: the timer <code>install_retention_timer</code> installs runs the module entry point (<code>python -m reckon.crew.gc</code>, <code>gc.main</code>), not the verb, and no orchestrator invokes it. So it belongs in <code>CREW_VERBS_OUTSIDE_ORCHESTRATION</code> in <code>tests/test_skill_contracts.py</code> with that reason, beside the other verbs that are maintenance rather than orchestration. The reckon-build skill is left as it is.</p><p>Done when: <code>test_every_registered_crew_verb_is_documented_or_exempt</code> passes at the head and fails at the base, and every other case in <code>tests/test_skill_contracts.py</code> keeps its base result. Negative control: removing the new entry makes the case fail again. Write path: <code>tests/test_skill_contracts.py</code>. Every log is under the run directory.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -198,10 +198,11 @@
     <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §8</pre>
     <p class="r-fu-outcome">Section 8 landed at merge 6fce240f4 after four review rounds: a finished run scratch is removed by run on every host. Review 111, zero added failures. f-cssb-009 carries section 9 and f-cssb-001 section 2.</p>
     </article>
-<article class="r-fu" data-id="f-cssb-009" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-24" data-recommends-skill="/reckon-build crew-state-stays-bounded §9" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cssb-009" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-edit" data-written-at="2026-10-24" data-recommends-skill="/reckon-build crew-state-stays-bounded §9" data-resolved-at="2026-10-24T05:05:02+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Implement §9: the retention-sweep verb is named as maintenance</h4>
     <div class="r-fu-body"><p>The verb §7 registered fails the skill-contract test on main. §9 adds its exemption with the reason. It dispatches once the peer run holding <code>tests/test_skill_contracts.py</code> lands.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-state-stays-bounded §9</pre>
+    <p class="r-fu-outcome">Section 9 landed: the retention-sweep verb is exempt as operator maintenance and the skill-contract verb case passes. Review 115, zero added failures. f-cssb-001 carries section 2.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -279,6 +280,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261024T043616104091-the-retention-sweep-verb-is-maintenance" data-who="reckon-build" data-when="2026-10-24T04:46:45.016Z">
     <div class="r-comment-body"><p>`reckon crew retention-sweep` is now listed in `CREW_VERBS_OUTSIDE_ORCHESTRATION` as an operator-run maintenance surface whose installed timer runs `python -m reckon.crew.gc` rather than the verb and which no orchestrator invokes; `test_every_registered_crew_verb_is_documented_or_exempt` moves from failing to passing — base arm 2 failed / 70 passed, head arm 1 failed / 71 passed with every other case keeping its base result, and the negative control that removes the entry reddens the case again at EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
+    <div class="r-comment-body"><p>Section 9 landed at merge <code>d549d0066</code>: the retention-sweep verb is exempt as operator maintenance, and the skill-contract verb case passes. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s9">evidence</a></p></div>
 </div>
 </section>
 </main>
