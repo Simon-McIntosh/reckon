@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp.py:3538 roadmap tool registration wraps _roadmap_deadline_tool() in _refuse_when_stale",
+    "reckon/mcp.py:2061 _roadmap loads the stored answer for the call's shape",
+    "reckon/mcp.py:2092 _roadmap stores every composition with its held flag",
+    "reckon/mcp_deadlines.py:520 _read_joining_running passes wait_limit and on_timeout into _await_body"
+  ],
+  "completed_at": "2026-10-24T07:39:47.635Z",
+  "dispatched_at": "2026-10-24T07:30:21Z",
+  "findings": [
+    {
+      "file": "tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py",
+      "line": "231",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert stale['shape'] == _shape() derives both sides from mcp_module._roadmap_snapshot_scope (which calls _roadmap_shape), so a defect in shape construction moves both sides together and the assertion stays true; it can only catch a dropped or unread shape field. The shape-identity behaviour is independently guarded at :336-357, but this line adds no guard of its own."
+    },
+    {
+      "file": "reckon/mcp_deadlines.py",
+      "line": "510",
+      "severity": "non-blocking",
+      "text": "non-blocking: on_timeout is set to the raw _fallback, while the presence check at :505 goes through _safe_fallback, which exists so that 'a fallback never becomes the read's failure' (:454-466). An exception raised while building the stale answer at the timeout therefore propagates out of _await_body instead of degrading to the storage-slow result the read would have reported."
+    },
+    {
+      "file": "reckon/mcp_deadlines.py",
+      "line": "507",
+      "severity": "non-blocking",
+      "text": "non-blocking: the presence-check half of 6a5b1d308 is unguarded by any test \u2014 reverting :505-507 to build the full answer up front leaves every case in tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py green, so only the keep-bound half of that follow-up has a failing condition."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T054625328204-a-slow-roadmap-read-serves-its-last-snapshot/head-gate.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T054625328204-a-slow-roadmap-read-serves-its-last-snapshot/base-gate.log"
+  },
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read commit by commit: 4065e0312 adds the per-shape record, held flag, roadmap_snapshot_last/roadmap_stale_answer and the reserve/on_timeout path; b5d9a9be0 makes the fallback resolve _run_scoped_read_root so a run-scoped read has no stored answer; 6a5b1d308 makes the keep bound count docs roots by mtime and splits answer presence from answer construction. Five files, all declared.",
+    "done_when": "The done_when names tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py with three existing files under the literal -n 8 command; head-gate.log records '39 passed in 46.46s' with EXIT=0 at 6a5b1d308 and base-gate.log '9 failed, 30 passed' with EXIT=1 at a 3df04d103 scratch tree, and I re-ran the three cases the follow-ups answer (test_one_tree_keeps, test_a_run_scoped_read_is_not, test_a_read_past_its_reserve) at 6a5b1d308: 3 passed. All eight cases section 56 lists are present at tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:201-470.",
+    "goal": "The goal is to store every composition as its tree's and shape's last snapshot and answer a read held past its reserve from it, marked stale; reckon/roadmap_snapshot.py:625 roadmap_snapshot_store now writes every composition with a held flag, reckon/roadmap_snapshot.py:581 roadmap_snapshot_last returns the newest record by tree and shape, and reckon/mcp.py:2017 _roadmap_stale_answer returns it marked, so the goal is met.",
+    "manifest": "Read; it names the three commits, the head/base/revert gate logs, baseline_suite 9 failed with pytest node ids and after_suite 0 failed at 6a5b1d308, the reserve constant and its override, and evidence_inputs that correctly attributes eight of the nine base failures to the absent _roadmap_deadline_tool helper and the ninth to roadmap_snapshot_store() not yet taking shape.",
+    "write_paths": "The declared paths are reckon/roadmap_snapshot.py, reckon/mcp_deadlines.py, reckon/mcp.py, the new test file and one evidence fragment (plus an unused docs/figures path); git diff 3df04d103..6a5b1d308 changes exactly five files, all inside that set."
+  },
+  "justifications": {
+    "durability": "Reverting 6a5b1d308 reddens test_one_tree_keeps_its_record_for_every_shape_it_holds and reverting b5d9a9be0 reddens test_a_run_scoped_read_is_not_answered_from_the_mounted_tree (each 1 failed, 8 passed, EXIT=1), but tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:231 compares stale['shape'] against _shape(), both derived from _roadmap_snapshot_scope, and the presence-check half of 6a5b1d308 has no assertion.",
+    "evidence": "head-gate.log ends '39 passed' EXIT=0 and base-gate.log '9 failed, 30 passed' EXIT=1, but eight of the nine base failures are AttributeError from the new helper at tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:134, so the delta measures an absent API as well as the behaviour.",
+    "fit": "The additions follow the surrounding idiom of reckon/roadmap_snapshot.py:554-625 and reckon/mcp_deadlines.py:454-520, and no added symbol carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/mcp.py:2091 stores with held=(settled[0]==key) and reckon/mcp.py:2017 builds the stale answer, matching every sentence of section 56.",
+    "reuse": "A capability search over reckon/ found no other owner of a last-stored-answer-by-shape fallback; the change extends reckon/roadmap_snapshot.py and reuses _INFLIGHT_READS and _read_joining_running at reckon/mcp_deadlines.py:487 rather than adding a second registry.",
+    "scope_discipline": "git diff --stat 3df04d103..6a5b1d308 lists five files, every one named in the node's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T072532586923-review-of-a-slow-roadmap-read-serves-its-last-snapshot-6a5b1d308c48",
+  "reviewed_base_sha": "3df04d103d2995617cf20c3f990764b3ea45031d",
+  "reviewed_head_sha": "6a5b1d308c482b3b5a881478341020368ca3ac1e",
+  "reviewed_run_id": "r-20261024T054625328204-a-slow-roadmap-read-serves-its-last-snapshot",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: The goal is to store every composition as its tree's and shape's last snapshot and answer a read held past its reserve from it, marked stale; reckon/roadmap_snapshot.py:625 roadmap_snapshot_store now writes every composition with a held flag, reckon/roadmap_snapshot.py:581 roadmap_snapshot_last returns the newest record by tree and shape, and reckon/mcp.py:2017 _roadmap_stale_answer returns it marked, so the goal is met.\nVERDICT done_when: The done_when names tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py with three existing files under the literal -n 8 command; head-gate.log records '39 passed in 46.46s' with EXIT=0 at 6a5b1d308 and base-gate.log '9 failed, 30 passed' with EXIT=1 at a 3df04d103 scratch tree, and I re-ran the three cases the follow-ups answer (test_one_tree_keeps, test_a_run_scoped_read_is_not, test_a_read_past_its_reserve) at 6a5b1d308: 3 passed. All eight cases section 56 lists are present at tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:201-470.\nVERDICT write_paths: The declared paths are reckon/roadmap_snapshot.py, reckon/mcp_deadlines.py, reckon/mcp.py, the new test file and one evidence fragment (plus an unused docs/figures path); git diff 3df04d103..6a5b1d308 changes exactly five files, all inside that set.\nVERDICT manifest: Read; it names the three commits, the head/base/revert gate logs, baseline_suite 9 failed with pytest node ids and after_suite 0 failed at 6a5b1d308, the reserve constant and its override, and evidence_inputs that correctly attributes eight of the nine base failures to the absent _roadmap_deadline_tool helper and the ninth to roadmap_snapshot_store() not yet taking shape.\nVERDICT diff: Read commit by commit: 4065e0312 adds the per-shape record, held flag, roadmap_snapshot_last/roadmap_stale_answer and the reserve/on_timeout path; b5d9a9be0 makes the fallback resolve _run_scoped_read_root so a run-scoped read has no stored answer; 6a5b1d308 makes the keep bound count docs roots by mtime and splits answer presence from answer construction. Five files, all declared.\nCALL_SITES: reckon/mcp.py:3538, reckon/mcp.py:2061, reckon/mcp.py:2092, reckon/mcp_deadlines.py:520\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2091 stores with held=(settled[0]==key) and reckon/mcp.py:2017 builds the stale answer, matching every sentence of section 56.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-gate.log ends '39 passed' EXIT=0 and base-gate.log '9 failed, 30 passed' EXIT=1, but eight of the nine base failures are AttributeError from the new helper at tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:134, so the delta measures an absent API as well as the behaviour.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3df04d103..6a5b1d308 lists five files, every one named in the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: Reverting 6a5b1d308 reddens test_one_tree_keeps_its_record_for_every_shape_it_holds and reverting b5d9a9be0 reddens test_a_run_scoped_read_is_not_answered_from_the_mounted_tree (each 1 failed, 8 passed, EXIT=1), but tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:231 compares stale['shape'] against _shape(), both derived from _roadmap_snapshot_scope, and the presence-check half of 6a5b1d308 has no assertion.\nSCORE fit: 19\nJUSTIFICATION fit: The additions follow the surrounding idiom of reckon/roadmap_snapshot.py:554-625 and reckon/mcp_deadlines.py:454-520, and no added symbol carries a plan, sprint or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: A capability search over reckon/ found no other owner of a last-stored-answer-by-shape fallback; the change extends reckon/roadmap_snapshot.py and reuses _INFLIGHT_READS and _read_joining_running at reckon/mcp_deadlines.py:487 rather than adding a second registry.\nFINDING tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:231 non-blocking: assert stale['shape'] == _shape() derives both sides from mcp_module._roadmap_snapshot_scope (which calls _roadmap_shape), so a defect in shape construction moves both sides together and the assertion stays true; it can only catch a dropped or unread shape field. The shape-identity behaviour is independently guarded at :336-357, but this line adds no guard of its own.\nFINDING reckon/mcp_deadlines.py:510 non-blocking: on_timeout is set to the raw _fallback, while the presence check at :505 goes through _safe_fallback, which exists so that 'a fallback never becomes the read's failure' (:454-466). An exception raised while building the stale answer at the timeout therefore propagates out of _await_body instead of degrading to the storage-slow result the read would have reported.\nFINDING reckon/mcp_deadlines.py:507 non-blocking: the presence-check half of 6a5b1d308 is unguarded by any test \u2014 reverting :505-507 to build the full answer up front leaves every case in tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py green, so only the keep-bound half of that follow-up has a failing condition.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:55:00+00:00",
+  "total": 112
+}
