@@ -1266,6 +1266,24 @@ def plan_blocker_state(
     }
 
 
+def recorded_blockers(plan: Mapping[str, Any]) -> list[Any]:
+    """The blockers a plan records, without the assembly's persisted placeholder.
+
+    ``plan_blocker_state`` synthesizes a ``persisted`` row to keep a stored
+    blocked status visible on the surfaces that report it. That row names no
+    recorded hold, so a rule asking whether the status has an explanation must
+    not read it as one — the audit exists to find statuses nothing accounts
+    for, which is exactly the case the placeholder is describing rather than
+    resolving.
+    """
+
+    return [
+        row
+        for row in plan.get("blocking") or []
+        if not (isinstance(row, Mapping) and row.get("kind") == "persisted")
+    ]
+
+
 def _authorisation_age(
     project: str,
     plan: dict[str, Any],
@@ -2965,7 +2983,7 @@ def _build_roadmap(
         # explanation even though no live blocker remains.
         if (
             status == "blocked"
-            and not (plan.get("blocking") or [])
+            and not recorded_blockers(plan)
             and slug not in released_by_clear
         ):
             findings.append(

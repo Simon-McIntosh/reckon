@@ -2007,6 +2007,7 @@ def _derive_lifecycle(
         closure_blockers,
         plan_blocker_state,
         plans_released_by_cleared_blockers,
+        recorded_blockers,
     )
 
     plans = deepcopy(inventory)
@@ -2093,9 +2094,13 @@ def _derive_lifecycle(
         workflow_status = _status(plan)
         plan["workflow_status"] = workflow_status
         plan["effective_status"] = state["effective_status"]
-        plan["blocking"] = state["blocking"]
+        # The assembly's synthesized placeholder explains a stored blocked
+        # status; it records no hold, and this list is what the audit reads to
+        # ask whether a blocked status has one. Publish the recorded rows, and
+        # keep the assembly's blocked answer in the status and the count.
+        plan["blocking"] = recorded_blockers({"blocking": state["blocking"]})
         plan["section_gate_blockers"] = state["section_gate_blockers"]
-        plan["blockers"] = len(state["blocking"])
+        plan["blockers"] = len(plan["blocking"])
         # Transition gates hold a closure or a choice, not execution, so they
         # leave this list and surface beside it instead.
         plan["closure_blockers"] = closure_blockers(plan)
