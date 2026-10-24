@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 3,
+  "added_failure_ids": [
+    "tests/test_spa_shell_geometry.py::test_open_project_picker_stays_inside_the_viewport[1374]",
+    "tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order",
+    "tests/test_spa_vertical_scroll.py::test_every_published_view_and_reader_scrolls_within_viewport"
+  ],
+  "call_sites": [
+    "reckon/serve.py:2081 plan_blocker_state",
+    "reckon/serve.py:2092 workflow_status",
+    "reckon/serve.py:1739 _derive_lifecycle",
+    "reckon/serve.py:1808 _derive_lifecycle",
+    "reckon/mcp_views.py:1229 _derive_lifecycle",
+    "reckon/roadmap.py:3451 plan_blocker_state",
+    "reckon/mcp.py:3180 build_roadmap",
+    "reckon/crew/plan_review.py:3107 build_roadmap",
+    "reckon/crew/queue_admission.py:1085 build_roadmap",
+    "reckon/flight.py:2635 build_roadmap",
+    "reckon/graph_target.py:204 build_roadmap"
+  ],
+  "completed_at": "2026-10-24T09:37:07.184Z",
+  "dispatched_at": "2026-10-24T09:22:37Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "2092",
+      "severity": "non-blocking",
+      "text": "non-blocking: the workflow-status precedence is re-spelled inline as plan.get(\"workflow_status\") or plan.get(\"status\") or \"draft\", a further copy of the rule roadmap._status (reckon/roadmap.py:627) owns and which reckon/roadmap.py:649 and reckon/followup_pointers.py:117 also carry, so a future change to that precedence would not reach the served view."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit; c01ab4230 changes the assembly, the served workflow status and adds one test case, and 70e662986 updates the evidence fragment.",
+    "done_when": "the done_when names the parity test file plus every test file exercising _derive_lifecycle or the served plan list at base and head; the manifest records that command and both arms' logs, each naming its revision and ending EXIT= (base 368 passed/5 failed, head 369 passed/4 failed).",
+    "goal": "the node goal is the served view taking each plan's blocker list from the roadmap assembly; reckon/serve.py:2081 calls roadmap.plan_blocker_state, and the gained commit c01ab4230 makes that assembly read the plan's workflow status through roadmap._status (reckon/roadmap.py:1224).",
+    "manifest": "read; status complete, gate results and log paths recorded, three controls logged, browser-family failures recorded under outside_scope.",
+    "write_paths": "declared scope is reckon/serve.py, reckon/roadmap.py, tests/test_the_served_view_reads_the_roadmaps_blockers.py and the evidence fragment; git diff --stat 3a8aba681..70e662986 lists exactly those four."
+  },
+  "justifications": {
+    "durability": "tests/test_the_served_view_reads_the_roadmaps_blockers.py:230 reddens under the logged status-source control, and its assertion at :259 reddens if reckon/serve.py:2092 reverts to the stored status alone.",
+    "evidence": "base-suite.log (9608e78d5, 368 passed/5 failed, EXIT=1) and head-suite.log (c01ab4230, 369 passed/4 failed, EXIT=1) name their revisions, and negative-control-status-source.log shows the new case failing (1 failed, EXIT=1) under the reverted status source.",
+    "fit": "reckon/roadmap.py:1218 states the precedence in the surrounding mechanism terms and the test name describes behaviour, with no plan label in symbol or comment.",
+    "goal_fidelity": "reckon/roadmap.py:1224 derives plan_status through _status and uses it for the persisted placeholder and effective_status, and reckon/serve.py:2092 keeps an existing workflow status, so both surfaces rank and report one status.",
+    "reuse": "the roadmap half reuses _status at reckon/roadmap.py:627; only reckon/serve.py:2092 duplicates that precedence inline.",
+    "scope_discipline": "git diff --stat 3a8aba6812416d55a81f5d5d9248052c24f5f74a..70e662986c93e3d4aa078102a7dc1331678f0eb4 touches only the four declared paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T091624498881-review-of-the-served-view-reads-the-roadmaps-blockers-70e662986c93",
+  "reviewed_base_sha": "3a8aba6812416d55a81f5d5d9248052c24f5f74a",
+  "reviewed_head_sha": "70e662986c93e3d4aa078102a7dc1331678f0eb4",
+  "reviewed_run_id": "r-20261024T060459639539-the-served-view-reads-the-roadmaps-blockers",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: the node's goal is that the served view takes each plan's blocker list from the roadmap assembly as section 51 specifies; the gained commits complete that by making the shared assembly read the workflow status, so reckon/roadmap.py:1224 derives plan_status through _status and a row carrying both spellings is ranked and reported alike.\nVERDICT done_when: the done_when names tests/test_the_served_view_reads_the_roadmaps_blockers.py plus every test file exercising _derive_lifecycle or the served plan list at base and head, and the manifest test line lists them; base-suite.log (9608e78d5, 368 passed/5 failed/1 skipped, EXIT=1) and head-suite.log (c01ab4230, 369 passed/4 failed/1 skipped, EXIT=1) each name their revision and end in EXIT=1.\nVERDICT write_paths: the declared scope is reckon/serve.py, reckon/roadmap.py, tests/test_the_served_view_reads_the_roadmaps_blockers.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/the-served-view-reads-the-roadmaps-blockers.html; git diff --stat 3a8aba681..70e662986 changes exactly those four and nothing else.\nVERDICT manifest: read at the reviewed run's manifest.md; it reports status complete, the head and base gate results with log paths, three separately logged controls, and records the browser-family failures under outside_scope.\nVERDICT diff: read commit by commit from 3a8aba6812416d55a81f5d5d9248052c24f5f74a to 70e662986c93e3d4aa078102a7dc1331678f0eb4: c01ab4230 changes reckon/roadmap.py (15 lines), reckon/serve.py (4 lines) and the test file (44 lines), and 70e662986 updates the evidence fragment.\nCALL_SITES: reckon/serve.py:2081 plan_blocker_state, reckon/serve.py:2092 workflow_status, reckon/serve.py:1739 _derive_lifecycle, reckon/serve.py:1808 _derive_lifecycle, reckon/mcp_views.py:1229 _derive_lifecycle, reckon/roadmap.py:3451 plan_blocker_state, reckon/mcp.py:3180 build_roadmap, reckon/crew/plan_review.py:3107 build_roadmap, reckon/crew/queue_admission.py:1085 build_roadmap, reckon/flight.py:2635 build_roadmap, reckon/graph_target.py:204 build_roadmap\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1224 now reads plan_status through _status and uses it for both the persisted-placeholder guard (:1248) and effective_status (:1265), and reckon/serve.py:2092 keeps a row's existing workflow status, so both surfaces rank and report one status.\nSCORE evidence: 17\nJUSTIFICATION evidence: base-suite.log and head-suite.log each name their revision and end in EXIT=, and negative-control-status-source.log records the new case failing (1 failed in 5.49s, EXIT=1) when the assembly reverts to plan.get(\"status\").\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3a8aba6812416d55a81f5d5d9248052c24f5f74a..70e662986c93e3d4aa078102a7dc1331678f0eb4 lists only the four declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_served_view_reads_the_roadmaps_blockers.py:230 reddens under the logged status-source control, and its first assertion (:259) reddens if reckon/serve.py:2092 reverts to the stored status alone.\nSCORE fit: 18\nJUSTIFICATION fit: the comment at reckon/roadmap.py:1218 states the precedence in the same mechanism terms as the surrounding comments, and the test name describes the behaviour it asserts rather than a plan identifier.\nSCORE reuse: 17\nJUSTIFICATION reuse: the roadmap half reuses _status (reckon/roadmap.py:627) rather than introducing a second helper, while reckon/serve.py:2092 re-spells that precedence inline.\nFINDING reckon/serve.py:2092 non-blocking: the workflow-status precedence is re-spelled inline as plan.get(\"workflow_status\") or plan.get(\"status\") or \"draft\", a further copy of the rule roadmap._status (reckon/roadmap.py:627) owns and which reckon/roadmap.py:649 and reckon/followup_pointers.py:117 also carry, so a future change to that precedence would not reach the served view.",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T09:39:12.223010+00:00",
+  "total": 108
+}
