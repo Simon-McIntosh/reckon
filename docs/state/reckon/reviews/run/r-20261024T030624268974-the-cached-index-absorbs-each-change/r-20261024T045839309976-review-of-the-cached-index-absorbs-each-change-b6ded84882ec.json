@@ -1,0 +1,102 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed manifest carries no baseline_suite/after_suite keys, so the pair was derived from its gate logs: after arm logs/population-final-2.log (revision f473e161f with the one-rule change, 154 passed, EXIT=0, no failing id) adds nothing; base arm logs/base-arm-failures.log (2 failed) and logs/base-arm-spa.log (1 failed) at 0b9d642cd name the three pre-existing ids. reckon.crew.review.added_failures_from_gate_logs returns (0, []) against those arms with their own working directories. The coordinator's own delta at f473e161f (logs/coordinator-population-delta-f473e161f.log) also records only-in-head 0.",
+  "call_sites": [
+    "reckon/metadata_index.py:_walk_covered",
+    "reckon/metadata_index.py:_patch_build",
+    "reckon/metadata_index.py:_reuse_covered",
+    "reckon/metadata_index.py:build_index",
+    "reckon/metadata_index.py:_covered_files",
+    "reckon/change_streams.py:observed_change",
+    "reckon/change_streams.py:_committed_paths"
+  ],
+  "completed_at": "2026-10-24T05:07:50.074Z",
+  "dispatched_at": "2026-10-24T04:59:27Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "the-cached-index-absorbs-each-change",
+      "recorded_at": "2026-10-24T05:08:40.522401+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "the-cached-index-absorbs-each-change",
+      "recorded_at": "2026-10-24T05:08:45.223866+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "the-cached-index-absorbs-each-change",
+      "recorded_at": "2026-10-24T05:08:50.712887+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "the-cached-index-absorbs-each-change",
+      "recorded_at": "2026-10-24T05:08:55.357220+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_the_cached_index_absorbs_each_change.py",
+      "line": "774",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `all(metadata_index.covered_name(relative) for relative in walked)` assertion is not independent of the code under test \u2014 _walk_covered calls that same predicate at reckon/metadata_index.py:1055, so the assertion holds for any mutation of covered_name and guards nothing; only the literal-set assertion at :767 fails under the drift control."
+    },
+    {
+      "file": "docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "non-blocking: the controls paragraph states `git status --porcelain` is empty after the run, while the log it cites (logs/negative-controls.log:69-72) lists three modified paths, so a reader checking the record against its own log finds them disagree."
+    },
+    {
+      "file": "docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the prior review's truncated sentence was deleted rather than completed, so the fragment still reports \"1 skipped\" in the population with no statement of which test it is or why it is out of scope."
+    },
+    {
+      "file": "logs/arm-head.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate and controls logs record revision f473e161f, not the reviewed head b6ded8488, so the evidence is reconcilable only through the three modified paths the controls log prints, not from the revision header the done-when requires."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the single commit b6ded8488 against f473e161f: _walk_covered (reckon/metadata_index.py:1000-1060) delegates coverage to covered_name at :1055, the test gains case 9 and the RECKON_TEST_INDEX_COVERAGE_DRIFT control (tests/test_the_cached_index_absorbs_each_change.py:749-776, :211-218), and the fragment updates its gate count and removes a truncated sentence.",
+    "done_when": "the done_when requires every clause of plan s15, including a nine-case gate with per-case controls, the module-window test, a population with no added failure and ruff clean on the staged paths; logs/arm-head.log, logs/negative-controls.log, logs/population-final-2.log and logs/module-window-2.log record each, and I re-ran the gate myself at b6ded8488 (9 passed, EXIT=0).",
+    "goal": "the source node's goal is that the metadata index keeps its cached build across every change a source can attribute; this increment lands the one-rule consolidation, reckon/metadata_index.py:1055 now calls covered_name instead of restating the HTML-or-figures predicate inline.",
+    "manifest": "read runs/r-20261024T030624268974-the-cached-index-absorbs-each-change/manifest.md; status complete, gate 9 passed with ten controls green, population over the three modules 154 passed EXIT=0, logs named under logs/, and it carries no baseline_suite or after_suite keys.",
+    "write_paths": "the declared paths are reckon/metadata_index.py, reckon/change_streams.py, reckon/serve.py, three granted test files and the evidence fragment; git diff f473e161f..b6ded8488 touches only reckon/metadata_index.py, tests/test_the_cached_index_absorbs_each_change.py and docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_cached_index_absorbs_each_change.py:767 asserts a literal covered set that reddens under the RECKON_TEST_INDEX_COVERAGE_DRIFT arm, but the assertion at :774 compares covered_name against the same predicate _walk_covered calls at metadata_index.py:1055 and cannot fail, and reverting the refactor leaves every assertion green because the two rules are behaviourally equivalent.",
+    "evidence": "logs/arm-head.log records 9 passed EXIT=0 and logs/arm-RECKON_TEST_INDEX_COVERAGE_DRIFT.log records the case failing with EXIT=1, but both headers name f473e161f rather than the reviewed head b6ded8488, and the manifest carries no baseline_suite/after_suite keys so the added-failure count is derived from gate logs by hand.",
+    "fit": "reckon/metadata_index.py:1000-1010 keeps the module's docstring style and the new test and control names (test_the_walk_covers_exactly_what_the_rule_accepts, RECKON_TEST_INDEX_COVERAGE_DRIFT) carry no plan, stage or version label.",
+    "goal_fidelity": "reckon/metadata_index.py:1055 makes the walk and the sources that report paths (reckon/change_streams.py:192, :401) decide coverage by the same predicate, which is exactly the goal's \"only the assumption it can attribute\" precondition and nothing more.",
+    "reuse": "the change removes the duplicate coverage predicate that reckon/metadata_index.py:1047-1055 previously owned inline and calls the existing owner covered_name at :380, so the module now has one definition of its covered set.",
+    "scope_discipline": "git diff f473e161f..b6ded8488 changes only reckon/metadata_index.py, tests/test_the_cached_index_absorbs_each_change.py and the evidence fragment, every path inside the declared write paths, and the fragment edits only repair the two prior-review findings it cites."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that the metadata index keeps its cached build across every change a source can attribute; this increment lands the one-rule consolidation, reckon/metadata_index.py:1055 now calls covered_name instead of restating the HTML-or-figures predicate inline.\nVERDICT done_when: the done_when requires every clause of plan s15, including a nine-case gate with per-case controls, the module-window test, a population with no added failure and ruff clean on the staged paths; logs/arm-head.log, logs/negative-controls.log, logs/population-final-2.log and logs/module-window-2.log record each, and I re-ran the gate myself at b6ded8488 (9 passed, EXIT=0).\nVERDICT write_paths: the declared paths are reckon/metadata_index.py, reckon/change_streams.py, reckon/serve.py, three granted test files and the evidence fragment; git diff f473e161f..b6ded8488 touches only reckon/metadata_index.py, tests/test_the_cached_index_absorbs_each_change.py and docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html, all inside them.\nVERDICT manifest: read runs/r-20261024T030624268974-the-cached-index-absorbs-each-change/manifest.md; status complete, gate 9 passed with ten controls green, population over the three modules 154 passed EXIT=0, logs named under logs/, and it carries no baseline_suite or after_suite keys.\nVERDICT diff: read the single commit b6ded8488 against f473e161f: _walk_covered (reckon/metadata_index.py:1000-1060) delegates coverage to covered_name at :1055, the test gains case 9 and the RECKON_TEST_INDEX_COVERAGE_DRIFT control (tests/test_the_cached_index_absorbs_each_change.py:749-776, :211-218), and the fragment updates its gate count and removes a truncated sentence.\nCALL_SITES: reckon/metadata_index.py:_walk_covered, reckon/metadata_index.py:_patch_build, reckon/metadata_index.py:_reuse_covered, reckon/metadata_index.py:build_index, reckon/metadata_index.py:_covered_files, reckon/change_streams.py:observed_change, reckon/change_streams.py:_committed_paths\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:1055 makes the walk and the sources that report paths (reckon/change_streams.py:192, :401) decide coverage by the same predicate, which is exactly the goal's \"only the assumption it can attribute\" precondition and nothing more.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/arm-head.log records 9 passed EXIT=0 and logs/arm-RECKON_TEST_INDEX_COVERAGE_DRIFT.log records the case failing with EXIT=1, but both headers name f473e161f rather than the reviewed head b6ded8488, and the manifest carries no baseline_suite/after_suite keys so the added-failure count is derived from gate logs by hand.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f473e161f..b6ded8488 changes only reckon/metadata_index.py, tests/test_the_cached_index_absorbs_each_change.py and the evidence fragment, every path inside the declared write paths, and the fragment edits only repair the two prior-review findings it cites.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_cached_index_absorbs_each_change.py:767 asserts a literal covered set that reddens under the RECKON_TEST_INDEX_COVERAGE_DRIFT arm, but the assertion at :774 compares covered_name against the same predicate _walk_covered calls at metadata_index.py:1055 and cannot fail, and reverting the refactor leaves every assertion green because the two rules are behaviourally equivalent.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/metadata_index.py:1000-1010 keeps the module's docstring style and the new test and control names (test_the_walk_covers_exactly_what_the_rule_accepts, RECKON_TEST_INDEX_COVERAGE_DRIFT) carry no plan, stage or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes the duplicate coverage predicate that reckon/metadata_index.py:1047-1055 previously owned inline and calls the existing owner covered_name at :380, so the module now has one definition of its covered set.\nFINDING tests/test_the_cached_index_absorbs_each_change.py:774 non-blocking: the `all(metadata_index.covered_name(relative) for relative in walked)` assertion is not independent of the code under test \u2014 _walk_covered calls that same predicate at reckon/metadata_index.py:1055, so the assertion holds for any mutation of covered_name and guards nothing; only the literal-set assertion at :767 fails under the drift control.\nFINDING docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html:27 non-blocking: the controls paragraph states `git status --porcelain` is empty after the run, while the log it cites (logs/negative-controls.log:69-72) lists three modified paths, so a reader checking the record against its own log finds them disagree.\nFINDING docs/evidence/fragments/the-page-paints-from-an-index/the-cached-index-absorbs-each-change.html:28 non-blocking: the prior review's truncated sentence was deleted rather than completed, so the fragment still reports \"1 skipped\" in the population with no statement of which test it is or why it is out of scope.\nFINDING logs/arm-head.log:2 non-blocking: the gate and controls logs record revision f473e161f, not the reviewed head b6ded8488, so the evidence is reconcilable only through the three modified paths the controls log prints, not from the revision header the done-when requires.\n",
+  "review_run_id": "r-20261024T045839309976-review-of-the-cached-index-absorbs-each-change-b6ded84882ec",
+  "reviewed_base_sha": "f473e161ffd9ad43bb1b2529422304250052d9a5",
+  "reviewed_head_sha": "b6ded84882ec33f142c5ccf542cea723c34d6ca4",
+  "reviewed_run_id": "r-20261024T030624268974-the-cached-index-absorbs-each-change",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T05:10:28.566116+00:00",
+  "total": 112
+}
