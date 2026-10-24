@@ -149,7 +149,6 @@ from reckon.git_dates import (  # noqa: F401 — the import surface of this modu
     _store_git_last_modified_cache,
 )
 from reckon.lifecycle import (
-    effective_status,
     unresolved_dependencies,
 )
 from reckon.project_state import ProjectStateError
@@ -1993,11 +1992,7 @@ def _derive_lifecycle(
     from copy import deepcopy
 
     from reckon._schema import parse_plan_ref
-    from reckon.roadmap import (
-        closure_blockers,
-        split_unpassed_gates,
-        unsettled_decisions,
-    )
+    from reckon.roadmap import closure_blockers, plan_blocker_state
 
     plans = deepcopy(inventory)
     plan_by_slug = {
@@ -2059,25 +2054,32 @@ def _derive_lifecycle(
 
     for plan in plan_by_slug.values():
         dependencies = [resolve(ref) for ref in plan.get("depends_on", [])]
-        blocking = unresolved_dependencies(dependencies)
-        blocking.extend(
-            {"kind": blocker_kind.get(blocker_id, "explicit"), "id": blocker_id}
-            for blocker_id in dict.fromkeys(
-                explicit_by_slug.get(str(plan.get("slug")), [])
-            )
+        # The blocker assembly is the roadmap's. Resolving a dependency needs the
+        # project's other rows, so those stay here; every hold that is a fact of
+        # this plan — an explicit blocker, a held path, an unpassed gate, an
+        # unscoped open decision — is read by the one function that also answers
+        # for the roadmap, so the served view and the roadmap cannot disagree
+        # about whether a plan is blocked.
+        state = plan_blocker_state(
+            plan,
+            dependency_blockers=unresolved_dependencies(dependencies),
+            blockers=(
+                {"kind": blocker_kind.get(blocker_id, "explicit"), "id": blocker_id}
+                for blocker_id in dict.fromkeys(
+                    explicit_by_slug.get(str(plan.get("slug")), [])
+                )
+            ),
         )
-        gate_blockers, section_gate_blockers = split_unpassed_gates(plan)
-        blocking.extend(gate_blockers)
         workflow_status = str(plan.get("status") or "draft")
         plan["workflow_status"] = workflow_status
-        plan["effective_status"] = effective_status(workflow_status, blocking)
-        plan["blocking"] = blocking
-        plan["section_gate_blockers"] = section_gate_blockers
-        plan["blockers"] = len(blocking)
+        plan["effective_status"] = state["effective_status"]
+        plan["blocking"] = state["blocking"]
+        plan["section_gate_blockers"] = state["section_gate_blockers"]
+        plan["blockers"] = len(state["blocking"])
         # Transition gates hold a closure or a choice, not execution, so they
         # leave this list and surface beside it instead.
         plan["closure_blockers"] = closure_blockers(plan)
-        plan["decision_blockers"] = unsettled_decisions(plan)
+        plan["decision_blockers"] = state["decision_blockers"]
 
     hydrated_sprints = deepcopy(sprints)
     for sprint in hydrated_sprints:

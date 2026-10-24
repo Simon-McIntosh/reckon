@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s51">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <meta name="plan-verdict" content="passed">
+  <title>The served view reads the roadmap's blockers | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-served-view-reads-the-roadmaps-blockers-landing" data-node="the-served-view-reads-the-roadmaps-blockers" data-reckon="landed" data-when="2026-10-24">
+  <h2>The served view takes each plan's blockers from the roadmap's assembly</h2>
+  <p><code>serve._derive_lifecycle</code> built its own blocker list from unsatisfied dependencies, sprint-declared explicit blockers and unpassed gates. The roadmap's row built a different one, folding in held paths and the plan-level open decisions that <code>plan_level_decisions</code> selects. The two disagreed exactly where the served view is the surface a reader sees: a plan held by an unscoped open decision read <code>active</code> through the served plan list and <code>blocked</code> through the roadmap, with nothing comparing them. Reproduced before the change on the fixture the test now uses: <code>served effective_status: active</code>, <code>served blocking: []</code>, while the roadmap row for the same row read <code>blocked</code>.</p>
+  <p><code>reckon/roadmap.py</code> now exports <code>plan_blocker_state</code>, which assembles one plan row's blockers — dependency rows the caller resolved, explicit and held rows, unpassed gates, plan-level open decisions — and returns the blocker list, the per-kind lists, the blocked flag, the closable flag and the effective status together. Unresolved dependency resolution stays with the caller, because it needs the project's other rows. The roadmap's own loop reads that function for its row instead of assembling a second list, keeping dependency cycles as the one graph-wide hold it adds itself, and <code>_derive_lifecycle</code> keeps no assembly of its own: the change there is at the call site, and the module's width is untouched.</p>
+  <p><code>tests/test_the_served_view_reads_the_roadmaps_blockers.py</code> builds a temporary project with three plans — one held by a plan-level open decision, one by an unpassed gate over its only implementable section, and one free — and compares the served view's blocker kinds and blocked state against the roadmap's for each: <strong>4 passed</strong>. Under the declared negative control, restoring the served view's own assembly, the decision-held plan disagrees and two cases fail (<code>EXIT=1</code>), while the gate-held and free plans still agree, so the check is aimed at the decision rather than failing for any change at all.</p>
+  <p>The gate over every test file exercising <code>_derive_lifecycle</code> or the served plan list, plus the module-width check, runs 369 passed, 2 failed, 1 skipped at the node's head against 368 passed, 3 failed, 1 skipped at base <code>9608e78d5</code>; the two new-test failures are the base arm reproducing the defect. One failure differs between the arms: <code>tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order</code> fails in this worktree and passes in an export of the same head content without <code>.git</code>, with the harness diagnosing <code>navigation-never-completed</code> at Chrome's network service; <code>tests/test_spa_composition.py::test_plans_surface_never_exceeds_its_window[1280]</code> fails on both arms. Neither is reachable from the changed assembly. <code>ruff check</code> and <code>ruff format --check</code> add no findings: 21 on the two changed modules at base and 21 at head, zero on the new test file, and both changed modules format clean.</p>
+</article>
+</body>
+</html>

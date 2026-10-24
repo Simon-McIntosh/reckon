@@ -1,0 +1,178 @@
+"""The served view and the roadmap answer one blocker assembly.
+
+A plan's blocked state is one fact with two readers: the roadmap a coordinator
+reads, and the plan list the SPA renders. Derived twice, they drifted — a plan
+held by a plan-level open decision read blocked through the roadmap and open
+through the served view, because the served view assembled a blocker list from
+dependencies and gates alone.
+
+The three plans here separate the holds. ``deciding`` carries an unscoped open
+decision, ``gated`` carries an unpassed execution gate over its only
+implementable section, and ``free`` carries neither. Each case compares the two
+surfaces against each other rather than asserting a literal about either one:
+two literals can drift in step while the surfaces disagree.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from reckon._plan_html import write_state
+
+PROJECT = "proj"
+
+PLAN_PAGE = (
+    '<!doctype html>\n<html lang="en">\n<head>'
+    '<meta charset="utf-8">'
+    f'<meta name="docs-project" content="{PROJECT}">'
+    "<title>{slug}</title></head>\n"
+    '<body><main class="plan-doc">'
+    '<section data-reckon="gates"></section>'
+    "</main></body>\n</html>\n"
+)
+
+
+def _write_plan(docs: Path, slug: str, state: dict) -> None:
+    payload = {
+        "slug": slug,
+        "title": slug.title(),
+        "status": "active",
+        "type": "plan",
+    }
+    payload.update(state)
+    page = PLAN_PAGE.format(slug=slug)
+    (docs / f"{slug}.html").write_text(write_state(page, payload), encoding="utf-8")
+
+
+def _project(tmp_path: Path) -> Path:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _write_plan(
+        docs,
+        "deciding",
+        {"decisions": {"transport": {"title": "Which transport?", "choice": ""}}},
+    )
+    _write_plan(
+        docs,
+        "gated",
+        {
+            "section_declarations": {"s1": "implementable"},
+            "gates": [
+                {
+                    "id": "s1-evidence",
+                    "section": "s1",
+                    "gated_sections": [],
+                    "status": "open",
+                    "measure": "Evidence for s1",
+                    "verdict": "open",
+                    "evidence": "",
+                }
+            ],
+        },
+    )
+    _write_plan(docs, "free", {"section_declarations": {"s1": "implementable"}})
+    return docs
+
+
+def _served_and_roadmap(docs: Path) -> tuple[dict[str, dict], dict[str, dict]]:
+    from reckon.roadmap import build_roadmap
+    from reckon.serve import discover_plans
+
+    discovered = discover_plans(docs, PROJECT, None)
+    served = {
+        plan["slug"]: plan
+        for plan in discovered["inventory"]
+        if plan.get("type") == "plan"
+    }
+    report = build_roadmap(
+        PROJECT,
+        discovered["inventory"],
+        discovered["sprints"],
+        active_sprint_id=discovered["active_sprint_id"],
+        project_manifest=discovered,
+        docs_dir=docs,
+    )
+    roadmap = {
+        row["slug"]: row
+        for bucket in ("ready_now", "blocked", "deferred")
+        for row in report.get(bucket, [])
+    }
+    return served, roadmap
+
+
+def _served_blockers(plan: dict) -> dict[str, set[str]]:
+    """The served plan's blocker list, grouped by kind."""
+
+    grouped: dict[str, set[str]] = {}
+    for row in plan.get("blocking") or []:
+        kind = str(row.get("kind") or "dependency")
+        grouped.setdefault(kind, set()).add(str(row.get("id") or row.get("ref") or ""))
+    return grouped
+
+
+def _roadmap_blockers(row: dict) -> dict[str, set[str]]:
+    """The roadmap row's blocker list, grouped by the kind each field reports."""
+
+    fields = {
+        "explicit": "explicit_blockers",
+        "held": "held_blockers",
+        "gate": "gate_blockers",
+        "decision": "decision_blockers",
+    }
+    grouped: dict[str, set[str]] = {}
+    for kind, field in fields.items():
+        ids = {str(blocker.get("id") or "") for blocker in row.get(field) or []}
+        if ids:
+            grouped[kind] = ids
+    return grouped
+
+
+def _blocked(plan: dict) -> bool:
+    return plan["effective_status"] == "blocked"
+
+
+def _roadmap_blocked(row: dict) -> bool:
+    return row["readiness"] == "blocked"
+
+
+def test_the_served_view_and_the_roadmap_agree_on_every_plan(tmp_path: Path) -> None:
+    served, roadmap = _served_and_roadmap(_project(tmp_path))
+
+    assert set(served) == {"deciding", "gated", "free"}
+    assert set(roadmap) == {"deciding", "gated", "free"}
+
+    for slug in ("deciding", "gated", "free"):
+        plan = served[slug]
+        row = roadmap[slug]
+        assert _served_blockers(plan) == _roadmap_blockers(row), (
+            f"{slug}: served {_served_blockers(plan)} vs roadmap "
+            f"{_roadmap_blockers(row)}"
+        )
+        assert _blocked(plan) == _roadmap_blocked(row), (
+            f"{slug}: served {plan['effective_status']} vs roadmap {row['readiness']}"
+        )
+
+
+def test_the_decision_held_plan_reads_blocked_on_both_surfaces(tmp_path: Path) -> None:
+    served, roadmap = _served_and_roadmap(_project(tmp_path))
+
+    assert _blocked(served["deciding"])
+    assert _roadmap_blocked(roadmap["deciding"])
+    assert _served_blockers(served["deciding"]) == {"decision": {"transport"}}
+
+
+def test_the_gate_held_plan_reads_blocked_on_both_surfaces(tmp_path: Path) -> None:
+    served, roadmap = _served_and_roadmap(_project(tmp_path))
+
+    assert _blocked(served["gated"])
+    assert _roadmap_blocked(roadmap["gated"])
+    assert _served_blockers(served["gated"]) == {"gate": {"s1-evidence"}}
+
+
+def test_a_free_plan_reads_open_on_both_surfaces(tmp_path: Path) -> None:
+    served, roadmap = _served_and_roadmap(_project(tmp_path))
+
+    assert not _blocked(served["free"])
+    assert not _roadmap_blocked(roadmap["free"])
+    assert _served_blockers(served["free"]) == {}
+    assert _roadmap_blockers(roadmap["free"]) == {}
