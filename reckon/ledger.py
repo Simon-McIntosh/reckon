@@ -1028,7 +1028,7 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
 
 # The index stores file-derived values only. Every access checks file metadata,
 # including ctime, so edits with a preserved mtime still invalidate the row.
-_RUN_INDEX_VERSION = 3
+_RUN_INDEX_VERSION = 4
 
 # The metadata key an index uses to carry the resolved ledger path it indexes.
 # It is written when the index is built, so a sweep can identify an index whose
@@ -1201,12 +1201,14 @@ _PICKER_FIELDS = (
     "run_id",
     "node",
     "plan",
+    "section",
     "backend",
     "agent",
     "member",
     "role",
     "spec_level",
     "gate",
+    "failure_classification",
     "completed_at",
     "completed_at_source",
     "dispatched_at",
@@ -1229,17 +1231,8 @@ def picker_record(record: Mapping[str, Any]) -> dict[str, Any]:
 
 def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
     """Read projected history without decoding retained full payloads."""
-    try:
-        data, _version = _indexed_data(project, root, picker_only=True)
-        return data["runs"]
-    except (OSError, sqlite3.Error):
-        stale = _last_good_index_data(
-            project, root, headers_only=False, picker_only=True
-        )
-        if stale is not None:
-            return stale[0]["runs"]
-        data, _version = load(project, root, use_index=False)
-        return [picker_record(row) for row in data["runs"]]
+    data, _version = load(project, root, True)
+    return data["runs"]
 
 
 # One sweep reads a per-run document through several readers — the ledger's own
@@ -1592,6 +1585,7 @@ def indexed_headers(
 def load(
     project: str,
     root: str | Path | None = None,
+    picker_only: bool = False,
     *,
     use_index: bool = True,
     headers_only: bool = False,
@@ -1609,14 +1603,24 @@ def load(
     instead of charging every reader a full scan of a multi-megabyte aggregate
     whenever a peer happens to be writing. Only when no good index can be read
     at all does the read open the aggregate.
+
+    ``picker_only`` reads each row as the projection :func:`picker_record`
+    retains beside its payload in the index, so a caller that consumes only
+    those fields decodes no full record on a warm read. What comes back from
+    the aggregate on a cold read is projected the same way.
     """
     if use_index:
         try:
-            return _indexed_data(project, root, headers_only=headers_only)
+            return _indexed_data(
+                project, root, headers_only=headers_only, picker_only=picker_only
+            )
         except (OSError, sqlite3.Error):
             # A disposable cache cannot make an otherwise readable ledger fail.
             stale = _last_good_index_data(
-                project, root, headers_only=headers_only, picker_only=False
+                project,
+                root,
+                headers_only=headers_only,
+                picker_only=picker_only,
             )
             if stale is not None:
                 data, version, age = stale
@@ -1624,6 +1628,11 @@ def load(
                 return data, version
     data, version = _load_aggregate(project, root)
     _merge_run_documents(project, root, data, refuse=True)
+    if picker_only:
+        data["runs"] = [
+            picker_record(row) if isinstance(row, Mapping) else row
+            for row in data["runs"]
+        ]
     return data, version
 
 
