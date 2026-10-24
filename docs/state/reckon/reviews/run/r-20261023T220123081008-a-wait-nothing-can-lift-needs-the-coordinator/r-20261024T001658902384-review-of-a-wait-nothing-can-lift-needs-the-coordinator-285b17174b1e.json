@@ -1,0 +1,66 @@
+{
+  "added_failure_basis": "the reviewed manifest records no baseline_suite or after_suite field (no armed suite role), so the delta was read from the node's own recorded arms: logs/negative-control-base-arm.log at 3adce740f holds three failing ids (the halted fixture, the reworded-detail arm and the raising arm) and logs/head-gate.log at 285b17174 holds 6 passed with no failing ids, while logs/head-focused-suite.log records 348 passed over the 23 importing files; no failing id at head is absent at base, so zero failures were added.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:311",
+    "reckon/crew/recovery_watch.py:1182",
+    "reckon/crew/recovery_watch.py:2998",
+    "reckon/crew/runs.py:1796",
+    "reckon/crew/runs.py:3332",
+    "reckon/crew/query.py:422",
+    "reckon/crew/query.py:559",
+    "reckon/crew/obligations.py:482",
+    "reckon/crew/directory.py:97",
+    "reckon/crew/promotion.py:387",
+    "reckon/crew/promotion_release.py:862",
+    "reckon/crew/recovery_review_dispatch.py:2047",
+    "reckon/crew/forgotten_runs.py:94",
+    "reckon/crew/resumption.py:1869",
+    "reckon/serve.py:884"
+  ],
+  "completed_at": "2026-10-24T00:24:33.896Z",
+  "dispatched_at": "2026-10-24T00:17:50Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_wait.py",
+      "line": 476,
+      "severity": "non-blocking",
+      "text": "the return annotation of _run_wait_condition_probe still reads dict[str, str] while every return path now carries the boolean `answered` field added by this change (lines 512-548), and its sibling _wait_condition_observation was widened to dict[str, Any]; the signature now describes a shape the function does not return, so a type-aware reader is told the flag cannot exist."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 3adce740f to 285b17174; three commits change four files (487 insertions, 3 deletions): the halted arm and its two predicates, the answered flag through the probe readers, the current-attempt guard, the new six-arm test and the fragment.",
+    "done_when": "the source prompt's measure names the new test fixture, the live-worker and non-terminal arms and the base arm; logs/head-gate.log records 6 passed EXIT=0 at the tree that became 285b17174 and logs/negative-control-base-arm.log records 3 failed / 3 passed at 3adce740f, and every arm the measure names is present in tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:196-375.",
+    "goal": "the source prompt's GOAL is to classify a declared wait whose worker has ended and whose condition probe cannot answer with a halted word and a resume remedy; reckon/crew/recovery_classification.py:1137-1160 now does exactly that, with the remedy text at :1154-1160.",
+    "manifest": "read at the source run directory; it records status complete, commits feb4b8e08, 8861becdd and 285b17174, the 6-passed head gate, the 348-passed focused wait/recovery suite, three negative controls, ruff delta zero and no retry failures, with baseline_suite and after_suite absent rather than claimed.",
+    "write_paths": "the source prompt declares reckon/crew/recovery_classification.py, the new test and the landing fragment; resume-1-advice.txt adds reckon/crew/recovery_wait.py, and git diff --stat 3adce740f 285b17174 touches those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:196-219 and :349-375 redden when the answered:false flag is removed (negative-control-raise-arm.log: 1 failed / 5 passed) and :318-346 reddens when _exit_record_names_attempt is replaced by True (negative-control-attempt-guard.log: 1 failed / 4 passed), so each added branch has a stated condition under which it fails; only the attempt-is-None default at recovery_classification.py:352-355 has no dedicated arm.",
+    "evidence": "logs/head-gate.log records 6 passed EXIT=0 and its `# committed-as: 285b17174` line is verifiable \u2014 sha256 of `git diff 8861becdd 285b17174 -- reckon/crew tests` is 64e62e5618398d05, matching the log's own tree-state digest \u2014 and logs/negative-control-base-arm.log records 3 failed / 3 passed at 3adce740f, so the measure the done_when names is asserted and recorded, though the source manifest carries no baseline_suite/after_suite JSON and the added-failure delta has to be read from the arm logs instead.",
+    "fit": "the added helpers at reckon/crew/recovery_classification.py:319 and :339 compose the module's existing _current_attempt_number and _exit_record_names_attempt and carry no plan label, but the change widened _wait_condition_observation to dict[str, Any] while leaving _run_wait_condition_probe's signature at reckon/crew/recovery_wait.py:476 as dict[str, str] although it now returns the boolean answered field.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1137-1160 classifies a valid declared wait over an ended worker's current attempt as stalled (pane word halted) with a `reckon crew resume` action whenever the probe carried answered:false, and the live-worker and non-terminal arms above it are untouched.",
+    "reuse": "the change extends the existing probe-observation owner at reckon/crew/recovery_wait.py:393-436 with one structured field and reuses the module's existing attempt helpers rather than adding a second normaliser; a search of reckon/ for an existing probe-answer flag found no other owner.",
+    "scope_discipline": "git diff --stat 3adce740f 285b17174 lists exactly reckon/crew/recovery_classification.py, reckon/crew/recovery_wait.py, tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py and the plan's evidence fragment, all inside the prompt's declared paths plus the recovery_wait.py grant in resume-1-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source prompt's GOAL is a halted word and a resume remedy for a declared wait whose worker ended and whose probe cannot answer; reckon/crew/recovery_classification.py:1137-1160 lands exactly that.\nVERDICT done_when: the measure's fixtures are all present in tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:196-375, and logs/head-gate.log records 6 passed EXIT=0 with logs/negative-control-base-arm.log recording 3 failed / 3 passed at the base revision.\nVERDICT write_paths: the prompt declares three paths and resume-1-advice.txt grants recovery_wait.py; git diff --stat 3adce740f 285b17174 touches those four paths only.\nVERDICT manifest: read; status complete, three commits, the 6-passed head gate, the 348-passed focused suite, three negative controls and ruff delta zero, with baseline_suite and after_suite absent rather than fabricated.\nVERDICT diff: read commit by commit from 3adce740f to 285b17174; three commits, four files, 487 insertions and 3 deletions, all inside the granted scope.\nCALL_SITES: reckon/crew/recovery_watch.py:311, reckon/crew/recovery_watch.py:1182, reckon/crew/recovery_watch.py:2998, reckon/crew/runs.py:1796, reckon/crew/runs.py:3332, reckon/crew/query.py:422, reckon/crew/query.py:559, reckon/crew/obligations.py:482, reckon/crew/directory.py:97, reckon/crew/promotion.py:387, reckon/crew/promotion_release.py:862, reckon/crew/recovery_review_dispatch.py:2047, reckon/crew/forgotten_runs.py:94, reckon/crew/resumption.py:1869, reckon/serve.py:884\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1137-1160 sets classification stalled and a `reckon crew resume` action for the ended-worker unanswered-probe case while the live-worker and non-terminal arms stay waiting.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-gate.log records 6 passed EXIT=0 and its `# committed-as: 285b17174` is verified by the tree-state digest 64e62e5618398d05 matching `git diff 8861becdd 285b17174 -- reckon/crew tests`, though the manifest carries no baseline_suite/after_suite JSON.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 3adce740f 285b17174 touches only recovery_classification.py, recovery_wait.py, the node test and the evidence fragment, all inside the prompt's paths plus the resume grant.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_wait_nothing_can_lift_needs_the_coordinator.py:372 reddens under the raise-arm mutation and :343 reddens under the attempt-guard mutation, leaving only the attempt-is-None default at recovery_classification.py:352 without an arm.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers at reckon/crew/recovery_classification.py:319 and :339 follow the module's idiom, but reckon/crew/recovery_wait.py:476 still annotates the probe reader as returning dict[str, str] while it now returns a boolean answered field.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner reckon/crew/recovery_wait.py:393-436 with one field and reuses _current_attempt_number and _exit_record_names_attempt; a search of reckon/ for an existing probe-answer flag found none.\nFINDING reckon/crew/recovery_wait.py:476 non-blocking: the return annotation reads dict[str, str] while every path now returns a boolean `answered` field, so the signature denies a field the classifier depends on.\n",
+  "review_run_id": "r-20261024T001658902384-review-of-a-wait-nothing-can-lift-needs-the-coordinator-285b17174b1e",
+  "reviewed_at": "2026-10-24T00:40:00Z",
+  "reviewed_base_sha": "3adce740f59d1738700a47cf15ca57849543a2c7",
+  "reviewed_head_sha": "285b17174b1e9e9a1c3f0320c1caef1345f00ab1",
+  "reviewed_run_id": "r-20261023T220123081008-a-wait-nothing-can-lift-needs-the-coordinator",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T00:24:36.531011+00:00",
+  "total": 114
+}
