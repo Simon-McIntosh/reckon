@@ -93,6 +93,7 @@ from reckon.crew.query import (
     normalize_runs_source,
 )
 from reckon.mcp_views import (
+    BLOCKER_STATE_KEY as _BLOCKER_STATE_KEY,
     ResourceSelector,
     ViewRequestError,
     audit_view,
@@ -1694,24 +1695,18 @@ def _read_plan_view(
                 None,
             )
             if inventory_plan is not None:
-                explicit_blockers = [
-                    item.get("id")
-                    for item in inventory_plan.get("blocking", [])
-                    if isinstance(item, dict)
-                    and item.get("kind") == "explicit"
-                    and item.get("id")
-                ]
-                held_blockers = [
-                    item.get("id")
-                    for item in inventory_plan.get("blocking", [])
-                    if isinstance(item, dict)
-                    and item.get("kind") == "held"
-                    and item.get("id")
-                ]
-                if explicit_blockers:
-                    data = {**data, "blocked_by": explicit_blockers}
-                if held_blockers:
-                    data = {**data, "held_by": held_blockers}
+                data = {
+                    **data,
+                    _BLOCKER_STATE_KEY: _plan_blocker_state(
+                        data,
+                        deps=deps,
+                        reported=inventory_plan.get("blocking") or [],
+                        project=selector.project,
+                        slug=selector.id,
+                        sprints=discovered.get("sprints") or [],
+                        checkout_path=checkout_path,
+                    ),
+                }
 
         html_text = None
         html_warning = None
@@ -1750,6 +1745,45 @@ def _read_plan_view(
             selector=selector,
             hint="Inspect the typed identity and project-state audit.",
         )
+
+
+def _plan_blocker_state(
+    plan: Mapping[str, Any],
+    *,
+    deps: Iterable[Mapping[str, Any]],
+    reported: Iterable[Any],
+    project: str,
+    slug: str,
+    sprints: Iterable[Mapping[str, Any]],
+    checkout_path: str | None,
+) -> dict[str, Any]:
+    """Assemble one plan's holds the way the roadmap assembles them.
+
+    The resource summary answers "is this plan blocked, and by what" from the
+    roadmap's own assembly rather than a second one of its own. A plan held by a
+    plan-level open decision or by a plan-level path reads blocked through the
+    roadmap and open through a narrower summary, and nothing compares them — so
+    the summary passes the roadmap's arguments, resolved for this one plan: the
+    row just read, the blockers the inventory reports for it, the dependency
+    rows already resolved, its decision→section scoping, and whether a cleared
+    hold's probe released it.
+    """
+
+    from reckon.lifecycle import unresolved_dependencies
+    from reckon.roadmap import (
+        _plan_decision_sections,
+        plan_blocker_state,
+        plans_released_by_cleared_blockers,
+    )
+
+    docs_dir = _docs_dir_for_project(project, checkout_path)
+    return plan_blocker_state(
+        plan,
+        dependency_blockers=unresolved_dependencies(list(deps)),
+        blockers=reported,
+        sections_map=_plan_decision_sections(plan, docs_dir, project, slug),
+        released=slug in plans_released_by_cleared_blockers(docs_dir, project, sprints),
+    )
 
 
 def _section_dependency_rows(
@@ -3212,24 +3246,6 @@ def _audit_read(
             )
     for artifact in plans:
         artifact_type = artifact.get("type", "plan")
-        if (
-            artifact_type == "plan"
-            and artifact.get("workflow_status", artifact.get("status")) == "blocked"
-            and not artifact.get("blocking")
-        ):
-            findings.append(
-                _finding(
-                    "lifecycle",
-                    "orphaned-blocked-status",
-                    "warn",
-                    (
-                        f"{artifact['slug']}: persisted blocked status has no "
-                        "unresolved dependency or explicit blocker reference"
-                    ),
-                    slug=artifact.get("slug"),
-                    path=(f"{artifact['href']}.html" if artifact.get("href") else None),
-                )
-            )
         if artifact_type == "research" and not artifact.get("informs"):
             findings.append(
                 _finding(

@@ -52,6 +52,11 @@ from reckon.project_state import _natural_identifier_key
 VIEW_NAMES = frozenset(
     {"summary", "detail", "history", "version", "raw", "schema", "section"}
 )
+#: Summary input key carrying a plan's assembled blocker state. The reading
+#: surface that owns a plan's holds fills it with ``roadmap.plan_blocker_state``'s
+#: answer; a summary that finds no such answer — a direct ``resource_view``
+#: call, or a plan outside the inventory — falls back to its own assembly.
+BLOCKER_STATE_KEY = "blocker_state"
 #: The response shapes a roadmap read serves. Declared here, beside the read
 #: that serves them, so a caller judging the argument before the scan reads the
 #: same set the read enforces rather than a copy of it.
@@ -2497,17 +2502,36 @@ def _paged_findings(
 
 
 def _open_decisions(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Decisions a reader can act on, with the status that holds each one.
+
+    A decision that records a choice is settled and is left out. What remains is
+    published by key, question and options, and — when the roadmap holds it
+    rather than leaving it plainly open — the status that holds it, so a gated
+    or deferred decision does not read like an open one. A plainly open decision
+    states no status, which is what makes the field worth reading: its presence
+    is the news. A plan-level gated decision raises no blocker, so the blocker
+    list is not where a reader can see it.
+    """
+
+    from reckon.roadmap import _decision_rows
+
+    held = {
+        str(row.get("id") or ""): str(row.get("status") or "")
+        for row in _decision_rows(data)
+        if row.get("status") in {"gated", "deferred"}
+    }
     decisions: list[dict[str, Any]] = []
     for key, value in (data.get("decisions") or {}).items():
         if not isinstance(value, dict) or value.get("choice"):
             continue
-        decisions.append(
-            {
-                "key": key,
-                "question": value.get("title", ""),
-                "options": list(value.get("choices") or []),
-            }
-        )
+        entry = {
+            "key": key,
+            "question": value.get("title", ""),
+            "options": list(value.get("choices") or []),
+        }
+        if held.get(key):
+            entry["status"] = held[key]
+        decisions.append(entry)
     return decisions
 
 
@@ -2562,6 +2586,48 @@ def _blocking(data: dict[str, Any], deps: list[dict[str, Any]]) -> list[Any]:
     plan_holding, _section_holding = split_unpassed_gates(data)
     result.extend(plan_holding)
     return result
+
+
+def _assembled_blocking(state: Mapping[str, Any]) -> list[Any]:
+    """Publish an assembled blocker list in the summary's established shape.
+
+    A reader of the summary already knows two row shapes: an explicit blocker is
+    its bare id, and a resolved dependency is a ``ref``/``found``/``status`` row.
+    Those stay as they were, so a summary pinned on them does not change, and
+    every other hold the assembly reports — a held path, an unpassed gate, the
+    placeholder standing for a stored blocked status — keeps its row and is told
+    apart by its ``kind``.
+
+    An open decision is the exception: the summary publishes its question and
+    options under ``open_decisions`` (and, when a transition edge or a recorded
+    rationale holds it, the status that holds it), so listing the same fields
+    again here would only grow the payload. The blocker list carries a reference
+    to the decision instead, and the roadmap keeps publishing the full row. The
+    reference names no plan because every plan-level hold in this list belongs
+    to the plan the summary is about, which the ``resource`` block already
+    names — the same reason an explicit blocker is published as a bare id.
+    """
+
+    decision_reference = ("kind", "id")
+
+    published: list[Any] = []
+    for row in state.get("blocking") or []:
+        if not isinstance(row, Mapping):
+            published.append(row)
+        elif row.get("kind") == "decision":
+            published.append(
+                {
+                    key: row[key]
+                    for key in decision_reference
+                    if row.get(key) is not None
+                }
+            )
+        elif row.get("kind") == "explicit":
+            if row.get("id"):
+                published.append(row.get("id"))
+        else:
+            published.append(dict(row))
+    return published
 
 
 def _section_gate_blockers(data: dict[str, Any]) -> list[dict[str, Any]]:
@@ -2643,6 +2709,8 @@ def _state(
     selector: ResourceSelector,
     data: dict[str, Any],
     blocking: list[Any],
+    *,
+    stated_status: str | None = None,
 ) -> dict[str, Any]:
     resource_type = selector.type
     if resource_type == "plan":
@@ -2650,7 +2718,8 @@ def _state(
         age_days = modified_age_days(data.get("modified"))
         state = {
             "status": workflow_status,
-            "effective_status": effective_status(workflow_status, blocking),
+            "effective_status": stated_status
+            or effective_status(workflow_status, blocking),
             "progress": float(data.get("impl", 0.0) or 0.0),
             "age_days": age_days,
             "staleness": lifecycle_staleness(
@@ -2747,7 +2816,18 @@ def _summary(
             "Summary responses never include full followup prompts.",
             "Use view='detail' with include_prompts=true.",
         )
-    blocking = _blocking(data, deps)
+    assembled = data.get(BLOCKER_STATE_KEY) if selector.type == "plan" else None
+    if isinstance(assembled, Mapping):
+        # The plan's holds come from the assembly every other surface reads, so
+        # a plan held by a plan-level open decision cannot read open here while
+        # the roadmap and the served view report it blocked. The assembly also
+        # states the effective status it derived those holds into, and that
+        # answer is the one published rather than a second derivation.
+        blocking = _assembled_blocking(assembled)
+        stated_status = assembled.get("effective_status")
+    else:
+        blocking = _blocking(data, deps)
+        stated_status = None
     result = {
         "resource": selector.as_dict(),
         "version": version,
@@ -2757,7 +2837,7 @@ def _summary(
         or data.get("name")
         or selector.id,
         "summary": data.get("summary") or data.get("description") or "",
-        "state": _state(selector, data, blocking),
+        "state": _state(selector, data, blocking, stated_status=stated_status),
         "blocking": blocking,
         "open_decisions": _open_decisions(data),
         "next": _next_action(data, include_prompts=False),
