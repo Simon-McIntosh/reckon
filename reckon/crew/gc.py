@@ -1179,11 +1179,38 @@ def settle_run_scratch(
     removed under the same ``SCRATCH_GRACE_SECONDS`` rule the orphan sweep
     applies, after the same holder check. A directory not named for a run is
     left to :func:`garbage_collect_orphan_scratch`.
+
+    ``root`` and ``runs_root`` name the scratch root and the state home a
+    caller relocated; the pass removes nothing when one of the two trees is
+    named and the other is left to this process's environment, because in that
+    case it cannot see the live pointers that protect the copies it would
+    delete.
     """
-    from reckon.crew.dispatch import tree_size_bytes, worker_scratch_root
+    from reckon.crew.dispatch import (
+        WORKER_SCRATCH_ROOT_ENV,
+        tree_size_bytes,
+        worker_scratch_root,
+    )
     from reckon.crew.runs import run_dir
 
     scratch = Path(root) if root is not None else worker_scratch_root()
+    # A removed copy cannot be recovered, and the copies under the host-wide
+    # default root belong to the runs of the operator's own state home. A
+    # private home cannot see those runs' live pointers, so it cannot show that
+    # a copy here is finished: a worker between turns sits in its worktree and
+    # holds nothing in the scratch directory to be seen by the holder scan.
+    # Removing on that reading is the destructive mis-scope this refuses, and a
+    # caller that relocates either tree names both.
+    scratch_named = root is not None or bool(os.environ.get(WORKER_SCRATCH_ROOT_ENV))
+    home_named = runs_root is not None or not os.environ.get("RECKON_HOME")
+    if not (scratch_named or home_named):
+        return {
+            "root": str(scratch),
+            "entries": [],
+            "removed": [],
+            "bytes_freed": 0,
+            "withheld": "state and scratch roots differ",
+        }
     if scratch.is_symlink() or scratch.resolve() != scratch.absolute():
         raise CrewError(f"scratch settling refuses noncanonical root {scratch}")
     if not scratch.is_dir():

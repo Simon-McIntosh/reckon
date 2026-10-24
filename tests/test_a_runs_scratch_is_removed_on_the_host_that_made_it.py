@@ -204,6 +204,42 @@ def test_a_copy_a_process_holds_is_left(scratch_root: Path, crew_home: Path) -> 
     assert copy.exists()
 
 
+def test_a_private_home_never_settles_the_host_wide_scratch(
+    scratch_root: Path, crew_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A home that cannot see the live pointers must not delete their copies."""
+    copy = _run_copy(RUN)
+    _finished_run_directory(RUN)
+    # The private home stays; only the declaration that pairs it with a scratch
+    # root is withdrawn, as a caller that sets RECKON_HOME alone leaves it.
+    monkeypatch.delenv(dispatch.WORKER_SCRATCH_ROOT_ENV)
+    monkeypatch.setattr(dispatch, "worker_scratch_root", lambda: scratch_root)
+
+    result = settle_run_scratch(apply=True)
+
+    assert result["withheld"] == "state and scratch roots differ"
+    assert result["removed"] == []
+    assert copy.exists()
+    assert copy.is_dir()
+
+
+def test_naming_both_trees_lets_the_pass_remove(
+    scratch_root: Path, crew_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A caller that relocates both declares both and is settled as usual."""
+    copy = _run_copy(RUN)
+    _finished_run_directory(RUN)
+    monkeypatch.delenv(dispatch.WORKER_SCRATCH_ROOT_ENV)
+
+    result = settle_run_scratch(
+        apply=True, root=scratch_root, runs_root=run_dir(RUN).parent
+    )
+
+    assert "withheld" not in result
+    assert str(copy) in result["removed"]
+    assert not copy.exists()
+
+
 def test_an_orphan_copy_waits_for_the_grace(
     scratch_root: Path, crew_home: Path
 ) -> None:

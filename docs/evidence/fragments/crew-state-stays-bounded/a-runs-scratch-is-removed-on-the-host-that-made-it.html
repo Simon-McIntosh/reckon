@@ -19,7 +19,13 @@
     launch, resume and lane-change paths all reach before a new worker's scratch is made; the
     step wrapper <code>_STEP_TASK_WRAPPER</code>, for a node that only runs steps and never launches;
     and §7's hourly <code>retention_sweep</code>, which now calls it and appends its removals to the
-    same rotating log. The release receipt is also written beside the run's own record
+    same rotating log. The pass removes nothing when the state home and the scratch root are
+    not both known to it — a caller that sets <code>RECKON_HOME</code> alone leaves the
+    host-wide default root in place, where the copies belong to runs whose live pointers that
+    private home cannot see, and the holder scan does not reach a worker sitting in its
+    worktree between turns. It therefore withholds with
+    <code>state and scratch roots differ</code>, the same guard the orphan sweep applies.
+    The release receipt is also written beside the run's own record
     (<code>release.json</code>) before the ledger write, because the ledger write is not durable on
     its own — see the route named below.
   </p>
@@ -89,7 +95,10 @@
     <code>retention_sweep</code> each remove a finished run's fresh copy — its ctime is well inside
     <code>SCRATCH_GRACE_SECONDS</code>, so no age wait applies. A copy under a live pointer, and a
     copy a process holds open, are both left. A run-named copy whose run has neither a pointer nor a
-    run directory is left at its own ctime and removed once past the grace. The step wrapper, run
+    run directory is left at its own ctime and removed once past the grace. A private home that
+    leaves the scratch root to this process's environment removes nothing, and names
+    <code>state and scratch roots differ</code>; a caller that names both trees is settled as
+    usual. The step wrapper, run
     under <code>bash</code> with the wrapper's own environment, removes a finished run's copy. A
     review run's release removes its scratch and names the host, and its receipt survives a landing
     commit that is refused.
