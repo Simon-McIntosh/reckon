@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order"
+  ],
+  "call_sites": [
+    "reckon/serve.py:1740 _derive_lifecycle (distributed project state)",
+    "reckon/serve.py:1808 _derive_lifecycle (single-tree discovery)",
+    "reckon/roadmap.py:3448 _build_roadmap",
+    "reckon/serve.py:1859 build_roadmap",
+    "reckon/mcp.py:2146 and reckon/mcp.py:3180 build_roadmap",
+    "reckon/crew/plan_review.py:3107 build_roadmap",
+    "reckon/crew/queue_admission.py:1085 build_roadmap",
+    "reckon/flight.py:2635 build_roadmap",
+    "reckon/graph_target.py:204 build_roadmap"
+  ],
+  "completed_at": "2026-10-24T07:05:24.403Z",
+  "dispatched_at": "2026-10-24T06:48:47Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": "2063",
+      "severity": "non-blocking",
+      "text": "non-blocking: the served view calls plan_blocker_state without the released argument it defines (reckon/roadmap.py:1198, default False), while the roadmap's own call passes released=slug in released_by_clear (reckon/roadmap.py:3453); so a plan stored status=blocked whose cleared blocker a probe has already released is given the synthesized persisted/unrecorded blocker (reckon/roadmap.py:1243-1249) on the served view and reads blocked, where the manifest's own fixture reads ready through the roadmap. Reproduced on the reviewed head: plan_blocker_state(row) gives effective_status blocked with blocking [('persisted','unrecorded')], plan_blocker_state(row, released=True) gives active with blocking []; before this change the served view synthesized no placeholder, so it read active and agreed with the released roadmap row. This is a divergence in the very fact the node unifies, and the comment at reckon/serve.py:2060-2062 claims the two surfaces 'cannot disagree', which is stronger than what landed. The manifest discloses the asymmetry in evidence_inputs item (4); it is recorded here rather than as blocking because the node's declared measure covers the decision/gate/free triad only."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the change reaches production through _derive_lifecycle (reckon/serve.py:1740, :1808) and through _build_roadmap (reckon/roadmap.py:3448), whose callers are reckon/serve.py:1859, reckon/mcp.py:2146, reckon/mcp.py:3180, reckon/crew/plan_review.py:3107, reckon/crew/queue_admission.py:1085, reckon/flight.py:2635 and reckon/graph_target.py:204.",
+    "diff": "read commit by commit from 9608e78d5: the single commit 74db0ba14 adds plan_blocker_state to reckon/roadmap.py, rewires _build_roadmap onto it, imports it into reckon/serve.py:_derive_lifecycle, adds the parity test file and the evidence fragment; 4 files, 330 insertions, 93 deletions, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_the_served_view_reads_the_roadmaps_blockers.py building a decision-held, a gate-held and a free plan and comparing the two surfaces, plus the negative control; the manifest records that file at head 4 passed EXIT=0 and at base 2 failed/2 passed, and negative-control.log records the restored own-assembly arm at 2 failed/2 passed EXIT=1.",
+    "goal": "the node goal is that _derive_lifecycle takes each plan's blockers and blocked state from the roadmap's assembly through one exported function and keeps none of its own; at 74db0ba14 reckon/serve.py:2063 calls roadmap.plan_blocker_state and the function is defined at reckon/roadmap.py:1192, with the served view's own split_unpassed_gates/effective_status assembly gone from that loop.",
+    "manifest": "read; it is complete, records commit 74db0ba14, four changed paths, the head/base suite arms with their logs and failure ids, and a negative-control log whose last line is a bare EXIT=1.",
+    "write_paths": "the manifest declares reckon/serve.py, reckon/roadmap.py, tests/test_the_served_view_reads_the_roadmaps_blockers.py, the evidence fragment and a figures directory; git diff --stat 9608e78d5 74db0ba14 changes exactly the first four files and no path outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_the_served_view_reads_the_roadmaps_blockers.py:147 fails when the served view stops reading the shared assembly, as negative-control.log shows at 'served {} vs roadmap {decision: {transport}}' with EXIT=1, and the :159/:169/:176 literals fail if decision/gate/free classification regresses; no assertion compares a value against an input the test itself passed in.",
+    "evidence": "base-suite.log (revision 9608e78d5, 368 passed/3 failed/EXIT=1) and head-suite.log (74db0ba14, 369 passed/2 failed/EXIT=1) are recorded in the manifest's baseline_suite/after_suite, the two base-only failures are the new parity cases, and a head-only environment failure (test_spa_shell_geometry) is disclosed and shown not to follow the content by an export without .git.",
+    "fit": "plan_blocker_state at reckon/roadmap.py:1192 sits in the module that owns the assembly and follows the module's existing long-docstring and per-kind-row idiom, and no added filename, symbol or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/serve.py:2063 now sources blockers and effective_status from roadmap.plan_blocker_state (reckon/roadmap.py:1192) and the loop keeps no assembly of its own, which is the deliverable; the released-flag omission at reckon/serve.py:2063 leaves one population disagreeing, so not full marks.",
+    "reuse": "the change removes a duplicate assembly rather than adding one: the roadmap's inline blocker list and the served view's separate list both collapse onto roadmap.plan_blocker_state, which is the module that already owned the capability, and a search of reckon/ for other blocker assembly found only direct split_unpassed_gates consumers that this node's goal does not reach.",
+    "scope_discipline": "git diff --stat 9608e78d5 74db0ba14 lists exactly reckon/roadmap.py, reckon/serve.py, tests/test_the_served_view_reads_the_roadmaps_blockers.py and the declared evidence fragment, 4 files and nothing outside them."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T064410309146-review-of-the-served-view-reads-the-roadmaps-blockers-74db0ba147ee",
+  "reviewed_base_sha": "9608e78d56045156220788606408679e9fc21417",
+  "reviewed_head_sha": "74db0ba147eec04b43b4a1c5fb50357666cfede8",
+  "reviewed_run_id": "r-20261024T060459639539-the-served-view-reads-the-roadmaps-blockers",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: the node goal is that serve._derive_lifecycle takes each plan's blockers and blocked state from the roadmap's assembly through one exported function and keeps none of its own; at 74db0ba14 reckon/serve.py:2063 calls roadmap.plan_blocker_state and the served loop no longer calls split_unpassed_gates or effective_status, so the goal is met for the decision/gate/free population the done_when names.\nVERDICT done_when: the done_when names tests/test_the_served_view_reads_the_roadmaps_blockers.py with a decision-held, gate-held and free plan compared across both surfaces plus a negative control; the manifest records that file at head 4 passed with EXIT=0, at base 2 failed/2 passed, and negative-control.log shows the restored own-assembly arm at 'served {} vs roadmap {decision: {transport}}' with EXIT=1, so the gate asserts the stated measure and its refusal is recorded.\nVERDICT write_paths: the manifest declares reckon/serve.py, reckon/roadmap.py, the new test file, the evidence fragment and a figure directory; git diff --stat 9608e78d5 74db0ba14 changes exactly four files, the first four, and no figure was written.\nVERDICT manifest: read; status complete, commit 74db0ba14, changed_paths all inside the declared scope, baseline_suite at 9608e78d5 (exit 1, 3 failures) and after_suite at 74db0ba14 (exit 1, 2 failures) with log paths, and a negative_control_log whose last line is a bare EXIT=1.\nVERDICT diff: read commit by commit from 9608e78d5; the single commit 74db0ba14 adds plan_blocker_state at reckon/roadmap.py:1192, rewires _build_roadmap onto it at :3448, replaces the served view's assembly with the call at reckon/serve.py:2063, and adds the parity test and evidence fragment, 4 files and 330/93 lines, all inside the declared paths.\nCALL_SITES: reckon/serve.py:1740 _derive_lifecycle, reckon/serve.py:1808 _derive_lifecycle, reckon/roadmap.py:3448 _build_roadmap, reckon/serve.py:1859 build_roadmap, reckon/mcp.py:2146 build_roadmap, reckon/mcp.py:3180 build_roadmap, reckon/crew/plan_review.py:3107 build_roadmap, reckon/crew/queue_admission.py:1085 build_roadmap, reckon/flight.py:2635 build_roadmap, reckon/graph_target.py:204 build_roadmap\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/serve.py:2063 sources blockers and effective_status from roadmap.plan_blocker_state (reckon/roadmap.py:1192) and the served loop keeps no assembly of its own, but the same call omits the released flag the function defines, leaving one population still disagreeing.\nSCORE evidence: 17\nJUSTIFICATION evidence: base-suite.log (9608e78d5, 368 passed/3 failed/EXIT=1) and head-suite.log (74db0ba14, 369 passed/2 failed/EXIT=1) are recorded in the manifest, the two base-only failures are the new parity cases, and the one head-only failure (tests/test_spa_shell_geometry.py) is disclosed and shown by a no-.git export not to follow the changed content.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 9608e78d5 74db0ba14 touches only reckon/roadmap.py, reckon/serve.py, tests/test_the_served_view_reads_the_roadmaps_blockers.py and the declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_served_view_reads_the_roadmaps_blockers.py:147 reddens when the served view stops reading the shared assembly, as negative-control.log's 'served {} vs roadmap {decision: {transport}}' with EXIT=1 shows, and :159/:169/:176 fix expected kinds and ids from the fixture rather than from the code under test.\nSCORE fit: 18\nJUSTIFICATION fit: plan_blocker_state at reckon/roadmap.py:1192 follows the owning module's long-docstring and per-kind-row idiom and introduces no plan, sprint or ticket identifier in any added name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change collapses the roadmap's inline assembly and the served view's separate one onto roadmap.plan_blocker_state, the module that already owned the capability, and a capability search over reckon/ found no other owner this addition duplicates.\nFINDING reckon/serve.py:2063 non-blocking: the served view calls plan_blocker_state without the released argument it defines (reckon/roadmap.py:1198, default False), while the roadmap passes released=slug in released_by_clear (reckon/roadmap.py:3453), so a stored-blocked plan whose cleared blocker a probe released reads blocked with a synthesized persisted/unrecorded blocker (reckon/roadmap.py:1243-1249) on the served view where the roadmap reads ready; reproduced at the reviewed head as plan_blocker_state(row) -> effective_status blocked, blocking [('persisted','unrecorded')] against plan_blocker_state(row, released=True) -> active, blocking [], and the comment at reckon/serve.py:2060-2062 claims the surfaces 'cannot disagree', which is stronger than what landed. The manifest discloses the asymmetry in evidence_inputs (4); recorded non-blocking because the declared measure covers the decision/gate/free triad only.\n",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:07:13.616298+00:00",
+  "total": 110
+}
