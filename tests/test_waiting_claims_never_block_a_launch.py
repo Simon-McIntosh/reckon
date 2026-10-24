@@ -84,6 +84,7 @@ def test_scope_registry_agrees_with_dispatch_for_waiting_requests(
 
     assert dispatch_claim.binding is False
     assert registry_claim["binding"] is False
+    assert dispatch_claim.disposition_reason == registry_claim["disposition_reason"]
 
 
 def test_working_claim_still_refuses_a_dispatch(
@@ -129,4 +130,7 @@ def test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path(
 
     assert result["launched"] == []
     assert runs.read_pointer("r-waiting")["phase"] == "queued"
-    assert runs.read_pointer("r-waiting").get("failure")
+    failure = runs.read_pointer("r-waiting")["failure"]
+    assert "ScopeConflict:" in failure
+    assert "r-launched" in failure
+    assert queue_cases.SHARED in failure

@@ -1524,6 +1524,9 @@ class ClaimDisposition:
     unintegrated: tuple[str, ...] = ()
 
 
+WAITING_REQUEST_PHASES = frozenset({"queued", "awaiting-upstream", "held"})
+
+
 def claim_disposition(
     pointer: Mapping[str, Any],
     *,
@@ -1551,20 +1554,19 @@ def claim_disposition(
     are already surfaced by the unreconciled-runs fence; judging the claim at
     read time adds no actor and cannot lag the state it reports.
 
-    A QUEUED CLAIM DOES NOT BIND, and it is judged by its phase rather than by
-    the pid it lacks. A queued request holds no worker and no worktree, so its
-    declared paths fence nothing while it waits; reading the absent pid as "not
-    yet" would make two queued requests naming one path refuse each other and
-    neither ever launch. The rule keys on the ``queued`` phase alone, so a
-    ``starting`` run — pid-less between its pointer write and its worker spawn —
+    A WAITING REQUEST DOES NOT BIND, and it is judged by its phase rather than
+    by the pid it lacks. Queued, upstream-waiting, and held requests have no
+    worker or worktree, so their paths are checked when they reach launch.
+    A ``starting`` run — pid-less between its pointer write and worker spawn —
     keeps binding exactly as it must.
     """
     run_id = str(pointer.get("run_id") or "unknown")
-    if str(pointer.get("phase") or "") == "queued":
+    phase = str(pointer.get("phase") or "")
+    if phase in WAITING_REQUEST_PHASES:
         return ClaimDisposition(
             binding=False,
             reason=(
-                f"run {run_id!r} is queued and holds no worker or worktree, so "
+                f"run {run_id!r} is {phase} and holds no worker or worktree, so "
                 "its claim is disregarded"
             ),
         )

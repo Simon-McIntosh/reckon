@@ -33,10 +33,10 @@ from reckon._timestamps import (
     parse_utc,
 )
 from reckon.crew.node import (
-    ClaimDisposition,
     CrewError,
     ScopeConflict,
     TaskNode,
+    WAITING_REQUEST_PHASES,
     claim_disposition,
     claim_repository,
     repository_identity,
@@ -113,19 +113,12 @@ class DirectoryClaimConflict(ScopeConflict):
         )
 
 
-# The phases a live claim carries while its worker is still being composed.
-# A pointer in any other phase — working, running, waiting, or anything a
-# future writer adds — describes a run that has already passed its own
-# admission, so its claim refuses newcomers however the registration times
-# compare. An absent phase is read the same way: a claim that cannot be shown
-# to be still composing is treated as established rather than quietly outranked.
+# These phases mark a launch claim still being composed. An established claim
+# is never outranked by a later registration. Waiting requests are judged
+# nonbinding by claim_disposition before this racing order is considered.
 _UNLAUNCHED_CLAIM_PHASES = frozenset(
     {"starting", "launching", "launcher", "dispatching"}
 )
-
-# Requests in these phases have no worker. Their paths are checked when they
-# leave the queue and reach the launch claim, not against another launch now.
-_WAITING_REQUEST_PHASES = frozenset({"queued", "awaiting-upstream", "held"})
 
 
 @dataclass(frozen=True)
@@ -463,13 +456,7 @@ def _repository_scope_claims(
             resolve_checkout=relevant,
         )
         phase = str(pointer.get("phase") or "")
-        if relevant and phase in _WAITING_REQUEST_PHASES:
-            disposition = ClaimDisposition(
-                binding=False,
-                reason=f"run {pointer.get('run_id')!r} is {phase} and has no launched worker",
-            )
-        else:
-            disposition = claim_disposition(pointer) if relevant else None
+        disposition = claim_disposition(pointer) if relevant else None
         project = str(pointer.get("project") or "")
         run_id = str(pointer.get("run_id") or "unknown")
         node_id = str(node.get("id") or "unknown")
@@ -508,7 +495,7 @@ def _repository_scope_claims(
                     # newcomers as it always has. The launch claim published
                     # before the checks is the only shape that is still
                     # composing, and the phase is what names it.
-                    launched=phase not in _WAITING_REQUEST_PHASES
+                    launched=phase not in WAITING_REQUEST_PHASES
                     and (
                         bool(pointer.get("worktree") or pointer.get("pid"))
                         or phase not in _UNLAUNCHED_CLAIM_PHASES
