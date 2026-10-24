@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "commits_read": [
+    "71f97cac797171e7f52966fa6d5ceca36c221250",
+    "6905205c0b38becfc93efc26e7c9180afe258fc8"
+  ],
+  "completed_at": "2026-10-24T23:13:24.545Z",
+  "dispatched_at": "2026-10-24T23:05:01Z",
+  "findings": [
+    {
+      "disposition_hint": "folded: reuse `wait_facts` from the follow path's memory instead of a second tuple, or restate the two sets as one",
+      "file": "reckon/crew_follow_commands.py",
+      "line": 1269,
+      "severity": "non-blocking",
+      "text": "`_pane_shown_memory` already owns the wait-facts tuple at line 1274 (recovery_classification, wait_condition_state, wait_overdue, expected_horizon_seconds) and its docstring at line 1271 says the duty is exactly what `same_word_row_is_news` reads; the landed change adds a second, differently-shaped tuple in `reckon/crew/ticker.py:2441` (`wait_facts`: overdue, condition_state, observed, horizon, resume_brief), so that docstring is now false and a replayed baseline row differing only in `resume_brief` or `wait_observed` is dropped as inventory by the replay path while the live row path would print it."
+    },
+    {
+      "disposition_hint": "folded: add a case that feeds a same-word wait return straight to `Ticker.render` so the renderer's memory has a failing condition of its own",
+      "file": "reckon/crew/ticker.py",
+      "line": 2794,
+      "severity": "non-blocking",
+      "text": "The renderer's own `self._shown_wait[run_id] = wait_facts(event)` write is guarded by no assertion: deleting it leaves all three new tests green, because the row policy withholds the return row at line 2028 before `Ticker.render` is ever handed one, and the changed-condition case passes through the `remembered is None` branch either way."
+    },
+    {
+      "disposition_hint": "exempted: the arms' literal commands are recorded in the gate log headers and both logs are cited, so the receipt can be re-run from the fallback",
+      "file": "manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "`baseline_suite.command` carries the placeholder `<43 ticker-importing files present at the base revision>` and `after_suite.command` carries `<worktree>`, which the manifest contract refuses; the literal commands survive only in the logs' `# command:` header lines."
+    },
+    {
+      "disposition_hint": "exempted: the two staged paths are a small diff and the clause is mechanically re-runnable at promotion",
+      "file": "manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "The done-when's clause \"ruff check and ruff format --check add no findings on the staged paths\" is claimed in `artifacts` but no ruff log is named in `test_logs`, so that clause is asserted rather than recorded."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "The predicate's two production call sites, `RowPolicy.feed` and `Ticker.render`, each pass their own per-run memory; the follow replay path in `reckon/crew_follow_commands.py` reaches the same judgement through its own memory and was left untouched.",
+    "diff": "Two commits over `0ab156b37`: `71f97cac7` changes `reckon/crew/ticker.py` (+88/\u221226) and adds `tests/test_a_wait_that_recovers_from_aged_prints_no_row.py` (one new file); `6905205c0` adds only the 39-line landing fragment.",
+    "done_when": "The done_when's five clauses map to `logs/head-test.log` (3 passed), `logs/base-pair.log` (all three rows at the base revision), `logs/head-arm.log` and `logs/base-arm.log` (639 vs 636 passed, no failures), and a ruff claim with no log.",
+    "goal": "The goal is to drop a same-word wait row that only clears the overdue flag with unchanged wait facts; `reckon/crew/ticker.py:2441` (`wait_facts`) and the memory read at line 2506 implement exactly that, with no second same-word rule added beside `same_word_row_is_news`.",
+    "manifest": "The manifest records both commits, the four logs, the negative control and zero retry failures, but names no ruff log and leaves an angle-bracket placeholder inside both suite `command` strings.",
+    "write_paths": "The declared paths are `reckon/crew/ticker.py`, the new test, the evidence fragment and the figure directory; the fragment at `docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-wait-that-recovers-from-aged-prints-no-row.html` is the fourth and no file outside them changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is to drop a same-word wait row that only clears the overdue flag with unchanged wait facts; reckon/crew/ticker.py:2441 (wait_facts) and the memory read at line 2506 implement exactly that, with no second same-word rule added beside same_word_row_is_news.\nVERDICT done_when: The done_when's five clauses map to logs/head-test.log (3 passed), logs/base-pair.log (all three rows at the base revision), logs/head-arm.log and logs/base-arm.log (639 vs 636 passed, no failures), and a ruff claim with no log.\nVERDICT write_paths: The declared paths are reckon/crew/ticker.py, the new test, the evidence fragment and the figure directory; the fragment at docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-wait-that-recovers-from-aged-prints-no-row.html is the fourth and no file outside them changed.\nVERDICT manifest: The manifest records both commits, the four logs, the negative control and zero retry failures, but names no ruff log and leaves an angle-bracket placeholder inside both suite command strings.\nVERDICT diff: Two commits over 0ab156b37: 71f97cac7 changes reckon/crew/ticker.py (+88/-26) and adds tests/test_a_wait_that_recovers_from_aged_prints_no_row.py; 6905205c0 adds only the 39-line landing fragment.\nCALL_SITES: reckon/crew/ticker.py:RowPolicy.feed, reckon/crew/ticker.py:Ticker.render, reckon/crew_follow_commands.py:_replay_rows\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:2506 withholds a return row whose overdue flag clears and whose declaration matches the shown row's, and line 2509 still keeps a return that newly sets overdue.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/base-pair.log records the three-row sequence printing all three at 0ab156b37 and logs/head-test.log ends 3 passed EXIT=0, but the done-when's ruff clause has no log behind it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 0ab156b37 6905205c0 --stat is one of the four declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: logs/negative-control.log restores the base predicate and reddens test_a_return_to_waiting_after_the_wait_aged_prints_no_row, but deleting reckon/crew/ticker.py:2794 reddens nothing, because the policy drops the return row before the renderer sees one.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/ticker.py:1373 places _shown_wait beside the existing _shown dict and _note_shown writes both in one loop, matching the module's per-run memory idiom; no name carries a plan or ticket label.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew_follow_commands.py:1274 already shapes a wait-facts tuple for the same judgement, and the addition at reckon/crew/ticker.py:2441 defines a different set beside it rather than extending it.\nFINDING reckon/crew_follow_commands.py:1269 non-blocking: _pane_shown_memory owns an overlapping wait-facts tuple and its docstring now claims to be exactly what same_word_row_is_news reads, which the added wait_facts makes false; a replay row differing only in resume_brief or wait_observed is dropped as inventory while the live path would print it.\nFINDING reckon/crew/ticker.py:2794 non-blocking: the renderer's _shown_wait write is guarded by no assertion, since the policy withholds the return row at line 2028 before Ticker.render receives one.\nFINDING manifest.md:19 non-blocking: baseline_suite and after_suite command strings carry angle-bracket placeholders, so the arms can be re-run only from the gate logs' own command headers.\nFINDING manifest.md:21 non-blocking: the done-when's ruff clause is claimed in artifacts but no ruff log appears in test_logs.\n",
+  "review_run_id": "r-20261024T230344377700-review-of-a-wait-that-recovers-from-aged-prints-no-row-6905205c0b38",
+  "reviewed_base_sha": "0ab156b37bb78f80394efdd7436b58d0e12d3c13",
+  "reviewed_commit": "71f97cac797171e7f52966fa6d5ceca36c221250",
+  "reviewed_head_sha": "6905205c0b38becfc93efc26e7c9180afe258fc8",
+  "reviewed_run_id": "r-20261024T222122779741-a-wait-that-recovers-from-aged-prints-no-row",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T23:17:09.428841+00:00",
+  "total": 98
+}
