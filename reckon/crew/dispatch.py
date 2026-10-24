@@ -274,6 +274,121 @@ def _queued_request_record(
     return record
 
 
+def _queue_validated_waits(
+    record: dict[str, Any],
+    *,
+    refs: list[str],
+    wait_projects: Mapping[str, str],
+    cap: int | None,
+    live: list[Mapping[str, Any]] | None = None,
+    cache: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], int | None, str]:
+    """Store one prevalidated request and apply its current wait verdict."""
+    from reckon.crew import queue_admission
+
+    record["waits"] = list(refs)
+    record["wait_projects"] = dict(wait_projects)
+    queued, position = queue_dispatch(record, cap=cap)
+    phase = str(queued.get("phase") or queue_admission.QUEUED_PHASE)
+    if refs and phase == queue_admission.QUEUED_PHASE:
+        target = queue_admission.resolve_waits(
+            record,
+            live=[*(live if live is not None else list_live()), record],
+            docs_dir=Path(str(record["repo"])) / "docs",
+            cache=cache if cache is not None else {},
+        )
+        if target != phase and queue_admission._move_pointer(
+            str(queued["run_id"]), target
+        ):
+            phase = target
+    return queued, position, phase
+
+
+def queue_requests(
+    nodes: Iterable[TaskNode],
+    *,
+    project: str,
+    session: str,
+    repo_root: str | Path,
+    config: Mapping[str, Any],
+    backend_name: str = "",
+    launch_kind: str = "cli",
+    run_ids: Mapping[str, str] | None = None,
+    cap: int | None = None,
+) -> dict[str, Any]:
+    """Validate a request batch, then use dispatch's queue writer for each."""
+    from reckon.crew import queue_admission
+    from reckon.crew.dispatch_admission import (
+        admission_domain_findings,
+        admission_refusals_and_warnings,
+    )
+
+    nodes = list(nodes)
+    lane = str(backend_name or "").strip() or str(
+        config.get("local_backend") or config.get("default_backend") or ""
+    )
+    if not lane:
+        raise CrewError("queueing a request names no backend to queue it for")
+    assigned_ids = {
+        node.id: str((run_ids or {}).get(node.id) or new_run_id(node.id))
+        for node in nodes
+    }
+    for node in nodes:
+        findings = admission_domain_findings(
+            node, project=project, repository=repo_root
+        )
+        refusals, _warnings = admission_refusals_and_warnings(findings)
+        if refusals:
+            raise CrewError(
+                f"node {node.id!r} is refused at queue time: "
+                + "; ".join(str(finding.get("detail") or "") for finding in refusals)
+            )
+    live = list_live()
+    refs_by_run, projects_by_run = queue_admission._validated_batch_waits(
+        nodes,
+        assigned_ids,
+        project=project,
+        repo_root=repo_root,
+        live=live,
+    )
+    stored: dict[str, Any] = {}
+    cache: dict[str, Any] = {}
+    for index, node in enumerate(nodes):
+        run_id = assigned_ids[node.id]
+        queued, position, phase = _queue_validated_waits(
+            _queued_request_record(
+                run_id=run_id,
+                project=project,
+                node=node,
+                repo_root=Path(str(repo_root)),
+                session=session,
+                backend_name=lane,
+                launch_kind=launch_kind,
+                lane_allowance={},
+                dispatch_options={
+                    "project": project,
+                    "session": session,
+                    "no_watch": True,
+                },
+                queued_at=_utc_now(),
+            ),
+            refs=refs_by_run[run_id],
+            wait_projects=projects_by_run[run_id],
+            cap=cap,
+            live=live,
+            cache=cache,
+        )
+        stored[str(queued["run_id"])] = {
+            "node": node.id,
+            "section": node.section,
+            "phase": phase,
+            "waits": list(queued.get("waits") or ()),
+            "position": position,
+            "index": index,
+        }
+    return stored
+
+
 def _arrange_dispatch_follower(
     project: str,
     session: str,
@@ -1648,13 +1763,18 @@ def dispatch(
         queue_admission.QUEUED_PHASE,
         *queue_admission.WAITING_UPSTREAM_PHASES,
     )
-    waiting = (
-        queue_admission.unmet_waits(node, repo_root=repo_root, project=project)
-        if stored_request and not member_refuses
-        else []
-    )
+    validated_refs: list[str] = []
+    wait_projects: dict[str, str] = {}
+    waiting: list[str] = []
+    if stored_request and not member_refuses:
+        validated_refs, wait_projects, waiting = queue_admission.dispatch_waits(
+            node,
+            repo_root=repo_root,
+            project=project,
+            run_id=str((existing or {}).get("run_id") or run_id),
+        )
     if waiting:
-        queued, position = queue_dispatch(
+        queued, position, phase = _queue_validated_waits(
             _queued_request_record(
                 run_id=run_id,
                 project=project,
@@ -1668,10 +1788,9 @@ def dispatch(
                 queued_at=_utc_now(),
                 admitted_from=admitted_from,
             ),
+            refs=validated_refs,
+            wait_projects=wait_projects,
             cap=queued_dispatch_cap(_queued_share_cap(backend)),
-        )
-        held_refs = queue_admission.hold_request_for_upstream(
-            str(queued["run_id"]), node=node, repo_root=repo_root
         )
         held = LaneHeld(
             {
@@ -1685,12 +1804,8 @@ def dispatch(
             # A request the writer could not move off ``queued`` is reported
             # as the phase it really holds, so the answer never claims a wait
             # the pointer does not carry.
-            "phase": (
-                queue_admission.AWAITING_UPSTREAM_PHASE
-                if held_refs
-                else str(queued.get("phase") or queue_admission.QUEUED_PHASE)
-            ),
-            "waits": list(held_refs or waiting),
+            "phase": phase,
+            "waits": list(validated_refs),
             "reason": "this section's waits have not landed",
         }
         if held_selection is not None:
@@ -2016,22 +2131,21 @@ def dispatch(
         # them — are never serialised against each other, and one run in flight
         # cannot refuse an unrelated task with `member-in-flight`. A named member
         # remains a deliberate route to a durable worker, so it keeps the roster
-        # lookup, the D14 check and the refusal. The identity is minted with the
+        # lookup, the registration check and the refusal. The identity is minted with the
         # claim above, so the roster below is only ever asked about a named one.
         roster_member = (
             ledger.member(project, effective_member, root=ledger_root)
             if named_member
             else None
         )
-        if named_member:
-            if roster_member is None:
-                raise CrewError(
-                    format_refusal(
-                        "D14",
-                        f"project {project!r} has no crew member {member!r}; register it "
-                        "with `reckon crew member add` before dispatching to it",
-                    )
+        if named_member and roster_member is None:
+            raise CrewError(
+                format_refusal(
+                    "D14",
+                    f"project {project!r} has no crew member {member!r}; register it "
+                    "with `reckon crew member add` before dispatching to it",
                 )
+            )
         live_pointers = [
             pointer
             for pointer in list_live(project=project)
@@ -2864,15 +2978,13 @@ def dispatch(
         try:
             _unwire_peer_channels(run_id, wired_peer_run_ids)
             if spawned_pid is not None:
-                try:
+                with contextlib.suppress(CrewError, OSError):
                     _signal_process_group(
                         spawned_pid,
                         spawned_start_time,
                         run_dir=run_dir(run_id),
                         reason="dispatch-rollback",
                     )
-                except (CrewError, OSError):
-                    pass
             # The pointer goes first. The worktree remover refuses a worktree
             # that a live pointer still claims, and until this run's own pointer
             # is gone it is that claim — so removing the worktree first raised,

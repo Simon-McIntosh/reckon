@@ -1704,24 +1704,22 @@ def _needs_own_section_verdict(node: TaskNode, *, repo_root: str | Path) -> bool
     return bool(state.get("gates") or state.get("decisions"))
 
 
-def unmet_waits(
+def dispatch_waits(
     node: TaskNode,
     *,
     repo_root: str | Path,
     project: str = "",
+    run_id: str = "",
     live: Sequence[Mapping[str, Any]] | None = None,
-) -> list[str]:
-    """The refs a node declares that have not landed.
+) -> tuple[list[str], dict[str, str], list[str]]:
+    """Validate a dispatch's graph and return all refs and its unmet refs.
 
-    A dispatch asks this before it launches anything, so a node whose upstream
-    has not landed is stored as a request and held rather than launched on a
-    lane that happens to have room. The answer is the readiness the admission
-    pass re-reads, so a node is held for the reason the pass would hold it, and
-    a node whose refs have all landed returns nothing and launches as usual.
+    The caller uses the same run identity for validation and storage. No queued
+    pointer exists when this raises for a missing target or a graph cycle.
     """
     own_verdict = _needs_own_section_verdict(node, repo_root=repo_root)
     if not derive_wait_refs(node, repo_root=repo_root) and not own_verdict:
-        return []
+        return [], {}, []
     docs_dir = Path(str(repo_root)) / "docs"
     owner_project = project or _project_of_docs_dir(docs_dir)
     if live is None:
@@ -1729,19 +1727,21 @@ def unmet_waits(
             live = runs.list_live()
         except Exception:  # noqa: BLE001 - an unreadable live set holds no wait
             live = []
+    candidate = run_id or f"candidate:{node.id}"
     refs_by_run, projects_by_run = _validated_batch_waits(
         [node],
-        {node.id: f"candidate:{node.id}"},
+        {node.id: candidate},
         project=owner_project,
         repo_root=repo_root,
         live=live,
         read_own_verdict=own_verdict,
     )
-    refs = refs_by_run[f"candidate:{node.id}"]
+    refs = refs_by_run[candidate]
+    wait_projects = projects_by_run[candidate]
     if not refs:
-        return []
+        return [], wait_projects, []
     if not any(wait_ref_kind(ref) == "request" for ref in refs):
-        return [
+        unmet = [
             ref
             for ref in refs
             if ref.startswith("readiness:")
@@ -1750,10 +1750,11 @@ def unmet_waits(
             )
             != SATISFIED
         ]
+        return refs, wait_projects, unmet
     cache: dict[str, Any] = {}
     rows, inventory = _readiness_rows(owner_project, docs_dir, cache)
     dead = _dead_sections(live)
-    return [
+    unmet = [
         ref
         for ref in refs
         if _wait_state(
@@ -1766,10 +1767,22 @@ def unmet_waits(
             project=owner_project,
             docs_dir=docs_dir,
             cache=cache,
-            wait_projects=projects_by_run[f"candidate:{node.id}"],
+            wait_projects=wait_projects,
         )
         != SATISFIED
     ]
+    return refs, wait_projects, unmet
+
+
+def unmet_waits(
+    node: TaskNode,
+    *,
+    repo_root: str | Path,
+    project: str = "",
+    live: Sequence[Mapping[str, Any]] | None = None,
+) -> list[str]:
+    """Return a node's unmet refs after validating its dependency graph."""
+    return dispatch_waits(node, repo_root=repo_root, project=project, live=live)[2]
 
 
 def _ref_state(
@@ -2013,129 +2026,20 @@ def queue_requests(
     run_ids: Mapping[str, str] | None = None,
     cap: int | None = None,
 ) -> dict[str, Any]:
-    """Queue a batch of nodes in one call, each waiting on its section's refs.
+    """Keep the batch entry while dispatch owns validation and queue writes."""
+    from reckon.crew.dispatch import queue_requests as dispatch_queue_requests
 
-    A coordinator loads a plan's whole width here rather than one section at a
-    time: every node is contract-checked before it is stored, so a malformed
-    node in the batch is refused at once and nothing of the batch is stored
-    for it, and every node whose section declares refs is stored
-    ``awaiting-upstream`` carrying those refs. Nothing in the batch launches
-    here — the admission pass launches each one as its refs land, so no
-    coordinator turn sits between an upstream landing and its downstream
-    starting.
-    """
-    from reckon.crew.dispatch import _queued_request_record
-    from reckon.crew.dispatch_admission import (
-        admission_domain_findings,
-        admission_refusals_and_warnings,
-    )
-
-    lane = str(backend_name or "").strip() or str(
-        config.get("local_backend") or config.get("default_backend") or ""
-    )
-    if not lane:
-        raise CrewError("queueing a request names no backend to queue it for")
-    stored: dict[str, Any] = {}
-    assigned_ids = {
-        node.id: str((run_ids or {}).get(node.id) or runs.new_run_id(node.id))
-        for node in nodes
-    }
-    for node in nodes:
-        findings = admission_domain_findings(
-            node, project=project, repository=repo_root
-        )
-        refusals, _warnings = admission_refusals_and_warnings(findings)
-        if refusals:
-            raise CrewError(
-                f"node {node.id!r} is refused at queue time: "
-                + "; ".join(str(finding.get("detail") or "") for finding in refusals)
-            )
-    live = runs.list_live()
-    refs_by_run, projects_by_run = _validated_batch_waits(
+    return dispatch_queue_requests(
         nodes,
-        assigned_ids,
         project=project,
+        session=session,
         repo_root=repo_root,
-        live=live,
+        config=config,
+        backend_name=backend_name,
+        launch_kind=launch_kind,
+        run_ids=run_ids,
+        cap=cap,
     )
-    cache: dict[str, Any] = {}
-    for index, node in enumerate(nodes):
-        run_id = assigned_ids[node.id]
-        record = _queued_request_record(
-            run_id=run_id,
-            project=project,
-            node=node,
-            repo_root=Path(str(repo_root)),
-            session=session,
-            backend_name=lane,
-            launch_kind=launch_kind,
-            lane_allowance={},
-            dispatch_options={"project": project, "session": session, "no_watch": True},
-            queued_at=_utc_now(),
-        )
-        refs = refs_by_run[run_id]
-        # The request is stored queued and moved to its waiting phase in the
-        # next write: the queue position is read from the queued order, and a
-        # request that a slot is not yet in reach for stands nowhere in it.
-        record["waits"] = refs
-        record["wait_projects"] = projects_by_run[run_id]
-        queued, position = runs.queue_dispatch(record, cap=cap)
-        phase = str(queued.get("phase") or QUEUED_PHASE)
-        if refs and phase == QUEUED_PHASE:
-            target = resolve_waits(
-                record,
-                live=[*live, record],
-                docs_dir=Path(repo_root) / "docs",
-                cache=cache,
-            )
-            if target != QUEUED_PHASE and _move_pointer(str(queued["run_id"]), target):
-                phase = target
-        stored[str(queued["run_id"])] = {
-            "node": node.id,
-            "section": node.section,
-            "phase": phase,
-            "waits": list(queued.get("waits") or ()),
-            "position": position,
-            "index": index,
-        }
-    return stored
-
-
-def hold_request_for_upstream(
-    run_id: str, *, node: TaskNode, repo_root: str | Path
-) -> list[str]:
-    """Hold a request a dispatch has just queued while its section waits.
-
-    This is the entry point a dispatch writes through, so a node whose plan
-    declares that its section waits on another section enters
-    ``awaiting-upstream`` instead of queueing as though it could launch now.
-    The refs come from the plan the node names, which is the same declaration
-    the admission pass re-reads later: nothing about the wait is stated twice.
-
-    Returns the refs the request is held on, so a caller can report why it was
-    held. A node whose section declares no refs is left queued and returns an
-    empty list — a request with nothing to wait for is not held, and no pointer
-    is written for it at all.
-    """
-    own_verdict = _needs_own_section_verdict(node, repo_root=repo_root)
-    if not derive_wait_refs(node, repo_root=repo_root) and not own_verdict:
-        return []
-    pointer = runs.read_pointer(run_id)
-    project = str(pointer.get("project") or "")
-    refs_by_run, projects_by_run = _validated_batch_waits(
-        [node],
-        {node.id: run_id},
-        project=project,
-        repo_root=repo_root,
-        live=runs.list_live(),
-        read_own_verdict=own_verdict,
-    )
-    refs = refs_by_run[run_id]
-    if not refs:
-        return []
-    if not _hold_pointer(run_id, refs, wait_projects=projects_by_run[run_id]):
-        return []
-    return refs
 
 
 class _PointerNotHoldableError(Exception):

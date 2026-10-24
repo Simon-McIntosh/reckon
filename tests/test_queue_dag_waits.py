@@ -2,16 +2,20 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from reckon import ledger
+from reckon import crew, ledger
 from reckon.crew import queue_admission, runs
+from reckon.crew.dispatch_admission import LaneHeld
 from reckon.crew.node import CrewError, TaskNode
 from tests import test_a_queued_request_waits_on_its_dependencies as fixtures
+
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 
 @pytest.fixture()
@@ -104,6 +108,25 @@ def _queue(
     )
 
 
+def _dispatch(first: Path, node: TaskNode, *, run_id: str) -> dict:
+    try:
+        return crew.dispatch(
+            node=node,
+            project=fixtures.PROJECT,
+            repo=first,
+            config=fixtures.CONFIG,
+            session=fixtures.SESSION,
+            run_id=run_id,
+            check_budget=False,
+            watch_override=True,
+            unreviewed_plan_override=True,
+            local=True,
+            launcher=lambda *args, **kwargs: pytest.fail("wait must not launch"),
+        )
+    except LaneHeld as held:
+        return dict(held.queued or {})
+
+
 def _admit() -> tuple[dict, list[str]]:
     launched: list[str] = []
     result = queue_admission.admit_once(
@@ -179,6 +202,24 @@ def test_section_preflight_does_not_scan_scope_claims(
     )
 
 
+def test_batch_and_dispatch_share_the_queue_writer(
+    projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first, _ = projects
+    calls: list[str] = []
+    original = dispatch_module._queue_validated_waits
+
+    def record_write(pointer, **kwargs):
+        calls.append(str(pointer["run_id"]))
+        return original(pointer, **kwargs)
+
+    monkeypatch.setattr(dispatch_module, "_queue_validated_waits", record_write)
+    _queue(first, _node("batch", "s2"), run_ids={"batch": "r-batch"})
+    _dispatch(first, _node("ordinary", "s3"), run_id="r-ordinary")
+
+    assert calls == ["r-batch", "r-ordinary"]
+
+
 def test_mutual_section_cycle_refuses_without_storage(
     projects: tuple[Path, Path],
 ) -> None:
@@ -188,7 +229,7 @@ def test_mutual_section_cycle_refuses_without_storage(
     _git(second, "add", "--", "docs/plans/plan-b.html")
     _git(second, "commit", "-q", "-m", "chore: declare dependency")
     with pytest.raises(CrewError) as caught:
-        _queue(first, _node("cyclic", "s1"), run_ids={"cyclic": "r-cyclic"})
+        _dispatch(first, _node("cyclic", "s1"), run_id="r-cyclic")
     assert "other:plan-b" in str(caught.value)
     assert "proj:plan-a" in str(caught.value)
     assert runs.list_live(project=fixtures.PROJECT) == []
@@ -199,13 +240,9 @@ def test_request_and_section_cycle_refuses_without_storing_second(
 ) -> None:
     first, _ = projects
     fixtures._declare_wait_refs(first, section="s2", refs=["plan-a#s1"])
-    _queue(first, _node("prior", "s2"), run_ids={"prior": "r-prior"})
+    _dispatch(first, _node("prior", "s2"), run_id="r-prior")
     with pytest.raises(CrewError) as caught:
-        _queue(
-            first,
-            _node("cyclic", "s1", after=["r-prior"]),
-            run_ids={"cyclic": "r-cyclic"},
-        )
+        _dispatch(first, _node("cyclic", "s1", after=["r-prior"]), run_id="r-cyclic")
     assert "r-prior" in str(caught.value)
     assert "plan-a" in str(caught.value)
     assert [row["run_id"] for row in runs.list_live(project=fixtures.PROJECT)] == [
@@ -222,14 +259,14 @@ def test_missing_plan_section_or_project_refuses_at_queue_time(
     first, _ = projects
     fixtures._declare_wait_refs(first, section="s2", refs=[ref])
     with pytest.raises(CrewError, match="missing"):
-        _queue(first, _node("waiting", "s2"))
+        _dispatch(first, _node("waiting", "s2"), run_id="r-waiting")
     assert runs.list_live(project=fixtures.PROJECT) == []
 
 
 def test_missing_request_refuses_at_queue_time(projects: tuple[Path, Path]) -> None:
     first, _ = projects
     with pytest.raises(CrewError, match="missing request"):
-        _queue(first, _node("waiting", "s1", after=["r-absent"]))
+        _dispatch(first, _node("waiting", "s1", after=["r-absent"]), run_id="r-waiting")
     assert runs.list_live(project=fixtures.PROJECT) == []
 
 
