@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: after_suite (gate-head.log, revision 93e0b5a52, completed, failure_count 0) minus baseline_suite (gate-base.log, revision 74abbdd99, completed, failure_count 6, the six listed ids); no id fails at head that passes at base. The five tests/test_the_held_worktree_read_is_bounded.py ids are setup errors present identically in both arms and are not failures.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:1232",
+    "reckon/hooks/coordinator_obligations.py:1328",
+    "reckon/crew/obligations.py:1625"
+  ],
+  "completed_at": "2026-10-24T15:04:40.101Z",
+  "dispatched_at": "2026-10-24T14:55:25Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140015079465-obligations-snapshot-tests-agree-with-the-derivation/manifest.md",
+      "line": 18,
+      "text": "non-blocking: after_suite records exit_status 0 while the gate-head.log it cites ends in EXIT=1, so a reader taking the record's exit status reads the head arm as green when the log is red on the five module-scoped fixture timeouts; the added-failure derivation is unaffected because those five are errors present identically in the base arm, but the record and its receipt disagree."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/obligations-snapshot-tests-agree-with-the-derivation.html",
+      "line": 73,
+      "text": "non-blocking: the fragment states 'Ruff reports nothing on the changed paths' with no ruff log in the run directory, so the done_when's lint clause rests on an unrecorded claim; I re-ran it at the reviewed head and it reports all checks passed and both files already formatted, so the claim is true but the node's own evidence cannot show it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change reaches reckon/crew/obligation_snapshot.py:1232, where the sweep calls payload_for to build the published snapshot, and the published document is read by reckon/hooks/coordinator_obligations.py:1328 _read_payload; the row shape it now invokes is owned by reckon/crew/obligations.py:1625-1653, which the slice now mirrors line for line.",
+    "diff": "read c644b7e6b, 85e9078a1, 93e0b5a52 and 1dee768a1 against 74abbdd99: one production change in reckon/crew/obligation_snapshot.py payload_for (+31/-11) routing its duty rows through obligations._with_action_form, run_section_index and project_run_rows, a one-line stand-in signature in tests/test_crew_tool_carries_the_write_verbs.py, and the evidence fragment written twice as the reading moved from blocked to repaired.",
+    "done_when": "\u00a744's measure names the six ids plus a base-arm differential over every tests/*.py importing a changed module; the manifest records baseline_suite 6 failed / after_suite 0 failed over 33 files from gate-base.log (revision 74abbdd99) and gate-head.log (revision 93e0b5a52), each with revision, tree, module.__file__ and literal command headers.",
+    "goal": "the node goal is to make the six \u00a744 census ids pass by asserting each intended contract or reporting the unintended change; all six pass at the reviewed head 1dee768a1, which I confirmed by running them myself in the reviewed worktree (reviewer-six-ids.log, 6 passed, EXIT=0).",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140015079465-obligations-snapshot-tests-agree-with-the-derivation/manifest.md; it names status complete, four commits, both arms with per-id failure lists and the five fixture-timeout errors attributed as scaffolding in both arms.",
+    "write_paths": "the dispatch names four test files plus the evidence fragment and a figures directory; resume-1-advice.txt widened the scope with 'your scope is widened to reckon/crew/obligation_snapshot.py', and git diff 74abbdd99..1dee768a1 touches exactly that module, tests/test_crew_tool_carries_the_write_verbs.py and the fragment, every path inside the grant as widened."
+  },
+  "justifications": {
+    "durability": "the negative-control logs show the parity assertions discriminate: dropping the section projection at reckon/crew/obligation_snapshot.py:1141 reddens five parity ids (negative-control-projection.log, 5 failed, EXIT=1) and reverting the stand-in at tests/test_crew_tool_carries_the_write_verbs.py:381 reddens the sixth with the tool's TypeError (negative-control.log, 1 failed, EXIT=1).",
+    "evidence": "gate-base.log and gate-head.log carry revision, tree, module.__file__, working directory and literal command headers and end EXIT=1 and EXIT=1, with the base arm failing exactly the six listed ids and the head arm failing none, but manifest.md:18 records after_suite exit_status 0 against a log whose last line is EXIT=1 and the fragment's ruff result has no recorded log.",
+    "fit": "the five-line comment at reckon/crew/obligation_snapshot.py:1131 explains why the row shape is delegated rather than restated, matching the module's existing comment idiom, and ruff check and ruff format --check report nothing on the changed paths when I ran them.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1131-1157 now runs its rows through obligations._with_action_form, run_section_index and project_run_rows exactly as reckon/crew/obligations.py:1625-1653 does, and all six listed ids pass at 1dee768a1 in a run I executed myself (6 passed, EXIT=0).",
+    "reuse": "the change adds no definition of its own; it invokes the existing owners reckon/crew/query.py:311 project_run_rows and reckon/crew/obligations.py:322 _with_action_form, which are exactly the two the derivation at reckon/crew/obligations.py:1625-1653 uses, so the row shape keeps one implementation.",
+    "scope_discipline": "git diff 74abbdd99..1dee768a1 touches only reckon/crew/obligation_snapshot.py, tests/test_crew_tool_carries_the_write_verbs.py and the declared fragment, and the production path is the one the coordinator's resume-1-advice.txt widened the fence to."
+  },
+  "node": "review-of-obligations-snapshot-tests-agree-with-the-derivation-1dee768a1ed0",
+  "node:reviewed": "obligations-snapshot-tests-agree-with-the-derivation",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the six \u00a744 census ids pass by asserting each intended contract or reporting the unintended change; all six pass at the reviewed head 1dee768a1, which I confirmed by running them in the reviewed worktree (6 passed, EXIT=0).\nVERDICT done_when: \u00a744's measure names the six ids plus a base-arm differential over every tests/*.py importing a changed module; the manifest records baseline_suite 6 failed over 33 files from gate-base.log at 74abbdd99 and after_suite 0 failed from gate-head.log at 93e0b5a52, both with revision, tree and literal command headers.\nVERDICT write_paths: the dispatch names four test files plus the fragment, resume-1-advice.txt widened the fence to reckon/crew/obligation_snapshot.py, and the diff touches only that module, tests/test_crew_tool_carries_the_write_verbs.py and the fragment.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140015079465-obligations-snapshot-tests-agree-with-the-derivation/manifest.md; status complete, four commits, both arms recorded with per-id failure lists and the five fixture-timeout errors attributed as scaffolding in both arms.\nVERDICT diff: read c644b7e6b, 85e9078a1, 93e0b5a52 and 1dee768a1 against 74abbdd99: payload_for routes its rows through the derivation's owners (+31/-11 in reckon/crew/obligation_snapshot.py), a one-line stand-in signature in tests/test_crew_tool_carries_the_write_verbs.py, and the evidence fragment.\nCALL_SITES: reckon/crew/obligation_snapshot.py:1232, reckon/hooks/coordinator_obligations.py:1328, reckon/crew/obligations.py:1625\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1131-1157 now runs its rows through obligations._with_action_form, run_section_index and project_run_rows exactly as reckon/crew/obligations.py:1625-1653 does, and all six listed ids pass at 1dee768a1.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-base.log and gate-head.log carry revision, tree and command headers with the base arm failing exactly the six listed ids and the head arm failing none, but manifest.md:18 records after_suite exit_status 0 against a log ending EXIT=1 and the ruff clause has no recorded log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 74abbdd99..1dee768a1 touches only reckon/crew/obligation_snapshot.py, tests/test_crew_tool_carries_the_write_verbs.py and the declared fragment, and the production path is the one resume-1-advice.txt widened the fence to.\nSCORE durability: 19\nJUSTIFICATION durability: dropping the section projection at reckon/crew/obligation_snapshot.py:1141 reddens five parity ids and reverting the stand-in at tests/test_crew_tool_carries_the_write_verbs.py:381 reddens the sixth, per negative-control-projection.log and negative-control.log.\nSCORE fit: 18\nJUSTIFICATION fit: the comment at reckon/crew/obligation_snapshot.py:1131 explains the delegation in the module's own comment idiom, and ruff check and ruff format --check report nothing on the changed paths.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition, invoking reckon/crew/query.py:311 project_run_rows and reckon/crew/obligations.py:322 _with_action_form, the same two owners the derivation uses at reckon/crew/obligations.py:1625-1653.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T140015079465-obligations-snapshot-tests-agree-with-the-derivation/manifest.md:18 non-blocking: after_suite records exit_status 0 while the gate-head.log it cites ends in EXIT=1, so the record reads green where its own receipt is red on five fixture-timeout errors.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/obligations-snapshot-tests-agree-with-the-derivation.html:73 non-blocking: the fragment claims ruff reports nothing on the changed paths with no ruff log in the run directory; I re-ran it at the reviewed head and it is clean, but the node's own evidence cannot show that.",
+  "review_run_id": "r-20261024T145414383555-review-of-obligations-snapshot-tests-agree-with-the-derivation-1dee768a1ed0",
+  "reviewed_base_sha": "74abbdd9900b54dd9d90b2186d4ad2b79c79226f",
+  "reviewed_head_sha": "1dee768a1ed0ebf8a489e5b7e65450954f62a221",
+  "reviewed_run_id": "r-20261024T140015079465-obligations-snapshot-tests-agree-with-the-derivation",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:22:00+00:00",
+  "total": 112
+}
