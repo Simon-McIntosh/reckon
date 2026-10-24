@@ -3193,6 +3193,11 @@ reckon/crew/dispatch.py:4535: TypeError
     <p>Run <code>r-20261024T210423068042-an-unresolvable-config-refuses-promotion-by-name</code> landed at merge <code>5a7803047</code> (head <code>7d705112d</code>). The light-ceiling case is replaced by two that state their contracts: promotion over an unresolvable flight config refuses and names the configuration error, and the ceiling read falls back to the shipped value when the config cannot resolve.</p><p>Worker's account: both new cases pass at head and base; negative controls red; committed 7d705112d</p><p>Coordinator's measure: the coordinator re-ran the gate (1 files) from git archive extractions: head 11 passed in 33.53s, merge with main (candidate 0947f8aa0 on b2c2427e5) 11 passed in 43.57s, main alone 1 failed, 9 passed in 34.44s, base 1 failed, 9 passed in 34.95s; failures the head adds over the base: 0; failures the merge adds over main: 0. Review 113 of 120.</p>
   </section>
 
+  <section id="s53">
+    <h2>§53 landing</h2>
+    <p>Run <code>r-20261024T201144368065-invariant-ids-in-claimed-modules-name-one-owner</code> landed at merge <code>04fab9046</code> (head <code>ce6924746</code>). The three invariant ids in claimed modules now each name a single owner and pass at the head.</p><p>Worker's account: all three ids pass at head aec25ad98 + ce6924746; arms and negative controls logged; scratch extraction removed</p><p>Coordinator's measure: the coordinator re-ran the gate (16 files) from git archive extractions: head 1 failed, 317 passed in 555.67s (0:09:15), merge with main (candidate 9c538fb3a on 703bfeddd) 1 failed, 317 passed in 404.96s (0:06:44), main alone 3 failed, 315 passed in 392.89s (0:06:32), base 3 failed, 315 passed in 549.69s (0:09:09); failures the head adds over the base: 0; failures the merge adds over main: 0. These arms ran at -n 2 in pairs after a first measure under a concurrent whole-suite run recorded two load-sensitive ids (test_a_resumed_worker_is_not_ended_as_delivered.py::test_a_resumed_stub_that_writes_complete_is_still_ended and test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch); run serially three times on each of base, head, merge and main, both passed 12 of 12 (idcheck/ in this run directory). Review 110 of 120.</p>
+  </section>
+
 </main>
 </body>
 </html>
