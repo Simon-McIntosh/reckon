@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s51">
+  <title>The served view keeps main's section-readiness names | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-served-view-keeps-mains-section-readiness-names-landing" data-node="the-served-view-keeps-mains-section-readiness-names" data-reckon="landed" data-when="2026-10-24">
+  <h2>The shared blocker assembly keeps every list the section verdicts read bound</h2>
+  <p>Merging <code>origin/main</code> over the shared-blocker refactor raised <code>NameError: name 'plan_holding_decisions' is not defined</code> at <code>reckon/roadmap.py:3690</code> of the merged tree. The refactor moved the list inside <code>plan_blocker_state</code>, while main's new section-verdict block reads it as a <code>build_roadmap</code> local beside the explicit, held and gate blockers. <code>build_roadmap</code> now rebinds <code>plan_holding_decisions</code> from the assembly with the other four lists, so the name the section rows read exists in both trees.</p>
+  <p>At merged tree <code>b93cd0ad1b91979661fd9de257b589cd9dffbefb</code>, <code>tests/test_roadmap_section_verdict.py</code> and <code>tests/test_mcp_audit.py</code> pass 21 with no <code>NameError</code>, matching <code>origin/main</code>'s 21 passed: zero added failures. Dropping the restored binding reproduces the defect, 16 failed and 5 passed. <code>ruff check</code> and <code>ruff format --check</code> pass on <code>reckon/roadmap.py</code> in the merged tree, the same as at <code>origin/main</code>.</p>
+</article>
+</body>
+</html>
