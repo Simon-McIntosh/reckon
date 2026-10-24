@@ -1,0 +1,101 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T21:28:15.299Z",
+  "dispatched_at": "2026-10-24T21:11:00Z",
+  "findings": [
+    {
+      "file": "tests/test_the_pane_shows_every_state_change.py",
+      "line": 134,
+      "severity": "non-blocking",
+      "text": "The replacement assertion at line 137 (`assert f\"delivered {ticker.ARROW} in review\" in drawn`) is not independent of the value under test. The painter's memory is seeded to 'delivered' at line 134, and Ticker.render (reckon/crew/ticker.py:2707) reads a stream row's left word from self._reported before the row's own from_state, so the assertion holds with the field this commit added removed: a read-only probe against the head sources rendered the same in-review row with its from_state key deleted and still printed 'delivered -> in review'. Removing reckon/crew/ticker.py:1558 would leave the test green, so the ticker change has no guard. The prior review found this same test's assertion satisfied by the grid's accumulated memory; the repair still draws from that memory rather than from the row alone."
+    },
+    {
+      "file": "tests/test_the_pane_shows_every_state_change.py",
+      "line": 129,
+      "severity": "non-blocking",
+      "text": "The added `assert any(...)` block at lines 129-131 is not ruff-formatted. `ruff format --check` on the three staged source and test paths reports one file would be reformatted and the only hunk is this block, while the same file was format-clean at the reviewed base 220cc0042. The node's done-when requires that ruff check and ruff format --check add no findings on the staged paths against the base, so that clause is unmet by the repair round even though the ticker.py format finding the previous review recorded is now fixed."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to carry a run's launch, a resume, a review starting as an in-review row on the reviewed run, and one landing or dropped row on the owner session's pane; the delta under review (220cc0042..91b43f760) repairs that work rather than extending it, and reckon/crew/recovery_watch.py:1918 together with reckon/crew/ticker.py:1558 makes the review resolution reuse the owning resolver and the in-review row name the row's left word.\nVERDICT done_when: the done_when asks for the named sequences, the producer arm, the base-revision negative, no added failures and a ruff clause; the focused gate at 91b43f760 records 8 passed and the 17-file arm records 87 passed EXIT=0 against 37 failed at base (after-17-repair.log, before-17.log), but the ruff-format clause is unmet because the added block at tests/test_the_pane_shows_every_state_change.py:129 is not formatted, and the new ticker assertion does not guard the ticker line.\nVERDICT write_paths: the declared paths are reckon/crew/ticker.py, reckon/crew/recovery_watch.py, tests/test_the_pane_shows_every_state_change.py and the evidence fragment; the delta's diff touches exactly those four and nothing else.\nVERDICT manifest: read; it reports status complete with 87 passed over 17 files at head against 37 failing at base, names focused-gate-repair.log and after-17-repair.log, and its stray carriage claim is corrected in this commit's fragment edit.\nVERDICT diff: read commit by commit; the single commit 91b43f760 touches four files (+48/-29): recovery_watch.py swaps the duplicated review-node lookup for recovery_review_delivery._resolved_reviewed_run_id behind the runs._SWEEP_LOCAL guard, ticker.py carries the reviewed run's shown word as the in-review row's from_state, the test file rewrites its in-review assertion, and the fragment corrects the carriage claims.\nCALL_SITES: reckon/crew/recovery_watch.py:_watch_transition, reckon/crew/recovery_review_delivery.py:_resolved_reviewed_run_id, reckon/crew_follow_commands.py:1052, reckon/crew/ticker.py:2362\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_watch.py:1918 now resolves a review's run through the owner, and the fragment at docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-pane-shows-every-state-change.html now states the carriage rule the code holds.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate result is recorded in focused-gate-repair.log (8 passed, EXIT=0) and after-17-repair.log (87 passed, EXIT=0), but the done_when's ruff clause fails at tests/test_the_pane_shows_every_state_change.py:129 and no arm exercises the ticker from_state line at reckon/crew/ticker.py:1558.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 220cc0042 91b43f760` names exactly the four declared paths and no other file.\nSCORE durability: 8\nJUSTIFICATION durability: the only assertion the delta adds, tests/test_the_pane_shows_every_state_change.py:137, still holds with the ticker line it is meant to guard removed, and the resolver swap at reckon/crew/recovery_watch.py:1918 adds no test of its own.\nSCORE fit: 17\nJUSTIFICATION fit: the helper at reckon/crew/recovery_watch.py:1918 follows the surrounding deferred-import and docstring idiom, and the reformatted guard at reckon/crew/ticker.py:1533 restores the formatting the previous review found broken.\nSCORE reuse: 19\nJUSTIFICATION reuse: the duplicated _reviewed_run_id is deleted and its duty moved to the owning resolver at reckon/crew/recovery_review_delivery.py:218, with the re-entry guard reusing the mechanism at reckon/crew/runs.py:2474.\nFINDING tests/test_the_pane_shows_every_state_change.py:134 non-blocking: the painter's memory is seeded to 'delivered', and Ticker.render (reckon/crew/ticker.py:2707) reads a stream row's left word from that memory before the row's own from_state, so the assertion at line 137 holds with reckon/crew/ticker.py:1558 removed; a read-only probe on the head sources rendered the same row with its from_state key deleted and still printed 'delivered -> in review', so the ticker change has no guard.\nFINDING tests/test_the_pane_shows_every_state_change.py:129 non-blocking: the added assert-any block is not ruff-formatted, so the done-when's 'ruff format --check adds no findings against the base' clause is unmet on a file that was format-clean at the reviewed base 220cc0042.",
+  "review_run_id": "r-20261024T210847645911-review-of-the-pane-shows-every-state-change-91b43f760035",
+  "reviewed_base_sha": "220cc00421d7d841a42c330bcd4607667a383d0c",
+  "reviewed_head_sha": "91b43f7600352ec6f7df6ab926e217d7d840e937",
+  "reviewed_run_id": "r-20261024T045518148505-the-pane-shows-every-state-change",
+  "scores": {
+    "durability": 8,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_arms": {
+    "after": {
+      "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_delivered_review_ends_its_turn.py tests/test_a_halt_the_run_left_is_not_drawn.py tests/test_a_pane_does_not_settle_during_admission.py tests/test_a_pane_shows_its_own_starts.py tests/test_a_remembered_state_renders_as_a_pane_word.py tests/test_a_resume_is_drawn_working_again.py tests/test_a_status_repair_prints_no_halted_row.py tests/test_follow_replays_the_gap.py tests/test_follow_settled_rows.py tests/test_follower_keeps_memory.py tests/test_follower_rearm_shows_nothing_twice.py tests/test_row_policy_holds_observer_context.py tests/test_the_live_pane_delivers_its_own_starts.py tests/test_the_pane_draws_no_round_trip.py tests/test_the_pane_speaks_seven_words.py tests/test_the_stream_carries_only_actionable_lines.py tests/test_ticker_row_is_one_transition.py",
+      "completed": true,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T045518148505-the-pane-shows-every-state-change/after-17-repair.log",
+      "revision": "91b43f7600352ec6f7df6ab926e217d7d840e937",
+      "tree": "/home/ITER/mcintos/.../the-pane-shows-every-state-change"
+    },
+    "baseline": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/a337e0e6-c34c-4497-878a-bc42ce1b7cf6/the-pane-shows-every-state-change /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_delivered_review_ends_its_turn.py tests/test_a_halt_the_run_left_is_not_drawn.py tests/test_a_pane_does_not_settle_during_admission.py tests/test_a_pane_shows_its_own_starts.py tests/test_a_remembered_state_renders_as_a_pane_word.py tests/test_a_resume_is_drawn_working_again.py tests/test_a_status_repair_prints_no_halted_row.py tests/test_follow_replays_the_gap.py tests/test_follow_settled_rows.py tests/test_follower_keeps_memory.py tests/test_follower_rearm_shows_nothing_twice.py tests/test_row_policy_holds_observer_context.py tests/test_the_live_pane_delivers_its_own_starts.py tests/test_the_pane_draws_no_round_trip.py tests/test_the_pane_speaks_seven_words.py tests/test_the_stream_carries_only_actionable_lines.py tests/test_ticker_row_is_one_transition.py",
+      "completed": true,
+      "failure_count": 37,
+      "failure_ids": [
+        "tests/test_a_delivered_review_ends_its_turn.py::test_a_delivered_review_inside_the_grace_is_left_running",
+        "tests/test_a_delivered_review_ends_its_turn.py::test_a_delivered_review_still_streaming_is_stopped",
+        "tests/test_a_delivered_review_ends_its_turn.py::test_a_review_with_no_stored_record_is_never_stopped",
+        "tests/test_a_delivered_review_ends_its_turn.py::test_a_template_manifest_status_is_refused_by_the_template_guard",
+        "tests/test_a_delivered_review_ends_its_turn.py::test_an_incomplete_manifest_review_is_left_running",
+        "tests/test_a_delivered_review_ends_its_turn.py::test_the_grace_is_measured_from_the_later_write",
+        "tests/test_a_halt_the_run_left_is_not_drawn.py::test_a_move_to_another_live_word_draws_the_halt_at_once",
+        "tests/test_a_halt_the_run_left_is_not_drawn.py::test_a_return_after_the_window_draws_both_halves_as_before",
+        "tests/test_a_halt_the_run_left_is_not_drawn.py::test_a_return_inside_the_window_leaves_no_halt_on_the_pane",
+        "tests/test_a_halt_the_run_left_is_not_drawn.py::test_the_terminal_echo_still_supersedes_nothing",
+        "tests/test_a_pane_does_not_settle_during_admission.py::test_a_handover_keeps_the_pane_and_draws_the_admitted_run",
+        "tests/test_a_pane_shows_its_own_starts.py::test_a_panes_own_start_prints_with_no_held_arrival",
+        "tests/test_a_pane_shows_its_own_starts.py::test_a_panes_own_start_stays_in_the_view_and_leaves_the_stream",
+        "tests/test_a_pane_shows_its_own_starts.py::test_a_reannouncement_or_replay_of_the_same_start_delivers_nothing",
+        "tests/test_a_remembered_state_renders_as_a_pane_word.py::test_every_internal_state_and_pane_word_renders_mapped",
+        "tests/test_a_resume_is_drawn_working_again.py::test_a_resume_out_of_a_stop_asks_the_coordinator_for_nothing",
+        "tests/test_a_resume_is_drawn_working_again.py::test_each_stop_state_the_pane_draws_halted_leaves_the_resume_out",
+        "tests/test_a_resume_is_drawn_working_again.py::test_the_halted_row_is_followed_by_the_delivered_row",
+        "tests/test_a_status_repair_prints_no_halted_row.py::test_an_unstamped_transition_is_untouched_by_the_rule",
+        "tests/test_follow_replays_the_gap.py::test_a_run_the_record_does_not_name_is_replayed_from_dispatched",
+        "tests/test_follow_settled_rows.py::test_observer_context_shown_still_leaves_the_start_rows_out",
+        "tests/test_follow_settled_rows.py::test_the_pane_receives_only_the_settled_changes",
+        "tests/test_follower_keeps_memory.py::test_a_reload_keeps_the_pane_memory_and_renders_the_transition",
+        "tests/test_follower_rearm_shows_nothing_twice.py::test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted",
+        "tests/test_row_policy_holds_observer_context.py::test_a_launch_prints_only_its_completion",
+        "tests/test_row_policy_holds_observer_context.py::test_a_run_discarded_by_the_coordinator_prints_nothing",
+        "tests/test_row_policy_holds_observer_context.py::test_a_shown_observer_pane_still_carries_only_the_delivery",
+        "tests/test_the_live_pane_delivers_its_own_starts.py::test_the_live_follower_keeps_its_own_start_out_of_the_stream",
+        "tests/test_the_pane_draws_no_round_trip.py::test_a_departure_that_does_not_return_still_prints_no_row",
+        "tests/test_the_pane_draws_no_round_trip.py::test_a_duty_arriving_while_away_still_reaches_the_pane",
+        "tests/test_the_pane_draws_no_round_trip.py::test_a_run_that_never_reached_the_pane_ends_with_no_row",
+        "tests/test_the_pane_draws_no_round_trip.py::test_a_terminal_echo_the_pane_withholds_stays_hidden",
+        "tests/test_the_pane_speaks_seven_words.py::test_every_internal_state_has_exactly_one_pane_word",
+        "tests/test_the_stream_carries_only_actionable_lines.py::test_a_halted_run_reaches_the_stream_and_its_recovery_does_not",
+        "tests/test_the_stream_carries_only_actionable_lines.py::test_only_the_actionable_kinds_reach_the_stream",
+        "tests/test_the_stream_carries_only_actionable_lines.py::test_the_rule_names_the_words_the_stream_carries",
+        "tests/test_ticker_row_is_one_transition.py::test_every_pane_word_is_a_hued_table_key"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T045518148505-the-pane-shows-every-state-change/before-17.log",
+      "revision": "ec6a40b2b8f1d92deb2fdddcb7e6dcdd3cf156b2",
+      "tree": "/home/ITER/mcintos/.../the-pane-shows-every-state-change"
+    },
+    "definition": "added failures are ids that fail at reviewed_head_sha and pass at reviewed_base_sha, derived from the reviewed run's own gate logs; the arm logs run the head test files",
+    "focused_gate": {
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T045518148505-the-pane-shows-every-state-change/focused-gate-repair.log",
+      "summary": "8 passed, EXIT=0 at head 91b43f760; re-run by this review, 8 passed"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T21:29:09.860788+00:00",
+  "total": 96
+}
