@@ -192,6 +192,7 @@ DISPLAY_HUE = {
         "waiting": 97,
         "halted": 124,
         "delivered": 30,
+        "in review": 30,
         "landed": 22,
         "dropped": 130,
         "new": 241,
@@ -202,6 +203,7 @@ DISPLAY_HUE = {
         "waiting": 104,
         "halted": 203,
         "delivered": 80,
+        "in review": 80,
         "landed": 71,
         "dropped": 179,
         "new": 245,
@@ -275,6 +277,12 @@ LIFT_STATES = frozenset({LIFT_GRANTED, LIFT_IN_FORCE, LIFT_ENDED, LIMIT_RESET})
 LIFT_STAGE = "lift"
 LIMIT_STAGE = "limit"
 
+# The internal state the row policy writes onto a review run's launch row, so
+# the pane draws the reviewed run as being in review. It is a pane word of its
+# own rather than a producer state: the reviewed run's own state never changes
+# while its review runs.
+IN_REVIEW_STATE = "in-review"
+
 # The sole state vocabulary printed by the pane. Recovery distinctions and
 # capacity-lift causes stay in the event's own facts.
 PANE_STATES = {
@@ -326,6 +334,12 @@ PANE_STATES = {
             "unpromoted",
         }
     ),
+    # A delivered run whose review is running. No producer state says this:
+    # the run is still ``complete`` and it is the review run's own start that
+    # tells the pane the review began, so the row policy writes this word onto
+    # that launch. It has to be a pane word of its own because neither
+    # ``delivered`` nor ``working`` describes a run whose review is underway.
+    "in review": frozenset({IN_REVIEW_STATE}),
     "landed": frozenset({"promoted", "recorded", "lift-ended"}),
     "dropped": frozenset({"withdrawn", "discarded", "departed"}),
 }
@@ -333,15 +347,21 @@ PANE_STATES = {
 # ── What the Monitor stream carries ───────────────────────────────────────────
 #
 # A line the follower prints reaches its coordinator through the session host as
-# a notification that starts a turn, so the stream carries a row only when it
-# names something only the coordinator can do next. Eight kinds qualify. Six
-# land a run in one of the two pane words below, or are a limit reset or the
-# follower's own end; the last two are carried by their own facts, because
-# neither lands a run in a word the stream can read off the row:
+# a notification that starts a turn, so the stream carries a row when it names
+# something the coordinator oversees: a duty it must discharge, or a state
+# change of the work it is running. Five pane words carry a row below, a launch
+# and the in-review row carry their own facts, and a limit reset and the
+# follower's own end are carried by their own facts too:
 #
 #   delivered      a run of this session delivered and unpromoted;
 #   halted         a run halted, which is blocked, failed, stalled, or carried
 #                  an unreadable manifest;
+#   in review      a run delivered whose review has started, drawn under the
+#                  reviewed run's node and naming the review run;
+#   landed         a run that reached a written record — recorded or promoted,
+#                  carried once per run whoever caused the landing;
+#   dropped        a run withdrawn, discarded or departed, carried once per run
+#                  whether the coordinator or a peer caused the drop;
 #   queued-refused a queued run refused at launch for a reason the coordinator
 #                  must clear, carrying the two words above and the remedy the
 #                  refusal names;
@@ -358,13 +378,31 @@ PANE_STATES = {
 #                  declaration's own facts rather than from the state word;
 #   follower-end   the follower ending with no session host to take over.
 #
+# A launch is carried by its own marker rather than by its word, because its
+# word is ``working`` and every ``working``/``waiting`` churn row shares it. The
+# row policy sets that marker only on the first row of an attempt, for a run the
+# pane's own session sent, and only on a path that releases a launch; a
+# re-announcement, a replay, a reload baseline and a peer session's start carry
+# nothing.
+#
 # Every other row stays in ``crew view`` and the pane's history and is not
-# printed: a launch, a ``working``/``waiting`` transition, a ``landed`` or
-# ``dropped`` row the coordinator's own merge or discard caused, a re-arm or
-# reload baseline, and a reload notice. The row policy and the summary lines
-# read the rule from here rather than restating it, so a row the stream withholds
-# is withheld by one decision.
-CARRIED_PANE_WORDS = frozenset({"delivered", "halted"})
+# printed: a ``working``/``waiting`` transition, a bare re-announcement or
+# replay of a start, a re-arm or reload baseline, and a reload notice. The row
+# policy and the summary lines read the rule from here rather than restating it,
+# so a row the stream withholds is withheld by one decision.
+CARRIED_PANE_WORDS = frozenset(
+    {"delivered", "halted", "in review", "landed", "dropped"}
+)
+
+# The pane words of a run whose work is over: a written record, or a drop. A
+# row landing in one of them is a state change the coordinator oversees, so the
+# observer-context hold does not withhold it.
+LANDING_PANE_WORDS = frozenset({"landed", "dropped"})
+
+# The row field the row policy sets on a launch it releases. It travels on the
+# row rather than in a word because a launch's word is ``working``, which every
+# churn row shares.
+LAUNCH_FIELD = "pane_launch"
 
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
 # config so that a role is known the moment it is dispatched; the word IS the
@@ -804,10 +842,10 @@ def _remembered_word(state: Any) -> str:
     rather than a pane word. It is mapped here, where the memory is taken in, so
     a run live across a re-arm shows its pane word on the left.
 
-    A state that is already one of the seven words maps to itself. Four of the
-    words — ``delivered``, ``halted``, ``landed`` and ``dropped`` — are not also
-    internal states, so ``_display_state`` blanks them; the identity is therefore
-    taken first rather than falling through to the blank.
+    A state that is already one of the pane's words maps to itself. Five of
+    them — ``delivered``, ``halted``, ``in review``, ``landed`` and ``dropped``
+    — are not also internal states, so ``_display_state`` blanks them; the
+    identity is therefore taken first rather than falling through to the blank.
     """
     spelled = str(state or "")
     if spelled in PANE_STATES:
@@ -1202,16 +1240,15 @@ def _pane_word(event: Mapping[str, Any]) -> str:
 def stream_carries(event: Mapping[str, Any]) -> bool:
     """Whether this row is a line the Monitor stream carries.
 
-    A carried line names something only the coordinator can do next: a run
-    delivered and unpromoted, a run halted (a queued run refused at launch and a
-    review finding that needs the coordinator land these same words), a limit
-    reset, a budget lift granted or ending that covers the session, a declared
-    wait a worker addresses to the coordinator, or the follower's own end. A row
-    about anything else — a launch, a ``working`` or ``waiting`` transition that
-    asks nothing, a
-    ``landed`` or ``dropped`` row the coordinator's own merge or discard caused,
-    a re-arm baseline, a reload notice — carries no such duty, so it is left to
-    ``crew view`` and the pane's history and is not printed.
+    A carried line names something the coordinator oversees: a duty it must
+    discharge, or a state change of the work it is running. One of the pane
+    words below, a launch the row policy marked, a limit reset, a budget lift
+    granted or ending that covers the session, a declared wait a worker
+    addresses to the coordinator, or the follower's own end. A row about
+    anything else — a ``working`` or ``waiting`` transition that asks nothing
+    and opens no attempt, a bare re-announcement or replay of a start, a re-arm
+    baseline, a reload notice — carries no such news, so it is left to ``crew
+    view`` and the pane's history and is not printed.
 
     This is the rule the row policy applies to every row it would release, and
     the rule the follower's summary lines read before naming anything, stated
@@ -1236,6 +1273,11 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
     if to_state == LIMIT_RESET or to_state in LIFT_STATES:
         return True
     if declares_a_wait(event):
+        return True
+    if event.get(LAUNCH_FIELD):
+        # The first row of an attempt the pane's own session sent. The policy
+        # set this only where it released a launch, so the session limit and
+        # the once-only judgement are already made and this stays agnostic.
         return True
     if _pane_word(event) in CARRIED_PANE_WORDS:
         return True
@@ -1403,6 +1445,83 @@ class RowPolicy:
             return False
         return kind in START_KINDS
 
+    def _is_own_launch(self, event: Mapping[str, Any], kind: tuple[Any, Any]) -> bool:
+        """Whether this row opens an attempt of a run the pane's session sent.
+
+        A launch is the first row of an attempt that reaches the ``working``
+        pane word: the arrival a fresh dispatch opens with, and the start pair
+        a relaunch or a resume writes. The arrival counts because a run still
+        sitting in ``dispatched`` when the arrival's window closes is the
+        launch the pane must show. Inventory is never a launch: a reload
+        baseline describes a run already on screen, so a re-arm prints none.
+        """
+        if is_baseline(event):
+            return False
+        if self._own_session is None:
+            return False
+        if str(event.get("session") or "") != self._own_session:
+            return False
+        return kind in START_KINDS or kind == ARRIVAL_KIND
+
+    def _launch_row(
+        self, event: Mapping[str, Any], kind: tuple[Any, Any], run_id: str
+    ) -> Mapping[str, Any] | None:
+        """The row a launch prints, or None when this row is not one.
+
+        The attempt's own memory decides once-only: a run the pane already
+        shows ``working`` has had its launch drawn, so a replayed or
+        re-announced start adds nothing and a resume, which leaves a word the
+        pane draws ``halted``, prints its own.
+
+        A review run's launch is drawn under the reviewed run's node as the
+        reviewed run's ``in review`` row, naming the review run in its own
+        field. The launch is still the review run's, and the memory that stops
+        it printing twice stays keyed on it.
+        """
+        if not self._is_own_launch(event, kind):
+            return None
+        if run_id and self._shown.get(run_id) == "working":
+            return None
+        reviewed = str(event.get("reviewed_run_id") or "")
+        if reviewed:
+            return {
+                **event,
+                "run_id": reviewed,
+                "node": str(event.get("reviewed_node") or ""),
+                "to_state": IN_REVIEW_STATE,
+                "review_run_id": run_id,
+                LAUNCH_FIELD: True,
+            }
+        return {**event, LAUNCH_FIELD: True}
+
+    def _release_launch(
+        self,
+        out: list[Mapping[str, Any]],
+        event: Mapping[str, Any],
+        kind: tuple[Any, Any],
+        run_id: str,
+    ) -> bool:
+        """Append the launch row for this event when it is one. True if it did."""
+        row = self._launch_row(event, kind, run_id)
+        if row is None:
+            return False
+        out.append(row)
+        self._note_launch(run_id, row)
+        return True
+
+    def _note_launch(self, run_id: str, row: Mapping[str, Any]) -> None:
+        """Record a released launch against the attempt that opened.
+
+        The word is ``working`` because that is what the attempt began. The key
+        is the run that launched, so a review run's launch — drawn as the
+        reviewed run's row — is remembered on the review run, and a second
+        review of the same run is a different launch that still prints.
+        """
+        key = str(row.get("review_run_id") or run_id or "")
+        if key:
+            self._reported[key] = "working"
+            self._shown[key] = "working"
+
     def _is_observed(self, event: Mapping[str, Any]) -> bool:
         """Whether this row belongs to a session the pane was asked to observe.
 
@@ -1504,11 +1623,22 @@ class RowPolicy:
             self._told[run_id] = True
 
     def _release_expired(self, now: float, out: list[Mapping[str, Any]]) -> None:
-        """Print every held row whose window has passed uncompleted."""
+        """Print every held row whose window has passed uncompleted.
+
+        A held arrival that expires is a launch, so it passes the same
+        own-session test every other release path applies: a peer session's
+        arrival, and a reload baseline, leave here unmarked and are withheld by
+        :func:`stream_carries` exactly as they would have been on the row's own
+        path.
+        """
         for run_id in [r for r, hold in self._held.items() if hold.deadline <= now]:
             hold = self._held.pop(run_id)
-            out.append(hold.opener)
-            self._note_printed(run_id, hold.opener)
+            opener = hold.opener
+            kind = (opener.get("from_state"), opener.get("to_state"))
+            if self._release_launch(out, opener, kind, run_id):
+                continue
+            out.append(opener)
+            self._note_printed(run_id, opener)
         # A departure that never returns is a real one, so it is delivered once
         # its window passes, exactly as it would have been delivered unheld.
         for run_id in [
@@ -1523,10 +1653,15 @@ class RowPolicy:
 
         Two kinds do. A recovery — the run leaves a state into a live one after
         the pane printed a duty for it — is the news a reader waiting on a
-        repair looks for. And an unexplained end — the run reaches a settled
+        repair looks for. An unexplained end — the run reaches a settled
         state without the pane ever having shown a duty for it — is the only
-        notice that a run which never asked for anything has stopped.
+        notice that a run which never asked for anything has stopped. And a
+        landing or a drop is the run's own state change, carried once however
+        the delivery before it read: the coordinator oversees the work whether
+        or not it was owed something when the work finished.
         """
+        if _pane_word(event) in LANDING_PANE_WORDS:
+            return True
         to_state = str(event.get("to_state") or "")
         told = bool(self._told.get(run_id))
         if told and to_state not in SETTLED_STATES:
@@ -1587,8 +1722,7 @@ class RowPolicy:
             # collapses into this one row, worn with the arrival's left side, so
             # the reader sees the work begin rather than the run's end alone.
             resolved = _arrival_resolution(event)
-            out.append(resolved)
-            self._note_printed(run_id, resolved)
+            self._release_launch(out, resolved, kind, run_id)
             return out
         if self._show_observer:
             out.append(event)
@@ -1719,8 +1853,11 @@ class RowPolicy:
                         self._reported[run_id] = to_state
                     return out
                 # The run moved without a dispatched left side: the arrival is
-                # stale, so it prints late and this row is handled below.
-                out.append(opener)
+                # stale, so it prints late and this row is handled below. It is
+                # still a launch, so it takes the same own-session test the
+                # resolving path applies; a peer's stale arrival is nobody's
+                # launch and leaves unmarked.
+                self._release_launch(out, opener, opener_kind, run_id)
             else:
                 # The pair did not complete, so the opener was a real event
                 # after all; it prints late, handled on this row's own account.
@@ -1742,12 +1879,23 @@ class RowPolicy:
         # the reader never saw. A suppressed duty is the failure this policy
         # exists to prevent, so the exemption is on the duty's own evidence
         # rather than on the kind alone.
+        # A launch is news even when its word repeats the one the pane last
+        # recorded for the run: a producer writes ``starting`` and then
+        # ``working`` seconds later, both of which the pane draws ``working``,
+        # and only the second is the attempt beginning. The attempt's own memory
+        # — the word the pane actually showed — decides once-only.
+        launch = bool(
+            run_id
+            and self._is_own_launch(event, kind)
+            and self._shown.get(run_id) != "working"
+        )
         word = _pane_word(event)
         if (
             run_id
             and word
             and word == _remembered_word(self._reported.get(run_id))
             and not same_word_row_is_news(event)
+            and not launch
         ):
             self._reported[run_id] = to_state
             return out
@@ -1756,8 +1904,8 @@ class RowPolicy:
             # A start whose arrival hold has already gone: the pane's own run
             # left dispatched into working with no arrival left standing, so the
             # row prints directly rather than being held as observer context.
-            out.append(event)
-            self._note_printed(run_id, event)
+            if not self._release_launch(out, event, kind, run_id) and run_id:
+                self._reported[run_id] = to_state
             return out
 
         if run_id and kind == ARRIVAL_KIND:
@@ -2165,10 +2313,14 @@ def same_word_row_is_news(event: Mapping[str, Any]) -> bool:
     The pane draws a transition only where its two halves differ, so a row
     whose destination word equals the word the pane already shows for the run
     would draw an empty line — and a released row that draws nothing is a duty
-    the reader never saw. Two such rows are news all the same, because each
+    the reader never saw. Three such rows are news all the same, because each
     carries something a repeated word would hide: a recovery classification the
-    fleet calls actionable, or a declared external wait whose condition the
-    coordinator must be able to read.
+    fleet calls actionable, a declared external wait whose condition the
+    coordinator must be able to read, and a launch the row policy released for
+    an attempt the pane's own session began. The launch's word is always
+    ``working``, which the pane may already show for the run from a seeded
+    reload memory, and the policy has already judged that this attempt's start
+    is news — so the renderer must not blank it.
 
     ``RowPolicy`` and ``Ticker.render`` read this one predicate. The policy
     withholds every other same-word row, so a row it releases is never drawn
@@ -2176,7 +2328,11 @@ def same_word_row_is_news(event: Mapping[str, Any]) -> bool:
     them as the empty line the pane never put up. A row whose two halves name
     different words is judged by them and is news wherever they differ.
     """
-    return _actionable_recovery(event) or declares_a_wait(event)
+    return (
+        _actionable_recovery(event)
+        or declares_a_wait(event)
+        or bool(event.get(LAUNCH_FIELD))
+    )
 
 
 def _agent_label(agent: Any) -> str:
