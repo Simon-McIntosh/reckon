@@ -622,6 +622,54 @@ def _record_review_dispatch(
         _mutate_pointer(run_id, record)
 
 
+def _queue_router_held_review(
+    record: Mapping[str, Any],
+    *,
+    node: Any,
+    fields: Mapping[str, Any],
+    config: Mapping[str, Any],
+    backend: str,
+    gate: Mapping[str, Any],
+    allow_unreconciled_runs: bool,
+) -> dict[str, Any] | None:
+    """Store the review as a queued request when the dispatch left none behind.
+
+    The dispatch queues a local router hold itself and the pointer rides the
+    exception. A hold that reached this reflex without that pointer is the same
+    hold and gets the same outcome here, written by the dispatch's own record
+    builder and the queue's own writer so the admission pass launches it exactly
+    as it launches one the dispatch stored.
+    """
+    from reckon.crew import runs as _runs
+
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    launch_kind = str(
+        ((config.get("backends") or {}).get(backend) or {}).get("launch") or "cli"
+    )
+    queued_record = dispatch_module._queued_request_record(
+        run_id=_runs.new_run_id(node.id),
+        project=str(fields["project"]),
+        node=node,
+        repo_root=Path(str(record.get("repo") or "")),
+        session=str(fields.get("session") or ""),
+        backend_name=backend,
+        launch_kind=launch_kind,
+        lane_allowance=dict(gate),
+        dispatch_options=_composed_review_options(
+            record, allow_unreconciled_runs=allow_unreconciled_runs
+        ),
+        queued_at=_utc_now(),
+    )
+    queued, position = _runs.queue_dispatch(queued_record)
+    return {
+        "run_id": str(queued.get("run_id") or ""),
+        "position": position,
+        "phase": str(queued.get("phase") or "queued"),
+        "waits": [],
+        "reason": gate.get("reason"),
+    }
+
+
 def _composed_review_run_id(
     project: str, plan_slug: str, node: Mapping[str, Any]
 ) -> str:
@@ -2551,7 +2599,7 @@ def _dispatch_composed_review(
         return {"run_id": run_id, "dispatched": False, "reason": reason}
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    from reckon.crew.dispatch import BudgetHold, LanePaused
+    from reckon.crew.dispatch import BudgetHold, LaneHeld, LanePaused
     from reckon.crew.node import TaskNode
 
     resolved = _resolved_review_config(project, config)
@@ -2845,10 +2893,40 @@ def _dispatch_composed_review(
             "lane_gate": gate,
             "reason": reason,
         }
-        # A local-lane hold queues the request: the queued pointer launches
-        # later from the brief in the composed run directory, so the report
-        # names the queued run and the caller keeps that directory.
+        # A router hold on the local lane queues the request: the queued pointer
+        # launches later from the brief in the composed run directory, so the
+        # report names the queued run and the caller keeps that directory. The
+        # dispatch normally carries that pointer on the exception. A hold that
+        # reaches here without one must still leave the review queued rather
+        # than merely held: the run it reviews waits for a slot, not for this
+        # reflex to fire again. A shut gate is the other half of the split —
+        # LanePaused without LaneHeld — and queues nothing.
         queued = getattr(exc, "queued", None)
+        if not queued and on_local_lane and isinstance(exc, LaneHeld):
+            try:
+                queued = _queue_router_held_review(
+                    record,
+                    node=node,
+                    fields=fields,
+                    config=resolved,
+                    backend=backend,
+                    gate=gate,
+                    allow_unreconciled_runs=allow_unreconciled_runs,
+                )
+            except (CrewError, OSError) as exc2:
+                # The reflex is a sweep: an automatic caller walks the
+                # delivered records with no handler around it, so a refused or
+                # failed queue write must be reported here rather than ending
+                # the project's whole review pass.
+                reason = f"the held review could not be queued: {exc2}"
+                record_dispatch(
+                    status="lane-paused",
+                    reason=reason,
+                    backend=backend,
+                    reviewed_head=fields["head"],
+                )
+                report["reason"] = reason
+                return report
         if queued:
             report["queued"] = dict(queued)
         return report

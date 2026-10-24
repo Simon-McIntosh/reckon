@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s92">
+  <meta name="plan-recorded-at" content="2026-10-24">
+  <title>An automatic review held by a full lane is queued | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="an-automatic-review-held-by-a-full-lane-is-queued-landing" data-node="an-automatic-review-held-by-a-full-lane-is-queued" data-reckon="landed" data-when="2026-10-24">
+  <h2>A review the router holds now waits as a queued run</h2>
+  <p id="an-automatic-review-held-by-a-full-lane-is-queued-condition">The condition that separated the unqueued 06:44Z dispatch from the queued 07:25Z run is <strong>which code path raised the lane hold</strong>, not the lane's state. The recorded reason on both sides is the router granting the session 0 extra workers while the gate document read <code>paused: False</code>. At 06:44Z the reflex composed the review through <code>dispatch()</code>, which raised <code>LaneHeld</code> (a <code>LanePaused</code> subclass meaning the router granted no worker) carrying the allowance gate and <em>no</em> <code>queued</code> record; <code>recovery_review_dispatch</code>'s <code>except LanePaused</code> branch reads <code>getattr(exc, "queued", None)</code> and reports <code>error: lane-paused</code> when it is absent, so the reflex had no queueing of its own and the review existed only as a hold. The queued review at 07:25Z (<code>r-20261024T072532586923</code>) was <strong>not</strong> dispatched by <code>reckon crew dispatch</code>: its run record carries <code>route_mode: explicit</code> and was dispatched by the coordinator's session, consistent with the reflex's reroute retry asking the picker for a lane. The first hold on the deterministic route is therefore the one that did not queue, and the conclusion stands. A shut gate is the other half of the split: <code>LanePaused</code> without <code>LaneHeld</code> withholds without queueing.</p>
+  <p id="an-automatic-review-held-by-a-full-lane-is-queued-fix">The reflex now queues a router-held review itself, deciding on the exception the dispatch already publishes rather than re-reading the gate: <code>isinstance(exc, LaneHeld)</code> is the router-hold test and <code>LanePaused</code> alone is the shut gate, so the state set the admission module owns is not duplicated here. <code>_queue_router_held_review</code> stores the request with <code>runs.queue_dispatch</code> using the same <code>_queued_request_record</code> builder the dispatch path uses, so the queued position rule is one rule rather than two. The write is guarded: the reflex is a sweep whose automatic caller walks the delivered records without a handler, so a <code>CrewError</code> from the queue or an <code>OSError</code> from the write is recorded as <code>lane-paused</code> with the error in its reason and reported, instead of ending the whole project's review pass.</p>
+  <p id="an-automatic-review-held-by-a-full-lane-is-queued-evidence">Evidence: <code>tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py</code> holds the section's three cases plus one for the guarded write, each on temp paths for the crew home, the mounts, both gate documents and the worktree root. Case 1 raises the recorded production shape (a real <code>LaneHeld</code> from <code>_dispatch_lane_allowance</code> with no <code>queued</code> attribute) and finds exactly one queued pointer whose run id the report names. Case 2 captures the exception the dispatch raises and asserts it is <code>LanePaused</code> and not <code>LaneHeld</code>, then finds <code>error: lane-paused</code> with no <code>queued</code> key and no pointer at all. Case 3 runs the CLI against the same config and gets <code>queued: true, position: 1</code>. Case 4 makes the queue write raise <code>CrewError</code> and finds a <code>lane-paused</code> report naming the error, no queued pointer, and no exception out of the reflex. Negative control, with the queue condition widened to any <code>LanePaused</code>, case 2 fails on a <code>queued</code> key in the paused-gate report — a shut gate would have queued.</p>
+</article>
+</body>
+</html>
