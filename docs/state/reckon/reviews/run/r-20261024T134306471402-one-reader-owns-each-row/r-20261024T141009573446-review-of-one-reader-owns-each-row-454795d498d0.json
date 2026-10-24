@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's baseline_suite (2 failed: test_the_index_figure_row_carries_every_key_figures_gives, test_a_crew_plan_read_opens_no_parsed_plan_again) and after_suite (0 failed); no failure present at head is absent from the base arm.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/serve.py:744",
+    "reckon/serve.py:851",
+    "reckon/serve.py:898",
+    "reckon/serve.py:1708",
+    "reckon/figures.py:228",
+    "reckon/metadata_index.py:1719"
+  ],
+  "completed_at": "2026-10-24T14:33:36.889Z",
+  "dispatched_at": "2026-10-24T14:12:21Z",
+  "findings": [
+    {
+      "file": "reckon/serve.py",
+      "line": 728,
+      "text": "blocking: _crew_plan_state takes read_state_and_text_file(plan_path)[0], which never raises FileNotFoundError (its _read_plan_text catches OSError and returns ''), so a missing first candidate docs/plans/<slug>.html yields an empty parse that is returned immediately and the loop never tries docs/<slug>.html or docs/plans/archive/<slug>.html. Reproduced against head 454795d: for a plan at docs/plans/archive/old-plan.html, _crew_plan_details returns ('', None) at head while base f77a15e returns ('archive', 5.5); reachable from reckon/serve.py:898 (crew rows) and reckon/serve.py:851 (roadmap waiting decisions), so archived and docs-root plans silently lose their sprint, effort and decisions."
+    },
+    {
+      "file": "tests/test_one_reader_owns_each_row.py",
+      "line": 134,
+      "text": "non-blocking: the second case warms only the first candidate docs/plans/<slug>.html, so it passes while the candidate fallback is broken; no case asserts a plan resolved from docs/<slug>.html or docs/plans/archive/<slug>.html, which is the regression this change introduces and the test that would guard it."
+    },
+    {
+      "file": "reckon/metadata_index.py",
+      "line": 1392,
+      "text": "non-blocking: the served /_index row still lacks caption, dims, download, for_plan and path because ROW_FIELDS excludes them and the projection moved to _row_for; the test compares the pre-projection _figure_index_row, so the observable index payload is unchanged and the done-when's 'index row carries every key' holds only of the builder row. The decision is documented and forced by tests/test_metadata_index_survives_restart.py:266 pinning ROW_FIELDS, which is outside the node's write paths."
+    },
+    {
+      "file": "reckon/serve.py",
+      "line": 737,
+      "text": "non-blocking: the sprint/effort fallback writes into the dict returned by read_state_and_text_file, which is the shared memoised parse; base mutated a fresh per-call parse, so regex-derived sprint/effort can now persist in the shared cache for later readers of the same plan."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "CALL_SITES: reckon/serve.py:744, reckon/serve.py:851, reckon/serve.py:898, reckon/serve.py:1708, reckon/figures.py:228, reckon/metadata_index.py:1719",
+    "diff": "VERDICT diff: read bf22d7a1c (source) and 454795d49 (evidence) against f77a15e: reckon/figures.py +44/-14, reckon/metadata_index.py +27/-14, reckon/serve.py +40/-24 (deleting _read_crew_plan_state), the new test file +148 and the evidence fragment +34.",
+    "done_when": "VERDICT done_when: section 52's done-when names tests/test_one_reader_owns_each_row.py, which holds both cases, and the base arm reproduces exactly the five missing keys (caption, dims, download, for_plan, path) plus the second case's open count while the head arm reports 287 passed EXIT=0, so the gate does assert the stated measure.",
+    "goal": "VERDICT goal: the node goal is to make figures.figure_rows own the index figure row and the memoised reader own the crew plan-details parse; reckon/figures.py:160 now derives dims inside figure_row and reckon/figures.py:231 reads row['dims'], reckon/metadata_index.py:1719 takes figures.figure_row's row whole and narrows it at reckon/metadata_index.py:1392, and reckon/serve.py:728 reads through _plan_html.read_state_and_text_file, so both halves are implemented.",
+    "manifest": "VERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T134306471402-one-reader-owns-each-row/manifest.md; status complete, commits bf22d7a1c and 454795d49, its tests line names the 22-file gate, baseline_suite records 2 failed / after_suite 0 failed, and negative_control_log is present.",
+    "write_paths": "VERDICT write_paths: the manifest declares reckon/metadata_index.py, reckon/figures.py, reckon/serve.py, tests/test_one_reader_owns_each_row.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/one-reader-owns-each-row.html and the docs/figures dir; git diff --stat f77a15e 454795d changes exactly four of those Python/test paths plus the fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_one_reader_owns_each_row.py:147-148 fails at base and under the negative-control mutation, but line 134 warms only docs/plans/<slug>.html so the candidate-fallback regression at reckon/serve.py:728 is unguarded.",
+    "evidence": "the recorded head arm (287 passed, EXIT=0) and base arm (2 failed on exactly the two new ids, EXIT=1) do assert the done-when, but neither arm exercises the docs/<slug>.html or docs/plans/archive/<slug>.html candidate that reckon/serve.py:728 breaks.",
+    "fit": "the changes follow the surrounding idiom and docstring style (reckon/figures.py:160-176, reckon/serve.py:709-719) and introduce no plan, sprint or version label.",
+    "goal_fidelity": "reckon/figures.py:160 and reckon/metadata_index.py:1719 land the figures half, but reckon/serve.py:728 changes plan resolution and returns an empty parse for two of the three candidate layouts, so the crew half is achieved by reading the wrong file.",
+    "reuse": "the node removes duplicate readers rather than adding one: _read_crew_plan_state is deleted and reckon/serve.py:728 calls _plan_html.read_state_and_text_file, while reckon/metadata_index.py:1719 calls figures.figure_row.",
+    "scope_discipline": "git diff --stat f77a15e 454795d changes only the declared write paths reckon/figures.py, reckon/metadata_index.py, reckon/serve.py, tests/test_one_reader_owns_each_row.py and the evidence fragment."
+  },
+  "node": "review-of-one-reader-owns-each-row-454795d498d0",
+  "node:reviewed": "one-reader-owns-each-row",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make figures.figure_rows own the index figure row and the memoised reader own the crew plan-details parse; reckon/figures.py:160 now derives dims inside figure_row and reckon/figures.py:231 reads row['dims'], reckon/metadata_index.py:1719 takes figures.figure_row's row whole and narrows it at reckon/metadata_index.py:1392, and reckon/serve.py:728 reads through _plan_html.read_state_and_text_file, so both halves are implemented.\nVERDICT done_when: section 52's done-when names tests/test_one_reader_owns_each_row.py, which holds both cases, and the base arm reproduces exactly the five missing keys (caption, dims, download, for_plan, path) plus the second case's open count while the head arm reports 287 passed EXIT=0, so the gate does assert the stated measure.\nVERDICT write_paths: the manifest declares reckon/metadata_index.py, reckon/figures.py, reckon/serve.py, tests/test_one_reader_owns_each_row.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/one-reader-owns-each-row.html and the docs/figures dir; git diff --stat f77a15e 454795d changes exactly four of those Python/test paths plus the fragment.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T134306471402-one-reader-owns-each-row/manifest.md; status complete, commits bf22d7a1c and 454795d49, its tests line names the 22-file gate, baseline_suite records 2 failed / after_suite 0 failed, and negative_control_log is present.\nVERDICT diff: read bf22d7a1c (source) and 454795d49 (evidence) against f77a15e: reckon/figures.py +44/-14, reckon/metadata_index.py +27/-14, reckon/serve.py +40/-24 (deleting _read_crew_plan_state), the new test file +148 and the evidence fragment +34.\nCALL_SITES: reckon/serve.py:744, reckon/serve.py:851, reckon/serve.py:898, reckon/serve.py:1708, reckon/figures.py:228, reckon/metadata_index.py:1719\nSCORE goal_fidelity: 12\nSCORE evidence: 15\nSCORE scope_discipline: 19\nSCORE durability: 14\nSCORE fit: 18\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/figures.py:160 and reckon/metadata_index.py:1719 land the figures half, but reckon/serve.py:728 changes plan resolution and returns an empty parse for two of the three candidate layouts, so the crew half is achieved by reading the wrong file.\nJUSTIFICATION evidence: the recorded head arm (287 passed, EXIT=0) and base arm (2 failed on exactly the two new ids, EXIT=1) do assert the done-when, but neither arm exercises the docs/<slug>.html or docs/plans/archive/<slug>.html candidate that reckon/serve.py:728 breaks.\nJUSTIFICATION scope_discipline: git diff --stat f77a15e 454795d changes only the declared write paths reckon/figures.py, reckon/metadata_index.py, reckon/serve.py, tests/test_one_reader_owns_each_row.py and the evidence fragment.\nJUSTIFICATION durability: tests/test_one_reader_owns_each_row.py:147-148 fails at base and under the negative-control mutation, but line 134 warms only docs/plans/<slug>.html so the candidate-fallback regression at reckon/serve.py:728 is unguarded.\nJUSTIFICATION fit: the changes follow the surrounding idiom and docstring style (reckon/figures.py:160-176, reckon/serve.py:709-719) and introduce no plan, sprint or version label.\nJUSTIFICATION reuse: the node removes duplicate readers rather than adding one: _read_crew_plan_state is deleted and reckon/serve.py:728 calls _plan_html.read_state_and_text_file, while reckon/metadata_index.py:1719 calls figures.figure_row.\nFINDING reckon/serve.py:728 blocking: _crew_plan_state takes read_state_and_text_file(plan_path)[0], which never raises FileNotFoundError (its _read_plan_text catches OSError and returns ''), so a missing first candidate docs/plans/<slug>.html yields an empty parse that is returned immediately and the loop never tries docs/<slug>.html or docs/plans/archive/<slug>.html. Reproduced against head 454795d: for a plan at docs/plans/archive/old-plan.html, _crew_plan_details returns ('', None) at head while base f77a15e returns ('archive', 5.5); reachable from reckon/serve.py:898 (crew rows) and reckon/serve.py:851 (roadmap waiting decisions), so archived and docs-root plans silently lose their sprint, effort and decisions.\nFINDING tests/test_one_reader_owns_each_row.py:134 non-blocking: the second case warms only the first candidate docs/plans/<slug>.html, so it passes while the candidate fallback is broken; no case asserts a plan resolved from docs/<slug>.html or docs/plans/archive/<slug>.html, which is the regression this change introduces and the test that would guard it.\nFINDING reckon/metadata_index.py:1392 non-blocking: the served /_index row still lacks caption, dims, download, for_plan and path because ROW_FIELDS excludes them and the projection moved to _row_for; the test compares the pre-projection _figure_index_row, so the observable index payload is unchanged and the done-when's 'index row carries every key' holds only of the builder row. The decision is documented and forced by tests/test_metadata_index_survives_restart.py:266 pinning ROW_FIELDS, which is outside the node's write paths.\nFINDING reckon/serve.py:737 non-blocking: the sprint/effort fallback writes into the dict returned by read_state_and_text_file, which is the shared memoised parse; base mutated a fresh per-call parse, so regex-derived sprint/effort can now persist in the shared cache for later readers of the same plan.",
+  "review_run_id": "r-20261024T141009573446-review-of-one-reader-owns-each-row-454795d498d0",
+  "reviewed_base_sha": "f77a15efcfb24ef81e1b58d07d9c282f4033b81b",
+  "reviewed_head_sha": "454795d498d03e3e144e5946e720edecdbe43802",
+  "reviewed_run_id": "r-20261024T134306471402-one-reader-owns-each-row",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 12,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T14:39:01.762454+00:00",
+  "total": 98
+}
