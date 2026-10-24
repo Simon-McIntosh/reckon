@@ -403,7 +403,9 @@ def test_the_sync_installer_binds_the_walk_guard_behind_the_git_guard_flag(
         assert script.is_file()
         # The guard loads the git guard's shell splitter from beside itself.
         assert (script.parent / "worker_git_guard.py").is_file()
-        assert interpreter == installer.interpreter_path(script)
+        # Independent of the resolver's own arithmetic: the command must name a
+        # path laid out as a checkout interpreter, ".venv/bin/python".
+        assert installer.interpreter_bootstrap.is_checkout_interpreter(str(interpreter))
     assert any(installer.is_worker_git_guard_group(group) for group in groups), (
         "the git guard is installed by the same flag"
     )
