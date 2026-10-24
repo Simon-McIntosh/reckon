@@ -622,6 +622,76 @@ def _record_review_dispatch(
         _mutate_pointer(run_id, record)
 
 
+# The gate states that withhold a launch rather than leaving a lane open: a
+# paused gate and one nobody could read. A router hold is neither.
+_GATE_WITHHELD_STATES = frozenset({"paused", "unreadable"})
+
+
+def _router_hold(gate: Mapping[str, Any]) -> bool:
+    """Whether a lane hold is the router granting no worker rather than a shut gate.
+
+    The two arrive as the same exception class and mean different things. A
+    paused or unreadable gate publishes a ``state`` and withholds every launch
+    until it opens, so nothing may be queued behind it. A router hold publishes
+    the allowance it read and a ``held`` decision, and the lane is open: the
+    request waits in the queue the admission pass drains.
+    """
+    if str(gate.get("state") or "") in _GATE_WITHHELD_STATES:
+        return False
+    return gate.get("held") is True or "allowance" in gate
+
+
+def _queue_router_held_review(
+    record: Mapping[str, Any],
+    *,
+    node: Any,
+    fields: Mapping[str, Any],
+    config: Mapping[str, Any],
+    backend: str,
+    gate: Mapping[str, Any],
+    allow_unreconciled_runs: bool,
+) -> dict[str, Any] | None:
+    """Store the review as a queued request when the dispatch left none behind.
+
+    The dispatch queues a local hold itself and the pointer rides the exception.
+    A hold that reached this reflex without that pointer is the same hold and
+    gets the same outcome here, written by the dispatch's own record builder and
+    the queue's own writer so the admission pass launches it exactly as it
+    launches one the dispatch stored. A withheld gate queues nothing: only a
+    router hold does, which is the distinction :func:`_router_hold` draws.
+    """
+    if not _router_hold(gate):
+        return None
+    from reckon.crew import runs as _runs
+
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    launch_kind = str(
+        ((config.get("backends") or {}).get(backend) or {}).get("launch") or "cli"
+    )
+    queued_record = dispatch_module._queued_request_record(
+        run_id=_runs.new_run_id(node.id),
+        project=str(fields["project"]),
+        node=node,
+        repo_root=Path(str(record.get("repo") or "")),
+        session=str(fields.get("session") or ""),
+        backend_name=backend,
+        launch_kind=launch_kind,
+        lane_allowance=dict(gate),
+        dispatch_options=_composed_review_options(
+            record, allow_unreconciled_runs=allow_unreconciled_runs
+        ),
+        queued_at=_utc_now(),
+    )
+    queued, position = _runs.queue_dispatch(queued_record)
+    return {
+        "run_id": str(queued.get("run_id") or ""),
+        "position": position,
+        "phase": str(queued.get("phase") or "queued"),
+        "waits": [],
+        "reason": gate.get("reason"),
+    }
+
+
 def _composed_review_run_id(
     project: str, plan_slug: str, node: Mapping[str, Any]
 ) -> str:
@@ -2847,8 +2917,23 @@ def _dispatch_composed_review(
         }
         # A local-lane hold queues the request: the queued pointer launches
         # later from the brief in the composed run directory, so the report
-        # names the queued run and the caller keeps that directory.
+        # names the queued run and the caller keeps that directory. The
+        # dispatch normally carries that pointer on the exception, but a hold
+        # that reaches here without one must still leave the review queued
+        # rather than merely held: the run it reviews waits for a slot, not
+        # for this reflex to fire again. The reflex writes the request itself
+        # in that case, through the same writer the dispatch uses.
         queued = getattr(exc, "queued", None)
+        if not queued and on_local_lane:
+            queued = _queue_router_held_review(
+                record,
+                node=node,
+                fields=fields,
+                config=resolved,
+                backend=backend,
+                gate=gate,
+                allow_unreconciled_runs=allow_unreconciled_runs,
+            )
         if queued:
             report["queued"] = dict(queued)
         return report
