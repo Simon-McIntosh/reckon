@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:1286 _served_index_rows calls metadata_index.index_rows, reached from the change stream at reckon/serve.py:2816 and the /_index routes at reckon/serve.py:2861 and reckon/serve.py:3405",
+    "reckon/mcp_views.py:1191 calls metadata_index.index_rows with revalidate=True"
+  ],
+  "completed_at": "2026-10-24T10:25:10.600Z",
+  "dispatched_at": "2026-10-24T10:12:53Z",
+  "finding_dispositions": {
+    "1": {
+      "kind": "exempted",
+      "reason": "no change is lost: a mark recorded after the path pops its marks stays recorded and is absorbed by the next read through _absorb_marked, the same exposure as a change landing just after any read returns; the window the section exists to close, a reader entering between publish and pop and stealing the marks, is closed and controlled by the early-store case",
+      "recorded_at": "2026-10-24T10:26:52.591155+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-page-paints-from-an-index/a-cold-read-sweeps-the-directories-once.html",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "the rewritten paragraph names the eight controls by suffix alone ('NO_WAIT', 'EARLY_STORE', ...) where the switch the run armed is RECKON_TEST_COLD_<NAME>, and still cites no command or log path; because this line was rewritten in the gained commit, the prior review's identical non-blocking finding could have been closed here, and spelling the variables in full beside their per-arm log paths would make each claim re-runnable from the record it appears in."
+    },
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "641",
+      "severity": "non-blocking",
+      "text": "a mark recorded after this pop but during _patch_build or the store is not consumed by the path, so the path's own caller can be handed rows from before a change recorded while it ran, while later readers do receive it through _absorb_marked; this is narrower than the window the commit closed and no change is lost, but the plan's deliverable says the path consumes every mark recorded while it ran before it returns."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/window-head-1b6ae1c6e.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/window-base.log",
+    "gate_final": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/gate-1b6ae1c6e.log",
+    "head_arm": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/cold-read-head-1b6ae1c6e.log",
+    "negative_control_early_store": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/negative-control-RECKON_TEST_COLD_EARLY_STORE-1b6ae1c6e.log",
+    "negative_control_summary": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/negative-control-summary-1b6ae1c6e.log",
+    "prefix_code_before_the_fix": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/logs/prefix-code-before-the-fix.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit from ebf3c554ec6a to 1b6ae1c6ece8: acbdb96d4 moves _pop_marks ahead of _store_cold_build in _cold_build and adds one test case plus its EARLY_STORE control hook to tests/test_a_cold_read_sweeps_the_directories_once.py; 1b6ae1c6e rewrites the evidence fragment's summary and landing paragraph and nothing else.",
+    "done_when": "The FENCE-EVIDENCE done-when requires a parsed record scoring all six dimensions, the two revisions, and added_failure_count/added_failure_ids derived from the reviewed run's own baseline_suite and after_suite logs; logs/window-base.log and logs/window-head-1b6ae1c6e.log both end '4 passed' with EXIT=0, and logs/gate-1b6ae1c6e.log ends '204 passed in 100.03s' with EXIT=0, so added_failure_count is 0 and added_failure_ids is empty.",
+    "goal": "The source node's goal is to make a cold index read stat each recorded directory once however many readers arrive together (reckon:the-page-paints-from-an-index#s17); the gained commit acbdb96d4 keeps that aim and closes the publication-order gap a prior review found: reckon/metadata_index.py:641 now takes the tree's marks before the build is stored, so a reader entering at publication can no longer consume them and leave the path answering from pre-change rows.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T084213936111-a-cold-read-sweeps-the-directories-once/manifest.md; it records commits up to 1b6ae1c6e, status complete, the combined gate at 204 passed EXIT=0, the unarmed head arm at 8 passed EXIT=0, eight per-arm control logs, the prefix pre-fix run at 1 failed EXIT=1, and the window arm pair at 4 passed EXIT=0; every claim I checked reconciles with the log it names.",
+    "write_paths": "The manifest declares reckon/metadata_index.py, tests/test_a_cold_read_sweeps_the_directories_once.py, docs/evidence/fragments/the-page-paints-from-an-index/a-cold-read-sweeps-the-directories-once.html and the figure topic directory; 'git diff --stat ebf3c554ec6a 1b6ae1c6ece8' lists exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_cold_read_sweeps_the_directories_once.py:650-651 assert a literal expected slug list against both readers' rows, and logs/prefix-code-before-the-fix.log shows the case reddens when reckon/metadata_index.py:641-652 is put back to store-before-pop, so the assertion names its own failure condition.",
+    "evidence": "The record reconciles with its artefacts: logs/gate-1b6ae1c6e.log ends '204 passed in 100.03s' with EXIT=0, logs/cold-read-head-1b6ae1c6e.log ends '8 passed' with EXIT=0, logs/negative-control-RECKON_TEST_COLD_EARLY_STORE-1b6ae1c6e.log ends '1 failed, 7 passed' with EXIT=1 on the new case, and logs/prefix-code-before-the-fix.log fails that same case against product code ebf3c554e.",
+    "fit": "reckon/metadata_index.py:641-652 keeps the surrounding lock discipline and mark/generation idiom, and the new test follows the file's existing monkeypatch-and-thread shape without a plan or ticket label; the only blemish is that the docstring at :610 and the inline comment at :636-640 restate the same ordering reason twice.",
+    "goal_fidelity": "reckon/metadata_index.py:641 takes the marks before reckon/metadata_index.py:652 stores the patched build, which is exactly the publication-order defect the prior review recorded and the gained commit set out to close.",
+    "reuse": "The gained commits add no function, class or module; they reorder two existing calls in reckon/metadata_index.py:_cold_build and extend the existing env-armed control mechanism in the test file, so no capability is forked.",
+    "scope_discipline": "'git diff --stat ebf3c554ec6a 1b6ae1c6ece8' reports reckon/metadata_index.py, tests/test_a_cold_read_sweeps_the_directories_once.py and the evidence fragment, all three declared in the manifest, and the evidence fragment is the landing record a node conventionally carries."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to make a cold index read stat each recorded directory once however many readers arrive together (reckon:the-page-paints-from-an-index#s17); the gained commit acbdb96d4 closes the publication-order gap a prior review found, with reckon/metadata_index.py:641 now taking the tree's marks before the build is stored.\nVERDICT done_when: the done-when requires added_failure_count and added_failure_ids derived from the reviewed run's own baseline_suite and after_suite logs; logs/window-base.log and logs/window-head-1b6ae1c6e.log both end '4 passed' with EXIT=0, so the record carries 0 and no ids.\nVERDICT write_paths: the manifest declares the two code paths and the evidence fragment; 'git diff --stat ebf3c554ec6a 1b6ae1c6ece8' lists exactly those three paths and nothing else.\nVERDICT manifest: read; it records commits up to 1b6ae1c6e, status complete, gate-1b6ae1c6e.log at 204 passed EXIT=0, cold-read-head-1b6ae1c6e.log at 8 passed EXIT=0, eight per-arm control logs, and each claim I checked reconciles with the log it names.\nVERDICT diff: read commit by commit from ebf3c554ec6a to 1b6ae1c6ece8: acbdb96d4 moves _pop_marks ahead of _store_cold_build in reckon/metadata_index.py:_cold_build and adds one test case with its EARLY_STORE control; 1b6ae1c6e rewrites the evidence fragment's summary and landing paragraph only.\nCALL_SITES: reckon/serve.py:1286 _served_index_rows (reached at reckon/serve.py:2816, 2861, 3405), reckon/mcp_views.py:1191 index_rows(revalidate=True)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/metadata_index.py:641 takes the marks before reckon/metadata_index.py:652 stores the patched build, closing the publication-order defect the prior review recorded.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-1b6ae1c6e.log ends '204 passed in 100.03s' EXIT=0, logs/cold-read-head-1b6ae1c6e.log ends '8 passed' EXIT=0, and logs/prefix-code-before-the-fix.log fails the new case against product code ebf3c554e.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: 'git diff --stat ebf3c554ec6a 1b6ae1c6ece8' reports only the two code paths and the evidence fragment, all declared in the manifest.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_cold_read_sweeps_the_directories_once.py:650-651 assert a literal expected slug list against both readers' rows, and logs/prefix-code-before-the-fix.log shows the case reddens when reckon/metadata_index.py:641-652 reverts to store-before-pop.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/metadata_index.py:641-652 keeps the surrounding lock and mark-generation idiom, though the docstring at :610 and the inline comment at :636-640 restate the same ordering reason twice.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commits add no definition; they reorder two existing calls in reckon/metadata_index.py:_cold_build and extend the existing env-armed control mechanism in the test file.\nFINDING docs/evidence/fragments/the-page-paints-from-an-index/a-cold-read-sweeps-the-directories-once.html:23 non-blocking: the rewritten paragraph names the eight controls by suffix alone ('NO_WAIT', 'EARLY_STORE', ...) where the armed switch is RECKON_TEST_COLD_<NAME> and cites no command or log path, so a reader cannot reproduce an arm from the fragment; the prior review raised the same finding on this line, which this commit rewrote without closing it.\nFINDING reckon/metadata_index.py:641 non-blocking: a mark recorded after this pop during _patch_build or the store is not consumed by the path, so the path's own caller can receive rows from before a change recorded while it ran, though later readers receive it through _absorb_marked.",
+  "review_run_id": "r-20261024T101103469481-review-of-a-cold-read-sweeps-the-directories-once-1b6ae1c6ece8",
+  "reviewed_base_sha": "ebf3c554ec6af46de36f9b46deb5aa17c8719ab4",
+  "reviewed_head_sha": "1b6ae1c6ece8e3d283e7399a0a94fa8365f71ac1",
+  "reviewed_run_id": "r-20261024T084213936111-a-cold-read-sweeps-the-directories-once",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T10:33:00+00:00",
+  "total": 116
+}
