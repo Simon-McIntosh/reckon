@@ -179,28 +179,35 @@ def _unreconciled_runs_remedy(text: str) -> dict[str, str] | None:
     """The remedy an ``UnreconciledRuns`` refusal states, read from its lines.
 
     The refusal names each finished run beside the action that settles it, and
-    the first named run's action is the one to publish: the coordinator must
-    reconcile the runs before the pass admits the queued request, and that
-    reconciliation is what the refusal itself asks for. The denial's other
-    route — passing ``--allow-unreconciled-runs`` — is only reachable when a
-    dispatch is made, so a request that is already queued can take it only by
-    being discarded and dispatched again, and the detail says so.
+    the first named run that still has a live pointer is the one to publish:
+    the coordinator must reconcile that run before the pass admits the queued
+    request, and that reconciliation is what the refusal itself asks for. A
+    named run whose pointer is gone has already been reconciled since the
+    refusal was recorded — promotion removes the pointer — so its action is no
+    longer owed and the next named run that is still live is read instead. When
+    none of them is live the refusal has been answered by the time this is
+    read, and no remedy stands: the queued request keeps its waiting reading
+    and admission re-tests it on its next pass. Publishing the action anyway
+    would keep raising a duty for a run that no longer needs it, because the
+    remedy composes nothing from a pointer that is not there.
     """
-    named = _UNRECONCILED_RUN_LINE.search(text)
-    if named is None:
-        return None
-    run_id, action = named.group(1), named.group(2).strip()
-    return {
-        "detail": (
-            f"the queued launch was refused because the project holds finished "
-            f"runs whose reviews are still owed, and {run_id} is the first the "
-            f"refusal names: {text} A queued run cannot take "
-            "--allow-unreconciled-runs after it is queued, so the alternative "
-            "is to discard the queued run and dispatch again with "
-            "--allow-unreconciled-runs"
-        ),
-        "next_command": action,
-    }
+    from reckon.crew.runs import read_pointer
+
+    for named in _UNRECONCILED_RUN_LINE.finditer(text):
+        run_id, action = named.group(1), named.group(2).strip()
+        try:
+            read_pointer(run_id)
+        except CrewError:
+            continue
+        return {
+            "detail": (
+                f"the queued launch was refused because the project holds "
+                f"finished runs whose reviews are still owed, and {run_id} is "
+                f"the first the refusal names that is still live: {text}"
+            ),
+            "next_command": action,
+        }
+    return None
 
 
 def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
@@ -228,8 +235,12 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     commands that clear it, and a quoted command can carry this session's id
     without the session being its subject. A follower condition keeps the
     follower the session arms. An ``UnreconciledRuns`` refusal names finished
-    runs waiting on reconciliation and publishes the first run's own action,
-    the review dispatch the refusal names for it. A refusal that is neither,
+    runs waiting on reconciliation and publishes the first named run's own
+    action that still has a live pointer, the review dispatch the refusal
+    names for it; when none of them is live the refusal has already been
+    answered, and it keeps the waiting reading rather than falling through to
+    the text search, where its own ``--allow-unreconciled-runs`` guidance
+    quotes a dispatch command. A refusal that is neither,
     but quotes the command which clears it — the ``reckon crew review`` a
     plan-review gate names — publishes that command. A refusal with no remedy
     to read keeps the waiting reading rather than raising a duty with no
@@ -253,9 +264,10 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
     if refusal_class in _wait_refusal_classes():
         return None
     if refusal_class == _UNRECONCILED_RUNS_REFUSAL:
-        remedy = _unreconciled_runs_remedy(text)
-        if remedy is not None:
-            return remedy
+        # No live run among those named means the refusal has already been
+        # answered, and that many of the words here are the refusal's own
+        # guidance: the default reading is the waiting one.
+        return _unreconciled_runs_remedy(text)
     session = str(record.get("session") or "").strip()
     # The class decides whose refusal this is. The text alone cannot: a
     # refusal quotes the commands that clear it, and one of those commands can
