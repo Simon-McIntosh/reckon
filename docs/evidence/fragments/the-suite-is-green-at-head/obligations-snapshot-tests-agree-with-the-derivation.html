@@ -6,78 +6,72 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="the-suite-is-green-at-head">
-  <meta name="plan-title" content="The obligations snapshot tests and the derivation disagree by one production omission">
-  <meta name="plan-summary" content="Five of the six listed ids compare the published snapshot against the derivation field for field; both producers were left unequal when the obligations view gained its section and its action form. The parity repair is in the snapshot slice, outside this node's write paths, so those five ids are reported blocked with the commits named. The sixth id was a stand-in that did not accept the field list the crew tool passes. A scratch-tree arm that projects the slice makes all five pass.">
+  <meta name="plan-title" content="The published obligations slice equals the derivation again">
+  <meta name="plan-summary" content="The sweep's slice built duty rows with neither the action form the derivation renders nor the projection that supplies the dispatched section, so the published snapshot disagreed with the derivation on every row. The slice now runs its rows through the derivation's own two owners, and one test stand-in that rejected the crew tool's field list was repaired. All six listed ids pass; the base and head arms add no failure.">
   <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
   <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s44">
   <meta name="plan-recorded-at" content="2026-10-24">
-  <meta name="plan-verdict" content="partial">
+  <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="crew,obligations,snapshot,evidence">
-  <title>The obligations snapshot tests and the derivation disagree by one production omission | reckon</title>
+  <title>The published obligations slice equals the derivation again | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
 <article class="r-note" data-node="obligations-snapshot-tests-agree-with-the-derivation" data-reckon="landed" data-when="2026-10-24">
-  <h2 id="obligations-snapshot-tests-agree-with-the-derivation-title">One repaired id, five blocked on a slice that lags its derivation</h2>
+  <h2 id="obligations-snapshot-tests-agree-with-the-derivation-title">The slice publishes the row the derivation builds</h2>
 
   <p id="obligations-snapshot-tests-agree-with-the-derivation-repro">All six ids failed at the node base
   <code>74abbdd99</code>, reproduced from a <code>git archive</code> extraction on node-local disk
-  (<code>base-arm-six-ids.log</code>: <code>6 failed</code>). Two causes, and they are different in kind.</p>
+  (<code>gate-base.log</code>: the six failures, and nothing else beyond five pre-existing fixture
+  timeouts that both arms carry). Two causes, both of them a producer that had drifted from the one
+  that owns the row shape.</p>
 
-  <p id="obligations-snapshot-tests-agree-with-the-derivation-repaired"><strong>Repaired:
-  <code>test_the_obligations_view_prints_the_action_form</code>.</strong> The crew tool asks the
-  obligations view for a caller's field list &mdash; <code>eb07961b3</code> (2026-10-22) added the
-  <code>fields</code> keyword and <code>reckon/mcp_views.py</code> passes it. The case installs its own
-  stand-in for <code>obligations.obligations</code>, and that stand-in accepted only
-  <code>(project, session)</code>, so the tool raised
-  <code>TypeError: ... got an unexpected keyword argument 'fields'</code> before the action form the
-  case exists to pin was ever built. The change is intended &mdash; the commit's message says every
-  view narrows to a requested field &mdash; so the stand-in now accepts the keyword. This is the
-  change delivered in <code>c644b7e6b</code>, and it is the only test edit the node needed.</p>
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-slice"><strong>Cause 1, the five parity
+  ids.</strong> The obligations view has two producers, and <code>4b3c82f5a</code> (2026-10-21) made
+  the sweep's slice equal to the derivation field for field. Two later changes reached only the
+  derivation: <code>d87b44154</code> (2026-10-20) renders each duty's printed command as an action
+  form (<code>next_action_form</code>), and <code>eb07961b3</code> (2026-10-22) routes every duty row
+  through <code>project_run_rows</code>, which supplies the <code>section</code> the run was dispatched
+  for and leaves an empty field off the row. The slice's <code>payload_for</code> built its rows and
+  returned them, so its duties carried neither, and the published snapshot disagreed with the
+  derivation on every row. Both changes were intended and their omission from the slice was not: the
+  slice's own docstring states the two producers are equal field for field, and the parity cases are
+  the guard that says so.</p>
 
-  <p id="obligations-snapshot-tests-agree-with-the-derivation-blocked"><strong>Blocked: the five parity
-  ids:</strong> <code>test_snapshot_obligations_match_the_derivation</code>,
-  <code>test_a_slice_equals_the_derivation_over_the_same_files</code>,
-  <code>test_the_snapshot_carries_the_derivation_over_unmodified_files</code>,
-  <code>test_a_moved_head_names_the_same_two_heads_in_snapshot_and_derivation</code>, and
-  <code>test_the_published_snapshot_lists_the_queued_run_the_derivation_lists</code>. Each asserts that
-  the sweep's slice equals the derivation field for field. The obligations view has two producers and
-  they were kept in step deliberately &mdash; <code>4b3c82f5a</code> (2026-10-21) built a queued row
-  through one helper in both and made that parity the contract.</p>
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-repair"><strong>Repair.</strong>
+  <code>payload_for</code> now runs its rows through the derivation's own two owners &mdash;
+  <code>obligations._with_action_form</code> and <code>obligations.project_run_rows</code> with the
+  derivation's <code>DUTY_ROW_FIELDS</code> vocabulary and its <code>run_section_index</code> over the
+  sweep's pointers &mdash; rather than restating either. The row shape stays in
+  <code>reckon/crew/obligations.py</code>, and a field added there reaches the snapshot with it.
+  Commit <code>93e0b5a52</code>.</p>
 
-  <p id="obligations-snapshot-tests-agree-with-the-derivation-gap">Two intended changes then reached
-  only the derivation. <code>d87b44154</code> (2026-10-20) made the view render each duty's action form
-  (<code>next_action_form</code>), and <code>eb07961b3</code> (2026-10-22) routed every duty row through
-  <code>project_run_rows</code>, which adds the <code>section</code> the run was dispatched for. The
-  slice in <code>reckon/crew/obligation_snapshot.py</code>'s <code>payload_for</code> does neither, so
-  the published snapshot's duties carry no <code>section</code> and no <code>next_action_form</code>.
-  Every failing assertion in these five ids is exactly that difference; nothing else in the payload
-  differs. Both changes are intended by their commits' own words, and the tests are already asserting
-  the intended contract, so the repair is a production change this node is fenced out of. The five ids
-  are left as they are, as &sect;44 directs for an unintended change.</p>
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-standin"><strong>Cause 2, the
+  obligations-view id.</strong> The crew tool asks the obligations view for a caller's field list, a
+  keyword <code>eb07961b3</code> added and <code>reckon/mcp_views.py</code> passes. The case's
+  stand-in for <code>obligations.obligations</code> accepted only <code>(project, session)</code>, so
+  the tool raised <code>TypeError: ... got an unexpected keyword argument 'fields'</code> before the
+  action form the case pins was built. The stand-in now accepts the keyword. Commit
+  <code>c644b7e6b</code>.</p>
 
-  <p id="obligations-snapshot-tests-agree-with-the-derivation-probe"><strong>The repair, measured, not
-  asserted.</strong> A scratch extraction of the node head was patched in
-  <code>payload_for</code> only: apply <code>_with_action_form</code> to both lists and project them
-  through <code>project_run_rows(view="obligations", vocabulary=DUTY_ROW_FIELDS,
-  sections=run_section_index([state.pointers.values()]))</code>. The five ids then pass
-  (<code>parity-probe-with-projection.log</code>: <code>5 passed in 9.02s</code>,
-  <code>EXIT=0</code>). That log is the coordinator's brief for the repair section; it is not a
-  committed change.</p>
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-controls"><strong>Two negative controls,
+  one per repair.</strong> Reverting the stand-in to <code>(project, session)</code> fails its id with
+  that <code>TypeError</code> (<code>negative-control.log</code>, <code>EXIT=1</code>). Changing the
+  slice's projection to supply no section fails all five parity ids
+  (<code>negative-control-projection.log</code>, <code>5 failed</code>, <code>EXIT=1</code>), so the
+  parity cases discriminate on the field they are meant to pin rather than passing for some other
+  reason.</p>
 
-  <p id="obligations-snapshot-tests-agree-with-the-derivation-control"><strong>Negative control.</strong>
-  The repair reverted &mdash; the stand-in's signature back to <code>(project, session)</code> &mdash;
-  fails with the same <code>TypeError</code> (<code>negative-control.log</code>, <code>EXIT=1</code>).</p>
-
-  <p id="obligations-snapshot-tests-agree-with-the-derivation-gate"><strong>Gate.</strong>
-  <code>tests/test_a_sweep_resolves_review_heads_once.py</code>,
-  <code>tests/test_crew_tool_carries_the_write_verbs.py</code>,
-  <code>tests/test_obligations_snapshot_is_published.py</code>,
-  <code>tests/test_queued_work_shows_where_held_work_shows.py</code> at <code>c644b7e6b</code>:
-  <code>5 failed, 38 passed</code> &mdash; the five blocked ids and no other failure. The node changed
-  no production module, so no test file outside the four imports a changed module. Ruff reports
-  nothing on the staged path.</p>
+  <p id="obligations-snapshot-tests-agree-with-the-derivation-gate"><strong>Gate, both arms from
+  <code>git archive</code> extractions on node-local disk.</strong> The four section files plus every
+  <code>tests/*.py</code> that imports <code>reckon.crew.obligation_snapshot</code> &mdash; 33 files,
+  run <code>-n 6</code> in the foreground. Base <code>74abbdd99</code>: <code>6 failed, 182 passed,
+  5 errors</code>. Head <code>93e0b5a52</code>: <code>188 passed, 5 errors</code>, no failure. The six
+  base failures are exactly the listed ids, and the five errors are the same module-scoped fixture
+  timing out at 300&nbsp;s in both arms while it builds 15 git worktrees and 500 ledger records under
+  six-way parallelism &mdash; identical in the two arms, so the delta is zero added. Ruff reports
+  nothing on the changed paths.</p>
 </article>
 </body>
 </html>
