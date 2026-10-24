@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: baseline_suite log logs/base-arm.log (revision bb45e47e0, 6 failed / 27 passed, EXIT=1) reduced against /tmp/reckon-crew-scratch arms/base and after_suite log logs/head-arm.log (revision 6d75c489e, 1 failed / 32 passed, EXIT=1) reduced against the recorded head tree; the head arm's only failing id is one the base arm also fails, so the added set is empty.",
+  "added_failure_ids": [],
+  "assertion_analysis": [],
+  "assertion_note": "The gained commit is documentation only and adds no assertion, so no added assertion can compare a value against the variable the test supplied.",
+  "base_log_revision": "bb45e47e0dd174b845dd72738c9f6e020937c689",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:_send_evidence_record",
+    "reckon/evidence.py:compose_landed_record"
+  ],
+  "completed_at": "2026-10-24T16:15:33.317Z",
+  "dispatched_at": "2026-10-24T16:08:52Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html",
+      "line": 101,
+      "severity": "non-blocking",
+      "text": "The Measure paragraph states 'Both arms are git archive extractions on node-local disk' while the same paragraph's closing sentence and logs/head-arm.log:2 both record the head arm as a worktree copy; the gained commit edited this file and left the false sentence standing, so the evidence record contradicts its own log."
+    },
+    {
+      "file": "logs/negative-control.log",
+      "line": 4,
+      "severity": "non-blocking",
+      "text": "Each arm's header records only the file it mutates ('# mutation: reckon/flight.py') and never the change itself, and the mutated file is restored between arms, so no arm is reproducible from the log and a reader cannot tell a targeted contract change from a file that was simply broken."
+    }
+  ],
+  "head_log_revision": "6d75c489e1ebb91b041fb65c1851018dfd950e53",
+  "item_verdicts": {
+    "diff": "Read 2c734986c..f2a3065bb commit by commit; the single commit changes only the Negative control paragraph of the landing fragment, +12/-4, naming the six mutated production files and rejecting the reverted-fixture form.",
+    "done_when": "Section 50's done-when requires the listed ids to pass, no added failure against a base arm, a control per repaired id that mutates the production code the test pins, and arms run from git archive extractions on node-local disk; the manifest records added_failure_count 0 and logs/negative-control.log carries six arms each reddening its named id, while logs/head-arm.log:2 records the head arm as a worktree copy rather than an extraction.",
+    "goal": "The source node's goal is to make the six section 50 census ids pass by asserting each intended contract or reporting the unintended change; the gained commit f2a3065bb supplies the per-id production mutation section 50's negative-control clause requires, and docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html:113 now names one mutated contract per repaired id.",
+    "manifest": "manifest.md records status complete, commits 7abea6637, 6d75c489e, 2c734986c, f2a3065bb, both suite arms with their logs and failure ids, and the blocked id's attribution; tests: at line 15 still reads \"unit\" rather than the gate command, as the prior review already recorded.",
+    "write_paths": "The fence grants the six census test files, the landing fragment and a figure directory; the gained diff changes one file, docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html, which is the landing fragment and inside the grant."
+  },
+  "justifications": {
+    "durability": "The gained commit adds no assertion; the guards it documents are the six control arms, which were executed once in a scratch tree under /tmp/reckon-crew-scratch and live only as a log, so nothing in the repository re-runs them if a pinned contract regresses.",
+    "evidence": "logs/negative-control.log arms at lines 1, 24, 43, 178, 215 and 275 each keep the head tests, mutate one production file, and end EXIT=1 with the named id failing; but each arm records only the mutated file path and not the change, and docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html:101 still claims both arms are git archive extractions where logs/head-arm.log:2 records a worktree copy.",
+    "fit": "The new paragraph follows the surrounding fragment's form and its element id keeps the node prefix, though it names the sixth arm's subject as 'the deferral case' rather than by its test id (docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html:124).",
+    "goal_fidelity": "docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html:113 now states one mutated production contract per repaired id, which is exactly what section 50's negative-control clause asks and what the prior review found missing.",
+    "reuse": "The gained commit adds no definition; the control harness is a scratch script under /tmp/reckon-crew-scratch, and no repository mechanism for per-id production mutation exists to fork.",
+    "scope_discipline": "git diff --stat 2c734986c f2a3065bb lists one file, docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html, which is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to make the six section 50 census ids pass by asserting each intended contract or reporting the unintended change; the gained commit f2a3065bb supplies the per-id production mutation section 50's negative-control clause requires, and docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html:113 now names one mutated contract per repaired id.\nVERDICT done_when: Section 50's done-when requires the listed ids to pass, no added failure against a base arm, a control per repaired id that mutates the production code the test pins, and arms run from git archive extractions on node-local disk; the manifest records added_failure_count 0 and logs/negative-control.log carries six arms each reddening its named id, while logs/head-arm.log:2 records the head arm as a worktree copy rather than an extraction.\nVERDICT write_paths: The fence grants the six census test files, the landing fragment and a figure directory; the gained diff changes one file, docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html, which is the landing fragment and inside the grant.\nVERDICT manifest: manifest.md records status complete, commits 7abea6637, 6d75c489e, 2c734986c, f2a3065bb, both suite arms with their logs and failure ids, and the blocked id's attribution; tests: at line 15 still reads \"unit\" rather than the gate command, as the prior review already recorded.\nVERDICT diff: Read 2c734986c..f2a3065bb commit by commit; the single commit changes only the Negative control paragraph of the landing fragment, +12/-4, naming the six mutated production files and rejecting the reverted-fixture form.\nCALL_SITES: reckon/serve.py:_send_evidence_record, reckon/evidence.py:compose_landed_record\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html:113 now states one mutated production contract per repaired id, which is exactly what section 50's negative-control clause asks and what the prior review found missing.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/negative-control.log arms at lines 1, 24, 43, 178, 215 and 275 each keep the head tests, mutate one production file, and end EXIT=1 with the named id failing; but each arm records only the mutated file path and not the change, and docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html:101 still claims both arms are git archive extractions where logs/head-arm.log:2 records a worktree copy.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2c734986c f2a3065bb lists one file, docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html, which is inside the declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: the gained commit adds no assertion; the guards it documents are the six control arms, executed once in a scratch tree under /tmp/reckon-crew-scratch and living only as a log, so nothing in the repository re-runs them if a pinned contract regresses.\nSCORE fit: 18\nJUSTIFICATION fit: the new paragraph follows the surrounding fragment's form and its element id keeps the node prefix, though it names the sixth arm's subject as 'the deferral case' rather than by its test id (docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html:124).\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commit adds no definition; the control harness is a scratch script under /tmp/reckon-crew-scratch, and no repository mechanism for per-id production mutation exists to fork.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html:101 non-blocking: The Measure paragraph states \"Both arms are git archive extractions on node-local disk\" while the same paragraph's closing sentence and logs/head-arm.log:2 both record the head arm as a worktree copy; the gained commit edited this file and left the false sentence standing, so the evidence record contradicts its own log.\nFINDING logs/negative-control.log:4 non-blocking: Each arm's header records only the file it mutates (\"# mutation: reckon/flight.py\") and never the change itself, and the mutated file is restored between arms, so no arm is reproducible from the log and a reader cannot tell a targeted contract change from a file that was simply broken.",
+  "review_run_id": "r-20261024T160802541884-review-of-flight-config-tests-read-todays-validation-f2a3065bb615",
+  "reviewed_base_sha": "2c734986c8ae163296cc4176505867b4dcbe8aa9",
+  "reviewed_commits": [
+    "f2a3065bb6152279965acefaf96bfed425bc05d5"
+  ],
+  "reviewed_head_sha": "f2a3065bb6152279965acefaf96bfed425bc05d5",
+  "reviewed_run_id": "r-20261024T142407451210-flight-config-tests-read-todays-validation",
+  "scope_note": "Re-review of the commits gained since the review at 2c734986c8ae163296cc4176505867b4dcbe8aa9; the earlier review's five commits were read by that record and are not re-scored here.",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T16:30:00Z",
+  "total": 104
+}
