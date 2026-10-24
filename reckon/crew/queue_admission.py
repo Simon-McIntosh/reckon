@@ -1648,6 +1648,8 @@ def unmet_waits(
     pass re-reads, so a node is held for the reason the pass would hold it, and
     a node whose refs have all landed returns nothing and launches as usual.
     """
+    if not derive_wait_refs(node, repo_root=repo_root):
+        return []
     docs_dir = Path(str(repo_root)) / "docs"
     if live is None:
         try:
