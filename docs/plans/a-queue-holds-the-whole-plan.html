@@ -20,12 +20,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="a-held-dispatch-waits-its-fair-turn">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-queue-holds-the-whole-plan#s2&quot;,&quot;a-queue-holds-the-whole-plan#s4&quot;],&quot;s4&quot;:[&quot;a-queue-holds-the-whole-plan#s5&quot;],&quot;s6&quot;:[&quot;a-queue-holds-the-whole-plan#s2&quot;],&quot;s7&quot;:[&quot;a-queue-holds-the-whole-plan#s4&quot;],&quot;s5&quot;:[&quot;a-queue-holds-the-whole-plan#s2&quot;],&quot;s8&quot;:[&quot;a-queue-holds-the-whole-plan#s2&quot;],&quot;s9&quot;:[&quot;a-queue-holds-the-whole-plan#s3&quot;,&quot;a-queue-holds-the-whole-plan#s8&quot;],&quot;s10&quot;:[&quot;a-queue-holds-the-whole-plan#s4&quot;,&quot;a-queue-holds-the-whole-plan#s5&quot;],&quot;s11&quot;:[&quot;a-queue-holds-the-whole-plan#s10&quot;],&quot;s12&quot;:[&quot;a-queue-holds-the-whole-plan#s9&quot;,&quot;a-queue-holds-the-whole-plan#s10&quot;],&quot;s13&quot;:[&quot;a-queue-holds-the-whole-plan#s9&quot;,&quot;a-queue-holds-the-whole-plan#s11&quot;,&quot;a-queue-holds-the-whole-plan#s12&quot;,&quot;a-queue-holds-the-whole-plan#s15&quot;],&quot;s14&quot;:[&quot;a-queue-holds-the-whole-plan#s6&quot;,&quot;a-queue-holds-the-whole-plan#s13&quot;,&quot;a-queue-holds-the-whole-plan#s15&quot;,&quot;imas-ambix:local-lane-admission-control#s27&quot;],&quot;s15&quot;:[&quot;a-queue-holds-the-whole-plan#s4&quot;,&quot;a-queue-holds-the-whole-plan#s7&quot;,&quot;a-queue-holds-the-whole-plan#s8&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
   <title>A Queue Holds the Whole Plan | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="68">
+<meta name="plan-version" content="69">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -71,7 +71,7 @@
     <p><strong>Done when</strong> the landing pass lands a passing fixture run, and its downstream request launches, with no session, coordinator or follower alive, and the run's gate executes through the srun shim rather than in the service's process. A run whose review read an older head is not landed. A below-floor review raises an obligation and does not land. A second review of an unchanged head is refused.</p>
 
     <h2 id="s7">§7 — A lifted lane with room is preferred, so a lift is spent</h2>
-    <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>The picker reads lift state as an input. A lane with an active lift, in scope for the request's session or project and with window room left, is preferred for requests at or above a stated priority and capability. Ordinary work still stays local while the local lane has room, and a named lane is still authoritative. The picker records the lift that moved a choice. Pace still ends a lift at its stated reset, and §4's ranking decides which requests the lifted lane takes first.</p>
     <p><strong>Done when</strong> a picker test with a lifted codex lane and an open local lane routes an elevated-risk request to codex and a low-risk one locally, and records the lift on the choice. With the lift cleared, both route locally.</p>
 
@@ -202,6 +202,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261024T070437836656-lift-preferring-picker" data-who="reckon-build" data-when="2026-10-24T07:34:06.485Z">
     <div class="r-comment-body"><p>lift_preference in reckon/crew/picker/prompts.py states the one lifted metered lane in scope with room for a node at or above elevated risk, rendered as node.lift_preference; reckon/crew/dispatch_picker.py re-asks once with the local lane excluded when an elevated node was routed locally and records the lift on the route it moved — gate tests/test_picker_prefers_lifted_lane.py 5 passed, EXIT=0</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-24T07:55:00Z">
+    <div class="r-comment-body"><p>§7 landed: the picker prefers a lifted metered lane with room for elevated work and records the lift (commit <code>234aa0514</code>); review 110, negative control red. <a href="/reckon/evidence/archive/a-queue-holds-the-whole-plan-landed.html#s7">evidence</a></p></div>
 </div>
 </section>
 </main>
