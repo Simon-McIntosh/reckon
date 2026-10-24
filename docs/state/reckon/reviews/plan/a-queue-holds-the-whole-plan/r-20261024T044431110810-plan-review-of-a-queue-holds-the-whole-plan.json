@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T04:49:29.125Z",
+  "dispatched_at": "2026-10-24T04:45:25Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-queue-holds-the-whole-plan.html:64",
+      "id": "reasoning-1",
+      "reason": "the section must say the copy is written on first storage only, or that a re-queue leaves an existing `steering.md` alone, and add the arm \"re-dispatch after an edit keeps the edited text\", otherwise the one interaction \u00a75 exists to guarantee is lost by the path \u00a79 recommends.",
+      "text": "\u00a75 says `_queued_request_record` (reckon/crew/dispatch.py:229) \"copies `--brief` into\" `steering.md`, but that builder is called on three in-place re-queue paths as well as first storage: `_answer_existing_node_run` for a node that is already queued (dispatch.py:1733, whose own docstring says \"A queued copy is updated in place\"), the yielded-lane path (dispatch.py:1847), and the admission re-queue that stores a replaced request under a new id (reckon/crew/queue_admission.py:1583); `queue_dispatch` documents that \"a repeat dispatch of a node the session already has queued only updates that pointer\" (reckon/crew/runs.py:552-554), so a literal implementation of this sentence rewrites `steering.md` from the command's `--brief` every time the same node is dispatched again, discarding a `crew queue edit` \u2014 which \u00a79 (line 84) then calls safe (\"reloading a plan after an interruption is safe\"), and no arm in \u00a75's done-when exercises it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "c7c3ad5ad933a6d237287e647596c4bdc220c25a205c165d159fb93b41714511",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 53,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-24T04:50:24.267873+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "reason": "",
+      "when": "2026-10-24T04:50:24.267873+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v53.json",
+  "review_run_id": "r-20261024T044431110810-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "df768b48e413dc1edd8a09136ebae733fc70f81f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_queued_request_record` (reckon/crew/dispatch.py:229), `_node_from_pointer` (reckon/crew/queue_admission.py:119), `_launch_queued` (:171), `_store_brief` and `_brief_digest` (reckon/crew/dispatch_admission.py:2241, :2204), `RUN_DELIVERED_STATUSES` (reckon/crew/queue_admission.py:1023), `_readiness_rows` (:1056), `_priority_key` (reckon/roadmap_ranking.py:196), `STARVATION_AGE_SECONDS` (reckon/crew/queue_order.py:13) and `crew view live --phase` (reckon/crew_run_commands.py:246) all resolve, as do the extensionless plan hrefs and `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html`.",
+    "done_when": "pass \u2014 each section names a negative or refusal arm; \u00a75's discriminating arm (leave `steering.md` alone, change the brief on the queued pointer, digest must match `steering.md`) genuinely fails on today's code, which stores the pointer's brief text at launch.",
+    "evidence_paths": "pass \u2014 gate logs are declared under the run directory, and \u00a714's record path `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html` exists in the repository.",
+    "naming": "pass \u2014 \u00a75 introduces `crew queue edit`, `reprioritise`, `drop`, `steering.md` and `awaiting-upstream`, none of which carries a plan label, stage name or ticket number, and its prose states mechanism rather than changelog.",
+    "reasoning": "a finding \u2014 \u00a75's root cause matches the code it cites (`_store_brief` copies the brief at dispatch, so a later edit of the source changes nothing the worker reads), and the caller of the launch-time read is named and real (`_launch_queued` is called from `admit_once` and from `dispatch()` at reckon/crew/dispatch.py:423), but the write site the section assigns to `_queued_request_record` also runs on in-place re-queue paths, where it would overwrite an edited `steering.md`.",
+    "single_goal": "pass \u2014 each node names one deliverable; \u00a75's two-node split (binding, then the verbs) is already recorded in followup f-aqhwp-002 and was declined earlier as one deliverable.",
+    "wiring": "pass \u2014 every `plan-section-depends-on` ref in the snapshot resolves to an existing section of this plan, \u00a73\u2192\u00a74 and \u00a75\u2192\u00a72 are declared, and the cross-project wait on `imas-ambix:local-lane-admission-control#s27` is carried on \u00a714."
+  },
+  "section_digests": {
+    "_document": "3687b78879f4254bc12755beb7d845e4cb94fe5d4fe55ae3e033ddf86e0d5cb5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "c5b9ec6971c99d11598fc75b9daab4490f64dd91b5df2e4b7178aa79ddb83a6d",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "7bb3dd3b3d1e28b5d5ed470cd96cfee891a8886a6f5317f7e1d5d5bb21ba5a7f",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "c8987dddf45ef27369fcce604285a552d5745bc1002c6947159125bd1216caa7",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "fb1f4aabfef49b7d853a1221761b5cb76d3a034a0fcac5e5e2cf199f2a538209",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T04:50:14.152803+00:00"
+}
