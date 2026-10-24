@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -156,7 +156,7 @@
     <code>$XDG_RUNTIME_DIR</code>.</p>
 
     <h2 id="s6">§6 — Ingest reads only bytes it has not read</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p>The station's tick stats the live directory and each live pointer and stream. A pointer is parsed only
     when its <code>file_memo.file_signature</code> moved against the stored one. A stream is read only past its stored offset, up to the last whole record,
     and folded by <code>_backends.observe_stream</code> with the stored fold state as <code>state</code>; a
@@ -348,6 +348,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261024T131127187301-review-of-the-station-ingests-only-new-bytes-f83b5cb5976a" data-who="reckon-build" data-when="2026-10-24T13:22:45.611Z">
     <div class="r-comment-body"><p>independent review of run r-20261024T125322878212-the-station-ingests-only-new-bytes at head f83b5cb59 scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 18, with added_failure_count 0 and three non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-24T14:00:00Z">
+    <div class="r-comment-body"><p>§6 landed in two nodes: the incremental ingest (merge <code>ef1bc1680</code>, review 111/120) and the classification through the producer's reuse key (head <code>b9196620c</code>, review 111/120), with 0 added failures in both. §7 must call <code>classify_tick</code> from the station's loop. <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s6">evidence</a></p></div>
 </div>
 </section>
 </main>
