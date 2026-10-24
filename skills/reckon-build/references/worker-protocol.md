@@ -137,7 +137,8 @@ That work has nowhere else to go: no deferred-work bucket, and no plan write by
 the worker. It reaches the coordinator on the promotion report and on the run's
 ledger row, and the coordinator answers **each entry** with a plan section or
 with an instruction in the next dispatch's prompt. Neither route is a list
-nobody reads.
+nobody reads. A review reports the same work as a `non-blocking` finding, so
+`outside_scope` and `non-blocking` are the two names one rule wears.
 
 ### The declared external wait
 

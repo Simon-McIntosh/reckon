@@ -391,12 +391,16 @@ promoted. A worker does not close its own node: it must not resolve its own
 driving followup and must not set a terminal status, because only the
 coordinator observes the other nodes — a worker knows its node landed, not
 whether the section closed. Re-triage open followups after every landing beat;
-Manifest `follow_ons` enter the same triage loop as open plan followups. Folding
-is the default: Same-plan follow-on work becomes a section, never a followup.
-Re-triage until a complete pass finds nothing foldable — a fixed pass count is
-not the termination condition. Continuation closes at THREE altitudes: classify
-every `follow_ons` entry, keep same-plan sections active on the plan, and report
-the sprint altitude from `feeds_sprints` rather than from memory.
+manifest `outside_scope` entries enter the same triage loop as open plan
+followups. Folding is the default: work found beyond a node becomes a plan
+section, or an instruction in the next dispatch's prompt, and never a followup.
+A review reports such work as a `non-blocking` finding, disposed `folded` into
+the node that carries it or `exempted` with its reason; a worker records it in
+the manifest's `outside_scope` field. Re-triage until a complete pass finds
+nothing foldable — a fixed pass count is not the termination condition.
+Continuation closes at THREE altitudes: classify every `outside_scope` entry,
+keep same-plan sections active on the plan, and report the sprint altitude from
+`feeds_sprints` rather than from memory.
 
 An exempt open followup records which exemption it claims: `authority-required`
 (spend, an outward-facing effect, or an irreversible action), `dissent-reopen`

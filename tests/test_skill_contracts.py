@@ -123,6 +123,59 @@ def test_fan_out_rule_lands_in_every_skill_a_session_holds() -> None:
             assert fragment in text, f"{label} missing fan-out rule: {fragment!r}"
 
 
+# The retired term for a deferred-work bucket, in every spelling it was written
+# in: the hyphenated prose word and the underscore field. No skill file is
+# exempt, because a skill is read to decide what to do with work found beyond a
+# node, and the term teaches a bucket that no roadmap reads.
+RETIRED_DEFERRED_WORK_TERM = re.compile(r"follow[-_]ons?", re.IGNORECASE)
+
+
+def test_no_skill_file_names_the_retired_deferred_work_term() -> None:
+    """No skill teaches the retired bucket; the two routes are the whole rule.
+
+    Work found beyond a node becomes a plan section, or an instruction in the
+    next dispatch's prompt. A skill that still carries the retired term is
+    teaching a third place for that work to sit, which is the thing retired.
+    """
+    offenders: list[str] = []
+    for path in sorted((ROOT / "skills").rglob("*")):
+        if not path.is_file():
+            continue
+        for number, line in enumerate(
+            path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
+        ):
+            if RETIRED_DEFERRED_WORK_TERM.search(line):
+                offenders.append(f"{path.relative_to(ROOT)}:{number}: {line.strip()}")
+    assert offenders == [], "retired deferred-work term in skills:\n" + "\n".join(
+        offenders
+    )
+
+
+def test_every_skill_teaching_continuation_names_the_two_names() -> None:
+    """The six files that taught the bucket now teach the rule by its two names.
+
+    ``non-blocking`` is the review severity from the finding vocabulary, and
+    ``outside_scope`` is the worker manifest field. A file that states the rule
+    but names neither leaves a reader without the word to record it under.
+    """
+    files = [
+        ROOT / "skills" / "reckon-build" / "SKILL.md",
+        ROOT / "skills" / "reckon-build" / "references" / "worker-protocol.md",
+        ROOT / "skills" / "reckon-build" / "references" / "sprint-orchestration.md",
+        ROOT / "skills" / "reckon-build" / "references" / "coordinator-reference.md",
+        ROOT / "skills" / "reckon-build" / "references" / "conditional-guidance.md",
+        ROOT / "skills" / "reckon-edit" / "SKILL.md",
+    ]
+    for path in files:
+        text = normalized(path.read_text(encoding="utf-8").lower())
+        assert "plan section" in text, f"{path.name} does not name the section route"
+        assert "instruction in the next dispatch" in text, (
+            f"{path.name} does not name the prompt route"
+        )
+        assert "non-blocking" in text, f"{path.name} does not name the severity"
+        assert "outside_scope" in text, f"{path.name} does not name the field"
+
+
 def test_followup_handoffs_are_single_line_plan_invocations() -> None:
     edit = (ROOT / "skills" / "reckon-edit" / "SKILL.md").read_text().lower()
     create = (ROOT / "skills" / "reckon-create" / "SKILL.md").read_text().lower()
@@ -977,7 +1030,7 @@ def test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer() -> None:
     assert "Never mutate the shared project index, sprint state" in reference
 
 
-def test_ship_turns_same_plan_follow_on_work_into_sections() -> None:
+def test_ship_turns_same_plan_section_work_into_sections() -> None:
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
@@ -985,8 +1038,10 @@ def test_ship_turns_same_plan_follow_on_work_into_sections() -> None:
         ).read_text()
     )
 
-    assert "Same-plan follow-on work becomes a section, never a followup" in ship
-    assert "Work owned by the plan in hand becomes a new evergreen section" in reference
+    assert "work found beyond a node becomes a plan section" in ship.lower()
+    assert "work owned by the plan in hand becomes a new evergreen section" in (
+        reference.lower()
+    )
     assert (
         "Do not set a terminal status while a same-plan section remains open"
         in reference
@@ -1027,7 +1082,7 @@ def test_ship_enumerates_the_only_open_followup_exemptions() -> None:
         )
 
 
-def test_manifest_follow_ons_enter_the_open_followup_triage_loop() -> None:
+def test_manifest_outside_scope_entries_enter_the_followup_triage_loop() -> None:
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
@@ -1035,7 +1090,9 @@ def test_manifest_follow_ons_enter_the_open_followup_triage_loop() -> None:
         ).read_text()
     )
 
-    sentence = "Manifest `follow_ons` enter the same triage loop as open plan followups"
+    sentence = (
+        "`outside_scope` entries enter the same triage loop as open plan followups"
+    )
     assert sentence in ship
     assert sentence in reference
 

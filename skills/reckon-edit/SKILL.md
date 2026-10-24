@@ -559,7 +559,7 @@ edit_plan(project, slug, ops=[{
 
 **Surfacing followups to the user (binding).** Followup ids (`f-<...>`) are
 internal plan-state keys. When telling the USER about queued or advised
-follow-on work, always lead with the PLAN + SECTION/RUNG name (e.g.
+followup work, always lead with the PLAN + SECTION/RUNG name (e.g.
 "temporal-physics-spine §3, rung P1b"), and close the report with a fenced,
 paste-ready invocation so a fresh session starts seamlessly:
 
@@ -571,9 +571,15 @@ paste-ready invocation so a fresh session starts seamlessly:
 ```
 ````
 
-Several follow-ons advised for one session → stack them in ONE fence in
+Several followups advised for one session → stack them in ONE fence in
 execution order. Each line is only the invocation; the plan owns all guidance.
 The id appears at most once, in passing, after the name.
+
+**Work found beyond the plan is not a followup.** It becomes a plan section, or
+an instruction in the next dispatch's prompt. A review reports it as a
+`non-blocking` finding; a worker records it in the manifest's `outside_scope`
+field, which reaches the coordinator on the promotion report and the run's
+ledger row.
 
 **Research items:** `edit_plan` append op to `target="research"`. No prompt required.
 
