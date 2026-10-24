@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]",
+    "tests/test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit"
+  ],
+  "added_failures_note": "derived from the reviewed run's base-arm-focused.log and head-arm-focused.log; both head ids pass 8/8 alone at head (head-crashed-alone.log) and are attributed in the manifest to host load",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/runs.py:3706 watch",
+    "reckon/crew/runs.py:932 list_live",
+    "reckon/crew/runs.py:2496 _publish_watch_transitions"
+  ],
+  "completed_at": "2026-10-24T18:49:43.788Z",
+  "dispatched_at": "2026-10-24T18:38:42Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html",
+      "line": "29",
+      "severity": "blocking",
+      "text": "blocking: the Measure paragraph states \"The 532 test files that import reckon.crew.runs ran on both arms from git archive extractions\", but the manifest's outside_scope records that neither full-population attempt reached a summary and only a 10-file focused population was run (base-arm-focused.log, head-arm-focused.log), so a landed evidence page claims coverage the run's own records contradict."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2795",
+      "severity": "non-blocking",
+      "text": "non-blocking: the retry thread calls _publish_watch_stream concurrently with the seat's ticker (runs.py:932) and nothing serialises _publish_watch_transitions, which mutates producer.known and producer.tick_deferred and appends to the stream, so an interleaved successful tick can append a transition twice or leave the fold's memory a step behind."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2680",
+      "severity": "non-blocking",
+      "text": "non-blocking: join_watch_sweeps joins producer.deferred_retry before _WATCH_STREAM_PRODUCERS.clear() at runs.py:2685, and the retry only exits on a registry check, so a retry still deferring cannot be joined; the caller pays the full timeout, reports the thread as a straggler, and the per-thread timeout doubles the bound per producer."
+    },
+    {
+      "file": "tests/test_a_crashed_producer_is_restarted.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm adds two failing ids against the base arm, and the host-load attribution in failure_attribution is supported by head-crashed-alone.log (8 passed) rather than by the arm itself, so \u00a755's \"adds no failure against a base arm\" is satisfied by attribution and not by the measurement."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against dea3758c1; one commit changes 2 files (+108/-14) \u2014 the deferred-tick retry thread, dataclass field, constant and join extension in reckon/crew/runs.py, plus a new 32-line evidence fragment with no deletions.",
+    "done_when": "\u00a755's measure asks for the listed id at head, a mechanism case that fails at base, a revert control, and \"every test file that imports a module the node changed adds no failure against a base arm\"; the head gate, base gate and revert control are all recorded on disk, while the importer population is measured on 10 of 532 files (65 passed / 2 failed per arm) and the worker records that gap in outside_scope.",
+    "goal": "the node goal is to repair the production defect behind \u00a755's one listed id and reproduce its mechanism first; commit 40c01c603 changes only reckon/crew/runs.py:2757-2795 and the listed id passes at head (head-gate.log, 1 passed, EXIT=0).",
+    "manifest": "read; it carries status complete, commit 40c01c603, the base reproduction and the mechanism found, the gate and arm log paths, the negative control, and it states plainly that the 532-file importer population did not run within the node's budget.",
+    "write_paths": "the reviewed prompt's FENCE \u2014 SCOPE grants reckon/crew/runs.py, tests/test_producer_loop_survives_a_config_change.py and the two evidence paths; the diff touches only reckon/crew/runs.py and the evidence fragment, so every landed path is inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_producer_loop_survives_a_config_change.py:262 asserts the durable stream gains r-2 and r-3 from an independent file read, it fails at the base (base-gate.log) and fails again with the repair's retry arming removed (negative-control.log, 27.47 s), so it reddens on exactly the guarded regression.",
+    "evidence": "head-gate.log, base-gate.log and negative-control.log each end in EXIT= and record the claimed results, but \u00a755's importer-population clause is measured on 10 of 532 files and the head arm adds two failures against the base arm (head-arm-focused.log).",
+    "fit": "reckon/crew/runs.py:2760-2795 follows the module's existing daemon-sweep-thread idiom and mechanism-based naming, though the join comment at runs.py:2676-2685 promises a stop the ordering does not deliver.",
+    "goal_fidelity": "reckon/crew/runs.py:2795 republishes the owed transitions on the producer's own beat once the config loads, which is the contract the listed id pins (tests/test_producer_loop_survives_a_config_change.py:262).",
+    "reuse": "a search over reckon/crew for a shared retry-loop owner found only per-purpose loops (reckon/crew/merge.py:490 index-lock retry, reckon/crew/queue_admission.py:440 backoff); the addition extends the producer's own sweep-thread and join mechanism rather than duplicating a reusable one.",
+    "scope_discipline": "the diff's two paths, reckon/crew/runs.py and docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html, are both inside the reviewed prompt's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to repair the production defect behind \u00a755's one listed id and reproduce its mechanism first; commit 40c01c603 changes only reckon/crew/runs.py:2757-2795 and the listed id passes at head (head-gate.log, 1 passed, EXIT=0).\nVERDICT done_when: \u00a755's measure asks for the listed id at head, a mechanism case that fails at base, a revert control, and \"every test file that imports a module the node changed adds no failure against a base arm\"; the head gate, base gate and revert control are all recorded on disk, while the importer population is measured on 10 of 532 files (65 passed / 2 failed per arm) and the worker records that gap in outside_scope.\nVERDICT write_paths: the reviewed prompt's FENCE \u2014 SCOPE grants reckon/crew/runs.py, tests/test_producer_loop_survives_a_config_change.py and the two evidence paths; the diff touches only reckon/crew/runs.py and the evidence fragment, so every landed path is inside the grant.\nVERDICT manifest: read; it carries status complete, commit 40c01c603, the base reproduction and the mechanism found, the gate and arm log paths, the negative control, and it states plainly that the 532-file importer population did not run within the node's budget.\nVERDICT diff: read commit by commit against dea3758c1; one commit changes 2 files (+108/-14) \u2014 the deferred-tick retry thread, dataclass field, constant and join extension in reckon/crew/runs.py, plus a new 32-line evidence fragment with no deletions.\nCALL_SITES: reckon/crew/runs.py:3706 watch, reckon/crew/runs.py:932 list_live, reckon/crew/runs.py:2496 _publish_watch_transitions\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2795 republishes the owed transitions on the producer's own beat once the config loads, which is the contract the listed id pins (tests/test_producer_loop_survives_a_config_change.py:262).\nSCORE evidence: 13\nJUSTIFICATION evidence: head-gate.log, base-gate.log and negative-control.log each end in EXIT= and record the claimed results, but \u00a755's importer-population clause is measured on 10 of 532 files and the head arm adds two failures against the base arm (head-arm-focused.log).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's two paths, reckon/crew/runs.py and docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html, are both inside the reviewed prompt's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_producer_loop_survives_a_config_change.py:262 asserts the durable stream gains r-2 and r-3 from an independent file read, it fails at the base (base-gate.log) and fails again with the repair's retry arming removed (negative-control.log, 27.47 s), so it reddens on exactly the guarded regression.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/runs.py:2760-2795 follows the module's existing daemon-sweep-thread idiom and mechanism-based naming, though the join comment at runs.py:2676-2685 promises a stop the ordering does not deliver.\nSCORE reuse: 18\nJUSTIFICATION reuse: a search over reckon/crew for a shared retry-loop owner found only per-purpose loops (reckon/crew/merge.py:490 index-lock retry, reckon/crew/queue_admission.py:440 backoff); the addition extends the producer's own sweep-thread and join mechanism rather than duplicating a reusable one.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/a-producer-publishes-again-after-a-broken-config.html:29 blocking: the Measure paragraph states \"The 532 test files that import reckon.crew.runs ran on both arms from git archive extractions\", but the manifest's outside_scope records that neither full-population attempt reached a summary and only a 10-file focused population was run (base-arm-focused.log, head-arm-focused.log), so a landed evidence page claims coverage the run's own records contradict.\nFINDING reckon/crew/runs.py:2795 non-blocking: the retry thread calls _publish_watch_stream concurrently with the seat's ticker (runs.py:932) and nothing serialises _publish_watch_transitions, which mutates producer.known and producer.tick_deferred and appends to the stream, so an interleaved successful tick can append a transition twice or leave the fold's memory a step behind.\nFINDING reckon/crew/runs.py:2680 non-blocking: join_watch_sweeps joins producer.deferred_retry before _WATCH_STREAM_PRODUCERS.clear() at runs.py:2685, and the retry only exits on a registry check, so a retry still deferring cannot be joined; the caller pays the full timeout, reports the thread as a straggler, and the per-thread timeout doubles the bound per producer.\nFINDING tests/test_a_crashed_producer_is_restarted.py:1 non-blocking: the head arm adds two failing ids against the base arm, and the host-load attribution in failure_attribution is supported by head-crashed-alone.log (8 passed) rather than by the arm itself, so \u00a755's \"adds no failure against a base arm\" is satisfied by attribution and not by the measurement.",
+  "review_run_id": "r-20261024T183438676330-review-of-a-producer-publishes-again-after-a-broken-config-40c01c603275",
+  "reviewed_base_sha": "dea3758c1582cb7d688d5b2a3d0180bce507e4e6",
+  "reviewed_head_sha": "40c01c6032757a790a927ded186a72c3380f2a17",
+  "reviewed_run_id": "r-20261024T174427959868-a-producer-publishes-again-after-a-broken-config",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T19:02:40.881130+00:00",
+  "total": 105
+}
