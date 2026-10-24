@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T00:17:38.413Z",
+  "dispatched_at": "2026-10-24T00:09:10Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261024T000824042835-plan-review-of-crew-state-stays-bounded/plan.html:169",
+      "id": "reasoning-1",
+      "reason": "without an installation step (or a caller that exists on a node that only runs a step) the plan's own remedy is absent on the hosts that hold the measured leaked copies, so a node implementing \"on each host\" as written ships a mechanism that never runs there.",
+      "text": "\"it runs from two callers on each host ... and \u00a77's hourly `retention_sweep`\" is asserted, not produced: `retention_sweep` runs from `install_retention_timer`, which installs a per-user `reckon-crew-retention.service`/`.timer` through `service.install_timer_units` (reckon/crew/gc.py:1468-1484) and must be run on each host; a step-placed worker creates its copy on a node that only ever runs a step, so on that node neither the launch path (no launch) nor a timer that was never installed settles it, which is exactly the multi-host leak \u00a78 exists to close",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/crew-state-stays-bounded/r-20261024T000824042835-plan-review-of-crew-state-stays-bounded/plan.html:170",
+      "id": "done_when-1",
+      "reason": "a node can pass every declared case with a fixture-only fix and close without ever identifying the route that actually skipped the release, so the measure cannot fail on the defect the section's evidence reports.",
+      "text": "the done-when's only review-promotion case is a fixture (\"a promoted review run's scratch is removed by its promotion\"), and no case requires the 13 review promotions with no release block, or the four survivors, to be named with their route, though plan.html:169 makes finding those routes a deliverable; nothing in the done-when's negative control touches that route either",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "8667a5ccd478b2d3c8a56862840a0c43bec54e6acd4ff2eb052362ee9edc9234",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 26,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T000824042835-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "d7787d66bddc07035d8a0659841560bd4aec5bc1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `ensure_worker_scratch` (reckon/crew/dispatch_launch.py:782), `remove_worker_scratch` (:829), `garbage_collect_orphan_scratch` (reckon/crew/gc.py:1030), `garbage_collect_scratch` (:1173), `retention_sweep` (:1329) and `_release_after_promotion` (reckon/crew/promotion_release.py:476) all resolve, and each of the three cited completion modules calls the release (promotion.py:1125,1752; promotion_records.py:188; crew_run_commands.py:2590). No href appears in \u00a78.",
+    "done_when": "a finding \u2014 the done-when (plan.html:170) measures only a fixture review promotion's scratch, and carries no case for the forensic deliverable on plan.html:169 (the 13 review promotions with no release block and the four unexplained survivors), so the plan's most uncertain deliverable can be closed unexamined.",
+    "evidence_paths": "pass \u2014 the durable record is the committed evidence fragment that quotes each gate's command and summary line; the run-directory logs are declared transient against \u00a73's retention, which the author has already answered as intent.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches the new names, including the declared test path `tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py`.",
+    "reasoning": "a finding \u2014 \u00a78 asserts the settling pass \"runs from two callers on each host\" (plan.html:169), but the only caller besides the launch path is \u00a77's hourly `retention_sweep`, which exists on a host only once an operator installs the per-user systemd unit, and \u00a78 neither installs it nor names that step.",
+    "single_goal": "pass \u2014 the whole of \u00a78 serves one outcome, a finished run's scratch leaving every host that holds a copy, and the review-promotion route repair is a means to that same outcome rather than a second deliverable.",
+    "wiring": "pass \u2014 \u00a78's only declared dependency is `crew-state-stays-bounded#s7`, which is `done`, and the section names the landed `retention_sweep` (reckon/crew/gc.py:1329) it extends; no needed dependency is missing."
+  },
+  "section_digests": {
+    "_document": "7b027ab93025f3f1274af4c8c21f7e58c154d6e99dbdf5e7f4aa8931cbb1f280",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "9201fe37417310883d221ec7b0b5b4ff7de29f66ab073ede465175d42aa91bc4",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "702c32e2a4883b4a0c18c2d6476be61da4ec72dc26b607e2f305f49fec5d7a91"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T00:19:54.737534+00:00"
+}
