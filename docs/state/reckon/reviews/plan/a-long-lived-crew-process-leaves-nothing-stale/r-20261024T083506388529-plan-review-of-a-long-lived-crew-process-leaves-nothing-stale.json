@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-24T08:43:08.824Z",
+  "dispatched_at": "2026-10-24T08:36:19Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/recovery_liveness.py:358",
+      "id": "duplicate_owner-1",
+      "reason": "the helper's first half collapses to one call to the existing reader, and the \"unreadable is not empty\" distinction the plan's ECHILD handling depends on is already made there rather than having to be re-derived.",
+      "text": "`_process_children(pid)` already reads every thread's `/proc/<pid>/task/<tid>/children` file and returns None for \"could not read\" rather than an empty list; \u00a73 proposes to read `/proc/self/task/*/children` itself, and `reckon/crew/process_signal.py:409` already imports `_process_children` inside `_running_descendants`, so the new helper's discovery half duplicates a reader in the very module it is being added to. The plan cites no search of it.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_launch.py:344",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is to register inherited children in the owner's set at adoption time and start its reaper, which removes the second reaper and leaves one module that decides what this process waits on.",
+      "text": "`_reap_launched_workers` plus `_worker_reaper_loop` (:374) and the idempotent `_ensure_launched_worker_reaper` (:394) already own non-blocking reaping of this process's children, and `_adopt_launched_workers_from_reexec` (:452) already exists to repopulate that registry across exactly the `os.execve` boundary \u00a73 is about; a pid registered there with no `_LAUNCHED_WORKER_RUNS` entry is reaped silently, which is what an inherited child needs. \u00a73 instead adds a parallel record and a second reaper, and must exclude adopted pids by reading `dispatch_launch._LAUNCHED_WORKERS` across a module boundary anyway \u2014 it takes on the coupling without the ownership. The plan does not say why the registry cannot be extended.",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_classification.py:251",
+      "id": "reuse_search-1",
+      "reason": "the section must name a refusal that still publishes a dispatch today (the unstamped text, or a class outside the wait family) or drop the second case, otherwise its stated reproduction and its negative control are both false.",
+      "text": "\u00a72's done-when requires the `ScopeConflict` failure recorded at 16:12:01Z to classify as `run-queued` and states the negative control fails without the new rule; called directly, `_queued_failure_remedy` on a stamped `ScopeConflict: ... `reckon crew dispatch --project p`` record already returns None because `_wait_refusal_classes()` (:128) contains `ScopeConflict` and its subclasses, so that case passes at base and cannot carry the negative control as written.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/process_signal.py:1",
+      "id": "interface_budget-1",
+      "reason": "a leading underscore keeps the counted family at 2128, and the section must either say so or name what it retires.",
+      "text": "every caller \u00a73 names (`queue_admission.admit_until_stopped`, `recovery_watch.watch_ticker`, the follower poll loop in `crew_follow_commands.py`) is inside the package, yet the helper is specified as the public name `reap_inherited_children()`; with public_definitions at 2128 the section adds one more without stating a retirement, a merge, or why the name cannot be private.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "22b8620c2fc995e75898679f0c568a734e8a122395248be4445defc597fc6bc7",
+  "plan_slug": "a-long-lived-crew-process-leaves-nothing-stale",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261024T083506388529-plan-review-of-a-long-lived-crew-process-leaves-nothing-stale",
+  "reviewed_blob_sha": "180f174e906ae228c9003cc8a0c719e040c41c8b",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reap_inherited_children()` hides the kernel child scan, the adopted-pid exclusion and the ECHILD/reaped forget behind a zero-argument call, which is a smaller interface than the behaviour it holds.",
+    "duplicate_owner": "a finding \u2014 the kernel child-list read proposed in \u00a73 is already owned by `reckon/crew/recovery_liveness.py:358` and already imported by the module the plan edits.",
+    "interface_budget": "a finding \u2014 public_definitions 2128, cli_options 407, mcp_views 22, refusal_families 23; \u00a73 adds one public definition (`reap_inherited_children`) and its section names nothing retired or merged, nor why the name cannot be module-private.",
+    "reuse_search": "a finding \u2014 \u00a73 does not cite `recovery_liveness._process_children` (the existing `/proc/<pid>/task/*/children` reader that `process_signal` already imports) or `dispatch_launch._reap_launched_workers` (the existing child reaper), and \u00a72's ScopeConflict case is already answered by `_wait_refusal_classes`.",
+    "thin_wrapper": "a finding \u2014 \u00a73 adds a second reaping layer beside the existing launched-worker reaper without saying why that registry cannot be extended to carry the inherited pids."
+  },
+  "section_digests": {
+    "_document": "f9cba4df7fbc196039ea8ec82ec7dc2e5db91846ecc923e44a457b5d8afdbd89",
+    "s1": "77bb91ddc14cac13de1d9957253392c537eaaceab9cd7d54a7aee16afb43f2cd",
+    "s2": "5639f652e9b20eeffe2166cf83d9a281f43a036c57d3627ace0aeb34928d9e56",
+    "s3": "db8faa8c306ef4481e635336bc6d521518257890cfe332f4cbfbd3997ac08d5a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T08:54:32.799301+00:00"
+}
