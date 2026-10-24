@@ -1,0 +1,119 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_derivation": "Derived with reckon.crew.review.added_failures_from_gate_logs over the reviewed run's own arms: baseline_suite log logs/base-arm.log (revision bb45e47e0, 6 failed / 27 passed, EXIT=1) and after_suite log logs/head-arm.log (revision 6d75c489e, 1 failed / 32 passed, EXIT=1), each reduced against its own recorded cwd. The head arm's only failing id is one the base arm also fails, so added_failure_count is 0 and added_failure_ids is empty.",
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "flight.validate_layer stops refusing an undeclared key when strict=True, so the pytest.raises at line 150 gets no exception.",
+      "file": "tests/test_crew_placement.py",
+      "line": 157
+    },
+    {
+      "condition_to_fail": "the retired settle key is accepted under strict, so the pytest.raises gets no exception.",
+      "file": "tests/test_the_settle_window_is_retired.py",
+      "line": 26
+    },
+    {
+      "condition_to_fail": "recovery._ordered_review_lanes returns a model of an excluded lane for a nameless review.",
+      "file": "tests/test_no_layer_declares_a_lane_model_name.py",
+      "line": 151
+    },
+    {
+      "condition_to_fail": "crew budget --check and the MCP budget view resolve different window sources or clocks for the same installed document.",
+      "file": "tests/test_preflight_reads_the_published_document.py",
+      "line": 289
+    },
+    {
+      "condition_to_fail": "backend_rate_statuses raises instead of returning the empty all-unpriced reading when the layer fails validation.",
+      "file": "tests/test_follower_survives_a_config_change.py",
+      "line": 258
+    }
+  ],
+  "assertion_note": "The diff adds no assertion; every assertion it relies on predates it. No added assertion compares a value against the same variable the test supplied, so none is self-confirming. The counter assertion at tests/test_follower_survives_a_config_change.py:255 compares the fixture's own counter with the constant that drives it and is a fixture sanity check, not a claim about production.",
+  "base_log_revision": "bb45e47e0dd174b845dd72738c9f6e020937c689",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-24T15:43:07.145Z",
+  "dispatched_at": "2026-10-24T15:32:43Z",
+  "findings": [
+    {
+      "file": "logs/negative-control.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the only control reverts each repaired test file to its base content, which \u00a750 explicitly says is not a control; no repaired id has a control that mutates the production contract it pins, so nothing demonstrates the repaired ids redden if that contract regresses, and the deferral repair landed at 6d75c489e has no control at all."
+    },
+    {
+      "file": "tests/test_no_layer_declares_a_lane_model_name.py",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "non-blocking: the re-frozen closed set is {\"claude\"} while the project layer the comment mirrors also excludes native (docs/state/reckon/flight.yaml:83), so the set and its comment no longer match the layer they claim to encode."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html",
+      "line": "101",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Measure paragraph states both arms are git archive extractions and then says the head tree is a worktree copy, which logs/head-arm.log:2 confirms, so the first sentence is false as written."
+    },
+    {
+      "file": "logs/head-arm.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm was measured at 6d75c489e from a worktree copy rather than a git archive extraction at the reviewed head 2c734986c, contrary to \u00a750's arm requirement; the delta to 2c734986c is the evidence fragment only, so the result still describes the reviewed code."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T142407451210-flight-config-tests-read-todays-validation/manifest.md",
+      "line": "23",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite.command and after_suite.command at lines 23 and 25 carry a description of the run rather than the literal command with absolute paths, which the delivery contract requires; the logs' own command headers carry it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T142407451210-flight-config-tests-read-todays-validation/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: tests: reads \"unit\" rather than the gate command, so a gate receipt built from this line cannot be re-run; crew check --manifest passes and the log header supplies the command."
+    }
+  ],
+  "head_log_revision": "6d75c489e1ebb91b041fb65c1851018dfd950e53",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Three commits change five test files (72 added, 34 deleted) plus one 124-line evidence fragment; no production module is touched.",
+    "done_when": "\u00a750's done-when requires the six ids to pass, each id's commit and intent recorded, and a per-id negative control that mutates production; the manifest records the per-id table and two readable arms, but logs/negative-control.log:1 reverts the repaired tests to base content, the form \u00a750 names as not a control.",
+    "goal": "The source node's goal is to make the six \u00a750 census ids pass by asserting each intended contract or reporting the unintended change; the landed diff re-freezes five stale fixtures and reports the sixth, tests/test_promotion_reads_the_review_tier.py::test_an_unreadable_light_ceiling_falls_back_to_the_shipped_one, as an unintended change in a5cedef37.",
+    "manifest": "The source manifest.md:1-33 records status complete, three commits, the changed paths, both suite arms with log paths and failure ids, and the blocked id with its attribution, while tests: at line 15 reads \"unit\" rather than the gate command.",
+    "write_paths": "The dispatch fence grants the six census test files plus the landing fragment and a figure directory; the base..head diff changes only the five test files it repaired and the landing fragment."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion at all, so durability rests on pre-existing assertions such as tests/test_no_layer_declares_a_lane_model_name.py:151, which would redden if an excluded-lane model became reachable, and no executed control shows that firing.",
+    "evidence": "logs/base-arm.log and logs/head-arm.log each carry revision, tree, command, module_file and cwd headers and a bare EXIT= line, but logs/negative-control.log:1 is the disallowed form of the \u00a750 control and no ruff result is recorded.",
+    "fit": "tests/test_follower_survives_a_config_change.py:83 names its helper by what it does and follows the file's existing _break_the_config idiom, and no added name carries a plan or ticket identifier.",
+    "goal_fidelity": "tests/test_crew_placement.py:157 and tests/test_the_settle_window_is_retired.py:26 assert refusal on the strict authoring read (reckon/flight.py:1232), and the blocked id is reported with commit a5cedef37 as \u00a750's deliverable permits.",
+    "reuse": "the only new definition, tests/test_follower_survives_a_config_change.py:83 _point_at_a_readable_config, extends that file's own config-writing helper; a search over tests/ and tests/conftest.py found no shared flight-config fixture it forked.",
+    "scope_discipline": "every path in the base..head diff is one of the six fenced test files or the landing fragment docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source node's goal is to make the six \u00a750 census ids pass by asserting each intended contract or reporting the unintended change; the landed diff re-freezes five stale fixtures (tests/test_crew_placement.py:157, tests/test_the_settle_window_is_retired.py:26, tests/test_preflight_reads_the_published_document.py:282, tests/test_no_layer_declares_a_lane_model_name.py:58, tests/test_follower_survives_a_config_change.py:83) and reports the sixth, tests/test_promotion_reads_the_review_tier.py::test_an_unreadable_light_ceiling_falls_back_to_the_shipped_one, as an unintended change in a5cedef37.\nVERDICT done_when: \u00a750's done-when (docs/plans/the-suite-is-green-at-head.html:833) requires the six ids to pass, each id's commit and intent recorded, and a per-id negative control that mutates production; the manifest records the per-id table and two readable arms (logs/base-arm.log 6 failed, logs/head-arm.log 1 failed), but logs/negative-control.log:1 reverts the repaired tests to base content, the form \u00a750 names as not a control.\nVERDICT write_paths: The dispatch fence grants the six census test files plus the landing fragment and a figure directory; the base..head diff changes only the five test files it repaired and docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html.\nVERDICT manifest: The source manifest.md:1-33 records status complete, three commits, the changed paths, both suite arms with log paths and failure ids, and the blocked id with its attribution, while tests: at line 15 reads \"unit\" rather than the gate command.\nVERDICT diff: Three commits (7abea6637, 6d75c489e, 2c734986c) change five test files, adding 72 lines and deleting 34, plus one 124-line evidence fragment; no production module is touched.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_crew_placement.py:157 and tests/test_the_settle_window_is_retired.py:26 assert refusal on the strict authoring read (reckon/flight.py:1232), and the blocked id is reported with commit a5cedef37 as \u00a750's deliverable permits.\nSCORE evidence: 11\nJUSTIFICATION evidence: logs/base-arm.log and logs/head-arm.log each carry revision, tree, command, module_file and cwd headers and a bare EXIT= line, but logs/negative-control.log:1 is the disallowed form of the \u00a750 control and no ruff result is recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the base..head diff is one of the six fenced test files or the landing fragment docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html.\nSCORE durability: 15\nJUSTIFICATION durability: the diff adds no assertion at all, so durability rests on pre-existing assertions such as tests/test_no_layer_declares_a_lane_model_name.py:151, which would redden if an excluded-lane model became reachable, and no executed control shows that firing.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_follower_survives_a_config_change.py:83 names its helper by what it does and follows the file's existing _break_the_config idiom, and no added name carries a plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the only new definition, tests/test_follower_survives_a_config_change.py:83 _point_at_a_readable_config, extends that file's own config-writing helper; a search over tests/ and tests/conftest.py found no shared flight-config fixture it forked.\nFINDING logs/negative-control.log:1 blocking: the only control reverts each repaired test file to its base content, which \u00a750 explicitly says is not a control; no repaired id has a control that mutates the production contract it pins, so nothing demonstrates the repaired ids redden if that contract regresses, and the deferral repair landed at 6d75c489e has no control at all.\nFINDING tests/test_no_layer_declares_a_lane_model_name.py:58 non-blocking: the re-frozen closed set is {\"claude\"} while the project layer the comment mirrors also excludes native (docs/state/reckon/flight.yaml:83), so the set and its comment no longer match the layer they claim to encode.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/flight-config-tests-read-todays-validation.html:101 non-blocking: the Measure paragraph states both arms are git archive extractions and then says the head tree is a worktree copy, which logs/head-arm.log:2 confirms, so the first sentence is false as written.\nFINDING logs/head-arm.log:2 non-blocking: the head arm was measured at 6d75c489e from a worktree copy rather than a git archive extraction at the reviewed head 2c734986c, contrary to \u00a750's arm requirement; the delta to 2c734986c is the evidence fragment only, so the result still describes the reviewed code.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T142407451210-flight-config-tests-read-todays-validation/manifest.md:23 non-blocking: baseline_suite.command and after_suite.command at lines 23 and 25 carry a description of the run rather than the literal command with absolute paths, which the delivery contract requires; the logs' own command headers carry it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T142407451210-flight-config-tests-read-todays-validation/manifest.md:15 non-blocking: tests: reads \"unit\" rather than the gate command, so a gate receipt built from this line cannot be re-run; crew check --manifest passes and the log header supplies the command.\n",
+  "review_run_id": "r-20261024T153105764386-review-of-flight-config-tests-read-todays-validation-2c734986c8ae",
+  "reviewed_base_sha": "bb45e47e0dd174b845dd72738c9f6e020937c689",
+  "reviewed_commits": [
+    "7abea66377759e54609b4a439d49b96febf05071",
+    "6d75c489e1ebb91b041fb65c1851018dfd950e53",
+    "2c734986c8ae163296cc4176505867b4dcbe8aa9"
+  ],
+  "reviewed_head_sha": "2c734986c8ae163296cc4176505867b4dcbe8aa9",
+  "reviewed_run_id": "r-20261024T142407451210-flight-config-tests-read-todays-validation",
+  "scores": {
+    "durability": 15,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:51:00Z",
+  "total": 103
+}
