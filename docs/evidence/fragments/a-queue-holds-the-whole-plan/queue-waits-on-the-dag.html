@@ -22,9 +22,10 @@
   fails all three new refusal and gate cases. Batch queueing now delegates to the production dispatch writer. The new
   shared-writer check fails when that owner commit is reversed, and the
   six-file focused gate passes 72 tests.</p>
-  <p>The paired importer measure selects 353 test files at each revision.
-  The base arm completed with 38 failures, 3,411 passes and two skips; the
-  head arm uses the same selection and per-test timeout. The failure IDs,
-  including the stop-before-spawn case observed at base, are compared in the
-  run receipt.</p>
+  <p>The paired importer measure selected the same 353 test files at each
+  revision with four workers and a 120-second per-test bound. Base completed
+  with 38 failures, 3,411 passes and two skips; head completed with 37
+  failures, 3,415 passes and two skips. No failure ID was added. The only
+  difference was the stop-before-spawn case, which failed at base and passed
+  at head.</p>
 </section>
