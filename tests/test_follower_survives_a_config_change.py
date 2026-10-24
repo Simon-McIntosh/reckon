@@ -80,6 +80,24 @@ def _break_the_config(home: Path, monkeypatch) -> Path:
     return path
 
 
+def _point_at_a_readable_config(home: Path, monkeypatch) -> Path:
+    """Give the process a host layer it can read, inside the temporary home.
+
+    Without a layer named the reader falls back to searching the host's own
+    configuration, which is neither this repository's nor this test's state and
+    costs each tick a filesystem walk. Naming a small valid layer keeps the read
+    local and quick, so the tick after the injected error is a real read that
+    completes well inside the arming's lifetime.
+    """
+    path = home / "flight.yaml"
+    path.write_text(
+        "review:\n  tiers:\n    light_changed_lines: 400\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RECKON_FLIGHT_CONFIG", str(path))
+    return path
+
+
 def _write_pointer(home: Path, run_id: str, node: str, *, phase: str) -> None:
     log = home / "logs" / f"{run_id}.jsonl"
     log.parent.mkdir(parents=True, exist_ok=True)
@@ -196,6 +214,7 @@ def test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error(
     # The error is injected at the per-tick read, standing for a layer a merge
     # broke under this image. The layer itself stays readable, so the tick after
     # the injection stops is a real read that delivers.
+    _point_at_a_readable_config(home, monkeypatch)
     # The run holds a seat while the read is failing. What it is doing is not
     # what the pane owes a reader; the blocked transition it makes after the
     # arming is where the pane gets it, and that row is held for the settle
@@ -244,7 +263,10 @@ def test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error(
                 ],
             )
 
-        events = _arm(on_poll=_block_once)
+        # Longer than the default: the row is written from the arming's own poll,
+        # so the pass that writes it must leave time for a later pass to read it
+        # back before the lifetime ends. A loaded machine spends that margin.
+        events = _arm(on_poll=_block_once, lifetime=3.0)
 
     printed = capfd.readouterr().out
 
