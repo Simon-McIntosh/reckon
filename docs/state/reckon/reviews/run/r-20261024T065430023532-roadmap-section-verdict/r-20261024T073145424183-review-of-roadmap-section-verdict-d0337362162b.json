@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/roadmap.py:_build_roadmap",
+    "reckon/crew/plan_review.py:_readiness_by_slug",
+    "reckon/crew/plan_review.py:_all_plans",
+    "reckon/crew/queue_admission.py:_ref_state"
+  ],
+  "completed_at": "2026-10-24T07:39:59Z",
+  "dispatched_at": "2026-10-24T07:33:11Z",
+  "findings": [
+    {
+      "file": "tests/test_roadmap_section_verdict.py",
+      "line": "84",
+      "severity": "non-blocking",
+      "text": "non-blocking: Iterating row.get(\"section_readiness\", []) makes the equality assertion at line 85 vacuous when the list is absent, so restoring the old gate-only omission leaves it green; disposition folded into node roadmap-section-readiness-assertion."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "commits d8d4f0c, 3658736, and d033736 change reckon/roadmap.py and reckon/crew/plan_review.py, add tests/test_roadmap_section_verdict.py, and record the evidence fragment.",
+    "done_when": "prompt.txt:103 names six held cases and ready cases; head-verdict.log:7 records nine passes, base-importers.log:14 and head-importers.log:14 record 553 passes each, and negative-control.log:144-147 records two failing gate cases.",
+    "goal": "prompt.txt:30 asks for a public per-section roadmap verdict, which reckon/roadmap.py:3649 emits for each implementable section with plan and section holds.",
+    "manifest": "manifest.md:21-24 supplies completed base and head suite receipts with zero failures, the focused and negative-control logs, and the three commits.",
+    "write_paths": "prompt.txt:69-74 grants the four files listed by git diff 916bd857..d0337362, with no changed path outside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_roadmap_section_verdict.py:81-83 fails when a hold disappears, but :84-85 can pass without checking the rebuilt section_readiness list.",
+    "evidence": "base-importers.log:14 and head-importers.log:14 both report 553 passes, while head-verdict.log:7 and negative-control.log:144-147 exercise the new verdict.",
+    "fit": "reckon/roadmap.py:908 and reckon/crew/plan_review.py:3094 extend the existing roadmap and project-read idioms with mechanism-based names.",
+    "goal_fidelity": "reckon/roadmap.py:3640-3649 publishes a verdict for each implementable section and includes plan and section blockers.",
+    "reuse": "the capability search in reckon found roadmap.py's existing section readiness assembly and plan_review.py's existing project read, both of which the additions extend rather than duplicate.",
+    "scope_discipline": "git diff 916bd857..d0337362 changes only the prompt.txt:69-74 grants, with reckon/roadmap.py:1967 and :3323 limited to lint rewrites needed by the gate."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for a public per-section roadmap verdict, which reckon/roadmap.py:3649 emits for each implementable section with plan and section holds.\nVERDICT done_when: prompt.txt:103 names six held cases and ready cases; head-verdict.log:7 records nine passes, base-importers.log:14 and head-importers.log:14 record 553 passes each, and negative-control.log:144-147 records two failing gate cases.\nVERDICT write_paths: prompt.txt:69-74 grants the four files listed by git diff 916bd857..d0337362, with no changed path outside the grant.\nVERDICT manifest: manifest.md:21-24 supplies completed base and head suite receipts with zero failures, the focused and negative-control logs, and the three commits.\nVERDICT diff: commits d8d4f0c, 3658736, and d033736 change reckon/roadmap.py and reckon/crew/plan_review.py, add tests/test_roadmap_section_verdict.py, and record the evidence fragment.\nCALL_SITES: reckon/roadmap.py:_build_roadmap, reckon/crew/plan_review.py:_readiness_by_slug, reckon/crew/plan_review.py:_all_plans, reckon/crew/queue_admission.py:_ref_state\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:3640-3649 publishes a verdict for each implementable section and includes plan and section blockers.\nSCORE evidence: 18\nJUSTIFICATION evidence: base-importers.log:14 and head-importers.log:14 both report 553 passes, while head-verdict.log:7 and negative-control.log:144-147 exercise the new verdict.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 916bd857..d0337362 changes only the prompt.txt:69-74 grants, with reckon/roadmap.py:1967 and :3323 limited to lint rewrites needed by the gate.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_roadmap_section_verdict.py:81-83 fails when a hold disappears, but :84-85 can pass without checking the rebuilt section_readiness list.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/roadmap.py:908 and reckon/crew/plan_review.py:3094 extend the existing roadmap and project-read idioms with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search in reckon found roadmap.py's existing section readiness assembly and plan_review.py's existing project read, both of which the additions extend rather than duplicate.\nFINDING tests/test_roadmap_section_verdict.py:84 non-blocking: Iterating row.get(\"section_readiness\", []) makes the equality assertion at line 85 vacuous when the list is absent, so restoring the old gate-only omission leaves it green; disposition folded into node roadmap-section-readiness-assertion.\n",
+  "review_run_id": "r-20261024T073145424183-review-of-roadmap-section-verdict-d0337362162b",
+  "reviewed_base_sha": "916bd85724b57d969af52a44e97b5f8fe975a20f",
+  "reviewed_head_sha": "d0337362162b14e3ad19bd10d7aac3780ede3a9f",
+  "reviewed_run_id": "r-20261024T065430023532-roadmap-section-verdict",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T07:42:32.453000+00:00",
+  "total": 110
+}
