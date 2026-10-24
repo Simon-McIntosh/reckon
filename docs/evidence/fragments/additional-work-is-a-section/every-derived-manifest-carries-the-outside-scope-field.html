@@ -34,7 +34,13 @@
   <code>normalize_outside_scope_paths</code>, which owns the one mapping — so it
   and the ledger re-export it fed are deleted. Two assertions now hold the
   shape: the ledger module carries the extractor and not the retired name, and
-  the record module carries the normalising reader and not the deleted helper.</p>
+  the record module carries the normalising reader and not the deleted helper.
+  The comment in <code>reckon/crew/reports.py</code> that lists the manifest
+  fields whose entries are prose named the retired spelling among them and now
+  names <code>outside_scope</code>; the retired-spelling constant beside it
+  stays, because that mapping is what lets a pre-rename manifest read. A
+  <code>git grep</code> over <code>reckon/</code> and <code>scripts/</code> now
+  finds the retired field spelling in source only at that constant.</p>
 
   <h3>Measured</h3>
 
@@ -62,8 +68,8 @@
       </tr>
       <tr>
         <td>the same population at the head</td>
-        <td>efd409b03</td>
-        <td>25 failed, 2941 passed, 4 skipped, 10 setup errors — none of the 25 is a case this work touched, and the 10 errors are 300 s fixture timeouts, not assertion failures</td>
+        <td>d2f4a09b8</td>
+        <td>25 failed, 2951 passed, 4 skipped, no errors — none of the 25 is a case this work touched, and the set is identical to the base arm's pre-existing failures</td>
       </tr>
     </tbody>
   </table>
@@ -73,15 +79,13 @@
   the base arm's leaves nothing: every one of the head arm's 25 failures was
   already failing at base, and the six new cases fail at base — the defect the
   section names, reproduced — and pass at head. Both arms ran with
-  <code>-n 8</code> on a host carrying load above 20 on eight CPUs. That load
-  cost the head arm ten setup errors in two modules whose module-scoped
-  fleet-build fixture exceeds 300 s under contention
+  <code>-n 8</code> on a host carrying load above 20 on eight CPUs. An
+  intermediate head arm on the same population recorded ten setup errors in two
+  modules whose module-scoped fleet-build fixture exceeds 300 s under that load
   (<code>tests/test_the_held_worktree_read_is_bounded.py</code> and
-  <code>tests/test_held_worktree_records_match_each_record_once.py</code>); the
-  same fixture family timed out in the base arm of the earlier run of this
-  gate. An isolated rerun of those ten ids passed seven before that run reached
-  its own 560 s bound, so they are recorded as timeouts rather than as
-  assertion failures, and no assertion in them reads the changed sites.</p>
+  <code>tests/test_held_worktree_records_match_each_record_once.py</code>) and
+  no failing id the base arm did not already carry; the final head arm at
+  <code>d2f4a09b8</code> ran the same population without them.</p>
 
   <p id="every-derived-manifest-carries-the-outside-scope-field-outside">Failing at
   both revisions and outside this node's scope:
