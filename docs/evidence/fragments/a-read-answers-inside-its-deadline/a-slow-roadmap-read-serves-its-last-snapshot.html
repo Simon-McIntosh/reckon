@@ -62,13 +62,14 @@
     <code>test_mcp_reads_have_deadlines.py</code> and
     <code>test_every_module_fits_a_worker_window.py</code>. Head arm, this
     change committed on a clean worktree — the log's revision line names the
-    commit: <strong>37 passed</strong>,
+    commit: <strong>41 passed</strong>,
     EXIT=0. Base arm, the base commit extracted into a scratch tree with the new
     test file copied in beside the three existing ones:
-    <strong>7 failed / 30 passed</strong>, EXIT=1 — the three existing files
+    <strong>11 failed / 30 passed</strong>, EXIT=1 — the three existing files
     pass unchanged at base, and every new case fails there because the store and
-    the fallback do not exist. The 7 cases are listed under the section's
-    done-when.
+    the fallback do not exist. Nine fail inside <code>_tool()</code> on the
+    missing deadline wrapper, one on the missing stale-answer builder, and the
+    pruning case on the store's <code>shape</code> keyword.
   </p>
   <p id="a-slow-roadmap-read-serves-its-last-snapshot-cases">
     <strong>Cases held.</strong> With a stored record and a recompute held past
@@ -128,11 +129,35 @@
     <strong>39 passed</strong>, and the base arm run against the same test file
     is <strong>9 failed / 30 passed</strong>.
   </p>
+  <p id="a-slow-roadmap-read-serves-its-last-snapshot-guard">
+    <strong>Three more from the review of that head.</strong> The fallback was
+    handed to the waiter raw at the timeout, while the presence check earning
+    the reserve went through the guard that treats a failing look-up as no
+    answer; a stored record that could not be rebuilt therefore escaped as the
+    read's own failure. Both call sites now go through that guard, so a build
+    that raises or returns nothing degrades to <code>storage-slow</code>:
+    <code>test_a_stale_answer_that_cannot_be_built_reports_the_deadline</code>
+    stores a composition, makes the builder raise, and requires the deadline
+    report — reverting the guard makes it raise
+    <code>RuntimeError</code>, 1 failed and 8 passed. The presence check had no
+    failing condition of its own, so
+    <code>test_the_stale_answer_is_built_only_when_the_wait_expires</code>
+    counts builds: a read answered inside its deadline builds none and one
+    whose shortened wait expires builds exactly one — building up front again
+    fails its first assertion after one build, 1 failed and 8 passed. The stale
+    answer's shape is now asserted against a literal written for the request
+    the case makes, rather than against the module's own scope, so a shape
+    defect can no longer move both sides of that comparison together. The gate
+    over the four files is <strong>41 passed</strong>; the base arm against the
+    same test file is <strong>11 failed / 30 passed</strong>, every new case
+    failing on the API it calls rather than on a behavioural assertion.
+  </p>
   <p id="a-slow-roadmap-read-serves-its-last-snapshot-lint">
     <strong>Lint delta.</strong> <code>ruff check</code> on the staged paths
     reports <strong>10</strong> findings at the base commit and
-    <strong>10</strong> at head — none added; <code>ruff format --check</code> is
-    clean on all four.
+    <strong>10</strong> at head — none added, all of them pre-existing in
+    <code>reckon/mcp.py</code>; the deadline wrapper and the case file are clean
+    at both, and <code>ruff format --check</code> is clean on all four.
   </p>
 </article>
 </body>
