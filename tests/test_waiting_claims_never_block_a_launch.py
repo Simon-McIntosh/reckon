@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
 from pathlib import Path
 
 import pytest
 
 from reckon.crew import queue_admission, runs
 from reckon.crew.dispatch_claims import refuse_widen_scope_conflicts
+from tests import test_a_queued_request_waits_on_its_dependencies as dependency_cases
 from tests import test_overlapping_queued_requests_launch_in_turn as queue_cases
 
 
@@ -34,8 +34,8 @@ def dispatch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 @pytest.fixture()
-def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    return queue_cases.admit_repo.__wrapped__(tmp_path, monkeypatch)
+def chain_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    return dependency_cases.chain_repo.__wrapped__(tmp_path, monkeypatch)
 
 
 def test_working_run_can_widen_across_a_waiting_claim(
@@ -69,39 +69,29 @@ def test_working_claim_still_refuses_a_dispatch(
 
 
 def test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path(
-    admit_repo: Path, tmp_path: Path
+    chain_repo: Path,
 ) -> None:
-    lane = queue_cases._lane_document(
-        tmp_path, slots={queue_cases.SESSION_A: 1, queue_cases.SESSION_B: 1}
+    waiting = dependency_cases._node("waiting", "s2")
+    waiting.write_paths = [queue_cases.SHARED]
+    stored = queue_admission.queue_requests(
+        [waiting],
+        project=dependency_cases.PROJECT,
+        session=dependency_cases.SESSION,
+        repo_root=chain_repo,
+        config=dependency_cases.CONFIG,
+        run_ids={"waiting": "r-waiting"},
     )
-    config = queue_cases._config(lane)
-    waiting = queue_cases._queue(
-        admit_repo,
-        node_id="waiting",
-        run_id="r-waiting",
-        session=queue_cases.SESSION_B,
-        write_paths=[queue_cases.SHARED],
-        queued_at="2026-10-14T11:59:00+00:00",
-    )
-    runs.queue_dispatch(waiting)
-    waiting = runs.read_pointer("r-waiting")
-    waiting["phase"] = "awaiting-upstream"
-    runs._write_json(runs.pointer_path("r-waiting"), waiting)
+    assert stored["r-waiting"]["phase"] == "awaiting-upstream"
     queue_cases._live(
-        admit_repo,
+        chain_repo,
         "r-launched",
         phase="working",
         write_paths=[queue_cases.SHARED],
     )
 
-    # Readiness moves the request into the queue; its worker still needs the
-    # ordinary launch-time claim check against the run already writing there.
-    pointer = runs.read_pointer("r-waiting")
-    pointer["phase"] = "queued"
-    runs._write_json(runs.pointer_path("r-waiting"), pointer)
+    dependency_cases._declare(chain_repo, "s1")
     result = queue_admission.admit_once(
-        now=queue_cases.START + timedelta(minutes=1),
-        config_for=lambda _pointer: config,
+        config_for=dependency_cases._config_for(),
         launcher=queue_cases._launcher([]),
     )
 
