@@ -23,7 +23,9 @@
     not both known to it — a caller that sets <code>RECKON_HOME</code> alone leaves the
     host-wide default root in place, where the copies belong to runs whose live pointers that
     private home cannot see, and the holder scan does not reach a worker sitting in its
-    worktree between turns. It therefore withholds with
+    worktree between turns. The two trees are taken together — both named as arguments, both
+    taken from the environment, or both left at their defaults — so one named and the other
+    read from the environment withdraws every removal. It withholds with
     <code>state and scratch roots differ</code>, the same guard the orphan sweep applies.
     The release receipt is also written beside the run's own record
     (<code>release.json</code>) before the ledger write, because the ledger write is not durable on
@@ -97,11 +99,26 @@
     copy a process holds open, are both left. A run-named copy whose run has neither a pointer nor a
     run directory is left at its own ctime and removed once past the grace. A private home that
     leaves the scratch root to this process's environment removes nothing, and names
-    <code>state and scratch roots differ</code>; a caller that names both trees is settled as
-    usual. The step wrapper, run
+    <code>state and scratch roots differ</code>; a scratch root named alone with a private home
+    does the same, and a caller that names both trees is settled as usual. The step wrapper, run
     under <code>bash</code> with the wrapper's own environment, removes a finished run's copy. A
     review run's release removes its scratch and names the host, and its receipt survives a landing
     commit that is refused.
+  </p>
+
+  <p id="a-runs-scratch-is-removed-on-the-host-that-made-it-route-entry">
+    <strong>The production route, driven end to end.</strong> A review run is promoted by the same
+    function every other run goes through: <code>reckon crew complete</code> calls
+    <code>reckon.crew.promotion.complete</code>, which folds the record, calls
+    <code>_release_after_promotion</code> and then records the release on the ledger row. The case
+    builds a temporary crew home with a committed repository, a parsed head-keyed review record, a
+    review-role pointer and the run's exit record, and calls that function — not the release function
+    behind it. Measured on the same fixture at both revisions, with the base revision's tree extracted
+    from <code>0409dcbe4</code>: at the base the copy is already removed on this host and the ledger
+    row already carries its release block, because the release predates this node; what the base does
+    not have is the receipt beside the run record, which reads absent there and present at the head.
+    At the head all three hold — copy removed, release block on the row, receipt beside the record —
+    and the case asserts all three, so it fails on the base tree.
   </p>
 
   <p id="a-runs-scratch-is-removed-on-the-host-that-made-it-negative">

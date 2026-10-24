@@ -577,17 +577,14 @@ def _write_release_receipt(run_id: str, release: Mapping[str, Any]) -> None:
     directory outlives the pointer and is read on this host alone, which is
     exactly the scope of the fact: which host removed which scratch copy.
     """
+    from reckon._store import write_json_atomically
     from reckon.crew.runs import run_dir
 
     try:
         directory = run_dir(run_id)
         if not directory.is_dir():
             return
-        target = directory / RELEASE_RECEIPT_NAME
-        target.write_text(
-            json.dumps(dict(release), indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
-        )
+        write_json_atomically(directory / RELEASE_RECEIPT_NAME, dict(release))
     except OSError:
         return
 

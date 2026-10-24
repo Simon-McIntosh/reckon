@@ -38,9 +38,10 @@ from pathlib import Path
 
 import pytest
 
-from reckon import ledger
-from reckon.crew import gc
+from reckon import _plan_html, ledger
+from reckon.crew import gc, promotion
 from reckon.crew import promotion_release as release_module
+from reckon.crew import review as review_module
 from reckon.crew.gc import SCRATCH_GRACE_SECONDS, settle_run_scratch
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 from tests.helpers.git import git as _git
@@ -118,6 +119,104 @@ def _repository(tmp_path: Path) -> Path:
 
 
 RUN = "r-20261024T000000000000-settled-run"
+
+REVIEW_PLAN = "review-scratch-target"
+REVIEWED_RUN = "r-20261024T000000000002-reviewed-run"
+REVIEW_RUN = "r-20261024T000000000003-review-of-reviewed-run"
+REVIEW_BASE = "b" * 40
+REVIEW_HEAD = "a" * 40
+
+
+def _review_repository(crew_home: Path, tmp_path: Path) -> Path:
+    """A committed repository mounted as the project, holding the plan it reads."""
+    repo = _repository(tmp_path)
+    plan = repo / "docs" / "plans" / f"{REVIEW_PLAN}.html"
+    plan.parent.mkdir(parents=True, exist_ok=True)
+    bare = (
+        "<!doctype html><html><head>"
+        f'<meta name="docs-project" content="{PROJECT}">'
+        f"<title>{REVIEW_PLAN}</title>"
+        '</head><body><main class="plan-doc"></main></body></html>\n'
+    )
+    plan.write_text(
+        _plan_html.write_state(
+            bare,
+            {
+                "type": "plan",
+                "slug": REVIEW_PLAN,
+                "title": "Review Scratch Target",
+                "status": "active",
+                "version": 0,
+                "comments": {},
+            },
+        ),
+        encoding="utf-8",
+    )
+    _git(repo, "add", "docs")
+    _git(repo, "commit", "-q", "-m", "add the plan the review reads")
+    (crew_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(repo / "docs")}), encoding="utf-8"
+    )
+    return repo
+
+
+def _review_record_path() -> Path:
+    """The head-keyed review-store path the reviewer was dispatched to write."""
+    return review_module.review_path(
+        PROJECT, REVIEWED_RUN, reviewed_head_sha=REVIEW_HEAD
+    )
+
+
+def _store_review_record() -> Path:
+    record = {
+        "status": "parsed",
+        "project": PROJECT,
+        "reviewed_run_id": REVIEWED_RUN,
+        "review_run_id": REVIEW_RUN,
+        "reviewed_base_sha": REVIEW_BASE,
+        "reviewed_head_sha": REVIEW_HEAD,
+        "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20),
+        "total": 20 * len(review_module.REVIEW_DIMENSIONS),
+        "findings": [],
+        "timestamp": "2026-10-24T00:10:00Z",
+    }
+    path = _review_record_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record), encoding="utf-8")
+    return path
+
+
+def _review_pointer(repository: Path, tmp_path: Path) -> Path:
+    """A finished review run's pointer, as its launch left it."""
+    manifest = tmp_path / "manifests" / f"{REVIEW_RUN}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    manifest.write_text(
+        "node: review-of-reviewed-run\n"
+        "status: complete\n"
+        "checkpoint: the review record is stored\n",
+        encoding="utf-8",
+    )
+    node = {
+        "id": f"review-of-{REVIEWED_RUN}",
+        "plan": REVIEW_PLAN,
+        "section": "s2",
+        "time_budget": "25m",
+        "role": "review",
+        "write_paths": [str(_review_record_path())],
+    }
+    pointer = {
+        "run_id": REVIEW_RUN,
+        "project": PROJECT,
+        "repo": str(repository),
+        "launch": "in-harness",
+        "role": "review",
+        "backend": "native",
+        "created_at": "2026-10-24T00:00:00Z",
+        "manifest_path": str(manifest),
+        "node": node,
+        "scratch": str(dispatch.worker_scratch_dir(REVIEW_RUN)),
+    }
+    return _write_json(pointer_path(REVIEW_RUN), pointer)
 
 
 def test_a_release_removes_this_hosts_copy_and_its_stem_sibling(
@@ -223,6 +322,21 @@ def test_a_private_home_never_settles_the_host_wide_scratch(
     assert copy.is_dir()
 
 
+def test_naming_only_the_scratch_root_withholds(
+    scratch_root: Path, crew_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A scratch root named alone is still paired with an unnamed state home."""
+    copy = _run_copy(RUN)
+    _finished_run_directory(RUN)
+    monkeypatch.delenv(dispatch.WORKER_SCRATCH_ROOT_ENV)
+
+    result = settle_run_scratch(apply=True, root=scratch_root)
+
+    assert result["withheld"] == "state and scratch roots differ"
+    assert result["removed"] == []
+    assert copy.exists()
+
+
 def test_naming_both_trees_lets_the_pass_remove(
     scratch_root: Path, crew_home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -301,6 +415,41 @@ def test_a_promoted_review_runs_scratch_is_removed_by_its_promotion(
     assert release["scratch_removed"] is True
     assert release["scratch_host"] == socket.gethostname()
     assert not copy.exists()
+
+
+def test_a_review_promoted_through_the_complete_route_removes_its_scratch(
+    scratch_root: Path, crew_home: Path, tmp_path: Path
+) -> None:
+    """The production entry point, not the release function behind it.
+
+    A review run is promoted by the same route every other run takes: the crew
+    complete verb calls ``promotion.complete``, which folds the record, releases
+    the workspace and records the release on the ledger row.
+    """
+    repository = _review_repository(crew_home, tmp_path)
+    _store_review_record()
+    _review_pointer(repository, tmp_path)
+    _finished_run_directory(REVIEW_RUN)
+    copy = _run_copy(REVIEW_RUN)
+
+    promotion.complete(
+        REVIEW_RUN, gate="not-run", root=repository, promoted_by="review-self"
+    )
+
+    assert not copy.exists()
+    [row] = ledger.runs(PROJECT, root=repository)
+    release = row["release"]
+    assert release["scratch_removed"] is True
+    assert release["scratch_host"] == socket.gethostname()
+    # The receipt also lands beside the run's own record, so it survives a
+    # landing commit that is rolled back, and it names the same host.
+    receipt = json.loads(
+        (run_dir(REVIEW_RUN) / release_module.RELEASE_RECEIPT_NAME).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert receipt["scratch_removed"] is True
+    assert receipt["scratch_host"] == socket.gethostname()
 
 
 def test_a_release_receipt_survives_a_refused_landing_commit(

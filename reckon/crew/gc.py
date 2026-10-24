@@ -1181,9 +1181,10 @@ def settle_run_scratch(
     left to :func:`garbage_collect_orphan_scratch`.
 
     ``root`` and ``runs_root`` name the scratch root and the state home a
-    caller relocated; the pass removes nothing when one of the two trees is
-    named and the other is left to this process's environment, because in that
-    case it cannot see the live pointers that protect the copies it would
+    caller relocated. The two are taken together: the pass removes nothing
+    unless both are named, both come from the environment, or both are left at
+    their defaults, because a tree named on one side and read from the other
+    leaves it unable to see the live pointers that protect the copies it would
     delete.
     """
     from reckon.crew.dispatch import (
@@ -1199,11 +1200,16 @@ def settle_run_scratch(
     # private home cannot see those runs' live pointers, so it cannot show that
     # a copy here is finished: a worker between turns sits in its worktree and
     # holds nothing in the scratch directory to be seen by the holder scan.
-    # Removing on that reading is the destructive mis-scope this refuses, and a
-    # caller that relocates either tree names both.
-    scratch_named = root is not None or bool(os.environ.get(WORKER_SCRATCH_ROOT_ENV))
-    home_named = runs_root is not None or not os.environ.get("RECKON_HOME")
-    if not (scratch_named or home_named):
+    # Removing on that reading is the destructive mis-scope this refuses, so the
+    # two trees are taken together: both named as arguments, both taken from the
+    # environment, or both left at their defaults.
+    if root is not None or runs_root is not None:
+        coherent = root is not None and runs_root is not None
+    else:
+        coherent = bool(os.environ.get("RECKON_HOME")) == bool(
+            os.environ.get(WORKER_SCRATCH_ROOT_ENV)
+        )
+    if not coherent:
         return {
             "root": str(scratch),
             "entries": [],
