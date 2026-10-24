@@ -48,7 +48,12 @@
   readiness probe, and a call made while it is cold is served by the running
   image, so the clean moved-checkout case now waits for the probe before
   asserting the answer the current code served. Its assertions are unchanged.
-  A new case asserts that an unmoved checkout reads as unmoved.</p>
+  A new case asks the same guard two questions and asserts its answers: an
+  untouched committed checkout reads as unmoved, and a checkout whose package
+  a commit has changed reads as moved. The expected stamp is not recomputed
+  here — a child interpreter imports the package from the checkout and prints
+  the stamp a server records at start, so the case compares the guard's answer
+  against a stamp the guard did not produce.</p>
 
   <p><strong>Measure: how an ordinary MCP read is answered.</strong> The same
   <code>crew(project="reckon", view="flight")</code> read, three times in one
@@ -68,17 +73,33 @@
   </table>
 
   <p><strong>Gate.</strong> The three listed files plus the new case in one
-  foreground run on the fleet node. The base and head arms, from
+  foreground run on the fleet node: 27 passed. The base and head arms, from
   <code>git archive</code> extractions on node-local disk, run every test file
-  that imports <code>reckon.served_code</code> together with the listed files.
-  The negative control reverts the production repair in an extraction of the
-  head commit and reruns the gate: the listed ids fail again.</p>
+  that imports <code>reckon.served_code</code> together with the listed files;
+  the head arm is two cases larger and both arms carry the same single
+  pre-existing failure.</p>
+
+  <p><strong>Negative control.</strong> Reverting only the production call —
+  the root handed to the identity check — at runtime, with the running stamp
+  already read, reddens five of the seven listed ids, the new unmoved-checkout
+  case, and one unlisted id that also failed at the base: 7 failed in one run
+  over the four gate files. Two listed ids do not redden:
+  <code>test_a_fenced_worker_edits_its_worktree_and_is_refused_on_the_main_checkout</code>
+  (in <code>tests/test_each_run_owns_its_harness_home.py</code>) and
+  <code>test_a_clean_moved_checkout_answers_on_the_current_code</code> (in
+  <code>tests/test_one_check_trusts_a_moved_checkout.py</code>). Both drive the
+  guard in a server they spawn as a subprocess, which does not inherit a
+  runtime patch applied to the parent process. Both fail at the base and pass
+  at the head, so the repair covers them; this control cannot reach into them,
+  and the run's manifest records that split rather than claiming every listed
+  id reddens.</p>
 
   <p>Logs, under the run directory: <code>logs/base-gate-full.log</code>,
-  <code>logs/head-gate-1.log</code>, <code>logs/head-moved-checkout.log</code>,
-  <code>logs/new-case-head.log</code>, <code>logs/read-path-base.log</code>,
-  <code>logs/read-path-head.log</code>, <code>logs/arm-base.log</code>,
-  <code>logs/arm-head.log</code>, <code>logs/negative-control.log</code>.</p>
+  <code>logs/head-gate.log</code>, <code>logs/new-case-head.log</code>,
+  <code>logs/read-path-base.log</code>, <code>logs/read-path-head.log</code>,
+  <code>logs/arm-base.log</code>, <code>logs/arm-head.log</code>,
+  <code>logs/negative-control-gate.log</code>,
+  <code>logs/negative-control.log</code>.</p>
 </section>
 </main>
 </body>
