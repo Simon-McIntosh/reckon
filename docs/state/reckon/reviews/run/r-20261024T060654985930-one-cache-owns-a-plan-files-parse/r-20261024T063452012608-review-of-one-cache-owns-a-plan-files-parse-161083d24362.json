@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/resources.py:290 identify_resource",
+    "reckon/resources.py:334 _identify_meta (calls file_memo.memoized by_content=True)",
+    "reckon/resources.py:605",
+    "reckon/resources.py:851",
+    "reckon/resources.py:1139",
+    "reckon/metadata_index.py:1172 resources.identify_resource"
+  ],
+  "completed_at": "2026-10-24T06:48:09.466Z",
+  "dispatched_at": "2026-10-24T06:35:48Z",
+  "findings": [
+    {
+      "file": "reckon/file_memo.py",
+      "line": "346",
+      "severity": "non-blocking",
+      "text": "non-blocking: content_digest's read stores decoded text with memoized(\"plan_text\", target, lambda: text), and memoized keys that store on the stat signature taken after the lambda returns, so a write landing between file_bytes' read and this store caches the old text under the new signature; the content_digest entry itself is shielded by memoized's post-compute recheck, but the plan_text entry is already stored and _read_plan_text/plan_text readers serve it. The pre-existing metadata_index._content_digest guards this by re-reading when file_signature(path) != signature (reckon/metadata_index.py:923-929); the new copy drops the guard."
+    },
+    {
+      "file": "reckon/metadata_index.py",
+      "line": "905",
+      "severity": "non-blocking",
+      "text": "non-blocking: the diff adds file_memo.content_digest, which duplicates _content_digest still present here \u2014 same sha256 of the bytes, the same memoised kind \"content_digest\" and the same plan_text priming \u2014 rather than moving the owner's body into file_memo and having this module call it; two implementations of one capability now coexist, one with the stale-text guard and one without."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/resources.py:290 identify_resource, reckon/resources.py:334 _identify_meta (calls file_memo.memoized by_content=True), reckon/resources.py:605, reckon/resources.py:851, reckon/resources.py:1139, reckon/metadata_index.py:1172 resources.identify_resource",
+    "diff": "read commit by commit from 9608e78d5: ec5289558 adds file_bytes/content_digest and the by_content identity and moves reckon/resources.py:_identify_meta onto it, e6ee194bc decodes from the bytes the digest already read, and 3dbb57655/161083d24 add the evidence fragment; reckon/metadata_index.py loses 69 lines of private cache plus its clear() arms.",
+    "done_when": "the done_when's measure is asserted by the gate that ran: the five grep counts are 0 at the reviewed tree (rev 161083d24362), tests/test_one_cache_owns_a_plan_files_parse.py:93 counts one parse across two byte-identical paths with a wrapper on _plan_html._parse_meta_head_uncached, head-arm.log ends '231 passed' with EXIT=0 against base-arm.log's '227 passed' EXIT=0, and negative-control.log reddens that case at 'assert 2 == 1' with EXIT=1.",
+    "goal": "the node's goal is to delete the metadata index's private parse cache and route its callers through file_memo.memoized; at the reviewed head reckon/metadata_index.py no longer defines _META_BY_DIGEST, _META_HEAD_BY_DIGEST, _digest_memo, parse_meta_shared or _parse_meta_head_shared (grep -c 0 in that module and in reckon/resources.py), and reckon/resources.py:301 calls file_memo.memoized(..., by_content=True) with the opt-in identity added at reckon/file_memo.py:380, so the goal is met.",
+    "manifest": "read; it records commits ec5289558, e6ee194bc, 3dbb57655 and 161083d24, the four logs under its /logs directory, baseline_suite revision 19daa104ef and after_suite revision 161083d24362 both with failure_count 0 and failure_ids [], and the two-caches reproduction base 1,1,2 against head 1,2,2.",
+    "write_paths": "the manifest declares seven paths (reckon/metadata_index.py, reckon/file_memo.py, reckon/resources.py, two test files, one evidence fragment, one figure directory); git diff 9608e78d5..161083d24362 changes exactly six files, every one inside that list, and no figure appears because the done_when names no artifact."
+  },
+  "justifications": {
+    "durability": "tests/test_one_cache_owns_a_plan_files_parse.py:93 counts parses against an independent counter and negative-control.log shows it reddening at 2 == 1 when memoized is replaced by a passthrough, though the weaker companion at :105 would also pass on a path-keyed cache.",
+    "evidence": "the head arm ends '231 passed' with EXIT=0 and the base arm '227 passed' with EXIT=0 over the 46 test files that import reckon.metadata_index or reckon.file_memo plus tests/test_every_module_fits_a_worker_window.py, a set I re-derived and found identical, so the delta is real but zero on both sides.",
+    "fit": "the additions follow the conventions of reckon/file_memo.py:310-323 and the existing memoized docstring style, and no added symbol or comment carries a plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/file_memo.py:380-390 swaps the identity for the content digest only when by_content is set, and reckon/resources.py:301 is its single opt-in caller, which is exactly the deliverable the goal states.",
+    "reuse": "the added file_memo.content_digest re-implements the capability already owned by reckon/metadata_index.py:905 _content_digest \u2014 same sha256, same memoised kind name, same plan_text priming \u2014 without converting that owner into a caller, so the repository now holds two implementations of one mechanism, which is why this dimension scores at the rubric's duplication cap.",
+    "scope_discipline": "git diff 9608e78d5..161083d24362 touches only the six declared paths, and even the shared 'content_digest' cache kind it spans stays inside the three product modules in scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261024T063452012608-review-of-one-cache-owns-a-plan-files-parse-161083d24362",
+  "reviewed_base_sha": "9608e78d56045156220788606408679e9fc21417",
+  "reviewed_head_sha": "161083d24362a3ab054bb108994de0f6effb605c",
+  "reviewed_run_id": "r-20261024T060654985930-one-cache-owns-a-plan-files-parse",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "text": "VERDICT goal: the node's goal is to delete the metadata index's private parse cache and route its callers through file_memo.memoized; at the reviewed head reckon/metadata_index.py no longer defines _META_BY_DIGEST, _META_HEAD_BY_DIGEST, _digest_memo, parse_meta_shared or _parse_meta_head_shared (grep -c 0 in that module and in reckon/resources.py), and reckon/resources.py:301 calls file_memo.memoized(..., by_content=True) with the opt-in identity added at reckon/file_memo.py:380, so the goal is met.\nVERDICT done_when: the done_when's measure is asserted by the gate that ran: the five grep counts are 0 at the reviewed tree (rev 161083d24362), tests/test_one_cache_owns_a_plan_files_parse.py:93 counts one parse across two byte-identical paths with a wrapper on _plan_html._parse_meta_head_uncached, head-arm.log ends '231 passed' with EXIT=0 against base-arm.log's '227 passed' EXIT=0, and negative-control.log reddens that case at 'assert 2 == 1' with EXIT=1.\nVERDICT write_paths: the manifest declares seven paths (reckon/metadata_index.py, reckon/file_memo.py, reckon/resources.py, two test files, one evidence fragment, one figure directory); git diff 9608e78d5..161083d24362 changes exactly six files, every one inside that list, and no figure appears because the done_when names no artifact.\nVERDICT manifest: read; it records commits ec5289558, e6ee194bc, 3dbb57655 and 161083d24, the four logs under its /logs directory, baseline_suite revision 19daa104ef and after_suite revision 161083d24362 both with failure_count 0 and failure_ids [], and the two-caches reproduction base 1,1,2 against head 1,2,2.\nVERDICT diff: read commit by commit from 9608e78d5: ec5289558 adds file_bytes/content_digest and the by_content identity and moves reckon/resources.py:_identify_meta onto it, e6ee194bc decodes from the bytes the digest already read, and 3dbb57655/161083d24 add the evidence fragment; reckon/metadata_index.py loses 69 lines of private cache plus its clear() arms.\nCALL_SITES: reckon/resources.py:290 identify_resource, reckon/resources.py:334 _identify_meta (calls file_memo.memoized by_content=True), reckon/resources.py:605, reckon/resources.py:851, reckon/resources.py:1139, reckon/metadata_index.py:1172 resources.identify_resource\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/file_memo.py:380-390 swaps the identity for the content digest only when by_content is set, and reckon/resources.py:301 is its single opt-in caller, which is exactly the deliverable the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: the head arm ends '231 passed' with EXIT=0 and the base arm '227 passed' with EXIT=0 over the 46 test files that import reckon.metadata_index or reckon.file_memo plus tests/test_every_module_fits_a_worker_window.py, a set I re-derived and found identical, so the delta is real but zero on both sides.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 9608e78d5..161083d24362 touches only the six declared paths, and even the shared 'content_digest' cache kind it spans stays inside the three product modules in scope.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_one_cache_owns_a_plan_files_parse.py:93 counts parses against an independent counter and negative-control.log shows it reddening at 2 == 1 when memoized is replaced by a passthrough, though the weaker companion at :105 would also pass on a path-keyed cache.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the conventions of reckon/file_memo.py:310-323 and the existing memoized docstring style, and no added symbol or comment carries a plan, sprint or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: the added file_memo.content_digest re-implements the capability already owned by reckon/metadata_index.py:905 _content_digest \u2014 same sha256, same memoised kind name, same plan_text priming \u2014 without converting that owner into a caller, so the repository now holds two implementations of one mechanism, which is why this dimension scores at the rubric's duplication cap.\nFINDING reckon/file_memo.py:346 non-blocking: non-blocking: content_digest's read stores decoded text with memoized(\"plan_text\", target, lambda: text), and memoized keys that store on the stat signature taken after the lambda returns, so a write landing between file_bytes' read and this store caches the old text under the new signature; the content_digest entry itself is shielded by memoized's post-compute recheck, but the plan_text entry is already stored and _read_plan_text/plan_text readers serve it. The pre-existing metadata_index._content_digest guards this by re-reading when file_signature(path) != signature (reckon/metadata_index.py:923-929); the new copy drops the guard.\nFINDING reckon/metadata_index.py:905 non-blocking: non-blocking: the diff adds file_memo.content_digest, which duplicates _content_digest still present here \u2014 same sha256 of the bytes, the same memoised kind \"content_digest\" and the same plan_text priming \u2014 rather than moving the owner's body into file_memo and having this module call it; two implementations of one capability now coexist, one with the stale-text guard and one without.\n",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T06:56:24.302731+00:00",
+  "total": 96
+}
