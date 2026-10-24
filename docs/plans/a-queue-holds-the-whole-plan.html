@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="95">
+<meta name="plan-version" content="96">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -283,6 +283,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-s15-no-metered-admitter" data-who="reckon-42" data-when="2026-10-24T12:40:00Z">
     <div class="r-comment-body"><p><strong>Measured on this plan's own queue, 24 October 2026.</strong> Two §4 requests dispatched with <code>--backend codex</code> waited <code>awaiting-upstream</code> on §5; when §5 closed, the admit service moved both to <code>queued</code> within two minutes, as §2 intends. They then sat on the codex lane with nothing to launch them: the only admit service on the fleet runs <code>crew admit --lane clive</code>, and no pass ever read them. A request routed to a metered lane at dispatch launches at once only if it is ready at dispatch. One that becomes ready later needs an admission pass for its lane. §15's admission per lane must therefore include every metered lane a queued request is routed to, whether that is a pass per lane or one pass that walks every lane's ready requests. Its done-when should include a codex-routed request that becomes ready after dispatch and launches with no coordinator call. The two requests were discarded and re-dispatched by hand this time.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-s11-frictions-20261024" data-who="reckon-42" data-when="2026-10-24T19:30:00Z">
+    <div class="r-comment-body"><p><strong>Two more frictions from building this plan through its own queue, 24 October 2026, for §11 and §13.</strong> First, a ready node whose write paths overlap a <em>launched</em> run's claim is refused with <code>scope-conflict</code> rather than queued to launch after that run, so nodes sharing a hot file (<code>reckon/crew/queue_admission.py</code> took six of this plan's nodes) must be hand-sequenced by the coordinator; the queue's own overlap rule, which launches overlapping queued requests in turn, should apply to a ready dispatch too. Second, the review reflex refuses to review a run whose previous review carries an undisposed blocking finding, while <code>crew dispose</code> refuses a disposition for a review that names an older head than the run's; after a repair round both refuse, and the coordinator had to author a review brief for the new head by hand three times. A repaired head should either supersede the older review's findings or accept their disposition.</p></div>
 </div>
 </section>
 </main>
