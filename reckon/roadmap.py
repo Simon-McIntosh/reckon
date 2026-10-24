@@ -3477,6 +3477,7 @@ def _build_roadmap(
         held_blockers = blocker_state["held_blockers"]
         gate_blockers = blocker_state["gate_blockers"]
         section_gate_blockers = blocker_state["section_gate_blockers"]
+        plan_holding_decisions = blocker_state["plan_holding_decisions"]
         decision_blockers = blocker_state["decision_blockers"]
         deferred_decisions = blocker_state["deferred_decisions"]
         decisions = _decision_rows(plan, decision_sections_map)
