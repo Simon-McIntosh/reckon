@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-24">
 </head>
 <body>
@@ -161,7 +161,10 @@
     when its <code>file_memo.file_signature</code> moved against the stored one. A stream is read only past its stored offset, up to the last whole record,
     and folded by <code>_backends.observe_stream</code> with the stored fold state as <code>state</code>; a
     stream whose inode changed or that shrank is folded from its start. The classifier
-    (<code>recovery.classify_pointer</code>) runs once per run whose inputs changed, and its liveness probe
+    (<code>recovery.classify_pointer</code>) runs once per run whose classification inputs changed, keyed on
+    <code>recovery_memo._classification_inputs</code>, which covers the pointer, the stream, the manifest, the run
+    directory's records, the review-store candidates and the tree head. A worker that finishes by writing its
+    manifest moves neither its pointer nor its stream, so a key on those two alone would never see it deliver. Its liveness probe
     runs only where the pointer's <code>launcher_host</code> is this node.</p>
     <p>Done when, replaying the fixture streams of five real runs (copied from the crew home into a test
     directory) in chunks: the station's folded observation equals a single full fold of each stream
@@ -170,11 +173,12 @@
     section's new mechanism is the classification, so it is measured directly. Over three ticks of a fixture with
     three live runs, with <code>recovery.classify_pointer</code> and the liveness probe counted through patches:
     a tick where nothing changed classifies no run; a tick where one run's pointer or stream moved classifies
-    exactly that run, once; and the liveness probe is called only for runs whose pointer's
+    exactly that run, once; a tick where only one run's manifest moved classifies exactly that run, once; and the liveness probe is called only for runs whose pointer's
     <code>launcher_host</code> is this node, so a run launched on another host is classified without a probe.
     Negative controls: an ingest that ignores the stored offset must fail the bytes test; one that drops the
-    carried fold state must fail the equality test on a stream whose rate depends on earlier records; and a tick
-    that classifies every run on every pass must fail the unchanged-tick count.</p>
+    carried fold state must fail the equality test on a stream whose rate depends on earlier records; a tick
+    that classifies every run on every pass must fail the unchanged-tick count; and a change key on the pointer
+    and stream alone must fail the manifest-only tick.</p>
     <p>This section is the next to edit <code>reckon/crew/station_store.py</code>, so it also takes the four non-blocking findings of §5's review. It deletes <code>store_at_runtime_root</code> and <code>default_store</code>, which have no caller and duplicate <code>StationStore.at_runtime_root</code>. It closes each day-file connection it opens: <code>sqlite3.Connection</code>'s context manager commits but does not close. And it replaces the assertion in <code>tests/test_the_station_store_is_node_local.py</code> that compares two outputs of the store with one against the fixture's three pointer paths. Done when, beside the measures above, <code>git grep -n "def store_at_runtime_root\|def default_store" reckon/</code> returns nothing, and a test counts the store's open file descriptors before and after writing 50 events and finds them equal.</p>
 
     <h2 id="s7">§7 — One station per node replaces the per-project producers</h2>
