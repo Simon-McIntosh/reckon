@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_stop_before_spawn_spawns_nothing.py::test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit"
+  ],
+  "assertion_analysis": {
+    "closure_and_landing": "tests/test_queue_dag_waits.py:267-348 fails if blocked or failed runs launch, complete but unmerged runs release, missing revisions omit an obligation, or a landed revision stays held.",
+    "cross_project": "tests/test_queue_dag_waits.py:139-160 fails if the wait releases before the foreign declaration is done or remains held afterward.",
+    "cycle_and_missing_targets": "tests/test_queue_dag_waits.py:190-233 fails if either cycle or any absent plan, section, project, or request is accepted or stored by queue_requests.",
+    "gate_and_verdict": "tests/test_queue_dag_waits.py:366-425 fails if either gate shape releases or the injected scoped decision holds the unrelated section.",
+    "independence": "No added assertion compares an observed value to the same variable passed to the code under test; phase, refusal, launch, and obligation expectations are literals or independently constructed states.",
+    "legacy_and_landing": "tests/test_a_queued_request_waits_on_its_dependencies.py:322-438 and tests/test_queue_landing.py:159-193 fail if an unlanded complete run releases a waiter or the landing fixture lacks an ancestor revision.",
+    "serialization_and_recheck": "tests/test_queue_dag_waits.py:389-444 fails if readiness is read more than once per project or --after is dropped in serialization or pointer recovery."
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1652",
+    "reckon/crew/dispatch.py:1673",
+    "reckon/crew/queue_admission.py:2305",
+    "reckon/crew_dispatch_commands.py:1526"
+  ],
+  "completed_at": "2026-10-24T17:48:33Z",
+  "dispatched_at": "2026-10-24T17:41:30Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1717",
+      "severity": "blocking",
+      "text": "blocking: section-only dispatch skips _validated_batch_waits; dispatch.py:1657 stores the pointer before hold_request_for_upstream validates a missing or cyclic ref, so queue-time refusal can leave a queued request behind."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "2020",
+      "severity": "blocking",
+      "text": "blocking: queue_requests duplicates the production queueing capability owned by reckon/crew/dispatch.py:1657 rather than extending that owner, so its tested batch validation and own-section verdict are absent from ordinary crew dispatch."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read each of ten commits from 19af48b2b8877f4007c33e4444b3428dbfbbec6e through c44157ab3c6e813005c71fbc69e5c2505ba631ab; queue_admission.py adds the wait graph and parallel queue path, tests add direct-helper assertions, and the evidence fragment records the gate result.",
+    "done_when": "prompt.txt:115 requires missing refs and cycles refused before storage and zero added importer failures; tests/test_queue_dag_waits.py checks the separate queue_requests helper, while the paired gate logs show 37 baseline and 38 head failures.",
+    "goal": "prompt.txt:30 requires cross-project DAG waits from the roadmap section verdict; queue_admission.py:1717 bypasses validation for ordinary section-only dispatches.",
+    "manifest": "manifest.md names ten commits, seven changed paths, a 51-pass focused gate, a red mutation, paired importer logs, and the one unresolved raw added failure.",
+    "write_paths": "prompt.txt:69-77 plus resume-1-advice.txt:1 and resume-2-advice.txt:1 grant the seven paths in the base-to-head diff, and each changed path is within that extended grant."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_dag_waits.py:139-444 has independent expected phases, refusals, obligations, call counts and launch outcomes that would fail if the direct helper regressed, but no added assertion reaches dispatch.py:1657 before a malformed section wait is stored.",
+    "evidence": "tests/test_queue_dag_waits.py:190 proves refusal through queue_requests, but base-importers-final.log:1990 and head-importers-final.log:2054 record 37 and 38 failures and the production dispatch path is untested for that refusal.",
+    "fit": "reckon/crew/queue_admission.py:1353 uses the existing project_section_readiness owner, yet its new _dispatch_nonrun_wait_state at line 1636 splits dispatch behavior from the graph validator and roadmap verdict.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1717 makes ordinary section-only dispatch use declaration checks rather than the per-section verdict and validation promised by the goal.",
+    "reuse": "reckon/crew/queue_admission.py:2020 adds queue_requests as a duplicate queue writer beside the production owner reckon/crew/dispatch.py:1657, while _dispatch_nonrun_wait_state duplicates readiness logic already owned by reckon/roadmap.py:908.",
+    "scope_discipline": "the seven changed paths in git diff 19af48b2..c44157ab are covered by prompt.txt:69-77 and the two scope grants in resume-1-advice.txt:1 and resume-2-advice.txt:1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 requires cross-project DAG waits from the roadmap section verdict; queue_admission.py:1717 bypasses validation for ordinary section-only dispatches.\nVERDICT done_when: prompt.txt:115 requires missing refs and cycles refused before storage and zero added importer failures; tests/test_queue_dag_waits.py checks the separate queue_requests helper, while the paired gate logs show 37 baseline and 38 head failures.\nVERDICT write_paths: prompt.txt:69-77 plus resume-1-advice.txt:1 and resume-2-advice.txt:1 grant the seven paths in the base-to-head diff, and each changed path is within that extended grant.\nVERDICT manifest: manifest.md names ten commits, seven changed paths, a 51-pass focused gate, a red mutation, paired importer logs, and the one unresolved raw added failure.\nVERDICT diff: read each of ten commits from 19af48b2b8877f4007c33e4444b3428dbfbbec6e through c44157ab3c6e813005c71fbc69e5c2505ba631ab; queue_admission.py adds the wait graph and parallel queue path, tests add direct-helper assertions, and the evidence fragment records the gate result.\nCALL_SITES: reckon/crew/dispatch.py:1652, reckon/crew/dispatch.py:1673, reckon/crew/queue_admission.py:2305, reckon/crew_dispatch_commands.py:1526\nSCORE goal_fidelity: 10\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1717 makes ordinary section-only dispatch use declaration checks rather than the per-section verdict and validation promised by the goal.\nSCORE evidence: 8\nJUSTIFICATION evidence: tests/test_queue_dag_waits.py:190 proves refusal through queue_requests, but base-importers-final.log:1990 and head-importers-final.log:2054 record 37 and 38 failures and the production dispatch path is untested for that refusal.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the seven changed paths in git diff 19af48b2..c44157ab are covered by prompt.txt:69-77 and the two scope grants in resume-1-advice.txt:1 and resume-2-advice.txt:1.\nSCORE durability: 9\nJUSTIFICATION durability: tests/test_queue_dag_waits.py:139-444 has independent expected phases, refusals, obligations, call counts and launch outcomes that would fail if the direct helper regressed, but no added assertion reaches dispatch.py:1657 before a malformed section wait is stored.\nSCORE fit: 11\nJUSTIFICATION fit: reckon/crew/queue_admission.py:1353 uses the existing project_section_readiness owner, yet its new _dispatch_nonrun_wait_state at line 1636 splits dispatch behavior from the graph validator and roadmap verdict.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:2020 adds queue_requests as a duplicate queue writer beside the production owner reckon/crew/dispatch.py:1657, while _dispatch_nonrun_wait_state duplicates readiness logic already owned by reckon/roadmap.py:908.\nFINDING reckon/crew/queue_admission.py:1717 blocking: section-only dispatch skips _validated_batch_waits; dispatch.py:1657 stores the pointer before hold_request_for_upstream validates a missing or cyclic ref, so queue-time refusal can leave a queued request behind.\nFINDING reckon/crew/queue_admission.py:2020 blocking: queue_requests duplicates the production queueing capability owned by reckon/crew/dispatch.py:1657 rather than extending that owner, so its tested batch validation and own-section verdict are absent from ordinary crew dispatch.\n",
+  "review_run_id": "r-20261024T173925666775-review-of-queue-waits-on-the-dag-c44157ab3c6e",
+  "reviewed_base_sha": "19af48b2b8877f4007c33e4444b3428dbfbbec6e",
+  "reviewed_head_sha": "c44157ab3c6e813005c71fbc69e5c2505ba631ab",
+  "reviewed_run_id": "r-20261024T143354818465-queue-waits-on-the-dag",
+  "scores": {
+    "durability": 9,
+    "evidence": 8,
+    "fit": 11,
+    "goal_fidelity": 10,
+    "reuse": 4,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T17:50:47.391021+00:00",
+  "total": 61
+}
