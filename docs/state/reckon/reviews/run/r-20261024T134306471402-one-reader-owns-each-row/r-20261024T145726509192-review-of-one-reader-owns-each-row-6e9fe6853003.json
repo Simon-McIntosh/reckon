@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite at f77a15e records 2 failures (test_the_index_figure_row_carries_every_key_figures_gives, test_a_crew_plan_read_opens_no_parsed_plan_again) and after_suite at 7c5da81 reports 290 passed with 0 failures; no failure present at head is absent from the base arm.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/serve.py:864",
+    "reckon/serve.py:911"
+  ],
+  "completed_at": "2026-10-24T15:19:27.434Z",
+  "dispatched_at": "2026-10-24T15:09:23Z",
+  "findings": [
+    {
+      "file": "tests/test_one_reader_owns_each_row.py",
+      "line": 206,
+      "text": "non-blocking: the copy assertions cannot fail against the regression they name. With reckon/serve.py:746's `state = dict(state)` removed, _crew_plan_state still receives an independent deepcopy from file_memo.py:406 because no read_only_region is active, and the `shared` dict the test captured on a first cache miss is a separate object from the stored entry, so the case passes at 454795d too (logs/negative-control-repair.log records '2 failed, 1 passed'). The read-only-region path where the copy is load-bearing is covered only by the manual logs/negative-control-fallback-region.log, not by a test, so removing the copy would redden no gate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "CALL_SITES: reckon/serve.py:864, reckon/serve.py:911",
+    "diff": "VERDICT diff: read 7c5da81 and 6e9fe68 against 454795d: reckon/serve.py +19/-6 stats each candidate before parsing and copies the fallback target, the test file +59 adds two parametrised location cases and the copy case, and the evidence fragment +10 records the reproduction, gate and control.",
+    "done_when": "VERDICT done_when: section 52's done_when names tests/test_one_reader_owns_each_row.py; the repair adds test_a_plan_is_found_wherever_the_project_keeps_it (docs root and archive) and test_the_head_fallback_fills_a_copy_not_the_shared_parse, and the recorded head arm logs 290 passed EXIT=0 against the base arm's 2 failed and 285 passed EXIT=1.",
+    "goal": "VERDICT goal: section 52's goal is that one reader owns each plan-file parse; the gained commits at reckon/serve.py:739-749 restore resolution across docs/plans, docs root and docs/plans/archive and copy the memoised parse before the head fallback, so the crew reader again reaches the owner's parse in every layout the pre-change reader handled.",
+    "manifest": "VERDICT manifest: read the manifest; status complete, commits bf22d7a1c, 454795d49, 7c5da81bd and 6e9fe6853, head 290 passed EXIT=0, base 2 failed, repair control logs/negative-control-repair.log EXIT=1, and the checkpoint names 7c5da81.",
+    "write_paths": "VERDICT write_paths: the manifest declares reckon/metadata_index.py, reckon/figures.py, reckon/serve.py, tests/test_one_reader_owns_each_row.py and the evidence fragment; git diff --stat 454795d 6e9fe68 changes only reckon/serve.py, tests/test_one_reader_owns_each_row.py and that fragment, all inside the set."
+  },
+  "justifications": {
+    "durability": "tests/test_one_reader_owns_each_row.py:172 is a real guard (it fails at 454795d per the repair control), but :206-207 cannot fail if reckon/serve.py:746's copy is removed because file_memo.py:406 hands a deepcopy outside a read-only region, so that half of the repair has no regression test.",
+    "evidence": "logs/head-arm.log records 290 passed at 7c5da81 EXIT=0, logs/base-arm.log records the same two new ids failing at f77a15e EXIT=1, and logs/negative-control-repair.log records the two location cases failing against pre-repair serve.py with the exact assertion diff, so the result is recorded rather than claimed.",
+    "fit": "the change keeps the existing _crew_plan_state helper and its docstring style (reckon/serve.py:710-726), introduces no plan, sprint or version label, and names the new cases by the capability they measure.",
+    "goal_fidelity": "reckon/serve.py:739-744 continues past an absent candidate on FileNotFoundError so the docs-root and archive layouts are reached again, and logs/negative-control-repair.log reproduces ('', None) against ('current', 3.25) at the pre-repair head; reckon/serve.py:746 copies the parse before the head fallback so no mutation reaches the shared value.",
+    "reuse": "the gained diff adds no definition and routes the reader through _plan_html.read_state_and_text_file and parse_meta; the only alternative owner, resources.resolve_resource, walks the tree the no-discovery reader exists to avoid.",
+    "scope_discipline": "git diff --stat 454795d 6e9fe68 changes only reckon/serve.py, tests/test_one_reader_owns_each_row.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/one-reader-owns-each-row.html, all inside the declared write paths."
+  },
+  "node": "review-of-one-reader-owns-each-row-6e9fe6853003",
+  "node:reviewed": "one-reader-owns-each-row",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 52's goal is that one reader owns each plan-file parse; the gained commits at reckon/serve.py:739-749 restore resolution across docs/plans, docs root and docs/plans/archive and copy the memoised parse before the head fallback, so the crew reader again reaches the owner's parse in every layout the pre-change reader handled.\nVERDICT done_when: section 52's done_when names tests/test_one_reader_owns_each_row.py; the repair adds test_a_plan_is_found_wherever_the_project_keeps_it (docs root and archive) and test_the_head_fallback_fills_a_copy_not_the_shared_parse, and the recorded head arm logs 290 passed EXIT=0 against the base arm's 2 failed and 285 passed EXIT=1.\nVERDICT write_paths: the manifest declares reckon/metadata_index.py, reckon/figures.py, reckon/serve.py, tests/test_one_reader_owns_each_row.py and the evidence fragment; git diff --stat 454795d 6e9fe68 changes only reckon/serve.py, tests/test_one_reader_owns_each_row.py and that fragment, all inside the set.\nVERDICT manifest: read the manifest; status complete, commits bf22d7a1c, 454795d49, 7c5da81bd and 6e9fe6853, head 290 passed EXIT=0, base 2 failed, repair control logs/negative-control-repair.log EXIT=1, and the checkpoint names 7c5da81.\nVERDICT diff: read 7c5da81 and 6e9fe68 against 454795d: reckon/serve.py +19/-6 stats each candidate before parsing and copies the fallback target, the test file +59 adds two parametrised location cases and the copy case, and the evidence fragment +10 records the reproduction, gate and control.\nCALL_SITES: reckon/serve.py:864, reckon/serve.py:911\nSCORE goal_fidelity: 19\nSCORE evidence: 18\nSCORE scope_discipline: 20\nSCORE durability: 15\nSCORE fit: 19\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/serve.py:739-744 continues past an absent candidate on FileNotFoundError so the docs-root and archive layouts are reached again, and logs/negative-control-repair.log reproduces ('', None) against ('current', 3.25) at the pre-repair head; reckon/serve.py:746 copies the parse before the head fallback so no mutation reaches the shared value.\nJUSTIFICATION evidence: logs/head-arm.log records 290 passed at 7c5da81 EXIT=0, logs/base-arm.log records the same two new ids failing at f77a15e EXIT=1, and logs/negative-control-repair.log records the two location cases failing against pre-repair serve.py with the exact assertion diff, so the result is recorded rather than claimed.\nJUSTIFICATION scope_discipline: git diff --stat 454795d 6e9fe68 changes only reckon/serve.py, tests/test_one_reader_owns_each_row.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/one-reader-owns-each-row.html, all inside the declared write paths.\nJUSTIFICATION durability: tests/test_one_reader_owns_each_row.py:172 is a real guard (it fails at 454795d per the repair control), but :206-207 cannot fail if reckon/serve.py:746's copy is removed because file_memo.py:406 hands a deepcopy outside a read-only region, so that half of the repair has no regression test.\nJUSTIFICATION fit: the change keeps the existing _crew_plan_state helper and its docstring style (reckon/serve.py:710-726), introduces no plan, sprint or version label, and names the new cases by the capability they measure.\nJUSTIFICATION reuse: the gained diff adds no definition and routes the reader through _plan_html.read_state_and_text_file and parse_meta; the only alternative owner, resources.resolve_resource, walks the tree the no-discovery reader exists to avoid.\nFINDING tests/test_one_reader_owns_each_row.py:206 non-blocking: the copy assertions cannot fail against the regression they name. With reckon/serve.py:746's `state = dict(state)` removed, _crew_plan_state still receives an independent deepcopy from file_memo.py:406 because no read_only_region is active, and the `shared` dict the test captured on a first cache miss is a separate object from the stored entry, so the case passes at 454795d too (logs/negative-control-repair.log records '2 failed, 1 passed'). The read-only-region path where the copy is load-bearing is covered only by the manual logs/negative-control-fallback-region.log, not by a test, so removing the copy would redden no gate.",
+  "review_run_id": "r-20261024T145726509192-review-of-one-reader-owns-each-row-6e9fe6853003",
+  "reviewed_base_sha": "454795d498d03e3e144e5946e720edecdbe43802",
+  "reviewed_head_sha": "6e9fe6853003fa0db04a108df7e4704010acf42c",
+  "reviewed_run_id": "r-20261024T134306471402-one-reader-owns-each-row",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:20:57.564350+00:00",
+  "total": 111
+}
