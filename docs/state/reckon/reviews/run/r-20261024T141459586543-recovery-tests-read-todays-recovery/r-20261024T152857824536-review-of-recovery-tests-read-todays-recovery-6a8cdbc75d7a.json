@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "after_suite failure ids are a strict subset of baseline_suite's: the two removed ids are the rewritten folded-widening cases, so no failure was added over the four gate files.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-10-24T15:40:47.197Z",
+  "dispatched_at": "2026-10-24T15:30:10Z",
+  "findings": [
+    {
+      "file": "tests/test_a_folded_finding_widens_its_repair.py",
+      "line": "369",
+      "severity": "non-blocking",
+      "text": "non-blocking: payload[\"added\"] == [MISSING] compares the reply against the argument the test itself supplied, so it cannot tell a reply that echoes its input from one that applied the widening; the same shape recurs at :397 and, pre-existing, at :321."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T141459586543-recovery-tests-read-todays-recovery/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite.command carries a literal <extraction> placeholder and prose rather than the command that ran, and the tests line at :13 names head 2410d61c1 while logs/gate_head.log:1 names 6a8cdbc75, so the receipt is recoverable only from the log header."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T141459586543-recovery-tests-read-todays-recovery/logs/gate_base.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm's tree header names the GPFS worktree rather than a git-archive extraction on node-local disk, which \u00a748 requires of both arms."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T141459586543-recovery-tests-read-todays-recovery/manifest.md",
+      "line": "52",
+      "severity": "non-blocking",
+      "text": "non-blocking: tests/test_a_resume_never_launches_beside_another_node.py::test_a_stream_past_the_window_launches is recorded with commit: unknown and no intendedness verdict, so the done_when's per-id attribution is unmet and its repair remains owed to a coordinator-written section."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read 2410d61c1 (rewrites the two folded-widening cases to the retirement of the widening refusal) and 6a8cdbc75 (adds the evidence fragment) against base 5cb2dc2f, two files and +165/-25, with no production module touched.",
+    "done_when": "the done_when names the nine ids, the four-file gate and a base arm; the manifest records base 10 failed/19 passed at 5cb2dc2f and head 8 failed/21 passed at 6a8cdbc75 with EXIT lines over exactly those four files, but only two of the nine ids pass and the per-id \"commit read and whether intended\" is unmet for tests/test_a_resume_never_launches_beside_another_node.py::test_a_stream_past_the_window_launches.",
+    "goal": "the node goal is to make the nine \u00a748 census ids pass by asserting each intended contract or reporting the unintended change; the diff rewrites the two tests/test_a_folded_finding_widens_its_repair.py ids and the manifest reports the remaining seven, six with a named commit and defect and one left with commit unknown.",
+    "manifest": "read the run's manifest; status complete, commits 2410d61c1 and 6a8cdbc75, three gate logs named, negative_control_log naming the mutated head arm, and baseline_suite/after_suite carrying both failure-id lists.",
+    "write_paths": "the manifest declares the four test files plus docs/evidence/fragments/the-suite-is-green-at-head/recovery-tests-read-todays-recovery.html and a figures directory; git diff --name-only 5cb2dc2f 6a8cdbc75 lists only tests/test_a_folded_finding_widens_its_repair.py and that fragment, both inside the declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_a_folded_finding_widens_its_repair.py:370 and :398 fail when reckon/crew_run_commands.py:1217 loses its kind and node tests, which logs/negative_control.log shows reddening both repaired ids while the widening still succeeds, and the positive counterpart at :323 pins the non-None answer.",
+    "evidence": "logs/gate_base.log:1 and logs/gate_head.log:1 carry revision, tree and command and end in EXIT=1 at 10 failed/19 passed and 8 failed/21 passed, but logs/gate_base.log:2 names the GPFS worktree rather than a git-archive extraction and manifest.md:20 records a placeholder command.",
+    "fit": "tests/test_a_folded_finding_widens_its_repair.py:351 and :379 name the mechanism they pin and the module docstring at :8-16 was rewritten to match, introducing no plan or version label.",
+    "goal_fidelity": "tests/test_a_folded_finding_widens_its_repair.py:351 and :379 now pin the disposition the grant reports, and manifest.md records the other seven ids as blocked, but the resume id at manifest.md:52 is still unattributed with commit unknown.",
+    "reuse": "the diff adds no production definition and reuses the file's existing _read_pointer at tests/test_a_folded_finding_widens_its_repair.py:304, and a search of reckon/crew for another widening-disposition reader found only reckon/crew_run_commands.py:1217.",
+    "scope_discipline": "git diff --name-only 5cb2dc2f 6a8cdbc75 lists only tests/test_a_folded_finding_widens_its_repair.py and docs/evidence/fragments/the-suite-is-green-at-head/recovery-tests-read-todays-recovery.html, both declared paths, and no production source changes."
+  },
+  "node": "review-of-recovery-tests-read-todays-recovery-6a8cdbc75d7a",
+  "node:reviewed": "recovery-tests-read-todays-recovery",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the nine \u00a748 census ids pass by asserting each intended contract or reporting the unintended change; the diff rewrites the two tests/test_a_folded_finding_widens_its_repair.py ids and the manifest reports the remaining seven, six with a named commit and defect and one left with commit unknown.\nVERDICT done_when: the done_when names the nine ids, the four-file gate and a base arm; the manifest records base 10 failed/19 passed at 5cb2dc2f and head 8 failed/21 passed at 6a8cdbc75 with EXIT lines over exactly those four files, but only two of the nine ids pass and the per-id \"commit read and whether intended\" is unmet for tests/test_a_resume_never_launches_beside_another_node.py::test_a_stream_past_the_window_launches.\nVERDICT write_paths: the manifest declares the four test files plus docs/evidence/fragments/the-suite-is-green-at-head/recovery-tests-read-todays-recovery.html and a figures directory; git diff --name-only 5cb2dc2f 6a8cdbc75 lists only tests/test_a_folded_finding_widens_its_repair.py and that fragment, both inside the declaration.\nVERDICT manifest: read the run's manifest; status complete, commits 2410d61c1 and 6a8cdbc75, three gate logs named, negative_control_log naming the mutated head arm, and baseline_suite/after_suite carrying both failure-id lists.\nVERDICT diff: read 2410d61c1 (rewrites the two folded-widening cases to the retirement of the widening refusal) and 6a8cdbc75 (adds the evidence fragment) against base 5cb2dc2f, two files and +165/-25, with no production module touched.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: tests/test_a_folded_finding_widens_its_repair.py:351 and :379 now pin the disposition the grant reports, and manifest.md records the other seven ids as blocked, but the resume id at manifest.md:52 is still unattributed with commit unknown.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/gate_base.log:1 and logs/gate_head.log:1 carry revision, tree and command and end in EXIT=1 at 10 failed/19 passed and 8 failed/21 passed, but logs/gate_base.log:2 names the GPFS worktree rather than a git-archive extraction and manifest.md:20 records a placeholder command.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 5cb2dc2f 6a8cdbc75 lists only tests/test_a_folded_finding_widens_its_repair.py and docs/evidence/fragments/the-suite-is-green-at-head/recovery-tests-read-todays-recovery.html, both declared paths, and no production source changes.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_folded_finding_widens_its_repair.py:370 and :398 fail when reckon/crew_run_commands.py:1217 loses its kind and node tests, which logs/negative_control.log shows reddening both repaired ids while the widening still succeeds, and the positive counterpart at :323 pins the non-None answer.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_folded_finding_widens_its_repair.py:351 and :379 name the mechanism they pin and the module docstring at :8-16 was rewritten to match, introducing no plan or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition and reuses the file's existing _read_pointer at tests/test_a_folded_finding_widens_its_repair.py:304, and a search of reckon/crew for another widening-disposition reader found only reckon/crew_run_commands.py:1217.\nFINDING tests/test_a_folded_finding_widens_its_repair.py:369 non-blocking: payload[\"added\"] == [MISSING] compares the reply against the argument the test itself supplied, so it cannot tell a reply that echoes its input from one that applied the widening; the same shape recurs at :397 and, pre-existing, at :321.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T141459586543-recovery-tests-read-todays-recovery/manifest.md:20 non-blocking: after_suite.command carries a literal <extraction> placeholder and prose rather than the command that ran, and the tests line at :13 names head 2410d61c1 while logs/gate_head.log:1 names 6a8cdbc75, so the receipt is recoverable only from the log header.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T141459586543-recovery-tests-read-todays-recovery/logs/gate_base.log:2 non-blocking: the base arm's tree header names the GPFS worktree rather than a git-archive extraction on node-local disk, which \u00a748 requires of both arms.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T141459586543-recovery-tests-read-todays-recovery/manifest.md:52 non-blocking: tests/test_a_resume_never_launches_beside_another_node.py::test_a_stream_past_the_window_launches is recorded with commit: unknown and no intendedness verdict, so the done_when's per-id attribution is unmet and its repair remains owed to a coordinator-written section.",
+  "review_run_id": "r-20261024T152857824536-review-of-recovery-tests-read-todays-recovery-6a8cdbc75d7a",
+  "reviewed_base_sha": "5cb2dc2fd49a3c0bd66af72a0da05f42c632fcb8",
+  "reviewed_head_sha": "6a8cdbc75d7aac07dcf1c12969b8bdab7ba44503",
+  "reviewed_run_id": "r-20261024T141459586543-recovery-tests-read-todays-recovery",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T15:38:10+00:00",
+  "total": 106
+}
