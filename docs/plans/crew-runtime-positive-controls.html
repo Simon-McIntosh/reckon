@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="374">
+<meta name="plan-version" content="376">
 <meta name="plan-modified" content="2026-10-24">
 <meta name="plan-section-depends-on" content="{&quot;s64&quot;:[]}">
 </head>
@@ -1331,12 +1331,12 @@
 <ul>
 <li>Choosing the promoted revision never drops a commit the landing check resolved. Where a cited commit cannot be resolved while the revision is chosen, the promotion is refused, naming the commit and the tree it was read in. It never chooses among the remaining commits. A resolver timeout or a failure to start git is reported as an instrument fault, distinct from a revision that names no commit, in <code>_resolve_commit</code> in <code>reckon/crew/recovery_review_subject.py</code>.</li>
 </ul>
-<p><strong>Write paths:</strong> <code>reckon/crew/promotion_scope.py</code>, <code>reckon/crew/recovery_review_subject.py</code>, the new <code>tests/test_a_landing_merges_the_head_the_run_reached.py</code>, and the node's evidence fragment. Every commit resolver already delegates to that one function (<code>reports._commit_resolves_in</code> at <code>reckon/crew/reports.py</code> and <code>_commit_canonical_id</code> at <code>reckon/crew/promotion_evidence.py</code> both call it), so changing what it reports reaches them all. The land's own check of the head it merges is §65, split out because <code>reckon/crew_run_commands.py</code> is claimed by another plan's runs while this section is ready.</p>
+<p><strong>Write paths:</strong> <code>reckon/crew/promotion_scope.py</code>, <code>reckon/crew/recovery_review_subject.py</code>, the new <code>tests/test_a_commit_that_fails_to_resolve_refuses_the_promotion.py</code>, and the node's evidence fragment. Every commit resolver already delegates to that one function (<code>reports._commit_resolves_in</code> at <code>reckon/crew/reports.py</code> and <code>_commit_canonical_id</code> at <code>reckon/crew/promotion_evidence.py</code> both call it), so changing what it reports reaches them all. The land's own check of the head it merges is §65, split out because <code>reckon/crew_run_commands.py</code> is claimed by another plan's runs while this section is ready.</p>
 <p><strong>Done when</strong> all of these hold:</p>
 <ul>
 <li>The new test builds a temporary repository with a linear chain of four commits, a run worktree at the fourth, and a run record citing all four, and asserts:<ul>
 <li>with the resolver answering normally, the promoted revision is the fourth commit;</li>
-<li>with the resolver timing out for the fourth commit alone, the promotion is refused naming that commit, and no promoted revision is recorded;</li>
+<li>with the resolver timing out for the fourth commit alone, the promotion is refused naming that commit and stating that the resolver timed out, worded differently from the refusal for a revision that names no commit, and no promoted revision is recorded;</li>
 <li>a revision that names no commit is still reported as unresolvable, not as an instrument fault;</li>
 <li>a cited commit that names nothing when the revision is chosen, although it resolved when the landing check read it, refuses the promotion naming it rather than being left out;</li>
 </ul>The test asserts the real crew home is untouched.</li>
