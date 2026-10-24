@@ -709,11 +709,17 @@ def _elapsed_since(stamp: object) -> int | None:
 def _crew_plan_state(docs: Path, slug: str) -> dict | None:
     """Read one referenced plan's parsed state without discovery.
 
-    The parse comes from :func:`reckon._plan_html.read_state_and_text_file`,
-    which owns and memoises a plan's parse, so the crew poll reuses the state a
-    reader that already opened this plan holds and opens no second time. A
-    plan whose head declares neither its sprint nor its effort falls back to
-    the regex head record, which reads the head alone.
+    The parse comes from
+    :func:`reckon._plan_html.read_state_and_text_file`, which owns and
+    memoises a plan's parse, so the crew poll reuses the state a
+    reader that already opened this plan holds and opens no second time. That
+    reader answers an absent file with an empty parse rather than raising, so
+    each candidate is tested for existence first: a slug absent from one
+    location must fall through to the next, which is how a plan in the archive
+    or a document at the docs root is found. A plan whose head declares neither
+    its sprint nor its effort falls back to the regex head record, which reads
+    the head alone; the fallback fills a copy, so the shared parse a later
+    reader receives keeps the values the file declares.
     """
 
     if not slug or not SAFE_NAME.fullmatch(slug):
@@ -725,13 +731,20 @@ def _crew_plan_state(docs: Path, slug: str) -> dict | None:
     )
     for plan_path in candidates:
         try:
-            state = _plan_html.read_state_and_text_file(plan_path)[0]
+            plan_path.stat()
         except FileNotFoundError:
             continue
+        except OSError:
+            return None
+        if not plan_path.is_file():
+            return None
+        try:
+            state = _plan_html.read_state_and_text_file(plan_path)[0]
         except (OSError, ValueError, UnicodeError):
             return None
         if state.get("effort_hours") is None or not state.get("sprint"):
             fallback = _plan_html.parse_meta(plan_path)
+            state = dict(state)
             for field in ("sprint", "effort_hours"):
                 if state.get(field) is None:
                     state[field] = fallback.get(field)

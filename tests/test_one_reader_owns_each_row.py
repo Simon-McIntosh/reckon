@@ -146,3 +146,62 @@ def test_a_crew_plan_read_opens_no_parsed_plan_again(
 
     assert (sprint, effort_hours) == ("current", 3.25)
     assert opened == [], [str(path) for path in opened]
+
+
+@pytest.mark.parametrize("location", ["docs root", "archive"])
+def test_a_plan_is_found_wherever_the_project_keeps_it(
+    docs: Path, location: str
+) -> None:
+    """A plan outside ``docs/plans`` is read from the location that holds it.
+
+    The memoised reader answers an absent file with an empty parse instead of
+    raising, so a candidate that is merely absent must fall through to the next
+    one; a plan kept at the docs root or in the archive is the case that shows
+    it.
+    """
+
+    (docs / "plans" / f"{_PLAN}.html").unlink()
+    target = (
+        docs / f"{_PLAN}.html"
+        if location == "docs root"
+        else docs / "plans" / "archive" / f"{_PLAN}.html"
+    )
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(_plan_html_text(), encoding="utf-8")
+
+    assert serve._crew_plan_details(docs, _PLAN) == ("current", 3.25)
+
+
+def test_the_head_fallback_fills_a_copy_not_the_shared_parse(
+    docs: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A head fallback leaves the memoised parse another reader receives alone.
+
+    The parse is memoised, so writing a fallback value into it would carry that
+    value to every later reader of the same plan, which the per-call parse this
+    reader replaced never did.
+    """
+
+    plan = docs / "plans" / "bare-plan.html"
+    plan.write_text(
+        "<!doctype html><html><head>"
+        f'<meta name="docs-project" content="{_PROJECT}">'
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="bare-plan">'
+        "<title>Bare</title>"
+        "</head><body></body></html>",
+        encoding="utf-8",
+    )
+    shared, _text = _plan_html.read_state_and_text_file(plan)
+    assert shared.get("sprint") is None, shared.get("sprint")
+    assert shared.get("effort_hours") is None, shared.get("effort_hours")
+
+    monkeypatch.setattr(
+        _plan_html,
+        "parse_meta",
+        lambda _path, _slug=None: {"sprint": "forced", "effort_hours": 7.0},
+    )
+
+    assert serve._crew_plan_details(docs, "bare-plan") == ("forced", 7.0)
+    assert shared.get("sprint") is None, "the shared parse was mutated"
+    assert shared.get("effort_hours") is None, "the shared parse was mutated"
