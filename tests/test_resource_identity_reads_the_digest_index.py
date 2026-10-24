@@ -82,12 +82,8 @@ def test_identical_content_parses_once_across_trees(tmp_path, monkeypatch):
     path_a = _write_plan(tree_a, "alpha", "Alpha")
     path_b = _write_plan(tree_b, "alpha", "Alpha")  # byte-identical to path_a
     path_c = _write_plan(tree_c, "alpha", "Alpha changed")  # one changed file
-    assert metadata_index._content_digest(path_a) == metadata_index._content_digest(
-        path_b
-    )
-    assert metadata_index._content_digest(path_a) != metadata_index._content_digest(
-        path_c
-    )
+    assert file_memo.content_digest(path_a) == file_memo.content_digest(path_b)
+    assert file_memo.content_digest(path_a) != file_memo.content_digest(path_c)
 
     calls = _counting_head_parse(monkeypatch)
     a = identify_resource(tree_a, path_a, "proj")

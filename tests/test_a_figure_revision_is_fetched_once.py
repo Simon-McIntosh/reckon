@@ -30,7 +30,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from reckon import metadata_index, serve
+from reckon import file_memo, metadata_index, serve
 
 _PROJECT = "sample"
 _NEGATIVE_CONTROL_ENV = "RECKON_TEST_DROP_FIGURE_REVISION"
@@ -192,7 +192,7 @@ def test_an_index_entry_that_predates_the_field_is_refreshed(project, monkeypatc
         [
             {
                 "path": project.relative,
-                "digest": metadata_index._content_digest(path),
+                "digest": file_memo.content_digest(path),
                 "fields": stale,
             }
         ],

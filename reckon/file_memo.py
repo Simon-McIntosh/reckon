@@ -307,24 +307,17 @@ def file_revision(stat: os.stat_result) -> str:
     return f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
 
 
-def file_bytes(path: Path | str) -> bytes:
-    """Return ``path``'s bytes, one physical read while its stat is unchanged.
-
-    A reader that decodes a document and a digest, or a digest and then a
-    parse, would otherwise read the file twice. Both reach it here and the
-    second caller is served from the first caller's read.
-    """
-
-    target = Path(path)
-
-    def read() -> bytes:
-        return target.read_bytes()
-
-    return memoized("file_bytes", target, read)
-
-
 def content_digest(path: Path | str) -> str:
-    """Return the digest of ``path``'s bytes, sharing one read while unchanged.
+    """Return a byte digest, sharing an unchanged file's one physical read.
+
+    The row is keyed on the file's bytes rather than its stat identity: a
+    rewrite that restores the same bytes — a checkout or a rebuild that only
+    touches the mtime — reuses the parsed row, while any byte change re-parses
+    it. A shared filesystem also reports a different device number for the same
+    file on each host, which a byte digest is blind to, so the served process
+    and the readers on other hosts share one persisted index instead of each
+    re-parsing the whole project. The process cache is revalidated by the file's
+    full stat identity; a changed file is hashed again.
 
     A parse keyed on this digest is shared by every path holding byte-identical
     content, so the same document reached through a second tree costs one hash
@@ -333,17 +326,30 @@ def content_digest(path: Path | str) -> str:
     see ``memoized(..., by_content=True)``.
 
     An HTML document's decoded text is stored as it is hashed, so a caller that
-    parses the document after keying on its digest decodes the bytes this read
-    already returned rather than reading the file a second time.
+    parses the document after keying on this digest decodes the bytes this read
+    already returned rather than reading the file a second time. The text is
+    stored only under the signature its bytes were read at: the signature is
+    taken before the read and checked again before the text is handed over, so
+    a write landing in between makes the store re-read rather than pair one
+    file's bytes with another's stat identity.
     """
 
     target = Path(path)
 
     def read() -> str:
-        content = file_bytes(target)
+        signature = file_signature(target)
+        content = target.read_bytes()
         if target.suffix == ".html":
-            text = content.decode("utf-8", errors="replace")
-            memoized("plan_text", target, lambda: text)
+
+            def decoded() -> str:
+                try:
+                    if file_signature(target) == signature:
+                        return content.decode("utf-8", errors="replace")
+                    return target.read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    return ""
+
+            memoized("plan_text", target, decoded)
         return hashlib.sha256(content).hexdigest()
 
     return memoized("content_digest", target, read)

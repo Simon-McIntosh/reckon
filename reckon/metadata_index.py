@@ -38,12 +38,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 
-from reckon import _plan_html, figures, resources
+from reckon import _plan_html, figures, file_memo, resources
 from reckon._store import _config_home, write_json_atomically
 from reckon.file_memo import (
     file_revision,
     file_signature,
-    memoized,
     signature_from_stat,
 )
 
@@ -588,7 +587,7 @@ def _patch_build(
             _reuse_entry(fresh, fresh_entries, relative, entry)
             continue
         try:
-            digest = _content_digest(path)
+            digest = file_memo.content_digest(path)
         except OSError:
             digest = None
         if (
@@ -823,7 +822,7 @@ def build_index(
                 _reuse_entry(build, entries, relative, entry)
                 continue
         try:
-            digest = _content_digest(path)
+            digest = file_memo.content_digest(path)
         except OSError:
             # A file that cannot be read is still a row, built below with its
             # parse left unknown; a vanished one drops out and the next build
@@ -900,38 +899,6 @@ def _row_is_complete(entry: Mapping) -> bool:
     if fields.get("type") != "plan":
         return True
     return isinstance(entry.get("plan"), Mapping)
-
-
-def _content_digest(path: Path) -> str:
-    """Return a byte digest, sharing an unchanged file's one physical read.
-
-    The row is keyed on the file's bytes rather than its stat identity: a
-    rewrite that restores the same bytes — a checkout or a rebuild that only
-    touches the mtime — reuses the parsed row, while any byte change re-parses
-    it. A shared filesystem also reports a different device number for the same
-    file on each host, which a byte digest is blind to, so the served process
-    and the readers on other hosts share one persisted index instead of each
-    re-parsing the whole project. The process cache is revalidated by the file's
-    full stat identity; a changed file is hashed again.
-    """
-
-    def read() -> str:
-        signature = file_signature(path)
-        content = path.read_bytes()
-        if path.suffix == ".html":
-
-            def decoded() -> str:
-                try:
-                    if file_signature(path) == signature:
-                        return content.decode("utf-8", errors="replace")
-                    return path.read_text(encoding="utf-8", errors="replace")
-                except OSError:
-                    return ""
-
-            memoized("plan_text", path, decoded)
-        return hashlib.sha256(content).hexdigest()
-
-    return memoized("content_digest", path, read)
 
 
 def _cache_key(docs_dir: Path, project: str, with_git: bool) -> tuple[str, str, bool]:
@@ -1330,7 +1297,7 @@ def discovery_state(docs_dir: Path, project: str) -> dict[str, dict]:
             fresh[relative] = dict(discovery)
             continue
         try:
-            digest = _content_digest(path)
+            digest = file_memo.content_digest(path)
         except OSError:
             continue
         if entry.get("digest") == digest:
@@ -1406,7 +1373,7 @@ def record_discovery(docs_dir: Path, project: str, relative: str) -> None:
     if relative not in known:
         return
     try:
-        digest = _content_digest(path)
+        digest = file_memo.content_digest(path)
         if known[relative].get("digest") == digest:
             return
         signature = list(file_signature(path))

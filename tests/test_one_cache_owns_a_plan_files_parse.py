@@ -121,9 +121,50 @@ def test_changed_bytes_at_the_same_path_are_parsed_again(tmp_path, monkeypatch):
     assert calls["count"] == 2
 
 
+def test_a_write_between_the_read_and_the_store_is_not_served(tmp_path, monkeypatch):
+    """The text is cached only under the signature its bytes were read at.
+
+    The digest reads a document's bytes and then hands the decode to a second
+    memo. A write landing between those two moments would let the old bytes be
+    stored under the new file's stat identity, so every later read would be
+    answered with text the file no longer holds. The write here happens on the
+    first signature check after the bytes are read — the moment the first
+    version cached the stale text.
+    """
+    docs = tmp_path / "docs"
+    path = _write_plan(docs, "alpha", "Alpha")
+    edited = _PLAN_DOC.format(slug="alpha", title="Alpha edited")
+
+    real_signature = file_memo.file_signature
+    real_read_bytes = Path.read_bytes
+    state = {"read": False, "written": False}
+
+    def read_bytes(inner_self):
+        data = real_read_bytes(inner_self)
+        if Path(inner_self) == path:
+            state["read"] = True
+        return data
+
+    def signature_then_write(candidate):
+        if Path(candidate) == path and state["read"] and not state["written"]:
+            path.write_text(edited, encoding="utf-8")
+            state["written"] = True
+        return real_signature(candidate)
+
+    monkeypatch.setattr(Path, "read_bytes", read_bytes)
+    monkeypatch.setattr(file_memo, "file_signature", signature_then_write)
+
+    assert resources_module._identify_meta(path)["title"] == "Alpha edited"
+    # The write did land, so this case is not passing on an untouched file.
+    assert state["written"]
+
+
 def test_the_index_keeps_no_parse_cache_of_its_own():
     """No second parse cache survives under the index, in name or in source."""
     source = Path(metadata_index.__file__).read_text(encoding="utf-8")
     for name in _INDEX_CACHE_NAMES:
         assert not hasattr(metadata_index, name), name
         assert name not in source, name
+    # The byte digest has one owner too, so a second copy cannot drift.
+    assert not hasattr(metadata_index, "_content_digest")
+    assert hasattr(file_memo, "content_digest")
