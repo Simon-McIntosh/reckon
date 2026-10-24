@@ -1236,12 +1236,13 @@ def _pending_limit_warning(
 
 
 def _value_at_path(data: dict[str, Any], path: str) -> Any:
-    """The current value a ``set`` op's path addresses, or ``_ABSENT``.
+    """The current value an address holds, or ``_ABSENT``.
 
-    Resolves the same address forms the store's set handler accepts: a list of
-    records keyed by ``id`` (sections, followups, gates), a mapping (decisions,
-    a section's declarations), or a top-level scalar. Anything unresolved is
-    reported as absent rather than guessed.
+    Resolves the same address forms the store's handlers accept: a list of
+    records keyed by ``id`` (sections, followups, gates, sprints and the other
+    listed collections) addressed as ``<collection>.<id>`` or with one more
+    field, a mapping (decisions, a section's declarations), or a top-level
+    scalar. Anything unresolved is reported as absent rather than guessed.
     """
     parts = [p for p in str(path).split(".") if p]
     if not parts:
@@ -1256,6 +1257,9 @@ def _value_at_path(data: dict[str, Any], path: str) -> Any:
         if hit is None:
             return _ABSENT
         return hit[1].get(parts[2], _ABSENT)
+    if len(parts) == 2 and isinstance(data.get(head), list):
+        hit = _find_by_id(data[head], parts[1])
+        return _ABSENT if hit is None else hit[1]
     if len(parts) == 2 and head in {"decisions", "section_declarations"}:
         mapping = data.get(head)
         if not isinstance(mapping, dict):
@@ -1268,6 +1272,29 @@ def _value_at_path(data: dict[str, Any], path: str) -> Any:
         else:
             return _ABSENT
     return current
+
+
+#: The store's op verbs this module composes a target for. ``_store._OP_DISPATCH``
+#: is the authority on which verbs exist; a verb added there without an entry
+#: here would silently answer a conflict with no target, so a test compares the
+#: two sets and fails on the difference.
+TARGET_COMPOSED_VERBS = frozenset(
+    {
+        "set",
+        "append",
+        "resolve",
+        "lock",
+        "accept",
+        "gate",
+        "pass",
+        "fail",
+        "insert_section",
+        "append_evidence",
+        "retire_prose",
+        "close",
+        "move",
+    }
+)
 
 
 def _op_target_path(op: dict[str, Any]) -> str | None:
@@ -1283,6 +1310,8 @@ def _op_target_path(op: dict[str, Any]) -> str | None:
     if not isinstance(op, dict):
         return None
     verb = op.get("op")
+    if verb not in TARGET_COMPOSED_VERBS:
+        return None
     if verb == "set":
         path = op.get("path")
         return path if isinstance(path, str) and path else None
@@ -1335,6 +1364,15 @@ def _changed_targets(
     value: the caller re-reads only what it did not expect to move, instead of
     re-reading the whole plan. Every op kind is answered, so the conflict shape
     is the same whichever verb the caller chose.
+
+    ``current`` is carried whenever the document holds something at the
+    composed address. That is every ``set``, ``close`` and ``move``; every
+    ``resolve``, ``lock``, ``accept``, ``gate``, ``pass`` and ``fail`` whose
+    record already exists; and an ``append`` whose collection already holds the
+    addressed entry. A verb that inserts a record the document does not hold —
+    an ``append`` of a new entry, ``insert_section``, ``append_evidence`` — and
+    a directive with no state address (``retire_prose``) reports the path
+    alone, because there is no current value to read back.
     """
     targets: list[dict[str, Any]] = []
     for index, op in enumerate(ops or []):

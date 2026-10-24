@@ -46,6 +46,16 @@ SECTION_RECORD = {
 }
 
 
+FOLLOWUP_RECORD = {
+    "id": "f-open",
+    "written_by": "w-seed",
+    "written_at": "2026-10-01T00:00:00Z",
+    "title": "A followup the resolve addresses",
+    "body": "<p>Body</p>",
+    "prompt": f"/reckon-build {PLAN} §1",
+}
+
+
 def _seed(root: Path) -> Path:
     path = root / "docs" / "plans" / f"{PLAN}.html"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -61,7 +71,25 @@ def _seed(root: Path) -> Path:
         "title": "Edit-path target",
         "status": "active",
         "version": 0,
-        "comments": {},
+        "owner": "seeded",
+        "comments": {
+            ANCHOR: [
+                {
+                    "id": "c-seeded",
+                    "who": "editor",
+                    "when": "2026-10-01T00:00:00Z",
+                    "body": "<p>c-seeded</p>",
+                }
+            ]
+        },
+        "followups": [
+            dict(FOLLOWUP_RECORD),
+            # A second open followup keeps the batch's continuation open when
+            # the resolve path is the one under test.
+            {**FOLLOWUP_RECORD, "id": "f-next", "title": "The continuation"},
+        ],
+        "decisions": {"d-seeded": {"title": "A decision the lock addresses"}},
+        "gates": [{"id": "g-seeded", "measure": "what the gate measures"}],
         "section_declarations": {"s1": "implementable"},
     }
     path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")
@@ -83,25 +111,14 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _op_kinds() -> dict[str, list[dict]]:
+    """One op per addressing family, each naming a target the document holds.
+
+    Every kind here addresses something the seeded document already carries, so
+    the refusal's ``current`` value can be checked against the document for each
+    path without an exception. A kind that inserts a new record has nothing to
+    read back and is driven by its own case below.
+    """
     return {
-        "followup-append": [
-            {
-                "op": "append",
-                "target": "followups",
-                "item": {
-                    "id": "f-refused",
-                    "written_by": "w-refused",
-                    "written_at": "2026-10-03T00:00:00Z",
-                    "title": "A followup appended mid-landing",
-                    "body": "<p>Body</p>",
-                    "prompt": f"/reckon-build {PLAN} §1",
-                },
-            }
-        ],
-        "section-append": [
-            {"op": "append", "target": "sections", "item": dict(SECTION_RECORD)}
-        ],
-        "state-set": [{"op": "set", "path": "owner", "value": "w-refused"}],
         "comment-append": [
             {
                 "op": "append",
@@ -115,7 +132,50 @@ def _op_kinds() -> dict[str, list[dict]]:
                 },
             }
         ],
+        "decision-lock": [
+            {
+                "op": "lock",
+                "key": "d-seeded",
+                "choice": "the first option",
+                "rationale": "The rationale the lock records.",
+                "by": "w-refused",
+            }
+        ],
+        "followup-resolve": [
+            {
+                "op": "resolve",
+                "target": "followups",
+                "id": "f-open",
+                "outcome": "Landed in the refused batch.",
+                "by": "w-refused",
+            }
+        ],
+        "gate-verdict": [
+            {"op": "pass", "id": "g-seeded", "evidence": "The gate's log."}
+        ],
+        "state-set": [{"op": "set", "path": "owner", "value": "w-refused"}],
     }
+
+
+def _value_in(state: dict, path: str):
+    """The document's value at ``path``, resolved independently of the module."""
+    current = state
+    for part in path.split("."):
+        assert isinstance(current, (dict, list)), (
+            f"{path!r}: {part!r} addresses no mapping or list"
+        )
+        if isinstance(current, dict):
+            assert part in current, f"{path!r}: {part!r} absent from the document"
+            current = current[part]
+        else:
+            hits = [
+                row
+                for row in current
+                if isinstance(row, dict) and str(row.get("id")) == part
+            ]
+            assert hits, f"{path!r}: the document holds no record {part!r}"
+            current = hits[0]
+    return current
 
 
 def _landing_between_read_and_write(
@@ -202,14 +262,17 @@ def test_the_refusal_shape_is_identical_across_op_paths(
         _landing_between_read_and_write(root, monkeypatch)
         outcome = _edit(root, ops, version)
         assert isinstance(outcome, dict), f"{kind} raised {outcome!r}"
-        # Every op kind names the targets its own ops address...
+        # Every op kind names the targets its own ops address, each carrying
+        # the value the document holds at that address — read back off disk,
+        # not one this test supplied.
         targets = outcome.get("changed_targets") or []
         assert targets, f"{kind} refused without naming its changed targets: {outcome}"
         state_after, _ = _store.read_plan(PROJECT, PLAN, root, artifact_type="plan")
         for entry in targets:
-            if "current" in entry:
-                # ...with the value read back off disk, not one this test passed.
-                assert entry["current"] == state_after[entry["path"]], entry
+            assert "current" in entry, (
+                f"{kind} named {entry['path']!r} without the value it holds"
+            )
+            assert entry["current"] == _value_in(state_after, entry["path"]), entry
         # The targets themselves differ between kinds by construction, so they
         # are compared apart from the refusal every path must return alike.
         shapes[kind] = {
@@ -239,3 +302,36 @@ def test_a_sequential_write_after_the_refusal_still_lands(
     assert retried.get("new_version") == 2, retried
     state, current = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
     assert state.get("owner") == "w-refused"
+
+
+def test_an_append_of_a_new_record_names_its_path_alone(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A record the document does not hold yet has no value to read back."""
+    _state, version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
+    _landing_between_read_and_write(repository, monkeypatch)
+    outcome = _edit(
+        repository,
+        [{"op": "append", "target": "sections", "item": dict(SECTION_RECORD)}],
+        version,
+    )
+
+    assert isinstance(outcome, dict), outcome
+    assert outcome["error"] == "version_conflict", outcome
+    assert outcome["changed_targets"] == [{"index": 0, "path": "sections.s-refused"}], (
+        outcome["changed_targets"]
+    )
+
+
+def test_every_store_op_verb_names_a_target() -> None:
+    """A verb added to the store's dispatch cannot silently lose its target."""
+    from reckon import _store as store_module
+    from reckon.mcp_edit_plan import TARGET_COMPOSED_VERBS
+
+    missing = set(store_module._OP_DISPATCH) - TARGET_COMPOSED_VERBS
+    assert not missing, (
+        f"{sorted(missing)} are store op verbs with no composed target address — "
+        "add each to TARGET_COMPOSED_VERBS and to _op_target_path"
+    )
+    stale = TARGET_COMPOSED_VERBS - set(store_module._OP_DISPATCH)
+    assert not stale, f"{sorted(stale)} compose a target for no store verb"
