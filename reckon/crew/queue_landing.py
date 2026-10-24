@@ -122,6 +122,16 @@ def land_once() -> dict[str, Any]:
         if isinstance(previous, Mapping) and recovery.same_revision(
             str(previous.get("head") or ""), head
         ):
+            if previous.get("status") == "attempting":
+                guard = "automatic landing interrupted before a receipt"
+                _record_attempt(run_id, head=head, guard=guard, status="refused")
+                obligations.append(
+                    {
+                        "run_id": run_id,
+                        "session": str(pointer.get("session") or ""),
+                        "guard": guard,
+                    }
+                )
             continue
         try:
             review, stale = select_review_for_head(project, run_id, head, tree=tree)

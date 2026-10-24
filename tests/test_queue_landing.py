@@ -235,6 +235,35 @@ def test_refused_land_names_its_guard_and_is_never_retried(
     ), duties
 
 
+def test_an_interrupted_attempt_becomes_an_owner_duty_without_retry(
+    delivery: dict[str, str | Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _review(base=str(delivery["base"]), head=str(delivery["head"]))
+    runs._mutate_pointer(
+        RUN,
+        lambda pointer: {
+            **pointer,
+            "admission_landing": {
+                "head": str(delivery["head"]),
+                "guard": "crew land",
+                "status": "attempting",
+            },
+        },
+    )
+    monkeypatch.setattr(
+        queue_landing, "_land", lambda run_id: pytest.fail("interrupted land retried")
+    )
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == []
+    assert result["obligations"][0]["run_id"] == RUN
+    assert "interrupted" in result["obligations"][0]["guard"]
+    assert runs.read_pointer(RUN)["admission_landing"]["status"] == "refused"
+    duties = obligations.obligations(PROJECT, SESSION)["obligations"]
+    assert any(item["kind"] == "landing-refused" for item in duties)
+
+
 def test_an_unchanged_head_is_not_reviewed_a_second_time(
     delivery: dict[str, str | Path],
 ) -> None:
