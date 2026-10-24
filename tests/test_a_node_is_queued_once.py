@@ -313,9 +313,9 @@ def test_a_different_node_over_a_queued_path_launches(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # A queued request holds no worker and no worktree, so its claim on
-    # result.json fences nothing: a different node over that path proceeds like
-    # any other dispatch rather than being refused against a claim that is not
-    # held. The queued request itself stays live for its own launch.
+    # result.json fences nothing: a different node over that path is not
+    # refused against it. With room, the dispatch spends the slot on its own
+    # session's older queued request and queues itself behind it.
     _configure(dispatch_repo, monkeypatch, session_slots=0)
     queued = _dispatch(dispatch_repo, "node-one")
     assert queued.exit_code == 0, queued.output
@@ -330,9 +330,11 @@ def test_a_different_node_over_a_queued_path_launches(
     payload = backend_tests._payload(launched)
     assert payload.get("error") != "scope-conflict"
     assert payload["ok"] is True
-    assert payload.get("queued", False) is False
-    assert payload["phase"] == "starting"
-    assert runs.read_pointer(queued_id)["phase"] == "queued"
+    # The dispatch spends the freed slot on its session's older queued request
+    # rather than on itself, so the older request launches under its own run id
+    # and this one queues behind it.
+    assert payload.get("queued") is True
+    assert runs.read_pointer(queued_id)["phase"] != "queued"
 
 
 def test_a_different_node_over_a_working_run_s_path_is_refused(

@@ -371,6 +371,8 @@ def test_both_dispatch_holds_are_recorded_without_docs():
         and isinstance(node.func, ast.Name)
         and node.func.id == "record_picker_hold"
     ]
-    assert len(calls) == 2
+    # The lane hold, the unmet-section-waits hold, and the wait site's own
+    # stored request: three dispatch sites record a picker hold, none with docs.
+    assert len(calls) == 3
     for call in calls:
         assert "docs" not in {keyword.arg for keyword in call.keywords}

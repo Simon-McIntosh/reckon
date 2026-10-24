@@ -170,8 +170,10 @@ def test_a_dispatch_launches_its_sessions_older_request_and_queues_behind_it(
         _dispatch(admit_repo, config, _launcher(recorded))
 
     live = _live_by_node()
-    # The older request left the queue, launched under its own run id.
-    assert not runs.pointer_path("r-older").exists()
+    # The older request left the queue and launched under its own run id, so
+    # its pointer now carries the launched phase rather than the queued one.
+    assert runs.pointer_path("r-older").exists()
+    assert live[OLDER_NODE]["run_id"] == "r-older"
     assert live[OLDER_NODE]["phase"] != "queued"
     assert recorded, "the older request's launch reached the launcher"
     # The fresh dispatch queued behind it.

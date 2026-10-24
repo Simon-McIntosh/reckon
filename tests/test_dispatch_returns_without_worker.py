@@ -1244,7 +1244,7 @@ def test_a_discarded_run_is_not_recreated(
         host,
         tag=f"discarded-{uuid.uuid4().hex[:8]}",
         marker_dir=marker_dir,
-        stub_sleep=5,
+        stub_sleep=30,
         hold=False,
     )
     outcome: dict[str, Any] = {"case": "a discarded run is not recreated"}
