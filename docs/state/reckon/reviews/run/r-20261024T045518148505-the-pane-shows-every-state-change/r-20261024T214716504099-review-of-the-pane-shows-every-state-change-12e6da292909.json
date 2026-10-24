@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-24T22:05:54.504Z",
+  "dispatched_at": "2026-10-24T21:49:48Z",
+  "findings": [
+    {
+      "file": "tests/test_the_pane_shows_every_state_change.py",
+      "line": 133,
+      "severity": "non-blocking",
+      "text": "The seeding now comes from the released delivery row rather than a test-written memory entry, but the assertion still passes with reckon/crew/ticker.py:1558 removed: Ticker.render (reckon/crew/ticker.py:2707) reads a stream row's left word from self._reported before the row's own from_state, and the test seeds that memory by rendering the delivery row first. The row-alone left word the ticker change added therefore remains unguarded; this is the residual of the prior review's finding, so it does not hold the node."
+    },
+    {
+      "file": "manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "The manifest's tests: line, which promotion reads as the gate receipt and re-runs, names 17 files that do not include tests/test_the_pane_shows_every_state_change.py, the only file this commit changes. The changed test is exercised only in focused-gate-final.log, so the receipt for head 12e6da292 would not run it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 one commit, one file, +16/-10, reworking the in-review test as described.",
+    "done_when": "pass \u2014 the focused gate at head 12e6da292 records 8 passed EXIT=0 in focused-gate-final.log against 8 passed at base 91b43f760 in focused-gate-repair.log, and ruff format and check add no findings on the changed file.",
+    "goal": "pass \u2014 the gained commit removes the test-written painter memory and seeds the in-review assertion from the released delivery row at tests/test_the_pane_shows_every_state_change.py:133.",
+    "manifest": "pass \u2014 read; it records the focused run and its result, though its tests: line omits the changed file (recorded as a non-blocking finding).",
+    "write_paths": "pass \u2014 the commit touches only tests/test_the_pane_shows_every_state_change.py, inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commit's stated purpose is to make the in-review assertion read the left word from the run's own last row rather than from test-written painter memory; it removes the _seed_ticker_memory seeding and renders the released delivery row at tests/test_the_pane_shows_every_state_change.py:133, so the left word is produced by the row policy rather than supplied by the test.\nVERDICT done_when: the source node's \u00a714 done_when asks the focused test file to print the named sequences; the focused gate at head 12e6da292 records 8 passed EXIT=0 in focused-gate-final.log against 8 passed at base 91b43f760 in focused-gate-repair.log, and ruff format --check and ruff check add no findings on tests/test_the_pane_shows_every_state_change.py (verified against the head file).\nVERDICT write_paths: the declared paths include reckon/crew/ticker.py, reckon/crew/recovery_watch.py, tests/test_the_pane_shows_every_state_change.py and the evidence fragment; the gained commit touches only tests/test_the_pane_shows_every_state_change.py, inside them.\nVERDICT manifest: read; status complete, it names focused-gate-final.log at head 12e6da292 (8 passed, EXIT=0) and claims the file is ruff-format clean, which this review verified; its tests: line at manifest.md:17 names 17 files that exclude the changed test, recorded as a non-blocking finding.\nVERDICT diff: read commit by commit against 91b43f760; the single commit 12e6da292 changes one file (+16/-10): it drops the _seed_ticker_memory import, renders the policy's released delivery row through the painter before the in-review row, and adds a halted-row control that must read 'halted -> in review'.\nCALL_SITES: reckon/crew/ticker.py:PaneRowPath.feed, reckon/crew/ticker.py:RowPolicy._launch_row, reckon/crew/ticker.py:Ticker.render\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_the_pane_shows_every_state_change.py:133 seeds the painter from the released delivery row, and the halted control at line 143 shows the left word follows memory rather than a constant.\nSCORE evidence: 15\nJUSTIFICATION evidence: focused-gate-final.log records 8 passed EXIT=0 at head 12e6da292 and the reformatted block is clean under ruff (verified), but the manifest's tests: line at manifest.md:17 omits the changed test from promotion's receipt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 91b43f760 12e6da292 names tests/test_the_pane_shows_every_state_change.py alone, inside the declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_pane_shows_every_state_change.py:136 reddens if the in-review left word stops following the painter's per-run memory or the delivery row stops being released, but it stays green with reckon/crew/ticker.py:1558 removed because reckon/crew/ticker.py:2707 prefers self._reported over the row's from_state.\nSCORE fit: 19\nJUSTIFICATION fit: the added delivery, halted and control bindings at tests/test_the_pane_shows_every_state_change.py:129-146 follow the file's local-variable idiom and introduce no plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition and removes a test-only use of _seed_ticker_memory, which reckon/crew_follow_commands.py:2565 still owns and crew_follow_commands.py:3025 still uses in production.\nFINDING tests/test_the_pane_shows_every_state_change.py:133 non-blocking: the painter is now seeded from the released delivery row, but the assertion still passes with reckon/crew/ticker.py:1558 removed because Ticker.render (reckon/crew/ticker.py:2707) reads a stream row's left word from self._reported before the row's own from_state, so the row-alone left word remains unguarded; residual of the prior review and does not hold the node.\nFINDING manifest.md:17 non-blocking: the manifest's tests: line, which promotion re-runs as the gate receipt, names 17 files that exclude tests/test_the_pane_shows_every_state_change.py, the only file the commit changes, so the receipt for head 12e6da292 would not exercise it.",
+  "review_run_id": "r-20261024T214716504099-review-of-the-pane-shows-every-state-change-12e6da292909",
+  "reviewed_base_sha": "91b43f7600352ec6f7df6ab926e217d7d840e937",
+  "reviewed_head_sha": "12e6da2929091995a1767490152529aae11cc919",
+  "reviewed_run_id": "r-20261024T045518148505-the-pane-shows-every-state-change",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_arms": {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "after": {
+      "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_pane_shows_every_state_change.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T045518148505-the-pane-shows-every-state-change/focused-gate-final.log",
+      "revision": "12e6da2929091995a1767490152529aae11cc919"
+    },
+    "baseline": {
+      "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_pane_shows_every_state_change.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T045518148505-the-pane-shows-every-state-change/focused-gate-repair.log",
+      "revision": "91b43f7600352ec6f7df6ab926e217d7d840e937"
+    },
+    "definition": "added failures are ids that fail at reviewed_head_sha and pass at reviewed_base_sha, derived from the reviewed run's own gate logs for the test file this review covers"
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-10-24T22:09:26.267247+00:00",
+  "total": 106
+}
