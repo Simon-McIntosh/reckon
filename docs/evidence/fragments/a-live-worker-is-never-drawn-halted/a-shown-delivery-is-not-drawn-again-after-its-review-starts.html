@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="A delivery already shown is not drawn again after its review starts">
+  <meta name="plan-summary" content="A coordinator's pane printed delivered → in review when a review launched, then in review → delivered carrying the delivery's own earlier time while the review was still running. The row policy now withholds a delivered row for a run whose in-review row it already drew in the open attempt, and a launch it releases for that run opens the next attempt so a resumed run's own delivery still prints.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s15">
+  <meta name="plan-recorded-at" content="2026-10-25">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch-stream,pane,row-policy,review,delivery">
+  <title>A delivery already shown is not drawn again after its review starts — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-note" class="r-note" data-node="a-shown-delivery-is-not-drawn-again-after-its-review-starts" data-reckon="landed" data-when="2026-10-25">
+  <h2 id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-head">A delivery already shown is not drawn again after its review starts</h2>
+
+  <p id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-defect">Measured 2026-10-25 02:50Z on this session's pane, after the in-review row landed. The pane printed <code>delivered → in review</code> for <code>the-orchestrator-reset-row-says-what-it-is</code> when its review launched, then <code>in review → delivered</code> carrying the delivery's own earlier time (02:46:52) while the review was still running. A reader takes the second row as the run leaving its review, which the review had not done.</p>
+
+  <p id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-mechanism">A producer re-sweeps a delivered run whose state has not changed, so the delivery it writes again is a row the pane printed before. The row survives the same-word rule because a delivered run awaiting its review carries the action classification <code>scoring</code>, and <code>same_word_row_is_news</code> names every actionable row news so a repeated word never hides a duty. <code>RowPolicy</code> now holds an attempt-keyed memory in <code>reckon/crew/ticker.py</code>: <code>_launches</code> counts the launches the pane released for a run, and <code>_review_started</code> records the ordinal at which it drew that run's in-review row. <code>_note_launch</code> writes both — the review's own launch marks the reviewed run's open attempt, and a launch under the run's own id moves the ordinal — and <code>_redraws_a_shown_delivery</code> withholds a delivered row for a run whose marked ordinal is still the open one. A resumed attempt is therefore a new ordinal, so its own delivery prints.</p>
+
+  <p id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-scope-of-rule">The rule is the reviewed run's alone. A review run's own delivery, the reviewed run's landing, and the halt and resume a review's findings cause all still print, which the resume arm drives end to end: launch, delivery, in review, the review's delivery, halt, the resume's launch, the resumed attempt's delivery.</p>
+
+  <h3 id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-gate">The gate, its control and the population</h3>
+
+  <p id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-gate-head">Three tests drive timed event sequences through a real <code>PaneRowPath</code>, so a hold's window is measured rather than waited out, and all three pass at the working tree. The first feeds a delivery, the review's launch drawn as the in-review row, and the same delivery re-emitted as a producer re-sweep emits it; the pane prints the delivery and the in-review row and nothing else. The second is the positive control: the same two delivery rows with no review between them print both times, so the withheld row is the memory's work rather than a row the pane never carried. The third adds the review's own delivery, a halt and a resume, and shows the new attempt's launch and its own delivery printing.</p>
+
+  <table id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-arms">
+    <thead>
+      <tr><th>arm</th><th>sequence</th><th>rows printed</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>the defect</td><td>launch, delivery, review launch, the delivery re-emitted</td><td>working, delivered, in review</td></tr>
+      <tr><td>control, no review between</td><td>launch, delivery, the delivery re-emitted</td><td>working, delivered, delivered</td></tr>
+      <tr><td>resume after the review</td><td>the defect sequence, the review's delivery, halt, resume, delivery</td><td>working, delivered, in review, delivered, halted, working, delivered</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-negative">The negative control removes the attempt-keyed memory — <code>reckon/crew/ticker.py</code> restored to the pre-change revision in a scratch tree — and runs the same file: the two withholding arms fail with the re-emitted delivery printed (<code>['working', 'delivered', 'in review', 'delivered']</code>) and <code>EXIT=1</code>, while the control arm still passes. The base arm runs the same file against the base revision and records the same two failures, so the gate fails where the change is absent and passes where it is present.</p>
+
+  <p id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-population">The population is the 52 test files importing <code>ticker</code>, 684 tests. At this head it passes 684 of 684, and at the base revision the 51 files present there pass 681 of 681. One run in between failed <code>test_crew_session_delivery.py::test_a_follower_waits_for_a_producer_instead_of_refusing</code> on a thread that did not join inside its two-second window; it passes alone three times and as a whole file at this head, and the full cohort passed on re-run, so it is the timing of that window under a loaded node rather than this change, which does not reach the follower's wait.</p>
+
+  <p id="a-shown-delivery-is-not-drawn-again-after-its-review-starts-scope">The section's write paths are the row policy and the new test, and nothing outside them was touched. Ruff reports no findings and no formatting difference on the two staged paths.</p>
+</article>
+</body>
+</html>
