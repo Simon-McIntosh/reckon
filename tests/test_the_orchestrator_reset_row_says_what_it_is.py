@@ -9,8 +9,12 @@ limit reset or that it asks a stopped session to continue, so each reader had to
 work it out for themselves.
 
 The row is now drawn as its own clause — what it is, the group, the clock it
-resets, and that orchestrator sessions may continue — with the announcer's
-reason after it when the record carries one. These tests drive the real
+resets, and whose work may continue — with the announcer's reason after it when
+the record carries one. The closing clause is chosen by the group: a wallet no
+configured backend draws on is the orchestrator wallet, so its reset frees
+orchestrator sessions; a group a backend draws on frees that worker lane and
+claims nothing above it; a config that declares no wallet names no lane at all.
+These tests drive the real
 producer path (``budget_reset.mark_used`` into ``lift_watch.sweep_resets``,
 through the real pane claim) so the measurement counts the line a pane prints
 rather than a fixture's opinion of it.
@@ -37,6 +41,13 @@ PROJECTS = ("alpha", "beta")
 NOW = datetime(2026, 10, 14, 18, 30, tzinfo=UTC)
 WIDE = 200
 
+# A host layer declaring one worker lane's wallet. Its purpose here is to make
+# the pane's reading of the config a declared fact rather than an accident of
+# which machine runs the tests: with a wallet declared, a group the config does
+# not name is the orchestrator wallet.
+LANE_GROUP = "claude-sub"
+HOST_LAYER = f"version: 1\n\nbackends:\n  claude:\n    budget_group: {LANE_GROUP}\n"
+
 
 def _listing(directory: Path) -> list[str]:
     if not directory.exists():
@@ -50,6 +61,7 @@ def _isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[
     real_claims = lift_claim_dir("")
     before = _listing(real_claims)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    (tmp_path / "flight.yaml").write_text(HOST_LAYER)
     yield tmp_path
     assert _listing(real_claims) == before, "a test wrote the real crew home"
 
@@ -119,7 +131,8 @@ def test_the_recorded_orchestrator_reset_row_says_what_it_is(tmp_path: Path):
         assert "limit reset" in rendered, rendered
         assert GROUP in rendered, rendered
         assert CLOCK in rendered, rendered
-        assert "may continue" in rendered, rendered
+        assert ticker.RESET_ORCHESTRATOR_INSTRUCTION in rendered, rendered
+        assert ticker.RESET_LANE_INSTRUCTION not in rendered, rendered
         assert "new → working" not in rendered, rendered
         assert "→" not in rendered, f"a reset row carries no transition: {rendered}"
 
@@ -150,7 +163,7 @@ def test_a_reset_with_no_reason_still_says_what_it_asks(tmp_path: Path):
     row = lift_watch._reset_row(PROJECTS[0], detected, moment=NOW)
     for rendered in _rendered(row):
         assert "limit reset" in rendered, rendered
-        assert "may continue" in rendered, rendered
+        assert ticker.RESET_ORCHESTRATOR_INSTRUCTION in rendered, rendered
         assert "announced by" not in rendered, rendered
 
 
@@ -170,6 +183,59 @@ def test_a_second_sweep_draws_nothing_more_but_a_second_pane_does(tmp_path: Path
         for row in second_pane.feed(row, now=2000.0)
     ]
     assert len(printed) == 1, "the other session's pane never drew the reset"
+
+
+def _reset(group: str) -> dict:
+    """One recorded reset for ``group``, built by the producer's own builder."""
+    return lift_watch._reset_row(
+        PROJECTS[0],
+        {
+            "id": f"reset-{group}",
+            "group": group,
+            "clock": CLOCK,
+            "kind": "used",
+            "by": "lead",
+            "reason": REASON,
+            "detected_at": NOW.isoformat(),
+            "session": "",
+        },
+        moment=NOW,
+    )
+
+
+def test_a_worker_lanes_reset_claims_nothing_about_orchestrator_sessions():
+    """A group a backend draws on is that lane's wallet, so its reset says so.
+
+    Only a group no backend declares belongs to the orchestrator wallet, and
+    the wording follows that fact rather than the row: the same renderer prints
+    the lane clause for a lane's group and the orchestrator clause for the
+    wallet above it, so no row promises orchestrator sessions a lane reset did
+    not free.
+    """
+    assert ticker.group_is_paced(LANE_GROUP) is True
+    for rendered in _rendered(_reset(LANE_GROUP)):
+        assert "limit reset" in rendered, rendered
+        assert LANE_GROUP in rendered, rendered
+        assert ticker.RESET_LANE_INSTRUCTION in rendered, rendered
+        assert "orchestrator" not in rendered, rendered
+
+
+def test_a_config_declaring_no_group_names_no_lane(tmp_path: Path, monkeypatch):
+    """With no wallet declared, the row claims no lane and no orchestrator.
+
+    A host that declares no budget group has said nothing about which sessions
+    a reset frees, and the pane must not turn that silence into the orchestrator
+    clause the lead's own wallet gets.
+    """
+    empty = tmp_path / "unconfigured"
+    empty.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(empty))
+    assert ticker.group_is_paced(LANE_GROUP) is None
+    assert ticker.group_is_paced(GROUP) is None
+    for rendered in _rendered(_reset(GROUP)):
+        assert ticker.RESET_NEUTRAL_INSTRUCTION in rendered, rendered
+        assert ticker.RESET_ORCHESTRATOR_INSTRUCTION not in rendered, rendered
+        assert ticker.RESET_LANE_INSTRUCTION not in rendered, rendered
 
 
 def test_the_row_stays_on_one_line_at_the_panes_minimum_width():

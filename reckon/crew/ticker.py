@@ -285,8 +285,18 @@ LIMIT_STAGE = "limit"
 # own clause instead — what it is, the group, the clock it resets, and what it
 # asks of the session — with the announcer's reason after it when the record
 # carries one.
+#
+# The closing clause is chosen by what the group's own declaration establishes,
+# never by the row alone. A group some configured backend draws on is a worker
+# lane's wallet: its reset says that lane's work may go on and says nothing
+# about orchestrator sessions. A group no backend declares is the orchestrator
+# wallet — the reset a coordinator acts on. Config unreadable leaves the group
+# unknown, so the row falls back to the words that name no lane at all rather
+# than asserting a scope the record cannot support.
 RESET_HEADLINE = f"{LIMIT_STAGE} reset"
-RESET_INSTRUCTION = "orchestrator sessions may continue"
+RESET_LANE_INSTRUCTION = "worker lanes may continue"
+RESET_ORCHESTRATOR_INSTRUCTION = "orchestrator sessions may continue"
+RESET_NEUTRAL_INSTRUCTION = "sessions stopped at the usage limit may continue"
 
 # The facts the clause reads out of the sentence the producer composes. That
 # sentence names the group, the clock, the instant, who announced it and why,
@@ -301,11 +311,46 @@ RESET_CLOCK_CLAUSE = re.compile(r"\([^()]*,\s*(?P<clock>[^(),]+)\)")
 RESET_REASON_CLAUSE = re.compile(r"announced by [^:]*:\s*(?P<reason>[^;]+)")
 
 
-def limit_reset_text(event: Mapping[str, Any]) -> str:
+def group_is_paced(group: str, project: str | None = None) -> bool | None:
+    """Whether a configured backend draws its quota on ``group``; None if unknown.
+
+    A group is a declared wallet, so the answer comes from the resolved flight
+    config and from nothing else — never inferred from a name here. ``None``
+    means the config did not answer: it could not be read, or it declares no
+    budget group at all. Both are different from "no backend paces this
+    group", which takes a declaration to establish, because a pane that cannot
+    see a wallet cannot show the group in question is not one.
+
+    Resolution reads the same layers a dispatch does, with ``project`` selecting
+    the project layer, and a malformed config yields ``None`` for the same
+    reason :func:`declared_model_aliases` yields no aliases: a display surface
+    that refuses to render is worse than one that names no lane.
+    """
+    name = str(group or "").strip()
+    if not name:
+        return None
+    try:
+        from reckon import flight as flight_module
+        from reckon.crew import budget_group
+    except ImportError:
+        return None
+    try:
+        config = flight_module.resolve(project).config
+    except (OSError, ValueError, flight_module.FlightConfigError):
+        return None
+    declared = budget_group.declared_groups(config)
+    if not declared:
+        return None
+    return name in declared
+
+
+def limit_reset_text(event: Mapping[str, Any], *, paced: bool | None = None) -> str:
     """One limit-reset row as the single clause a reader acts on.
 
     The group is the row's own ``node``: a broadcast row carries no run, and the
-    producer puts the budget group there.
+    producer puts the budget group there. ``paced`` is
+    :func:`group_is_paced` for that group — True for a worker lane's wallet,
+    False for the orchestrator wallet, None when the config could not say.
     """
     clause = str(event.get("detail") or "")
     parts = [RESET_HEADLINE]
@@ -315,7 +360,12 @@ def limit_reset_text(event: Mapping[str, Any]) -> str:
     clock = RESET_CLOCK_CLAUSE.search(clause)
     if clock:
         parts.append(clock.group("clock").strip())
-    parts.append(RESET_INSTRUCTION)
+    if paced is None:
+        parts.append(RESET_NEUTRAL_INSTRUCTION)
+    elif paced:
+        parts.append(RESET_LANE_INSTRUCTION)
+    else:
+        parts.append(RESET_ORCHESTRATOR_INSTRUCTION)
     reason = RESET_REASON_CLAUSE.search(clause)
     if reason:
         parts.append(reason.group("reason").strip())
@@ -2626,6 +2676,10 @@ class Ticker:
         self._fixed_aliases = None if model_aliases is None else tuple(model_aliases)
         self._project = project
         self._alias_widths: dict[str | None, int] = {}
+        # Whether a configured backend paces a budget group, remembered per
+        # project so the flight config is read once for a pane's rows rather
+        # than once per reset row.
+        self._paced_groups: dict[tuple[str, str | None], bool | None] = {}
         self.model_width = self._model_width(project)
         self.width = self._grid_width()
         # NO_COLOR is the caller's environment overriding the caller's flag, per
@@ -2948,10 +3002,15 @@ class Ticker:
             + sum(len(text) for text, _ in stats)
         )
         room = self._grid_width() - CLOCK - GAP - tail
+        group = str(event.get("node") or "").strip()
+        project = str(event.get("project") or "").strip() or self._project
+        key = (group, project)
+        if key not in self._paced_groups:
+            self._paced_groups[key] = group_is_paced(group, project)
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
             (" " * GAP, None),
-            (elide(limit_reset_text(event), room), None),
+            (elide(limit_reset_text(event, paced=self._paced_groups[key]), room), None),
             (" " * GAP, None),
             *spend,
             (" " * GAP, None),
