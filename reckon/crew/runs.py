@@ -383,49 +383,35 @@ def _mutate_pointer(
         return record
 
 
-# The floor and ceiling of a session's queued-dispatch allowance. A share the
-# lane publishes below the floor is raised to it and one above the ceiling is
-# trimmed to it, so a session always holds at least two and never more than
-# eight queued runs whatever the lane's arithmetic reads; a lane that publishes
-# no share at all leaves the session on the floor.
-QUEUED_DISPATCH_CAP_FLOOR = 2
-QUEUED_DISPATCH_CAP_CEILING = 8
-
-
 class QueueFull(CrewError):  # noqa: N818 - named as the refusal states it, beside BudgetHold
-    """A session is already holding its share of queued dispatches.
+    """A project already holds its whole queue.
 
-    The cap is the lane document's own fair share, kept between its floor and
-    ceiling, so the refusal carries the session's counted held runs beside the
-    cap it exceeded. Nothing is written: the check runs under the queue's own
-    lock before the record is stored.
+    The bound is the flight setting ``queue.max_requests``, so the refusal
+    carries the project's counted held requests beside the bound it exceeded.
+    Nothing is written: the check runs under the queue's own lock before the
+    record is stored.
     """
 
-    def __init__(self, *, session: str, held: int, cap: int) -> None:
+    def __init__(
+        self,
+        *,
+        project: str = "",
+        session: str = "",
+        held: int,
+        cap: int,
+    ) -> None:
+        self.project = project
         self.session = session
         self.held = held
         self.cap = cap
-        super().__init__(
-            f"session {session or 'unidentified'} already holds {held} queued "
-            f"runs, at its cap of {cap}; a queued run launches when a slot frees"
+        subject = (
+            f"project {project}" if project else f"session {session or 'unidentified'}"
         )
-
-
-def queued_dispatch_cap(fair_share: object) -> int:
-    """Resolve the session's queued-dispatch cap from the lane's fair share.
-
-    The lane document publishes the share the router gives each session; the
-    cap is that figure kept between ``QUEUED_DISPATCH_CAP_FLOOR`` and
-    ``QUEUED_DISPATCH_CAP_CEILING``. A share the document does not publish, or
-    one that is not a number, leaves the session on the floor: a lane
-    publishing nothing says nothing about its capacity, and a cap of none would
-    refuse the very dispatch the queue exists to hold.
-    """
-    if isinstance(fair_share, bool) or not isinstance(fair_share, (int, float)):
-        return QUEUED_DISPATCH_CAP_FLOOR
-    return max(
-        QUEUED_DISPATCH_CAP_FLOOR, min(QUEUED_DISPATCH_CAP_CEILING, int(fair_share))
-    )
+        super().__init__(
+            f"{subject} already holds {held} queued runs, at the "
+            f"queue.max_requests bound of {cap}; a queued run launches when a "
+            "slot frees"
+        )
 
 
 # A queued request whose launch the admission pass is attempting is recorded
@@ -440,13 +426,18 @@ def handover_dir() -> Path:
     return crew_home() / "handover"
 
 
-def _node_identity(record: Mapping[str, Any]) -> tuple[str, str, str, str]:
-    """The (session, plan, section, node id) tuple that identifies one request."""
+def _node_identity(record: Mapping[str, Any]) -> tuple[str, str, str]:
+    """The (plan, section, node id) tuple that identifies one request.
+
+    The session is deliberately absent: a request names work to do, and two
+    sessions naming the same section are asking for the same run rather than
+    for two. The project is the other half of the identity and is carried by
+    the directory the scan walks, so every lookup below reads it from there.
+    """
     node = record.get("node") or {}
     if not isinstance(node, Mapping):
         node = {}
     return (
-        str(record.get("session") or ""),
         str(node.get("plan") or ""),
         str(node.get("section") or ""),
         str(node.get("id") or ""),
@@ -654,22 +645,55 @@ def _write_steering(run_id: str, brief: str) -> Path | None:
         return None
 
 
+def _resolved_queue_max_requests(record: Mapping[str, Any]) -> int:
+    """The project's queue depth from its own flight layer, or the default.
+
+    A dispatch path that already holds a resolved config passes the figure in,
+    so the host and override layers are honoured there. This fallback answers a
+    caller that does not — an admission pass re-queuing a request, or a caller
+    using :func:`queue_dispatch` directly — by reading the project's own layer,
+    which is the only one that carries a per-project bound in practice. A
+    layer that is absent, unreadable or malformed leaves the shipped default,
+    because a queue that cannot read its bound must not become unbounded.
+    """
+    from reckon import flight
+
+    try:
+        path = flight.project_config_path(
+            str(record.get("project") or ""), str(record.get("repo") or "") or None
+        )
+        layer = flight.read_layer_file(path)
+    except (OSError, ValueError, flight.FlightConfigError):
+        return flight.DEFAULT_QUEUE_MAX_REQUESTS
+    return flight.queue_max_requests(layer)
+
+
 def queue_dispatch(
-    record: dict[str, Any], *, cap: int | None = None
+    record: dict[str, Any],
+    *,
+    max_requests: int | None = None,
+    cap: int | None = None,
 ) -> tuple[dict[str, Any], int | None]:
-    """Store a held local request once per project, session, section and node.
+    """Store a held local request once per project, plan, section and node.
 
-    ``cap`` is the session's allowance of queued runs. A dispatch that would
-    push a session past it is refused with :class:`QueueFull` before the
-    record is stored, while a repeat dispatch of a node the session already
-    has queued only updates that pointer and is never refused by the cap. Both
-    the count and the requeue decision are taken under the queue's own lock, so
-    two concurrent dispatches from one session cannot both pass the check.
+    ``max_requests`` is the project's depth, ``queue.max_requests`` in flight
+    configuration. A dispatch that would push the project past it is refused
+    with :class:`QueueFull` before the record is stored, while a repeat
+    dispatch of a node the project already has queued only updates that
+    pointer and is never refused by the bound. Both the count and the requeue
+    decision are taken under the queue's own lock, so two concurrent
+    dispatches cannot both pass the check.
 
-    A review is exempt from the cap: reviewing a delivered run is what lets it
-    land, so it is the last dispatch the cap may refuse. A review is neither
-    refused when the session holds its allowance nor counted against it, so a
-    session's queued reviews do not shrink its room for implementation.
+    ``cap`` is an optional session-scoped bound a caller may impose on top of
+    the project's; no dispatch path derives one, because depth is a property of
+    the project and admission ranks across sessions rather than rationing one.
+    Both bounds are read under the same lock.
+
+    A review is exempt from the bound: reviewing a delivered run is what lets
+    it land, so it is the last dispatch the bound may refuse. A review is
+    neither refused when the project holds its whole queue nor counted against
+    it, so a project's queued reviews do not shrink its room for
+    implementation.
 
     A dispatch of a node whose request is already being admitted, or whose run
     is otherwise in flight, writes nothing: the existing run is returned with
@@ -733,19 +757,34 @@ def queue_dispatch(
                     # discarded underneath the re-queue: fall through and queue
                     # afresh rather than reading a pointer that is gone.
             if not requeued:
-                if cap is not None:
-                    from reckon.crew.recovery_review_delivery import _is_review_run
+                from reckon.crew.recovery_review_delivery import _is_review_run
 
-                    session = str(record.get("session") or "")
+                if not _is_review_run(record):
+                    bound = (
+                        max_requests
+                        if max_requests is not None
+                        else _resolved_queue_max_requests(record)
+                    )
                     held = sum(
                         1
                         for pointer in live
                         if pointer.get("phase") == "queued"
-                        and str(pointer.get("session") or "") == session
+                        and str(pointer.get("project") or project) == project
                         and not _is_review_run(pointer)
                     )
-                    if not _is_review_run(record) and held >= cap:
-                        raise QueueFull(session=session, held=held, cap=cap)
+                    if held >= bound:
+                        raise QueueFull(project=project, held=held, cap=bound)
+                    if cap is not None:
+                        session = str(record.get("session") or "")
+                        session_held = sum(
+                            1
+                            for pointer in live
+                            if pointer.get("phase") == "queued"
+                            and str(pointer.get("session") or "") == session
+                            and not _is_review_run(pointer)
+                        )
+                        if session_held >= cap:
+                            raise QueueFull(session=session, held=session_held, cap=cap)
                 run_id = str(record["run_id"])
                 with _pointer_lock(run_id):
                     _write_json(pointer_path(run_id), record)

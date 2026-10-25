@@ -148,6 +148,16 @@ GC_KEY = "gc"
 GC_RUN_FILE_MAX_MB_KEY = "run_file_max_mb"
 DEFAULT_RUN_FILE_MAX_MB = 256
 
+# How many requests one project may hold queued. Depth is a property of the
+# project's plan rather than of the session that loaded it: a coordinator
+# queues a plan's whole width in one pass, so the bound exists to stop a
+# runaway loop rather than to ration a session's share. The ``queue``
+# namespace is reckon-owned in the same sense as ``gc`` above: a layer may set
+# it, and a resolved config that never did falls back here.
+QUEUE_KEY = "queue"
+QUEUE_MAX_REQUESTS_KEY = "max_requests"
+DEFAULT_QUEUE_MAX_REQUESTS = 500
+
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
 # every caller measures the same run against the same number.
@@ -1015,6 +1025,26 @@ def run_file_max_mb(config: Mapping[str, Any] | None) -> int:
     )
     if not isinstance(value, int) or isinstance(value, bool) or value < 1:
         return DEFAULT_RUN_FILE_MAX_MB
+    return int(value)
+
+
+def queue_max_requests(config: Mapping[str, Any] | None) -> int:
+    """How many requests one project may hold queued at once.
+
+    Read from the resolved config's ``queue`` namespace, so a host or project
+    layer retunes the depth without a code change. A config declaring no such
+    key — a hand-assembled test config, or a host that never set one — falls
+    back to the shipped default rather than failing, and a value that is not a
+    positive integer falls back the same way rather than disabling the bound.
+    """
+    queue = (config or {}).get(QUEUE_KEY)
+    value = (
+        queue.get(QUEUE_MAX_REQUESTS_KEY, DEFAULT_QUEUE_MAX_REQUESTS)
+        if isinstance(queue, Mapping)
+        else DEFAULT_QUEUE_MAX_REQUESTS
+    )
+    if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+        return DEFAULT_QUEUE_MAX_REQUESTS
     return int(value)
 
 

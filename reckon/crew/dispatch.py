@@ -184,7 +184,6 @@ from reckon.crew.runs import (
     process_alive as process_alive,
     QueueFull as QueueFull,
     queue_dispatch as queue_dispatch,
-    queued_dispatch_cap as queued_dispatch_cap,
     read_pointer as read_pointer,
     record_process_alive as record_process_alive,
     record_stacked_dispatch as record_stacked_dispatch,
@@ -199,31 +198,6 @@ from reckon.crew.runs import (
     watch_state as watch_state,
     watch_stream_path as watch_stream_path,
 )
-
-
-def _queued_share_cap(backend: Mapping[str, Any]) -> object:
-    """Read the lane document's published fair share, or ``None`` when absent.
-
-    The share is the router's own figure for how much of the lane one session
-    may hold; the caller clamps it to the queued-dispatch floor and ceiling. A
-    lane that declares no document, cannot be read, or is not a JSON object
-    returns ``None``, so the caller falls to the floor rather than inventing a
-    share the router never published.
-    """
-    declared = backend.get("lane_document")
-    if not declared:
-        return None
-    try:
-        raw = Path(str(declared)).expanduser().read_text(encoding="utf-8")
-    except OSError:
-        return None
-    try:
-        payload = json.loads(raw)
-    except ValueError:
-        return None
-    if not isinstance(payload, Mapping):
-        return None
-    return _lane_document.read_lane_admission(payload).get("fair_share")
 
 
 def _queued_request_record(
@@ -279,7 +253,8 @@ def _queue_validated_waits(
     *,
     refs: list[str],
     wait_projects: Mapping[str, str],
-    cap: int | None,
+    max_requests: int | None = None,
+    cap: int | None = None,
     live: list[Mapping[str, Any]] | None = None,
     cache: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], int | None, str]:
@@ -288,7 +263,7 @@ def _queue_validated_waits(
 
     record["waits"] = list(refs)
     record["wait_projects"] = dict(wait_projects)
-    queued, position = queue_dispatch(record, cap=cap)
+    queued, position = queue_dispatch(record, max_requests=max_requests, cap=cap)
     phase = str(queued.get("phase") or queue_admission.QUEUED_PHASE)
     if refs and phase == queue_admission.QUEUED_PHASE:
         target = queue_admission.resolve_waits(
@@ -374,6 +349,7 @@ def queue_requests(
             ),
             refs=refs_by_run[run_id],
             wait_projects=projects_by_run[run_id],
+            max_requests=flight.queue_max_requests(config),
             cap=cap,
             live=live,
             cache=cache,
@@ -426,6 +402,7 @@ def _answer_existing_node_run(
     record: dict[str, Any],
     backend: Mapping[str, Any],
     lane_allowance: Mapping[str, Any],
+    max_requests: int | None = None,
 ) -> LaneHeld:
     """The hold that names the run a node already has, writing no second pointer.
 
@@ -437,10 +414,7 @@ def _answer_existing_node_run(
     """
     phase = str(existing.get("phase") or "")
     if phase == "queued":
-        queued, position = queue_dispatch(
-            record,
-            cap=queued_dispatch_cap(_queued_share_cap(backend)),
-        )
+        queued, position = queue_dispatch(record, max_requests=max_requests)
         held = LaneHeld(dict(lane_allowance))
         held.queued = {
             "run_id": str(queued["run_id"]),
@@ -1790,7 +1764,7 @@ def dispatch(
             ),
             refs=validated_refs,
             wait_projects=wait_projects,
-            cap=queued_dispatch_cap(_queued_share_cap(backend)),
+            max_requests=flight.queue_max_requests(config),
         )
         held = LaneHeld(
             {
@@ -1859,6 +1833,7 @@ def dispatch(
             ),
             backend=backend,
             lane_allowance=lane_allowance,
+            max_requests=flight.queue_max_requests(config),
         )
         if existing_phase == "queued":
             _arrange_dispatch_follower(
@@ -1900,7 +1875,7 @@ def dispatch(
                     queued_at=_utc_now(),
                     admitted_from=admitted_from,
                 ),
-                cap=queued_dispatch_cap(_queued_share_cap(backend)),
+                max_requests=flight.queue_max_requests(config),
             )
             from reckon.crew import queue_admission
 
@@ -1971,7 +1946,7 @@ def dispatch(
                         dispatch_options=dispatch_options,
                         queued_at=_utc_now(),
                     ),
-                    cap=queued_dispatch_cap(_queued_share_cap(backend)),
+                    max_requests=flight.queue_max_requests(config),
                 )
                 held = LaneHeld(
                     {
