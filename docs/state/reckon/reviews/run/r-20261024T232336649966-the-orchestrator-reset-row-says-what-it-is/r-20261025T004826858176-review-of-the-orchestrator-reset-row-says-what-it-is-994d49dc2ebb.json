@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms. baseline_suite (revision 6c9489c9507f719a1ad65428c623e598f3b20ade, logs/base.log, EXIT=1, completed true) records 4 failed / 1 passed for tests/test_the_orchestrator_reset_row_says_what_it_is.py; after_suite (revision f7e1cb2610963e9b534000509b7c44d5b54798e6, logs/head_both.log, EXIT=0, completed true) records 20 passed and no failing id. No head failing id exists, so no failing id is added against the base arm. Read from the logs themselves, not the manifest text: logs/head_both.log:3 reads '20 passed in 7.02s' and its last line is EXIT=0; logs/base.log lists four FAILED ids and ends EXIT=1. The head arm ran at f7e1cb261 rather than the reviewed head 994d49dc2; the two commits between them (307459d09, 994d49dc2) touch only the evidence fragment, so the test result carries.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:2471 (format_watch_transition renders the row through Ticker().render)",
+    "reckon/crew/recovery.py:438 (re-exports format_watch_transition to the follower path)",
+    "reckon/crew_follow_commands.py:3156 (a pane renders a followed row)",
+    "reckon/crew_follow_commands.py:3368 (the live pane renders a followed row with its grid)",
+    "reckon/crew_follow_commands.py:2557 (_ticker_grid builds the follower's Ticker)"
+  ],
+  "completed_at": "2026-10-25T00:58:11.241Z",
+  "dispatched_at": "2026-10-25T00:50:05Z",
+  "findings": [
+    {
+      "file": "tests/test_a_limit_reset_reaches_every_pane.py",
+      "line": 170,
+      "text": "non-blocking: the file is outside the node's declared write paths (the dispatch names reckon/crew/ticker.py, the new test, the fragment and a figures directory), so a superseded assertion in a peer-owned test lands under this node's commits; manifest.md discloses it under outside_scope as granted by the repair round, and the repair is necessary because the old assertion required the very `working` word this section removes."
+    },
+    {
+      "file": "manifest.md",
+      "line": 12,
+      "text": "non-blocking: after_suite records revision f7e1cb2610963e9b534000509b7c44d5b54798e6 rather than the reviewed head 994d49dc2ebbd6aab9cfd28babe13067f274ee3c; the intervening commits touch only the evidence fragment so the result carries, but the arm's revision and the governed head differ and the arm alone does not say so."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-orchestrator-reset-row-says-what-it-is.html",
+      "line": 15,
+      "text": "non-blocking: the landing fragment says `ticker.Painter.render` returns to `_reset_line`, but no `Painter` class exists in reckon/crew/ticker.py \u2014 the class is `Ticker` at reckon/crew/ticker.py:2648 and the routing lives at ticker.py:2897-2900 \u2014 so the record points a reader at an anchor that cannot be opened; the prior review recorded the same defect and the repair round left it in place."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "VERDICT diff: read commit by commit from 6c9489c95 to 994d49dc2 \u2014 09089a1e9 draws the clause, 6957a8600 chooses it by the group's wallet, f7e1cb261 repairs the superseded sibling assertion, 307459d09/994d49dc2 record the fragment \u2014 450 insertions and 9 deletions across reckon/crew/ticker.py, its new test, tests/test_a_limit_reset_reaches_every_pane.py and the landing fragment.",
+    "done_when": "VERDICT done_when: the done_when asks a test to render the recorded reset and find limit reset, the group, the clock and may continue with no new -> working, plus a base arm containing the old text; tests/test_the_orchestrator_reset_row_says_what_it_is.py:125-137 asserts the first half against the real producer path and logs/base.log:15 prints the base render 'limit  claude-orchestrators  new \u2192 working'.",
+    "goal": "VERDICT goal: the goal is to draw the claude-orchestrators reset announcement as limit reset, the group, the clock and an orchestrator-continues clause; reckon/crew/ticker.py:347-372 composes exactly that clause and ticker.py:2986-3022 renders it in place of the transition for a limit-reset row.",
+    "manifest": "VERDICT manifest: read in full; it records six commits, populated baseline_suite and after_suite objects with their log paths, a bare negative_control_log path (logs/behaviour-without-scope-clause.log) plus a note naming three further controls, and an honest outside_scope entry for the sibling test file.",
+    "write_paths": "VERDICT write_paths: the node is declared for reckon/crew/ticker.py, its new test, the evidence fragment and a figures directory; the diff stays inside three of those but also changes tests/test_a_limit_reset_reaches_every_pane.py, which is not in the node's declared list and is disclosed under outside_scope in manifest.md."
+  },
+  "justifications": {
+    "durability": "tests/test_the_orchestrator_reset_row_says_what_it_is.py:206-220 reddens if the group-scoped clause is replaced by the constant (logs/behaviour-without-scope-clause.log records 2 failed) and :131-137 reddens if the transition returns (logs/base.log:32 shows that failure shape); two assertions at :134 and :166 compare against ticker's own instruction constants rather than a literal, which the sibling file's literal 'may continue' assertion at tests/test_a_limit_reset_reaches_every_pane.py:170 covers within the same gate.",
+    "evidence": "the gate measures the done_when and its result is on disk \u2014 logs/head_both.log ends EXIT=0 with 20 passed and logs/base.log:15 prints the old 'new \u2192 working' render \u2014 but the head arm was taken at f7e1cb261 rather than the reviewed head 994d49dc2, and the done_when's ruff clause is asserted in the manifest with no ruff log among logs/.",
+    "fit": "group_is_paced at reckon/crew/ticker.py:314-345 repeats the lazy-import and display-surface fallback idiom of declared_model_aliases at ticker.py:1001-1023, and every added name is mechanism-named with no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/ticker.py:347-372 builds the clause from the row's own fields (headline, group from node, instruction) and ticker.py:2897-2900 routes a limit-reset row to _reset_line, so the recorded orchestrator reset reads as the goal states.",
+    "reuse": "group_is_paced delegates the capability to budget_group.declared_groups at reckon/crew/ticker.py:343 rather than re-deriving wallet membership, and the clause renderer extends the pane's existing elide/_paint/_spend_cells machinery instead of adding a second formatter.",
+    "scope_discipline": "the diff changes tests/test_a_limit_reset_reaches_every_pane.py, which the node's own dispatch did not declare, so one of the four changed paths sits outside the fenced scope even though manifest.md discloses it as granted by the repair round."
+  },
+  "node": "review-of-the-orchestrator-reset-row-says-what-it-is-994d49dc2ebb",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to draw the claude-orchestrators reset announcement as limit reset, the group, the clock and an orchestrator-continues clause; reckon/crew/ticker.py:347-372 composes exactly that clause and ticker.py:2986-3022 renders it in place of the transition its pane word would make, for a limit-reset row.\nVERDICT done_when: the done_when asks a test to render the recorded reset and find limit reset, the group, the clock and may continue with no new -> working, plus a base arm containing the old text; tests/test_the_orchestrator_reset_row_says_what_it_is.py:125-137 asserts the first half against the real producer path and logs/base.log:15 prints the base render 'limit  claude-orchestrators  new \u2192 working'.\nVERDICT write_paths: the node is declared for reckon/crew/ticker.py, its new test, the evidence fragment and a figures directory; the diff stays inside three of those but also changes tests/test_a_limit_reset_reaches_every_pane.py, which is not in the node's declared list and is disclosed under outside_scope in manifest.md.\nVERDICT manifest: read in full; it records six commits, populated baseline_suite and after_suite objects with their log paths, a bare negative_control_log path (logs/behaviour-without-scope-clause.log) plus a note naming three further controls, and an honest outside_scope entry for the sibling test file.\nVERDICT diff: read commit by commit from 6c9489c95 to 994d49dc2 \u2014 09089a1e9 draws the clause, 6957a8600 chooses it by the group's wallet, f7e1cb261 repairs the superseded sibling assertion, 307459d09/994d49dc2 record the fragment \u2014 450 insertions and 9 deletions across reckon/crew/ticker.py, its new test, tests/test_a_limit_reset_reaches_every_pane.py and the landing fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:2471, reckon/crew/recovery.py:438, reckon/crew_follow_commands.py:3156, reckon/crew_follow_commands.py:3368, reckon/crew_follow_commands.py:2557\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:347-372 builds the clause from the row's own fields (headline, group from node, instruction) and ticker.py:2897-2900 routes a limit-reset row to _reset_line, so the recorded orchestrator reset reads as the goal states.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate measures the done_when and its result is on disk \u2014 logs/head_both.log ends EXIT=0 with 20 passed and logs/base.log:15 prints the old 'new \u2192 working' render \u2014 but the head arm was taken at f7e1cb261 rather than the reviewed head 994d49dc2, and the done_when's ruff clause is asserted in the manifest with no ruff log among logs/.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff changes tests/test_a_limit_reset_reaches_every_pane.py, which the node's own dispatch did not declare, so one of the four changed paths sits outside the fenced scope even though manifest.md discloses it as granted by the repair round.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_orchestrator_reset_row_says_what_it_is.py:206-220 reddens if the group-scoped clause is replaced by the constant (logs/behaviour-without-scope-clause.log records 2 failed) and :131-137 reddens if the transition returns (logs/base.log:32 shows that failure shape); two assertions at :134 and :166 compare against ticker's own instruction constants rather than a literal, which the sibling file's literal 'may continue' assertion at tests/test_a_limit_reset_reaches_every_pane.py:170 covers within the same gate.\nSCORE fit: 19\nJUSTIFICATION fit: group_is_paced at reckon/crew/ticker.py:314-345 repeats the lazy-import and display-surface fallback idiom of declared_model_aliases \u2014 and every added name is mechanism-named with no plan, ticket or version identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: group_is_paced delegates the capability to budget_group.declared_groups at reckon/crew/ticker.py:343 rather than re-deriving wallet membership, and the clause renderer extends the pane's existing elide/_paint/_spend_cells machinery instead of adding a second formatter.\nFINDING tests/test_a_limit_reset_reaches_every_pane.py:170 non-blocking: the file is outside the node's declared write paths (the dispatch names reckon/crew/ticker.py, the new test, the fragment and a figures directory), so a superseded assertion in a peer-owned test lands under this node's commits; manifest.md discloses it under outside_scope as granted by the repair round, and the repair is necessary because the old assertion required the very `working` word this section removes.\nFINDING manifest.md:12 non-blocking: after_suite records revision f7e1cb2610963e9b534000509b7c44d5b54798e6 rather than the reviewed head 994d49dc2ebbd6aab9cfd28babe13067f274ee3c; the intervening commits touch only the evidence fragment so the result carries, but the arm's revision and the governed head differ and the arm alone does not say so.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-orchestrator-reset-row-says-what-it-is.html:15 non-blocking: the landing fragment says `ticker.Painter.render` returns to `_reset_line`, but no `Painter` class exists in reckon/crew/ticker.py \u2014 the class is `Ticker` at reckon/crew/ticker.py:2648 and the routing lives at ticker.py:2897-2900 \u2014 so the record points a reader at an anchor that cannot be opened; the prior review recorded the same defect and the repair round left it in place.",
+  "review_run_id": "r-20261025T004826858176-review-of-the-orchestrator-reset-row-says-what-it-is-994d49dc2ebb",
+  "reviewed_assertions": [
+    "tests/test_the_orchestrator_reset_row_says_what_it_is.py:131-137 asserts the rendered line holds 'limit reset', the group, the clock, the orchestrator instruction and no arrow; it reddens if Painter.render falls back to the transition, which is the base arm's own failure at logs/base.log:32.",
+    "tests/test_the_orchestrator_reset_row_says_what_it_is.py:146 asserts the recorded reason reaches the line; it reddens if RESET_REASON_CLAUSE stops matching or the reason stops being appended.",
+    "tests/test_the_orchestrator_reset_row_says_what_it_is.py:165-167 asserts a row with no announcer still carries the instruction and shows no 'announced by'; it reddens if the instruction is read out of the detail sentence instead of the row's fields.",
+    "tests/test_the_orchestrator_reset_row_says_what_it_is.py:176-177 asserts a second sweep with the returned seen set appends no row; it reddens if sweep_resets stops carrying its seen ids.",
+    "tests/test_the_orchestrator_reset_row_says_what_it_is.py:185 asserts a second session's pane draws the event once; it reddens if the once-per-pane claim is keyed on anything other than the session.",
+    "tests/test_the_orchestrator_reset_row_says_what_it_is.py:215,219-220 assert a backend-drawn group gets the lane clause and no orchestrator claim; they redden if the closing clause becomes the fixed constant, which logs/behaviour-without-scope-clause.log records as 2 failed.",
+    "tests/test_the_orchestrator_reset_row_says_what_it_is.py:233-238 assert a config declaring no wallet names no lane; they redden if an unreadable or empty config defaults to the orchestrator clause.",
+    "tests/test_the_orchestrator_reset_row_says_what_it_is.py:258-261 assert the row stays on one line and within ticker.MIN_WIDTH; they redden if the free-text clause is no longer elided, which is the overflow the docstring names.",
+    "tests/test_a_limit_reset_reaches_every_pane.py:170-175 assert a worker lane's reset row carries 'may continue' and no 'orchestrator'; they redden if the row reverts to the state word or claims orchestrator scope, the second shown by logs/revert-sibling-assertion.log as 1 failed."
+  ],
+  "reviewed_base_sha": "6c9489c9507f719a1ad65428c623e598f3b20ade",
+  "reviewed_head_sha": "994d49dc2ebbd6aab9cfd28babe13067f274ee3c",
+  "reviewed_node": "the-orchestrator-reset-row-says-what-it-is",
+  "reviewed_run_id": "r-20261024T232336649966-the-orchestrator-reset-row-says-what-it-is",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-25T00:58:00+00:00",
+  "total": 106
+}
