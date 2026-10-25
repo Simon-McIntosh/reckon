@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s62">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-25">
+  <meta name="plan-tags" content="crew,watch,producer,teardown">
+  <title>The producer stubs are the real producer record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-producer-stubs-are-the-real-producer-record" data-reckon="landed" data-when="2026-10-25">
+  <h2 id="the-producer-stubs-are-the-real-producer-record-title">The producer stubs are the real producer record</h2>
+  <p id="the-producer-stubs-are-the-real-producer-record-cause"><strong>Cause.</strong>
+  The seat's teardown, <code>join_watch_sweeps</code> in
+  <code>reckon/crew/runs.py</code>, joins both threads a registered producer owns:
+  <code>producer.sweep_thread</code> and <code>producer.deferred_retry</code>. Two cases
+  registered hand-built stand-ins for the producer — <code>_ProducerStub</code> in
+  <code>tests/test_a_limit_reset_reaches_every_pane.py</code> and a
+  <code>SimpleNamespace</code> built by <code>_Producers.__missing__</code> in
+  <code>tests/test_a_model_notice_reaches_the_session.py</code> — each carrying only the
+  fields its case happened to read. When the producer gained the deferral-retry thread,
+  the teardown stopped being able to read those stand-ins, so three cases errored at
+  teardown after their assertions had already passed.</p>
+  <p id="the-producer-stubs-are-the-real-producer-record-reproduction"><strong>Reproduction.</strong>
+  The base arm (extraction of <code>1c1080d0c</code>, the main checkout's
+  <code>.env</code> linked) reports <code>18 passed, 3 errors</code> with
+  <code>EXIT=1</code>, every error an
+  <code>AttributeError</code> on <code>deferred_retry</code> raised from
+  <code>reckon/crew/runs.py:2680</code>. The three ids are
+  <code>test_the_registered_producer_writes_the_row</code>,
+  <code>test_a_sweep_past_the_refresh_age_fetches_once_and_within_it_none</code> and
+  <code>test_a_refresh_that_raises_leaves_the_producer_loop_running</code>.</p>
+  <p id="the-producer-stubs-are-the-real-producer-record-repair"><strong>Repair.</strong>
+  Each stand-in becomes the record the seat itself builds:
+  <code>runs._WatchStreamProducer(path=…, known={},
+  stall_window=runs.DEFAULT_WATCH_STALL_WINDOW)</code>, constructed with the path the case
+  already resolves. No production file changes. A field the record gains later therefore
+  reaches the loop and its teardown intact, which is the property the stand-ins lacked.</p>
+  <p id="the-producer-stubs-are-the-real-producer-record-measure"><strong>Measure.</strong>
+  Head arm at <code>5dbe8eca3</code>, an extraction with <code>.env</code> linked:
+  <code>18 passed</code> in 2.68 s, no teardown error, <code>EXIT=0</code>. Base arm at
+  <code>1c1080d0c</code>: <code>18 passed, 3 errors</code>, <code>EXIT=1</code>. Negative
+  control restores the hand-built <code>_ProducerStub</code> in a scratch extraction of
+  the head, never committed: <code>18 passed, 1 error</code>, <code>EXIT=1</code>, the
+  error being <code>AttributeError: '_ProducerStub' object has no attribute
+  'deferred_retry'</code> on the id the head arm does not fail. <code>ruff check</code>
+  and <code>ruff format --check</code> add no findings to the two staged test files.</p>
+</article>
+</body>
+</html>
