@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted"
+  ],
+  "completed_at": "2026-10-25T00:12:37.281Z",
+  "dispatched_at": "2026-10-25T00:02:02Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/a-discarded-request-is-not-launched.html",
+      "line": 89,
+      "severity": "non-blocking",
+      "text": "the fragment labels the gate `e2437cbfe: 9 passed, EXIT=0` while the log it cites, logs/gate-head-round3.log, carries revision 8e7f898358263d40cc9e1dc2721c588c3662050c in its header; the result holds because 8e7f89835 is a docs-only child of e2437cbfe, but a reader checking the citation finds a log stamped with a different revision than the label names."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 699ce843f: e2437cbfe adds test_a_discard_outlives_a_refusal_by_another_guard to tests/test_a_discarded_request_stays_discarded.py:236-279, and 8e7f89835 adds its paragraph at docs/evidence/fragments/the-suite-is-green-at-head/a-discarded-request-is-not-launched.html:80-90 and moves `three cases` to `four cases` at :94.",
+    "done_when": "the done_when requires a new case failing at the base and passing at the head, an importer population adding no failure, a negative control and clean ruff; logs/gate-head-round3.log records `9 passed` / `EXIT=0` at 8e7f898358263d40cc9e1dc2721c588c3662050c, logs/negative-control-3.log:47-52 reddens the new case on `promotion.discard_recorded` when the release copy is deleted, and the importer arms are recorded at e513e59cd rather than the final head.",
+    "goal": "the node's goal is to refuse a launch whose discard is recorded before its worker is spawned and to release its claim; the commits gained since the prior review (e2437cbfe, 8e7f89835) add no production code and instead pin the release-time spool copy at reckon/crew/dispatch_claims.py:832, which the goal's repair introduced without coverage.",
+    "manifest": "read; status `complete` is a recognised value, baseline_suite and after_suite both parse as JSON objects with completed true, and retry_failures records the one head-arm id that passes alone in both arms.",
+    "write_paths": "the manifest declares five paths; the two gained commits touch only docs/evidence/fragments/the-suite-is-green-at-head/a-discarded-request-is-not-launched.html and tests/test_a_discarded_request_stays_discarded.py, both inside the declared set, and the fragment edit splices into the cumulative record (14 insertions, one word changed) rather than replacing a peer's content."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-3.log:47-52 shows the new case failing on `assert promotion.discard_recorded(run_id)` when the release-time copy is deleted, so the assertion reads production state rather than a value the test supplied.",
+    "evidence": "logs/gate-head-round3.log ends `9 passed` / `EXIT=0` at the reviewed head, while the importer population in baseline_suite and after_suite is measured at e513e59cd and the coordinator's final-head re-measure logs end mid-run with no summary or EXIT line.",
+    "fit": "tests/test_a_discarded_request_stays_discarded.py:248-265 repeats the file's own importlib.import_module plus monkeypatch idiom at :156-168, and imports CrewError from reckon.crew.node as the other dispatch tests do.",
+    "goal_fidelity": "tests/test_a_discarded_request_stays_discarded.py:236 exercises the only uncovered production line of the goal's repair, reckon/crew/dispatch_claims.py:830-832, and the delta changes no production code.",
+    "reuse": "no definition is added; the case calls promotion.discard_recorded as the owner of the discard question and reuses the admit_repo, _config_for, _attempted_request and _launcher helpers, so the search found no capability to fork.",
+    "scope_discipline": "both changed paths are inside the manifest's declared set, and the documentation change is additive to the existing cumulative fragment at line 80 with only the case count updated at line 94."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261025T000012970127-review-of-a-discarded-request-is-not-launched-8e7f89835826",
+  "reviewed_base_sha": "699ce843f784defc0999afcf3686f0bf6e1a8fe4",
+  "reviewed_head_sha": "8e7f898358263d40cc9e1dc2721c588c3662050c",
+  "reviewed_run_id": "r-20261024T222006463560-a-discarded-request-is-not-launched",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-25T00:15:55.092857+00:00",
+  "total": 111
+}
