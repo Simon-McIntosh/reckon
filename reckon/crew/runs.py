@@ -773,7 +773,12 @@ def queue_dispatch(
                         and not _is_review_run(pointer)
                     )
                     if held >= bound:
-                        raise QueueFull(project=project, held=held, cap=bound)
+                        raise QueueFull(
+                            project=project,
+                            session=str(record.get("session") or ""),
+                            held=held,
+                            cap=bound,
+                        )
                     if cap is not None:
                         session = str(record.get("session") or "")
                         session_held = sum(
