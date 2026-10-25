@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:follower_row_path",
+    "reckon/crew_follow_commands.py:1255",
+    "reckon/crew_follow_commands.py:2233",
+    "reckon/crew_follow_commands.py:2318"
+  ],
+  "completed_at": "2026-10-25T02:50:56.573Z",
+  "dispatched_at": "2026-10-25T02:42:22Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-shown-delivery-is-not-drawn-again-after-its-review-starts.html",
+      "line": 49,
+      "severity": "non-blocking",
+      "text": "the done-when's ruff clause is asserted only in the landing fragment's prose; no ruff check or ruff format --check log exists under the run directory, so the record cannot be re-run from its test_logs list (I confirmed both are clean at head: All checks passed, 2 files already formatted)"
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261025T015521624493-a-shown-delivery-is-not-drawn-again-after-its-review-starts/gate-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261025T015521624493-a-shown-delivery-is-not-drawn-again-after-its-review-starts/base-arm.log",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261025T015521624493-a-shown-delivery-is-not-drawn-again-after-its-review-starts/negative-control.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the only production path into the change is reckon/crew_follow_commands.py:follower_row_path (PaneRowPath construction at :1052) feeding it at :1255, :2233 and :2318; the class remains the row policy's own owner and no second filter was added.",
+    "diff": "read both commits against the base 62121960138c: 999fbeb7d adds _review_started and _launches to RowPolicy, wires them in _note_launch, adds _redraws_a_shown_delivery and calls it in _feed before the same-word rule, plus three tests; 629105e4d adds the 52-line landing fragment and touches nothing else.",
+    "done_when": "the done-when asks a test feeding a delivery, the review's launch drawn as in review, then the same delivery re-emitted to print two rows and drop the third, with a new attempt's launch and delivery still printing; the gate names tests/test_a_shown_delivery_is_not_drawn_again_after_its_review_starts.py and gate-head.log records 3 passed EXIT=0 at 629105e4d, base-arm.log records the base printing ['working','delivered','in review','delivered'] EXIT=1, and negative-control.log records the memory-removed tree red EXIT=1.",
+    "goal": "the node goal is to withhold, within one attempt, a re-emitted delivery once that run's in-review row has been drawn; reckon/crew/ticker.py:1724 _redraws_a_shown_delivery does exactly that for a delivered-word row whose attempt ordinal still matches the one _review_started recorded when the in-review row printed.",
+    "manifest": "the manifest states commits 999fbeb7d and 629105e4d, the three gate arms with their EXIT codes, the 52-file ticker cohort 684 passed at head against 681 at base with the one load-timing retry named, no outside_scope work and no blockers; every figure it states matches the logs it names.",
+    "write_paths": "the declared write paths are reckon/crew/ticker.py, tests/test_a_shown_delivery_is_not_drawn_again_after_its_review_starts.py, the landing fragment and an unused figures directory; git diff --stat 62121960138c..629105e4d changes exactly ticker.py (+53/-3), the new test file and the fragment, nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_shown_delivery_is_not_drawn_again_after_its_review_starts.py:92 fails if the withholding is removed (the base arm prints the extra 'delivered'), and the control at :106 and the resume arm at :140 fail if the memory over-withholds; every assertion compares printed rows against a hardcoded literal rather than a value the test handed in.",
+    "evidence": "gate-head.log ends 3 passed EXIT=0 at 629105e4d, base-arm.log reproduces the defect at base as ['working','delivered','in review','delivered'] EXIT=1, and negative-control.log is red on the same two ids with the memory removed; the only unlogged clause is ruff, which I re-ran clean at head.",
+    "fit": "the two memories sit in RowPolicy.__init__ beside _shown and _reported, the helpers are private methods on the same class, and the names (_launches, _review_started, _redraws_a_shown_delivery) state the mechanism with no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/crew/ticker.py:2139-2144 returns before the same-word rule when _redraws_a_shown_delivery matches, and ticker.py:1711-1713 moves the ordinal only on a launch the pane actually released for the run, so a resume's delivery still prints.",
+    "reuse": "a capability search over reckon/crew for an existing attempt-ordinal or review-start memory found none; the change extends RowPolicy, which already owns every row-withholding memory (_shown, _reported, _shown_wait, _held), rather than adding a second filter beside it.",
+    "scope_discipline": "git diff --stat 62121960138c 629105e4d lists only reckon/crew/ticker.py, the new test file and the declared landing fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to withhold, within one attempt, a re-emitted delivery once that run's in-review row has been drawn; reckon/crew/ticker.py:1724 _redraws_a_shown_delivery does exactly that for a delivered-word row whose attempt ordinal still matches the one _review_started recorded when the in-review row printed.\nVERDICT done_when: the done-when asks a test feeding a delivery, the review's launch drawn as in review, then the same delivery re-emitted to print two rows and drop the third, with a new attempt's launch and delivery still printing; the gate names tests/test_a_shown_delivery_is_not_drawn_again_after_its_review_starts.py and gate-head.log records 3 passed EXIT=0 at 629105e4d, base-arm.log records the base printing ['working','delivered','in review','delivered'] EXIT=1, and negative-control.log records the memory-removed tree red EXIT=1.\nVERDICT write_paths: the declared write paths are reckon/crew/ticker.py, tests/test_a_shown_delivery_is_not_drawn_again_after_its_review_starts.py, the landing fragment and an unused figures directory; git diff --stat 62121960138c..629105e4d changes exactly ticker.py (+53/-3), the new test file and the fragment, nothing else.\nVERDICT manifest: the manifest states commits 999fbeb7d and 629105e4d, the three gate arms with their EXIT codes, the 52-file ticker cohort 684 passed at head against 681 at base with the cohort-head.log retry named (test_crew_session_delivery.py::test_a_follower_waits_for_a_producer_instead_of_refusing, load-timing, green on rerun), no outside_scope work and no blockers; every figure it states matches the logs it names.\nVERDICT diff: read both commits against the base 62121960138c: 999fbeb7d adds _review_started and _launches to RowPolicy, wires them in _note_launch, adds _redraws_a_shown_delivery and calls it in _feed before the same-word rule, plus three tests; 629105e4d adds the 52-line landing fragment and touches nothing else.\nCALL_SITES: reckon/crew_follow_commands.py:follower_row_path, reckon/crew_follow_commands.py:1255, reckon/crew_follow_commands.py:2233, reckon/crew_follow_commands.py:2318\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:2139-2144 returns before the same-word rule when _redraws_a_shown_delivery matches, and ticker.py:1711-1713 moves the ordinal only on a launch the pane actually released for the run, so a resume's delivery still prints.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log ends 3 passed EXIT=0 at 629105e4d, base-arm.log reproduces the defect at base as ['working','delivered','in review','delivered'] EXIT=1, and negative-control.log is red on the same two ids with the memory removed; the only unlogged clause is ruff, which I re-ran clean at head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 62121960138c 629105e4d lists only reckon/crew/ticker.py, the new test file and the declared landing fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_shown_delivery_is_not_drawn_again_after_its_review_starts.py:92 fails if the withholding is removed (the base arm prints the extra 'delivered'), and the control at :106 and the resume arm at :140 fail if the memory over-withholds; every assertion compares printed rows against a hardcoded literal rather than a value the test handed in.\nSCORE fit: 19\nJUSTIFICATION fit: the two memories sit in RowPolicy.__init__ beside _shown and _reported, the helpers are private methods on the same class, and the names (_launches, _review_started, _redraws_a_shown_delivery) state the mechanism with no plan or ticket identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search over reckon/crew for an existing attempt-ordinal or review-start memory found none; the change extends RowPolicy, which already owns every row-withholding memory (_shown, _reported, _shown_wait, _held), rather than adding a second filter beside it.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-shown-delivery-is-not-drawn-again-after-its-review-starts.html:49 non-blocking: the done-when's ruff clause is asserted only in the landing fragment's prose; no ruff check or ruff format --check log exists under the run directory, so the record cannot be re-run from its test_logs list (I confirmed both are clean at head: All checks passed, 2 files already formatted).\n",
+  "review_run_id": "r-20261025T023947255309-review-of-a-shown-delivery-is-not-drawn-again-after-its-review-starts-629105e4dbfb",
+  "reviewed_base_sha": "62121960138cefdea2cfac383ab5975209fa9896",
+  "reviewed_head_sha": "629105e4dbfbe4028e092e33973b5354e5445482",
+  "reviewed_run_id": "r-20261025T015521624493-a-shown-delivery-is-not-drawn-again-after-its-review-starts",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-25T02:53:00+00:00",
+  "total": 116
+}
