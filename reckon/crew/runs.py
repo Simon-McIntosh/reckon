@@ -539,12 +539,7 @@ def existing_node_run(
     pass's own launch passes ``include_handovers=False``: it wrote that handover
     itself and is the one dispatch it must not answer.
     """
-    key = (
-        str(session or ""),
-        str(plan or ""),
-        str(section or ""),
-        str(node_id or ""),
-    )
+    key = (str(plan or ""), str(section or ""), str(node_id or ""))
     for pointer in _list_live_records(project=project):
         if str(pointer.get("phase") or "") in _TERMINAL_RUN_PHASES:
             continue
