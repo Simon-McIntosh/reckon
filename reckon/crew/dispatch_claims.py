@@ -822,11 +822,51 @@ def _release_launch_claim(run_id: str) -> None:
     Neither removal is an argument about whose claim it is — the path is this
     run's own — so a call for a run that published nothing removes nothing.
     """
+    # A discard issued while this launch was composing recorded its departure
+    # in the run directory, which the removal below takes with it. Copied to
+    # the shared spool first, that departure outlives the refusal that gives
+    # the claim back, so a reader after the rollback still finds it instead of
+    # the same absence a vanished pointer produces.
+    from reckon.crew.promotion import preserve_discard_record
+
+    preserve_discard_record(run_id)
     # Publish and release use the same lock, so a publish already in progress
     # finishes before the removal and cannot write the pointer back afterward.
     with _pointer_lock(run_id):
         pointer_path(run_id).unlink(missing_ok=True)
     shutil.rmtree(run_dir(run_id), ignore_errors=True)
+
+
+def _refuse_a_discarded_launch(run_id: str, *, started: bool = False) -> None:
+    """Refuse a launch whose request was discarded before its worker started.
+
+    A discard removes the run's pointer and leaves its own record behind, and
+    the admission path hands an already-selected request to dispatch, which
+    publishes the claim and composes the launch over several seconds. An
+    operator's discard can land inside that span, after the pass selected the
+    request and before this dispatch starts the worker, and nothing else on the
+    path reads that record: the launch would write the pointer back and spawn a
+    worker beside the record of its own discard, so every reader that takes a
+    recorded discard for an abandoned run reads the new worker as one.
+
+    Called at the last step before the spawn, so the window left open to a
+    discard is only the fork itself.
+    """
+    from reckon.crew.promotion import discard_recorded, preserve_discard_record
+
+    if discard_recorded(run_id):
+        # The rollback that follows this refusal removes the run directory,
+        # which is where a discard issued while this launch was composing
+        # recorded its departure. Copied to the shared spool first, the record
+        # outlives the directory exactly as it does for a discard the admission
+        # pass preserved before handing the request over.
+        preserve_discard_record(run_id)
+        when = (
+            "while its worker was being started"
+            if started
+            else "before its worker was started"
+        )
+        raise CrewError(f"run {run_id!r} was discarded {when}; the launch is refused")
 
 
 @contextlib.contextmanager
