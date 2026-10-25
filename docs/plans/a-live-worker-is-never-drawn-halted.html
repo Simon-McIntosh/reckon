@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 <meta name="plan-modified" content="2026-10-25">
 </head>
 <body>
@@ -516,6 +516,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-25T01:05:00Z">
     <div class="r-comment-body"><p>§7 closed. The orchestrator reset row says what it is, and only the orchestrator group is told to continue. Review 106; population clean over 182 files. <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s7">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261024T232336649966-the-orchestrator-reset-row-says-what-it-is" data-who="reckon-build" data-when="2026-10-25T00:46:49Z">
+    <div class="r-comment-body"><p>A limit-reset row is drawn as one clause — `limit reset · &lt;group&gt; · &lt;clock&gt; · &lt;who may continue&gt;`, plus the announcer&#x27;s recorded reason — instead of `limit &lt;group&gt; new → working`, and the closing clause is chosen by the group: a group the resolved flight config names says that worker lane may continue, a group no backend declares says orchestrator sessions may continue, and a config declaring no wallet names no lane. The recorded orchestrator reset renders as `01:46:55  limit reset · claude-orchestrators · five_hour · orchestrator sessions may continue · the lead reports the usage limits have reset`; the node&#x27;s file holds 7 checks green at head, the sibling file 13 green, and 20 green together; the same render at the base revision reads `new → working` (4 failed, EXIT=1).</p></div>
 </div>
 </section>
 </main>
