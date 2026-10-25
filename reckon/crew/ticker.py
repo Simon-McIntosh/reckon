@@ -277,6 +277,101 @@ LIFT_STATES = frozenset({LIFT_GRANTED, LIFT_IN_FORCE, LIFT_ENDED, LIMIT_RESET})
 LIFT_STAGE = "lift"
 LIMIT_STAGE = "limit"
 
+# What a limit-reset row says, in place of the transition it maps to. A reset
+# is a broadcast about a budget group rather than a state change of a run, and
+# the pane word it lands on — ``working`` — carries none of what a reader needs:
+# ``limit <group> new → working`` gives no sign that the row is a usage-limit
+# reset or that it asks a stopped session to continue. The row is drawn as its
+# own clause instead — what it is, the group, the clock it resets, and what it
+# asks of the session — with the announcer's reason after it when the record
+# carries one.
+#
+# The closing clause is chosen by what the group's own declaration establishes,
+# never by the row alone. A group some configured backend draws on is a worker
+# lane's wallet: its reset says that lane's work may go on and says nothing
+# about orchestrator sessions. A group no backend declares is the orchestrator
+# wallet — the reset a coordinator acts on. Config unreadable leaves the group
+# unknown, so the row falls back to the words that name no lane at all rather
+# than asserting a scope the record cannot support.
+RESET_HEADLINE = f"{LIMIT_STAGE} reset"
+RESET_LANE_INSTRUCTION = "worker lanes may continue"
+RESET_ORCHESTRATOR_INSTRUCTION = "orchestrator sessions may continue"
+RESET_NEUTRAL_INSTRUCTION = "sessions stopped at the usage limit may continue"
+
+# The facts the clause reads out of the sentence the producer composes. That
+# sentence names the group, the clock, the instant, who announced it and why,
+# and rides the row's free-text field, which the renderer drops for every other
+# row because no other row needs it. The clock is printed beside the group and
+# the announcer's reason at the end, so the pane reads those two facts apart
+# from the sentence. A sentence matching no pattern costs the row neither of
+# them silently: the headline, the group and the instruction come from the
+# row's own fields, so an unrecognised sentence narrows the new clause rather
+# than blanking the row.
+RESET_CLOCK_CLAUSE = re.compile(r"\([^()]*,\s*(?P<clock>[^(),]+)\)")
+RESET_REASON_CLAUSE = re.compile(r"announced by [^:]*:\s*(?P<reason>[^;]+)")
+
+
+def group_is_paced(group: str, project: str | None = None) -> bool | None:
+    """Whether a configured backend draws its quota on ``group``; None if unknown.
+
+    A group is a declared wallet, so the answer comes from the resolved flight
+    config and from nothing else — never inferred from a name here. ``None``
+    means the config did not answer: it could not be read, or it declares no
+    budget group at all. Both are different from "no backend paces this
+    group", which takes a declaration to establish, because a pane that cannot
+    see a wallet cannot show the group in question is not one.
+
+    Resolution reads the same layers a dispatch does, with ``project`` selecting
+    the project layer, and a malformed config yields ``None`` for the same
+    reason :func:`declared_model_aliases` yields no aliases: a display surface
+    that refuses to render is worse than one that names no lane.
+    """
+    name = str(group or "").strip()
+    if not name:
+        return None
+    try:
+        from reckon import flight as flight_module
+        from reckon.crew import budget_group
+    except ImportError:
+        return None
+    try:
+        config = flight_module.resolve(project).config
+    except (OSError, ValueError, flight_module.FlightConfigError):
+        return None
+    declared = budget_group.declared_groups(config)
+    if not declared:
+        return None
+    return name in declared
+
+
+def limit_reset_text(event: Mapping[str, Any], *, paced: bool | None = None) -> str:
+    """One limit-reset row as the single clause a reader acts on.
+
+    The group is the row's own ``node``: a broadcast row carries no run, and the
+    producer puts the budget group there. ``paced`` is
+    :func:`group_is_paced` for that group — True for a worker lane's wallet,
+    False for the orchestrator wallet, None when the config could not say.
+    """
+    clause = str(event.get("detail") or "")
+    parts = [RESET_HEADLINE]
+    group = str(event.get("node") or "").strip()
+    if group:
+        parts.append(group)
+    clock = RESET_CLOCK_CLAUSE.search(clause)
+    if clock:
+        parts.append(clock.group("clock").strip())
+    if paced is None:
+        parts.append(RESET_NEUTRAL_INSTRUCTION)
+    elif paced:
+        parts.append(RESET_LANE_INSTRUCTION)
+    else:
+        parts.append(RESET_ORCHESTRATOR_INSTRUCTION)
+    reason = RESET_REASON_CLAUSE.search(clause)
+    if reason:
+        parts.append(reason.group("reason").strip())
+    return " · ".join(part for part in parts if part)
+
+
 # The internal state the row policy writes onto a review run's launch row, so
 # the pane draws the reviewed run as being in review. It is a pane word of its
 # own rather than a producer state: the reviewed run's own state never changes
@@ -2581,6 +2676,10 @@ class Ticker:
         self._fixed_aliases = None if model_aliases is None else tuple(model_aliases)
         self._project = project
         self._alias_widths: dict[str | None, int] = {}
+        # Whether a configured backend paces a budget group, remembered per
+        # project so the flight config is read once for a pane's rows rather
+        # than once per reset row.
+        self._paced_groups: dict[tuple[str, str | None], bool | None] = {}
         self.model_width = self._model_width(project)
         self.width = self._grid_width()
         # NO_COLOR is the caller's environment overriding the caller's flag, per
@@ -2793,14 +2892,19 @@ class Ticker:
             # rather than against its own alone.
             self._shown_wait[run_id] = wait_facts(event)
 
+        # A reset is drawn as a clause of its own rather than as the transition
+        # its pane word would make: what it is, the group, the clock, and what
+        # it asks. Its pane word is still recorded above, so the pane's memory
+        # of the group reads as it does for every other row.
+        if raw_to_state == LIMIT_RESET:
+            return self._reset_line(event)
+
         # A broadcast row carries no run and so no role: its stage names the
         # broadcast, and its job cell names the budget group it concerns. A
-        # reset is not a lift, so it takes its own stage word rather than
-        # claiming the lift's — the row reads as what it is.
+        # lift keeps its own stage word here; a reset is drawn above, as the
+        # clause it is, so the two families stay readable apart.
         stage = (
-            LIMIT_STAGE
-            if raw_to_state == LIMIT_RESET
-            else LIFT_STAGE
+            LIFT_STAGE
             if raw_to_state in LIFT_STATES
             else _display_role(event.get("role"))
         )
@@ -2873,6 +2977,45 @@ class Ticker:
             cells[-1] = (text.rstrip(), style)
         # A shadow will never merge, so the row says so about itself end to end
         # rather than spending a column on an identifier a reader cannot use.
+        shadow = is_shadow(event)
+        return "".join(
+            self._paint(text, "dim" if shadow and style is not None else style)
+            for text, style in cells
+        )
+
+    def _reset_line(self, event: Mapping[str, Any]) -> str:
+        """One limit reset as a clause, in place of the transition's two words.
+
+        The clause takes the room the stage, job and transition columns give it,
+        and the elapsed cell and the counters keep their places after it, so a
+        reset row lines up with the fleet rows beneath it. It is the one row
+        carrying free text, so it is cut to the pane like every other cell: the
+        cut is what keeps a long reason from wrapping the row, which would cost
+        a quarter of the visible history.
+        """
+        spend = self._spend_cells(event, LIMIT_RESET)
+        stats = self._stats(event)
+        tail = (
+            GAP
+            + sum(len(text) for text, _ in spend)
+            + GAP
+            + sum(len(text) for text, _ in stats)
+        )
+        room = self._grid_width() - CLOCK - GAP - tail
+        group = str(event.get("node") or "").strip()
+        project = str(event.get("project") or "").strip() or self._project
+        key = (group, project)
+        if key not in self._paced_groups:
+            self._paced_groups[key] = group_is_paced(group, project)
+        cells: list[tuple[str, Any]] = [
+            (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
+            (" " * GAP, None),
+            (elide(limit_reset_text(event, paced=self._paced_groups[key]), room), None),
+            (" " * GAP, None),
+            *spend,
+            (" " * GAP, None),
+            *stats,
+        ]
         shadow = is_shadow(event)
         return "".join(
             self._paint(text, "dim" if shadow and style is not None else style)

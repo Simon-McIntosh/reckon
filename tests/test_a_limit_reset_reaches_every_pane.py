@@ -8,9 +8,9 @@ reset events into each project's stream and the pane draws one row per event.
 The reset family runs beside the lift family rather than through it. A reset
 and a lift concern the same budget group and both reach the pane once per
 session, but a reset is not a lift and the pane draws it that way: its stage
-cell reads ``limit``, its transition reads ``working``, and it neither reads nor
-writes the pane's memory of the lift groups, so a group holding a lift still
-draws its own baseline and end rows as before.
+cell reads ``limit``, it carries an instruction rather than a transition, and it
+neither reads nor writes the pane's memory of the lift groups, so a group
+holding a lift still draws its own baseline and end rows as before.
 
 These use the lift-broadcast fixtures — a temporary crew home, the real
 ``take_lift_claim``, and ``follower_row_path`` — and drive the real
@@ -167,7 +167,12 @@ def test_a_pane_following_both_projects_draws_the_reset_once(tmp_path):
     assert len(drawn) == 1, f"session A's pane drew the reset {len(drawn)} times"
     for rendered in _rendered(drawn[0]):
         assert ticker.LIMIT_STAGE in rendered, "the stage cell names the reset"
-        assert "working" in rendered, "the state cell reads the pane's working word"
+        assert "may continue" in rendered, (
+            "the row carries the instruction, not a state word"
+        )
+        assert "orchestrator" not in rendered, (
+            "a worker lane's wallet claims nothing about orchestrator sessions"
+        )
 
 
 def test_a_second_sessions_pane_draws_it_once_too(tmp_path):
