@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-25T01:24:01.725Z",
+  "dispatched_at": "2026-10-25T01:16:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:337",
+      "id": "reasoning-1",
+      "reason": "a node will find its negative control (\"the first fixture at the base revision gives review-missing\") does not reproduce, so the plan must name the condition that actually failed (record-path resolution or the head-suffixed durable fallback) or the node either duplicates an existing recognition or lands with no reproducible defect.",
+      "text": "\u00a716 says the pointer's null `reviewed_run_id`/`review_subject` meant \"the in-flight reading could not tie it to the run it reviews\", and prescribes recognition \"through `recovery_review_delivery._resolved_reviewed_run_id`\", but that resolver is already the in-flight reader's own fallback: `recovery_review_dispatch._review_subject` (:331-358) returns it when no granted record path names a run, and `_review_in_flight` (:491-560, reached from `obligations._in_flight_review`:411) already sweeps every live review pointer through `_review_subject`; neither field the section blames is read on that path, so the mechanism it prescribes is present at HEAD",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:341",
+      "id": "reasoning-2",
+      "reason": "without naming the pane word or carried kind, a node satisfies only half its own done-when and the pane the section exists for still prints nothing.",
+      "text": "\u00a717 says the release \"writes one row to the project's watch stream, naming both hosts, and the pane carries it once\", but the pane prints only rows `ticker.stream_carries` passes (ticker.py:1391-1419): a pane word in `CARRIED_PANE_WORDS` (:488), a launch or landing mark, or a `ROW_COORDINATOR` class; a seat-release row has no `PANE_STATES` word at all (`PANE_STATES`, :383-437), so `_pane_word` returns \"\" and the row is withheld, and the section names no word, carried-kind membership or coordinator class to add although it grants `ticker.py`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:333",
+      "id": "done_when-1",
+      "reason": "the rule as scoped trades one wrong row for a missing real one on the resume path \u00a73 and \u00a714 both produce, so the plan needs the per-attempt key and an arm that proves the resumed attempt's delivery still prints.",
+      "text": "\u00a715's rule suppresses \"a delivery the pane already showed \u2026 once that run's `in review` row has been drawn\", keyed to the row policy's per-run memory with no attempt boundary, while its only guard is \"a new attempt's launch after it still prints\"; after a resume the new attempt launches (printing), then delivers again with the same word, so a literal implementation drops that attempt's genuine delivery, and no arm in the done-when feeds launch-after-review followed by that attempt's own delivery",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:363",
+      "id": "wiring-1",
+      "reason": "the next build beat would read an open followup directing it at three completed sections and would not learn that \u00a715\u2013\u00a717 are the remaining work.",
+      "text": "the open followup `f-alwh-004` still recommends `/reckon-build a-live-worker-is-never-drawn-halted \u00a714` and orders \"\u00a714 comes first, then \u00a75 and then \u00a77 \u2026 then \u00a713 \u2026 \u00a711 last\", but \u00a714 closed at 2026-10-24T22:10Z (`c-close-s14`), \u00a75 at 23:20Z and \u00a77 at 2026-10-25T01:05Z, all three declared `done` in `plan-section-declarations`, and the followup neither drops them nor names \u00a715\u2013\u00a717",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "88764e3ade540943842b4e1fd5eaa8480240fbc1ac42edc4205e296b3f555957",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 80,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261025T011534395008-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "fa1162dfba65b8dfb2785155737470f9b92a4fec",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery_review_delivery._resolved_reviewed_run_id` (recovery_review_delivery.py:218), `watch_unit.release_seat_when_misplaced` (watch_unit.py:370) and `watch_unit.watch_log_path` (:1007) all resolve.",
+    "done_when": "a finding \u2014 \u00a715's suppression rule has no attempt boundary and its done-when has no arm for the resumed attempt's own delivery.",
+    "evidence_paths": "pass \u2014 each new section records its gate and its negative control in the node's gate log, and \u00a711's report path is the durable evidence fragment directory.",
+    "naming": "pass \u2014 the new sections introduce no plan labels, stage names or ticket numbers; `in review` and `seat release` are data words, not section IDs.",
+    "reasoning": "a finding \u2014 \u00a716's stated cause is not what the cited reading does (the node-id resolver is already its fallback), and \u00a717's mechanism names no way for the pane to carry the row it writes.",
+    "single_goal": "pass \u2014 \u00a715, \u00a716 and \u00a717 each name one deliverable (a row-policy suppression, an in-flight review recognition plus its pointer field, a seat-release row).",
+    "wiring": "a finding \u2014 the open followup f-alwh-004 still recommends `/reckon-build \u2026 \u00a714` and an order whose first three sections are `done`."
+  },
+  "section_digests": {
+    "_document": "d5e7b26358600d3d834d2dde0de3a226b3197b9bc2d543f22d381ef8ea48a49e",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "75b4df0e4c67134607272550aaa2236e7b1d3066609a6473041e0749aeed2ed8",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "c9a865797ebfeb76a1768ae28c033ed42a186f2ec3fcd4b6599d9e25692dbb4b",
+    "s15": "4cedc613c30c1c093e2c0c9864bc3c495feb35b31a6f49b93a16008553ed5fab",
+    "s16": "8a45cc2b1cd3abb0d6fa24bdfb44384d9cdf75b47225fb2824a31648fa88035f",
+    "s17": "314b90085aa67b15f6d96e548cebbbc82ec068b8903a2a101f6a3b89f1ed8f25",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "607c5ed638bb7fd894caef6e6fd6331649e3d6efcc2df2b48c1528c827010ae5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-25T01:28:11.730873+00:00"
+}
