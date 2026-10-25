@@ -1,0 +1,44 @@
+<section id="queue-depth-project-bound-landing">
+  <h2>Queue depth is the project's bound, and one request is stored once</h2>
+
+  <p><strong>What changed.</strong> The 2&ndash;8 per-session queued-dispatch
+  clamp is gone: <code>QUEUED_DISPATCH_CAP_FLOOR</code>,
+  <code>QUEUED_DISPATCH_CAP_CEILING</code> and the fair-share reader that fed
+  them (<code>queued_dispatch_cap</code> in <code>reckon/crew/runs.py</code>,
+  <code>_queued_share_cap</code> in <code>reckon/crew/dispatch.py</code>) are
+  removed. Depth is now a property of the project:
+  <code>queue.max_requests</code> in flight configuration, default 500, read by
+  <code>flight.queue_max_requests</code> (<code>reckon/flight.py</code>) and
+  applied in <code>queue_dispatch</code> under the queue's own lock, so two
+  concurrent dispatches cannot both pass the bound. Every dispatch path passes
+  the resolved figure in, and a caller holding no config falls back to the
+  project's own flight layer and then to the shipped default.
+
+  <p><strong>One request, one pointer.</strong> A request's identity lost its
+  session: <code>_node_identity</code> now returns (plan, section, node id),
+  with the project carried by the pointer directory the scan walks. Queuing the
+  same section twice — from one session or from two — updates the existing
+  pointer and returns its run id, storing nothing new.
+
+  <p><strong>The review exemption moved with the bound.</strong> A review of a
+  delivered run is neither refused at <code>queue.max_requests</code> nor
+  counted against it, which is the same exemption the per-session cap carried.
+  An explicit session-scoped <code>cap</code> argument survives for callers
+  that impose one; no dispatch path derives one any more.
+
+  <p><strong>The bound costs a reader nothing measurable.</strong> The crew MCP
+  reads of the <code>live</code> and <code>obligations</code> views each answer
+  inside the 30&nbsp;s deadline their wrapper enforces, cold and warm, on a
+  fixture of 500 queued pointers.
+
+  <p><strong>Measure.</strong> <code>tests/test_queue_depth_project_bound.py</code>
+  has 8 arms: one session queues 200 requests with no refusal (the arm the
+  restored clamp fails at the ninth); a duplicate returns the existing id and
+  the live set is unchanged; another session's copy of one request is the same
+  request; the 501st request is refused with <code>held=500</code> and the
+  refusal naming <code>queue.max_requests</code>; the setting resolves to 500
+  by default and to a project's declared figure; a review is queued at a full
+  bound; a queued review does not shrink the project's remaining room; and the
+  two MCP reads answer inside their deadline. The negative control restores
+  the clamp and fails the 200-request arm at eight held requests.
+</section>
