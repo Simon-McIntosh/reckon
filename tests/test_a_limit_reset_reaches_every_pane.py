@@ -369,13 +369,17 @@ def test_a_process_that_is_not_the_producer_writes_no_reset_row(
     assert _rows(stream) == [], "a non-producer wrote the project's stream"
 
 
-class _ProducerStub:
-    """The attributes the producer loop and its teardown read off the seat."""
+def _producer(stream: Path) -> runs._WatchStreamProducer:
+    """The seat's own record, as the seat registers one.
 
-    sweep_thread = None
-
-    def __init__(self) -> None:
-        self.seeded_states: dict = {}
+    A hand-built stand-in carries only the attributes a case happens to read,
+    so a field the record gains later reaches the loop and its teardown as a
+    missing attribute. Building the real record keeps the case measuring the
+    sweep rather than the stub's shape.
+    """
+    return runs._WatchStreamProducer(
+        path=stream, known={}, stall_window=runs.DEFAULT_WATCH_STALL_WINDOW
+    )
 
 
 def test_the_registered_producer_writes_the_row(tmp_path, monkeypatch):
@@ -383,7 +387,9 @@ def test_the_registered_producer_writes_the_row(tmp_path, monkeypatch):
     real_now = datetime.now(UTC)
     _announce(moment=real_now)
     stream = tmp_path / "alpha.events"
-    monkeypatch.setattr(runs, "_WATCH_STREAM_PRODUCERS", {PROJECTS[0]: _ProducerStub()})
+    monkeypatch.setattr(
+        runs, "_WATCH_STREAM_PRODUCERS", {PROJECTS[0]: _producer(stream)}
+    )
     monkeypatch.setattr(runs, "watch_stream_path", lambda stream_project: stream)
     seen = recovery_watch._sweep_reset_rows(PROJECTS[0], None)
     assert seen, "the registered producer announced nothing"
@@ -458,7 +464,7 @@ def test_the_reset_sweep_runs_on_a_pass_where_the_change_gate_did_not_move(
     """
     project = PROJECTS[0]
     stream = tmp_path / "alpha.events"
-    monkeypatch.setattr(runs, "_WATCH_STREAM_PRODUCERS", {project: _ProducerStub()})
+    monkeypatch.setattr(runs, "_WATCH_STREAM_PRODUCERS", {project: _producer(stream)})
     monkeypatch.setattr(runs, "watch_stream_path", lambda _project: stream)
     _announce(moment=datetime.now(UTC))
 
