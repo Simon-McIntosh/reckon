@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-25T00:16:52.536Z",
+  "dispatched_at": "2026-10-25T00:05:23Z",
+  "findings": [
+    {
+      "file": "tests/test_a_limit_reset_reaches_every_pane.py",
+      "line": 170,
+      "severity": "blocking",
+      "text": "the landed change supersedes this assertion (`assert \"working\" in rendered`) and leaves it failing: logs/sibling_base.log is 13 passed / EXIT=0 at 6c9489c95 and logs/sibling_head.log is 12 passed 1 failed / EXIT=1 at 09089a1e9 on tests/test_a_limit_reset_reaches_every_pane.py::test_a_pane_following_both_projects_draws_the_reset_once, so promoting this node alone turns the suite red; the worker was fenced out of the file and declared it under outside_scope with the one-line repair, and the repair must land with this node."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": 318,
+      "severity": "blocking",
+      "text": "RESET_INSTRUCTION is appended to every limit-reset row whatever its group, so a reset recorded under a worker budget group prints `orchestrator sessions may continue` \u2014 measured in logs/sibling_head.log, whose claude-sub/seven_day row renders `limit reset \u00b7 claude-sub \u00b7 seven_day \u00b7 orchestrator sessions may continue`; that record establishes nothing about orchestrator sessions, and this is the group whose 2026-10-22 reset had to be clarified to thirteen sessions as not applying across lanes."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": 301,
+      "severity": "non-blocking",
+      "text": "RESET_CLOCK_CLAUSE and RESET_REASON_CLAUSE re-parse the prose composed by lift_watch._reset_detail (reckon/crew/lift_watch.py:382-385), so that sentence's punctuation and wording become a second hardcoded contract; a reworded sentence silently drops the clock and the reason from every pane row with no failure anywhere, which is the fallback the docstring describes but no test exercises."
+    },
+    {
+      "file": "tests/test_the_orchestrator_reset_row_says_what_it_is.py",
+      "line": 120,
+      "severity": "non-blocking",
+      "text": "`assert GROUP in rendered` and `assert CLOCK in rendered` at :120-121 assert values the fixture itself passed through _announce into mark_used, and both already appear in the base revision's render (`limit claude-orchestrators new \u2192 working` in logs/base.log), so neither can fail on the regression the change guards; the guard rests on :119 and :122-123, which do redden."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-orchestrator-reset-row-says-what-it-is.html",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "the landing record says the renderer returns to `ticker.Painter.render`, but reckon/crew/ticker.py:2598 defines the class as `Ticker` and no `Painter` exists in the package, so a reader following the record's own pointer finds nothing."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 6c9489c95: 09089a1e9 adds RESET_HEADLINE/RESET_INSTRUCTION/the two clause regexes and limit_reset_text at reckon/crew/ticker.py:280-318, the early return and _reset_line at :2845 and :2932, and the 196-line test file; b38fcc01a adds only the 29-line landing fragment under docs/evidence/fragments/.",
+    "done_when": "four clauses: the render test (met, logs/head.log `5 passed`/`EXIT=0`, and the line it prints at head.log is the clause); the negative control (met, logs/base.log and logs/negative-control.log each render `limit claude-orchestrators new \u2192 working` and end `EXIT=1` with four ids the head arm does not fail); tests importing ticker add no failures against base (NOT met \u2014 logs/sibling_base.log is 13 passed/EXIT=0 and logs/sibling_head.log is 12 passed 1 failed/EXIT=1 on tests/test_a_limit_reset_reaches_every_pane.py::test_a_pane_following_both_projects_draws_the_reset_once); ruff adds no findings on the staged paths (met on re-check, but no ruff log is recorded in the manifest's test_logs, so the claim rests on the evidence fragment rather than a recorded run).",
+    "goal": "the goal is that the reset row say what it is; reckon/crew/ticker.py:2845 returns a limit-reset row to _reset_line, which prints `limit reset \u00b7 <group> \u00b7 <clock> \u00b7 orchestrator sessions may continue` plus the recorded reason, exactly the clause plan section 7 asks for \u2014 but the instruction at ticker.py:289 is unconditional, so every budget group's reset carries it.",
+    "manifest": "read; status `complete` is a recognised value, baseline_suite and after_suite both parse with completed true, the negative-control log path is bare, and outside_scope names the superseded sibling assertion with its measured 13/13 base and 12/13 head counts rather than hiding it.",
+    "write_paths": "the manifest declares reckon/crew/ticker.py, tests/test_the_orchestrator_reset_row_says_what_it_is.py, docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-orchestrator-reset-row-says-what-it-is.html and a figures directory; git diff 6c9489c95..b38fcc01a touches the first three only, so every changed path is inside the declared set and the unused figures path carries no content."
+  },
+  "justifications": {
+    "durability": "the added assertions at tests/test_the_orchestrator_reset_row_says_what_it_is.py:119 and :122-123 redden at the base revision and under the declared mutation (logs/base.log, logs/negative-control.log), but :120-121 assert GROUP and CLOCK, which the base render already contains, so they cannot fail on this regression.",
+    "evidence": "logs/head.log ends `5 passed`/`EXIT=0` and logs/base.log renders the same recorded event as `new \u2192 working` with `EXIT=1`, so the central measure is recorded; the done-when's importer clause is contradicted by logs/sibling_head.log (12/13) against logs/sibling_base.log (13/13), and no ruff log is listed among test_logs.",
+    "fit": "reckon/crew/ticker.py:280-318 follows the module's UPPERCASE constant and one-purpose helper idiom and introduces no plan label or versioned name, while the landing fragment at docs/evidence/fragments/a-live-worker-is-never-drawn-halted/the-orchestrator-reset-row-says-what-it-is.html:15 cites a `ticker.Painter` class the module does not define.",
+    "goal_fidelity": "reckon/crew/ticker.py:2932 renders the reset as one clause with group, clock, instruction and optional reason, which is the goal; ticker.py:318 applies the orchestrator instruction to every group, which the section's stated population does not cover.",
+    "reuse": "reckon/crew/ticker.py:2838-2862 reuses local_clock, elide, _grid_width, _spend_cells and _stats rather than rebuilding the row, but limit_reset_text re-derives the clock and reason out of the sentence reckoned by the capability owner lift_watch._reset_detail (reckon/crew/lift_watch.py:362) instead of extending it with structured fields.",
+    "scope_discipline": "every path in git diff 6c9489c95..b38fcc01a is inside the four paths the manifest declares; the only overreach is behavioural, the instruction travelling to groups the section does not name."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261025T000309422418-review-of-the-orchestrator-reset-row-says-what-it-is-b38fcc01a887",
+  "reviewed_base_sha": "6c9489c9507f719a1ad65428c623e598f3b20ade",
+  "reviewed_head_sha": "b38fcc01a88742af10e2b320f9ba64d34308ed88",
+  "reviewed_run_id": "r-20261024T232336649966-the-orchestrator-reset-row-says-what-it-is",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 14,
+    "reuse": 14,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-25T00:18:54.491595+00:00",
+  "total": 88
+}
