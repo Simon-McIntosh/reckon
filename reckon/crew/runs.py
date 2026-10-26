@@ -740,6 +740,10 @@ def queue_dispatch(
                     # discarded underneath the re-queue: fall through and queue
                     # afresh rather than reading a pointer that is gone.
             if not requeued:
+                from reckon.crew.queue_admission import (
+                    QUEUED_PHASE,
+                    WAITING_UPSTREAM_PHASES,
+                )
                 from reckon.crew.recovery_review_delivery import _is_review_run
 
                 if not _is_review_run(record):
@@ -751,7 +755,8 @@ def queue_dispatch(
                     held = sum(
                         1
                         for pointer in live
-                        if pointer.get("phase") == "queued"
+                        if pointer.get("phase")
+                        in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES)
                         and str(pointer.get("project") or project) == project
                         and not _is_review_run(pointer)
                     )

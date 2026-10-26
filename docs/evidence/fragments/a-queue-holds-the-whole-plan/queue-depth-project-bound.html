@@ -13,6 +13,8 @@
   concurrent dispatches cannot both pass the bound. Every dispatch path passes
   the resolved figure in, and a caller holding no config resolves the shipped,
   host and project flight layers through the same resolver.
+  Requests in <code>queued</code>, <code>awaiting-upstream</code> and
+  <code>blocked-upstream</code> all count toward that bound.
 
   <p><strong>One request, one pointer.</strong> A request's identity lost its
   session: <code>_node_identity</code> now returns (plan, section, node id),
@@ -36,7 +38,8 @@
   (the arm the restored clamp fails at the ninth); a duplicate returns the existing id and
   the live set is unchanged; another session's copy of one request is the same
   request; the 501st request is refused with <code>held=500</code> and the
-  refusal naming <code>queue.max_requests</code>; strict flight resolution
+  refusal naming <code>queue.max_requests</code> for each held phase; strict
+  flight resolution
   accepts an override, and a caller without a bound reads the host and project
   layers; a review is queued at a full
   bound; a queued review does not shrink the project's remaining room; and the

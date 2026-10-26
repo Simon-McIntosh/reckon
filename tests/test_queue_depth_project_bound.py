@@ -104,7 +104,9 @@ def _request(
     }
 
 
-def _seed_queued(count: int, *, session: str = SESSION) -> list[str]:
+def _seed_queued(
+    count: int, *, session: str = SESSION, phase: str = "queued"
+) -> list[str]:
     """Write ``count`` queued pointers straight to the live directory.
 
     Seeding through :func:`runs.queue_dispatch` would rescan the queue on every
@@ -118,6 +120,7 @@ def _seed_queued(count: int, *, session: str = SESSION) -> list[str]:
         run_id = f"r-fixture-{index:04d}"
         record = _request(f"node-{index:04d}", section=f"s{index:04d}", session=session)
         record["run_id"] = run_id
+        record["phase"] = phase
         runs._write_json(runs.pointer_path(run_id), record)
         written.append(run_id)
     return written
@@ -179,10 +182,11 @@ def test_another_sessions_copy_of_one_request_is_the_same_request(
 # ── the bound: queue.max_requests, named in the refusal
 
 
+@pytest.mark.parametrize("phase", ["queued", "awaiting-upstream", "blocked-upstream"])
 def test_the_501st_request_in_a_project_is_refused_by_the_bound(
-    crew_home: Path,
+    crew_home: Path, phase: str
 ) -> None:
-    _seed_queued(500)
+    _seed_queued(500, phase=phase)
 
     with pytest.raises(QueueFull) as refused:
         runs.queue_dispatch(_request("node-overflow", section="s-overflow"))
