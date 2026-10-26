@@ -1,0 +1,42 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:46 crew_station calls station.run_station",
+    "reckon/crew/dispatch.py:384 _ensure_watch_producer calls dispatch_watch._ensure_node_station",
+    "reckon/crew/watch_unit.py:620 the watch-unit path calls _ensure_watch_producer",
+    "reckon/crew/fleet_supervisor.py:2052 StationProcess construction and its handle_line station verb"
+  ],
+  "completed_at": "2026-10-26T23:47:15.983Z",
+  "dispatched_at": "2026-10-26T23:39:14Z",
+  "findings": [
+    {
+      "file": "tests/test_one_station_per_node_runs_the_tick.py",
+      "line": "146",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm's only failure is the integration test that carries the done_when, and it fails at the pre-existing offset-advance assertion after the node's own assertions passed at :139-144, so the run does not show the done-when test green; stability evidence is a single retry rather than a repeated alternating base/head run, and the same failure id reddens at base for a different reason (:125, the new lease assertion)."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T220248454173-the-station-starts-where-workers-run/review-importers-head-extended.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T220248454173-the-station-starts-where-workers-run/review-importers-base-extended.log"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the station holds its node lock through host_lease.HostLease, starts where workers run, and reloads from an image under the node-local runtime root; reckon/crew/station.py:30-38 claims the lease through HostLease, reckon/crew/dispatch_watch.py:475-489 requests the station at dispatch, reckon/crew/fleet_supervisor.py:1860-1914 ensures it from the supervisor, and reckon/crew/station.py:85-113 reloads through follower_reload.image_reexec_* from a tree under checkout_trust's runtime cache.\nVERDICT done_when: The done_when's parts are covered by tests/test_the_station_starts_where_workers_run.py:16-99 and tests/test_one_station_per_node_runs_the_tick.py:121-146, but the head arm leaves the second one red at :146 (offset advance) after the done-when assertions at :139-144 passed, so the integration measure is shown by assertions that executed before a failure rather than by a green test.\nVERDICT write_paths: The manifest's declared paths plus the coordinator's resume-3 grant of reckon/crew/host_lease.py and reckon/crew/follower_reload.py cover all eight files in the diff; no path outside them is touched.\nVERDICT manifest: Read; status complete, it records the 51-file matched arms (base 5 failed/488 passed, head 1 failed/492 passed), three mutation controls and their EXIT=1 logs, and names review-importers-*-extended.log as the gate logs.\nVERDICT diff: Read all eight commits from eb125341a812bf7ed9d3d491ef20eca4453afbb0 to 3d19555ee3d5c49011580d15ef070634db724244: two feature commits, one route fix, four evidence commits, and the two review repairs (785b458ee host identity, 4d82dc20d shared re-exec recipe); 3d19555ee and f6f902dd1 are docs-only.\nCALL_SITES: reckon/crew_follow_commands.py:46 crew_station calls station.run_station, reckon/crew/dispatch.py:384 _ensure_watch_producer calls dispatch_watch._ensure_node_station, reckon/crew/watch_unit.py:620 the watch-unit path calls _ensure_watch_producer, reckon/crew/fleet_supervisor.py:2052 StationProcess construction and its handle_line station verb\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:30-38 takes the node lock through HostLease, dispatch_watch.py:475-489 and fleet_supervisor.py:1860-1914 start it where workers run, and station.py:85-113 reloads from a tree under the runtime root.\nSCORE evidence: 15\nJUSTIFICATION evidence: review-importers-base-extended.log ends 5 failed/488 passed and review-importers-head-extended.log 1 failed/492 passed, giving zero head-only ids, but the head failure is inside the done-when test at tests/test_one_station_per_node_runs_the_tick.py:146.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every file in the diff is inside the manifest's declared paths or the coordinator's resume-3 grant of host_lease.py and follower_reload.py, and the evidence commit touches only the fragment.\nSCORE durability: 18\nJUSTIFICATION durability: review-negative-controls-extended.log shows the three mutations (no dispatch ensure, image under crew home, no holder inspection) each reddening its named test, and tests/test_the_station_starts_where_workers_run.py:83-84 asserts the dead holder is gone and the seat can be reclaimed.\nSCORE fit: 17\nJUSTIFICATION fit: host_lease.local_host (reckon/crew/host_lease.py:19-21) follows the module's existing one-line host-identity idiom, and station.py:103-112 now calls follower_reload's recipe rather than restating it.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/follower_reload.py:32-60 is now the single image re-exec owner used by both follower (follower_reload.py:472,516) and station (station.py:103,109), and the image machinery is checkout_trust's; no capability is re-implemented.\nFINDING tests/test_one_station_per_node_runs_the_tick.py:146 non-blocking: the head arm's only failure is the integration test that carries the done_when, and it fails at the pre-existing offset-advance assertion after the node's own assertions at :139-144 passed, so the run does not show the done-when test green; the stability evidence is the recorded single retry rather than a repeated alternating base/head run, and the same failure id reddens at base for a different reason (:125, the new lease assertion).",
+  "review_run_id": "r-20261026T233745045229-review-of-the-station-starts-where-workers-run-3d19555ee3d5",
+  "reviewed_base_sha": "eb125341a812bf7ed9d3d491ef20eca4453afbb0",
+  "reviewed_head_sha": "3d19555ee3d5c49011580d15ef070634db724244",
+  "reviewed_run_id": "r-20261026T220248454173-the-station-starts-where-workers-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T23:51:02.752291+00:00",
+  "total": 105
+}
