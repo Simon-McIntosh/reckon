@@ -477,6 +477,8 @@ def _ensure_node_station() -> None:
     from reckon.crew.fleet_supervisor import REQUEST_FIFO_NAME
     from reckon.crew.host_lease import HostLease
 
+    if not _fleet_spawn_enabled():
+        return
     fleet = _read_fleet_record()
     if fleet is None or not _runs_inside_fleet_allocation(fleet):
         return
@@ -501,11 +503,16 @@ def _ensure_node_station() -> None:
             return
         else:
             return
-    _write_fleet_request(
-        runtime / REQUEST_FIFO_NAME,
-        b"station\n",
-        time.monotonic() + WATCHER_LOAD_BOUND_SECONDS,
-    )
+    try:
+        _write_fleet_request(
+            runtime / REQUEST_FIFO_NAME,
+            b"station\n",
+            time.monotonic(),
+        )
+    except CrewError:
+        # The batch step also ensures the station on its own pass. A missing
+        # FIFO during startup must not hold a producer's arming path.
+        return
 
 
 # The session host a Claude Code session runs declares its request FIFO in a

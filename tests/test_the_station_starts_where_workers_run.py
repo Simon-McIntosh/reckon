@@ -19,6 +19,7 @@ def test_dispatch_requests_a_missing_node_station_once(
     runtime = tmp_path / "runtime"
     runtime.mkdir()
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
+    monkeypatch.setattr(dispatch_watch, "_fleet_spawn_enabled", lambda: True)
     monkeypatch.setattr(dispatch_watch, "_read_fleet_record", lambda: {"node": "local"})
     monkeypatch.setattr(dispatch_watch, "_runs_inside_fleet_allocation", lambda _: True)
     monkeypatch.setattr(dispatch_watch, "_fleet_runtime_dir", lambda _: runtime)
