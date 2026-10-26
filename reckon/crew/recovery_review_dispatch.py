@@ -1879,8 +1879,11 @@ def _zero_slot_held_lane(
     no work from the run and so may be re-routed, and only a record for it is
     read at all. The lane's own published admission then decides: a router
     granting the session no worker is the case the route question exists for,
-    and a lane publishing no figure holds nothing, because absence of a signal
-    is not exhaustion. A paused gate records the same status without a zero
+    and a lane publishing no figure holds nothing because absence of a signal
+    is not exhaustion.
+    When project weights are configured, the lane-wide worker allowance is
+    authoritative and a zero per-session router share cannot reroute a review.
+    A paused gate records the same status without a zero
     allowance, so the allowance check is what tells the two apart.
     """
     recorded = record.get(_review_dispatch_field(rubric))
@@ -1894,9 +1897,14 @@ def _zero_slot_held_lane(
     settings = (config.get("backends") or {}).get(backend)
     if not isinstance(settings, Mapping):
         return ""
+    from reckon import flight
     from reckon.crew.dispatch_plan import _dispatch_lane_allowance
 
-    allowance = _dispatch_lane_allowance(settings, session=session)
+    allowance = _dispatch_lane_allowance(
+        settings,
+        session=session,
+        weights_configured=flight.fair_use_weights_configured(config),
+    )
     if allowance is None or not allowance.get("held"):
         return ""
     return backend

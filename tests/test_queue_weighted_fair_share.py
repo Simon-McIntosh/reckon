@@ -15,7 +15,7 @@ from typing import Any
 import pytest
 
 from reckon import flight
-from reckon.crew import dispatch_plan, queue_admission
+from reckon.crew import dispatch_plan, queue_admission, recovery_review_dispatch
 
 PROJECTS = ("alpha", "beta")
 
@@ -361,6 +361,29 @@ def test_a_zero_session_share_holds_nothing_once_weights_are_configured(
     assert held_before["held"] is True
     assert held_after["held"] is False
     assert held_after["allowance"] == 4
+
+
+def test_a_weighted_review_reads_lane_wide_slots_before_rerouting(tmp_path) -> None:
+    backend = _backend(tmp_path, lane_wide=4, session_share=0)
+    record = {"review_dispatch": {"status": "awaiting-lane", "backend": "local"}}
+    unweighted = {"backends": {"local": backend}}
+    weighted = {
+        **unweighted,
+        "queue": {"project_weights": {"alpha": 3, "beta": 1}},
+    }
+
+    assert (
+        recovery_review_dispatch._zero_slot_held_lane(
+            record, config=unweighted, session="coordinator-a"
+        )
+        == "local"
+    )
+    assert (
+        recovery_review_dispatch._zero_slot_held_lane(
+            record, config=weighted, session="coordinator-a"
+        )
+        == ""
+    )
 
 
 @pytest.mark.parametrize(
