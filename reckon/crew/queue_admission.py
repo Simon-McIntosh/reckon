@@ -154,8 +154,10 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
     )
 
 
-def _resolve_lane_config(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
-    """Resolve flight config for the queued request's own project lanes."""
+def _resolve_lane_config(
+    pointer: Mapping[str, Any], *, select_local: bool = True
+) -> Mapping[str, Any]:
+    """Resolve the request's project config, selecting its local lane when needed."""
     from reckon import flight as flight_module
     from reckon.crew_dispatch_commands import _resolved_flight
 
@@ -165,7 +167,7 @@ def _resolve_lane_config(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
         pointer.get("repo"),
         runs.recorded_dispatch_overrides(pointer),
     )
-    if pointer.get("local"):
+    if select_local and pointer.get("local"):
         config = flight_module.select_local_backend(config)
     return config
 
@@ -2161,7 +2163,7 @@ def _fair_use_weights(
         configs[project] = (
             config_for(pointer)
             if config_for is not None
-            else _resolve_lane_config(pointer)
+            else _resolve_lane_config(pointer, select_local=False)
         )
     declared: dict[str, float] = {}
     for project in projects:
