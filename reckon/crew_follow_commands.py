@@ -30,6 +30,20 @@ from reckon.crew_dispatch_commands import _crew_modules, _emit_crew_result, crew
 from reckon.env_duration import read_duration_override
 
 
+@crew.command(name="station")
+@click.option("--interval", type=click.FloatRange(min=0.01), default=1.0, show_default=True)
+@click.option("--once", is_flag=True, help="Run one ingest and classification tick, then exit.")
+def crew_station(interval: float, once: bool) -> None:
+    """Run the single node-local station for every mounted project."""
+    from reckon.crew.station import StationHeldError, run_station
+    from reckon.crew.station_store import StationStoreError
+
+    try:
+        run_station(interval=interval, once=once)
+    except (StationHeldError, StationStoreError) as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
 def _follow_selects(
     event: Mapping[str, Any],
     *,

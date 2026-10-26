@@ -122,7 +122,8 @@ CREATE TABLE IF NOT EXISTS events (
     from_state TEXT,
     to_state   TEXT,
     detail     TEXT,
-    duty       TEXT
+    duty       TEXT,
+    payload    TEXT
 );
 CREATE INDEX IF NOT EXISTS events_by_audience ON events (audience, id);
 CREATE INDEX IF NOT EXISTS events_by_project ON events (project, id);
@@ -377,8 +378,15 @@ class StationStore:
         against the stored one; a stream is read only past its stored offset.
         """
         root = Path(home) if home is not None else crew_home()
-        for path in sorted((root / "live").glob("*.json")):
+        present = set((root / "live").glob("*.json"))
+        for path in sorted(present):
             self.ingest_pointer(path)
+        connection = self.connect()
+        connection.executemany(
+            "DELETE FROM pointers WHERE path = ?",
+            [(row["path"],) for row in self.pointer_rows() if Path(row["path"]) not in present],
+        )
+        connection.commit()
         for stream in self._pointer_streams(root):
             self.ingest_stream(stream)
         self.heartbeat()
@@ -700,6 +708,10 @@ class StationStore:
         connection = sqlite3.connect(self._day_path(day))
         connection.row_factory = sqlite3.Row
         connection.executescript(_DAY_SCHEMA)
+        columns = {str(row["name"]) for row in connection.execute("PRAGMA table_info(events)")}
+        if "payload" not in columns:
+            connection.execute("ALTER TABLE events ADD COLUMN payload TEXT")
+            connection.commit()
         return connection
 
     def write_event(
@@ -714,6 +726,7 @@ class StationStore:
         to_state: str | None = None,
         detail: str | None = None,
         duty: str | None = None,
+        payload: Mapping[str, Any] | None = None,
     ) -> int:
         """Append one event to its UTC day's file, returning its sequence id."""
         moment = at.astimezone(UTC)
@@ -723,7 +736,7 @@ class StationStore:
         with closing(self._open_day(day)) as day_connection:
             day_connection.execute(
                 "INSERT INTO events (id, time, project, audience, run, kind, from_state, "
-                "to_state, detail, duty) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "to_state, detail, duty, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     next_id,
                     moment.isoformat(),
@@ -735,6 +748,7 @@ class StationStore:
                     to_state,
                     detail,
                     duty,
+                    json.dumps(dict(payload), sort_keys=True) if payload is not None else None,
                 ),
             )
             day_connection.commit()
@@ -749,6 +763,79 @@ class StationStore:
         self.set_station_value(EVENT_GENERATION_KEY, str(next_id))
         return next_id
 
+    def recorded_fleet(self, project: str) -> dict[str, dict[str, Any]]:
+        """The last fleet image committed beside this project's event rows."""
+        raw = self.station_value(f"fleet:{project}")
+        return json.loads(raw) if raw else {}
+
+    def recorded_projects(self) -> set[str]:
+        """Projects whose previous tick can still contain a departure."""
+        return {
+            str(row["key"])[len("fleet:") :]
+            for row in self.connect().execute("SELECT key FROM station WHERE key LIKE 'fleet:%'")
+        }
+
+    def record_tick(
+        self,
+        project: str,
+        events: Iterable[Mapping[str, Any]],
+        fleet: Mapping[str, Mapping[str, Any]],
+        *,
+        at: datetime,
+    ) -> None:
+        """Commit events, their sequence and the next fleet image in one tick.
+
+        The day file is attached before the transaction starts. A killed writer
+        therefore rolls back an unfinished tick and a restarted writer compares
+        against the image committed with the last completed one.
+        """
+        rows = list(events)
+        connection = self.connect()
+        with closing(self._open_day(at.astimezone(UTC).date())):
+            pass
+        connection.execute("ATTACH DATABASE ? AS tick_day", (str(self._day_path(at.astimezone(UTC).date())),))
+        try:
+            connection.execute("BEGIN IMMEDIATE")
+            sequence = int(self.station_value(EVENT_COUNTER_KEY) or "0")
+            for event in rows:
+                sequence += 1
+                connection.execute(
+                    "INSERT INTO tick_day.events (id, time, project, audience, run, kind, "
+                    "from_state, to_state, detail, duty, payload) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        sequence,
+                        at.astimezone(UTC).isoformat(),
+                        project,
+                        event.get("audience") or "*",
+                        event.get("run_id"),
+                        event.get("event"),
+                        event.get("from_state"),
+                        event.get("to_state"),
+                        event.get("detail"),
+                        event.get("duty"),
+                        json.dumps(dict(event), sort_keys=True),
+                    ),
+                )
+            connection.execute(
+                "UPDATE station SET value = ? WHERE key = ?", (str(sequence), EVENT_COUNTER_KEY)
+            )
+            if rows:
+                connection.execute(
+                    "UPDATE station SET value = ? WHERE key = ?", (str(sequence), EVENT_GENERATION_KEY)
+                )
+            connection.execute(
+                "INSERT INTO station (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                (f"fleet:{project}", json.dumps(dict(fleet), sort_keys=True)),
+            )
+            connection.commit()
+        except BaseException:
+            connection.rollback()
+            raise
+        finally:
+            connection.execute("DETACH DATABASE tick_day")
+
     def events(
         self, *, audience: str | None = None, after_id: int = 0
     ) -> list[dict[str, Any]]:
@@ -760,7 +847,7 @@ class StationStore:
             try:
                 query = (
                     "SELECT id, time, project, audience, run, kind, from_state, to_state, "
-                    "detail, duty FROM day.events WHERE id > ?"
+                    "detail, duty, payload FROM day.events WHERE id > ?"
                 )
                 parameters: list[Any] = [after_id]
                 if audience is not None:
