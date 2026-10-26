@@ -15,12 +15,23 @@ from tests import test_a_queued_request_waits_on_its_dependencies as fixtures
 chain_repo = fixtures.chain_repo
 
 
+def _files(*roots: Path) -> dict[Path, tuple[int, bytes]]:
+    return {
+        path: (path.stat().st_mtime_ns, path.read_bytes())
+        for root in roots
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+
+
 def test_drain_names_implementable_sections_without_requests(
     chain_repo: Path,
 ) -> None:
+    before = _files(chain_repo.parent / "config", chain_repo / "docs")
     assert runs.drain(fixtures.PROJECT)["unloaded"] == {
         fixtures.PLAN: ["s1", "s2", "s3"]
     }
+    assert _files(chain_repo.parent / "config", chain_repo / "docs") == before
 
 
 def _write_two_chains(repository: Path) -> None:
@@ -101,8 +112,10 @@ def test_whole_width_stores_once_and_releases_in_dependency_order(
     }
 
     pointers_before = {path.name for path in runs.live_dir().glob("*.json")}
+    files_before = _files(chain_repo.parent / "config", chain_repo / "docs")
     assert runs.drain(fixtures.PROJECT)["unloaded"] == {fixtures.PLAN: ["s6"]}
     assert {path.name for path in runs.live_dir().glob("*.json")} == pointers_before
+    assert _files(chain_repo.parent / "config", chain_repo / "docs") == files_before
 
     again = _dispatch(chain_repo, nodes[1], config, "r-repeated")
     assert again["run_id"] == stored["s2"]["run_id"]

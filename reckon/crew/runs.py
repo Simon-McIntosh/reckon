@@ -1931,6 +1931,42 @@ def _project_executable_remainder(project: str) -> tuple[int | None, int | None]
     return (sum(remainders) if remainders else None), uncovered_plans
 
 
+def _drain_plan_states(project: str) -> list[tuple[str, dict[str, Any]]] | None:
+    """Read live plans without publishing the plan index or any other file."""
+    from reckon import _plan_html, resources
+
+    docs_dir = _docs_dir_for_project(project)
+    if docs_dir is None:
+        return None
+    plans: list[tuple[str, dict[str, Any]]] = []
+    try:
+        for path in sorted(docs_dir.rglob("*.html")):
+            resource = resources.identify_resource(docs_dir, path, project)
+            if resource is None or resource.type != "plan" or resource.archived:
+                continue
+            plans.append((resource.slug, _plan_html.read_state_file(path)))
+    except (OSError, ValueError):
+        return None
+    return plans
+
+
+def _drain_executable_remainder(
+    plans: list[tuple[str, dict[str, Any]]] | None,
+) -> tuple[int | None, int | None]:
+    """Derive the closure count from the same read-only plan inventory."""
+    from reckon._schema import plan_executable_remainder
+
+    if not plans:
+        return None, None
+    remainders = [plan_executable_remainder(state) for _slug, state in plans]
+    return (
+        sum(remainder for remainder in remainders if remainder is not None)
+        if any(remainder is not None for remainder in remainders)
+        else None,
+        sum(remainder is None for remainder in remainders),
+    )
+
+
 def _drain_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
     """One live pointer's closure row, the drain's own classification."""
     from reckon.crew.recovery import (
@@ -1955,14 +1991,15 @@ def _drain_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _unloaded_sections(
-    project: str, pointers: Iterable[Mapping[str, Any]]
+    project: str,
+    pointers: Iterable[Mapping[str, Any]],
+    plans: list[tuple[str, dict[str, Any]]] | None,
 ) -> dict[str, list[str]]:
     """Name declared work with neither a request nor a promoted run."""
-    from reckon import _plan_html, ledger, metadata_index
+    from reckon import _plan_html, ledger
     from reckon._schema import is_implementable_section
 
-    docs_dir = _docs_dir_for_project(project)
-    if docs_dir is None:
+    if plans is None:
         return {}
 
     def identity(record: Mapping[str, Any]) -> tuple[str, str]:
@@ -1975,14 +2012,10 @@ def _unloaded_sections(
         )
 
     covered = {identity(pointer) for pointer in pointers}
-    covered.update(identity(record) for record in ledger.runs(project))
+    landed, _version = ledger.load(project, use_index=False)
+    covered.update(identity(record) for record in landed["runs"])
     unloaded: dict[str, list[str]] = {}
-    for plan in metadata_index.plan_derivations(docs_dir, project):
-        if plan["unreadable"]:
-            continue
-        path = docs_dir / plan["path"]
-        state = _plan_html.read_state_file(path)
-        slug = str(state.get("slug") or path.stem)
+    for slug, state in plans:
         sections = sorted(
             str(section)
             for section, classification in (
@@ -2027,7 +2060,8 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
 
     counted, peers = _partition_session_rows(rows, session)
     unreconciled = sum(1 for row in counted if row["unreconciled"])
-    executable_remainder, uncovered_plans = _project_executable_remainder(project)
+    plans = _drain_plan_states(project)
+    executable_remainder, uncovered_plans = _drain_executable_remainder(plans)
     result = {
         "project": project,
         "live_pointers": len(counted),
@@ -2040,7 +2074,7 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
         ),
         "dispositions": list(RUN_DRAIN_DISPOSITIONS),
         "runs": counted,
-        "unloaded": _unloaded_sections(project, pointers),
+        "unloaded": _unloaded_sections(project, pointers, plans),
     }
     if session is not None:
         result.update(
