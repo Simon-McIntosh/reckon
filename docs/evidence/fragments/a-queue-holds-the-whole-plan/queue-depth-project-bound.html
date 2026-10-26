@@ -45,4 +45,13 @@
   bound; a queued review does not shrink the project's remaining room; and the
   two MCP reads answer inside their deadline. The negative control restores
   the clamp and fails the 200-request arm at eight held requests.
+
+  <p id="queue-depth-project-bound-scope-grant"><strong>Scope record.</strong>
+  The repair-round write grant explicitly includes the flight schema source
+  (<code>reckon/schema/flight.yaml</code>), its generated Python and published
+  JSON companions (<code>reckon/_flight_schema.py</code> and
+  <code>docs/_shared/flight.schema.json</code>), and the existing queue test
+  (<code>tests/test_a_queued_dispatch_is_accepted.py</code>). These files are
+  part of the authorized change: they declare the bound, publish it, and check
+  that a session is refused when its project's queue reaches that bound.
 </section>
