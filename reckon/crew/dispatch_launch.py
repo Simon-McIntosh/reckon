@@ -453,41 +453,70 @@ def _export_launched_workers_for_reexec() -> None:
         os.environ.pop(_LAUNCHED_WORKERS_HANDOVER_ENV, None)
 
 
+def _inherited_child_pids() -> list[int]:
+    """The pids the kernel lists as this process's own children.
+
+    A child the previous image started and never registered is still this
+    process's child after an image replacement, and nothing in the new image
+    refers to it, so nothing would ever wait on it. An empty answer is the
+    honest one both for a process that has just started, which owns no
+    children, and for a kernel that does not publish the list: a missing list
+    is no reason to refuse to start.
+    """
+    from reckon.crew.recovery_liveness import _process_children
+
+    return [pid for pid in (_process_children(os.getpid()) or ()) if pid > 0]
+
+
 def _adopt_launched_workers_from_reexec() -> None:
     """Register pids handed across a process image replacement, or start clean.
 
-    The new follower image after an ``os.execv`` owns the same process, so the
-    pids its previous image launched are still its children; registering them
-    exactly as a launch would makes the reaper their owner again, because it
-    is the same process and remains their parent. A carrier that is absent,
-    empty or unparseable leaves the registry empty and does not raise, because
-    a follower that refuses to start is worse than one that misses a reap.
+    The new follower image after an ``os.execv`` owns the kernel's child set:
+    the pids its previous image launched are still its children, and so is
+    every other child that image left. Registering them makes the reaper their
+    owner again, because it is the same process and remains their parent. A
+    carrier that is absent, empty or unparseable registers no carried pid and
+    does not raise, because a follower that refuses to start is worse than one
+    that misses a reap.
+
+    The child scan covers what the carrier cannot: a child the previous image
+    held no record of. Those pids are registered with no run record, so the
+    reaper collects their exit silently, having no launch of its own to judge.
+    A process that has just started owns no children, and a child the new
+    image starts later is never scanned, so its own ``Popen`` keeps its exit
+    status.
     """
+    inherited = _inherited_child_pids()
+    with _LAUNCHED_WORKERS_LOCK:
+        _LAUNCHED_WORKERS.update(inherited)
+        adopted = bool(inherited)
+        if adopted:
+            _LAUNCHED_WORKERS_WAKE.set()
+
     raw = os.environ.pop(_LAUNCHED_WORKERS_HANDOVER_ENV, "")
-    if not raw:
-        return
-    try:
-        payload = json.loads(raw)
-    except (TypeError, ValueError):
-        return
+    payload: Any = None
+    if raw:
+        try:
+            payload = json.loads(raw)
+        except (TypeError, ValueError):
+            payload = None
     # A bare pid list is the older carrier; the mapping is the current one.
     # Any other parsed type — a scalar, a string — is unparseable as a carrier
     # and starts the new image clean rather than raising from the iteration.
+    pids: list[int] = []
+    runs_carried: Any = {}
     if isinstance(payload, dict):
         pids = [int(pid) for pid in payload.get("pids") or ()]
         runs_carried = payload.get("runs") or {}
     elif isinstance(payload, (list, tuple)):
         pids = [int(pid) for pid in payload]
-        runs_carried = {}
-    else:
-        return
     with _LAUNCHED_WORKERS_LOCK:
-        _LAUNCHED_WORKERS.update(pid for pid in pids)
+        _LAUNCHED_WORKERS.update(pids)
         for pid in pids:
             entry = runs_carried.get(str(pid))
             if isinstance(entry, dict):
                 _LAUNCHED_WORKER_RUNS[pid] = dict(entry)
-        adopted = bool(_LAUNCHED_WORKERS)
+        adopted = adopted or bool(pids)
         if adopted:
             _LAUNCHED_WORKERS_WAKE.set()
     if adopted:

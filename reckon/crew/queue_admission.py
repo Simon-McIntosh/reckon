@@ -2525,6 +2525,12 @@ def admit_until_stopped(
     leaves the service on its current code, so a tree mid-merge never replaces a
     running service.
     """
+    # A service that replaced its own image in place still owns the children
+    # the old image left. Registering them here, once, lets the shared reaper
+    # collect them; nothing in this image refers to them otherwise.
+    from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
+
+    _adopt_launched_workers_from_reexec()
     admission_options: dict[str, Any] = {"lane": lane}
     if launcher is not None:
         admission_options["launcher"] = launcher

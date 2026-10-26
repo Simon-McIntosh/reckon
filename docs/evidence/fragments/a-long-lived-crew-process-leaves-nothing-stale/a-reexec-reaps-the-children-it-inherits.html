@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-long-lived-crew-process-leaves-nothing-stale">
+  <meta name="plan-title" content="A re-exec reaps the children it inherits">
+  <meta name="plan-evidence-for" content="reckon:a-long-lived-crew-process-leaves-nothing-stale">
+  <meta name="plan-verifies" content="reckon:a-long-lived-crew-process-leaves-nothing-stale#s3">
+  <meta name="plan-recorded-at" content="2026-10-25">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,reexec,reaper,processes">
+  <title>A re-exec reaps the children it inherits — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-reexec-reaps-the-children-it-inherits-landed" data-node="a-reexec-reaps-the-children-it-inherits" data-reckon="landed" data-when="2026-10-25">
+  <h2>A re-exec reaps the children it inherits</h2>
+  <p id="a-reexec-reaps-the-children-it-inherits-change">The adoption that runs at the in-place image replacement now also registers every pid the kernel lists as this process's own child, read through <code>recovery_liveness._process_children</code>, with no <code>_LAUNCHED_WORKER_RUNS</code> entry, so the existing reaper collects them silently. Before this, a child alive across an <code>execve</code> stayed the process's child while every object naming it vanished with the old image, so nothing waited on it and it stayed a zombie for the life of the process. A pid carried through the environment keeps its run record unchanged, and a child the new image starts afterwards is never registered, so its own <code>Popen</code> keeps its exit status. <code>queue_admission.admit_until_stopped</code> and <code>recovery_watch.watch_ticker</code> call the adoption once at start-up, as the follower already did.</p>
+  <p id="a-reexec-reaps-the-children-it-inherits-measure">Measure: <code>tests/test_a_reexec_reaps_the_children_it_inherits.py</code> passes 5 of 5 at this change, and the file does not exist at the base revision. The importer gate over the 124 test files touching the three changed modules ran 1212 passed, 3 failed and 6 errors at this revision; every one of those ids is also present at the base revision (<code>test_crashed_producer_reoccupies_the_seat[crash]</code> and <code>test_repeated_crashes_reach_a_reported_limit</code> reproduce on an unmodified extraction of the base tree, and the six <code>test_dispatch_returns_without_worker</code> errors do too), so the change adds no failure. <code>test_resume_reaps_its_child</code> failed once under eight-way parallelism and passes 6 of 6 at both revisions when run alone. Negative control — the child scan skipped — leaves the inherited child in state <code>Z</code> and fails the first case with <code>EXIT=1</code>.</p>
+  <ul id="a-reexec-reaps-the-children-it-inherits-cases">
+    <li id="a-reexec-reaps-the-children-it-inherits-case-reaped">A process starts a child, replaces its image with a script that calls the adoption, and the child — exiting after the replacement — has no process-table entry within the reaper's poll interval.</li>
+    <li id="a-reexec-reaps-the-children-it-inherits-case-popen">A child the new image starts afterwards and holds as a <code>Popen</code> reports its own non-zero exit status from <code>wait()</code>.</li>
+    <li id="a-reexec-reaps-the-children-it-inherits-case-handover">A launched-worker pid handed over through the environment keeps its run record.</li>
+    <li id="a-reexec-reaps-the-children-it-inherits-case-admission">The admission loop reaches the adoption exactly once at start-up.</li>
+    <li id="a-reexec-reaps-the-children-it-inherits-case-producer">The producer loop reaches the adoption exactly once at start-up.</li>
+  </ul>
+</article>
+</body>
+</html>
