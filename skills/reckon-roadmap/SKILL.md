@@ -111,7 +111,9 @@ for p in d["pending_work"]:
         print(p.get("slug") or p.get("plan"), sorted(ready), p.get("dependency_readiness"))'
 ```
 
-`reckon-build` acts on this set every beat (its references/sprint-orchestration.md §12).
+This readiness view describes which sections can launch now. It does not limit
+the build skill's one-beat load: that dispatch set also includes implementable
+sections whose declared upstream has not landed, so the queue can hold them.
 
 ## Wiring diagnosis
 

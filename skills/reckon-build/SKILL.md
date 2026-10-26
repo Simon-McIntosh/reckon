@@ -138,15 +138,19 @@ item, use isolated worktrees by default, and never dispatch two workers that
 write the same file. Each node carries a brief citing the reuse map: the module
 to extend, the interface not to widen, the question the worker may not settle.
 
-**Fill the lane every beat.** Read the ready-idle set: sections that are
-implementable, dependency-ready and gate-clear with no live run, plus plans that
-read `closable`. Dispatch every one of your own, critical-path links first. Name
-a peer's idle critical-path link to its owner. A full lane queues the dispatch
-centrally, so a full lane is never a reason to wait. Neither one node in flight
-nor a question the plan already answers licenses an idle section. The recipe and
-the measured failure are in
-[references/sprint-orchestration.md §12](references/sprint-orchestration.md);
-`/reckon-roadmap` reads the set.
+**Load the plan's full width after its review round is answered.** Size every
+remaining implementable section into nodes and dispatch all of them in one beat,
+naming no lane so the picker routes each request. The dispatch set includes
+sections whose upstream has not landed; leave out only deferred sections, done
+sections, and sections with a live run. A declared section wait parks its node
+`awaiting-upstream` until the upstream lands, with no further coordinator
+dispatch. The queue orders only waits declared in `plan-section-depends-on`.
+Read progress through `crew view live` and steer waiting requests with the three
+queue verbs below. Until metered admission serves a request after its upstream
+lands, a metered request still `awaiting-upstream` or `queued` after that landing
+must be dropped and dispatched again; the run-queued obligation names it.
+The detailed loading rule is in
+[references/sprint-orchestration.md §12](references/sprint-orchestration.md).
 
 Each implementation dispatch carries a `health_review` block: the newest code
 review whose neighbourhood covers the node's write paths, its age and the open

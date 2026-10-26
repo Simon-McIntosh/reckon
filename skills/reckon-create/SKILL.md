@@ -309,6 +309,12 @@ DOCS_DIR="$REPO_ROOT/docs"
    and a soft sequencing edge count too, so the right wire is also the one the
    audit accepts.
 
+   **Declare section waits before dispatch.** Whenever one section consumes
+   another section's output, record that wait in the `plan-section-depends-on`
+   head meta, including waits between sections of this plan. The queue can park
+   a request until its upstream lands only when the relation is declared there;
+   prose order and section numbering do not create a wait.
+
    Work down the sprint's plan list and fill a row per candidate. "It" below is
    the candidate slug in the first column:
 

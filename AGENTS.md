@@ -28,8 +28,9 @@ prevents. Pointers below, one per rule; the references hold the full text.
   - size an operational cap from population and measured unit rate so the
     cohort completes — and name the scarce resource
   - an operational run outliving a turn runs in bounded slices
-  - an idle lane with ready work is a defect — dispatch every ready-idle section
-    each beat, and name a peer's idle critical-path link to its owner
+  - after the plan review is answered, load all remaining implementable sections
+    in one beat, including those whose upstream has not landed; the queue holds
+    their declared waits until admission can release them
 
 ## Project
 

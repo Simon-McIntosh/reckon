@@ -264,6 +264,11 @@ abandoned, archived, historical or reference) must declare `plan-depends-on`,
 `plan-blocks`, `plan-informs` or a gate. Work down the sprint's plan list and
 fill a row per candidate; "it" is the slug in the first column:
 
+When editing or adding sections, declare a wait in `plan-section-depends-on`
+whenever one section consumes another section's output, including an output
+from the same plan. The queue orders only declared waits; prose order and
+section numbering do not hold a downstream request.
+
 | Candidate (slug) | Does my first section wait on it? | Does it consume my evidence? | Does one section of mine wait on one section of it? | Relation to write |
 |---|---|---|---|---|
 | `…` | | | | |
