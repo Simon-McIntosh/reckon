@@ -2,51 +2,116 @@
 
 from __future__ import annotations
 
-import fcntl
 import json
 import os
+import re
 import signal
-import socket
+import sys
 import time
-from collections.abc import Callable, Iterator, Mapping
-from contextlib import contextmanager
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon import flight
-from reckon.crew import recovery, recovery_watch, station_store, ticker
+from reckon import checkout_trust, flight
+from reckon.crew import follower_reload, recovery, recovery_watch, station_store, ticker
+from reckon.crew.host_lease import HostLease, local_host
 from reckon.crew.run_paths import crew_home
-
-LOCK_NAME = "station.lock"
+from reckon.crew_follow_commands import (
+    _FOLLOWER_IMAGE_COMMIT_ENV as IMAGE_IDENTITY_ENV,
+)
+from reckon.crew_follow_commands import _FOLLOWER_IMAGE_PIN_ENV as IMAGE_PIN_ENV
+from reckon.crew_follow_commands import _FOLLOWER_SOURCE_ROOT_ENV as SOURCE_ROOT_ENV
 
 
 class StationHeldError(RuntimeError):
-    """A station already holds this node's writer lock."""
+    """A station already holds this node's writer lease."""
 
 
-@contextmanager
-def node_lock(root: Path) -> Iterator[None]:
-    """Hold one stable lock inode for the station's entire process lifetime."""
-    root.mkdir(parents=True, exist_ok=True)
-    path = root / LOCK_NAME
-    with path.open("a+", encoding="utf-8") as handle:
+def station_lease(root: Path) -> HostLease:
+    """Name the one writer on this node through the shared lease mechanism."""
+    return HostLease(
+        root,
+        "station",
+        local_host(),
+        os.getpid(),
+        os.environ.get("SLURM_JOB_ID", ""),
+    )
+
+
+class StationReloader:
+    """Replace the station with a proved image from the node's runtime root."""
+
+    def __init__(self, runtime_root: Path) -> None:
+        self.runtime_root = runtime_root
+        self.import_root = Path(__file__).resolve().parents[2]
+        self.source_root = Path(
+            os.environ.get(SOURCE_ROOT_ENV, str(self.import_root))
+        ).resolve()
+        self.identity = os.environ.pop(IMAGE_IDENTITY_ENV, "") or (
+            checkout_trust.source_code_identity(
+                self.source_root / "reckon", source_root=self.source_root
+            )
+        )
+        self.image_pin: int | None = None
+        carried = os.environ.pop(IMAGE_PIN_ENV, "")
+        if carried:
+            try:
+                candidate = int(carried)
+                if checkout_trust.pin_matches_materialized_tree(
+                    candidate, self.import_root
+                ):
+                    os.set_inheritable(candidate, False)
+                    self.image_pin = candidate
+            except (OSError, ValueError):
+                pass
+        self.deferred_identity: str | None = None
+
+    def poll(self) -> None:
+        """Check committed code after a tick and re-execute when it moves."""
+        if self.image_pin is not None:
+            checkout_trust.refresh_materialized_tree_pin(
+                self.image_pin, self.import_root
+            )
+        current = checkout_trust.source_code_identity(
+            self.source_root / "reckon", source_root=self.source_root
+        )
+        if current in (checkout_trust.IDENTITY_UNKNOWN, self.identity):
+            return
+        if current == self.deferred_identity or not re.fullmatch(
+            r"[0-9a-f]{40}", current
+        ):
+            return
+        original_cache = checkout_trust._committed_tree_cache
+        checkout_trust._committed_tree_cache = lambda: (
+            self.runtime_root / "reload-trees"
+        )
         try:
-            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as exc:
-            handle.seek(0)
-            holder = handle.read().strip() or "unknown holder"
-            raise StationHeldError(f"station at {path} is held by {holder}") from exc
-        holder = {"pid": os.getpid(), "host": socket.gethostname()}
-        handle.seek(0)
-        handle.truncate()
-        handle.write(json.dumps(holder, sort_keys=True) + "\n")
-        handle.flush()
-        os.fsync(handle.fileno())
-        try:
-            yield
+            image, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
+                self.source_root, current, active_root=self.import_root
+            )
         finally:
-            fcntl.flock(handle, fcntl.LOCK_UN)
+            checkout_trust._committed_tree_cache = original_cache
+        if not image.is_relative_to(self.runtime_root):
+            os.close(pin)
+            raise RuntimeError(f"station reload image escaped runtime root: {image}")
+        imports, _reason = checkout_trust.reckon_imports(image)
+        if not imports:
+            self.deferred_identity = current
+            os.close(pin)
+            return
+        environment = follower_reload.image_reexec_environment(
+            self.source_root, current, pin
+        )
+        try:
+            os.execve(  # noqa: S606 - replacement keeps this station's pid
+                sys.executable,
+                follower_reload.image_reexec_argv(image),
+                environment,
+            )
+        except OSError:
+            os.close(pin)
+            raise
 
 
 class Station:
@@ -142,18 +207,46 @@ def run_station(*, interval: float = 1.0, once: bool = False) -> None:
         nonlocal stopping
         stopping = True
 
-    with node_lock(store.root), store:
+    lease = station_lease(store.root)
+    previous_holder = lease.holder()
+    if previous_holder is not None and previous_holder.host == local_host():
+        try:
+            os.kill(previous_holder.pid, 0)
+        except ProcessLookupError:
+            if not lease.release_holder(previous_holder):
+                raise StationHeldError(
+                    f"station at {lease.path} changed holder before takeover"
+                ) from None
+    if not lease.claim():
+        holder = lease.holder()
+        identity = (
+            f"{holder.host} pid {holder.pid}"
+            if holder is not None
+            else "unknown holder"
+        )
+        raise StationHeldError(f"station at {lease.path} is held by {identity}")
+    with store:
         previous = {
             signum: signal.signal(signum, stop)
             for signum in (signal.SIGINT, signal.SIGTERM)
         }
         try:
             station = Station(store)
+            reloader = StationReloader(store.root)
+            renewed_at = time.monotonic()
             while not stopping:
                 station.tick()
+                if time.monotonic() - renewed_at >= 5:
+                    if not lease.renew():
+                        raise StationHeldError(
+                            f"station lost its lease at {lease.path}"
+                        )
+                    renewed_at = time.monotonic()
                 if once:
                     break
+                reloader.poll()
                 time.sleep(interval)
         finally:
             for signum, handler in previous.items():
                 signal.signal(signum, handler)
+            lease.release()

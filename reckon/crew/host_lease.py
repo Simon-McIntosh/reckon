@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import tempfile
 import time
 from collections.abc import Callable
@@ -13,6 +14,11 @@ from uuid import uuid4
 
 LEASE_RENEW_SECONDS = 5.0
 LEASE_STALE_SECONDS = 30.0
+
+
+def local_host() -> str:
+    """The host identity a node lease writes and compares."""
+    return socket.gethostname()
 
 
 @dataclass(frozen=True)
