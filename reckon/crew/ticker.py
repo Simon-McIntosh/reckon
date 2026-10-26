@@ -195,6 +195,7 @@ DISPLAY_HUE = {
         "in review": 30,
         "landed": 22,
         "dropped": 130,
+        "seat moved": 176,
         "new": 241,
     },
     "dark": {
@@ -206,6 +207,7 @@ DISPLAY_HUE = {
         "in review": 80,
         "landed": 71,
         "dropped": 179,
+        "seat moved": 140,
         "new": 245,
     },
 }
@@ -378,6 +380,12 @@ def limit_reset_text(event: Mapping[str, Any], *, paced: bool | None = None) -> 
 # while its review runs.
 IN_REVIEW_STATE = "in-review"
 
+# The state a producer's release row carries so the pane draws a seat that
+# moved between hosts as the state change it is. Like IN_REVIEW_STATE it names
+# no producer state: the row is written by the releasing producer, not derived
+# from any run.
+SEAT_MOVED_STATE = "seat-moved"
+
 # The sole state vocabulary printed by the pane. Recovery distinctions and
 # capacity-lift causes stay in the event's own facts.
 PANE_STATES = {
@@ -435,6 +443,10 @@ PANE_STATES = {
     # that launch. It has to be a pane word of its own because neither
     # ``delivered`` nor ``working`` describes a run whose review is underway.
     "in review": frozenset({IN_REVIEW_STATE}),
+    # A producer that gave up its seat off the fleet node and announced it. The
+    # word describes the seat rather than a run, so it has no producer state of
+    # its own: the release row's ``to_state`` selects it.
+    "seat moved": frozenset({SEAT_MOVED_STATE}),
     "landed": frozenset({"promoted", "recorded", "lift-ended"}),
     "dropped": frozenset({"withdrawn", "discarded", "departed"}),
 }
@@ -444,7 +456,7 @@ PANE_STATES = {
 # A line the follower prints reaches its coordinator through the session host as
 # a notification that starts a turn, so the stream carries a row when it names
 # something the coordinator oversees: a duty it must discharge, or a state
-# change of the work it is running. Five pane words carry a row below, a launch
+# change of the work it is running. The pane words below carry a row, a launch
 # and the in-review row carry their own facts, and a limit reset and the
 # follower's own end are carried by their own facts too:
 #
@@ -457,6 +469,10 @@ PANE_STATES = {
 #                  carried once per run whoever caused the landing;
 #   dropped        a run withdrawn, discarded or departed, carried once per run
 #                  whether the coordinator or a peer caused the drop;
+#   seat moved     a producer gave up its seat off the fleet node, which is the
+#                  work moving between hosts: written once by the releasing
+#                  producer and carried as the state change a coordinator
+#                  oversees;
 #   queued-refused a queued run refused at launch for a reason the coordinator
 #                  must clear, carrying the two words above and the remedy the
 #                  refusal names;
@@ -485,7 +501,7 @@ PANE_STATES = {
 # replay of a start, a re-arm or reload baseline, and a reload notice. The row
 # policy and the summary lines read the rule from here rather than restating it,
 # so a row the stream withholds is withheld by one decision.
-CARRIED_PANE_WORDS = frozenset({"delivered", "halted", "in review"})
+CARRIED_PANE_WORDS = frozenset({"delivered", "halted", "in review", "seat moved"})
 
 # The pane words of a run whose work is over: a written record, or a drop. A
 # landing is news only when the pane itself drew the delivery before it, and a
