@@ -19,8 +19,8 @@ from pathlib import Path
 
 import pytest
 
-from reckon._store import _config_home
 from reckon import crew_follow_commands
+from reckon._store import _config_home
 from reckon.crew import runs, ticker, watch_unit
 
 PROJECT = "a-seat-release-reaches-the-panes"
