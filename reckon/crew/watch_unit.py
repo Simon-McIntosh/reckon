@@ -419,10 +419,11 @@ def announce_seat_moved(project: str, verdict: Mapping[str, Any]) -> None:
     """
     from reckon.crew import runs
 
-    with contextlib.suppress(OSError, ValueError):
-        runs._append_watch_lines(
-            watch_stream_path(project), [seat_moved_row(project, verdict)]
-        )
+    try:
+        row = seat_moved_row(project, verdict)
+        runs._append_watch_lines(watch_stream_path(project), [row])
+    except Exception:  # noqa: BLE001 - a row that cannot be written never blocks the release
+        return
 
 
 def release_seat_when_misplaced(
