@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-26T20:57:19.883Z",
+  "dispatched_at": "2026-10-26T20:49:12Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-long-lived-crew-process-leaves-nothing-stale.html:48",
+      "id": "done_when-1",
+      "reason": "the override's loss would surface as an absent record in those tests only if they also had a record at the owner path, and adding that arm is a test detail a worker can add without changing the plan's contract.",
+      "text": "\u00a74 keeps the `RECKON_FLEET_RECORD` override but its done-when tests only the `FLEET_NAME` delegation, so nothing asserts the override still wins over it (the two existing tests that set the override, `tests/test_dispatch_spawns_through_the_fleet.py:229` and `:320`, would still pass if the override were dropped and the owner path read instead, because both write the record at the override path only)",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "718a782eeec1c2f4127fb6cf14170a470f5e709955170f64c9f282dc16f1e714",
+  "plan_slug": "a-long-lived-crew-process-leaves-nothing-stale",
+  "plan_version": 10,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261026T204821856663-plan-review-of-a-long-lived-crew-process-leaves-nothing-stale",
+  "reviewed_blob_sha": "3d732387be12be16149dd942fef842b46eab7975",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol exists at the reviewed revision: `dispatch_launch._fleet_record_path` (`reckon/crew/dispatch_launch.py:2201`, re-exported at `reckon/crew/dispatch.py:3257`), `fleet_supervisor.state_directory` (`reckon/crew/fleet_supervisor.py:329`) and `fleet_supervisor.RECORD_NAME` (`:108`), and the cited review run `r-20261023T190223217038-review-code-99f708f8a031` exists and its manifest records the divergence (`owner /.local/state/fleet/fleets/alpha/record.json` vs duplicate `/.local/state/fleet/record.json`, EXIT=3).",
+    "done_when": "pass \u2014 \u00a74's done-when names a mechanical deletion grep, a behavioural assertion (`FLEET_NAME=alpha`, `RECKON_FLEET_RECORD` unset, record read from `state_directory()/record.json`), an importer delta gate and a ruff delta, plus a negative control (\"restoring the `XDG_STATE_HOME` default fails that case\") that provably fires because the old resolver returns `~/.local/state/fleet/record.json` while the owner writes `~/.local/state/fleet/fleets/alpha/record.json`.",
+    "evidence_paths": "pass \u2014 \u00a74 asks a worker to land a test file and code only; it names no scratchpad or node-local temporary path, and the plan's own landed evidence sits in `docs/evidence/archive/a-long-lived-crew-process-leaves-nothing-stale-landed.html` (linked from the \u00a72 and \u00a73 close comments, and resolving in the audit above).",
+    "naming": "pass \u2014 the section names mechanisms (`_fleet_record_path`, `state_directory`, `RECORD_NAME`) and the test file by what it measures; no plan label, ticket number or version tag reaches a symbol, comment or filename.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (two resolvers disagreeing only when `FLEET_NAME`/`FLEET_STATE_DIR` is set, reproduced by the cited review), the mechanism produces the done-when (delegation to the owner makes the two paths one), and it runs on a live caller: `_read_fleet_record` is called by `dispatch_launch._start_supervisor` (`reckon/crew/dispatch_launch.py:2396`) before the fleet spawn decision, and by `dispatch_watch.py:362` and `watch_unit.fleet_record_node` (`reckon/crew/watch_unit.py:216`), which inherit the fix.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable, one resolver deleted and one delegation, with the re-export removal as part of the same change rather than a second goal.",
+    "wiring": "pass \u2014 the document now declares `plan-blocks` = `the-monitor-reads-each-fact-once#s7`; that slug resolves (`docs/plans/the-monitor-reads-each-fact-once.html:209` has id `s7`, still `implementable`), `parse_plan_ref` accepts the `slug#stage` form, and `reckon audit-doc \u2026 --check-links` on this plan exits 0 with no dangling-slug or dangling-anchor finding (logged at audit.log in this directory)."
+  },
+  "section_digests": {
+    "_document": "2664189cf56b7c056e3d4daa5c967db43dc48477c75e4f811ef813ba709d6a5c",
+    "s1": "77bb91ddc14cac13de1d9957253392c537eaaceab9cd7d54a7aee16afb43f2cd",
+    "s2": "ca28b341fc363b1880316a661362829b1dbca0d4de7093e08155132c0ad79a65",
+    "s3": "3448a928ac3bc63a9fa412b1465626859a0bafdd1b2b1563a93a2a588a271885",
+    "s4": "b384188878e381cb5338106cf703a5a8267d6671090a96108da69b98b3de83b5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T21:02:20.386567+00:00"
+}
