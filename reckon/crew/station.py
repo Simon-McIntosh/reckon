@@ -6,7 +6,6 @@ import json
 import os
 import re
 import signal
-import socket
 import sys
 import time
 from collections.abc import Callable, Mapping
@@ -16,7 +15,7 @@ from typing import Any
 
 from reckon import checkout_trust, flight
 from reckon.crew import recovery, recovery_watch, station_store, ticker
-from reckon.crew.host_lease import HostLease
+from reckon.crew.host_lease import HostLease, local_host
 from reckon.crew.run_paths import crew_home
 
 
@@ -34,7 +33,7 @@ def station_lease(root: Path) -> HostLease:
     return HostLease(
         root,
         "station",
-        socket.gethostname(),
+        local_host(),
         os.getpid(),
         os.environ.get("SLURM_JOB_ID", ""),
     )
@@ -218,11 +217,14 @@ def run_station(*, interval: float = 1.0, once: bool = False) -> None:
 
     lease = station_lease(store.root)
     previous_holder = lease.holder()
-    if previous_holder is not None and previous_holder.host == socket.gethostname():
+    if previous_holder is not None and previous_holder.host == local_host():
         try:
             os.kill(previous_holder.pid, 0)
         except ProcessLookupError:
-            lease.release_holder(previous_holder)
+            if not lease.release_holder(previous_holder):
+                raise StationHeldError(
+                    f"station at {lease.path} changed holder before takeover"
+                ) from None
     if not lease.claim():
         holder = lease.holder()
         identity = (

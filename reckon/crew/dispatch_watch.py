@@ -7,7 +7,6 @@ import json
 import os
 import re
 import shutil
-import socket
 import subprocess
 import sys
 import time
@@ -475,7 +474,7 @@ def _ensure_watch_producer(
 def _ensure_node_station() -> None:
     """Ask the worker node's batch step for its station when none holds it."""
     from reckon.crew.fleet_supervisor import REQUEST_FIFO_NAME
-    from reckon.crew.host_lease import HostLease
+    from reckon.crew.host_lease import HostLease, local_host
 
     if not _fleet_spawn_enabled():
         return
@@ -489,16 +488,17 @@ def _ensure_node_station() -> None:
     lease = HostLease(
         root,
         "station",
-        socket.gethostname(),
+        local_host(),
         os.getpid(),
         os.environ.get("SLURM_JOB_ID", ""),
     )
     holder = lease.holder()
-    if holder is not None and holder.host == socket.gethostname():
+    if holder is not None and holder.host == lease.owner.host:
         try:
             os.kill(holder.pid, 0)
         except ProcessLookupError:
-            lease.release_holder(holder)
+            if not lease.release_holder(holder):
+                return
         except PermissionError:
             return
         else:

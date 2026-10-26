@@ -51,20 +51,27 @@ def test_dispatch_watch_ensures_station_before_producer(
     monkeypatch.setattr(
         dispatch_watch, "watch_stream_path", lambda _project: tmp_path / "watch.jsonl"
     )
-    monkeypatch.setattr(
-        dispatch_watch,
-        "watch_state",
-        lambda _project, **_kwargs: {"watcher_live": True, "watcher": {}},
-    )
+
+    def producer_state(_project, **_kwargs):
+        calls.append("producer-state")
+        return {"watcher_live": True, "watcher": {}}
+
+    monkeypatch.setattr(dispatch_watch, "watch_state", producer_state)
     monkeypatch.setattr(dispatch_watch, "watch_observer_alive", lambda _watcher: True)
     dispatch_watch._ensure_watch_producer("sample")
-    assert calls == ["station"]
+    assert calls == ["station", "producer-state", "producer-state"]
 
 
 def test_fleet_supervisor_starts_only_one_station(tmp_path: Path, monkeypatch) -> None:
     runtime = tmp_path / "runtime"
     runtime.mkdir()
     calls: list[list[str]] = []
+    holder_host = "node.example.org"
+    monkeypatch.setattr(socket, "gethostname", lambda: holder_host)
+    monkeypatch.setattr(fleet_supervisor, "_short_hostname", lambda: "node")
+    dead = HostLease(runtime, "station", holder_host, 99999999, "job")
+    assert dead.claim()
+    fresh = HostLease(runtime, "station", holder_host, os.getpid(), "job")
 
     class Process:
         pid = 12345
@@ -73,6 +80,8 @@ def test_fleet_supervisor_starts_only_one_station(tmp_path: Path, monkeypatch) -
             return None
 
     def spawn(argv, **_kwargs):
+        assert not dead.path.exists(), "the dead local holder must be released"
+        assert fresh.claim()
         calls.append(argv)
         return Process()
 
@@ -80,13 +89,14 @@ def test_fleet_supervisor_starts_only_one_station(tmp_path: Path, monkeypatch) -
     monkeypatch.setattr(
         fleet_supervisor, "service_log_directory", lambda _env: tmp_path / "logs"
     )
-    process = fleet_supervisor.StationProcess(
-        runtime, {"XDG_RUNTIME_DIR": str(runtime), "SLURM_JOB_ID": "job"}
-    )
-    process.ensure()
-    process.ensure()
-    assert len(calls) == 1
-    assert calls[0][-2:] == ["crew", "station"]
+    environment = {"XDG_RUNTIME_DIR": str(runtime), "SLURM_JOB_ID": "job"}
+    try:
+        fleet_supervisor.StationProcess(runtime, environment).ensure()
+        fleet_supervisor.StationProcess(runtime, environment).ensure()
+        assert len(calls) == 1
+        assert calls[0][-2:] == ["crew", "station"]
+    finally:
+        fresh.release()
 
 
 def test_station_reloads_from_a_node_local_image(tmp_path: Path, monkeypatch) -> None:

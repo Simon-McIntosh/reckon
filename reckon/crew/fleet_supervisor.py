@@ -78,7 +78,7 @@ from typing import Any
 
 from reckon import service
 from reckon._store import write_json_atomically
-from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease
+from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.routing import signal_worker
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
@@ -1866,18 +1866,20 @@ class StationProcess:
             log("station has no shared node-local runtime root")
             self.next_attempt = self.clock() + LEASE_RENEW_SECONDS
             return
-        holder = HostLease(
+        lease = HostLease(
             root,
             "station",
-            _short_hostname(),
+            local_host(),
             os.getpid(),
             self.environ.get("SLURM_JOB_ID", ""),
-        ).holder()
-        if holder is not None and holder.host == _short_hostname():
+        )
+        holder = lease.holder()
+        if holder is not None and holder.host == lease.owner.host:
             try:
                 os.kill(holder.pid, 0)
             except ProcessLookupError:
-                pass
+                if not lease.release_holder(holder):
+                    return
             except PermissionError:
                 return
             else:
