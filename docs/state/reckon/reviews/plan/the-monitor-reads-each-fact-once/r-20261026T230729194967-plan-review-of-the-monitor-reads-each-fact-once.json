@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-26T23:14:43.393Z",
+  "dispatched_at": "2026-10-26T23:08:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:331",
+      "id": "wiring-1",
+      "reason": "the chain's next invocation sends a build node to a closed section, so a coordinator following the chain at face value rebuilds \u00a76 or stalls while \u00a77 sits implementable; this is the same defect that was answered for f-tmref-002/\u00a75 and has since been re-created by \u00a76's closure, not a re-raise.",
+      "text": "the only open followup, f-tmref-003, recommends `\u00a76` and says \"\u00a76 is next \u2026 \u00a77 follows \u00a76\", while \u00a76 is declared `done` (merge ef1bc1680, close comment c-close-s6 at 2026-10-24T14:00Z, thirteen minutes after this followup was written) and \u00a77/\u00a78 are `implementable` with no open followup naming either",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:262",
+      "id": "reasoning-1",
+      "reason": "the \u00a78 node would perform the stated move, run the trace, find crew-home opens it cannot remove, and have to decide outside the plan whether the producer-lease renewal moves into the station (a \u00a77 mechanism \u00a77 does not state) or the producers retire early (contradicting \u00a77's \"retires nothing immediately\" and \u00a712's measured cutover); the trace measure as written is unsatisfiable by the mechanism the section describes.",
+      "text": "\u00a78 asserts the follower \"reads nothing on GPFS\" and measures \"a 60 s `strace -f -e trace=openat,stat,newfstatat` of a running subscriber names no path under the crew home\", but the follower's per-wait pass calls `_renew_producer_lease()` (`reckon/crew_follow_commands.py:1760`), which opens `crew_home()/watch/<project>-<digest>.lock` at least twice on every pass through `runs.renew_producer_lease` \u2192 `producer_live` (`reckon/crew/runs.py:3064`) and `watch_lease_renewed_at` \u2192 `read_watch_registration` (`reckon/crew/runs.py:2071-2085`), and writes its own delivery lease under `runs.follower_dir` (`reckon/crew/follower_registration.py:66`) \u2014 \u00a78 moves only the registration, checkpoint and history, and \u00a77 keeps the per-project producers running beside the station until \u00a712's cutover so the renewal is still required (a producer ends one lease interval after the last renewal)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:263",
+      "id": "done_when-1",
+      "reason": "the write lands inside a 60 s window whenever a row is drawn, so the control is satisfiable as intended; naming the per-pass access would sharpen it but does not change what the node builds.",
+      "text": "the new negative control \"one that still reads its checkpoint from `runs.follower_dir` must fail the trace measure\" leaves implicit which read the mutant must perform, while today's only crew-home checkpoint read is at arming (`follow_checkpoint.read`, `reckon/crew_follow_commands.py:756`) and the per-pass access is the throttled write at `:1763`",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "561a38bf330039498b7126f5817fd4ed1aa42f56f4e73f12935bf27e9b2c31b5",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 36,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261026T230729194967-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "f4a411fa11772c9dac06073c3b77100888d38e8a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `follow_checkpoint.checkpoint_path`/`history_path` (`reckon/crew/follow_checkpoint.py:79,279`), `runs.follower_dir` (`reckon/crew/follower_registration.py:42`), `ticker.PaneRowPath` (`reckon/crew/ticker.py:2367`) and all four cited test files exist, `test_running_follower_reloads_without_stream_or_registration_gap` is at `tests/test_follower_freshness.py:172`, and the extensionless hrefs resolve as `<path>.html` with `#s4`, `#s5`, `#s6` present in the archive page.",
+    "done_when": "pass \u2014 \u00a78's done-when names measures (pane tests green, retargeted reload case, `strace` of a running subscriber) and two negative controls (a subscriber without a persisted cursor, one still reading its crew-home checkpoint), each of which can fail; the mechanism that must satisfy the trace measure is the reasoning finding below.",
+    "evidence_paths": "pass \u2014 \u00a78's evidence is test files under `tests/` and a measured trace, no scratchpad or node-local temporary path is named as the record.",
+    "naming": "pass \u2014 the changed text adds no ticket numbers, stage labels or version tags; its parenthetical \"old \u00a777\" is a plan cross-reference, not a code or comment leak.",
+    "reasoning": "a finding \u2014 the stated mechanism does not produce \u00a78's own measure: the poll path it claims opens nothing under the crew home calls `_renew_producer_lease()` on every wait pass.",
+    "single_goal": "pass \u2014 \u00a78 carries one deliverable, the follower becoming a subscriber (event read, cursor, checkpoint/history relocation, station-side pane policy), and no second section's work.",
+    "wiring": "a finding \u2014 the plan's only open followup, f-tmref-003 (plan.html:331), still recommends `/reckon-build the-monitor-reads-each-fact-once \u00a76` while `plan-section-declarations` records s6 as `done`."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "7a7ba3c6327adda079636679545a61093485536b48cc689ea7d1b4fcec35f64a",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T23:17:38.760705+00:00"
+}
