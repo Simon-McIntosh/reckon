@@ -2240,6 +2240,7 @@ def queued_placements(
     *,
     now: datetime | None = None,
     lane: str = "",
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Return each queued request's place in the order the pass admits by.
 
@@ -2248,15 +2249,16 @@ def queued_placements(
     surfaces come to disagree about which request goes first. The order is the
     admission pass's own, computed by
     :func:`reckon.crew.queue_order.admission_order` on the same snapshot the
-    pass ranks, so a request's reported place is the place it will be launched
-    at.
+    pass ranks, including the configured project weights, so a request's
+    reported place is the place it will be launched at.
 
     The place is published as three figures, because they answer three questions.
     ``position`` is its place among every queued request on the lane, which is
     the figure a dispatch reports when a dispatch is queued. ``rank`` is its
     place among its own session's queued requests, which is what a coordinator
-    reading its own queue wants. ``effective_rank`` is its place within its
-    project, and ``reason`` names the signal that placed it. ``lane`` narrows
+    reading its own queue wants. ``effective_rank`` is the weighted launch
+    place when weights are configured, or its place within its project when
+    they are absent. ``reason`` names the signal that placed it. ``lane`` narrows
     the ordering to one backend's
     queued requests, matching the narrowing the pass applies to its own queue.
 
@@ -2281,17 +2283,26 @@ def queued_placements(
     placements: dict[str, dict[str, Any]] = {}
     session_rank: dict[str, int] = {}
     project_rank: dict[str, int] = {}
-    for position, (pointer, reason) in enumerate(
-        queue_order.admission_order_details(queued, pointers, now=moment), 1
-    ):
+    details = queue_order.admission_order_details(queued, pointers, now=moment)
+    reasons = {str(pointer.get("run_id") or ""): reason for pointer, reason in details}
+    weights = _fair_use_weights(queued, config_for=config_for)
+    order = [pointer for pointer, _reason in details]
+    if weights is not None:
+        order = weighted_project_order(order, weights)
+    for position, pointer in enumerate(order, 1):
         session = str(pointer.get("session") or "")
         project = str(pointer.get("project") or "")
         session_rank[session] = session_rank.get(session, 0) + 1
         project_rank[project] = project_rank.get(project, 0) + 1
+        reason = reasons[str(pointer.get("run_id") or "")]
+        if weights is not None:
+            reason = f"weighted fair use ({project}: {weights[project]:g}); {reason}"
         placements[str(pointer.get("run_id") or "")] = {
             "position": position,
             "rank": session_rank[session],
-            "effective_rank": project_rank[project],
+            "effective_rank": position
+            if weights is not None
+            else project_rank[project],
             "reason": reason,
         }
     return placements
@@ -2635,7 +2646,7 @@ def admit_until_stopped(
     code before the move was noticed. So a stamp the checkout has moved past, on
     a checkout the trusted test accepts, re-executes this process in place before
     the next pass begins, and the failure guard's code fingerprint retries
-    whatever the old code held. A stamp on a checkout the trusted test refuses
+    work held before re-exec. A stamp on a checkout the trusted test refuses
     leaves the service on its current code, so a tree mid-merge never replaces a
     running service.
     """

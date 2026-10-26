@@ -66,7 +66,7 @@ def test_two_projects_weighted_three_to_one_launch_near_their_share() -> None:
 
     alpha = launches.count("alpha")
     beta = launches.count("beta")
-    assert alpha + beta == 80
+    assert launches[:8] == ["alpha", "alpha", "beta", "alpha"] * 2
     assert 3 / 4 * 80 * 0.9 <= alpha <= 3 / 4 * 80 * 1.1, (alpha, beta)
     assert 1 / 4 * 80 * 0.9 <= beta <= 1 / 4 * 80 * 1.1, (alpha, beta)
 
@@ -76,7 +76,7 @@ def test_equal_weights_move_the_split_to_one_to_one() -> None:
 
     alpha = launches.count("alpha")
     beta = launches.count("beta")
-    assert alpha + beta == 80
+    assert launches[:8] == ["alpha", "beta"] * 4
     assert 40 * 0.9 <= alpha <= 40 * 1.1, (alpha, beta)
     assert 40 * 0.9 <= beta <= 40 * 1.1, (alpha, beta)
 
@@ -108,7 +108,11 @@ def test_a_shallow_project_does_not_hold_a_slot_idle() -> None:
         "alpha",
         "alpha",
     ]
-    assert len(sequence) == 8
+    assert {pointer["run_id"] for pointer in sequence} == {
+        *(f"alpha-{index}" for index in range(6)),
+        "beta-0",
+        "beta-1",
+    }
 
 
 def test_a_project_under_its_share_leaves_the_rest_of_the_pass_to_the_other() -> None:
@@ -188,6 +192,51 @@ def test_weights_are_declared_in_flight_configuration_with_equal_default() -> No
     assert flight.project_weights(configured, (*PROJECTS, "gamma"))["gamma"] == 1.0
     assert flight.fair_use_weights_configured(configured) is True
     assert flight.fair_use_weights_configured({}) is False
+
+
+def test_strict_flight_resolution_accepts_project_weights() -> None:
+    resolved = flight.resolve(
+        overrides={"queue": {"project_weights": {"alpha": 3, "beta": 1}}},
+        strict=True,
+    )
+
+    assert flight.project_weights(resolved.config, PROJECTS) == {
+        "alpha": 3.0,
+        "beta": 1.0,
+    }
+
+
+@pytest.mark.parametrize("weight", [0, -1, float("nan"), float("inf"), "heavy"])
+def test_strict_flight_resolution_refuses_nonpositive_or_nonfinite_weights(
+    weight: Any,
+) -> None:
+    with pytest.raises(
+        flight.FlightConfigError, match=r"queue\.project_weights\.alpha"
+    ):
+        flight.resolve(
+            overrides={"queue": {"project_weights": {"alpha": weight}}},
+            strict=True,
+        )
+
+
+def test_queue_view_reports_the_weighted_launch_order() -> None:
+    start = datetime(2026, 10, 26, tzinfo=UTC)
+    queued = [
+        *_queue("alpha", 4, start=start),
+        *_queue("beta", 4, start=start + timedelta(seconds=4)),
+    ]
+    config = _config({"alpha": 3, "beta": 1})
+
+    placements = queue_admission.queued_placements(
+        queued,
+        now=start + timedelta(minutes=1),
+        config_for=lambda _pointer: config,
+    )
+    ordered = sorted(placements, key=lambda run_id: placements[run_id]["position"])
+
+    assert ordered[:4] == ["alpha-0", "alpha-1", "beta-0", "alpha-2"]
+    assert placements["beta-0"]["effective_rank"] == 3
+    assert "weighted fair use (beta: 1)" in placements["beta-0"]["reason"]
 
 
 def test_a_weight_that_is_not_a_positive_number_reads_as_equal() -> None:

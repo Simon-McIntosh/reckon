@@ -1093,6 +1093,32 @@ def fair_use_weights_configured(config: Mapping[str, Any] | None) -> bool:
     return bool(declared_project_weights(config))
 
 
+def _validate_project_weights(data: Mapping[str, Any], source: str | Path) -> None:
+    """Refuse weights that cannot grant a positive share of the local queue."""
+    queue = data.get(QUEUE_KEY)
+    if not isinstance(queue, Mapping) or QUEUE_PROJECT_WEIGHTS_KEY not in queue:
+        return
+    weights = queue[QUEUE_PROJECT_WEIGHTS_KEY]
+    if not isinstance(weights, Mapping):
+        return  # The generated schema reports the shape error.
+    for project, value in weights.items():
+        try:
+            positive = (
+                not isinstance(value, bool)
+                and isinstance(value, (int, float))
+                and math.isfinite(float(value))
+                and value > 0
+            )
+        except OverflowError:
+            positive = False
+        if not positive:
+            raise FlightConfigError(
+                source,
+                f"queue.project_weights.{project}",
+                "must be a positive finite number",
+            )
+
+
 def queue_max_requests(config: Mapping[str, Any] | None) -> int:
     """How many requests one project may hold queued at once.
 
@@ -1365,6 +1391,7 @@ def validate_layer(
             source, key_path, first.get("msg", "is invalid")
         ) from exc
 
+    _validate_project_weights(data, source)
     _validate_harness_home_files(data, source)
     _validate_plan_review_gate(data, source)
     review = data.get(REVIEW_KEY)
