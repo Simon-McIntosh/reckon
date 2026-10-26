@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-26T23:43:19.379Z",
+  "dispatched_at": "2026-10-26T23:36:11Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-live-worker-is-never-drawn-halted/r-20261026T233523804468-plan-review-of-a-live-worker-is-never-drawn-halted/plan.html:318",
+      "id": "done_when-1",
+      "reason": "the implementer must decide the control's verdict on a comparison the plan leaves undefined, so the node needs a stated tie-break (compare at second granularity, or exclude only a claim strictly later than the row's `observed_at`) before the negative control can be run.",
+      "text": "the third halted kind now requires \"no attempt claim between the repair and the row\", but on the very row the section names as its positive control the claim and the row fall inside the same second: run `r-20261023T012524464845-a-plan-write-refuses-the-bucket` has `status-repair.json` `repaired_at` 2026-10-23T12:14:30Z, its carried halted row at 12:14:49Z (`complete -> blocked`, no `status_repair` field, so a genuine pre-fix carried row), and `attempt-4.claim` with mtime 2026-10-23T12:14:49.398Z \u2014 nineteen seconds after the repair and inside the same second as the row. The stream records `observed_at` only to the second, so whether the claim is \"between the repair and the row\" depends on an observation instant no record preserves; read one way the control counts 1, the other way it reads 0 and the section's own rule fires (\"A figure that reads zero on that window cannot see its mechanism\")",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "43b51d450349a54c735edc226cb89c79774897c1c722aaf6300f7de1dfecbaad",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 106,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261026T233523804468-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "384a46e1c036e725f0bacac4e31443138df5d114",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol and path the section names resolves at HEAD: `ticker.stream_carries` (reckon/crew/ticker.py:1379), `ticker._pane_word` (ticker.py:1362), `obligations._current_review_in_flight` (reckon/crew/obligations.py:432), `recovery_review_dispatch._review_in_flight` (reckon/crew/recovery_review_dispatch.py:491), `scripts/census/` holding `death_census.py` and `carryover_census.py` beside the new module's target name, and `runs.status_repair_record` / `repaired_at` (reckon/crew/runs.py:1767, 1870).",
+    "done_when": "a finding \u2014 the third kind's new \"no attempt claim between the repair and the row\" exclusion is decided on a sub-second ordering that the plan's own negative-control row cannot settle (see FINDING).",
+    "evidence_paths": "pass \u2014 the evidence fragments are `docs/evidence/fragments/a-live-worker-is-never-drawn-halted/{census-instrument,census-report}.html` (the directory exists; the landing beat folds both into `docs/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html`, which exists), and the sampler appends to `~/.cache/reckon-population/a-live-worker-census/review-missing-samples.jsonl`, a GPFS home path that outlives the node; the reference instrument is present at the cited `~/.cache/reckon-population/a-live-worker-census/scan_monitor.py`.",
+    "naming": "pass \u2014 the changed prose introduces no plan labels, ticket numbers or version tags, and names mechanisms (`attempt-N.claim`, `stale_snapshot`, `status-repair.json`) rather than plan stages.",
+    "reasoning": "pass \u2014 the section's root cause matches its cited evidence (the `review-missing` duty is gated by `obligations._current_review_in_flight` at obligations.py:540, which is the reader the sampler is told to call), and the sampling mechanism runs on that production reader rather than a looser one; the one mechanism defect in the changed passage is the exclusion's indeterminacy, filed under `done_when` because it decides that node's control.",
+    "single_goal": "pass \u2014 the section's two nodes each own one deliverable and one evidence fragment (`census-instrument`, `census-report`), and the report was split out of the census node since the earlier `single_goal` finding.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `{\"s11\":[\"a-live-worker-is-never-drawn-halted#s13\"]}` (plan.html:29), and the only sections still `implementable` are s11 and s13, so the prose's \"every other section of this plan has landed\" is carried by that one declaration; \u00a712's ordering note (\"\u00a711 runs last\") agrees."
+  },
+  "section_digests": {
+    "_document": "d5e7b26358600d3d834d2dde0de3a226b3197b9bc2d543f22d381ef8ea48a49e",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "194b36cf159e4adaab983bd8054aaf2a1f42b7dc3a892e005cc40d7522dc3289",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "c9a865797ebfeb76a1768ae28c033ed42a186f2ec3fcd4b6599d9e25692dbb4b",
+    "s15": "96f7bae86410d123869e495106004eada0a3a764c5ecc7dea21cf279ee685aad",
+    "s16": "226b392d3cbe9483faf3eacfa6b4c6168026cb77bfcd440db6d0c4f8637bd0ee",
+    "s17": "4e7def20507d18b41e40d80de1bb146b9747af3a2d3a60303f6ecd8dbfbdb8ea",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "607c5ed638bb7fd894caef6e6fd6331649e3d6efcc2df2b48c1528c827010ae5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T23:46:33.584223+00:00"
+}
