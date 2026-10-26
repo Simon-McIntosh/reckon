@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -241,7 +241,10 @@
     file. The subscriber attaches the day files from its cursor's day through today, and attaches the new file at
     each UTC rollover. A cursor older than the oldest retained day file resumes at that file's first event and
     prints one line saying how many days were skipped. The subscriber's registration is its own row in
-    <code>cursors</code>, in the node-local store, not a watch record under the crew home. The pane policy (<code>ticker.PaneRowPath</code>: arrival and settle holds, lift claims)
+    <code>cursors</code>, in the node-local store, not a watch record under the crew home. The pane's checkpoint and
+    history, which <code>follow_checkpoint.checkpoint_path</code> and <code>history_path</code> keep under
+    <code>runs.follower_dir</code> in the crew home today, move into that same row's columns, so the poll path
+    opens nothing under the crew home. The pane policy (<code>ticker.PaneRowPath</code>: arrival and settle holds, lift claims)
     runs in the station once per audience, so its decisions are made once and stored with the row. The
     follower computes no snapshot, reads nothing on GPFS, and does not reload: its code is a query and a
     painter. When the station's heartbeat is older than its stale window, the follower prints one line saying
@@ -257,7 +260,8 @@
     and prints its one skip line; a stale heartbeat prints one line; a subscriber wakes on an event written to an attached day file and
     on nothing else, with the heartbeat write disabled for that test.
     Measure: a 60 s <code>strace -f -e trace=openat,stat,newfstatat</code> of a running subscriber names no path
-    under the crew home; a <code>/proc/&lt;pid&gt;/io</code> delta cannot attribute reads to paths and misses reads served from cache. Negative control: a subscriber that does not persist its cursor must fail the restart test.</p>
+    under the crew home; a <code>/proc/&lt;pid&gt;/io</code> delta cannot attribute reads to paths and misses reads served from cache. Negative controls: a subscriber that does not persist its cursor must fail the restart test, and one that
+    still reads its checkpoint from <code>runs.follower_dir</code> must fail the trace measure.</p>
 
     <h2 id="s9">§9 — Obligations and hooks read the station</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
