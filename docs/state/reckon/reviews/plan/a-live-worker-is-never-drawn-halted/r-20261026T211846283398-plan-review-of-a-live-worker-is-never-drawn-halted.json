@@ -1,0 +1,114 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-26T21:24:19.390Z",
+  "dispatched_at": "2026-10-26T21:19:39Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:317",
+      "id": "wiring-1",
+      "reason": "the section's precondition must name every section whose fix its zeros depend on (through \u00a717), or the census is run early and reports a defect it was meant to confirm is gone.",
+      "text": "\u00a711 says it is \"re-run once \u00a72\u2013\u00a710 have landed and every producer has reloaded\", but the figure it now adds \u2014 \"zero `review-missing` duties sampled while their review run was live\" \u2014 is the defect \u00a716 repairs, and its lift/wait/landing figures are \u00a712, \u00a714, \u00a715 and \u00a717; followup `f-alwh-005` orders \"\u00a711 runs last\". A node dispatched on \u00a711's own stated precondition would measure an unfixed `review-missing` class and \u00a712\u2013\u00a717's unfixed rows, then assert zeros against them.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:317",
+      "id": "reasoning-1",
+      "reason": "without naming the resolver the census's zero is an artefact of the matcher rather than a finding, which is exactly the \u00a716 case the section exists to measure.",
+      "text": "the sampler \"reads the live review pointers at that moment\" and copies one \"when a live review stands for that run\", but never names the reader that decides standing; \u00a716 records the pointer behind the same defect carrying `reviewed_run_id: null` and `review_subject: null`, recognised only through `recovery_review_dispatch._review_subject` and its fallback `recovery_review_delivery._resolved_reviewed_run_id` (recovery_review_delivery.py:218). A sampler keyed on the raw `reviewed_run_id` field finds no standing review and reports zero by construction.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:317",
+      "id": "done_when-1",
+      "reason": "the node would either run a sampler past its own turn (which it cannot hold) or report a window it never sampled; the plan needs a slice/persistence rule for the sampler.",
+      "text": "the report requires sampling every session's obligations snapshot for \"the 24 hours after the last producer reload\", and the section itself states why this cannot be recovered later (\"the per-session obligations snapshots are overwritten in place\"); nothing in the section says where the samples are persisted or how a single node's run spans 24 hours of live sampling, so the finished report figure has no stated way to be produced inside a node's gate.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d9be5da250883f236300446de33885ac3e6291246dad49a9edbfd1d6d9cb8fe1",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 89,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-26T21:29:18.552370+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-26T21:29:46.235708+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-26T21:30:07.076608+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "reason": "",
+      "when": "2026-10-26T21:30:07.076608+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "reason": "",
+      "when": "2026-10-26T21:29:46.235708+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "reason": "",
+      "when": "2026-10-26T21:29:18.552370+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-live-worker-is-never-drawn-halted/r-20261026T211846283398-plan-review-of-a-live-worker-is-never-drawn-halted.json",
+  "review_run_id": "r-20261026T211846283398-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "6312012312feb3903ecb59b47d135bad83a344ff",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `ticker.stream_carries` (ticker.py:1363), `ticker._pane_word` (ticker.py:1346), `docs/evidence/...` paths and \u00a71's \"24 rows with `process_alive: true`\" all resolve; no hrefs in this section.",
+    "done_when": "a finding \u2014 the report needs a 24-hour *live* sampling window (snapshots are overwritten in place, per `reckon/crew/obligation_snapshot.py`), and the section states no persisted sample store or way for one node's run to span that window.",
+    "evidence_paths": "pass \u2014 `scripts/census/` exists beside `death_census.py` and `carryover_census.py`, and both `docs/evidence/fragments/a-live-worker-is-never-drawn-halted/` and `docs/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html` exist.",
+    "naming": "pass \u2014 the section names no plan labels, ticket numbers or version tags for symbols; `<node-id>` is a runtime placeholder in an evidence path.",
+    "reasoning": "a finding \u2014 the sampler's criterion for \"a live review stands for that run\" is unnamed, while the plan's own \u00a716 evidence records a pointer whose `reviewed_run_id`/`review_subject` were null.",
+    "single_goal": "pass \u2014 \u00a711 names one deliverable, a committed census module with its test and report fragment.",
+    "wiring": "a finding \u2014 \u00a711's precondition still reads \"re-run once \u00a72\u2013\u00a710 have landed\", but its new `review-missing` figure is fixed by \u00a716 and its other figures by \u00a712/\u00a714/\u00a715/\u00a717, while followup `f-alwh-005` says \"\u00a711 runs last\"."
+  },
+  "section_digests": {
+    "_document": "d5e7b26358600d3d834d2dde0de3a226b3197b9bc2d543f22d381ef8ea48a49e",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "472f6f80f442f29797849443501463a1aee4b4fa8ad9d9de663bf31b8a98fc83",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "c9a865797ebfeb76a1768ae28c033ed42a186f2ec3fcd4b6599d9e25692dbb4b",
+    "s15": "96f7bae86410d123869e495106004eada0a3a764c5ecc7dea21cf279ee685aad",
+    "s16": "226b392d3cbe9483faf3eacfa6b4c6168026cb77bfcd440db6d0c4f8637bd0ee",
+    "s17": "4e7def20507d18b41e40d80de1bb146b9747af3a2d3a60303f6ecd8dbfbdb8ea",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "607c5ed638bb7fd894caef6e6fd6331649e3d6efcc2df2b48c1528c827010ae5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T21:26:59.180832+00:00"
+}

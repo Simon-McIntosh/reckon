@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:33-47 (crew_station CLI verb, imported by reckon/cli.py:226 onward so the command registers on the crew group)"
+  ],
+  "completed_at": "2026-10-26T21:49:21.094Z",
+  "dispatched_at": "2026-10-26T21:38:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station.py",
+      "line": 29,
+      "severity": "non-blocking",
+      "summary": "node_lock duplicates the single-owner-with-holder-identity capability the repository already owns in reckon/crew/host_lease.py:26 (HostLease.claim/holder, which records host and pid and names the holder) and in the fleet supervisor's lifetime service lock probed by reckon/crew/fleet_supervisor.py:720; it neither wraps nor extends either owner, and the overlap should be folded onto one when the supervisor launch named in plan section 7 lands. It is non-blocking because the plan fixes a lock under the node-local runtime root, neither owner exposes that guarantee as a callable, and the repository repeats flock inline in several modules."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "line": 127,
+      "severity": "non-blocking",
+      "summary": "Plan section 7 also states the station is the only process that reloads onto new code from a reload image under the runtime root and is started by the crew host or the fleet supervisor; the landed change implements neither, so section 7 is not complete with this node alone even though the node goal does not name reload. It is recorded in the manifest's outside_scope and is non-blocking here."
+    },
+    {
+      "file": "tests/test_one_station_per_node_runs_the_tick.py",
+      "line": 140,
+      "severity": "non-blocking",
+      "summary": "The payload assertion compares the serialized event's run_id against the row's run column, and both derive from the same event mapping passed to StationStore.record_tick, so it cannot detect a payload written from the wrong event; it does still fail if the column is null or mis-encoded, so it is weak coverage rather than a vacuous guard."
+    }
+  ],
+  "justifications": {
+    "durability": "Reverting the baseline seeding at reckon/crew/station.py:99 and the offset persistence would redden tests/test_one_station_per_node_runs_the_tick.py:161 and :236, and the declared lock mutation was run red in station-lock-negative.log, which fails at line 122 with EXIT=1.",
+    "evidence": "tests/test_one_station_per_node_runs_the_tick.py:122 asserts the second station's refusal and :161 asserts a restart re-emits nothing, both matching the done_when; the manifest's station-committed-head.log records 5 passed with EXIT=0.",
+    "fit": "reckon/crew/station.py follows the module idiom beside station_store.py, reuses recovery/ticker rather than re-deriving them, uses a lazy import for the adoption call, and introduces no plan label or version name.",
+    "goal_fidelity": "reckon/crew/station.py:68 tick() ingests, calls store.classify_tick, writes folded transitions with audience and duty via store.record_tick, and moves the heartbeat, and :29 node_lock holds one runtime-root lock for the process lifetime.",
+    "reuse": "The fold reuses recovery.fleet_transitions and recovery._watch_transition and extends StationStore in place, but reckon/crew/station.py:29 node_lock writes its own holder record where reckon/crew/host_lease.py:26 already owns that claim.",
+    "scope_discipline": "git diff --stat across 9c689e62..723aa95d lists only the five declared paths, and the store's new payload column and pointer-row cleanup in reckon/crew/station_store.py:378 serve the same restart guarantee rather than an unrelated goal."
+  },
+  "notes": "Reviewed base 9c689e62 is an ancestor of the reviewed head; the review worktree's own HEAD (bf07b346d) is not, so the landed commits are not yet on main and were read from the object store rather than the working tree. The manifest's single importer failure test_every_module_is_reached was confirmed as scaffolding by its own traceback (git cat-file exits 128 with no .git in the extracted tree) and it is identical in both arms, so added_failure_count is 0.",
+  "project": "reckon",
+  "review_run_id": "r-20261026T213638517441-review-of-one-station-per-node-runs-the-tick-723aa95d27fc",
+  "review_text": "VERDICT goal: the node's goal is a node-locked station process ticking ingest, classification and transition writing and surviving a restart; reckon/crew/station.py:29, :68 and :131 implement all four.\nVERDICT done_when: the gate is tests/test_one_station_per_node_runs_the_tick.py, whose five tests assert the two-project three-session integration, one row per transition with its audience, the second-station refusal, restart from stored offsets, per-tick classification, startup adoption order and heartbeat movement; its log records 5 passed with EXIT=0.\nVERDICT write_paths: the declared six paths were read from the brief; the diff touches five of them and no other file.\nVERDICT manifest: read; it reports complete with four commits, the focused gate, a 57-file importer population with one identical scaffold failure per arm, and unchanged ruff and format counts, each reconciling with the log it names.\nVERDICT diff: read commit by commit against 9c689e62; four commits, five files, all inside the declared scope, subjects conventional with bodies and no attribution or plan identifiers.\nCALL_SITES: reckon/crew_follow_commands.py:33-47\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:68 ingests, classifies, writes folded transitions with audience and duty, and moves the heartbeat, and :29 holds one runtime-root lock for the process lifetime.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_one_station_per_node_runs_the_tick.py:122 and :161 assert the refusal and the no-re-emit restart, matching the done_when, and station-committed-head.log records 5 passed, EXIT=0.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in 9c689e62..723aa95d is one of the five declared code paths, and the store's payload column and pointer cleanup at reckon/crew/station_store.py:378 serve the same restart guarantee.\nSCORE durability: 18\nJUSTIFICATION durability: reverting the baseline seed at reckon/crew/station.py:99 or the offset persistence reddens tests/test_one_station_per_node_runs_the_tick.py:161, and the declared lock mutation was run red in station-lock-negative.log at line 122.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/station.py sits beside station_store.py, reuses recovery and ticker, and introduces no plan label or version name.\nSCORE reuse: 15\nJUSTIFICATION reuse: the fold reuses recovery.fleet_transitions and recovery._watch_transition, but node_lock at reckon/crew/station.py:29 re-implements the holder-naming claim owned by reckon/crew/host_lease.py:26.\nFINDING reckon/crew/station.py:29 non-blocking: node_lock duplicates the single-owner-with-holder-identity capability owned by reckon/crew/host_lease.py:26 and the fleet supervisor's lifetime service lock at reckon/crew/fleet_supervisor.py:720 without extending either.\nFINDING reckon/crew/station.py:127 non-blocking: plan section 7's reload-image and launch wiring are unimplemented and recorded under outside_scope.\nFINDING tests/test_one_station_per_node_runs_the_tick.py:140 non-blocking: the payload assertion compares two values derived from the same event mapping, so it cannot detect a payload written from the wrong event.\n",
+  "reviewed_base_sha": "9c689e624b67b7876f0e2d2e9825755f227eb460",
+  "reviewed_head_sha": "723aa95d27fcfed5c0d1146aeebf852cc2581e39",
+  "reviewed_run_id": "r-20261026T205710583680-one-station-per-node-runs-the-tick",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T21:49:26.566095+00:00",
+  "total": 108,
+  "verdicts": {
+    "diff": "Read commit by commit: d36663b21 adds station.py, the store's tick wiring and the test; 6756833e9 seeds newly observed runs as baseline and adds the legacy-day read; 4ecc0ce51 selects the event query by schema; 723aa95d2 adds only the evidence fragment, all inside the declared scope.",
+    "done_when": "The gate is tests/test_one_station_per_node_runs_the_tick.py, 5 tests covering two projects and three sessions, one-row-per-transition with audience, the second-station refusal, restart from stored offsets, per-tick classify_tick, startup adoption order and heartbeat movement; its committed-head log records 5 passed, EXIT=0.",
+    "goal": "The goal is a node-locked station process that ticks ingest, classification and transition writing and survives a restart; reckon/crew/station.py:29 (node_lock), :68 (tick) and :131 (run_station) implement all four, and reckon/crew_follow_commands.py:33 registers the verb.",
+    "manifest": "The manifest reports status complete, four commits, the focused gate at the committed head, an importer population of 57 files with one identical scratch failure per arm, and ruff/format counts unchanged; each claim reconciles with the log it names.",
+    "write_paths": "The declared six paths are reckon/crew/station.py, reckon/crew/station_store.py, reckon/crew_follow_commands.py, tests/test_one_station_per_node_runs_the_tick.py, the evidence fragment and the figures directory; the diff touches the first five and nothing else."
+  }
+}

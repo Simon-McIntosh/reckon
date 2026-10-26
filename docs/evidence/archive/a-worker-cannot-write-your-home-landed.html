@@ -2704,6 +2704,16 @@ exit: 0</pre>
     <p>Merge <code>925986fb4</code> (head <code>9c642ab9d</code>), built in session at the lead's direction during the 2026-10-23 storage incident. A fenced launch's PATH carries no git shim and strips an inherited one; an unfenced launch keeps it. <code>tests/test_a_fenced_worker_runs_git_directly.py</code>, 7 cases, passes. Inside a composed fence the real git commits in the run's worktree, and refuses commit, branch and update-ref in the main checkout, a commit in a peer worktree, and the <code>--git-dir</code>/<code>--work-tree</code> spelling. With the main checkout and the pool unsealed, the foreign commits land. The twelve test files touching the worker PATH or the shim read 3 failed at base and 1 failed at head, 0 added; all four are in <code>tests/test_stop_before_spawn_spawns_nothing.py</code>, whose stop races flake under load. Logs are under <code>~/.cache/reckon-storage-rca/</code>. <strong>Plan review waived by the lead</strong>: the lane gate was paused to stop the GPFS load, so no reviewer could run, and the fix had to land before the gate reopened for new launches to benefit. The next content review of this plan reads §23 as landed.</p>
   </section>
 
+  <section id="s21">
+    <h2>§21 — A scope refusal names the paths it parsed</h2>
+    <p>Merge <code>2b4d42d65</code> (head <code>cc4c3d191</code>, run <code>r-20261023T135622629487-a-scope-refusal-names-the-paths-it-parsed</code>). When a manifest list field holds one item whose whitespace splits it into declared paths, the manifest audit reports one comma-separation finding naming the field and the item, in place of a scope finding. Every stray path in a scope finding is quoted, so one item can no longer read as several. The first review (106/120) found two existing tests asserting the old unquoted message. Commit <code>cc4c3d191</code> updated them, granted by widening the run onto <code>tests/test_manifest_check_command.py</code> and <code>tests/test_a_review_manifest_passes_its_own_check.py</code>. Matched arms: base 193 passed, head 197 passed, 0 added. Re-review 115/120. Non-blocking: a joined list of paths that exist but are undeclared still reads as one stray.</p>
+  </section>
+
+  <section id="s22">
+    <h2>§22 — One resolver answers whether a cited commit exists</h2>
+    <p>Head <code>21c1bc4da</code> (run <code>r-20261026T204928893851-one-resolver-answers-every-commit-citation</code>). One <code>_commit_resolves_in</code> definition remains, in <code>reckon/crew/promotion_evidence.py</code>. <code>reckon/crew/reports.py</code> reaches it through a module <code>__getattr__</code> that imports it on first use, which avoids the import cycle with <code>promotion_evidence</code> and keeps <code>reports._commit_resolves_in</code> addressable as the same function object. Gate: 1,094 passed at head. The new test asserts both readers are one function and drives the citation check, accepting a real commit and refusing an all-zero hash and a hash naming no object. Review 113/120, 0 added failures. Non-blocking: the negative control's red log is a conftest import failure, not a failure of the guarded assertions.</p>
+  </section>
+
 </main>
 </body>
 </html>

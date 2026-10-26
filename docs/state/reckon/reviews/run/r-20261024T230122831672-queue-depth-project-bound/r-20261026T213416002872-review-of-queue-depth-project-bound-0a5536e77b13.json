@@ -1,0 +1,88 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from reviewed run manifest.md baseline_suite at 9eb68d63b585b51e4ebb5701842ee0de4c2d42e3 (base-repair-delta.log: 210 passed, EXIT=0, completed true, failure_ids []) and after_suite at 0a5536e77b1331bf414a97ff2db3c7babc20eb51 (head-final-delta.log: 221 passed, EXIT=0, completed true, failure_ids []); set difference is empty.",
+  "assertion_analysis": [
+    {
+      "fails_if": "A dispatched request is refused before three, the fourth is accepted, the refusal changes class or cap, or fewer/more than three pointers are stored; the five fair-share cases rule out the retired share clamp.",
+      "path": "tests/test_a_queued_dispatch_is_accepted.py:76-82"
+    },
+    {
+      "fails_if": "The restored session clamp refuses request index 8 (observed in negative-control-final.log), the payload stops reporting a queue position, or the 200 requests are not stored.",
+      "path": "tests/test_queue_depth_project_bound.py:150-154"
+    },
+    {
+      "fails_if": "The 501st request is accepted, the cap/refusal no longer names queue.max_requests, or awaiting-upstream/blocked-upstream requests are omitted from the held count.",
+      "path": "tests/test_queue_depth_project_bound.py:185-197"
+    },
+    {
+      "fails_if": "Strict flight validation rejects the queue namespace or resolution drops the override and yields the default; 7 is a literal expectation, not a variable passed through the assertion.",
+      "path": "tests/test_queue_depth_project_bound.py:205-215"
+    },
+    {
+      "fails_if": "The fallback helper omits the host layer or fails to let the project layer override it; the assertions do not establish that queue_dispatch still calls the helper.",
+      "path": "tests/test_queue_depth_project_bound.py:225-229"
+    },
+    {
+      "fails_if": "Either MCP read refuses, exceeds its 30-second deadline, or returns fewer/more than the 500 seeded pointers; the returned count independently checks the seeded fixture.",
+      "path": "tests/test_queue_depth_project_bound.py:291-295"
+    }
+  ],
+  "completed_at": "2026-10-26T21:44:56Z",
+  "dispatched_at": "2026-10-26T21:36:25Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-queue-depth-project-bound-0a5536e77b13",
+      "recorded_at": "2026-10-26T21:50:54.660120+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/schema/flight.yaml",
+      "line": 1108,
+      "severity": "blocking",
+      "text": "The schema addition and companion generated schema, published JSON schema, and legacy test edits are outside prompt.txt:69-75's exclusive write grant; obtain an explicit scope extension or move them into an authorized repair node before landing."
+    },
+    {
+      "file": "tests/test_queue_depth_project_bound.py",
+      "line": 225,
+      "severity": "non-blocking",
+      "text": "The host/project fallback assertions call _resolved_queue_max_requests directly, so replacing queue_dispatch's use of that helper at reckon/crew/runs.py:753 with the default 500 leaves the added assertions green; fold into an authorized fallback-path test node."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch.py:266, reckon/crew/dispatch.py:417, reckon/crew/dispatch.py:1695, reckon/crew/dispatch.py:1863, reckon/crew/queue_admission.py:386, reckon/crew/recovery_review_dispatch.py:663, reckon/flight.py:1939",
+    "diff": "read fcb0072c1317, 4fbd6d6cfe57, and 0a5536e77b13 against reviewed base 89ba3ba06eb5; the commits add layered resolution and schema, count upstream-held pointers, and route the 200-request arm through dispatch.",
+    "done_when": "prompt.txt:105 names the 200-request, 501st, review, MCP read, delta, and lint gates; tests/test_queue_depth_project_bound.py:136-295 asserts them and manifest.md names completed logs.",
+    "goal": "prompt.txt:30 asks for a project bound and deduplication; reckon/crew/runs.py:643-651 now resolves the bound through flight layers, and :755-769 counts all three waiting phases.",
+    "manifest": "manifest.md reports complete at 0a5536e77 with base-repair-delta.log 210 passed, head-final-delta.log 221 passed, negative-control-final.log EXIT=1, and ruff-final.log EXIT=0.",
+    "write_paths": "prompt.txt:69-75 grants six paths, but the three new commits also change reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, and tests/test_a_queued_dispatch_is_accepted.py; manifest.md:3 lists those extra paths without a matching dispatch grant."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_depth_project_bound.py:150 reddens on the restored clamp and :185-197 reddens if either upstream-held phase stops counting, while :225-229 only invoke the fallback helper directly.",
+    "evidence": "tests/test_queue_depth_project_bound.py:150 and :291-295 assert dispatch acceptance beyond the old ceiling and populated MCP reads, and manifest.md names the 210-pass base and 221-pass head logs.",
+    "fit": "reckon/_flight_schema.py:268 adds QueueConfig beside the existing flight models and reckon/crew/runs.py:744-759 uses the queue phase vocabulary rather than new string literals.",
+    "goal_fidelity": "reckon/crew/runs.py:750-769 applies the project bound to queued and upstream-held requests while reckon/crew/dispatch.py:1695 reuses the node identity across sessions.",
+    "reuse": "the capability search found reckon/flight.py:1939 as the layer resolver and reckon/crew/queue_admission.py:58 as the phase owner; the diff extends those owners through reckon/crew/runs.py:647 and :744-759.",
+    "scope_discipline": "reckon/schema/flight.yaml:1108 and three other changed paths are absent from the exclusive grant in prompt.txt:69-75 despite being listed in manifest.md:3."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261026T213416002872-review-of-queue-depth-project-bound-0a5536e77b13",
+  "review_text": "VERDICT goal: prompt.txt:30 asks for a project bound and deduplication; reckon/crew/runs.py:643-651 now resolves the bound through flight layers, and :755-769 counts all three waiting phases.\nVERDICT done_when: prompt.txt:105 names the 200-request, 501st, review, MCP read, delta, and lint gates; tests/test_queue_depth_project_bound.py:136-295 asserts them and manifest.md names completed logs.\nVERDICT write_paths: prompt.txt:69-75 grants six paths, but the three new commits also change reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, and tests/test_a_queued_dispatch_is_accepted.py; manifest.md:3 lists those extra paths without a matching dispatch grant.\nVERDICT manifest: manifest.md reports complete at 0a5536e77 with base-repair-delta.log 210 passed, head-final-delta.log 221 passed, negative-control-final.log EXIT=1, and ruff-final.log EXIT=0.\nVERDICT diff: read fcb0072c1317, 4fbd6d6cfe57, and 0a5536e77b13 against reviewed base 89ba3ba06eb5; the commits add layered resolution and schema, count upstream-held pointers, and route the 200-request arm through dispatch.\nCALL_SITES: reckon/crew/dispatch.py:266, reckon/crew/dispatch.py:417, reckon/crew/dispatch.py:1695, reckon/crew/dispatch.py:1863, reckon/crew/queue_admission.py:386, reckon/crew/recovery_review_dispatch.py:663, reckon/flight.py:1939\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:750-769 applies the project bound to queued and upstream-held requests while reckon/crew/dispatch.py:1695 reuses the node identity across sessions.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_queue_depth_project_bound.py:150 and :291-295 assert dispatch acceptance beyond the old ceiling and populated MCP reads, and manifest.md names the 210-pass base and 221-pass head logs.\nSCORE scope_discipline: 5\nJUSTIFICATION scope_discipline: reckon/schema/flight.yaml:1108 and three other changed paths are absent from the exclusive grant in prompt.txt:69-75 despite being listed in manifest.md:3.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_queue_depth_project_bound.py:150 reddens on the restored clamp and :185-197 reddens if either upstream-held phase stops counting, while :225-229 only invoke the fallback helper directly.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_flight_schema.py:268 adds QueueConfig beside the existing flight models and reckon/crew/runs.py:744-759 uses the queue phase vocabulary rather than new string literals.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found reckon/flight.py:1939 as the layer resolver and reckon/crew/queue_admission.py:58 as the phase owner; the diff extends those owners through reckon/crew/runs.py:647 and :744-759.\nFINDING reckon/schema/flight.yaml:1108 blocking: the schema addition and companion generated schema, published JSON schema, and legacy test edits are outside prompt.txt:69-75's exclusive write grant; obtain an explicit scope extension or move them into an authorized repair node before landing.\nFINDING tests/test_queue_depth_project_bound.py:225 non-blocking: the host/project fallback assertions call _resolved_queue_max_requests directly, so replacing queue_dispatch's use of that helper at reckon/crew/runs.py:753 with the default 500 leaves the added assertions green; fold into an authorized fallback-path test node.",
+  "reviewed_base_sha": "89ba3ba06eb559542c15fe6dc3209be0e8886b18",
+  "reviewed_head_sha": "0a5536e77b1331bf414a97ff2db3c7babc20eb51",
+  "reviewed_run_id": "r-20261024T230122831672-queue-depth-project-bound",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 5
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T21:46:30.529305+00:00",
+  "total": 97
+}

@@ -2090,11 +2090,21 @@ def _citation_tokens(entry: str) -> list[str]:
     return tokens
 
 
-def _commit_resolves_in(root: Path, revision: str) -> bool:
-    """Report whether one revision names a commit object in one repository."""
-    from reckon.crew.recovery import _resolve_commit
+def __getattr__(name: str) -> Any:
+    """Serve a name this module reaches from a module that imports it.
 
-    return bool(_resolve_commit(root, revision))
+    The commit-citation resolver has one definition, in
+    ``reckon.crew.promotion_evidence``, which imports this module at module
+    scope; a top-level import of it here would close that cycle. Assigning the
+    one function object to this name keeps ``reports._commit_resolves_in`` the
+    same object a caller gets from promotion_evidence, without a second
+    definition. The call that needs it imports it where it is used.
+    """
+    if name == "_commit_resolves_in":
+        from reckon.crew.promotion_evidence import _commit_resolves_in
+
+        return _commit_resolves_in
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def _citation_stores(
@@ -2150,6 +2160,10 @@ def _commit_citation_findings(
     stores = _citation_stores(worktree=worktree, repository=repository)
     if not stores:
         return []
+    # Imported where it is used: promotion_evidence imports this module at
+    # module scope, so a top-level import of its resolver would close the cycle.
+    from reckon.crew.promotion_evidence import _commit_resolves_in
+
     findings: list[str] = []
     for entry in entries:
         unresolved = [

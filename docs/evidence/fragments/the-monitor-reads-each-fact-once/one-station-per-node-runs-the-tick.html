@@ -1,0 +1,11 @@
+<section id="one-station-per-node-runs-the-tick" data-node="one-station-per-node-runs-the-tick">
+  <h3 id="one-station-per-node-runs-the-tick-result">One station owns the node's tick</h3>
+  <p><code>reckon crew station</code> holds a lock under the node-local runtime root, ingests every live pointer and stream, calls <code>StationStore.classify_tick</code> on each pass, and persists the fleet image beside its dated transition rows. A newly observed run establishes its stored baseline without an event row. A later verdict change is folded through <code>recovery.fleet_transitions</code>, with the event addressed to its owning session. The station calls worker adoption before opening its store.</p>
+  <p>The process test used two projects and three sessions. Initial publication wrote zero events; two changed verdicts wrote two rows with their owning audiences; a competing station exited naming the first holder; and a killed station restarted with the three stream offsets intact and wrote no repeat row. One later verdict change wrote one row. The heartbeat moved on both measured ticks. The committed-head focused gate passed 5 tests.</p>
+  <table id="one-station-per-node-runs-the-tick-measure"><thead><tr><th>Measure</th><th>Base</th><th>Head</th></tr></thead><tbody>
+    <tr><td>Importer population, 57 files</td><td>466 passed, 1 scratch setup failure</td><td>466 passed, the same setup failure; 0 added failure IDs</td></tr>
+    <tr><td>Ruff findings on changed Python paths</td><td>2 existing findings</td><td>2 existing findings; 0 added</td></tr>
+    <tr><td>Files failing Ruff format check</td><td>1 existing file</td><td>The same 1 existing file; 0 added</td></tr>
+  </tbody></table>
+  <p>The importer setup failure is <code>test_every_module_is_reached</code>: both extracted measurement trees lack <code>.git</code>, so <code>git cat-file HEAD</code> exits 128 before its assertion. The lock mutation removed acquisition in a temporary head image; the integration case failed with exit 1 because the second station entered with exit 0. Source landed in <code>d36663b21</code>, <code>6756833e9</code>, and <code>4ecc0ce51</code>.</p>
+</section>

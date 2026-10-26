@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-26T22:20:35.486Z",
+  "dispatched_at": "2026-10-26T22:09:57Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-is-never-drawn-halted.html:317",
+      "id": "reasoning-1",
+      "reason": "the plan must either restrict the count to duties whose snapshot computed_at is at or after the review's launch (the reader was true when the duty was computed) or accept \u00a716's stale snapshots, in which case \u00a711's \"zero review-missing duties sampled while their review run was live\" cannot hold and its done-when is unattainable.",
+      "text": "\u00a711 counts a review-missing duty whenever obligations._current_review_in_flight is true at the moment the sampler reads it, and asserts that equals \"published while a review run standing for that run was live\"; a snapshot whose computed_at predates the review pointer's created_at (exactly the case \u00a716 records: \"a snapshot that predated the review's launch\") is read after the launch, returns true, and is counted, so \u00a711 conflates \u00a716's stale-snapshot cause with its own defect",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "ab9cd0150a82035d07827540d4458a3c589004991e76cd77b2e32041a9d48cfb",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 94,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-26T22:25:36.247995+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "reason": "",
+      "when": "2026-10-26T22:25:36.247995+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-live-worker-is-never-drawn-halted/r-20261026T220850486345-plan-review-of-a-live-worker-is-never-drawn-halted.json",
+  "review_run_id": "r-20261026T220850486345-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "48fe7de804bbd24a7b7bae04c7c47dbe21a8271b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 obligations._current_review_in_flight resolves at reckon/crew/obligations.py:432 and gates the duty at :540 via _live_review_runs (:1534); recovery_review_dispatch._review_in_flight resolves at :491; ticker.stream_carries (:1363) and ticker._pane_word (:1346) resolve; scripts/census/ holds death_census.py and carryover_census.py; the snapshot carries computed_at (obligation_snapshot.document_for, :795) and the review pointer carries created_at (runs.py:2518/:3541).",
+    "done_when": "pass \u2014 \u00a711's first-node done-when is measurable (one committed census module under scripts/census/, a co-located test over a synthetic stream asserting each count is 1, and a sampler test requiring 1 beside a live review pointer and 0 for three absent/queued/older-head snapshots) and names a negative control (the 48 hours ending 2026-10-23T12:37Z reproduces \u00a71's 24 halted rows with process_alive: true).",
+    "evidence_paths": "pass \u2014 samples append to ~/.cache/reckon-population/a-live-worker-census/review-missing-samples.jsonl on GPFS (the directory exists), the report lands as docs/evidence/fragments/a-live-worker-is-never-drawn-halted/<node-id>.html, and the cited archive docs/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html exists; no session scratchpad or node-local path is named.",
+    "naming": "pass \u2014 \u00a711 introduces no plan labels, ticket numbers or version tags into code; the named symbols are mechanism-named and the evidence path uses a <node-id> placeholder.",
+    "reasoning": "a finding \u2014 \u00a711 evaluates obligations._current_review_in_flight at sample time and claims \"a duty sampled while it returns true is the defect and nothing else is\", but a snapshot computed before the review launched (the stale-snapshot cause \u00a716 identifies) returns true when read after the launch, so the instrument cannot separate \u00a716's cause from \u00a711's defect and its zero target contradicts \u00a716's \"lands no product change\" branch.",
+    "single_goal": "pass \u2014 \u00a711 keeps one goal per dispatch: the first node commits only the instrument and sampler with their tests, the sampler is started by the coordinator, and a separate short node composes the report, as the section text states.",
+    "wiring": "pass \u2014 \u00a711's ordering (\"re-run once every other section has landed and every producer has reloaded\") agrees with \u00a712's \"\u00a711 runs last\" and f-alwh-005's \"then the census\"; the sections whose figures it counts (\u00a72, \u00a73, \u00a75, \u00a76, \u00a79, \u00a716) all land before it."
+  },
+  "section_digests": {
+    "_document": "d5e7b26358600d3d834d2dde0de3a226b3197b9bc2d543f22d381ef8ea48a49e",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "81440aca6dd01cd9b0a07764558254410e54d5c55618c743401e1d5e532bc647",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "c9a865797ebfeb76a1768ae28c033ed42a186f2ec3fcd4b6599d9e25692dbb4b",
+    "s15": "96f7bae86410d123869e495106004eada0a3a764c5ecc7dea21cf279ee685aad",
+    "s16": "226b392d3cbe9483faf3eacfa6b4c6168026cb77bfcd440db6d0c4f8637bd0ee",
+    "s17": "4e7def20507d18b41e40d80de1bb146b9747af3a2d3a60303f6ecd8dbfbdb8ea",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "607c5ed638bb7fd894caef6e6fd6331649e3d6efcc2df2b48c1528c827010ae5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T22:24:16.458275+00:00"
+}

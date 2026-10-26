@@ -1,0 +1,93 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-26T21:10:55.069Z",
+  "dispatched_at": "2026-10-26T21:06:21Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:317",
+      "id": "reasoning-1",
+      "reason": "the node would be dispatched to produce a count from a source that cannot contain it, and would either fabricate the figure or discover mid-build that the measure \u00a716 could not take is equally untakeable here, which is precisely the gap this clause was added to close.",
+      "text": "\u00a711 says the census \"reclassifies each event through `ticker.stream_carries` and `ticker._pane_word`\" and now counts \"`review-missing` duties published while a review run standing for that run was live\", keeping \"the pointer and snapshot lines behind each instance\"; but `review-missing` is an obligations duty kind derived at collection time (reckon/crew/obligations.py:1009), never written to the watch stream the census reads, and the snapshot/pointer evidence behind it is what \u00a716's own close comment (c-close-s16, 2026-10-26T21:05Z) records as gone \u2014 the pointer is removed at completion and the per-session snapshot is overwritten in place \u2014 so a census over a past 24-hour window has neither the event nor the evidence to count",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-is-never-drawn-halted.html:317",
+      "id": "done_when-1",
+      "reason": "a measure added to the intro but absent from the done-when is not gated, so a census that silently never counts that kind would pass the node's gate.",
+      "text": "the done-when's report sentence still enumerates only the four pre-existing figures (\"zero carried halted rows with `process_alive: true`, zero halted rows returning to working with no new attempt claim, at most one `lift-granted` per lift id, and zero same-word wait rows\") and the negative control reproduces only \u00a71's 24 halted rows, so the newly added `review-missing` count has no expected value and no arm that could show the instrument counts it",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "4ea1a9da66fa46ef71ae58204ea95a4a39b4b5bf08f5ab2059813ad83b2cbd0e",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 88,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-26T21:16:53.424764+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-26T21:17:12.933788+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "reason": "",
+      "when": "2026-10-26T21:17:12.933788+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "reason": "",
+      "when": "2026-10-26T21:16:53.424764+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-live-worker-is-never-drawn-halted/r-20261026T210528363721-plan-review-of-a-live-worker-is-never-drawn-halted.json",
+  "review_run_id": "r-20261026T210528363721-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "ed7996ddb038562e79d1f0b5105e962fc22de6d0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `scripts/census/death_census.py` and `carryover_census.py` exist, `ticker.stream_carries` (ticker.py:1363) and `ticker._pane_word` (ticker.py:1346) resolve, \u00a71's table (line 51) does carry \"24 rows with `process_alive: true`\", and the evidence archive resolves.",
+    "done_when": "a finding \u2014 the report figures \u00a711's done-when enumerates do not include the newly added `review-missing` count, so the clause the change introduced is not measured by the node's own gate.",
+    "evidence_paths": "pass \u2014 the script, its test and the evidence fragment under `docs/evidence/fragments/a-live-worker-is-never-drawn-halted/` are durable repository paths, and the archive `docs/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html` exists.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the script or its symbols; `<node-id>` is a runtime path placeholder, not a plan label.",
+    "reasoning": "a finding \u2014 \u00a711 now counts `review-missing` duties published while a review run was live, but that duty is not a watch-stream event and its evidence is the exact record \u00a716 closed as not retained.",
+    "single_goal": "pass \u2014 \u00a711 still names one deliverable, one census module plus its co-located test and report; the added `review-missing` count is a second measure inside the same instrument, not a second goal.",
+    "wiring": "pass \u2014 \u00a711's only ordering constraint (\"re-run once \u00a72\u2013\u00a710 have landed\", and \u00a712 records \"\u00a711 runs last\") resolves to nodes that exist and are all earlier in the plan than \u00a711."
+  },
+  "section_digests": {
+    "_document": "d5e7b26358600d3d834d2dde0de3a226b3197b9bc2d543f22d381ef8ea48a49e",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "560540aeccb8679cd49169ba0b175fde8d12cb15e4b64fd4541d79255d4b5b80",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "c9a865797ebfeb76a1768ae28c033ed42a186f2ec3fcd4b6599d9e25692dbb4b",
+    "s15": "96f7bae86410d123869e495106004eada0a3a764c5ecc7dea21cf279ee685aad",
+    "s16": "226b392d3cbe9483faf3eacfa6b4c6168026cb77bfcd440db6d0c4f8637bd0ee",
+    "s17": "4e7def20507d18b41e40d80de1bb146b9747af3a2d3a60303f6ecd8dbfbdb8ea",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "607c5ed638bb7fd894caef6e6fd6331649e3d6efcc2df2b48c1528c827010ae5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T21:14:10.521192+00:00"
+}

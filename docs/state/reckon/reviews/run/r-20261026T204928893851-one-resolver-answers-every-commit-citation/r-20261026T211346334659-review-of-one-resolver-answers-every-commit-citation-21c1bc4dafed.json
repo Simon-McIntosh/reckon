@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:2118",
+    "reckon/crew/promotion.py:2296",
+    "reckon/crew/reports.py:2165",
+    "reckon/crew/reports.py:2172",
+    "reckon/crew/reports.py:2609"
+  ],
+  "completed_at": "2026-10-26T21:24:11.903Z",
+  "dispatched_at": "2026-10-26T21:15:24Z",
+  "failure_derivation": "the reviewed run records no baseline_suite or after_suite keys (both parse as null in its classification.json); added failures are derived from its after arm, gate-head.log, which reads 1094 passed at EXIT=0, so the added set is empty because added failures are a subset of head failures",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T204928893851-one-resolver-answers-every-commit-citation/negative-control.log",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "the red log's failure is the conftest import of promotion.py's `_commit_resolves_in`, not the citation test modules, so no test id fails and the control would stay red even if those tests were deleted; the declared mutation is met in shape but the control does not show the guarded assertions failing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T204928893851-one-resolver-answers-every-commit-citation/citation-tests-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the header names revision a6ee51e8, which does not contain tests/test_one_resolver_answers_every_commit_citation.py (added in 642f473e), so the label does not identify the code the run exercised."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "five production sites verified",
+    "diff": "both commits read against a6ee51e8; three files, no behaviour change",
+    "done_when": "every clause has a recorded artefact; the named citation pair re-ran 6 passed",
+    "goal": "one definition at promotion_evidence.py:383, reached by reports.py through a deferred import at :2165",
+    "manifest": "read; records the gate at 1094 passed EXIT=0 and no baseline/after suite arms",
+    "write_paths": "all three changed files are inside the five declared paths"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one `_commit_resolves_in` definition in promotion_evidence.py that reports.py reaches by a deferred import; `git grep -n 'def _commit_resolves_in' <head> -- reckon/` prints exactly one line: reckon/crew/promotion_evidence.py:383.\nVERDICT done_when: every clause of the done_when has a recorded artefact \u2014 the one-line grep (promotion_evidence.py:383), the identity assertion and the fixture-repository citation check (tests/test_one_resolver_answers_every_commit_citation.py:56-77), the negative control at EXIT=4, the 108-importer gate at 1094 passed EXIT=0, and ruff clean per the manifest; I re-ran the named citation pair and got 6 passed.\nVERDICT write_paths: the node declared five paths; the three files the diff touches (reckon/crew/reports.py, tests/test_one_resolver_answers_every_commit_citation.py, docs/evidence/fragments/a-worker-cannot-write-your-home/one-resolver-answers-every-commit-citation.html) are all inside them and nothing outside them changed.\nVERDICT manifest: read it; it reports status complete with commits 642f473e and 21c1bc4d, gate-head.log 1094 passed EXIT=0, citation-tests-head.log 6 passed, negative-control.log EXIT=4, and it records no baseline_suite or after_suite arm (both parse as null in classification.json).\nVERDICT diff: read both commits against base a6ee51e8c5253359cad9d1445fceb3f53b317fe6; reports.py deletes its own definition and gains a call-site import at :2165 plus a module `__getattr__` at :2093, the new test adds four assertions over a temp fixture repository, and the evidence fragment records the landing; nothing else changed.\nCALL_SITES: reckon/crew/promotion.py:2118, reckon/crew/promotion.py:2296, reckon/crew/reports.py:2165, reckon/crew/reports.py:2172, reckon/crew/reports.py:2609\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/reports.py:2165 imports the resolver inside `_commit_citation_findings` and reports.py:2103 serves the same object, so the one definition at promotion_evidence.py:383 is the only one left, though the module `__getattr__` is surface the goal sentence does not name.\nSCORE evidence: 17\nJUSTIFICATION evidence: the recorded gate reads 1094 passed at EXIT=0 in gate-head.log and the citation pair 6 passed, which I re-ran, but the reviewed manifest records no baseline_suite or after_suite arm so the zero-added claim rests on the single green head arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff --stat a6ee51e8..21c1bc4d` (reckon/crew/reports.py, tests/test_one_resolver_answers_every_commit_citation.py, one evidence fragment) is inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_resolver_answers_every_commit_citation.py:57 fails if a second definition is reintroduced in reports.py, because a local def would shadow the `__getattr__` at reports.py:2093 and break object identity.\nSCORE fit: 19\nJUSTIFICATION fit: reports.py:2093 follows the same lazy re-export shape already used at reckon/crew/fleet_supervisor.py:250, and no name it introduces breaks the repository naming rules.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes reports.py's duplicate and points at the owner at promotion_evidence.py:383; searching reckon/ for another commit-citation predicate found only recovery_review_subject.py:202 `_resolve_commit`, which the remaining definition already answers through `_commit_canonical_id`.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T204928893851-one-resolver-answers-every-commit-citation/negative-control.log:7 non-blocking: the red log's failure is the conftest import of promotion.py's `_commit_resolves_in`, not the citation test modules, so no test id fails and the control would stay red even if those tests were deleted; the declared mutation is met in shape but the control does not show the guarded assertions failing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T204928893851-one-resolver-answers-every-commit-citation/citation-tests-head.log:1 non-blocking: the header names revision a6ee51e8, which does not contain tests/test_one_resolver_answers_every_commit_citation.py (added in 642f473e), so the label does not identify the code the run exercised.\n",
+  "review_run_id": "r-20261026T211346334659-review-of-one-resolver-answers-every-commit-citation-21c1bc4dafed",
+  "reviewed_base_sha": "a6ee51e8c5253359cad9d1445fceb3f53b317fe6",
+  "reviewed_head_sha": "21c1bc4dafed81e1dfae90ab43fc931629a53245",
+  "reviewed_run_id": "r-20261026T204928893851-one-resolver-answers-every-commit-citation",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T21:24:14.487759+00:00",
+  "total": 113
+}

@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-26T22:23:29Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/queue-fair-share-by-weight.html",
+      "line": 55,
+      "severity": "non-blocking",
+      "text": "The delta paragraph states \"Both arms run the same 144 test files\", but the recorded base command names 143 test files plus tests/conftest.py and omits tests/test_queue_weighted_fair_share.py, while the head command names 144 plus conftest. The two populations differ by exactly the file the fragment's own next sentence says the base tree lacks, and the 1733-vs-1751 passed delta is that file's 17 tests; saying the arms ran the same set overstates what they compared and contradicts the following sentence."
+    }
+  ],
+  "notes": "Review covers only the commits gained since the prior review at bc6a72ba: 113983753 (fix: merge only declared weights) and e87def46d (docs evidence). e87def46d touches only the evidence fragment, so the code the head gate measured at 113983753 is the reviewed head's code. The prior blocking finding at reckon/crew/queue_admission.py:2168 is repaired: _fair_use_weights now merges flight.declared_project_weights (no defaults) with setdefault and applies project_weights once at the end, so a declaration in any project's config is no longer overwritten by the first queued project's default-filled map. The negative control negative-control-merge.log reinstates the defect (commit 113983753 reverted, new tests kept) and records EXIT=1 with test_a_later_projects_declaration_is_not_lost_to_the_first_projects_default (got {'alpha':1.0,'beta':1.0}) and test_a_declaration_anywhere_in_the_queue_sets_the_split (40 alpha, not 60) failing, neither of which the head arm fails \u2014 so the two added assertions are independent of their inputs and genuinely guard the regression. The third added test (test_no_declaration_anywhere_keeps_the_priority_order) passes on the pre-fix code too and guards the fallback rather than the regression. The base arm was re-measured correctly: base-gate-verified.log names module_file and cwd under the base scratch tree, addressing the prior review's second blocking finding; base 1733 passed / 1 failed (tests/test_routing_picker_key.py::test_dispatch_resolves_routing_key[route-deterministic-alpha-deterministic-False]) and head 1751 passed / 0 failed, both completed with the same tests/conftest.py collection ERROR (scaffolding), giving 0 added failures. Deviation noted for the evidence score: the node's done_when asks for the delta 'measured serially' but both gate arms ran under pytest -n 8, and the done_when's 'weights declared in the flight schema with a default of equal weight' clause is unmet and recorded under outside_scope as owned by the concurrent queue-depth-project-bound schema node. The reckon MCP read_plan timed out twice (storage-slow); the plan section \u00a74 was read directly from docs/plans/a-queue-holds-the-whole-plan.html instead.",
+  "project": "reckon",
+  "review_run_id": "r-20261026T222147034009-review-of-queue-fair-share-by-weight-e87def46d908",
+  "reviewed_base_sha": "bc6a72bac7ad890c925db230a1e13dce878d8c0e",
+  "reviewed_head_sha": "e87def46d908c9eca69b3759d6ddeff49f0496dc",
+  "reviewed_run_id": "r-20261024T230608002476-queue-fair-share-by-weight",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T22:33:29.604689+00:00",
+  "total": 105
+}

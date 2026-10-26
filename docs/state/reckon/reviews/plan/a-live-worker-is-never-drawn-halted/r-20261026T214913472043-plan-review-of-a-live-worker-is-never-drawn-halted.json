@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-26T21:57:09.609Z",
+  "dispatched_at": "2026-10-26T21:50:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-live-worker-is-never-drawn-halted/r-20261026T214913472043-plan-review-of-a-live-worker-is-never-drawn-halted/plan.html:317",
+      "id": "reasoning-1",
+      "reason": "measuring the duty with a reader other than the one that publishes it makes the section's zero uninterpretable (a false positive reads as a surviving defect, or an unrunnable call raises), so the node would either chase a defect that is not there or build the wrong comparison.",
+      "text": "\u00a711 names `recovery_review_dispatch._review_in_flight` as the reader that decides whether a review \"stands for that run\", but the `review-missing` duty is emitted behind `obligations._current_review_in_flight` (obligations.py:432, gating the duty at :540), which first honours the reflex's recorded claim whatever revision the run now carries (`_reflex_review_in_flight`), then excludes queued-phase pointers and requires the review pointer to exist, not be queued, and carry the head-keyed record name the dispatch granted (`_in_flight_review` \u2192 `_review_in_flight` over the queued-filtered set, then the `granted` name check at obligations.py:466-474). `_review_in_flight` alone returns a queued review as in flight and ignores that name check, so the census would count a `review-missing` duty as \"published while a review stood\" in cases the publisher deliberately published it \u2014 a non-zero figure that is not the defect, against a done-when that requires zero \u2014 and its sampler test's only negative arm is \"the review pointer is absent\", which does not exercise either divergence. The section also never says the census must read the reviewed run's own pointer to call that reader: `_review_in_flight(record)` takes the run pointer (it reads `run_id`, the dispatch field, `_review_dispatch_fields(record)[\"project\"]` and `head`), while a duty entry carries `run_id`, `head` and `kind` only.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fdb5c7d13a93f4a11b5a1a67375fde19983eafb075fd0682fcd5be03cb36863b",
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "plan_version": 91,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-26T22:05:56.378559+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "a337e0e6-c34c-4497-878a-bc42ce1b7cf6",
+      "reason": "",
+      "when": "2026-10-26T22:05:56.378559+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-live-worker-is-never-drawn-halted/r-20261026T214913472043-plan-review-of-a-live-worker-is-never-drawn-halted.json",
+  "review_run_id": "r-20261026T214913472043-plan-review-of-a-live-worker-is-never-drawn-halted",
+  "reviewed_blob_sha": "ca57f9aff2c06a7f7b4c890917ee349c6b73ecb4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `scripts/census/death_census.py` and `scripts/census/carryover_census.py` both exist beside the new module, and `ticker.stream_carries` (ticker.py:1363), `ticker._pane_word` (:1346) and `recovery_review_dispatch._review_in_flight` (:491) all resolve.",
+    "done_when": "pass \u2014 \u00a711's measure is quantitative (zero of each counted kind over a stated 24-hour window), and its negative control (the same instrument over the 48 hours ending 2026-10-23T12:37Z reproducing \u00a71's 24 `process_alive: true` halted rows) is a positive control at base that the instrument can fail.",
+    "evidence_paths": "pass \u2014 the samples are written to `~/.cache/reckon-population/a-live-worker-census/review-missing-samples.jsonl`, and `df -T /home/ITER/mcintos/.cache` reports `gpfs`, so the file survives the node; the report lands under `docs/evidence/fragments/...`.",
+    "naming": "pass \u2014 the new module is named by what it does, and the only identifiers the section introduces are the data path and the census directory; no plan label or ticket number reaches a symbol.",
+    "reasoning": "a finding \u2014 \u00a711 decides \"a live review stands for that run\" with `recovery_review_dispatch._review_in_flight`, but the `review-missing` duty it is counting is published by `obligations._current_review_in_flight`, which is a wider reader; the census therefore measures the duty against a predicate its publisher never used.",
+    "single_goal": "pass \u2014 the three nodes \u00a711 describes (instrument+sampler, the coordinator's bounded job, the report) each carry their own done condition, and the section has one verdict: the census figure.",
+    "wiring": "pass \u2014 \u00a711's position (last, after every other section has landed and the producers have reloaded) matches followup f-alwh-005's ordering, and its inputs (`ticker`, the obligations snapshots, the live review pointers) are owned by sections that land before it."
+  },
+  "section_digests": {
+    "_document": "d5e7b26358600d3d834d2dde0de3a226b3197b9bc2d543f22d381ef8ea48a49e",
+    "s1": "fdb0ee3dedcf73cd7c31af5f79b1d6f1be8507f3719e92fd34a61e01cdd35b78",
+    "s10": "70c7adc788727af45a8714a697d6346247fe2103ec92cc0aabe31175592510f3",
+    "s11": "30ecae39e670c5f8776bff1e813816c22732eb476f93141982b2163527581c59",
+    "s12": "a46913a985a58a6d0611fc0648d5e4045d01bfd1e4eb3048257bc574bb1ec912",
+    "s13": "e7c1f4273eb7c1f1e6f812c00a231a7305e1650425ff00af6b9ddc7393bc5c48",
+    "s14": "c9a865797ebfeb76a1768ae28c033ed42a186f2ec3fcd4b6599d9e25692dbb4b",
+    "s15": "96f7bae86410d123869e495106004eada0a3a764c5ecc7dea21cf279ee685aad",
+    "s16": "226b392d3cbe9483faf3eacfa6b4c6168026cb77bfcd440db6d0c4f8637bd0ee",
+    "s17": "4e7def20507d18b41e40d80de1bb146b9747af3a2d3a60303f6ecd8dbfbdb8ea",
+    "s2": "c70702959e42962a53184387993123e6b33693a435a06e946ca449754b33ea68",
+    "s3": "be700141126a9f237bac20562b4dcfad23aac331578ae9436e34181230a8be67",
+    "s4": "789bd707090d33eccd7a114acae9de24ed9233fbe5d4912aa2f82e553ca1c10d",
+    "s5": "729232b3d3df5d38992053380aac95417e0f31e94a46e0fc40b123e1d5d4122e",
+    "s6": "7bacac917ceea413da790f88aade389dde79677d9d8952459a1700a2c2bb3707",
+    "s7": "e0d2472a318e1a27f08abcca88ffe574165e01b272d6138ba68c315ecbfc6f68",
+    "s8": "6b624c6cbe92fe711fc3a9dafd75574d3ef03e725cd3e30db12854627b923470",
+    "s9": "607c5ed638bb7fd894caef6e6fd6331649e3d6efcc2df2b48c1528c827010ae5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T22:03:54.322970+00:00"
+}
