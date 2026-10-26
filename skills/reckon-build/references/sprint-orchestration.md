@@ -744,7 +744,7 @@ Continue through ordinary complexity, validation, and recoverable integration:
 | "This next step is a *different kind* of work" | Not an exemption. §7c's list is closed; a new category is the stop wearing a costume. |
 | "Each fold surfaced another fold" | That is convergence, not creep. See §7d — fold depth carries no stopping authority. |
 | "The handoff is written, the next link is named" | A named next link you could dispatch is a defect, not a deliverable. See §9. |
-| "I am waiting on the node in flight" | One node in flight does not license an idle lane. Dispatch every ready section (below); the lane admits it or queues it. |
+| "I am waiting on the node in flight" | One node in flight does not license an unloaded plan section. Load the remaining implementable width as described below. |
 | "This needs the lead's decision" | First check whether the plan's own rules already decide it. A question the plan answers is not a decision, and holding a node for it is an idle lane. |
 
 Plans do not override global safety or expand user authority. A locked decision
@@ -755,54 +755,24 @@ forward by changing runtime, member, scope, node shape, advice, or experiment,
 repoint and continue. Stop only when progress needs new authority: an external
 prerequisite, user-owned decision, excess spend, or consent for an outward effect.
 
-### An idle lane with ready work is a defect
+### Load the whole plan after the review round
 
-**Every beat, dispatch every ready section; the lane's central queue does the
-ordering, not the coordinator's patience.** The router can only fill the cards
-with work it is given. A coordinator that waits on one node while other sections
-are ready leaves the cards empty, and nothing else will notice: the router reads
-an empty queue as a drained lane, and the derived flow draws a ready plan with
-no run as a "predicted" bar. Measured 2026-10-22 on power_convertor: the local
-lane sat at one request in flight of twelve, with 38 worker slots free and an
-empty router queue. Meanwhile three sections were implementable, dependency-ready
-and gate-clear with no run:
-- one held for a "lead decision" that the plan's own rule already answered;
-- one that was simply never dispatched;
-- a peer's section at the head of the project's 27-hour critical path.
+**Once the plan's review round is answered, size every remaining implementable
+section into nodes and dispatch all of them in one beat, naming no lane.** The
+picker routes each request. The dispatch set includes sections whose upstream
+has not landed; exclude only deferred sections, done sections, and sections with
+a live run. Consult the plan's declared `plan-section-depends-on` waits and give
+each node its own exclusive write scope. A node waiting on an unlanded section
+parks `awaiting-upstream`; admission releases it when that section lands, with
+no new coordinator dispatch. The queue orders only declared waits.
 
-The beat:
-
-1. **Read the ready-idle set.** These are sections that are implementable,
-   dependency-ready, gate-clear and have no live run. Until the roadmap tool
-   serves it as one bounded view, take it from the lossless report and subtract
-   the live runs:
-
-   ```bash
-   reckon roadmap --project <project> --json-output | python3 -c '
-   import json,sys; d=json.load(sys.stdin)
-   for p in d["pending_work"]:
-       ready=set(p.get("ready_sections") or [])&set(p.get("implementable_sections") or [])
-       if ready: print(p.get("slug") or p.get("plan"), sorted(ready), p.get("dependency_readiness"))'
-   ```
-
-   Then subtract each section that `crew(project, view="live")` shows a run on.
-   Also list every plan whose `dependency_readiness` reads `closable`: it needs a
-   close, or a descope decision, from its owner.
-2. **Dispatch your own ready-idle sections, critical-path links first**, within
-   the session's share (`admission.sessions[<session>].worker_slots`). A dispatch
-   the lane cannot admit is queued centrally and launched in fair-share order, so
-   a full lane is a reason to dispatch, never to wait. A plan-wide review gap on a
-   section you are not building is waived with `--allow-unreviewed-plan`, with
-   the reason in `--comment`; compose that review in parallel.
-3. **Name a peer's idle critical-path link to its owner at once.** The critical
-   path is the roadmap's `critical_path.sections`. A link with no run, owned by
-   another coordinator (`crew(view="directory")`), gets a message naming the
-   section, the path length it heads and the free slots. That coordinator may
-   know a prerequisite you do not. Ask, do not assume capacity.
-4. **Report the set in the wave report**, with each idle section's reason if it
-   is not dispatched: an external prerequisite named by ref, a user-owned
-   decision quoted, or a spend hold. An idle section with no stated reason is the
-   defect this rule exists to catch.
+Read `crew view live` for progress and use the build skill's queue edit,
+reprioritise and drop verbs to steer requests before launch. A plan whose
+`dependency_readiness` reads `closable` still needs its owner to close it or
+make a descope decision. Name an unloaded critical-path link owned by a peer to
+that owner. A full lane holds requests in the central queue; it does not narrow
+the plan's dispatch set. Report each excluded section and the reason it is
+deferred, done, or already live.
 
 ### Coordinators waiting on each other is a deadlock, not a schedule
 
