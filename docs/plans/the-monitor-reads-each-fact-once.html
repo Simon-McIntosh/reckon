@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -285,14 +285,27 @@
 <section data-reckon="section" data-id="s10" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p>Today each follower runs <code>resumption.sweep</code> (the review reflex,
     <code>recovery_review_acceptance.dispatch_awaiting_reviews</code>) and settle detection on its own
-    cadence. The station runs both once per change, for every session on the node, on the session's behalf.
-    A run resumed by a coordinator's <code>crew resume --advice</code> starts the same settle window an
-    automatic resume does (old §81).</p>
+    cadence. The station runs both for every session on the node, on the session's behalf: the reflex on
+    each change, and settle detection on each change <em>and</em> on the station's own beat. The beat is
+    needed because a settle window expires on the clock, <code>REVIEW_SETTLE_SECONDS</code> from the run's
+    resume stamp (<code>recovery_review_dispatch.review_settle_seconds_remaining</code>), and a resumed worker
+    that writes nothing produces no change at the moment the window passes.</p>
+    <p>Today the settle reader takes only the sweep's own <code>auto_resume</code> stamp. The advice door in
+    <code>resumption</code> records <code>resume_superseded_head</code> and withdraws a queued review but
+    writes no resume stamp, so an advice-resumed run reads as settled at once. This section makes the advice
+    door write the same stamp the reader takes, so a run resumed by a coordinator's
+    <code>crew resume --advice</code> waits the same settle window an automatic resume does (old §81).</p>
     <p>Done when tests show a delivered run gets exactly one review dispatched with three subscribers
-    attached for its session, and a run resumed by advice is not reviewed until its settle window has passed. Measure: a 60 s
+    attached for its session; a run resumed by advice is not reviewed until its settle window has passed;
+    and a resumed run whose worker writes nothing after the resume is reviewed once the window has passed,
+    with no further change to its files. Measure: a 60 s
     <code>strace -f -e trace=openat,stat,newfstatat</code> of a running settle-aware subscriber names no path under the
     crew home other than the two lease files §8 allows, because settle detection now reads the station.
-    Negative control: running the reflex per subscriber must fail the exactly-one test.</p>
+    Negative controls: running the reflex per subscriber must fail the exactly-one test; an advice door that
+    writes no resume stamp must fail the advice-settle test; a station that evaluates settle only on change
+    must fail the quiet-run test; and the same 60 s trace of a subscriber running today's per-follower settle
+    reader must name the run directories it lists, so a trace naming nothing is shown to be a trace that
+    could have named something.</p>
 
     <h2 id="s11">§11 — A lift row reads as a lift</h2>
 <section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
