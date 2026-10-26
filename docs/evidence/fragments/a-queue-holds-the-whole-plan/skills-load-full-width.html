@@ -1,0 +1,22 @@
+<section id="skills-load-full-width-landing">
+  <h2>The skills load all remaining sections with declared waits</h2>
+  <p>After the plan review round, the build skill and its orchestration reference
+  now dispatch every remaining implementable section in one beat, including
+  sections whose upstream has not landed. They exclude only deferred, done and
+  live-run sections. The build skill describes <code>awaiting-upstream</code>,
+  queue steering and the interim metered-lane re-dispatch rule. Create and edit
+  instruct authors to record consumed section outputs in
+  <code>plan-section-depends-on</code>. Roadmap and repository guidance no longer
+  prescribe dispatching only the ready set on each beat.</p>
+  <p>The new contract check passes all 3 cases at the committed head. Restoring
+  the dependency-ready qualifier makes
+  <code>test_dispatch_set_includes_sections_waiting_for_upstream</code> and
+  <code>test_readiness_reports_do_not_narrow_the_dispatch_set</code> fail
+  (<code>EXIT=1</code>); the unmutated focused arm has <code>EXIT=0</code>.</p>
+  <p>The named gate has 92 passes and one failure at base, then 95 passes and
+  the same single failure at head: zero added failures. The failure is
+  <code>test_every_registered_crew_verb_is_documented_or_exempt</code>. Its
+  station-command assertion conflicts with the other contract test's fixed
+  command list; resolving that test file is outside this node's write scope.
+  The base, head and negative-control logs are in the run directory.</p>
+</section>
