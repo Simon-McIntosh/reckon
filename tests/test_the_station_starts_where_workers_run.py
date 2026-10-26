@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from reckon import checkout_trust
-from reckon.crew import dispatch_watch, fleet_supervisor, station
+from reckon.crew import dispatch_watch, fleet_supervisor, follower_reload, station
 from reckon.crew.host_lease import HostLease
 
 
@@ -124,6 +124,20 @@ def test_station_reloads_from_a_node_local_image(tmp_path: Path, monkeypatch) ->
     monkeypatch.setattr(checkout_trust, "materialize_committed_tree", materialize)
     monkeypatch.setattr(checkout_trust, "reckon_imports", lambda _image: (True, ""))
     executed: list[tuple[list[str], dict[str, str]]] = []
+    recipe_calls: list[str] = []
+    actual_environment = follower_reload.image_reexec_environment
+    actual_argv = follower_reload.image_reexec_argv
+
+    def environment(*args, **kwargs):
+        recipe_calls.append("environment")
+        return actual_environment(*args, **kwargs)
+
+    def argv(*args, **kwargs):
+        recipe_calls.append("argv")
+        return actual_argv(*args, **kwargs)
+
+    monkeypatch.setattr(follower_reload, "image_reexec_environment", environment)
+    monkeypatch.setattr(follower_reload, "image_reexec_argv", argv)
 
     class ReexecutedError(Exception):
         pass
@@ -140,4 +154,5 @@ def test_station_reloads_from_a_node_local_image(tmp_path: Path, monkeypatch) ->
     assert image.is_relative_to(runtime)
     assert str(image) in executed[0][0][2]
     assert executed[0][1][station.SOURCE_ROOT_ENV] == str(source)
+    assert recipe_calls == ["environment", "argv"]
     os.close(int(executed[0][1][station.IMAGE_PIN_ENV]))

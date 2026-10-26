@@ -29,6 +29,45 @@ from typing import Any
 from reckon import checkout_trust
 
 
+def image_reexec_argv(image_root: Path) -> list[str]:
+    """Run the current crew command with its package imported from an image."""
+    launcher = (
+        "import sys; "
+        f"sys.path.insert(0, {str(image_root)!r}); "
+        "from reckon.cli import main; main()"
+    )
+    return [sys.executable, "-c", launcher, *sys.argv[1:]]
+
+
+def image_reexec_environment(
+    source_root: Path,
+    commit: str | None,
+    pin: int | None,
+    *,
+    environment: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Carry an image's source, identity and lease through one in-place exec."""
+    from reckon.crew_follow_commands import (
+        _FOLLOWER_IMAGE_COMMIT_ENV,
+        _FOLLOWER_IMAGE_PIN_ENV,
+        _FOLLOWER_SOURCE_ROOT_ENV,
+        _SHIM_PYTHON_ENV,
+    )
+
+    # The carried identity belongs to the replacement, not children launched
+    # before exec. An image has no project virtualenv, so its shims also need
+    # the interpreter this process already uses.
+    carried = dict(os.environ if environment is None else environment)
+    if commit is not None:
+        carried[_FOLLOWER_SOURCE_ROOT_ENV] = str(source_root)
+        carried[_FOLLOWER_IMAGE_COMMIT_ENV] = commit
+        if pin is not None:
+            os.set_inheritable(pin, True)
+            carried[_FOLLOWER_IMAGE_PIN_ENV] = str(pin)
+        carried.setdefault(_SHIM_PYTHON_ENV, sys.executable)
+    return carried
+
+
 def _probe_retry_jitter(gap: float) -> float:
     """The random part of the wait before a timed-out probe is retried.
 
@@ -275,11 +314,7 @@ class _FollowerReloader:
         from reckon.crew.dispatch import _export_launched_workers_for_reexec
         from reckon.crew_follow_commands import (
             _FOLLOWER_CHECKPOINT_ENV,
-            _FOLLOWER_IMAGE_COMMIT_ENV,
-            _FOLLOWER_IMAGE_PIN_ENV,
             _FOLLOWER_LIFETIME_ENV,
-            _FOLLOWER_SOURCE_ROOT_ENV,
-            _SHIM_PYTHON_ENV,
             FOLLOWER_RELOAD_PROBE_RETRY_CAP_SECONDS,
             FOLLOWER_RELOAD_PROOF_PENDING_SECONDS,
             _dim_history_line,
@@ -432,33 +467,13 @@ class _FollowerReloader:
         _export_launched_workers_for_reexec()
         if self.registration is not None:
             self.registration.prepare_reexec()
-        # A shell commonly supplies only a command name in argv[0], so an
-        # absolute console-script guess cannot identify the code now running.
-        # Lead with the sys.path root that supplied the imported package.
-        launcher = (
-            "import sys; "
-            f"sys.path.insert(0, {str(self.replacement_root)!r}); "
-            "from reckon.cli import main; main()"
+        # The replacement receives the same image identity and launcher as
+        # every other crew process that changes code without changing pid.
+        exec_environment = image_reexec_environment(
+            self.source_root,
+            current_head if current_head == current_stamp else None,
+            self.replacement_pin,
         )
-        # The carried deadline travels in the environment this exec passes,
-        # not in this image's ``os.environ``: a child the follower starts
-        # inherits ``os.environ`` and would otherwise carry a deadline that
-        # bounds nothing it runs. Building the mapping here keeps the arming's
-        # identity separate from every process but the replacement itself.
-        exec_environment = dict(os.environ)
-        if current_head and current_stamp == current_head:
-            exec_environment[_FOLLOWER_SOURCE_ROOT_ENV] = str(self.source_root)
-            exec_environment[_FOLLOWER_IMAGE_COMMIT_ENV] = current_head
-            if self.replacement_pin is not None:
-                os.set_inheritable(self.replacement_pin, True)
-                exec_environment[_FOLLOWER_IMAGE_PIN_ENV] = str(self.replacement_pin)
-            # A reload image holds only the package, so its shims find no
-            # ``.venv`` and fall through to a system Python that cannot import
-            # the package's dependencies. Hand the image the interpreter this
-            # process runs under so every shim it launches starts there instead.
-            # An interpreter a caller already named is left as it stands.
-            if not exec_environment.get(_SHIM_PYTHON_ENV):
-                exec_environment[_SHIM_PYTHON_ENV] = sys.executable
         if not self.seat:
             # The reader's place reaches the replacement image through the
             # mapping this exec passes and never through ``os.environ``: every
@@ -498,12 +513,7 @@ class _FollowerReloader:
         try:
             os.execve(  # noqa: S606 - replacement preserves descriptors and stdout
                 sys.executable,
-                [
-                    sys.executable,
-                    "-c",
-                    launcher,
-                    *sys.argv[1:],
-                ],
+                image_reexec_argv(self.replacement_root),
                 exec_environment,
             )
         except OSError as exc:
@@ -524,7 +534,6 @@ class _FollowerReloader:
             if self.replacement_pin is not None:
                 os.close(self.replacement_pin)
                 self.replacement_pin = None
-
 
 
 class _StampPoll:
@@ -563,4 +572,3 @@ class _StampPoll:
         if self.previous is not None:
             signal.signal(signal.SIGALRM, self.previous)
             self.previous = None
-

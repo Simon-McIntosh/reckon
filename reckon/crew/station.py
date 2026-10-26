@@ -14,18 +14,18 @@ from pathlib import Path
 from typing import Any
 
 from reckon import checkout_trust, flight
-from reckon.crew import recovery, recovery_watch, station_store, ticker
+from reckon.crew import follower_reload, recovery, recovery_watch, station_store, ticker
 from reckon.crew.host_lease import HostLease, local_host
 from reckon.crew.run_paths import crew_home
+from reckon.crew_follow_commands import (
+    _FOLLOWER_IMAGE_COMMIT_ENV as IMAGE_IDENTITY_ENV,
+)
+from reckon.crew_follow_commands import _FOLLOWER_IMAGE_PIN_ENV as IMAGE_PIN_ENV
+from reckon.crew_follow_commands import _FOLLOWER_SOURCE_ROOT_ENV as SOURCE_ROOT_ENV
 
 
 class StationHeldError(RuntimeError):
     """A station already holds this node's writer lease."""
-
-
-SOURCE_ROOT_ENV = "RECKON_STATION_SOURCE_ROOT"
-IMAGE_IDENTITY_ENV = "RECKON_STATION_IMAGE_IDENTITY"
-IMAGE_PIN_ENV = "RECKON_STATION_IMAGE_PIN"
 
 
 def station_lease(root: Path) -> HostLease:
@@ -100,21 +100,13 @@ class StationReloader:
             self.deferred_identity = current
             os.close(pin)
             return
-        os.set_inheritable(pin, True)
-        environment = dict(os.environ)
-        environment[SOURCE_ROOT_ENV] = str(self.source_root)
-        environment[IMAGE_IDENTITY_ENV] = current
-        environment[IMAGE_PIN_ENV] = str(pin)
-        environment.setdefault("RECKON_SHIM_PYTHON", sys.executable)
-        launcher = (
-            "import sys; "
-            f"sys.path.insert(0, {str(image)!r}); "
-            "from reckon.cli import main; main()"
+        environment = follower_reload.image_reexec_environment(
+            self.source_root, current, pin
         )
         try:
             os.execve(  # noqa: S606 - replacement keeps this station's pid
                 sys.executable,
-                [sys.executable, "-c", launcher, *sys.argv[1:]],
+                follower_reload.image_reexec_argv(image),
                 environment,
             )
         except OSError:
