@@ -1,0 +1,6 @@
+<section id="drain-lists-unloaded-landing">
+  <h3 id="drain-lists-unloaded-result">Unloaded sections appear in the drain</h3>
+  <p>The original drain read raised <code>KeyError: 'unloaded'</code> on a fixture plan with three implementable sections. The drain now lists each implementable section whose plan and section identity is absent from live requests and promoted run records. Reading it creates no request pointer.</p>
+  <p>The two-chain fixture dispatched five nodes in five calls before an upstream landed: two heads queued and three tails awaited their upstreams. The sixth implementable section appeared as unloaded, disappeared after dispatch, and stayed absent when its pointer was replaced by a promoted run record. Re-dispatch returned the stored request id without adding a pointer. Admission launched three ready nodes first, then one each after the upstream sections landed.</p>
+  <p>Serial related-test gate: 50 passed at the base revision and 52 passed at the changed revision, with zero added failure ids. The declared mutation listed every implementable section regardless of requests; it failed the stops-being-listed test with <code>EXIT=1</code>, while the unmutated head passed it. Logs: <code>baseline-suite.log</code>, <code>after-suite.log</code> and <code>negative-control.log</code> in the run directory.</p>
+</section>
