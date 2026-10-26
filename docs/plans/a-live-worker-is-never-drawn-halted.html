@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="85">
+<meta name="plan-version" content="86">
 <meta name="plan-modified" content="2026-10-26">
 </head>
 <body>
@@ -543,6 +543,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-close-s15" data-who="reckon-build" data-when="2026-10-26T20:50:00Z">
     <div class="r-comment-body"><p>§15 closed. A delivery already shown is not drawn again once its review starts, and a new attempt's own rows still print. Review 116; population zero over 183 files. <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s15">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261025T015521624493-a-shown-delivery-is-not-drawn-again-after-its-review-starts" data-who="reckon-build" data-when="2026-10-25T02:38:47.953Z">
+    <div class="r-comment-body"><p>The row policy withholds a delivery row for a run whose in-review row it already drew in the open attempt (attempt-keyed memory in `RowPolicy`: `_launches` ordinals plus `_review_started`), so a producer re-sweep no longer draws `in review -&gt; delivered`; a launch released for the run opens the next attempt, so a resumed run&#x27;s own delivery still prints. Gate: new file 3 passed / EXIT=0 at head, base arm 2 failed / 1 passed / EXIT=1, negative control 2 failed / 1 passed / EXIT=1, ticker cohort 684 passed at head against 681 at base.</p></div>
 </div>
 </section>
 </main>
