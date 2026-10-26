@@ -1,0 +1,17 @@
+<section id="skills-drop-session-queue-share-landing">
+  <h2>The build skill states the project queue bound</h2>
+  <p>The <code>queue-full</code> refusal row and the dispatch limit now describe
+    <code>queue.max_requests</code>: 500 queued requests per project by default,
+    across all sessions. A dispatch past the bound is refused naming it, and
+    repeating the same project, plan, section and node returns the existing
+    request. The added skill contract check rejects the stale session-share
+    wording.</p>
+  <p>The five-file gate reached 96 passed and one existing failure; the base
+    arm reached 95 passed, the same failure and one deselected new check, so
+    the failure delta is zero:
+    <code>test_every_registered_crew_verb_is_documented_or_exempt</code> expects
+    <code>reckon crew station</code> in the skill and also fails with the old
+    queue paragraph restored. The new check passes with the replacement text;
+    restoring the old paragraph makes it fail. Ruff check and format check pass
+    on the changed test file.</p>
+</section>
