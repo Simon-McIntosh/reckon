@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="106">
-<meta name="plan-modified" content="2026-10-25">
+<meta name="plan-version" content="107">
+<meta name="plan-modified" content="2026-10-26">
 </head>
 <body>
   <main class="plan-doc">
@@ -158,6 +158,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20261023-s3-deadline" data-who="reckon-build" data-when="2026-10-23T11:00:00Z">
     <div class="r-comment-body"><p>Content review of v5 on 2026-10-23, for the author before §3 is dispatched: the 30 s <code>deadline_seconds</code> is applied by the MCP read wrapper in <code>reckon/mcp_deadlines.py</code> to MCP calls; <code>crew view live</code> run from a shell carries no such bound. State whether §3's done-when measures the MCP read or times the shell command against 30 s.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261025T025352041382-review-of-queue-depth-project-bound-89ba3ba06eb5" data-who="reckon-build" data-when="2026-10-25T03:05:58.708Z">
+    <div class="r-comment-body"><p>Reviewed queue-depth-project-bound at 89ba3ba06 against base 9eb68d63b: goal fully landed (per-project queue.max_requests bound, (plan,section,node id) identity, review exemption moved to the project bound), scores 17/16/19/14/16/8, six added failures all in the out-of-scope stale tests/test_a_queued_dispatch_is_accepted.py, five non-blocking findings and none blocking.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20261023-s4-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content and design reviews on 2026-10-23, for the author before §4 is dispatched: the priority order stated here (critical path, then ROI, then the active sprint) differs from the roadmap's own key, <code>_priority_key</code> in <code>reckon/roadmap_ranking.py</code>, which puts sprint position before ROI, and that key and its signal vocabulary are what §4 should reuse; during the transition <code>_dispatch_lane_allowance</code> in <code>reckon/crew/dispatch_plan.py</code> still holds requests on the router's per-session figure.</p></div>

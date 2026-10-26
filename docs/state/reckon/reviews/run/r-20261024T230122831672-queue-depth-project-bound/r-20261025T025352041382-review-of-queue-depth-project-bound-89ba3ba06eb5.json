@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 6,
+  "added_failure_ids": [
+    "tests/test_a_queued_dispatch_is_accepted.py::test_cap_follows_the_published_share[1-2]",
+    "tests/test_a_queued_dispatch_is_accepted.py::test_cap_follows_the_published_share[3-3]",
+    "tests/test_a_queued_dispatch_is_accepted.py::test_cap_follows_the_published_share[12-8]",
+    "tests/test_a_queued_dispatch_is_accepted.py::test_cap_follows_the_published_share[None-2]",
+    "tests/test_a_queued_dispatch_is_accepted.py::test_cap_follows_the_published_share[unknown-2]",
+    "tests/test_a_queued_dispatch_is_accepted.py::test_a_session_at_its_cap_is_refused_queue_full"
+  ],
+  "added_failures_note": "Derived from the reviewed run's own baseline_suite and after_suite blocks and reconciled against the logs they name. baseline_suite: revision 9eb68d63b (base-tree), exit_status 0, completed true, failure_count 0, log base-delta.log whose tail reads '126 passed in 150.74s' and 'EXIT=0'. after_suite: revision 89ba3ba06, exit_status 1, completed true, failure_count 6, log head-delta.log whose tail reads '6 failed, 120 passed in 155.85s' and 'EXIT=1'. added = after minus before = all six ids, every one in tests/test_a_queued_dispatch_is_accepted.py, the file the reviewed manifest records under outside_scope as still asserting the retired per-session clamp.",
+  "completed_at": "2026-10-25T03:05:58.708Z",
+  "dispatched_at": "2026-10-25T02:56:44Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 643,
+      "severity": "non-blocking",
+      "text": "_resolved_queue_max_requests reads only the project layer (project_config_path then read_layer_file at reckon/crew/runs.py:657-660), so a bound declared in the host or override layer is ignored on every path that reaches it -- reckon/crew/queue_admission.py:386 and reckon/crew/recovery_review_dispatch.py:663 call runs.queue_dispatch with no max_requests -- while the dispatch paths at reckon/crew/dispatch.py:266 pass the fully resolved figure, so one project is bounded by two different numbers depending on which code re-queues the request. flight.resolve at reckon/flight.py:1969 is the owner that merges the layers; probe against the head tree: flight.resolve(overrides={'queue':{'max_requests':7}}, strict=False) carries queue into the merged config and queue_max_requests returns 7, so the divergence is in layer selection alone."
+    },
+    {
+      "file": "reckon/flight.py",
+      "line": 157,
+      "severity": "non-blocking",
+      "text": "The queue namespace is declared in code (QUEUE_KEY, QUEUE_MAX_REQUESTS_KEY, DEFAULT_QUEUE_MAX_REQUESTS) but not in the flight schema, so the setting the docstring at reckon/flight.py:1031 says a host or project layer retunes is an undeclared key wherever a layer is validated. Reproduced against the head tree: flight.resolve(overrides={'queue': {'max_requests': 7}}, strict=True) raises FlightConfigError '<override>: queue: Extra inputs are not permitted', and the non-strict resolution lists queue under unknown_keys, which reckon/project_setup_commands.py:429 surfaces as flight_unknown_keys. Runtime readers still honour the value, so this is a declaration gap rather than a broken bound, and reckon/_flight_schema.py:200 FlightConfig is outside the node's write scope."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 534,
+      "severity": "non-blocking",
+      "text": "existing_node_run's docstring still states 'A node is queued at most once per session while any run of it is queued', which is the rule the same commit retired: the key computed at reckon/crew/runs.py:538 no longer contains the session, and session at :526 is now an unread required keyword. A reader who trusts the docstring infers a per-session dedupe that the code no longer performs -- two sessions naming one section get one request."
+    },
+    {
+      "file": "tests/test_queue_depth_project_bound.py",
+      "line": 112,
+      "severity": "non-blocking",
+      "text": "The 200-request arm calls runs.queue_dispatch directly with no cap, and reckon/crew/runs.py:676 defaults cap to None, so the arm is green if a dispatch path restores the retired session bound -- a regression setting cap=queued_dispatch_cap(...) at reckon/crew/dispatch.py:1864 would leave it passing. The negative control in negative-control.log does fail this arm, but only because the applied mutation installed the clamp inside queue_dispatch itself (its message reads 'session coordinator-session already holds 8 queued runs, at the queue.max_requests bound of 8'), which is not the shape a revert of this node's dispatch.py wiring takes. The arm guards queue_dispatch's own default and not the production path that supplied the cap."
+    },
+    {
+      "file": "tests/test_queue_depth_project_bound.py",
+      "line": 232,
+      "severity": "non-blocking",
+      "text": "The MCP deadline arm asserts only that the answer carries no storage-slow error and that elapsed time is under 30 s, so a read that refused immediately with any other error (an unresolved project, an unknown view) passes without ever having walked the 500 queued pointers. The fixture seeds 500 through _seed_queued at :92 and never asserts the live or obligations answer reports them, so the arm does not show the read saw what it is measuring; a count on the returned payload would make the deadline the only way it can fail."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch.py:266, reckon/crew/dispatch.py:417, reckon/crew/dispatch.py:1864 and reckon/crew/dispatch.py:1936 pass max_requests into queue_dispatch; reckon/crew/queue_admission.py:386 and reckon/crew/recovery_review_dispatch.py:663 call runs.queue_dispatch with no bound and therefore reach the _resolved_queue_max_requests fallback; reckon/crew_dispatch_commands.py:2089 renders the QueueFull refusal as the queue-full payload; reckon/crew/runs.py:523 existing_node_run is the lookup keyed on the new identity; reckon/crew/recovery_classification.py:146 reads QueueFull by class name for the waiting reading.",
+    "diff": "Read commit by commit against base 9eb68d63b: c530fd61d is the bound, the identity change and the review exemption in reckon/crew/runs.py, reckon/crew/dispatch.py and reckon/flight.py; fdbb4cd15 is the landing fragment; ca382d7d9 carries the asking session into the QueueFull payload; 89ba3ba06 moves existing_node_run onto the same (plan, section, node id) key the queue's identity now uses, with no other file touched.",
+    "done_when": "The done_when names seven measurements. tests/test_queue_depth_project_bound.py carries an arm for each of the first six, and the seventh is a two-part clause: the serial delta is recorded (base-delta.log 126 passed EXIT=0 at 9eb68d63b, head-delta.log 6 failed 120 passed EXIT=1 at 89ba3ba06) and ruff check plus ruff format --check pass on the four changed paths, which the manifest does not record and I verified myself at head with all four files clean.",
+    "goal": "The goal is to replace the per-session queued-dispatch clamp with a per-project bound and deduplicate queued requests; all three clauses are landed in the diff: QUEUED_DISPATCH_CAP_FLOOR, QUEUED_DISPATCH_CAP_CEILING and queued_dispatch_cap are gone from reckon/crew/runs.py, reckon/flight.py:1031 queue_max_requests reads queue.max_requests with DEFAULT_QUEUE_MAX_REQUESTS 500, and reckon/crew/runs.py:666 queue_dispatch bounds by project and identifies a request on (plan, section, node id).",
+    "manifest": "Read; status complete with commits c530fd61d, fdbb4cd15, ca382d7d9, 89ba3ba06, a tests line naming the gate command, and baseline_suite/after_suite JSON blocks that reconcile with the tails of base-delta.log and head-delta.log; it leaves the done_when's ruff clause unrecorded and names only the stale test file under outside_scope.",
+    "write_paths": "The declared paths are reckon/crew/runs.py, reckon/crew/dispatch.py, reckon/flight.py, tests/test_queue_depth_project_bound.py, the landing fragment and a figures directory; git diff --stat 9eb68d63b..89ba3ba06 lists exactly five files -- the three modules, the test file and the fragment -- 422 insertions and 101 deletions, nothing outside the declared scope and no figure."
+  },
+  "justifications": {
+    "durability": "Six arms redden on a real regression -- the 501st-refusal arm fails where no bound exists, tests/test_queue_depth_project_bound.py:129 fails if the session returns to the identity, :175 fails if the review exemption is withdrawn -- but the 200-request arm at :112 supplies no cap so it stays green if a dispatch path restores one, and the deadline arm at :232 has no positive control.",
+    "evidence": "The gate measures the done_when arm by arm -- tests/test_queue_depth_project_bound.py:112 reaches 200 without a refusal, :146 refuses the 501st with held=500 and the bound named, :175 and :187 cover the review exemption -- and reports '8 passed in 121.12s' EXIT=0 at head, but the manifest records no ruff result the done_when also requires, and its deadline arm at :232 asserts only the absence of the storage-slow error.",
+    "fit": "reckon/flight.py:1031 mirrors the surrounding run_file_max_mb and sprint_recent_days getters in the same module and no changed path, symbol or comment carries a plan, version or ticket label, but reckon/crew/runs.py:534 still tells a reader a node is queued once per session, which the change retires.",
+    "goal_fidelity": "reckon/crew/runs.py:666 bounds the queue per project at queue.max_requests, reckon/crew/runs.py:429 _node_identity returns (plan, section, node id) so a repeated request returns the existing pointer, and reckon/flight.py:1031 supplies the 500 default, which is every clause of the goal.",
+    "reuse": "reckon/crew/runs.py:643 _resolved_queue_max_requests resolves the setting itself from the project layer alone rather than through flight.resolve at reckon/flight.py:1969, the owner that merges shipped, host, project and override layers, so it repeats the owner's layer policy and diverges from it.",
+    "scope_discipline": "Every path in the diff is inside the manifest's declared write paths, and the diff carries nothing the goal does not imply beyond an optional `cap` argument at reckon/crew/runs.py:666 retained for callers that impose their own session bound."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261025T025352041382-review-of-queue-depth-project-bound-89ba3ba06eb5",
+  "reviewed_base_sha": "9eb68d63b585b51e4ebb5701842ee0de4c2d42e3",
+  "reviewed_head_sha": "89ba3ba06eb559542c15fe6dc3209be0e8886b18",
+  "reviewed_run_id": "r-20261024T230122831672-queue-depth-project-bound",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 8,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T20:35:16.595255+00:00",
+  "total": 90
+}
