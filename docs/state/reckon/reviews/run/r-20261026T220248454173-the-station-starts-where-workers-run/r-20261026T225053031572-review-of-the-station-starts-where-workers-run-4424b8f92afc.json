@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:46 the `crew station` verb calls station.run_station",
+    "reckon/crew/dispatch.py:384 dispatch calls dispatch_watch._ensure_watch_producer, which now calls _ensure_node_station at reckon/crew/dispatch_watch.py:442",
+    "reckon/crew/watch_unit.py:682 the watch-unit path calls dispatch._ensure_watch_producer",
+    "reckon/crew/fleet_supervisor.py:2053/2064/2084 and :1941 serve() and handle_line drive StationProcess.ensure on every supervisor pass and on a `station` request"
+  ],
+  "completed_at": "2026-10-26T23:01:29.003Z",
+  "dispatched_at": "2026-10-26T22:52:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "1876",
+      "severity": "non-blocking",
+      "text": "non-blocking: StationProcess compares the station lease's host against _short_hostname() while reckon/crew/station.py:37 writes socket.gethostname(); on this node that is 98dci4-clu-2068 versus 98dci4-clu-2068.iter.org, so the own-host branch (and the os.kill liveness probe and stale-holder release it carries) is never taken and a live local station falls through the :1885 `elif holder is not None: return`. The supervisor still behaves correctly by accident, but a station that died is only respawned after the 30 s staleness window rather than at once, and the added branch cannot be exercised in production."
+    },
+    {
+      "file": "tests/test_the_station_starts_where_workers_run.py",
+      "line": "88",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_fleet_supervisor_starts_only_one_station's second ensure() returns on the instance's own live handle (fleet_supervisor.py:1866 `self.process.poll() is None`) and never reaches the node-lease read the one-station-per-node claim rests on, so deleting the holder check at fleet_supervisor.py:1872-1889 would leave this test green; only test_one_station_per_node_runs_the_tick.py:121 covers a second process refusing, and that is the station's own lease path, not the supervisor's."
+    },
+    {
+      "file": "tests/test_the_station_starts_where_workers_run.py",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_dispatch_watch_ensures_station_before_producer asserts only that the station ensure was called once; nothing in it shows the call preceded the producer arming, so a regression that moved _ensure_node_station to the end of _ensure_watch_producer would pass under a name that claims ordering."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "non-blocking: StationReloader re-implements the re-exec-into-a-materialised-committed-image recipe that reckon/crew/follower_reload.py:499 already owns, including its own environment-name set and launcher string, rather than extending or extracting the owner; the image machinery it calls (checkout_trust.materialize_committed_tree, source_code_identity, refresh_materialized_tree_pin) is properly reused, so the duplication is the exec/argv/environment recipe rather than the capability's core."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T220248454173-the-station-starts-where-workers-run/importers-head-local.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T220248454173-the-station-starts-where-workers-run/importers-base.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_follow_commands.py:46, reckon/crew/dispatch.py:384 through dispatch_watch.py:442, reckon/crew/watch_unit.py:682, and the fleet_supervisor.py:1941/2053/2064/2084 StationProcess.ensure sites are the runtime paths that reach the landed change.",
+    "diff": "Read all four commits from eb125341a812bf7ed9d3d491ef20eca4453afbb0 to 4424b8f92afcf93ce089143495d3b8a6223b7b85: 295527e65 replaces station.py's fcntl node_lock with HostLease and adds StationReloader, 17e9c5f31 adds dispatch_watch._ensure_node_station and fleet_supervisor.StationProcess, a0499b06d and 4424b8f92 carry the evidence fragment only (405 insertions, 31 deletions across six files, none of them code-bearing outside the first two commits).",
+    "done_when": "The done_when's parts each land: station.py:34-38 builds the lease and :221-231 claims it, station.py:29-46 no longer holds an fcntl lock (git grep at head finds node_lock only in a test's assertion that station.lock is absent), tests/test_one_station_per_node_runs_the_tick.py:124-126 asserts the second station names the holder's host and pid and that leases/station.json exists, dispatch_watch.py:475-517 and fleet_supervisor.py:1840-1915 start one station, and station.py:56-120 reloads from an image under the runtime root; the matched importer arms read 7 failed/377 passed at base against 384 passed at head.",
+    "goal": "The node's goal is that the station holds its node lock through host_lease.HostLease, is started where workers run, and reloads onto new code from a reload image under the node-local runtime root; reckon/crew/station.py:32-41, reckon/crew/dispatch_watch.py:475-517 and reckon/crew/fleet_supervisor.py:1840-1915 deliver all three.",
+    "manifest": "Read the source manifest; it names commits 295527e65, 17e9c5f31, a0499b06d and 4424b8f92, records importers-base.log at 7 failed/377 passed against importers-head-local.log at 384 passed/0 failed with the two arm commands spelled in full, names both baseline_suite and after_suite with exit statuses and log paths, and records negative-controls.log at 2 failed EXIT=1.",
+    "write_paths": "The source brief grants seven paths under reckon/crew/, tests/ and docs/evidence/fragments/; git diff --name-only eb125341a..4424b8f92 changes exactly the six files inside that set and nothing else, and the declared figure directory is untouched as the brief requires."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_starts_where_workers_run.py:16-41 and :92-133 redden if the station ensure or the reload are removed, but :88 never reaches the lease check it is named for and the reload test supplies its own runtime root, so the runtime-root and second-process guards a regression could break are only covered by tests/test_one_station_per_node_runs_the_tick.py:121.",
+    "evidence": "importers-base.log ends '7 failed, 377 passed' EXIT=1 and importers-head-local.log ends '384 passed' EXIT=0 over the same 35 test files, giving zero head-only failure ids, and re-running tests/test_the_station_starts_where_workers_run.py at 4424b8f92 passed 4 tests, but the done_when asks the reload image be shown under the root session_host_runtime_candidate resolves and tests/test_the_station_starts_where_workers_run.py:120 passes its own tmp_path runtime instead.",
+    "fit": "reckon/crew/station.py:32-41 follows the HostLease idiom already used at reckon/crew/watch_unit.py:32 and reckon/crew/fleet_supervisor.py:1188 and the reload reuses checkout_trust rather than a hand-rolled git read, though station.py:98-104 mutates the module-private checkout_trust._committed_tree_cache to redirect the image directory, which no other caller does.",
+    "goal_fidelity": "reckon/crew/station.py:32-41 and :219-260 make HostLease the station's only writer claim, reckon/crew/dispatch_watch.py:442 and reckon/crew/fleet_supervisor.py:2053 put the station where workers run, and reckon/crew/station.py:56-120 re-executes from an image under store.root, which is the node-local runtime root station_store.at_runtime_root resolves.",
+    "reuse": "the capability search over reckon/crew for image replacement found reckon/crew/follower_reload.py:499 owning the materialise-then-execve recipe and reckon/checkout_trust.py owning the image machinery; station.py reuses the checkout_trust half properly but writes a second exec/environment recipe of its own.",
+    "scope_discipline": "git diff --name-only eb125341a..4424b8f92 lists six paths, every one inside the seven the brief granted, and the only non-code file is the landing fragment the brief always permits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the station holds its node lock through host_lease.HostLease, is started where workers run, and reloads onto new code from a reload image under the node-local runtime root; reckon/crew/station.py:32-41, reckon/crew/dispatch_watch.py:475-517 and reckon/crew/fleet_supervisor.py:1840-1915 deliver all three.\nVERDICT done_when: The done_when's parts each land: station.py:34-38 builds the lease and :221-231 claims it, station.py:29-46 no longer holds an fcntl lock (git grep at head finds node_lock only in a test's assertion that station.lock is absent), tests/test_one_station_per_node_runs_the_tick.py:124-126 asserts the second station names the holder's host and pid and that leases/station.json exists, dispatch_watch.py:475-517 and fleet_supervisor.py:1840-1915 start one station, and station.py:56-120 reloads from an image under the runtime root; the matched importer arms read 7 failed/377 passed at base against 384 passed at head.\nVERDICT write_paths: The source brief grants seven paths under reckon/crew/, tests/ and docs/evidence/fragments/; git diff --name-only eb125341a..4424b8f92 changes exactly the six files inside that set and nothing else, and the declared figure directory is untouched as the brief requires.\nVERDICT manifest: Read the source manifest; it names commits 295527e65, 17e9c5f31, a0499b06d and 4424b8f92, records importers-base.log at 7 failed/377 passed against importers-head-local.log at 384 passed/0 failed with the two arm commands spelled in full, names both baseline_suite and after_suite with exit statuses and log paths, and records negative-controls.log at 2 failed EXIT=1.\nVERDICT diff: Read all four commits from eb125341a812bf7ed9d3d491ef20eca4453afbb0 to 4424b8f92afcf93ce089143495d3b8a6223b7b85: 295527e65 replaces station.py's fcntl node_lock with HostLease and adds StationReloader, 17e9c5f31 adds dispatch_watch._ensure_node_station and fleet_supervisor.StationProcess, a0499b06d and 4424b8f92 carry the evidence fragment only (405 insertions, 31 deletions across six files, none of them code-bearing outside the first two commits).\nCALL_SITES: reckon/crew_follow_commands.py:46, reckon/crew/dispatch.py:384 through dispatch_watch.py:442, reckon/crew/watch_unit.py:682, and the fleet_supervisor.py:1941/2053/2064/2084 StationProcess.ensure sites are the runtime paths that reach the landed change.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:32-41 and :219-260 make HostLease the station's only writer claim, reckon/crew/dispatch_watch.py:442 and reckon/crew/fleet_supervisor.py:2053 put the station where workers run, and reckon/crew/station.py:56-120 re-executes from an image under store.root, which is the node-local runtime root station_store.at_runtime_root resolves.\nSCORE evidence: 16\nJUSTIFICATION evidence: importers-base.log ends '7 failed, 377 passed' EXIT=1 and importers-head-local.log ends '384 passed' EXIT=0 over the same 35 test files, giving zero head-only failure ids, and re-running tests/test_the_station_starts_where_workers_run.py at 4424b8f92 passed 4 tests, but the done_when asks the reload image be shown under the root session_host_runtime_candidate resolves and tests/test_the_station_starts_where_workers_run.py:120 passes its own tmp_path runtime instead.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only eb125341a..4424b8f92 lists six paths, every one inside the seven the brief granted, and the only non-code file is the landing fragment the brief always permits.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_station_starts_where_workers_run.py:16-41 and :92-133 redden if the station ensure or the reload are removed, but :88 never reaches the lease check it is named for and the reload test supplies its own runtime root, so the runtime-root and second-process guards a regression could break are only covered by tests/test_one_station_per_node_runs_the_tick.py:121.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/station.py:32-41 follows the HostLease idiom already used at reckon/crew/watch_unit.py:32 and reckon/crew/fleet_supervisor.py:1188 and the reload reuses checkout_trust rather than a hand-rolled git read, though station.py:98-104 mutates the module-private checkout_trust._committed_tree_cache to redirect the image directory, which no other caller does.\nSCORE reuse: 13\nJUSTIFICATION reuse: the capability search over reckon/crew for image replacement found reckon/crew/follower_reload.py:499 owning the materialise-then-execve recipe and reckon/checkout_trust.py owning the image machinery; station.py reuses the checkout_trust half properly but writes a second exec/environment recipe of its own.\nFINDING reckon/crew/fleet_supervisor.py:1876 non-blocking: StationProcess compares the station lease's host against _short_hostname() while reckon/crew/station.py:37 writes socket.gethostname(); on this node that is 98dci4-clu-2068 versus 98dci4-clu-2068.iter.org, so the own-host branch (and the os.kill liveness probe and stale-holder release it carries) is never taken and a live local station falls through the :1885 `elif holder is not None: return`. The supervisor still behaves correctly by accident, but a station that died is only respawned after the 30 s staleness window rather than at once, and the added branch cannot be exercised in production.\nFINDING tests/test_the_station_starts_where_workers_run.py:88 non-blocking: test_fleet_supervisor_starts_only_one_station's second ensure() returns on the instance's own live handle (fleet_supervisor.py:1866 `self.process.poll() is None`) and never reaches the node-lease read the one-station-per-node claim rests on, so deleting the holder check at fleet_supervisor.py:1872-1889 would leave this test green; only test_one_station_per_node_runs_the_tick.py:121 covers a second process refusing, and that is the station's own lease path, not the supervisor's.\nFINDING tests/test_the_station_starts_where_workers_run.py:61 non-blocking: test_dispatch_watch_ensures_station_before_producer asserts only that the station ensure was called once; nothing in it shows the call preceded the producer arming, so a regression that moved _ensure_node_station to the end of _ensure_watch_producer would pass under a name that claims ordering.\nFINDING reckon/crew/station.py:56 non-blocking: StationReloader re-implements the re-exec-into-a-materialised-committed-image recipe that reckon/crew/follower_reload.py:499 already owns, including its own environment-name set and launcher string, rather than extending or extracting the owner; the image machinery it calls (checkout_trust.materialize_committed_tree, source_code_identity, refresh_materialized_tree_pin) is properly reused, so the duplication is the exec/argv/environment recipe rather than the capability's core.\n",
+  "review_run_id": "r-20261026T225053031572-review-of-the-station-starts-where-workers-run-4424b8f92afc",
+  "reviewed_base_sha": "eb125341a812bf7ed9d3d491ef20eca4453afbb0",
+  "reviewed_head_sha": "4424b8f92afcf93ce089143495d3b8a6223b7b85",
+  "reviewed_run_id": "r-20261026T220248454173-the-station-starts-where-workers-run",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T22:58:41.220878+00:00",
+  "total": 97
+}
