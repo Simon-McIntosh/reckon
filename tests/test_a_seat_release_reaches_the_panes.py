@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 
 from reckon._store import _config_home
+from reckon import crew_follow_commands
 from reckon.crew import runs, ticker, watch_unit
 
 PROJECT = "a-seat-release-reaches-the-panes"
@@ -147,6 +148,10 @@ def test_the_row_policy_prints_the_seat_move_once_under_its_own_word(
 
     rows = _stream_rows(PROJECT)
     assert len(rows) == 1, rows
+
+    # The row names no session, so a session-scoped follower admits it: a seat
+    # moving is the project's news rather than one session's.
+    assert crew_follow_commands._follow_selects(rows[0], session="s-any")
 
     path = ticker.PaneRowPath(own_session="s-any")
     printed = path.feed(rows[0], now=0.0)

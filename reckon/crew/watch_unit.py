@@ -410,8 +410,6 @@ def seat_moved_row(project: str, verdict: Mapping[str, Any]) -> dict[str, Any]:
     return row
 
 
-
-
 def announce_seat_moved(project: str, verdict: Mapping[str, Any]) -> None:
     """Append the seat-moved row to the project's watch stream.
 
