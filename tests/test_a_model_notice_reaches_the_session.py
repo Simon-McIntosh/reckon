@@ -19,7 +19,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from reckon.crew import model_catalogue, recovery_watch
+from reckon.crew import model_catalogue, recovery_watch, runs
 from reckon.hooks import coordinator_obligations
 from tests.conftest import real_store_home, real_store_is_not_a_fixture_target
 
@@ -148,8 +148,19 @@ def _drive_producer(
         yield (True, "watcher")
 
     class _Producers(dict):
+        """The seat's registry, interned with the record the seat itself builds.
+
+        A case that stubs the seat still registers a producer the loop and its
+        teardown read; the real record keeps a field the producer gains later
+        from arriving as a missing attribute at teardown.
+        """
+
         def __missing__(self, key):
-            value = SimpleNamespace(seeded_states={}, sweep_thread=None)
+            value = runs._WatchStreamProducer(
+                path=runs.watch_stream_path(key),
+                known={},
+                stall_window=runs.DEFAULT_WATCH_STALL_WINDOW,
+            )
             self[key] = value
             return value
 
