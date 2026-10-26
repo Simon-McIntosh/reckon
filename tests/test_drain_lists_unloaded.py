@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -156,8 +157,36 @@ def test_whole_width_stores_once_and_releases_in_dependency_order(
 
     row = ledger.run_path(fixtures.PROJECT, "r-landed")
     row.parent.mkdir(parents=True, exist_ok=True)
-    row.write_text(
-        json.dumps({"run_id": "r-landed", "plan": fixtures.PLAN, "section": "s6"})
-    )
+
+    def record(revision: str | None) -> None:
+        row.write_text(
+            json.dumps(
+                {
+                    "run_id": "r-landed",
+                    "plan": fixtures.PLAN,
+                    "section": "s6",
+                    **({"promoted_revision": revision} if revision else {}),
+                }
+            )
+        )
+
+    record(None)
     runs.pointer_path("r-sixth").unlink()
+    assert runs.drain(fixtures.PROJECT)["unloaded"] == {fixtures.PLAN: ["s6"]}
+
+    tree = subprocess.check_output(
+        ["git", "rev-parse", "HEAD^{tree}"], cwd=chain_repo, text=True
+    ).strip()
+    unrelated = subprocess.check_output(
+        ["git", "commit-tree", tree, "-m", "chore: alternate fixture root"],
+        cwd=chain_repo,
+        text=True,
+    ).strip()
+    record(unrelated)
+    assert runs.drain(fixtures.PROJECT)["unloaded"] == {fixtures.PLAN: ["s6"]}
+
+    landed = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=chain_repo, text=True
+    ).strip()
+    record(landed)
     assert runs.drain(fixtures.PROJECT)["unloaded"] == {}
