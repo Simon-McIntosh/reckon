@@ -139,11 +139,11 @@ def test_one_session_queues_two_hundred_requests_without_a_refusal(
 ) -> None:
     """A session's depth is bounded by its project, never by its own share.
 
-    The arm that fails if the per-session clamp returns: at a floor of two the
-    ninth dispatch is refused, and this loop reaches two hundred.
+    The arm that fails if the per-session clamp returns: the published share
+    exceeds its ceiling, so the ninth dispatch is refused under that clamp.
     """
     repo = dispatch_tests.dispatch_repo.__wrapped__(tmp_path, monkeypatch)
-    dispatch_tests._config(repo, monkeypatch, fair_share=2)
+    dispatch_tests._config(repo, monkeypatch, fair_share=12)
     for index in range(200):
         result = dispatch_tests._dispatch(repo, f"node-{index:03d}")
         payload = backend_tests._payload(result)
