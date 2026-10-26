@@ -59,17 +59,28 @@
     changing the weights to 1:1.</figcaption>
   </figure>
 
-  <p><strong>The delta.</strong> The base arm runs the files that import
-  <code>queue_admission</code>, <code>dispatch_plan</code> or
-  <code>reckon.flight</code> from the base revision. The head arm runs that
-  population plus <code>tests/test_queue_weighted_fair_share.py</code>, which
-  does not exist at base. Each arm runs from its own tree with that tree's
-  module imported (<code>module.__file__</code> recorded in the log header).
-  The current base and head gate receipts are in the run manifest.
+  <p><strong>The delta.</strong> A completed serial base arm runs six named
+  queue, dispatch and flight test files from the merge parent: 139 passed.
+  The head arm runs those six files plus
+  <code>tests/test_queue_weighted_fair_share.py</code>, which does not exist at
+  base: 163 passed, with no added failures. Both logs name the source tree and
+  each imported module's <code>__file__</code>. The wider importer population
+  was also attempted serially — 143 files at base, 144 at head — but the base
+  arm reached its 20-minute bound without a summary, so it yields no delta
+  verdict. Its logs remain in the run directory.
 
   <p><strong>Configuration and view.</strong> The flight schema now declares
   <code>queue.project_weights</code> beside <code>queue.max_requests</code>,
   and strict resolution accepts a 3:1 map. Queue placements use the weighted
   launch sequence for their positions and name each project's weight in the
-  reason shown to the reader.
+  reason shown to the reader. A view that only reads weights resolves project
+  configuration without requiring a local backend declaration; the two view
+  tests that exposed that requirement now pass.
+
+  <p><strong>Remaining review path.</strong> A held review still calls
+  <code>_dispatch_lane_allowance</code> without the weights flag in a file
+  outside this worker's grant. A bounded probe with 3:1 weights, four lane-wide
+  slots and zero per-session slots returns <code>'local'</code> as held when the
+  weighted lane-wide rule would leave it open. The reproduction is in the run
+  directory for a scoped repair.
 </section>
