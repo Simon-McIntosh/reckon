@@ -1026,14 +1026,17 @@ def run_file_max_mb(config: Mapping[str, Any] | None) -> int:
     return int(value)
 
 
-def _declared_project_weights(
+def declared_project_weights(
     config: Mapping[str, Any] | None,
 ) -> dict[str, float]:
     """The project weights one resolved configuration declares.
 
-    A weight that is not a positive finite number is treated as absent rather
-    than read as zero: a zero-weight project would never launch, and a weight is
-    a share of the lane rather than a switch.
+    Only the projects the configuration actually names are returned, with no
+    default filled in, so a caller merging several configurations' declarations
+    can tell a declared weight from an absent one. A weight that is not a
+    positive finite number is treated as absent rather than read as zero: a
+    zero-weight project would never launch, and a weight is a share of the lane
+    rather than a switch.
     """
     queue = (config or {}).get(QUEUE_KEY)
     declared = (
@@ -1064,7 +1067,7 @@ def project_weights(
     admission order it had. Every project named in ``projects`` is returned, so
     a caller reads one figure for every project it is about to rank.
     """
-    weights = _declared_project_weights(config)
+    weights = declared_project_weights(config)
     return {
         str(project): weights.get(str(project), DEFAULT_PROJECT_WEIGHT)
         for project in projects
@@ -1078,7 +1081,7 @@ def fair_use_weights_configured(config: Mapping[str, Any] | None) -> bool:
     because the split between sessions is then reckon's own setting rather than
     the router's per-session share.
     """
-    return bool(_declared_project_weights(config))
+    return bool(declared_project_weights(config))
 
 
 def _review_owned_key_shape_is_valid(shape: str, value: Any) -> bool:

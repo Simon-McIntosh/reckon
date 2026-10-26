@@ -238,6 +238,57 @@ def test_weights_configured_reads_the_lane_wide_worker_slots(tmp_path) -> None:
     assert decision["held"] is False
 
 
+def test_a_later_projects_declaration_is_not_lost_to_the_first_projects_default() -> (
+    None
+):
+    pointers = [
+        {"project": "alpha", "session": "coordinator-a"},
+        {"project": "beta", "session": "coordinator-a"},
+    ]
+
+    def config_for(pointer: dict[str, Any]) -> dict[str, Any]:
+        if pointer["project"] == "alpha":
+            return {}
+        return {"queue": {"project_weights": {"alpha": 3, "beta": 1}}}
+
+    weights = queue_admission._fair_use_weights(pointers, config_for=config_for)
+
+    assert weights == {"alpha": 3.0, "beta": 1.0}
+
+
+def test_a_declaration_anywhere_in_the_queue_sets_the_split() -> None:
+    start = datetime(2026, 10, 26, tzinfo=UTC)
+    queued = [
+        *_queue("alpha", 100, start=start),
+        *_queue("beta", 100, start=start + timedelta(seconds=100)),
+    ]
+
+    def config_for(pointer: dict[str, Any]) -> dict[str, Any]:
+        if pointer["project"] == "alpha":
+            return {}
+        return _config({"alpha": 3.0, "beta": 1.0})
+
+    sequence = queue_admission.fair_share_admission_order(
+        queued,
+        [],
+        now=start + timedelta(minutes=1),
+        config_for=config_for,
+    )
+    launches = [str(pointer["project"]) for pointer in sequence[:80]]
+
+    assert launches.count("alpha") == 60
+    assert launches.count("beta") == 20
+
+
+def test_no_declaration_anywhere_keeps_the_priority_order() -> None:
+    pointers = [
+        {"project": "alpha", "session": "coordinator-a"},
+        {"project": "beta", "session": "coordinator-a"},
+    ]
+
+    assert queue_admission._fair_use_weights(pointers, config_for=lambda _p: {}) is None
+
+
 def test_without_weights_the_session_share_still_governs(tmp_path) -> None:
     backend = _backend(tmp_path, lane_wide=6, session_share=1)
 

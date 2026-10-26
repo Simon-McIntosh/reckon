@@ -2141,9 +2141,13 @@ def _fair_use_weights(
     """Each project's declared fair-use weight, or ``None`` when none is set.
 
     The weights live in flight configuration, so they are resolved through the
-    same per-project config the pass reads for every other question. ``None``
-    is what tells the pass to keep the plain admission order: a configuration
-    that declares no weight keeps exactly the order it had.
+    same per-project config the pass reads for every other question. Only the
+    weights each config actually declares are merged, first declaration winning,
+    and the equal default is applied once at the end: merging completed weight
+    maps instead would let whichever project came first in the queue fix every
+    other project's weight at the default. ``None`` is what tells the pass to
+    keep the plain admission order: a configuration that declares no weight
+    keeps exactly the order it had.
     """
     from reckon import flight as flight_module
 
@@ -2159,17 +2163,18 @@ def _fair_use_weights(
             if config_for is not None
             else _resolve_lane_config(pointer)
         )
-    if not any(
-        flight_module.fair_use_weights_configured(config) for config in configs.values()
-    ):
-        return None
-    weights: dict[str, float] = {}
+    declared: dict[str, float] = {}
     for project in projects:
-        for name, weight in flight_module.project_weights(
-            configs[project], projects
+        for name, weight in flight_module.declared_project_weights(
+            configs[project]
         ).items():
-            weights.setdefault(name, weight)
-    return weights
+            declared.setdefault(name, weight)
+    if not declared:
+        return None
+    return flight_module.project_weights(
+        {flight_module.QUEUE_KEY: {flight_module.QUEUE_PROJECT_WEIGHTS_KEY: declared}},
+        projects,
+    )
 
 
 def weighted_project_order(
