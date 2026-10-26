@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="119">
+<meta name="plan-version" content="120">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -320,6 +320,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-close-s16" data-who="" data-when="">
     <div class="r-comment-body"><p>Landed at merge <code>52228208a</code>: coordinators are told to load a plan's full width in one beat, and the global guidelines match. Live sessions pick it up on their next <code>/reckon-build</code> call. <a href="/reckon/evidence/archive/a-queue-holds-the-whole-plan-landed.html#s16-skills-load-full-width">Landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s11-blocked-is-not-abandoned" data-who="" data-when="">
+    <div class="r-comment-body"><p>Defect found on 27 October, while dogfooding the full-width load. <code>RUN_FAILED_STATUSES</code> in <code>reckon/crew/queue_admission.py</code> includes <code>blocked</code>. A request waiting <code>--after</code> a run whose manifest reads <code>blocked</code> therefore moves to <code>blocked-upstream</code>, as if the run were abandoned. A blocked run is resumable: it is waiting on its coordinator (measured with reckon-e0's §13 behind <code>queue-fair-share-by-weight</code>, which was blocked only on a scope grant). Each admission pass re-derives the phase, so the request recovers once the run delivers. Until then it reads as dead in the obligations and drain views. The fix belongs with §11's stranding rules: a <code>blocked</code> manifest is pending, and only <code>failed</code>, <code>abandoned</code> or a discard abandons a wait.</p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261026T222758737633-review-of-skills-load-full-width-90ba5ad62bdb" data-who="reckon-build" data-when="2026-10-26T22:43:11Z">
     <div class="r-comment-body"><p>Independent review parsed at base 46639488 and head 90ba5ad; six scores recorded, zero added failures, and two non-blocking findings.</p></div>
