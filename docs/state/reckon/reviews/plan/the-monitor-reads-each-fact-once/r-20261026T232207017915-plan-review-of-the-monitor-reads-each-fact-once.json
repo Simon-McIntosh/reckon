@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-26T23:30:09.662Z",
+  "dispatched_at": "2026-10-26T23:23:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:249",
+      "id": "reasoning-1",
+      "reason": "without a statement that settle detection and the sweep leave the follower (or an s8\u2192\u00a710 dependency), the section's own trace measure cannot pass on the subscriber it deploys, so the node either fails its gate or reaches into \u00a710's mechanism.",
+      "text": "\u00a78 states \"The follower computes no snapshot, reads nothing on GPFS\" and its measure at :264 requires a 60 s `strace -f -e trace=openat,stat,newfstatat` of a running subscriber to name no path under the crew home other than the two lease files, but the deployed subscriber is settle-aware (`settle: bool = False` defaults off, yet the session host runs settle-aware followers): `_check_settle` (reckon/crew_follow_commands.py:1517) samples every `FOLLOWER_SETTLE_SAMPLE_SECONDS = 1.0` (:312) and calls `_population_has_live_work` (:1508) -> `runs._list_live_records` (:497), which reads the crew-home live-pointer directory; `_check_settle` runs on every wait pass (:1759), and the resumption sweep runs on its own cadence (`_sweep_on_cadence` -> `resumption.sweep`, :1790, DEFAULT_SWEEP_SECONDS = 120). \u00a78 neither states that these leave the follower nor declares a dependency on \u00a710, which owns moving settle detection and the sweep into the station, so a node grading the trace on a settle-aware subscriber sees live-pointer opens under the crew home and fails the gate, or must implement \u00a710's removal out of scope.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "799b0cdcecf1a5c868fcbbf0dbd88d1de78f5ada42b4f248ea22321d7bf4f2d3",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 37,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261026T232207017915-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "1afe33abe043376fabc770e6b911ba13111b985f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 tests/test_a_delivered_row_does_not_round_trip.py, tests/test_a_dispatch_is_one_row.py, tests/test_crew_session_delivery.py, tests/test_follower_freshness.py and its test_running_follower_reloads_without_stream_or_registration_gap all exist; runs.renew_producer_lease, runs.follower_dir, follow_checkpoint.checkpoint_path/history_path and ticker.PaneRowPath all resolve; the extensionless hrefs (/reckon/research/monitor-storage-load-rca, /reckon/plans/the-monitor-shows-the-work-it-watches) resolve as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a78's done-when is measurable (existing pane tests, retargeted reload test, six new tests, a 60 s trace measure) and names two declared negative controls (no persisted cursor, checkpoint still written each draw).",
+    "evidence_paths": "pass \u2014 the gate is the repository's test files and a trace, and the plan's evidence link resolves to the archive document.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach code symbols; the prose's \"old \u00a777\" is a plan-internal reference, and the new prose states the mechanism (cursor pair, generation counter) rather than a tracker entry.",
+    "reasoning": "a finding \u2014 \u00a78 asserts the follower \"reads nothing on GPFS\" and its trace measure allows no crew-home path other than the two lease files, but the settle-aware subscriber the session host runs samples its population every 1 s and reads the crew-home live-pointer directory, and no section states that settle detection and the resumption sweep leave the follower.",
+    "single_goal": "pass \u2014 \u00a78 names one deliverable, the follower becoming a query-and-painter subscriber, and the lease continuance is a stated interim constraint on that one goal rather than a second deliverable.",
+    "wiring": "pass \u2014 \u00a78's declared dependency on \u00a77 resolves, and the sections it names (\u00a75 store, \u00a77 station) exist; the settle coupling below is a mechanism/scope defect rather than a wrong depends-on edge."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "a96b0172939e6d2b0b84ea329f6b40619869f7950fa9017676b03073117e36e7",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "1d48725ac29b5218451f205ff918d15321c648a2037e2f2248672e162a6b2d73",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T23:32:42.587622+00:00"
+}
