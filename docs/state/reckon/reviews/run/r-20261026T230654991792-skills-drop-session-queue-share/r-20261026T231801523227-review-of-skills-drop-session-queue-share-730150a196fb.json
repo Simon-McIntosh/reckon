@@ -1,0 +1,30 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-26T23:24:37Z",
+  "dispatched_at": "2026-10-26T23:19:51Z",
+  "evidence_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T230654991792-skills-drop-session-queue-share/base-gate.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T230654991792-skills-drop-session-queue-share/committed-head-gate.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T230654991792-skills-drop-session-queue-share/negative-control.log"
+  ],
+  "findings": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for project queue bound guidance, and skills/reckon-build/SKILL.md:219 and :522-526 at the reviewed head state it.\nVERDICT done_when: prompt.txt:103 requires the queue wording, focused contract check, zero added failures and ruff checks; committed-head-gate.log:25 and base-gate.log:25 show the same single failure, while the manifest records the ruff result.\nVERDICT write_paths: prompt.txt:69-73 declares the skill, test, evidence fragment and figure directory; both reviewed commits change only the first three paths.\nVERDICT manifest: manifest.md names both commit SHAs, the three changed paths, the gate logs, the old wording control and the pre-existing failure.\nVERDICT diff: f48eb937 changes skills/reckon-build/SKILL.md:219 and :522-526 plus tests/test_skills_load_full_width.py:34-39; 730150a196fb adds the matching evidence fragment at docs/evidence/fragments/a-queue-holds-the-whole-plan/skills-drop-session-queue-share.html:1-17.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:219 and :522-526 replace session share with the project bound, default 500, bound-naming refusal and duplicate request reuse.\nSCORE evidence: 18\nJUSTIFICATION evidence: committed-head-gate.log:25, base-gate.log:25 and negative-control.log:38-41 record the test result and zero added failures; manifest.md reports ruff checks without a separate ruff log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commit diffs change only skills/reckon-build/SKILL.md, tests/test_skills_load_full_width.py and the declared docs/evidence/fragments/a-queue-holds-the-whole-plan/skills-drop-session-queue-share.html.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_skills_load_full_width.py:37 fails if both queue.max_requests mentions disappear, :38 fails when the old its share wording returns, and :39 fails if minimum of 2 returns; negative-control.log:38 demonstrates the old paragraph triggers :38.\nSCORE fit: 20\nJUSTIFICATION fit: skills/reckon-build/SKILL.md:219 and :522-526 update the existing refusal table and limit paragraph, and tests/test_skills_load_full_width.py:34-39 follows the file's normalized text checks.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; it updates the existing queue guidance in skills/reckon-build/SKILL.md:219 and :522-526, while reckon/crew/dispatch.py:352 already uses the project queue bound owner.",
+  "review_run_id": "r-20261026T231801523227-review-of-skills-drop-session-queue-share-730150a196fb",
+  "reviewed_base_sha": "f324cf4f5ed0ba84337c3af3f1149af27de75b1f",
+  "reviewed_head_sha": "730150a196fbf042999095053fe44bea8185cb13",
+  "reviewed_run_id": "r-20261026T230654991792-skills-drop-session-queue-share",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T23:25:03.567172+00:00",
+  "total": 115
+}
