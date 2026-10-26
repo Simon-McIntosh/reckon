@@ -864,13 +864,17 @@ class StationStore:
                     str(row["name"])
                     for row in connection.execute("PRAGMA day.table_info(events)")
                 }
-                payload_column = (
-                    "payload" if "payload" in columns else "NULL AS payload"
-                )
-                query = (
-                    "SELECT id, time, project, audience, run, kind, from_state, to_state, "
-                    f"detail, duty, {payload_column} FROM day.events WHERE id > ?"
-                )
+                if "payload" in columns:
+                    query = (
+                        "SELECT id, time, project, audience, run, kind, from_state, "
+                        "to_state, detail, duty, payload FROM day.events WHERE id > ?"
+                    )
+                else:
+                    query = (
+                        "SELECT id, time, project, audience, run, kind, from_state, "
+                        "to_state, detail, duty, NULL AS payload FROM day.events "
+                        "WHERE id > ?"
+                    )
                 parameters: list[Any] = [after_id]
                 if audience is not None:
                     query += " AND audience = ?"
