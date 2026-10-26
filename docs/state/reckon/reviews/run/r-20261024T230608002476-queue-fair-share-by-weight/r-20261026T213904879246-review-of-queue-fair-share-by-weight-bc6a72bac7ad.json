@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-26T21:52:33.069Z",
+  "dispatched_at": "2026-10-26T21:40:40Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 2168,
+      "severity": "blocking",
+      "text": "_fair_use_weights merges per-project configs with weights.setdefault over a dict that flight.project_weights has already completed with 1.0 for EVERY named project, so the first project's config fixes all weights and every later project's declared weight is silently dropped; reproduced with the landed code: pointers alpha-then-beta with alpha's config empty and beta declaring 3.0 yields {'alpha': 1.0, 'beta': 1.0}, and with only beta declaring the shared map {'alpha': 3.0, 'beta': 1.0} it yields {'alpha': 1.0, 'beta': 1.0}, so a declared 3:1 split runs equal-weight whenever the declaring project is not the first queued one."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261024T230608002476-queue-fair-share-by-weight/base-gate.log",
+      "line": 4,
+      "severity": "blocking",
+      "text": "the recorded baseline arm is not a measurement of the base revision: its own header names module_file /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/404513fc-8e68-4a0f-8060-29ac9ff3d5fd/queue-fair-share-by-weight/reckon/crew/queue_admission.py (the HEAD worktree) while its command and cwd name the base scratch tree, and that tree contains no tests/test_queue_weighted_fair_share.py and no fair_share_admission_order, so 13 of the node's 14 test items fail there (reproduced, log at /tmp/reckon-crew-scratch/r-20261026T213904879246-review-of-queue-fair-share-by-weight-bc6a72bac7ad/base-arm/base-arm.log); a base arm reporting 1734 passed, failure_count 0, failure_ids [] cannot have run the command it records, so added_failure_count derived from it carries no information."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 1899,
+      "severity": "non-blocking",
+      "text": "_zero_slot_held_lane calls _dispatch_lane_allowance(settings, session=session) without the new weights_configured argument although it already holds the resolved config, so with weights configured a review attempt is still read as held on admission.sessions[<session>].worker_slots and re-routed off its lane while the lane-wide worker_slots would grant it room, leaving the done_when's last clause unmet on the review path."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 2279,
+      "severity": "non-blocking",
+      "text": "queued_placements reports position and effective_rank from queue_order.admission_order_details, the unweighted ranking, so once weights are set a request whose view reports rank 3 can launch after requests the view ranks below it, and the plan section's requirement that the queue view report each request's effective rank and its reason is delivered by a surface that disagrees with the launch order."
+    },
+    {
+      "file": "tests/test_queue_weighted_fair_share.py",
+      "line": 125,
+      "severity": "non-blocking",
+      "text": "assert [pointer[\"project\"] for pointer in sequence].count(\"alpha\") == 1 cannot fail on any ordering because the input contains exactly one alpha pointer and the function returns a permutation of it, so it guards duplication or loss rather than the share it sits beside; the same vacuity is at line 69 (assert alpha + beta == 80, where every item is one of the two projects) and line 111 (assert len(sequence) == 8), all three of which would redden only if requests were added or dropped."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/queue-fair-share-by-weight.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "the landing fragment states the measured 60/20 and 40/40 splits in prose and carries no figure, where the recorded write paths reserve a figures directory for this node and a two-bar comparison of the launched split against 3:1 and 1:1 would show at a glance what the reader now has to parse out of the sentence."
+    }
+  ],
+  "notes": "added_failure_count is derived as required from the reviewed run's own baseline_suite and after_suite blocks: both record failure_ids [] and completed true, so 0 added failures with no ids. That figure is not evidence of no added failures, because the baseline arm it rests on is itself the subject of the second blocking finding; the head arm (559 passed, 0 failed in head-gate-final.log, which was run at the head worktree with module_file naming it) and the negative control (3 of the 14 items fail when the weighted choice is replaced by the first-come order) are both sound. The wide head arm head-gate.log records 1 failure (test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted) which the manifest attributes to timing and which did not reproduce; after_suite names the narrower 43-file arm while baseline_suite names a 144-file arm, so the two populations compared are not the same set. The conftest ERROR ('fixture prefix not found') is present in both arms and is scaffolding, not a node failure.",
+  "project": "reckon",
+  "review_run_id": "r-20261026T213904879246-review-of-queue-fair-share-by-weight-bc6a72bac7ad",
+  "reviewed_base_sha": "845a8391392ff65b5c433ccb1e10b2ea377cdf72",
+  "reviewed_head_sha": "bc6a72bac7ad890c925db230a1e13dce878d8c0e",
+  "reviewed_run_id": "r-20261024T230608002476-queue-fair-share-by-weight",
+  "scores": {
+    "durability": 12,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 13,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T22:27:49.039231+00:00",
+  "total": 88
+}
