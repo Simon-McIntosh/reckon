@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T221338409187-skills-load-full-width/final-gate.log",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T221338409187-skills-load-full-width/base-gate.log",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:1662 install_skills",
+    "reckon/agent_context.py:494 _discover_skills"
+  ],
+  "completed_at": "2026-10-26T22:43:11Z",
+  "dispatched_at": "2026-10-26T22:35:23Z",
+  "findings": [
+    {
+      "file": "tests/test_skills_load_full_width.py",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "non-blocking: The queue-verb count reads pre-existing command examples, so removing new steering prose at skills/reckon-build/SKILL.md:148-150 leaves this assertion green."
+    },
+    {
+      "file": "tests/test_skills_load_full_width.py",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: _words duplicates whitespace normalization in tests/test_skill_contracts.py:22-23; the duplicate is confined to one test module."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Commit 690bebf changes six guidance files, 1a432cf adds tests/test_skills_load_full_width.py, and 90ba5ad adds docs/evidence/fragments/a-queue-holds-the-whole-plan/skills-load-full-width.html:1-22.",
+    "done_when": "The source prompt's five-file gate has one failure in both base-gate.log and final-gate.log, while negative-control.log shows two new tests failing on the restored dependency-ready qualifier.",
+    "goal": "The source goal is met by full-width loading in skills/reckon-build/SKILL.md:141-150 and declared waits in skills/reckon-create/SKILL.md:312-316 and skills/reckon-edit/SKILL.md:267-270.",
+    "manifest": "The source manifest records all three commits, the five-file gate, baseline and after receipts, and the red negative-control log.",
+    "write_paths": "The source prompt lists eight granted paths at prompt.txt:69-78, and the base-to-head diff changes only those paths."
+  },
+  "justifications": {
+    "durability": "tests/test_skills_load_full_width.py:23 and :39-44 fail on the recorded mutation, while the queue-verb count at :58 survives removal of the new steering prose.",
+    "evidence": "tests/test_skills_load_full_width.py:17-60 plus the source run's base-gate.log, final-gate.log, and negative-control.log establish zero added failures and a red dependency-ready mutation.",
+    "fit": "skills/reckon-build/SKILL.md:141 follows the surrounding imperative style, and tests/test_skills_load_full_width.py:17-60 uses ordinary pytest assertions with no forbidden source names.",
+    "goal_fidelity": "skills/reckon-build/SKILL.md:141-150 names the full dispatch set and interim caveat, and skills/reckon-create/SKILL.md:312-316 and skills/reckon-edit/SKILL.md:267-270 require declared waits.",
+    "reuse": "tests/test_skills_load_full_width.py:13-14 duplicates the whitespace normalizer owned by tests/test_skill_contracts.py:22-23 instead of extending or wrapping it.",
+    "scope_discipline": "The base-to-head diff changes only the source prompt's eight granted paths, including docs/evidence/fragments/a-queue-holds-the-whole-plan/skills-load-full-width.html:1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal is met by full-width loading in skills/reckon-build/SKILL.md:141-150 and declared waits in skills/reckon-create/SKILL.md:312-316 and skills/reckon-edit/SKILL.md:267-270.\nVERDICT done_when: The source prompt's five-file gate has one failure in both base-gate.log and final-gate.log, while negative-control.log shows two new tests failing on the restored dependency-ready qualifier.\nVERDICT write_paths: The source prompt lists eight granted paths at prompt.txt:69-78, and the base-to-head diff changes only those paths.\nVERDICT manifest: The source manifest records all three commits, the five-file gate, baseline and after receipts, and the red negative-control log.\nVERDICT diff: Commit 690bebf changes six guidance files, 1a432cf adds tests/test_skills_load_full_width.py, and 90ba5ad adds docs/evidence/fragments/a-queue-holds-the-whole-plan/skills-load-full-width.html:1-22.\nCALL_SITES: reckon/project_maintenance_commands.py:1662 install_skills, reckon/agent_context.py:494 _discover_skills\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: skills/reckon-build/SKILL.md:141-150 names the full dispatch set and interim caveat, and skills/reckon-create/SKILL.md:312-316 and skills/reckon-edit/SKILL.md:267-270 require declared waits.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_skills_load_full_width.py:17-60 plus the source run's base-gate.log, final-gate.log, and negative-control.log establish zero added failures and a red dependency-ready mutation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The base-to-head diff changes only the source prompt's eight granted paths, including docs/evidence/fragments/a-queue-holds-the-whole-plan/skills-load-full-width.html:1.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_skills_load_full_width.py:23 and :39-44 fail on the recorded mutation, while the queue-verb count at :58 survives removal of the new steering prose.\nSCORE fit: 19\nJUSTIFICATION fit: skills/reckon-build/SKILL.md:141 follows the surrounding imperative style, and tests/test_skills_load_full_width.py:17-60 uses ordinary pytest assertions with no forbidden source names.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_skills_load_full_width.py:13-14 duplicates the whitespace normalizer owned by tests/test_skill_contracts.py:22-23 instead of extending or wrapping it.\nFINDING tests/test_skills_load_full_width.py:58 non-blocking: The queue-verb count reads pre-existing command examples, so removing new steering prose at skills/reckon-build/SKILL.md:148-150 leaves this assertion green.\nFINDING tests/test_skills_load_full_width.py:13 non-blocking: _words duplicates whitespace normalization in tests/test_skill_contracts.py:22-23; the duplicate is confined to one test module.\n",
+  "review_run_id": "r-20261026T222758737633-review-of-skills-load-full-width-90ba5ad62bdb",
+  "reviewed_base_sha": "46639488a209b1cb4479802157e4e1c90587d2d6",
+  "reviewed_head_sha": "90ba5ad62bdbdbdb14b704406f622970633c6267",
+  "reviewed_run_id": "r-20261026T221338409187-skills-load-full-width",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T22:45:24.848554+00:00",
+  "total": 98
+}
