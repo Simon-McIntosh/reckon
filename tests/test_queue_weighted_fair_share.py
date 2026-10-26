@@ -38,16 +38,26 @@ def _queue(project: str, count: int, *, start: datetime) -> list[dict[str, Any]]
     ]
 
 
+def _config(weights: dict[str, float] | None) -> dict[str, Any]:
+    return {} if weights is None else {"queue": {"project_weights": dict(weights)}}
+
+
 def _admissions(
     weights: dict[str, float], *, rounds: int, per_project: int
 ) -> list[str]:
     """The project of each admission, taken from the ordering the pass uses."""
     start = datetime(2026, 10, 26, tzinfo=UTC)
-    ordered = [
+    queued = [
         *_queue("alpha", per_project, start=start),
         *_queue("beta", per_project, start=start + timedelta(seconds=per_project)),
     ]
-    sequence = queue_admission.weighted_project_order(ordered, weights)
+    config = _config(weights)
+    sequence = queue_admission.fair_share_admission_order(
+        queued,
+        [],
+        now=start + timedelta(minutes=1),
+        config_for=lambda _pointer: config,
+    )
     return [str(pointer["project"]) for pointer in sequence[:rounds]]
 
 
@@ -117,6 +127,28 @@ def test_a_project_under_its_share_leaves_the_rest_of_the_pass_to_the_other() ->
         "alpha",
         "beta",
         "beta",
+    ]
+
+
+def test_no_declared_weight_keeps_the_priority_order() -> None:
+    start = datetime(2026, 10, 26, tzinfo=UTC)
+    queued = [
+        *_queue("alpha", 3, start=start),
+        *_queue("beta", 3, start=start + timedelta(seconds=3)),
+    ]
+
+    configured = queue_admission.fair_share_admission_order(
+        queued,
+        [],
+        now=start + timedelta(minutes=1),
+        config_for=lambda _p: _config(None),
+    )
+    plain = queue_admission.queue_order.admission_order(
+        queued, [], now=start + timedelta(minutes=1)
+    )
+
+    assert [pointer["run_id"] for pointer in configured] == [
+        pointer["run_id"] for pointer in plain
     ]
 
 

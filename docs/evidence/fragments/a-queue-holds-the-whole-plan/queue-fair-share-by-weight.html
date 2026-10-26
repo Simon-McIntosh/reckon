@@ -1,0 +1,51 @@
+<section id="queue-fair-share-by-weight-landing">
+  <h2>Admission chooses the project for each freed slot by weighted fair use</h2>
+
+  <p><strong>What changed.</strong> The admission pass no longer launches
+  whichever project's request happens to come first. It ranks the queue by the
+  roadmap order it already had (<code>queue_order.admission_order</code>, which
+  keeps priority, ageing and reviews inside a project), then interleaves that
+  ranking across projects by weighted deficit round robin:
+  <code>weighted_project_order</code> in
+  <code>reckon/crew/queue_admission.py</code>. Every project still holding a
+  request accrues its weight each round, the largest deficit is served next and
+  pays the round's total, and it contributes its own highest-ranked request. A
+  project whose queue runs dry accrues nothing, so it cannot sit on a share it
+  can no longer use.
+
+  <p><strong>Where the weights live.</strong> <code>queue.project_weights</code>
+  in flight configuration, read by <code>flight.project_weights</code> in
+  <code>reckon/flight.py</code>. A project the configuration does not name —
+  and every project when the key is absent — carries the equal default
+  <code>1.0</code>, and
+  <code>flight.fair_use_weights_configured</code> tells the pass whether any
+  weight is declared at all. With none declared, the pass keeps exactly the
+  order it had, so an install that never sets weights is unaffected.
+
+  <p><strong>The allowance becomes lane-wide.</strong>
+  <code>_dispatch_lane_allowance</code> and <code>_lane_worker_allowance</code>
+  in <code>reckon/crew/dispatch_plan.py</code> take
+  <code>weights_configured</code>. When it is set they skip the router's
+  <code>admission.sessions</code> map — both this session's entry and the
+  new-session figure — and read the lane-wide
+  <code>admission.worker_slots</code>, because the split between sessions is
+  now reckon's setting rather than the router's. The dispatch path passes the
+  flag from the resolved config it already holds; the admission path passes it
+  from the per-project config it resolves for the request.
+
+  <p><strong>The measure.</strong> Two projects, 100 ready requests each, with
+  the ordering the pass uses: weights 3:1 launch 60 / 20 in the first 80
+  admissions (exactly 3:1), and equal weights launch 40 / 40. A project with one
+  ready request against another's nine takes its single slot and then leaves
+  every remaining slot to the other, and priority order inside a project is
+  unchanged by the interleave.
+
+  <p><strong>Not yet declared by the schema.</strong>
+  <code>reckon/schema/flight.yaml</code> (and its generated
+  <code>_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>)
+  is another node's write scope, so the <code>queue</code> namespace and its
+  <code>project_weights</code> slot are not declared there yet. Strict layer
+  validation refuses an undeclared key, so a configuration that sets weights
+  reads them here but is refused by <code>reckon flight</code> until that slot
+  lands. It is recorded as an out-of-scope finding for the coordinator.
+</section>

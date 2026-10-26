@@ -2208,6 +2208,28 @@ def weighted_project_order(
     return result
 
 
+def fair_share_admission_order(
+    queued: Sequence[Mapping[str, Any]],
+    live: Sequence[Mapping[str, Any]],
+    *,
+    now: datetime,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> list[Mapping[str, Any]]:
+    """The order one admission pass will launch the queue in.
+
+    The priority order (:func:`reckon.crew.queue_order.admission_order`) still
+    ranks the requests, and the projects are interleaved across it by their
+    configured fair-use weights. With no weight declared the priority order is
+    returned unchanged, so an install that sets none keeps exactly the order it
+    had.
+    """
+    order = queue_order.admission_order(queued, live, now=now)
+    weights = _fair_use_weights(queued, config_for=config_for)
+    if weights is None:
+        return order
+    return weighted_project_order(order, weights)
+
+
 def queued_placements(
     pointers: Sequence[Mapping[str, Any]],
     *,
@@ -2339,10 +2361,9 @@ def admit_once(
         unplaceable = [
             pointer for pointer in queued if parse_utc(pointer.get("queued_at")) is None
         ]
-        order = queue_order.admission_order(placeable, live, now=moment)
-        weights = _fair_use_weights(placeable, config_for=config_for)
-        if weights is not None:
-            order = weighted_project_order(order, weights)
+        order = fair_share_admission_order(
+            placeable, live, now=moment, config_for=config_for
+        )
         remaining: dict[str, float | None] = {}
         allowance_sources: dict[str, str] = {}
         verdicts: list[dict[str, Any]] = result["verdicts"]
