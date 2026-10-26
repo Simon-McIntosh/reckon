@@ -1995,9 +1995,11 @@ def _unloaded_sections(
     pointers: Iterable[Mapping[str, Any]],
     plans: list[tuple[str, dict[str, Any]]] | None,
 ) -> dict[str, list[str]]:
-    """Name declared work with neither a request nor a promoted run."""
+    """Name declared work with neither a request nor a reachable promotion."""
     from reckon import _plan_html, ledger
     from reckon._schema import is_implementable_section
+    from reckon.crew.dispatch_sections import project_mount_repository
+    from reckon.crew.promotion_scope import _revision_is_ancestor
 
     if plans is None:
         return {}
@@ -2012,20 +2014,36 @@ def _unloaded_sections(
         )
 
     covered = {identity(pointer) for pointer in pointers}
-    landed, _version = ledger.load(project, use_index=False)
-    covered.update(identity(record) for record in landed["runs"])
-    unloaded: dict[str, list[str]] = {}
+    pending: dict[tuple[str, str], str] = {}
     for slug, state in plans:
-        sections = sorted(
-            str(section)
-            for section, classification in (
-                state.get("section_declarations") or {}
-            ).items()
-            if is_implementable_section(classification)
-            and (slug, _plan_html.section_record_id(section)) not in covered
-        )
-        if sections:
-            unloaded[slug] = sections
+        for section, classification in (
+            state.get("section_declarations") or {}
+        ).items():
+            key = (slug, _plan_html.section_record_id(section))
+            if is_implementable_section(classification) and key not in covered:
+                pending[key] = str(section)
+
+    checkout = project_mount_repository(project) if pending else None
+    if checkout is not None:
+        landed, _version = ledger.load(project, use_index=False)
+        for record in landed["runs"]:
+            key = identity(record)
+            if key not in pending:
+                continue
+            revision = str(record.get("promoted_revision") or "").strip()
+            if not revision:
+                continue
+            try:
+                if _revision_is_ancestor(checkout, revision, "HEAD"):
+                    pending.pop(key)
+            except CrewError:
+                continue
+
+    unloaded: dict[str, list[str]] = {}
+    for (slug, _section), name in pending.items():
+        unloaded.setdefault(slug, []).append(name)
+    for sections in unloaded.values():
+        sections.sort()
     return unloaded
 
 
