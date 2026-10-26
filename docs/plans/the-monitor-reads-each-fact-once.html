@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -262,7 +262,9 @@
     Until §12 retires the per-project producers, they still need the follower's leases, so the subscriber keeps
     renewing the producer's watch lease (<code>runs.renew_producer_lease</code>) and writing its delivery lease under
     <code>runs.follower_dir</code>; §12 removes both. Measure: a 60 s <code>strace -f -e trace=openat,stat,newfstatat</code>
-    of a running subscriber names no path under the crew home other than those two lease files; a <code>/proc/&lt;pid&gt;/io</code> delta cannot attribute reads to paths and misses reads served from cache. Negative controls: a subscriber that does not persist its cursor must fail the restart test, and one that
+    of a running subscriber with settle detection off names no path under the crew home other than those two lease
+    files. A settle-aware subscriber still lists the live directory each second until §10 moves settle detection
+    into the station, so its trace is §10's measure; a <code>/proc/&lt;pid&gt;/io</code> delta cannot attribute reads to paths and misses reads served from cache. Negative controls: a subscriber that does not persist its cursor must fail the restart test, and one that
     still writes its checkpoint under <code>runs.follower_dir</code> each time it draws a row must fail the trace measure.</p>
 
     <h2 id="s9">§9 — Obligations and hooks read the station</h2>
@@ -287,7 +289,9 @@
     A run resumed by a coordinator's <code>crew resume --advice</code> starts the same settle window an
     automatic resume does (old §81).</p>
     <p>Done when tests show a delivered run gets exactly one review dispatched with three subscribers
-    attached for its session, and a run resumed by advice is not reviewed until its settle window has passed.
+    attached for its session, and a run resumed by advice is not reviewed until its settle window has passed. Measure: a 60 s
+    <code>strace -f -e trace=openat,stat,newfstatat</code> of a running settle-aware subscriber names no path under the
+    crew home other than the two lease files §8 allows, because settle detection now reads the station.
     Negative control: running the reflex per subscriber must fail the exactly-one test.</p>
 
     <h2 id="s11">§11 — A lift row reads as a lift</h2>
