@@ -971,7 +971,11 @@ def plan_dispatch(
         )
     lane_reading = _dispatch_lane_reading(backend)
     lane_gate = _dispatch_lane_gate(backend)
-    lane_allowance = _dispatch_lane_allowance(backend, session=session)
+    lane_allowance = _dispatch_lane_allowance(
+        backend,
+        session=session,
+        weights_configured=flight.fair_use_weights_configured(config),
+    )
     orchestrator_lane_stop = _dispatch_orchestrator_lane_stop(
         backend_name=backend_name,
         backend=backend,
@@ -1445,7 +1449,9 @@ def _lane_allowance_unknown(detail: str) -> dict[str, Any]:
 # negative figure states that no window has been observed, and a figure resting
 # on no history is read exactly as a block that states no window at all, so the
 # allowance falls back to headroom, which needs none.
-def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
+def _lane_worker_allowance(
+    document: object, *, session: str, weights_configured: bool = False
+) -> dict[str, Any]:
     """Choose the extra-worker allowance the lane's router grants this session.
 
     The router's own arithmetic is the authority and its own preference orders
@@ -1458,6 +1464,12 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
     it was averaged over; a window of zero or below is no history, so the
     allowance falls back to headroom, which needs none, exactly as it does when
     the block states no window at all.
+
+    ``weights_configured`` states that fair-use weights are declared, at which
+    point the split of slots between sessions is reckon's own setting: the
+    per-session figures are skipped and the allowance is read lane-wide from
+    ``worker_slots``, so a session's share of the router is never what holds
+    its queued work.
 
     An allowance of zero or less *holds*: the router has granted no room and
     the reason names the router's own verdict. An allowance that could not be
@@ -1489,7 +1501,9 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
     allowance: int | float | None = None
     source = "none"
     if admission.get("present") and history_is_trusted:
-        sessions_present = bool(admission.get("sessions_present"))
+        sessions_present = bool(admission.get("sessions_present")) and not (
+            weights_configured
+        )
         listed = (
             admission["sessions"].get(session_id)
             if sessions_present and session_id
@@ -1513,7 +1527,11 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
             )
             if share is not None:
                 allowance = share
-                source = "the global worker slots"
+                source = (
+                    "the lane-wide worker slots"
+                    if weights_configured
+                    else "the global worker slots"
+                )
     # Captured before the headroom fallback: only a figure taken inside the
     # trusted-window block above rests on observed history, and headroom --
     # which needs no window -- never does.
@@ -1563,13 +1581,17 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
 
 
 def _dispatch_lane_allowance(
-    backend: Mapping[str, Any], *, session: str
+    backend: Mapping[str, Any], *, session: str, weights_configured: bool = False
 ) -> dict[str, Any] | None:
     """Read the resolved lane's published allowance for this coordinator session.
 
     A backend may declare ``lane_document``, the local JSON the lane publishes
     about itself. The document is resolved through the shared lane reader and
-    the allowance is chosen from the router's own figures. An absent
+    the allowance is chosen from the router's own figures.
+    ``weights_configured`` says fair-use weights are declared, so the allowance
+    is the lane-wide figure rather than this session's share: the split between
+    sessions is then reckon's setting and never holds a session's queued work.
+    An absent
     declaration returns ``None`` -- a lane that publishes nothing has nothing
     to hold on -- and a document that cannot be read or parsed resolves to an
     unknown allowance that holds nothing, because absence of a signal is not
@@ -1595,7 +1617,9 @@ def _dispatch_lane_allowance(
         return _lane_allowance_unknown(
             f"lane document {str(path)!r} is not a JSON object"
         )
-    return _lane_worker_allowance(payload, session=session)
+    return _lane_worker_allowance(
+        payload, session=session, weights_configured=weights_configured
+    )
 
 
 def _carry_declared_gate_documents(

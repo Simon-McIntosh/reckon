@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import os
 import re
 import shutil
@@ -147,6 +148,13 @@ DEFAULT_RAW_REPORT_RETENTION_DAYS = 30
 GC_KEY = "gc"
 GC_RUN_FILE_MAX_MB_KEY = "run_file_max_mb"
 DEFAULT_RUN_FILE_MAX_MB = 256
+
+# Fair-use weights: the share of the lane each project's queued work is meant
+# to take. Declared per project under the ``queue`` namespace, defaulting to
+# equal weight, which is the behaviour a configuration that omits them keeps.
+QUEUE_KEY = "queue"
+QUEUE_PROJECT_WEIGHTS_KEY = "project_weights"
+DEFAULT_PROJECT_WEIGHT = 1.0
 
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
@@ -1016,6 +1024,61 @@ def run_file_max_mb(config: Mapping[str, Any] | None) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value < 1:
         return DEFAULT_RUN_FILE_MAX_MB
     return int(value)
+
+
+def _declared_project_weights(
+    config: Mapping[str, Any] | None,
+) -> dict[str, float]:
+    """The project weights one resolved configuration declares.
+
+    A weight that is not a positive finite number is treated as absent rather
+    than read as zero: a zero-weight project would never launch, and a weight is
+    a share of the lane rather than a switch.
+    """
+    queue = (config or {}).get(QUEUE_KEY)
+    declared = (
+        queue.get(QUEUE_PROJECT_WEIGHTS_KEY) if isinstance(queue, Mapping) else None
+    )
+    if not isinstance(declared, Mapping):
+        return {}
+    weights: dict[str, float] = {}
+    for project, value in declared.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        weight = float(value)
+        if not math.isfinite(weight) or weight <= 0:
+            continue
+        weights[str(project)] = weight
+    return weights
+
+
+def project_weights(
+    config: Mapping[str, Any] | None, projects: Iterable[str] = ()
+) -> dict[str, float]:
+    """Each named project's fair-use weight, defaulting to equal weight.
+
+    The weights are declared per project in flight configuration under
+    ``queue.project_weights``. A project the configuration does not name -- and
+    every project when the key is absent -- carries the equal default of
+    ``1.0``, so a configuration that never mentions weights keeps the plain
+    admission order it had. Every project named in ``projects`` is returned, so
+    a caller reads one figure for every project it is about to rank.
+    """
+    weights = _declared_project_weights(config)
+    return {
+        str(project): weights.get(str(project), DEFAULT_PROJECT_WEIGHT)
+        for project in projects
+    }
+
+
+def fair_use_weights_configured(config: Mapping[str, Any] | None) -> bool:
+    """Whether the configuration declares any project weight at all.
+
+    Admission reads the lane's figure lane-wide once weights are configured,
+    because the split between sessions is then reckon's own setting rather than
+    the router's per-session share.
+    """
+    return bool(_declared_project_weights(config))
 
 
 def _review_owned_key_shape_is_valid(shape: str, value: Any) -> bool:

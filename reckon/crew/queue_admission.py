@@ -406,7 +406,11 @@ def _session_allowance_read(
     backend = (config.get("backends") or {}).get(str(pointer.get("backend") or ""))
     if not backend:
         return None, "no backend declares the request's lane"
-    decision = _dispatch_lane_allowance(backend, session=str(pointer["session"]))
+    decision = _dispatch_lane_allowance(
+        backend,
+        session=str(pointer["session"]),
+        weights_configured=_fair_use_weights_configured(config),
+    )
     if decision is None:
         return None, "the lane publishes no allowance"
     source = str(decision.get("source") or "unknown")
@@ -2123,6 +2127,87 @@ def _move_pointer(run_id: str, phase: str) -> bool:
     return True
 
 
+def _fair_use_weights_configured(config: Mapping[str, Any]) -> bool:
+    from reckon import flight as flight_module
+
+    return flight_module.fair_use_weights_configured(config)
+
+
+def _fair_use_weights(
+    pointers: Sequence[Mapping[str, Any]],
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> dict[str, float] | None:
+    """Each project's declared fair-use weight, or ``None`` when none is set.
+
+    The weights live in flight configuration, so they are resolved through the
+    same per-project config the pass reads for every other question. ``None``
+    is what tells the pass to keep the plain admission order: a configuration
+    that declares no weight keeps exactly the order it had.
+    """
+    from reckon import flight as flight_module
+
+    projects: list[str] = []
+    configs: dict[str, Mapping[str, Any]] = {}
+    for pointer in pointers:
+        project = str(pointer.get("project") or "")
+        if project in configs:
+            continue
+        projects.append(project)
+        configs[project] = (
+            config_for(pointer)
+            if config_for is not None
+            else _resolve_lane_config(pointer)
+        )
+    if not any(
+        flight_module.fair_use_weights_configured(config) for config in configs.values()
+    ):
+        return None
+    weights: dict[str, float] = {}
+    for project in projects:
+        for name, weight in flight_module.project_weights(
+            configs[project], projects
+        ).items():
+            weights.setdefault(name, weight)
+    return weights
+
+
+def weighted_project_order(
+    ordered: Sequence[Mapping[str, Any]],
+    weights: Mapping[str, float],
+) -> list[Mapping[str, Any]]:
+    """Interleave a priority-ordered queue so each project's share tracks its weight.
+
+    Weighted deficit round robin across the projects that still hold a request:
+    every such project accrues its weight per round, the largest deficit is
+    served next and pays the round's total, and its highest-ranked request —
+    the one the priority order already placed first for that project — is
+    taken. A project with nothing left accrues nothing, so a queue shallower
+    than its share never holds a slot idle while another project has work.
+    """
+    pending: dict[str, list[Mapping[str, Any]]] = {}
+    first_seen: dict[str, int] = {}
+    for index, pointer in enumerate(ordered):
+        project = str(pointer.get("project") or "")
+        pending.setdefault(project, []).append(pointer)
+        first_seen.setdefault(project, index)
+    deficits: dict[str, float] = dict.fromkeys(pending, 0.0)
+    servable = list(pending)
+    result: list[Mapping[str, Any]] = []
+    while servable:
+        total = sum(weights.get(project, 1.0) for project in servable)
+        for project in servable:
+            deficits[project] += weights.get(project, 1.0)
+        chosen = max(
+            servable, key=lambda project: (deficits[project], -first_seen[project])
+        )
+        deficits[chosen] -= total
+        result.append(pending[chosen].pop(0))
+        if not pending[chosen]:
+            servable.remove(chosen)
+    return result
+
+
 def queued_placements(
     pointers: Sequence[Mapping[str, Any]],
     *,
@@ -2255,6 +2340,9 @@ def admit_once(
             pointer for pointer in queued if parse_utc(pointer.get("queued_at")) is None
         ]
         order = queue_order.admission_order(placeable, live, now=moment)
+        weights = _fair_use_weights(placeable, config_for=config_for)
+        if weights is not None:
+            order = weighted_project_order(order, weights)
         remaining: dict[str, float | None] = {}
         allowance_sources: dict[str, str] = {}
         verdicts: list[dict[str, Any]] = result["verdicts"]
