@@ -216,7 +216,7 @@ worktree, a manifest, a gate and a ledger record.
 | `scope-conflict` | 7 | Wait for the owning run to release its path claim. |
 | `watcher-required` | 8 | Arm the `attach_line`; use `--no-watch` only deliberately. |
 | `member-in-flight` | 9 | Wait for the named run to reach a terminal phase. |
-| `queue-full` | 75 | Your session holds its share of queued runs; dispatch more as they launch. |
+| `queue-full` | 75 | The project holds `queue.max_requests` queued requests across its sessions; a dispatch past the bound is refused naming that bound. |
 | `lane-paused` | 75 | The lane's gate is paused; nothing was queued. |
 
 Read the JSON document rather than inferring a refusal from an empty stream.
@@ -519,10 +519,11 @@ frees.
   "queued": true`, a `run_id` and a `position`. A `lane-paused` result at exit
   75 is a paused gate and queues nothing.
 - **Leaving it alone.** Never discard a queued run to re-dispatch it.
-- **The limit.** A session queues up to its share, the lane document's
-  `admission.fair_share`, kept between 2 and 8 runs. Past that, dispatch refuses
-  with `queue-full` at exit 75 and writes nothing; add more as your own runs
-  launch.
+- **The limit.** A project holds up to `queue.max_requests` queued requests
+  across all its sessions (500 by default, a flight setting). A dispatch past
+  the bound is refused with `queue-full` at exit 75 and names that bound.
+  Dispatching the same project, plan, section and node again returns the
+  existing request.
 - **Timing.** Never poll `lane.json` to decide when to dispatch.
 - **Picker holds.** When Jev holds a node and the local lane was among its
   offered candidates, the node continues on local and launches or queues. A

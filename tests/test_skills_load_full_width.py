@@ -31,6 +31,14 @@ def test_dispatch_set_includes_sections_waiting_for_upstream() -> None:
     assert "parks `awaiting-upstream`" in reference
 
 
+def test_build_skill_names_project_queue_bound() -> None:
+    build = normalized(BUILD.read_text()).lower()
+
+    assert "queue.max_requests" in build
+    assert "its share" not in build
+    assert "minimum of 2" not in build
+
+
 def test_readiness_reports_do_not_narrow_the_dispatch_set() -> None:
     for path in (BUILD, REFERENCE, ROADMAP, GUIDANCE):
         words = normalized(path.read_text())
