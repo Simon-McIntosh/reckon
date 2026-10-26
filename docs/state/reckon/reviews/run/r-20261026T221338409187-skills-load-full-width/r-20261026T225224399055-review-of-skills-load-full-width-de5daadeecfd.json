@@ -1,0 +1,43 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T221338409187-skills-load-full-width/repair-head-gate.log",
+  "baseline_suite_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T221338409187-skills-load-full-width/repair-base-gate.log",
+  "call_sites": [],
+  "completed_at": "2026-10-26T22:58:06Z",
+  "dispatched_at": "2026-10-26T22:54:05Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "Commit de5daadeecfd0352a346111fba1c779c4d359436 changes only tests/test_skills_load_full_width.py:6-67, reusing normalized and adding a steering-sentence assertion.",
+    "done_when": "The source done_when at prompt.txt:106-107 requires no added failures; repair-base-gate.log and repair-head-gate.log each record the same one failure and 95 passes.",
+    "goal": "The source goal at prompt.txt:30 is full-width skill guidance; tests/test_skills_load_full_width.py:58-65 now guards its queue steering instruction.",
+    "manifest": "The source manifest records commit de5daadeecfd0352a346111fba1c779c4d359436, the focused green and red controls, and complete base and head gate receipts.",
+    "write_paths": "The source grant at prompt.txt:69-78 includes tests/test_skills_load_full_width.py, the only path in the 90ba5ad-to-de5daade diff."
+  },
+  "justifications": {
+    "durability": "Removing the steering sentence from the build rule makes the new assertion at tests/test_skills_load_full_width.py:62-65 fail, as repair-negative-control.log records.",
+    "evidence": "tests/test_skills_load_full_width.py:62-65 fails in repair-negative-control.log when the steering sentence is removed, while repair-base-gate.log and repair-head-gate.log identify the same lone failure.",
+    "fit": "tests/test_skills_load_full_width.py:6 imports the existing normalized helper and lines 58-65 follow the file's direct assertion style without forbidden names.",
+    "goal_fidelity": "tests/test_skills_load_full_width.py:58-65 checks the queue steering instruction in the full-width loading rule named by prompt.txt:30.",
+    "reuse": "The diff adds no definition and tests/test_skills_load_full_width.py:6 reuses normalized from tests/test_skill_contracts.py:22-23, the owner found by searching whitespace normalization.",
+    "scope_discipline": "The reviewed diff changes only tests/test_skills_load_full_width.py:6-67, which appears in the grant at prompt.txt:76."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal at prompt.txt:30 is full-width skill guidance; tests/test_skills_load_full_width.py:58-65 now guards its queue steering instruction.\nVERDICT done_when: The source done_when at prompt.txt:106-107 requires no added failures; repair-base-gate.log and repair-head-gate.log each record the same one failure and 95 passes.\nVERDICT write_paths: The source grant at prompt.txt:69-78 includes tests/test_skills_load_full_width.py, the only path in the 90ba5ad-to-de5daade diff.\nVERDICT manifest: The source manifest records commit de5daadeecfd0352a346111fba1c779c4d359436, the focused green and red controls, and complete base and head gate receipts.\nVERDICT diff: Commit de5daadeecfd0352a346111fba1c779c4d359436 changes only tests/test_skills_load_full_width.py:6-67, reusing normalized and adding a steering-sentence assertion.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_skills_load_full_width.py:58-65 checks the queue steering instruction in the full-width loading rule named by prompt.txt:30.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_skills_load_full_width.py:62-65 fails in repair-negative-control.log when the steering sentence is removed, while repair-base-gate.log and repair-head-gate.log identify the same lone failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The reviewed diff changes only tests/test_skills_load_full_width.py:6-67, which appears in the grant at prompt.txt:76.\nSCORE durability: 20\nJUSTIFICATION durability: Removing the steering sentence from the build rule makes the new assertion at tests/test_skills_load_full_width.py:62-65 fail, as repair-negative-control.log records.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_skills_load_full_width.py:6 imports the existing normalized helper and lines 58-65 follow the file's direct assertion style without forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no definition and tests/test_skills_load_full_width.py:6 reuses normalized from tests/test_skill_contracts.py:22-23, the owner found by searching whitespace normalization.\n",
+  "review_run_id": "r-20261026T225224399055-review-of-skills-load-full-width-de5daadeecfd",
+  "reviewed_base_sha": "90ba5ad62bdbdbdb14b704406f622970633c6267",
+  "reviewed_head_sha": "de5daadeecfd0352a346111fba1c779c4d359436",
+  "reviewed_run_id": "r-20261026T221338409187-skills-load-full-width",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T22:58:58.470551+00:00",
+  "total": 118
+}
