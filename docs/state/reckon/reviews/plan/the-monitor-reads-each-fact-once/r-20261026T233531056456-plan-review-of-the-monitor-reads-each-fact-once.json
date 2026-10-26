@@ -1,0 +1,109 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-26T23:41:54.172Z",
+  "dispatched_at": "2026-10-26T23:36:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261026T233531056456-plan-review-of-the-monitor-reads-each-fact-once/plan.html:288",
+      "id": "reasoning-1",
+      "reason": "\u00a76 already solves this exact shape by re-deriving the stall clock each tick (`recovery_watch._stall_reading`); \u00a710 must say the station re-reads the settle clock each tick rather than only on change, or the node implements an event trigger that cannot expire.",
+      "text": "\"The station runs both once per change\" cannot satisfy \u00a710's own done-when \"a run resumed by advice is not reviewed until its settle window has passed\": the window expires on the clock (`REVIEW_SETTLE_SECONDS` measured from a resume stamp, reckon/crew/recovery_review_dispatch.py:1258-1271), and a resumed worker that writes nothing produces no change at the instant the window passes, so a purely change-driven station never fires the review",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261026T233531056456-plan-review-of-the-monitor-reads-each-fact-once/plan.html:289",
+      "id": "reasoning-2",
+      "reason": "the node's done-when (\"a run resumed by advice is not reviewed until its settle window has passed\") fails against today's code and \u00a710 names no mechanism to make it pass; one clause naming `_latest_resume_at` (reckon/crew/recovery_review_dispatch.py:205, which already reads both stamps) as what the settle helper must switch to would make the node's work unambiguous.",
+      "text": "\u00a710 asserts in the present tense that \"A run resumed by a coordinator's `crew resume --advice` starts the same settle window an automatic resume does\", but the settle reader takes only the sweep's own stamp (`resume = record.get(\"auto_resume\")`, reckon/crew/recovery_review_dispatch.py:1266) while the advice door records `resume_superseded_head` and withdraws any queued review (reckon/crew/resumption.py:1302, :1489) without stamping `auto_resume`, so today an advice resume restarts review immediately",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261026T233531056456-plan-review-of-the-monitor-reads-each-fact-once/plan.html:292",
+      "id": "done_when-1",
+      "reason": "\u00a78's own text already names the mutant (`a settle-aware subscriber still lists the live directory each second until \u00a710 moves settle detection into the station`, plan.html:266-267), so one clause \"a subscriber that keeps the per-second live-directory scan must fail the trace measure\" makes the new measure falsifiable at no design cost.",
+      "text": "the settle-aware trace measure is the only measure of the settle-aware subscriber's reads, and \u00a710 declares no control that fails it; a trace naming nothing could equally be a subscriber that was not running or a `strace` that attached to nothing",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "d5005c44425ef348c4680dfd423b0923169c972a3cd60e1962dc57169068fc98",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 39,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-26T23:44:31.345542+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "",
+      "when": "2026-10-26T23:44:47.879981+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-26T23:45:12.643538+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-26T23:45:12.643538+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-26T23:44:31.345542+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-26T23:44:47.879981+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-reads-each-fact-once.v39.json",
+  "review_run_id": "r-20261026T233531056456-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "1afcb3095e68b35bd1f8d6793717235f436f643b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the symbols both units cite resolve in the tree: `runs.renew_producer_lease` (reckon/crew/runs.py:2115), `follow_checkpoint.checkpoint_path`/`history_path` (reckon/crew/follow_checkpoint.py:79, :279), `ticker.PaneRowPath` (reckon/crew/ticker.py:2367), `recovery_review_acceptance.dispatch_awaiting_reviews (reckon/crew/recovery_review_acceptance.py:377)`; the extensionless RCA href `/reckon/research/monitor-storage-load-rca` resolves as `<path>.html` under the house convention.",
+    "done_when": "a finding \u2014 \u00a710's newly added settle-aware trace measure (plan.html:292-294) carries no negative control; the section's only control (\"running the reflex per subscriber must fail the exactly-one test\", plan.html:295) targets the other measure.",
+    "evidence_paths": "pass \u2014 both units measure through `strace` fixtures and repository tests (`tests/test_follower_freshness.py`, `tests/test_a_delivered_row_does_not_round_trip.py`, \u2026), not a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 neither changed unit introduces plan labels, stage names, ticket numbers or version tags into a symbol or code comment.",
+    "reasoning": "a finding \u2014 \u00a710 says the station runs the reflex and settle detection \"once per change\" (plan.html:288), which cannot deliver a wall-clock settle window expiring; and its advice-resume sentence (plan.html:289-290) states a property today's code does not have, with no mechanism named.",
+    "single_goal": "pass \u2014 \u00a78 is the subscriber's query-and-painter rewrite, \u00a710 is moving the review reflex and settle detection into the station; each names one deliverable.",
+    "wiring": "pass \u2014 s8 depends on s7, s10 depends on s7, and s12 lists s8/s9/s10/s11; every target exists in the plan and in `plan-section-declarations`."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "8bb4e6a11b18a665eb750b08f52cbd3f3566e8f5f09eb70dc88be88c2fb16d40",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T23:44:22.171127+00:00"
+}
