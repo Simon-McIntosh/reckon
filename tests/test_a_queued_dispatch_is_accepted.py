@@ -1,4 +1,4 @@
-"""A queued dispatch is an acceptance, capped at the session's fair share."""
+"""A queued dispatch is accepted until its project reaches its queue bound."""
 
 from __future__ import annotations
 
@@ -20,7 +20,11 @@ def dispatch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def _config(
-    repo: Path, monkeypatch: pytest.MonkeyPatch, *, fair_share: object = None
+    repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    fair_share: object = None,
+    max_requests: int | None = None,
 ) -> None:
     lane = repo.parent / "lane.json"
     admission = {
@@ -36,6 +40,8 @@ def _config(
         json.dumps({"headroom": 4, "admission": admission}), encoding="utf-8"
     )
     config = copy.deepcopy(backend_tests.CONFIG)
+    if max_requests is not None:
+        config["queue"] = {"max_requests": max_requests}
     config["local_backend"] = "clive"
     config["backends"]["clive"]["lane_document"] = str(lane)
     config["backends"]["beta"]["lane_document"] = str(lane)
@@ -59,11 +65,21 @@ def _dispatch(repo: Path, node: str):
 
 
 @pytest.mark.parametrize(
-    ("fair_share", "expected"),
-    [(1, 2), (3, 3), (12, 8), (None, 2), ("unknown", 2)],
+    "fair_share",
+    [1, 3, 12, None, "unknown"],
 )
-def test_cap_follows_the_published_share(fair_share: object, expected: int) -> None:
-    assert runs.queued_dispatch_cap(fair_share) == expected
+def test_project_bound_ignores_the_published_share(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch, fair_share: object
+) -> None:
+    _config(dispatch_repo, monkeypatch, fair_share=fair_share, max_requests=3)
+    for index in range(3):
+        assert _dispatch(dispatch_repo, f"node-{index}").exit_code == 0
+    refused = _dispatch(dispatch_repo, "overflow")
+    payload = backend_tests._payload(refused)
+    assert refused.exit_code == 75
+    assert payload["error"] == "queue-full"
+    assert payload["cap"] == 3
+    assert len(runs.list_live(project="proj")) == 3
 
 
 def test_queued_dispatch_exits_zero_and_names_its_pointer(
@@ -102,10 +118,10 @@ def test_a_paused_gate_still_refuses_and_writes_no_pointer(
     assert runs.list_live(project="proj") == []
 
 
-def test_a_session_at_its_cap_is_refused_queue_full(
+def test_a_project_at_its_bound_is_refused_queue_full(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _config(dispatch_repo, monkeypatch, fair_share=2)
+    _config(dispatch_repo, monkeypatch, fair_share=2, max_requests=2)
     assert _dispatch(dispatch_repo, "node-one").exit_code == 0
     assert _dispatch(dispatch_repo, "node-two").exit_code == 0
 
@@ -123,7 +139,7 @@ def test_a_session_at_its_cap_is_refused_queue_full(
 def test_a_repeat_dispatch_at_the_cap_updates_the_pointer(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _config(dispatch_repo, monkeypatch, fair_share=2)
+    _config(dispatch_repo, monkeypatch, fair_share=2, max_requests=2)
     first = _dispatch(dispatch_repo, "node-one")
     assert first.exit_code == 0
     assert _dispatch(dispatch_repo, "node-two").exit_code == 0
