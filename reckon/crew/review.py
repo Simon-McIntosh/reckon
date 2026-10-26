@@ -2995,13 +2995,61 @@ def run_review_record_location(
 def delivered_run_review_paths(
     record: Mapping[str, Any], run_directory: str | Path
 ) -> list[Path]:
-    """The record files a run review delivered, in the order it declared them."""
+    """The record files a run review delivered.
+
+    The declared names come first, in the order they were declared. A reviewer
+    writes its record by hand, so it can name the file by its own run id rather
+    than the path its dispatch declared, and a filing that read only the
+    declared names left a well-formed record where nothing read it: measured
+    2026-10-24 on a review run whose manifest said the declared paths had been
+    written. The content arm below finds that record, so the filing is decided
+    by what a record says about itself as well as by where it was meant to sit.
+    """
     node = record.get("node") or {}
     located = (
         run_review_record_location(declared, run_directory)
         for declared in node.get("write_paths") or ()
     )
-    return [path for path in located if path is not None]
+    paths = [path for path in located if path is not None]
+    seen = set(paths)
+    for path in _records_naming_this_review(record, run_directory):
+        if path not in seen:
+            paths.append(path)
+            seen.add(path)
+    return paths
+
+
+def _records_naming_this_review(
+    record: Mapping[str, Any], run_directory: str | Path
+) -> list[Path]:
+    """Records in the reviewed run's record directory that name this review.
+
+    A record is selected by the pair of identities it carries — its own
+    ``review_run_id`` and the ``reviewed_run_id`` of the run it reviews — and
+    both must name the runs this filing is for. Requiring the pair is what
+    keeps another review's record out: a sibling review of the same run and
+    head names itself, not this run, so it is left where it is and cannot
+    displace the record already stored for that head or the dispositions
+    written on it.
+    """
+    review_run_id = str(record.get("run_id") or "").strip()
+    reviewed_run_id = Path(run_directory).name
+    if not review_run_id or not reviewed_run_id:
+        return []
+    found: list[Path] = []
+    for candidate in sorted(run_review_record_directory(run_directory).glob("*.json")):
+        try:
+            body = json.loads(candidate.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(body, Mapping):
+            continue
+        if str(body.get("review_run_id") or "").strip() != review_run_id:
+            continue
+        if str(body.get("reviewed_run_id") or "").strip() != reviewed_run_id:
+            continue
+        found.append(candidate)
+    return found
 
 
 class FiledRunReviews(list[Path]):
