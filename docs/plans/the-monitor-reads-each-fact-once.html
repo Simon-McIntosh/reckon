@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -259,9 +259,11 @@
     every event across the two day files exactly once; a cursor older than retention resumes at the oldest event
     and prints its one skip line; a stale heartbeat prints one line; a subscriber wakes on an event written to an attached day file and
     on nothing else, with the heartbeat write disabled for that test.
-    Measure: a 60 s <code>strace -f -e trace=openat,stat,newfstatat</code> of a running subscriber names no path
-    under the crew home; a <code>/proc/&lt;pid&gt;/io</code> delta cannot attribute reads to paths and misses reads served from cache. Negative controls: a subscriber that does not persist its cursor must fail the restart test, and one that
-    still reads its checkpoint from <code>runs.follower_dir</code> must fail the trace measure.</p>
+    Until §12 retires the per-project producers, they still need the follower's leases, so the subscriber keeps
+    renewing the producer's watch lease (<code>runs.renew_producer_lease</code>) and writing its delivery lease under
+    <code>runs.follower_dir</code>; §12 removes both. Measure: a 60 s <code>strace -f -e trace=openat,stat,newfstatat</code>
+    of a running subscriber names no path under the crew home other than those two lease files; a <code>/proc/&lt;pid&gt;/io</code> delta cannot attribute reads to paths and misses reads served from cache. Negative controls: a subscriber that does not persist its cursor must fail the restart test, and one that
+    still writes its checkpoint under <code>runs.follower_dir</code> each time it draws a row must fail the trace measure.</p>
 
     <h2 id="s9">§9 — Obligations and hooks read the station</h2>
 <section data-reckon="section" data-id="s9" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
