@@ -384,7 +384,11 @@ class StationStore:
         connection = self.connect()
         connection.executemany(
             "DELETE FROM pointers WHERE path = ?",
-            [(row["path"],) for row in self.pointer_rows() if Path(row["path"]) not in present],
+            [
+                (row["path"],)
+                for row in self.pointer_rows()
+                if Path(row["path"]) not in present
+            ],
         )
         connection.commit()
         for stream in self._pointer_streams(root):
@@ -708,7 +712,9 @@ class StationStore:
         connection = sqlite3.connect(self._day_path(day))
         connection.row_factory = sqlite3.Row
         connection.executescript(_DAY_SCHEMA)
-        columns = {str(row["name"]) for row in connection.execute("PRAGMA table_info(events)")}
+        columns = {
+            str(row["name"]) for row in connection.execute("PRAGMA table_info(events)")
+        }
         if "payload" not in columns:
             connection.execute("ALTER TABLE events ADD COLUMN payload TEXT")
             connection.commit()
@@ -748,7 +754,9 @@ class StationStore:
                     to_state,
                     detail,
                     duty,
-                    json.dumps(dict(payload), sort_keys=True) if payload is not None else None,
+                    json.dumps(dict(payload), sort_keys=True)
+                    if payload is not None
+                    else None,
                 ),
             )
             day_connection.commit()
@@ -772,7 +780,9 @@ class StationStore:
         """Projects whose previous tick can still contain a departure."""
         return {
             str(row["key"])[len("fleet:") :]
-            for row in self.connect().execute("SELECT key FROM station WHERE key LIKE 'fleet:%'")
+            for row in self.connect().execute(
+                "SELECT key FROM station WHERE key LIKE 'fleet:%'"
+            )
         }
 
     def record_tick(
@@ -793,7 +803,10 @@ class StationStore:
         connection = self.connect()
         with closing(self._open_day(at.astimezone(UTC).date())):
             pass
-        connection.execute("ATTACH DATABASE ? AS tick_day", (str(self._day_path(at.astimezone(UTC).date())),))
+        connection.execute(
+            "ATTACH DATABASE ? AS tick_day",
+            (str(self._day_path(at.astimezone(UTC).date())),),
+        )
         try:
             connection.execute("BEGIN IMMEDIATE")
             sequence = int(self.station_value(EVENT_COUNTER_KEY) or "0")
@@ -818,11 +831,13 @@ class StationStore:
                     ),
                 )
             connection.execute(
-                "UPDATE station SET value = ? WHERE key = ?", (str(sequence), EVENT_COUNTER_KEY)
+                "UPDATE station SET value = ? WHERE key = ?",
+                (str(sequence), EVENT_COUNTER_KEY),
             )
             if rows:
                 connection.execute(
-                    "UPDATE station SET value = ? WHERE key = ?", (str(sequence), EVENT_GENERATION_KEY)
+                    "UPDATE station SET value = ? WHERE key = ?",
+                    (str(sequence), EVENT_GENERATION_KEY),
                 )
             connection.execute(
                 "INSERT INTO station (key, value) VALUES (?, ?) "
@@ -845,9 +860,16 @@ class StationStore:
         for path in self.day_files():
             connection.execute("ATTACH DATABASE ? AS day", (str(path),))
             try:
+                columns = {
+                    str(row["name"])
+                    for row in connection.execute("PRAGMA day.table_info(events)")
+                }
+                payload_column = (
+                    "payload" if "payload" in columns else "NULL AS payload"
+                )
                 query = (
                     "SELECT id, time, project, audience, run, kind, from_state, to_state, "
-                    "detail, duty, payload FROM day.events WHERE id > ?"
+                    f"detail, duty, {payload_column} FROM day.events WHERE id > ?"
                 )
                 parameters: list[Any] = [after_id]
                 if audience is not None:

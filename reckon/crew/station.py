@@ -90,6 +90,13 @@ class Station:
                 if str(pointers.get(run_id, {}).get("project") or "") == project
             }
             known = self.store.recorded_fleet(project)
+            # A run first seen by this station is inventory. The producer's
+            # fold represents an unknown run as a dispatched arrival, then
+            # its actual verdict as a second row; the station records that
+            # verdict as its baseline before asking the same fold for changes.
+            for run_id, verdict in current.items():
+                if run_id not in known:
+                    known[run_id] = dict(verdict)
             folded, next_known = recovery.fleet_transitions(
                 known,
                 current,
