@@ -216,6 +216,7 @@ class FlightConfig(ConfiguredBaseModel):
     gates: GateConfig | None = Field(default=None)
     review: ReviewConfig | None = Field(default=None)
     gc: GcConfig | None = Field(default=None, description="""How gc bounds the files a promoted run captured and how long it keeps a finished run's directory. Declared on the flight config so a host or project layer retunes the limits without a code change; the resolver reads them from the resolved config.""")
+    queue: QueueConfig | None = Field(default=None, description="""How many requests one project may hold queued at once. A project can load a plan's full width without a per-session depth allowance.""")
     budget: BudgetConfig | None = Field(default=None)
     fences: FenceConfig | None = Field(default=None)
     capability_raise: CapabilityRaise | None = Field(default=None, description="""Rule that raises the capability a node resolves at once its plan section has been attempted at or above a threshold, so a section that keeps costing attempts stops landing on the raise's own lane without anyone deciding it by hand. The raise moves a node upward only: a node already at or above the raised level resolves unchanged.""")
@@ -262,6 +263,13 @@ class GcConfig(ConfiguredBaseModel):
             err_msg = f"Invalid directory_grace format: {v}"
             raise ValueError(err_msg)
         return v
+
+
+class QueueConfig(ConfiguredBaseModel):
+    """
+    The project-wide queued request bound.
+    """
+    max_requests: int | None = Field(default=None, description="""Maximum queued non-review requests in one project. The runtime default is 500 when no layer sets this value.""", ge=1)
 
 
 class ReviewSuite(ConfiguredBaseModel):
@@ -770,6 +778,7 @@ FlightConfig.model_rebuild()
 RoutingConfig.model_rebuild()
 ReviewConfig.model_rebuild()
 GcConfig.model_rebuild()
+QueueConfig.model_rebuild()
 ReviewSuite.model_rebuild()
 ReviewPopulation.model_rebuild()
 ReviewTiers.model_rebuild()

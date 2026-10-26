@@ -523,7 +523,6 @@ def sweep_handovers(keep_run_ids: Iterable[str]) -> list[str]:
 def existing_node_run(
     project: str,
     *,
-    session: str,
     plan: str,
     section: str,
     node_id: str,
@@ -531,9 +530,10 @@ def existing_node_run(
 ) -> dict[str, Any] | None:
     """The queued, being-admitted or in-flight run of one node, if any.
 
-    A node is queued at most once per session while any run of it is queued,
-    being admitted, or in flight. The live pointers answer first — a queued or
-    working run of the node — and the admission handovers answer for the gap in
+    A node is queued at most once per (project, plan, section, node id) while
+    any run of it is queued, being admitted, or in flight. The live pointers
+    answer first — a queued or working run of the node — and the admission
+    handovers answer for the gap in
     which the pass has taken the request but has not yet launched it, so the
     node is never named by neither an absent pointer nor a record. The admission
     pass's own launch passes ``include_handovers=False``: it wrote that handover
@@ -641,26 +641,14 @@ def _write_steering(run_id: str, brief: str) -> Path | None:
 
 
 def _resolved_queue_max_requests(record: Mapping[str, Any]) -> int:
-    """The project's queue depth from its own flight layer, or the default.
-
-    A dispatch path that already holds a resolved config passes the figure in,
-    so the host and override layers are honoured there. This fallback answers a
-    caller that does not — an admission pass re-queuing a request, or a caller
-    using :func:`queue_dispatch` directly — by reading the project's own layer,
-    which is the only one that carries a per-project bound in practice. A
-    layer that is absent, unreadable or malformed leaves the shipped default,
-    because a queue that cannot read its bound must not become unbounded.
-    """
+    """The project's queue depth from the resolved flight configuration."""
     from reckon import flight
 
-    try:
-        path = flight.project_config_path(
-            str(record.get("project") or ""), str(record.get("repo") or "") or None
-        )
-        layer = flight.read_layer_file(path)
-    except (OSError, ValueError, flight.FlightConfigError):
-        return flight.DEFAULT_QUEUE_MAX_REQUESTS
-    return flight.queue_max_requests(layer)
+    resolved = flight.resolve(
+        str(record.get("project") or "") or None,
+        checkout_path=str(record.get("repo") or "") or None,
+    )
+    return flight.queue_max_requests(resolved.config)
 
 
 def queue_dispatch(

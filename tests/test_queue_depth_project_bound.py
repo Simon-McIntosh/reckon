@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import subprocess
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,6 +26,8 @@ import pytest
 from reckon import flight
 from reckon.crew import runs
 from reckon.crew.runs import QueueFull
+from tests import test_a_queued_dispatch_is_accepted as dispatch_tests
+from tests import test_dispatch_names_its_backend as backend_tests
 
 PROJECT = "queue-depth-fixture"
 SESSION = "coordinator-session"
@@ -47,6 +50,24 @@ def repository(crew_home: Path, tmp_path: Path) -> Path:
     """A mounted project checkout, so a crew view resolves its docs root."""
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (root / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for arguments in (
+        ["init", "-q", "-b", "main"],
+        ["add", "seed.txt"],
+        [
+            "-c",
+            "user.name=Fixture",
+            "-c",
+            "user.email=fixture@example.invalid",
+            "commit",
+            "-q",
+            "-m",
+            "chore: seed fixture",
+            "-m",
+            "Give crew reads a repository with a HEAD.",
+        ],
+    ):
+        subprocess.run(["git", *arguments], cwd=root, check=True, capture_output=True)
     (crew_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
     )
@@ -110,21 +131,24 @@ def _live_names() -> list[str]:
 
 
 def test_one_session_queues_two_hundred_requests_without_a_refusal(
-    crew_home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A session's depth is bounded by its project, never by its own share.
 
     The arm that fails if the per-session clamp returns: at a floor of two the
     ninth dispatch is refused, and this loop reaches two hundred.
     """
+    repo = dispatch_tests.dispatch_repo.__wrapped__(tmp_path, monkeypatch)
+    dispatch_tests._config(repo, monkeypatch, fair_share=2)
     for index in range(200):
-        queued, position = runs.queue_dispatch(
-            _request(f"node-{index:03d}", section=f"s{index:03d}")
-        )
-        assert queued["phase"] == "queued"
-        assert position is not None
+        result = dispatch_tests._dispatch(repo, f"node-{index:03d}")
+        payload = backend_tests._payload(result)
+        assert result.exit_code == 0, (index, payload)
+        assert payload["queued"] is True
+        assert payload["position"] is not None
 
-    assert len(runs.list_live(project=PROJECT)) == 200
+    assert len(runs.list_live(project="proj")) == 200
 
 
 def test_a_duplicate_request_returns_the_existing_id_and_stores_nothing(
@@ -169,11 +193,36 @@ def test_the_501st_request_in_a_project_is_refused_by_the_bound(
     assert len(runs.list_live(project=PROJECT)) == 500
 
 
-def test_the_bound_is_the_projects_configured_depth() -> None:
+def test_the_bound_is_the_projects_configured_depth(tmp_path: Path) -> None:
     """The depth is a flight setting, so a project layer can lower it."""
     assert flight.queue_max_requests({}) == 500
     assert flight.queue_max_requests({"queue": {"max_requests": 7}}) == 7
     assert flight.queue_max_requests({"queue": {"max_requests": "many"}}) == 500
+    assert (
+        flight.queue_max_requests(
+            flight.resolve(
+                overrides={"queue": {"max_requests": 7}},
+                host_path=tmp_path / "host.yaml",
+                catalogue_path=tmp_path / "catalogue.yaml",
+                strict=True,
+            ).config
+        )
+        == 7
+    )
+
+
+def test_a_caller_without_a_bound_resolves_host_and_project_layers(
+    crew_home: Path, repository: Path
+) -> None:
+    (crew_home / "flight.yaml").write_text(
+        "queue:\n  max_requests: 3\n", encoding="utf-8"
+    )
+    record = _request("node-a", repo=str(repository))
+    assert runs._resolved_queue_max_requests(record) == 3
+
+    project_layer = repository / "docs" / "state" / PROJECT / "flight.yaml"
+    project_layer.write_text("queue:\n  max_requests: 4\n", encoding="utf-8")
+    assert runs._resolved_queue_max_requests(record) == 4
 
 
 def test_a_review_of_a_delivered_run_is_never_refused_by_the_bound(
@@ -226,8 +275,17 @@ def test_the_mcp_crew_reads_answer_inside_their_deadline_on_five_hundred(
         for attempt in ("cold", "warm"):
             started = time.monotonic()
             answer = asyncio.run(
-                tool(view=view, project=PROJECT, checkout_path=str(repository))
+                tool(
+                    view=view,
+                    project=PROJECT,
+                    session=SESSION,
+                    checkout_path=str(repository),
+                    fields=["run_id"],
+                )
             )
             elapsed = time.monotonic() - started
+            assert answer["ok"] is True, (view, attempt, answer)
             assert answer.get("error") != "storage-slow", (view, attempt, answer)
             assert elapsed < READ_DEADLINE_SECONDS, (view, attempt, elapsed)
+            rows = answer["runs"] if view == "live" else answer["obligations"]
+            assert len(rows) == 500, (view, attempt, len(rows))

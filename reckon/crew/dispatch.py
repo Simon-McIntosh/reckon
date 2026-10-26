@@ -1694,7 +1694,6 @@ def dispatch(
     if not shadow_lineage:
         existing = existing_node_run(
             project,
-            session=session,
             plan=node.plan,
             section=node.section,
             node_id=node.id,
