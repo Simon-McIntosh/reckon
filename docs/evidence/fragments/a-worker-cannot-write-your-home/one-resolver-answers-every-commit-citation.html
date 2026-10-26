@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="One resolver answers every commit citation">
+  <meta name="plan-summary" content="The commit-citation predicate has one definition, in promotion_evidence.py, and reports.py reaches the same function object through an import at its call site plus a module-level attribute hook, because promotion_evidence imports reports at module scope. The audit's citation check accepts a real commit and refuses an all-zero hash and a hash naming no object.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s22">
+  <meta name="plan-commits" content="642f473e16d41c0758691f276edf124b6bfb9d36">
+  <meta name="plan-recorded-at" content="2026-10-26">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,manifest,audit,citation,duplication">
+  <title>One resolver answers every commit citation — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="one-resolver-answers-every-commit-citation" data-reckon="landed" data-when="2026-10-26">
+  <h2 id="one-resolver-answers-every-commit-citation">One resolver answers every commit citation</h2>
+  <p id="one-resolver-answers-every-commit-citation-landing">The commit-citation predicate now has one definition, in <code>reckon/crew/promotion_evidence.py</code>; the copy in <code>reckon/crew/reports.py</code> is deleted. Nothing behaviourally changed, because the deleted copy already answered through <code>recovery._resolve_commit</code> and the remaining one answers through <code>_commit_canonical_id</code>, which is <code>_resolve_commit(root, revision) or None</code>. Measured: <code>git grep -n 'def _commit_resolves_in' reckon/</code> prints exactly one line, <code>reckon/crew/promotion_evidence.py:383</code>.</p>
+  <p id="one-resolver-answers-every-commit-citation-reach">reports reaches that definition without closing an import cycle. promotion_evidence imports reports at module scope, so reports imports the resolver inside <code>_commit_citation_findings</code>, the function that calls it — the same deferred form the neighbouring <code>recovery</code> readers in that file already use. A module-level <code>__getattr__</code> serves the same function object to a reader that names <code>reports._commit_resolves_in</code> as an attribute, which an existing test does; the assertion is object identity, not equality of behaviour, so a wrapper would not satisfy it.</p>
+  <p id="one-resolver-answers-every-commit-citation-check">The new test drives the audit's citation check on one fixture repository holding a single commit. The commit's own id is accepted (no finding). An all-zero 40-hex hash is refused (<code>_commit_resolves_in</code> returns <code>False</code>, and the check returns one finding naming that token). A 40-hex hash derived from the real id by changing its 31st character is refused the same way. The same four tests assert that <code>reports._commit_resolves_in is promotion_evidence._commit_resolves_in</code>, so a reintroduced second definition fails here rather than drifting quietly.</p>
+  <p id="one-resolver-answers-every-commit-citation-gate">Gate: <code>tests/test_one_resolver_answers_every_commit_citation.py</code> passes 4 of 4; together with <code>tests/test_one_function_resolves_a_citation.py</code> the pair reports 6 passed at <code>EXIT=0</code>. The 108 test files importing <code>reckon/crew/reports.py</code>, <code>reckon/crew/promotion_evidence.py</code> or <code>reckon/crew/promotion.py</code> report <code>1094 passed</code> at <code>EXIT=0</code>, so the added-failure count against base is zero by construction: a fully green head arm has nothing to add to any baseline. <code>ruff check</code> and <code>ruff format --check</code> report zero findings and zero formatting changes on the two changed Python files.</p>
+  <p id="one-resolver-answers-every-commit-citation-control">Negative control: with the single definition deleted in a scratch copy of the tree, both citation test modules fail at <code>tests/conftest.py import</code> with <code>ImportError: cannot import name '_commit_resolves_in' from 'reckon.crew.promotion_evidence'</code>, and pytest exits <code>EXIT=4</code>. The failure is at conftest import, so pytest records no test id — the declared mutation says the tests must fail on import, and that is the shape the log shows.</p>
+</article>
+</body>
+</html>
