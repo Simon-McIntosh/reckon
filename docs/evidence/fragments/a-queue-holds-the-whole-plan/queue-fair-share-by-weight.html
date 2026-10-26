@@ -33,12 +33,34 @@
   flag from the resolved config it already holds; the admission path passes it
   from the per-project config it resolves for the request.
 
+  <p><strong>Reading a weight from any project's config.</strong> Each project
+  resolves its own configuration, so the pass merges only the weights those
+  configurations actually declare — first declaration wins — and applies the
+  equal default once at the end. Merging completed maps instead would let
+  whichever project came first in the queue fix every other project at the
+  default, which is what a declared 3:1 split did whenever the declaring
+  project was not first: the split silently ran 1:1.
+  <code>flight.declared_project_weights</code> returns the declared map without
+  filling defaults, which is what makes the two distinguishable.
+
   <p><strong>The measure.</strong> Two projects, 100 ready requests each, with
   the ordering the pass uses: weights 3:1 launch 60 / 20 in the first 80
   admissions (exactly 3:1), and equal weights launch 40 / 40. A project with one
   ready request against another's nine takes its single slot and then leaves
   every remaining slot to the other, and priority order inside a project is
-  unchanged by the interleave.
+  unchanged by the interleave. Seventeen tests carry the behaviour, three of
+  them the cross-config declaration: the same 60 / 20 split holds when only the
+  project queued second declares the weights.
+
+  <p><strong>The delta.</strong> Both arms run the same 144 test files —
+  every one importing <code>queue_admission</code>, <code>dispatch_plan</code>
+  or <code>reckon.flight</code> — each from its own tree with that tree's
+  module imported (<code>module.__file__</code> recorded in the log header).
+  Base <code>845a839</code>: 1733 passed, 1 failed, 1 collection error; head:
+  1751 passed, 0 failed, the same collection error. The base tree carries no
+  <code>tests/test_queue_weighted_fair_share.py</code> and no
+  <code>fair_share_admission_order</code>, which the log states rather than
+  leaving to be assumed.
 
   <p><strong>Not yet declared by the schema.</strong>
   <code>reckon/schema/flight.yaml</code> (and its generated
