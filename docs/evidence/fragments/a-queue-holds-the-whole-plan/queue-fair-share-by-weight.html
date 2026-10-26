@@ -77,10 +77,10 @@
   configuration without requiring a local backend declaration; the two view
   tests that exposed that requirement now pass.
 
-  <p><strong>Remaining review path.</strong> A held review still calls
-  <code>_dispatch_lane_allowance</code> without the weights flag in a file
-  outside this worker's grant. A bounded probe with 3:1 weights, four lane-wide
-  slots and zero per-session slots returns <code>'local'</code> as held when the
-  weighted lane-wide rule would leave it open. The reproduction is in the run
-  directory for a scoped repair.
+  <p><strong>Review rerouting.</strong> The held-review path passes the configured
+  weights flag to <code>_dispatch_lane_allowance</code>. Its focused test starts
+  from the reproduced 3:1 case: four lane-wide slots and zero per-session
+  slots. Without weights the review is held on the session's zero; with weights
+  it remains eligible on the lane-wide four. The earlier failing probe and the
+  repaired test are both recorded in the run directory.
 </section>
