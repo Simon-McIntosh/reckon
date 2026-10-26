@@ -1508,6 +1508,18 @@ class RowPolicy:
         # once between them. ``None`` draws every lift row on this pane's own
         # memory alone, the behaviour before the claim.
         self._lift_claim = lift_claim
+        # run_id -> the launch ordinal at which this pane drew the run's
+        # in-review row. A producer resweeps a delivered run whose state has not
+        # changed, so the delivery it writes again is a row this pane already
+        # printed; once the review has started, that echo would draw the pane
+        # the run leaving its review while nothing has landed on it. The ordinal
+        # is the attempt's own: a launch the pane released for the run moves it,
+        # so a resumed attempt's delivery is new and prints.
+        self._review_started: dict[str, int] = {}
+        # run_id -> how many launches this pane has released for the run. Not
+        # the state word, because a run's pane word passes through the review
+        # and back; the attempt is what decides whether a delivery is fresh.
+        self._launches: dict[str, int] = {}
 
     @property
     def lift_groups(self) -> frozenset[str]:
@@ -1690,11 +1702,39 @@ class RowPolicy:
         is the run that launched, so a review run's launch — drawn as the
         reviewed run's row — is remembered on the review run, and a second
         review of the same run is a different launch that still prints.
+
+        A launch opens an attempt, so it also moves the ordinal a later delivery
+        is judged against: the reviewed run's in-review row marks the attempt
+        whose delivery the pane showed, and a resume of that run is a new one
+        whose own delivery is news.
         """
         key = str(row.get("review_run_id") or run_id or "")
-        if key:
-            self._reported[key] = "working"
-            self._shown[key] = "working"
+        if not key:
+            return
+        reviewed = str(row.get("review_run_id") or "")
+        if reviewed:
+            source = str(row.get("run_id") or "")
+            if source:
+                self._review_started[source] = self._launches.get(source, 0)
+        else:
+            self._launches[key] = self._launches.get(key, 0) + 1
+        self._reported[key] = "working"
+        self._shown[key] = "working"
+
+    def _redraws_a_shown_delivery(self, event: Mapping[str, Any], run_id: str) -> bool:
+        """Whether this row re-emits a delivery the pane already drew.
+
+        A producer re-sweep writes the delivery of a run whose state it has
+        already recorded, so the row is one the pane printed before. Once the
+        run's review has started, printing it again reads as the run leaving
+        its review — the review has landed nothing, so the run is still
+        delivered — so the echo is withheld. The memory names the attempt, so a
+        resumed attempt's own delivery is a new one and prints.
+        """
+        if not run_id or _pane_word(event) != "delivered":
+            return False
+        started = self._review_started.get(run_id)
+        return started is not None and started == self._launches.get(run_id, 0)
 
     def _is_observed(self, event: Mapping[str, Any]) -> bool:
         """Whether this row belongs to a session the pane was asked to observe.
@@ -2094,6 +2134,14 @@ class RowPolicy:
         if from_state is not None and from_state == to_state:
             if run_id:
                 self._reported[run_id] = to_state
+            return out
+
+        # A delivery this attempt already put on the pane is not drawn again:
+        # the producer's re-sweep re-emits it with the classification that made
+        # it actionable, so the same-word rule alone would let it through, and
+        # after the run's review started it would read as the run leaving a
+        # review that has landed nothing.
+        if self._redraws_a_shown_delivery(event, run_id):
             return out
 
         # A row whose destination draws the word the pane already shows for its
