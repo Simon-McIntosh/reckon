@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    "test_drain_names_implementable_sections_without_requests: line 31 fails if the empty-request inventory is absent or wrong; line 34 fails if the read changes config or docs files.",
+    "test_whole_width_stores_once_and_releases_in_dependency_order: lines 105-112 fail if dispatch loses a request or assigns the wrong initial phase; lines 116-118 fail if the sixth is missing, a pointer is added, or config/docs files change during the read.",
+    "The duplicate-dispatch checks at lines 121-122 fail if the second dispatch changes its id or adds a pointer; lines 125-126 fail if the sixth remains unloaded or is not stored.",
+    "The admission checks at lines 141-155 fail if tails leave their waits too early or the expected number of launches fails to follow declarations; they do not identify the launched ids individually.",
+    "The ledger check at line 163 fails only if all ledger rows stop counting as coverage; its fixture omits promoted_revision, so it rewards the unlanded-row defect."
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1370",
+    "reckon/mcp_views.py:4240",
+    "reckon/crew/obligations.py:1624"
+  ],
+  "completed_at": "2026-10-26T23:52:05Z",
+  "dispatched_at": "2026-10-26T23:46:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2016",
+      "severity": "blocking",
+      "text": "blocking: Every ledger row suppresses unloaded even when promoted_revision is absent or not an ancestor of HEAD; the existing landing check at reckon/crew/queue_admission.py:1546-1558 requires that ancestry, so a lost pointer can hide unfinished work."
+    },
+    {
+      "file": "tests/test_drain_lists_unloaded.py",
+      "line": "160",
+      "severity": "blocking",
+      "text": "blocking: The fixture writes a ledger row with no promoted_revision and line 163 expects the section to vanish; this assertion accepts the unlanded-row regression and must use a genuine landed revision plus a negative unlanded case."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "1934",
+      "severity": "non-blocking",
+      "text": "non-blocking: This function repeats the inventory traversal owned by reckon/resources.py:541 and leaves the earlier remainder owner at runs.py:1897 unused; disposition folded into the drain-lists-unloaded repair node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Four commits from ef22b8ba21879c486f6ee4b6b414d6a07a4f6f7f through a2202efef5605a769c625672ca6b2bc5efd5edab add unloaded derivation, tests, cache repair, and evidence in the three declared paths.",
+    "done_when": "The source measure in prompt.txt:102-103 requires two chains, deduplication, unload transitions, and no read writes; repair-head.log:6 reports 61 passes, but tests/test_drain_lists_unloaded.py:160 does not establish a landed run.",
+    "goal": "The source goal in prompt.txt:30 asks for implementable sections without requests or landed runs; reckon/crew/runs.py:2014-2028 lists missing sections but counts every ledger row as landed.",
+    "manifest": "The reviewed manifest.md:5,21-22 reports completion and the serial base and head gate receipts, whose logs show one baseline failure and no head failures.",
+    "write_paths": "The fence in prompt.txt:69-73 grants runs.py, the new drain test, and landing evidence; git diff ef22b8ba..a2202efe changes only those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_drain_lists_unloaded.py:31-34,105-155 would fail on a wrong inventory, cache write, extra pointer, wrong phase, changed deduplication id, or wrong launch count, but line 163 stays green for an unlanded ledger row.",
+    "evidence": "repair-base.log:71-72 and repair-head.log:6-7 establish a serial delta of one baseline failure to zero head failures, while tests/test_drain_lists_unloaded.py:160 supplies no landing proof.",
+    "fit": "reckon/crew/runs.py:1993-2029 follows the local drain structure and names by behavior, while lines 1934-1967 leave a parallel plan-inventory and remainder path.",
+    "goal_fidelity": "reckon/crew/runs.py:2016 suppresses a section after promotion even when its revision has not landed, contrary to the goal in prompt.txt:30.",
+    "reuse": "reckon/crew/runs.py:1934 repeats the plan traversal owned by reckon/resources.py:541, and lines 1953-1967 parallel the existing remainder derivation at runs.py:1897.",
+    "scope_discipline": "The ef22b8ba21879c486f6ee4b6b414d6a07a4f6f7f..a2202efef5605a769c625672ca6b2bc5efd5edab diff changes only the paths declared in prompt.txt:69-73."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in prompt.txt:30 asks for implementable sections without requests or landed runs; reckon/crew/runs.py:2014-2028 lists missing sections but counts every ledger row as landed.\nVERDICT done_when: The source measure in prompt.txt:102-103 requires two chains, deduplication, unload transitions, and no read writes; repair-head.log:6 reports 61 passes, but tests/test_drain_lists_unloaded.py:160 does not establish a landed run.\nVERDICT write_paths: The fence in prompt.txt:69-73 grants runs.py, the new drain test, and landing evidence; git diff ef22b8ba..a2202efe changes only those three paths.\nVERDICT manifest: The reviewed manifest.md:5,21-22 reports completion and the serial base and head gate receipts, whose logs show one baseline failure and no head failures.\nVERDICT diff: Four commits from ef22b8ba21879c486f6ee4b6b414d6a07a4f6f7f through a2202efef5605a769c625672ca6b2bc5efd5edab add unloaded derivation, tests, cache repair, and evidence in the three declared paths.\nCALL_SITES: reckon/crew_run_commands.py:1370, reckon/mcp_views.py:4240, reckon/crew/obligations.py:1624\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2016 suppresses a section after promotion even when its revision has not landed, contrary to the goal in prompt.txt:30.\nSCORE evidence: 16\nJUSTIFICATION evidence: repair-base.log:71-72 and repair-head.log:6-7 establish a serial delta of one baseline failure to zero head failures, while tests/test_drain_lists_unloaded.py:160 supplies no landing proof.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The ef22b8ba21879c486f6ee4b6b414d6a07a4f6f7f..a2202efef5605a769c625672ca6b2bc5efd5edab diff changes only the paths declared in prompt.txt:69-73.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_drain_lists_unloaded.py:31-34,105-155 would fail on a wrong inventory, cache write, extra pointer, wrong phase, changed deduplication id, or wrong launch count, but line 163 stays green for an unlanded ledger row.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/runs.py:1993-2029 follows the local drain structure and names by behavior, while lines 1934-1967 leave a parallel plan-inventory and remainder path.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/runs.py:1934 repeats the plan traversal owned by reckon/resources.py:541, and lines 1953-1967 parallel the existing remainder derivation at runs.py:1897.\nFINDING reckon/crew/runs.py:2016 blocking: Every ledger row suppresses unloaded even when promoted_revision is absent or not an ancestor of HEAD; the existing landing check at reckon/crew/queue_admission.py:1546-1558 requires that ancestry, so a lost pointer can hide unfinished work.\nFINDING tests/test_drain_lists_unloaded.py:160 blocking: The fixture writes a ledger row with no promoted_revision and line 163 expects the section to vanish; this assertion accepts the unlanded-row regression and must use a genuine landed revision plus a negative unlanded case.\nFINDING reckon/crew/runs.py:1934 non-blocking: This function repeats the inventory traversal owned by reckon/resources.py:541 and leaves the earlier remainder owner at runs.py:1897 unused; disposition folded into the drain-lists-unloaded repair node.\n",
+  "review_run_id": "r-20261026T234403989209-review-of-drain-lists-unloaded-a2202efef560",
+  "reviewed_base_sha": "ef22b8ba21879c486f6ee4b6b414d6a07a4f6f7f",
+  "reviewed_head_sha": "a2202efef5605a769c625672ca6b2bc5efd5edab",
+  "reviewed_run_id": "r-20261026T221905269639-drain-lists-unloaded",
+  "scores": {
+    "durability": 11,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 12,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T23:54:07.204197+00:00",
+  "total": 79
+}
