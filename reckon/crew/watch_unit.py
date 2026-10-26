@@ -367,6 +367,65 @@ def release_watch_seat(project: str) -> bool:
     return released
 
 
+def seat_moved_row(project: str, verdict: Mapping[str, Any]) -> dict[str, Any]:
+    """One watch row announcing that a producer's seat moved between hosts.
+
+    A seat changing hands is a state change a coordinator oversees, so the
+    release is written to the project's watch stream rather than only to the
+    producer's own log. The row names both hosts — the one giving the seat up
+    and the fleet node taking it — as structured fields beside the free-text
+    clause a person reads, so a reader needs no parsing to know where the work
+    moved. ``to_state`` selects the pane's ``seat moved`` word; no run's state
+    changes when a seat moves, which is why the row carries that word rather
+    than any producer state.
+    """
+    from reckon.crew import recovery_watch
+    from reckon.crew.ticker import SEAT_MOVED_STATE
+
+    from_host = str(verdict.get("host") or "")
+    to_host = str(verdict.get("fleet_node") or "")
+    row = recovery_watch._watch_transition(
+        project,
+        kind="transition",
+        snapshot={
+            "run_id": None,
+            "node": to_host,
+            "session": "",
+            "role": "",
+            "backend": "",
+            "model": "",
+            "detail": (
+                f"seat released on {from_host}, which cannot probe runs "
+                f"launched on the fleet node; the producer on {to_host} takes it"
+            ),
+            "recovery_classification": SEAT_MOVED_STATE,
+        },
+        previous=None,
+        current=SEAT_MOVED_STATE,
+        counts={"working": 0, "blocked": 0, "unpromoted": 0},
+        spend_runs=[],
+    )
+    row["seat_from_host"] = from_host
+    row["seat_to_host"] = to_host
+    return row
+
+
+def announce_seat_moved(project: str, verdict: Mapping[str, Any]) -> None:
+    """Append the seat-moved row to the project's watch stream.
+
+    A stream that cannot be written is not fatal: the release itself has
+    already happened and ends the process either way, so a failure here costs
+    the announcement rather than the release.
+    """
+    from reckon.crew import runs
+
+    try:
+        row = seat_moved_row(project, verdict)
+        runs._append_watch_lines(watch_stream_path(project), [row])
+    except Exception:  # noqa: BLE001 - a row that cannot be written never blocks the release
+        return
+
+
 def release_seat_when_misplaced(
     project: str,
     *,
@@ -380,7 +439,9 @@ def release_seat_when_misplaced(
     A hold is returned to the caller, which stays at work. A release-and-exit
     first disables the unit that would restart this producer, so a restart
     policy cannot bring the same misplaced producer back, then gives up the
-    seat, announces the release once naming both hosts, and ends the process.
+    seat, writes one row to the project's watch stream so the panes draw the
+    seat moving, announces the release once naming both hosts, and ends the
+    process.
 
     Called at start-up and on every lease renewal: a producer can be reloaded
     onto another host after it has taken the seat, so the start-up answer alone
@@ -395,6 +456,7 @@ def release_seat_when_misplaced(
     release_watch_seat(project)
     if project not in _ANNOUNCED_RELEASES:
         _ANNOUNCED_RELEASES.add(project)
+        announce_seat_moved(project, verdict)
         print(verdict["announcement"], flush=True)
     (exit_process if exit_process is not None else _EXIT_PROCESS)(0)
     return verdict

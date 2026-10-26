@@ -408,6 +408,7 @@ def test_every_pane_word_is_a_hued_table_key() -> None:
         "landed",
         "dropped",
         "in review",
+        "seat moved",
     }
     for theme in ("light", "dark"):
         for word in ticker_module.PANE_STATES:
