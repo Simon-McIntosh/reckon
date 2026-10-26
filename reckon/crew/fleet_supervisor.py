@@ -1837,6 +1837,84 @@ def _run_session_copy(name: str, layout: str, environ: Mapping[str, str] | None)
         return 1
 
 
+class StationProcess:
+    """Keep one station on this worker node for the batch step's lifetime."""
+
+    def __init__(
+        self,
+        runtime: Path,
+        environ: Mapping[str, str] | None = None,
+        *,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self.runtime = runtime
+        self.environ = os.environ if environ is None else environ
+        self.clock = clock
+        self.process: subprocess.Popen[bytes] | None = None
+        self.next_attempt = 0.0
+
+    def ensure(self) -> None:
+        """Spawn once when the node's lease names no live station."""
+        if self.process is not None and self.process.poll() is None:
+            return
+        if self.clock() < self.next_attempt:
+            return
+        from reckon.crew.dispatch_watch import session_host_runtime_candidate
+
+        root, source = session_host_runtime_candidate(environ=self.environ)
+        if root is None or source == "scratch":
+            log("station has no shared node-local runtime root")
+            self.next_attempt = self.clock() + LEASE_RENEW_SECONDS
+            return
+        holder = HostLease(
+            root,
+            "station",
+            _short_hostname(),
+            os.getpid(),
+            self.environ.get("SLURM_JOB_ID", ""),
+        ).holder()
+        if holder is not None and holder.host == _short_hostname():
+            try:
+                os.kill(holder.pid, 0)
+            except ProcessLookupError:
+                pass
+            except PermissionError:
+                return
+            else:
+                return
+        elif holder is not None:
+            return
+        launcher = (
+            "import sys; "
+            f"sys.path.insert(0, {str(Path(__file__).resolve().parents[2])!r}); "
+            "from reckon.cli import main; main()"
+        )
+        log_path = service_log_directory(self.environ) / "station.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        with log_path.open("ab") as sink:
+            self.process = subprocess.Popen(
+                [sys.executable, "-c", launcher, "crew", "station"],
+                env=dict(self.environ),
+                stdin=subprocess.DEVNULL,
+                stdout=sink,
+                stderr=sink,
+                start_new_session=True,
+            )
+        self.next_attempt = self.clock() + LEASE_RENEW_SECONDS
+        log(f"station started as pid {self.process.pid}")
+
+    def stop(self) -> None:
+        """End only the station this batch step started."""
+        if self.process is None or self.process.poll() is not None:
+            return
+        self.process.terminate()
+        try:
+            self.process.wait(timeout=DETACH_GRACE_SECONDS)
+        except subprocess.TimeoutExpired:
+            self.process.kill()
+            self.process.wait()
+
+
 def handle_line(
     line: str,
     runtime: Path,
@@ -1844,6 +1922,7 @@ def handle_line(
     exec_: Any = os.execv,
     services: DeclaredServices | None = None,
     *,
+    station_process: StationProcess | None = None,
     standby: bool = False,
     promote: Callable[[], None] | None = None,
 ) -> bool:
@@ -1857,6 +1936,9 @@ def handle_line(
     if request.verb == "session":
         layout = request.fields[1] if len(request.fields) > 1 else ""
         _run_session_copy(request.fields[0] if request.fields else "", layout, environ)
+    elif request.verb == "station" and not request.fields:
+        if station_process is not None and not standby:
+            station_process.ensure()
     elif request.verb == "ready" and len(request.fields) == 1:
         token = request.fields[0]
         if re.fullmatch(r"[0-9a-f]{32}", token):
@@ -1965,8 +2047,10 @@ def serve(
     )
     start_health_sampler(environ)
     services = DeclaredServices(runtime, environ)
+    station_process = StationProcess(runtime, environ)
     if not standby:
         services.reload()
+        station_process.ensure()
     is_standby = standby
 
     def promote() -> None:
@@ -1977,6 +2061,7 @@ def serve(
         reserve_fleet_projects(environ)
         is_standby = False
         services.reload()
+        station_process.ensure()
         log("fleet supervisor promoted")
 
     stopping = threading.Event()
@@ -1995,6 +2080,8 @@ def serve(
         pending = b""
         while True:
             _reap_finished_children()
+            if not is_standby:
+                station_process.ensure()
             if not readable_within(descriptor, REQUEST_WAIT_SECONDS):
                 continue
             chunk = os.read(descriptor, REQUEST_READ_BYTES)
@@ -2010,6 +2097,7 @@ def serve(
                     environ,
                     exec_,
                     services,
+                    station_process=station_process,
                     standby=is_standby,
                     promote=promote,
                 ):
@@ -2023,6 +2111,7 @@ def serve(
         with suppress(OSError):
             os.close(descriptor)
         stopping.set()
+        station_process.stop()
         services.stop_all()
     return 0
 

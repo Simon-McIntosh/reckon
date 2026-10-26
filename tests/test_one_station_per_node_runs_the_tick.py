@@ -121,6 +121,9 @@ def test_one_station_keeps_every_session_transition_once_across_restart(
         )
         assert second.returncode != 0
         assert "held by" in second.stderr and str(first.pid) in second.stderr
+        assert socket.gethostname() in second.stderr
+        assert (runtime / "leases" / "station.json").is_file()
+        assert not (runtime / "station.lock").exists()
 
         _phase(pointers["r-one"], "blocked-upstream")
         _phase(pointers["r-three"], "awaiting-upstream")
@@ -136,9 +139,9 @@ def test_one_station_keeps_every_session_transition_once_across_restart(
             ("r-one", "session-one"),
             ("r-three", "session-three"),
         ]
-        assert all(
-            json.loads(row["payload"])["run_id"] == row["run"] for row in store.events()
-        )
+        assert [
+            (json.loads(row["payload"])["run_id"], row["run"]) for row in store.events()
+        ] == [("r-one", "r-one"), ("r-three", "r-three")]
         consumed = {row["path"]: row["consumed"] for row in store.stream_rows()}
         assert all(consumed[path] > initial_offsets[path] for path in consumed)
     finally:

@@ -7,6 +7,7 @@ import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -438,6 +439,7 @@ def _ensure_watch_producer(
     caller is also the only place that holds the session whose delivery is a
     separate question from the watcher's liveness.
     """
+    _ensure_node_station()
     arming_lock = watch_stream_path(project).with_suffix(".arm.lock")
     arming_lock.parent.mkdir(parents=True, exist_ok=True)
     deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
@@ -468,6 +470,42 @@ def _ensure_watch_producer(
                     break
                 time.sleep(0.05)
     return watch_state(project, session=session)
+
+
+def _ensure_node_station() -> None:
+    """Ask the worker node's batch step for its station when none holds it."""
+    from reckon.crew.fleet_supervisor import REQUEST_FIFO_NAME
+    from reckon.crew.host_lease import HostLease
+
+    fleet = _read_fleet_record()
+    if fleet is None or not _runs_inside_fleet_allocation(fleet):
+        return
+    runtime = _fleet_runtime_dir(fleet)
+    root, source = session_host_runtime_candidate()
+    if runtime is None or root is None or source == "scratch":
+        return
+    lease = HostLease(
+        root,
+        "station",
+        socket.gethostname(),
+        os.getpid(),
+        os.environ.get("SLURM_JOB_ID", ""),
+    )
+    holder = lease.holder()
+    if holder is not None and holder.host == socket.gethostname():
+        try:
+            os.kill(holder.pid, 0)
+        except ProcessLookupError:
+            lease.release_holder(holder)
+        except PermissionError:
+            return
+        else:
+            return
+    _write_fleet_request(
+        runtime / REQUEST_FIFO_NAME,
+        b"station\n",
+        time.monotonic() + WATCHER_LOAD_BOUND_SECONDS,
+    )
 
 
 # The session host a Claude Code session runs declares its request FIFO in a
