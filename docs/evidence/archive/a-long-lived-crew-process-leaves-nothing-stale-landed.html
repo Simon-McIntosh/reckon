@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-long-lived-crew-process-leaves-nothing-stale-landed">
+  <meta name="plan-title" content="A Long-Lived Crew Process Leaves Nothing Stale — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Long-Lived Crew Process Leaves Nothing Stale: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-long-lived-crew-process-leaves-nothing-stale">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Long-Lived Crew Process Leaves Nothing Stale — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Long-Lived Crew Process Leaves Nothing Stale — landed record</h1>
+  <p>Closure synthesis for A Long-Lived Crew Process Leaves Nothing Stale: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="s2">
+    <h2>§2 — A queued run is never told to re-dispatch</h2>
+    <p>Merge <code>9e2bd14f7</code> (head <code>d1f19f171</code>, run <code>r-20261024T095738002560-a-reconciled-refusal-reads-as-waiting</code>). <code>_unreconciled_runs_remedy</code> publishes the first named run that still has a live pointer, and <code>_queued_failure_remedy</code> returns the waiting reading, with no fall-through to the quoted re-dispatch, when none does. Only an absent pointer counts as reconciled, so an unreadable one keeps the duty; the review found that fail-open and it was repaired in <code>ddb95ea73</code>. The remedy's detail no longer advises discard-and-redispatch. Two superseded assertions in <code>tests/test_a_quoted_session_id_is_not_a_session_refusal.py</code> were rewritten, granted by widening the run. Gate: the new test file passes at head and reads 4 failed at base; the negative control fails the removed-pointer cases. Population over the importers: base 19 failed and 10 errors, head 14 failed and 10 errors, 0 added. Review 112/120.</p>
+  </section>
+
+  <section id="s3">
+    <h2>§3 — A re-exec reaps the children it inherits</h2>
+    <p>Head <code>0def2d8a7</code> (run <code>r-20261024T110802029357-a-reexec-reaps-the-children-it-inherits</code>). <code>dispatch_launch._adopt_launched_workers_from_reexec</code> registers every child the process holds when it runs, read through <code>recovery_liveness._process_children</code>, into the existing launched-worker registry without a run record, and starts the reaper. <code>admit_until_stopped</code> and <code>watch_ticker</code> call it first at start-up, as the follower already did. No second reaper and no new public name. Gate: 5 passed; with the child scan skipped the inherited child stays a zombie and the first case fails. Two head-only ids in the 124-file importer arm were attributed and waived: one fails at base run alone, the other passes at both revisions run serially. Review 110/120. Its main non-blocking finding: the adoption takes every child that exists when it runs, so it must stay the first call in a loop that later starts children of its own.</p>
+  </section>
+
+</main>
+</body>
+</html>
