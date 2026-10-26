@@ -1,0 +1,560 @@
+{
+  "agent": {
+    "alias": "sol6",
+    "backend": "codex",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-6-sol",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "codex",
+  "base_sha": "f324cf4f5ed0ba84337c3af3f1149af27de75b1f",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 5836288,
+      "cached_input_tokens_cumulative": 5836288,
+      "input_tokens": 5936530,
+      "input_tokens_cumulative": 5936530,
+      "output_tokens": 18029,
+      "output_tokens_cumulative": 18029,
+      "reasoning_output_tokens": 6127,
+      "reasoning_output_tokens_cumulative": 6127
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 31,
+    "files": 3,
+    "removed": 5
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "f48eb9378fbd89b9585055ce4c033d920509b616",
+    "730150a196fbf042999095053fe44bea8185cb13"
+  ],
+  "completed_at": "2026-10-26T23:17:05Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-10-26T23:09:18Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=\"$PWD\" /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_skills_load_full_width.py tests/test_skill_contracts.py tests/test_skill_contract_parity.py tests/test_skill_session_ownership_rules.py tests/test_skills_name_no_host_path.py",
+    "exit_status": 1,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T230654991792-skills-drop-session-queue-share/committed-head-gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.5083798882681564,
+    "at_dispatch": 0.4748603351955307,
+    "plan": "a-queue-holds-the-whole-plan",
+    "verdict": "moved"
+  },
+  "lane": "codex",
+  "lane_advisory": {
+    "backend": "codex",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "no projected exhaustion is available for 'codex'; the burn projection needs a numeric utilisation bounded by a known window, and without one no horizon comparison is made",
+    "horizon_ends_at": "2026-10-26T23:37:27.744711+00:00",
+    "horizon_seconds": 1800,
+    "metered": true,
+    "observed_at": "2026-10-26T23:07:26Z",
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": "2026-11-02T20:41:14Z",
+    "seconds_until_reset": 596027,
+    "state": "quiet",
+    "utilisation_pct": 12.0
+  },
+  "lane_declaration": {
+    "backend": "codex",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-10-26T23:07:26Z",
+    "read_at": "2026-10-26T23:07:27Z",
+    "resolved_backend": "codex",
+    "utilisation_pct": 12.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "generating": "unknown",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "backend declares no lane document",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": "unknown"
+  },
+  "lane_receipt": {
+    "effective_context_window": 380000,
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-26T23:17:05Z",
+    "quota_state": "measured",
+    "quota_windows": [
+      {
+        "observed_at": "2026-10-26T23:17:05Z",
+        "resets_at": 1793652074,
+        "used_percent": 12.0,
+        "window_minutes": 10080
+      }
+    ],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "notional_cost_usd": "no_dated_rate",
+      "rate_basis": "no_dated_rate"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T230654991792-skills-drop-session-queue-share/manifest.md",
+  "member": "disposable-r-20261026T230654991792-skills-drop-session-queue-share",
+  "model_key": "sol",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_skills_load_full_width.py::test_build_skill_names_project_queue_bound"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+      "tests/test_skills_load_full_width.py::test_build_skill_names_project_queue_bound"
+    ],
+    "declaration": "restore the 'A session queues up to its share' paragraph; the new check must fail",
+    "head_failure_ids": [
+      "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T230654991792-skills-drop-session-queue-share/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T230654991792-skills-drop-session-queue-share/negative-control.log",
+    "test_paths": [
+      "tests/test_skills_load_full_width.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "skills-drop-session-queue-share",
+  "node_definition": {
+    "after": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "low",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1369,
+          "cached_input_tokens": 398188,
+          "input_tokens": 399559,
+          "output_tokens": 1057,
+          "reasoning_output_tokens": 146,
+          "total_tokens": 400616,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "session_id": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd"
+    },
+    "done_when": "skills/reckon-build/SKILL.md no longer describes a per-session queue share: the refusal-table row for queue-full (near line 219) and the limit paragraph (near line 522) are rewritten to state that a project holds up to queue.max_requests queued requests (500 by default, a flight setting) across all its sessions, that a dispatch past it is refused naming the bound, and that dispatching the same project, plan, section and node again returns the existing request; a check in tests/test_skills_load_full_width.py asserts the build skill names queue.max_requests and does not contain 'its share' or 'minimum of 2'; tests/test_skills_load_full_width.py, tests/test_skill_contracts.py, tests/test_skill_contract_parity.py, tests/test_skill_session_ownership_rules.py and tests/test_skills_name_no_host_path.py add no failures against the base revision; ruff check and ruff format --check pass on the changed test file.",
+    "estimated_hours": null,
+    "goal": "Replace the build skill's per-session queue-share text with the per-project queue bound",
+    "id": "skills-drop-session-queue-share",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "codex",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-10-26T23:07:26Z",
+      "read_at": "2026-10-26T23:07:27Z",
+      "resolved_backend": "codex",
+      "utilisation_pct": 12.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "generating": "unknown",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "backend declares no lane document",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": "unknown"
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T230654991792-skills-drop-session-queue-share/manifest.md",
+    "negative_control": "restore the 'A session queues up to its share' paragraph; the new check must fail",
+    "plan": "a-queue-holds-the-whole-plan",
+    "regenerate_paths": [],
+    "requested_backend": "codex",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§16",
+    "spec_level": "exact",
+    "time_budget": "30m",
+    "token_budget": null,
+    "write_paths": [
+      "skills/reckon-build/SKILL.md",
+      "tests/test_skills_load_full_width.py",
+      "docs/evidence/fragments/a-queue-holds-the-whole-plan/skills-drop-session-queue-share.html",
+      "docs/figures/a-queue-holds-the-whole-plan/skills-drop-session-queue-share"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "outside_scope_paths": [
+    "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt"
+  ],
+  "pace": {
+    "allowance": {
+      "advisory": true,
+      "burn_multiple": null,
+      "derived": null,
+      "drain_hours": 168.0,
+      "effective_limit": null,
+      "elapsed_fraction": 0.014603075896164037,
+      "elapsed_hours": 2.453316750555558,
+      "group": "codex-sub",
+      "limited_by": null,
+      "observed_at": "2026-10-26T23:08:25+00:00",
+      "pace_multiple": 1.1,
+      "provider_ceiling": null,
+      "reason": "window too young to project: burn evidence is quantised too coarsely: 1.46% elapsed is below the 5% floor",
+      "remaining_budget": 0.88,
+      "remaining_windows": null,
+      "resets_at": "2026-11-02T20:41:14Z",
+      "state": "observed",
+      "utilisation": 0.12,
+      "window_minutes": 10080
+    },
+    "bar": {
+      "bar": 0.039743999999999995,
+      "decided_by": "window",
+      "margin": 0.454006,
+      "name": "skills-drop-session-queue-share",
+      "score": 0.49375,
+      "state": "observed",
+      "verdict": "send-metered",
+      "window_fill": 0.12
+    },
+    "clocks": {
+      "five_hour": {
+        "age_seconds": 0.940302,
+        "observed_at": "2026-10-26T23:08:25+00:00",
+        "period": "primary",
+        "resets_at": "2026-11-02T20:41:14Z",
+        "state": "observed",
+        "utilisation": 0.12,
+        "window_minutes": 10080
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "not_published",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": "codex-sub",
+    "hold": null,
+    "lane": "codex",
+    "lift_id": null,
+    "member": "codex",
+    "node": "skills-drop-session-queue-share",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": null,
+    "recorded_at": "2026-10-26T23:08:25.940302+00:00",
+    "score": 0.49375,
+    "session": null,
+    "source": "recorded",
+    "state": "observed"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5000.466,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 805.883,
+      "context-estimate": 78.099,
+      "records": 1314.152,
+      "verdict-inputs": 2889.776
+    }
+  },
+  "plan": "a-queue-holds-the-whole-plan",
+  "plan_impl_at_dispatch": 0.4748603351955307,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "730150a196fbf042999095053fe44bea8185cb13",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "f324cf4f5ed0ba84337c3af3f1149af27de75b1f",
+    "reviewed_head_sha": "730150a196fbf042999095053fe44bea8185cb13",
+    "scores": {
+      "durability": 17,
+      "evidence": 18,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "reuse": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 115
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261026T230654991792-skills-drop-session-queue-share",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§16",
+  "session": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+  "session_harness": "codex",
+  "session_id": "01a17a7a-0c9e-7f41-86f2-717c1aa94cc2",
+  "session_model": "gpt-6-sol",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 5836288,
+    "cumulative_input_tokens": 11772818,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 24156
+  },
+  "time_budget": "30m",
+  "tool_steps": 70.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "backend": "codex",
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "blocked",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports blocked: Exact all-direct-importer serial delta was not completed. A 535-file baseline advanced only about 3 percent in 4.5 minutes; so the matching 536-file head run cannot fit the node's remaining window. The focused 50-to-52 test delta and negative control are complete.",
+        "effective_phase": "blocked",
+        "elapsed_seconds": 2694,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "ended_pids": [],
+          "exit_code": 0,
+          "exited_at": "2026-10-26T22:48:04Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-10-26T22:23:29Z",
+          "recorded_by": "supervisor",
+          "removed_harness_caches": [
+            {
+              "bytes": 46419077,
+              "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T221905269639-drain-lists-unloaded/codex-home/cache"
+            },
+            {
+              "bytes": 28832101,
+              "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T221905269639-drain-lists-unloaded/codex-home/plugins"
+            }
+          ],
+          "run_id": "r-20261026T221905269639-drain-lists-unloaded",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 414,
+          "worker_pid": 1301970
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "Exact all-direct-importer serial delta was not completed. A 535-file baseline advanced only about 3 percent in 4.5 minutes; so the matching 536-file head run cannot fit the node's remaining window. The focused 50-to-52 test delta and negative control are complete.",
+          "lifting_condition": null,
+          "recovery": "decide",
+          "recovery_classification": "blocked",
+          "stall_base_detail": null,
+          "stall_base_state": null,
+          "stall_pause_reason": null,
+          "stall_process_state": null,
+          "stall_quiet_seconds": null,
+          "stall_window_seconds": 900,
+          "state": "blocked"
+        },
+        "interruption": null,
+        "lane": "codex",
+        "lane_cause": null,
+        "lane_ended_at": "2026-10-26T22:48:04Z",
+        "lane_event": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 1190,
+        "log_fresh": false,
+        "manifest_commits": [
+          "589236ed150d570dc7c082da29f30a1f10249b86",
+          "c5a90476d35b9ee051b1dde777c0923404deec80"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "6df65e4a640132a879423c4062eb05e885b637d561cc53c6112f2720b7643cc7",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T221905269639-drain-lists-unloaded/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "blocked",
+        "manifest_status": "blocked",
+        "marker": "!",
+        "model_key": "sol",
+        "needs_help_complete": false,
+        "next_action": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T221905269639-drain-lists-unloaded/manifest.md; resolve the blocker before resuming the run",
+        "node": "drain-lists-unloaded",
+        "phase": "blocked",
+        "plan": "a-queue-holds-the-whole-plan",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "decide",
+        "recovery_classification": "blocked",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20261026T221905269639-drain-lists-unloaded",
+        "session": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+        "session_resolution": {
+          "consulted": [
+            "pointer",
+            "stream",
+            "ledger"
+          ],
+          "resolved": true,
+          "run_id": "r-20261026T221905269639-drain-lists-unloaded",
+          "session_id": "01a17a4f-ec88-7820-b9dd-e596e5a4790b",
+          "source": "stream"
+        },
+        "stored_phase": "blocked",
+        "terminal_age_seconds": 1223,
+        "terminal_at": "2026-10-26T22:47:28Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/404513fc-8e68-4a0f-8060-29ac9ff3d5fd/drain-lists-unloaded"
+      }
+    ]
+  },
+  "wall_seconds": 467,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-26T23:17:10Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-10-26T23:09:27Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [
+      {
+        "bytes": 46466462,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T230654991792-skills-drop-session-queue-share/codex-home/cache"
+      },
+      {
+        "bytes": 28835209,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T230654991792-skills-drop-session-queue-share/codex-home/plugins"
+      }
+    ],
+    "run_id": "r-20261026T230654991792-skills-drop-session-queue-share",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 213,
+    "worker_pid": 1539057
+  },
+  "worker_seconds": 467,
+  "worker_seconds_source": "wall_fallback",
+  "worktree_retention": null
+}
