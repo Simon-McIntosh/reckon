@@ -22,6 +22,7 @@ WORDS = frozenset(
         "landed",
         "dropped",
         "in review",
+        "seat moved",
     }
 )
 

@@ -139,7 +139,7 @@ def test_a_limit_reset_reaches_the_stream_once():
 
 def test_the_rule_names_the_words_the_stream_carries():
     """The policy and the summaries read one rule, stated in ``ticker``."""
-    assert frozenset({"delivered", "halted", "in review"}) == (
+    assert frozenset({"delivered", "halted", "in review", "seat moved"}) == (
         ticker.CARRIED_PANE_WORDS
     )
     assert ticker.stream_carries({"to_state": "completed_unpromoted"})
