@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 5,
+  "added_failure_ids": [
+    "tests/test_external_wait.py::test_the_sweep_resumes_only_after_the_condition_terminates",
+    "tests/test_ticker_row_is_one_transition.py::test_every_pane_word_is_a_hued_table_key",
+    "tests/test_the_stream_carries_only_actionable_lines.py::test_the_rule_names_the_words_the_stream_carries",
+    "tests/test_follower_freshness.py::test_failed_reexec_reports_once_and_keeps_the_registration",
+    "tests/test_the_pane_speaks_seven_words.py::test_every_internal_state_has_exactly_one_pane_word"
+  ],
+  "added_failures_note": "baseline_suite (179f35c39, logs/base-population.log) exit 1 with 1 failure id, tests/test_producer_reads_only_what_changed.py::test_bytes_parsed_equals_bytes_appended_and_unchanged_polls_parse_nothing; after_suite (3173f788b, logs/head-population.log) exit 1 with the 5 ids above, none of which appears in the base arm, so the set difference is 5. Two of the five \u2014 test_external_wait.py::test_the_sweep_resumes_only_after_the_condition_terminates and test_follower_freshness.py::test_failed_reexec_reports_once_and_keeps_the_registration \u2014 pass serially at head (logs/head-suspect-files.log:7, 33 passed, EXIT=0) and are parallel-execution flakes; the other three are the ticker census literals the node names under outside_scope and are genuine failures of this change.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:363",
+    "reckon/crew/runs.py:3166"
+  ],
+  "completed_at": "2026-10-26T21:46:53.206Z",
+  "dispatched_at": "2026-10-26T21:31:18Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T210334621610-a-seat-release-reaches-the-panes/logs/head-population-final.log",
+      "line": "1",
+      "severity": "blocking",
+      "text": "blocking: the only gate log at the reviewed head is header-only \u2014 five lines, no pytest summary, no EXIT= line \u2014 while the manifest's after_suite names revision 3173f788b and its commits line does not mention b9efcc6b8 at all, so the reviewed head's own source change (the widened guard at reckon/crew/watch_unit.py:425) has never been through a completed gate; re-running the population with this log finished, and recording b9efcc6b8 in commits, is the repair."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "449",
+      "severity": "blocking",
+      "text": "blocking: adding the 'seat moved' pane word leaves three pre-existing ticker tests red at head and green at base \u2014 tests/test_the_pane_speaks_seven_words.py::test_every_internal_state_has_exactly_one_pane_word, tests/test_ticker_row_is_one_transition.py::test_every_pane_word_is_a_hued_table_key and tests/test_the_stream_carries_only_actionable_lines.py:142::test_the_rule_names_the_words_the_stream_carries (the third compares a literal frozenset against ticker.CARRIED_PANE_WORDS at that line) \u2014 so the done_when's 'add no failures against the base' is unmet and promoting this head alone leaves main red; the node names all three with one-line patches under outside_scope, and those patches must land with it in the same wave."
+    },
+    {
+      "file": "reckon/crew/watch_unit.py",
+      "line": "425",
+      "severity": "non-blocking",
+      "text": "non-blocking: 'except Exception: return' makes a lost announcement completely silent \u2014 no line to the producer's own log (watch_log_path) and no counter \u2014 so the one case this guard exists for, a stream the release could not write, is the case a later reader has no way to find; the release already printed its verdict to stdout at :460, so writing one line there or to the producer log costs nothing and preserves the 'never blocks the release' intent."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s): reckon/crew/recovery_watch.py:363 (the project watch loop's start-up verdict) and reckon/crew/runs.py:3166 (renew_watch_host_lease, the lease renewal).",
+    "diff": "read all four commits against 179f35c39c798a77831c1d69f5c393fd7a3d384e: 3173f788b adds seat_moved_row and announce_seat_moved to watch_unit.py and the pane word, hue and carried-word membership to ticker.py; 6c91bc8dc adds the follower-selector assertion to the new test module; 41aab83f8 adds the landing fragment; b9efcc6b8 widens the stream write's guard at reckon/crew/watch_unit.py:425 from contextlib.suppress(OSError, ValueError) to except Exception.",
+    "done_when": "the done_when's row clause is asserted by tests/test_a_seat_release_reaches_the_panes.py:117 (exactly one row, to_state seat-moved, both hosts in structured fields and in detail) and its print-once clause by :137 (row policy prints it under 'seat moved', rendered line names the fleet node), both green when re-run at the reviewed head; its base clause is shown by logs/negative-control.log:82 (announce removed, stream empty, 3 failed of 5, EXIT=1); its 'tests importing watch_unit or ticker add no failures against the base' clause is NOT met \u2014 three census tests fail at head and pass at base (logs/head-population.log:207-211).",
+    "goal": "the goal is one seat-moved row on the project's watch stream when a producer releases its seat, carried on the pane once under its own pane word; reckon/crew/watch_unit.py:370-430 writes that row and reckon/crew/ticker.py:449 adds the word and its carriage, which is what the goal asks for.",
+    "manifest": "read; it reports status complete, three commits (3173f788b, 6c91bc8dc, 41aab83f8), five test logs and a negative control, but its commits line omits the reviewed head b9efcc6b8 and its after_suite names revision 3173f788b, so the record's own account describes a revision one commit behind the one under review.",
+    "write_paths": "the manifest declares five paths (watch_unit.py, ticker.py, the new test module, the landing fragment, and a figures directory) and the four files in the full diff all sit inside them; no path outside the grant appears."
+  },
+  "justifications": {
+    "durability": "removing the announce call reddens three of the five checks (logs/negative-control.log:82 records 3 failed of 5 with EXIT=1 and an empty stream) and moving it outside the _ANNOUNCED_RELEASES guard would redden tests/test_a_seat_release_reaches_the_panes.py:170, but no assertion covers the reviewed head's own change \u2014 that a stream write which raises leaves the release and its exit intact.",
+    "evidence": "logs/head-population.log:1 is stamped revision 3173f788b and the only log at the reviewed head, logs/head-population-final.log, holds five header lines with no summary and no EXIT= line, so no completed gate covers b9efcc6b8; the new module does pass at the reviewed head (I re-ran tests/test_a_seat_release_reaches_the_panes.py once: 5 passed), and the done_when's 'add no failures against the base' clause fails on three ticker census ids.",
+    "fit": "the additions follow watch_unit's established local-import idiom (reckon/crew/watch_unit.py:355, :382, :572) and ticker's frozenset PANE_STATES entries, carry mechanism names with no plan or ticket identifier, though the bare 'except Exception' at reckon/crew/watch_unit.py:425 is coarser than the contextlib.suppress(OSError, ValueError) used at :360.",
+    "goal_fidelity": "reckon/crew/watch_unit.py:370 builds the row with to_state seat-moved and both host fields (seat_from_host, seat_to_host) beside the clause, and :459 announces it inside the existing _ANNOUNCED_RELEASES guard so a lease renewal cannot draw it twice, while reckon/crew/ticker.py:449 gives it a pane word of its own, so the goal is met in full.",
+    "reuse": "seat_moved_row reuses recovery_watch._watch_transition for the row shape and announce_seat_moved reuses runs._append_watch_lines, so both extend owners that already exist; a search over reckon/crew for watch-stream writers found reckon/crew/queue_admission.py:726 and reckon/crew/lift_watch.py:243 repeating the same two-line append, and no shared announce-one-row owner exists that this addition could have extended.",
+    "scope_discipline": "git diff --stat 179f35c39c798a77831c1d69f5c393fd7a3d384e..b9efcc6b8fa815a79eabc018f9bb2eff03994207 lists four files and every one is inside the five declared write paths, with the declared figures directory left unused."
+  },
+  "plan_slug": "a-live-worker-is-never-drawn-halted",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is one seat-moved row on the project's watch stream when a producer releases its seat, carried on the pane once under its own pane word; reckon/crew/watch_unit.py:370-430 writes that row and reckon/crew/ticker.py:449 adds the word, its hue and its carriage, which is what the goal asks for.\nVERDICT done_when: the row clause is asserted by tests/test_a_seat_release_reaches_the_panes.py:117 (exactly one row, to_state seat-moved, both hosts in structured fields and in detail) and the print-once clause by :137 (row policy prints it under 'seat moved', rendered line names the fleet node), both green when re-run at the reviewed head (5 passed); the base clause is shown by logs/negative-control.log:82 (announce removed, stream empty, 3 failed of 5, EXIT=1); but the 'tests importing watch_unit or ticker add no failures against the base' clause is not met, because three census tests fail at head and pass at base (logs/head-population.log:207-211).\nVERDICT write_paths: the manifest declares five paths and the four files in the full diff all sit inside them \u2014 reckon/crew/watch_unit.py, reckon/crew/ticker.py, tests/test_a_seat_release_reaches_the_panes.py and docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-seat-release-reaches-the-panes.html \u2014 with the declared figures directory left unused.\nVERDICT manifest: read; it reports status complete with three commits, five test logs and a negative control, but its commits line omits the reviewed head b9efcc6b8 and its after_suite names revision 3173f788b, so the record's own account describes a revision one commit behind the one under review.\nVERDICT diff: read all four commits against 179f35c39c798a77831c1d69f5c393fd7a3d384e; 3173f788b adds seat_moved_row and announce_seat_moved to watch_unit.py and the pane word, hue and carried-word membership to ticker.py, 6c91bc8dc adds the follower-selector assertion to the new module, 41aab83f8 adds the landing fragment, and b9efcc6b8 widens the stream write's guard at reckon/crew/watch_unit.py:425 from contextlib.suppress(OSError, ValueError) to except Exception.\nCALL_SITES: reckon/crew/recovery_watch.py:363, reckon/crew/runs.py:3166\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/watch_unit.py:370 builds the row with to_state seat-moved and both host fields beside the clause, and :459 announces it inside the existing _ANNOUNCED_RELEASES guard so a lease renewal cannot draw it twice, while reckon/crew/ticker.py:449 gives it a pane word of its own.\nSCORE evidence: 11\nJUSTIFICATION evidence: logs/head-population.log:1 is stamped revision 3173f788b and the only log at the reviewed head (logs/head-population-final.log) holds five header lines with no summary and no EXIT= line, so no completed gate covers b9efcc6b8, and the done_when's no-added-failures clause fails on three census ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 179f35c39..b9efcc6b8 lists four files and every one is inside the five declared write paths, with nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: removing the announce call reddens three of the five checks (logs/negative-control.log:82 records 3 failed of 5, EXIT=1, empty stream) and moving it outside the guard would redden tests/test_a_seat_release_reaches_the_panes.py:170, but nothing asserts that a stream write which raises leaves the release intact.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow watch_unit's local-import idiom (reckon/crew/watch_unit.py:355, :382) and ticker's frozenset PANE_STATES entries with mechanism names and no plan identifiers, though the bare except Exception at reckon/crew/watch_unit.py:425 is coarser than the contextlib.suppress at :360.\nSCORE reuse: 18\nJUSTIFICATION reuse: seat_moved_row reuses recovery_watch._watch_transition and announce_seat_moved reuses runs._append_watch_lines, and a search over reckon/crew for watch-stream writers found reckon/crew/queue_admission.py:726 and reckon/crew/lift_watch.py:243 repeating the same two-line append with no shared announce-one-row owner to extend.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T210334621610-a-seat-release-reaches-the-panes/logs/head-population-final.log:1 blocking: the only gate log at the reviewed head is header-only with no summary and no EXIT= line, while the manifest's after_suite names 3173f788b and its commits line omits b9efcc6b8, so the reviewed head's own guard change has never been through a completed gate; re-running the population to completion and recording b9efcc6b8 in commits is the repair.\nFINDING reckon/crew/ticker.py:449 blocking: adding the 'seat moved' pane word leaves three pre-existing ticker tests red at head and green at base (tests/test_the_pane_speaks_seven_words.py::test_every_internal_state_has_exactly_one_pane_word, tests/test_ticker_row_is_one_transition.py::test_every_pane_word_is_a_hued_table_key, tests/test_the_stream_carries_only_actionable_lines.py:142::test_the_rule_names_the_words_the_stream_carries), so the done_when's 'add no failures against the base' is unmet and promoting this head alone leaves main red; the node names all three with one-line patches under outside_scope and those patches must land in the same wave.\nFINDING reckon/crew/watch_unit.py:425 non-blocking: 'except Exception: return' makes a lost announcement silent \u2014 no line to the producer's own log and no counter \u2014 so the one case the guard exists for is the case a later reader cannot find; one line beside the verdict print at :460 would preserve the never-blocks-the-release intent without the silence.",
+  "review_run_id": "r-20261026T213011550410-review-of-a-seat-release-reaches-the-panes-b9efcc6b8fa8",
+  "reviewed_base_sha": "179f35c39c798a77831c1d69f5c393fd7a3d384e",
+  "reviewed_head_sha": "b9efcc6b8fa815a79eabc018f9bb2eff03994207",
+  "reviewed_run_id": "r-20261026T210334621610-a-seat-release-reaches-the-panes",
+  "scores": {
+    "durability": 17,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T21:55:45.613566+00:00",
+  "total": 103
+}
