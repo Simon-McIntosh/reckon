@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="98">
+<meta name="plan-version" content="99">
 <meta name="plan-modified" content="2026-10-26">
 </head>
 <body>
@@ -558,6 +558,9 @@
 </div>
 <div class="r-comment" data-section="s17" data-id="c-close-s17" data-who="" data-when="">
     <div class="r-comment-body">Landed at 32c098fc8 after one repair round: a seat release writes a seat-moved row the panes draw as 'seat moved'. Population on the merged tree adds no failure that survives a rerun. Evidence: <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s17">§17 landing record</a>. Open non-blocking: a lost seat row is silent.</div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261026T210334621610-a-seat-release-reaches-the-panes" data-who="reckon-build" data-when="2026-10-26T22:15:31Z">
+    <div class="r-comment-body"><p>A producer&#x27;s seat release now writes one row to the project&#x27;s watch stream (to_state seat-moved, naming both hosts in seat_from_host/seat_to_host and in detail) under the existing once-per-project announcement guard, and ticker gains the pane word &quot;seat moved&quot; in PANE_STATES, a hue for both themes, and membership in CARRIED_PANE_WORDS, so the row policy prints it once; the new module&#x27;s five checks pass at head, the declared negative control turns 3 of 5 red with no row on the stream, and the three pane-word census literals that spell out the vocabulary name the new word in the same wave.</p></div>
 </div>
 </section>
 </main>
