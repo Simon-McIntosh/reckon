@@ -23,7 +23,7 @@
   <title>A Long-Lived Crew Process Leaves Nothing Stale | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-26">
 <meta name="plan-blocks" content="the-monitor-reads-each-fact-once#s7">
 </head>
@@ -79,6 +79,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-10-26T08:00:00Z">
     <div class="r-comment-body"><p>§3 landed: head <code>0def2d8a7</code>, review 110/120; the inherited child is reaped by the existing reaper. <a href="/reckon/evidence/archive/a-long-lived-crew-process-leaves-nothing-stale-landed.html#s3">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261024T110802029357-a-reexec-reaps-the-children-it-inherits" data-who="reckon-build" data-when="2026-10-24T23:18:51.596Z">
+    <div class="r-comment-body"><p>A re-exec now adopts every pid the kernel lists as this process&#x27;s child, with no run record, so the shared reaper collects the children the old image stranded; queue_admission.admit_until_stopped and recovery_watch.watch_ticker call it once at start-up. tests/test_a_reexec_reaps_the_children_it_inherits.py passes 5/5 at this change (file absent at base); the 124-file importer gate adds 0 failures; the negative control without the child scan leaves the inherited child a zombie and fails the first case at EXIT=1.</p></div>
 </div>
 </section>
 </main>
