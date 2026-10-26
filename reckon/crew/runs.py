@@ -1954,6 +1954,48 @@ def _drain_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _unloaded_sections(
+    project: str, pointers: Iterable[Mapping[str, Any]]
+) -> dict[str, list[str]]:
+    """Name declared work with neither a request nor a promoted run."""
+    from reckon import _plan_html, ledger, metadata_index
+    from reckon._schema import is_implementable_section
+
+    docs_dir = _docs_dir_for_project(project)
+    if docs_dir is None:
+        return {}
+
+    def identity(record: Mapping[str, Any]) -> tuple[str, str]:
+        node = record.get("node")
+        if not isinstance(node, Mapping):
+            node = {}
+        return (
+            str(node.get("plan") or record.get("plan") or ""),
+            _plan_html.section_record_id(node.get("section") or record.get("section")),
+        )
+
+    covered = {identity(pointer) for pointer in pointers}
+    covered.update(identity(record) for record in ledger.runs(project))
+    unloaded: dict[str, list[str]] = {}
+    for plan in metadata_index.plan_derivations(docs_dir, project):
+        if plan["unreadable"]:
+            continue
+        path = docs_dir / plan["path"]
+        state = _plan_html.read_state_file(path)
+        slug = str(state.get("slug") or path.stem)
+        sections = sorted(
+            str(section)
+            for section, classification in (
+                state.get("section_declarations") or {}
+            ).items()
+            if is_implementable_section(classification)
+            and (slug, _plan_html.section_record_id(section)) not in covered
+        )
+        if sections:
+            unloaded[slug] = sections
+    return unloaded
+
+
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the closure drain derived from one project's live pointers.
 
@@ -1980,7 +2022,8 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     # unproven answer is carried no further than the row, because the
     # closure fence turns on whether the worker lives now rather than on
     # what a pointer's writer recorded at launch.
-    rows = [_drain_row(pointer) for pointer in list_live(project=project)]
+    pointers = list_live(project=project)
+    rows = [_drain_row(pointer) for pointer in pointers]
 
     counted, peers = _partition_session_rows(rows, session)
     unreconciled = sum(1 for row in counted if row["unreconciled"])
@@ -1997,6 +2040,7 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
         ),
         "dispositions": list(RUN_DRAIN_DISPOSITIONS),
         "runs": counted,
+        "unloaded": _unloaded_sections(project, pointers),
     }
     if session is not None:
         result.update(
