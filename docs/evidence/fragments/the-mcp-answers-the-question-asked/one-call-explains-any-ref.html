@@ -86,16 +86,16 @@
 <p id="one-call-explains-any-ref-scope">
   The budget row is registered: <code>reckon/mcp_budget.py</code> declares
   <code>("read_plan", "why")</code> at 24,000 and the view reads it, so no fork
-  remains. Two one-line declarations still live outside this node's write
-  scope. <code>reckon/mcp_views.py</code> owns <code>VIEW_NAMES</code>, which
-  should carry <code>"why"</code> so the accepted-view vocabulary and
-  <code>tests/test_mcp_vocabulary_is_complete.py</code> enumerate it. And
-  <code>tests/test_every_default_read_fits.py</code> holds its per-tool view list
-  as a literal (<code>READ_PLAN_VIEWS</code>), so it needs <code>"why"</code>
-  added; until then its parity case reports exactly one extra declared row,
-  <code>("read_plan", "why")</code>, which is the row this view now owns. That
-  single failure is measured, not assumed: <code>1 failed</code>, the extra item
-  named in the assertion.
+  remains. The default-fit test now enumerates the
+  view: <code>READ_PLAN_VIEWS</code> carries <code>"why"</code>, its parity case
+  passes, and the fit sweep calls the view with the slug it needs, so the whole
+  file and <code>tests/test_mcp_vocabulary_is_complete.py</code> are green at
+  the head (4 passed and 3 passed; the vocabulary test needs no change because
+  it derives its expectations from <code>VIEW_NAMES</code>). One one-line
+  declaration remains outside this node's write scope:
+  <code>reckon/mcp_views.py</code> owns <code>VIEW_NAMES</code>, which should
+  carry <code>"why"</code> so the accepted-view vocabulary itself names the
+  view; another run holds that file.
 </p>
 
 </section>
