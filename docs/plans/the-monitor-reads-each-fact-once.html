@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;,&quot;the-monitor-reads-each-fact-once#s8&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="74">
+<meta name="plan-version" content="75">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -229,7 +229,7 @@
     station without the node lock, started twice, must fail the "each transition once" test.</p>
 
     <h2 id="s8">§8 — A follower becomes a subscriber</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><code>crew follow</code> keeps its arguments and its output format. It reads <code>PRAGMA data_version</code>
     each poll. That pragma moves only for commits to the main database, not for commits to the attached day files
     that hold the events (§5), so the station writes a generation counter in its <code>station</code> table, in the
@@ -472,7 +472,7 @@
     <div class="r-comment-body"><p>Reviewed a-follower-is-a-station-subscriber at f6ebaf398 against c30c057d4: scored goal_fidelity 16, evidence 15, scope_discipline 18, durability 13, fit 18, reuse 17 with four non-blocking findings — the crew_follow subscriber wiring is untested, the held-registration adapter drops the takeover guard, the landing fragment names base/head arm figures its own logs contradict, and the 60 s trace names crew/live beside the two lease files — added_failure_count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261027T102752210751-review-of-a-follower-is-a-station-subscriber-eb435418a58b" data-who="reckon-build" data-when="2026-10-27T10:44:06.356Z">
-    <div class="r-comment-body"><p>Independent review of a-follower-is-a-station-subscriber at eb435418a against base c30c057d4: goal_fidelity 17, evidence 15, scope_discipline 19, durability 18, fit 16, reuse 15, added failures 0, three non-blocking findings (a refused pane&#x27;s cursor never advances so it re-feeds lift rows on every generation change; StationSubscriber.wake has no production caller and duplicates the loop in _follow_watch_lines; the 60 s trace still names crew/live beside the two lease files).</p></div>
+    <div class="r-comment-body"><p>Independent review of a-follower-is-a-station-subscriber at eb435418a against base c30c057d4: goal_fidelity 17, evidence 15, scope_discipline 19, durability 18, fit 16, reuse 15, added failures 0, three non-blocking findings (a refused pane's cursor never advances so it re-feeds lift rows on every generation change; StationSubscriber.wake has no production caller and duplicates the loop in _follow_watch_lines; the 60 s trace still names crew/live beside the two lease files).</p></div>
 </div>
 </section>
 </main>
