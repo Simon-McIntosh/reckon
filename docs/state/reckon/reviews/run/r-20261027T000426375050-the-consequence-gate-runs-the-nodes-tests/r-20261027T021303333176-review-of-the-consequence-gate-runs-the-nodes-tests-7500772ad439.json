@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:624 _evaluate_suite_delta sole promotion-path caller of the resolved command",
+    "reckon/crew/recovery_repair_dispatch.py:857 _reviewed_run_suite_command feeds the inherited command into compose_repair_for_run at :872",
+    "reckon/crew/recovery.py:181 re-exports _reviewed_run_suite_command",
+    "reckon/crew/node.py:985 is_test_path is the owner the resolver now calls",
+    "reckon/crew/runs.py:1019 _repository_relative_scope is the owner the resolver now calls"
+  ],
+  "completed_at": "2026-10-27T02:28:43.208Z",
+  "dispatched_at": "2026-10-27T02:18:35Z",
+  "findings": [],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T000426375050-the-consequence-gate-runs-the-nodes-tests/coordinator-final-head-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T000426375050-the-consequence-gate-runs-the-nodes-tests/coordinator-final-base-arm.log"
+  },
+  "item_verdicts": {
+    "diff": "Read both commits against 9803c15e2: e8f5de7a4 replaces the private test_*.py rule with is_test_path plus _repository_relative_scope and resolves a repair's inherited command through _scoped_suite_command, 7500772ad updates the landing fragment; no file outside the declared scope changed.",
+    "done_when": "The done_when asks for a clean scoped pair with no added failure; after_suite at 7500772ad records 81 passed, EXIT=0 (coordinator-final-head-arm.log) and baseline_suite records 67 passed, 1 error, EXIT=1 whose only failing id is the node's own new test file imported into the base revision, so the head adds no failure id.",
+    "goal": "The node goal is an armed promotion-consequence gate whose command resolves to the node's own fenced test files; reckon/crew/promotion_records.py:335-402 now delegates that selection to is_test_path (reckon/crew/node.py:985) and _repository_relative_scope (reckon/crew/runs.py:1019), and reckon/crew/recovery_repair_dispatch.py:642 passes a resolved command into a repair brief.",
+    "manifest": "Read; it now records commits 8f6f24571, 9803c15e2, e8f5de7a4, 7500772ad, the coordinator's 12-file pair, the earlier 17/18-file importer pair, the six serial re-runs of the flaky id and the negative-control log path.",
+    "write_paths": "Read the manifest's declared write paths; git diff 9803c15e2..7500772ad touches exactly the four scored paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_consequence_gate_runs_the_nodes_tests.py:256-273, :285-296 and :299-308 each compare against an independent literal and each reddens if the removed narrower rule or the raw-template return is reinstated; the recorded negative control exercises the declaration-removal path rather than these three.",
+    "evidence": "The done_when's pair is recorded in coordinator-final-head-arm.log (81 passed, EXIT=0) and coordinator-final-base-arm.log (67 passed, 1 error, EXIT=1), and added_failure_count is 0 because no head failure id is absent from the base arm.",
+    "fit": "reckon/crew/promotion_records.py:333-368 keeps the existing private-helper idiom and mechanism-based names, and the deferred import at reckon/crew/recovery_repair_dispatch.py:662 is required: importing promotion_records already loads recovery_repair_dispatch, so a module-level import would be a cycle.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:355-358 now classifies scope entries with is_test_path and normalises them with _repository_relative_scope, so a node scoped to tests/body_test.py is measured rather than silently resolved to nothing.",
+    "reuse": "The change removes the duplicate: reckon/crew/promotion_records.py:33 imports is_test_path from reckon/crew/node.py:985 and :34 imports _repository_relative_scope from reckon/crew/runs.py:1019, and reckon/crew/recovery_repair_dispatch.py:664 delegates to _scoped_suite_command instead of resolving a second time.",
+    "scope_discipline": "git diff 9803c15e2..7500772ad changes only reckon/crew/promotion_records.py, reckon/crew/recovery_repair_dispatch.py, tests/test_the_consequence_gate_runs_the_nodes_tests.py and the landing fragment, all four inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is an armed promotion-consequence gate whose command resolves to the node's own fenced test files; reckon/crew/promotion_records.py:335-402 now delegates that selection to is_test_path (reckon/crew/node.py:985) and _repository_relative_scope (reckon/crew/runs.py:1019), and reckon/crew/recovery_repair_dispatch.py:642 passes a resolved command into a repair brief.\nVERDICT done_when: The done_when asks for a clean scoped pair with no added failure; after_suite at 7500772ad records 81 passed, EXIT=0 (coordinator-final-head-arm.log) and baseline_suite records 67 passed, 1 error, EXIT=1 whose only failing id is the node's own new test file imported into the base revision, so the head adds no failure id.\nVERDICT write_paths: Read the manifest's declared write paths; git diff 9803c15e2..7500772ad touches exactly the four scored paths and nothing else.\nVERDICT manifest: Read; it now records commits 8f6f24571, 9803c15e2, e8f5de7a4, 7500772ad, the coordinator's 12-file pair, the earlier 17/18-file importer pair, the six serial re-runs of the flaky id and the negative-control log path.\nVERDICT diff: Read both commits against 9803c15e2: e8f5de7a4 replaces the private test_*.py rule with is_test_path plus _repository_relative_scope and resolves a repair's inherited command through _scoped_suite_command, 7500772ad updates the landing fragment; no file outside the declared scope changed.\nCALL_SITES: reckon/crew/promotion.py:624 _evaluate_suite_delta sole promotion-path caller of the resolved command, reckon/crew/recovery_repair_dispatch.py:857 _reviewed_run_suite_command feeds the inherited command into compose_repair_for_run at :872, reckon/crew/recovery.py:181 re-exports _reviewed_run_suite_command, reckon/crew/node.py:985 is_test_path is the owner the resolver now calls, reckon/crew/runs.py:1019 _repository_relative_scope is the owner the resolver now calls\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:355-358 now classifies scope entries with is_test_path and normalises them with _repository_relative_scope, so a node scoped to tests/body_test.py is measured rather than silently resolved to nothing.\nSCORE evidence: 18\nJUSTIFICATION evidence: The done_when's pair is recorded in coordinator-final-head-arm.log (81 passed, EXIT=0) and coordinator-final-base-arm.log (67 passed, 1 error, EXIT=1), and added_failure_count is 0 because no head failure id is absent from the base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 9803c15e2..7500772ad changes only reckon/crew/promotion_records.py, reckon/crew/recovery_repair_dispatch.py, tests/test_the_consequence_gate_runs_the_nodes_tests.py and the landing fragment, all four inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_consequence_gate_runs_the_nodes_tests.py:256-273, :285-296 and :299-308 each compare against an independent literal and each reddens if the removed narrower rule or the raw-template return is reinstated; the recorded negative control exercises the declaration-removal path rather than these three.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_records.py:333-368 keeps the existing private-helper idiom and mechanism-based names, and the deferred import at reckon/crew/recovery_repair_dispatch.py:662 is required: importing promotion_records already loads recovery_repair_dispatch, so a module-level import would be a cycle.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change removes the duplicate: reckon/crew/promotion_records.py:33 imports is_test_path from reckon/crew/node.py:985 and :34 imports _repository_relative_scope from reckon/crew/runs.py:1019, and reckon/crew/recovery_repair_dispatch.py:664 delegates to _scoped_suite_command instead of resolving a second time.",
+  "review_run_id": "r-20261027T021303333176-review-of-the-consequence-gate-runs-the-nodes-tests-7500772ad439",
+  "reviewed_base_sha": "9803c15e22bd76b63a8d45dc27a8ac2aaf294c45",
+  "reviewed_head_sha": "7500772ad439ac0422599e7a74b095a0c86a221a",
+  "reviewed_run_id": "r-20261027T000426375050-the-consequence-gate-runs-the-nodes-tests",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T02:32:45.136827+00:00",
+  "total": 113
+}
