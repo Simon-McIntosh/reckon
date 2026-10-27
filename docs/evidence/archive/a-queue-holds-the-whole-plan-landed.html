@@ -90,6 +90,11 @@
     <p>Run <code>r-20261027T123148256109-a-worker-widens-to-an-unclaimed-path</code> (head <code>39046ccfb</code>). A worker can now widen its own run's grant while its process is alive, to a path no live run claims, launched or waiting. The grant records the reason and that the worker made it. A path a peer holds is refused, naming the holder, and a worker cannot widen another run. The review brief lists every grant with its source, so a self-grant reads as in scope.</p><p>Measure: six cases at head, against a new file absent at base. The coordinator's importer arms show 560 passed at base and 566 at head, with zero added. The review scored 103 with two non-blocking findings. The worker's own base arm collected nothing, which the coordinator's arms supply. And <code>_list_write_grants_in_brief</code> swallows <code>OSError</code>, so a brief it cannot amend dispatches without the grant list; that is a follow-up.</p>
   </section>
 
+  <section id="s11-plan-edit-holds-own-units">
+    <h2>§11 — a plan edit never strands a queued request</h2>
+    <p>Run <code>r-20261027T063158683216-plan-edit-holds-own-units</code> (head <code>eec394bdb</code>). At admission the plan-review gate is evaluated only over the request's own section and the document unit, so an uncovered edit elsewhere no longer holds it. A request whose own unit is uncovered goes <code>held</code> with reason <code>plan-review-owed</code>, one obligation row is raised per plan, and a stored review that covers the unit releases it on the next pass, while a request held by hand stays held. Each pass also re-derives a waiting request's waits with <code>derive_wait_refs</code>, keeping plan-level and <code>--after</code> refs, so an edit to a section's waits reaches its queued request. A <code>blocked</code> upstream no longer closes its waiter: only <code>failed</code>, <code>abandoned</code> or a discard does.</p><p>Measure: the armed pair passes 31 at head, the new file being absent at base. The coordinator's importer arms over <code>routing</code>, <code>queue_admission</code> and <code>obligations</code> add zero. The first review blocked on the <code>[blocked]</code> case of <code>test_queue_dag_waits.py</code>, which encoded the superseded contract. It was granted and updated rather than reverted, and the re-review scored 108.</p>
+  </section>
+
 </main>
 </body>
 </html>
