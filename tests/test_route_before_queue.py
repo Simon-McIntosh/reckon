@@ -308,6 +308,36 @@ def test_queued_pick_launches_the_selected_nondefault_model(
     assert launched["agent"]["model"] == "model-astra"
 
 
+def test_a_move_launches_on_its_explicit_destination(
+    repository: Path,
+    routing: tuple[dict, dict],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, _state = routing
+    _declare_wait(repository)
+    with pytest.raises(LaneHeld) as held:
+        _dispatch(repository, config, "moved-pick", section="waiting")
+    request_id = held.value.queued["run_id"]
+    _land_upstream(repository)
+    order = queue_admission.fair_share_admission_order
+    with monkeypatch.context() as no_launch:
+        no_launch.setattr(
+            queue_admission,
+            "fair_share_admission_order",
+            lambda queued, live, **kwargs: order([], live, **kwargs),
+        )
+        assert _admit(config)["launched"] == []
+    assert runs.read_pointer(request_id)["phase"] == "queued"
+
+    _open_local(config)
+    moved = queue_admission.move_queued_run(
+        request_id, LOCAL, config=config, reason="operator chose local"
+    )
+    assert moved["backend"] == LOCAL
+    assert moved["lane_move"]["to_backend"] == LOCAL
+    assert moved["picker_selection"]["backend"] == METERED
+
+
 def test_pace_hold_falls_back_when_a_picked_request_becomes_ready(
     repository: Path, routing: tuple[dict, dict]
 ) -> None:

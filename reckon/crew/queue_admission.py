@@ -238,6 +238,7 @@ def _launch_queued(
     replay_pick = (
         isinstance(selection, Mapping)
         and selection.get("action") == "route"
+        and not destination
         and not pointer.get("named_route")
         and not pointer.get("route_fallback")
     )
