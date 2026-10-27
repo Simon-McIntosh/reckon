@@ -139,13 +139,30 @@ def test_week_view_counts_each_request_and_uses_the_last_admission_verdict(
 def test_old_upstream_wait_is_stuck_only_when_admission_would_advance_it(
     chain_repo: Path,
 ) -> None:
-    upstream_fixtures._declare(chain_repo, "s1")
+    upstream_fixtures._write_plan(
+        chain_repo,
+        {
+            "s1": "done",
+            "s2": "implementable",
+            "s3": "failed",
+            "s4": "implementable",
+            "s5": "implementable",
+        },
+    )
+    upstream_fixtures._run(
+        chain_repo, "add", "--", f"docs/plans/{upstream_fixtures.PLAN}.html"
+    )
+    upstream_fixtures._run(
+        chain_repo, "commit", "-q", "-m", "chore: record dependency outcomes"
+    )
     now = datetime.now(UTC)
     ready = _request(501, "awaiting-upstream", upstream_fixtures.PLAN, now)
     waiting = _request(502, "awaiting-upstream", upstream_fixtures.PLAN, now)
+    blocked = _request(503, "awaiting-upstream", upstream_fixtures.PLAN, now)
     for request, run_id, section, upstream in (
         (ready, "r-ready", "s2", "s1"),
-        (waiting, "r-waiting", "s3", "s2"),
+        (waiting, "r-waiting", "s4", "s2"),
+        (blocked, "r-blocked", "s5", "s3"),
     ):
         request.update(
             {
@@ -158,7 +175,7 @@ def test_old_upstream_wait_is_stuck_only_when_admission_would_advance_it(
             }
         )
         runs._write_json(runs.pointer_path(run_id), request)
-    live = [ready, waiting]
+    live = [ready, waiting, blocked]
     cache = {}
     assert (
         queue_admission.resolve_waits(
@@ -172,17 +189,29 @@ def test_old_upstream_wait_is_stuck_only_when_admission_would_advance_it(
         )
         == "awaiting-upstream"
     )
+    assert (
+        queue_admission.resolve_waits(
+            blocked, live=live, docs_dir=chain_repo / "docs", cache=cache
+        )
+        == "blocked-upstream"
+    )
     (runs.crew_home() / "admission-verdicts.jsonl").write_text(
         json.dumps(
-            {"pointers": [{"run_id": "r-ready", "verdict": "held-for-allowance"}]}
+            {
+                "pointers": [
+                    {"run_id": "r-ready", "verdict": "held-for-allowance"},
+                    {"run_id": "r-blocked", "verdict": "held-by-gate"},
+                ]
+            }
         )
         + "\n"
     )
 
     stuck = runs.drain(upstream_fixtures.PROJECT)["week"]["project"]["stuck"]
-    assert [(row["run_id"], row["last_verdict"]) for row in stuck] == [
-        ("r-ready", "held-for-allowance")
-    ]
+    assert {row["run_id"]: row["last_verdict"] for row in stuck} == {
+        "r-ready": "held-for-allowance",
+        "r-blocked": "held-by-gate",
+    }
 
 
 def test_recent_launch_of_a_landed_request_uses_the_worker_stamp(
