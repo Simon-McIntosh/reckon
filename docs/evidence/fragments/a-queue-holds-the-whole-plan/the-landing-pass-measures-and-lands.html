@@ -31,15 +31,29 @@ so the interpreter, any <code>env</code> or <code>timeout</code> wrapper,
 every option and its path value survive unchanged. An arm that cannot be
 started, or that exits non-zero without reporting the id, is unreadable and
 refuses the landing rather than reading as a failure at both revisions.</p>
-<p>Measured on the node's gate: ten tests pass against a test suite with
+<p>The step runs inside the admission loop, so it is bounded. Every
+measurement subprocess — the suite arms, the population arms, each isolated
+re-run and the base checkout's <code>git worktree</code> calls — carries a
+wall-clock timeout from flight config
+(<code>landing.measure_timeout_seconds</code>, default 600 s). A timed-out arm
+is <em>unmeasurable</em>: no failure id is taken from a partial log, the landing
+is refused and the run's obligation is raised. A pass measures at most one
+delivered run (the rest are deferred in delivery order), a measurement is stored
+per run and head and reused while the head is unchanged, and the base checkout
+is built under node-local temporary storage and removed on every exit path,
+including a checkout that times out.</p>
+<p>Measured on the node's gate: thirteen tests pass against a test suite with
 stubbed repositories and commands, covering a clean population landing with its
 armed suite pair recorded, a flaky added id landing, a real added id refused
 with one obligation naming it, the landing beat ticking the section, a run
 whose review is not accepted left untouched, narrowing across
 <code>--cov-config</code>, <code>env</code>, <code>timeout</code> and a
-multi-file command, and an unreadable arm refusing the landing. The importer
-population (<code>tests/test_queue_landing.py</code>) adds no failures: 8
-passed at both arms, at <code>ccaf5a1c3</code> and at the delivered head.</p>
+multi-file command, an unreadable arm refusing the landing, a measurement that
+exceeds its bound refusing the landing with no scratch tree left behind, a pass
+with three delivered runs measuring exactly one, and a second pass reusing the
+stored measurement of an unchanged head. The importer population — every test
+file importing <code>landing_measure</code>, <code>queue_landing</code> or
+<code>queue_admission</code> — shows no added failure at the delivered head.</p>
 </section>
 </main>
 </body>
