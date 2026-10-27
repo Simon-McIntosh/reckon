@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-title" content="A section can be descoped">
+  <meta name="plan-summary" content="A descoped section declaration carrying a required reason closes a plan and the critical path while staying out of the impl denominator, and a descoped declaration with no reason is refused.">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s9">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-tags" content="plan,sections,declarations,close,impl,schema">
+  <title>A section can be descoped — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-section-can-be-descoped" data-reckon="landed" data-when="2026-10-27">
+  <h2 id="a-section-can-be-descoped-title">A section can be descoped</h2>
+  <p id="a-section-can-be-descoped-change"><code>descoped</code> joins the section declarations in <code>reckon/_schema.py</code> (<code>SECTION_DECLARATION_ENUM</code> and the <code>SectionRecord</code> model). It is deliberately outside <code>OPEN_SECTION_DECLARATIONS</code> in <code>reckon/_plan_html.py</code>, so the terminal guard and the critical path read it as closed, while both impl derivations count it as neither built nor outstanding — the same denominator position <code>deferred</code> holds. The reason rides on the section record as <code>descope_reason</code>, rendered to <code>data-descope-reason</code> and parsed back from it, so a plan read shows the declaration and why the work was dropped rather than a <code>done</code> tick that says the work exists. A reasoned declaration is one op: <code>{"op":"set","path":"section_declarations.s4","value":{"status":"descoped","reason":"…"}}</code>. A bare <code>"descoped"</code> value and a <code>descoped</code> entry in a whole-map <code>set</code> are both refused, because neither form carries a reason; <code>_require_descope_reasons</code> re-checks the same invariant over the whole working state, so no op order or path reaches the store with no reason attached.</p>
+  <p id="a-section-can-be-descoped-measure">PLACEHOLDER-MEASURE</p>
+  <p id="a-section-can-be-descoped-control">PLACEHOLDER-CONTROL</p>
+  <p id="a-section-can-be-descoped-open">PLACEHOLDER-OPEN</p>
+</article>
+</body>
+</html>

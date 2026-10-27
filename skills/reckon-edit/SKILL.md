@@ -412,7 +412,7 @@ section carries the result and a link to the evidence. Never a hand edit.
 
 | Op | Required keys | Notes |
 |---|---|---|
-| `set` | `path`, `value` | Plan: `status` (any non-terminal value), `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`, `followups.<id>.prompt`, `followups.<id>.title`, `followups.<id>.body`, `gates.<id>.measure`, `gates.<id>.required_evidence`, `section_depends_on.<sid>`, `sections.<id>.<field>` (a section's title, links, effort_hours, capability or body). Index: `active_sprint_id`, `sprints.<id>.<field>` |
+| `set` | `path`, `value` | Plan: `status` (any non-terminal value), `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`, `followups.<id>.prompt`, `followups.<id>.title`, `followups.<id>.body`, `gates.<id>.measure`, `gates.<id>.required_evidence`, `section_depends_on.<sid>`, `section_declarations.<sid>` (a declaration value, or `{"status": "descoped", "reason": …}`), `sections.<id>.<field>` (a section's title, links, effort_hours, capability or body). Index: `active_sprint_id`, `sprints.<id>.<field>` |
 | `close` | `status`, `outcome`, `by` | Closes a plan in one write: sets a terminal `status` and resolves every open followup with `outcome`, reporting every failing terminal guard together. A `set` of a terminal `status` is refused, naming this op. Optional `superseded_by`. |
 | `append` | `target`, `item` | Plan targets: `followups`, `research`, `questions`, `comments`, `decisions` (+ `key`). Index targets: `sprints`, `sprints.<id>.items`, `milestones`, `timeline`, `blockers` |
 | `resolve` | `target`, `id`, `by`, `outcome` or `resolution` | `followups` uses `outcome`; `questions` uses `resolution` |
@@ -429,6 +429,21 @@ and announce the reason in your reply under the bypass rule above.
 a section's declaration moves to `done` — the store refuses a direct write in
 both derivations. A node that lands without closing its section belongs in that
 section's comment, not in `impl`.
+
+**A section the plan dropped is `descoped`, not `done`.** A section whose
+work the plan will not build is declared `descoped` with the reason it was
+dropped, in one op:
+
+```json
+{"op": "set", "path": "section_declarations.s4",
+ "value": {"status": "descoped", "reason": "the interface it built was retired upstream"}}
+```
+
+That closes the section for landing — a plan whose only remaining sections are
+descoped closes — while `impl` excludes it, because nothing was built. A bare
+`"descoped"` value, or a `descoped` entry in a whole-map `set`, is refused: the
+reason has nowhere to go, and a descope with no reason is the same false record
+`done` would have been. `done` stays reserved for work that exists.
 
 **Section effort and risk.** `effort_hours` on an `insert_section` or an
 `append` of a section record is a positive number of quarter hours (`0.25`
