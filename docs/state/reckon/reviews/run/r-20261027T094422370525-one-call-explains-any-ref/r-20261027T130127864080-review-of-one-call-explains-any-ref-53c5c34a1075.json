@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T13:18:08.454Z",
+  "dispatched_at": "2026-10-27T13:06:58Z",
+  "findings": [
+    {
+      "file": "logs/why-repair-gate.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the 45-passed log header reads 'revision: HEAD + repair' with no resolvable sha, so the combined run cannot be tied to 53c5c34a1 from the file alone; the declared after_suite arm is separately stamped at 53c5c34a1 and green, so this does not hold the node."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/mcp.py:1166, :1480, :1498, :1583 route to why_answer; reckon/mcp_budget.py:36 registers the ('read_plan','why') row.",
+    "diff": "Single commit e96f42c10..53c5c34a1 changes three files, all inside scope, with a conventional fix(mcp) subject and a body.",
+    "done_when": "logs/why-repair-after.log records 10 passed EXIT=0 at 53c5c34a1; logs/why-repair-gate.log records 45 passed with tests/test_mcp_tools.py; logs/why-repair-baseline.log records 1 failed / 9 passed EXIT=1 on the pre-fix code.",
+    "goal": "The node goal is one read_plan view explaining any ref; the increment 53c5c34a1 repairs the prior review's blocking defect so each waited_on_by row reports the waiting section's declaration at reckon/why_view.py:381.",
+    "manifest": "Read at status complete: baseline_suite has 1 failure at e96f42c10, after_suite has 0 at 53c5c34a1, so added_failure_count is 0.",
+    "write_paths": "All three changed paths (reckon/why_view.py, tests/test_one_call_explains_any_ref.py, docs/evidence/fragments/the-mcp-answers-the-question-asked/one-call-explains-any-ref.html) lie inside the declared write paths read from the source manifest and prompt.txt."
+  },
+  "justifications": {
+    "durability": "tests/test_one_call_explains_any_ref.py:281 asserts 'implementable' against a fixture whose plan status is 'active', so restoring the removed None reddens it, as the baseline log shows.",
+    "evidence": "The red-then-green pair in logs/why-repair-baseline.log and logs/why-repair-after.log records the gate result rather than claiming.",
+    "fit": "reckon/why_view.py:92 already passes authored.get('section_declarations') to dependency_row_state, matching the new call at :381.",
+    "goal_fidelity": "reckon/why_view.py:381 passes states.of(waiting_slug).get('section_declarations') to dependency_row_state, fixing the container-status fallback.",
+    "reuse": "The repair extends the existing reckon/why_view.py:561 _PlanStates.of cache rather than adding a definition, though _authored at :578 remains a second read path, a duplication the prior review already recorded.",
+    "scope_discipline": "Only reckon/why_view.py, tests/test_one_call_explains_any_ref.py and the evidence fragment changed, each inside the declared scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261027T130127864080-review-of-one-call-explains-any-ref-53c5c34a1075",
+  "reviewed_base_sha": "e96f42c10cd3b5ea65840558cc43a4b2d403fb15",
+  "reviewed_head_sha": "53c5c34a107512803715298ca7ec334524f952a3",
+  "reviewed_run_id": "r-20261027T094422370525-one-call-explains-any-ref",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T13:23:22.013132+00:00",
+  "total": 106
+}
