@@ -1,0 +1,48 @@
+<section id="a-hand-dispatched-review-is-recognised-landing">
+  <h2>A review dispatched by hand is recognised by the paths it was granted</h2>
+
+  <p><strong>What changed.</strong> <code>_review_pointer_rubric</code> in
+  <code>reckon/crew/recovery_review_dispatch.py</code> now computes the record
+  paths it expects from the <em>reviewed</em> run's directory — the same
+  <code>review.run_review_record_paths(runs.run_dir(reviewed_run_id), …)</code>
+  call the composer makes in <code>recovery_review_subject.py</code>. It
+  previously computed them from the reviewer's own run directory, so a review's
+  declared paths and the matcher's expected paths never intersected: a live
+  review read as no review at all, and the duties view told a coordinator to
+  dispatch a review that already existed.
+
+  <p><strong>One path names both sides.</strong> A declaration that spells a
+  head is now authoritative for that head: a pointer whose head-keyed record
+  path names an earlier revision is not the review of the head the run carries
+  now, and its headless spelling no longer stands for the current head either.
+  Only a pointer that names no head at all falls back to the headless match,
+  because it cannot be told apart from one at any revision.
+
+  <p><strong>Recognition is not gated on looking like a reviewer.</strong>
+  <code>_review_in_flight</code> consults the granted record path before asking
+  whether a pointer carries a review role or a minted review node id, because a
+  hand dispatch chooses both freely. The granted path is what the composer
+  wrote for this run, so it names this run's review whatever the pointer calls
+  itself. The role-and-id reading remains as the second route for records
+  dispatched before the paths moved.
+
+  <p><strong>Measure.</strong>
+  <code>tests/test_a_hand_dispatched_review_is_recognised.py</code> builds every
+  fixture path by calling the composer, so it fails if either side moves. It
+  shows four arms: a live pointer granted run R's paths at head H, with no
+  dispatch record on R, is returned by <code>_review_in_flight</code> for R at
+  H; the same pointer in <code>queued</code> makes R's duty read
+  <code>review-queued</code> and not <code>review-missing</code>; a pointer
+  granted R's paths at an earlier head is not R's review at H, with the current
+  head's paths accepted as the control; and a figure review is told apart from a
+  content review in both directions. The declared negative control — compute the
+  expected paths from the reviewer's directory again — fails all four arms.
+
+  <p><strong>One out-of-scope fixture.</strong>
+  <code>tests/test_figure_review.py</code> builds its in-flight fixture with
+  <code>runs.run_dir("review-run")</code>, the reviewer's own directory, so its
+  figure arm asserts the layout this change corrects. It is outside this node's
+  write scope and is recorded for the coordinator; the correction is
+  <code>review_directory = runs.run_dir(RUN_ID)</code> in
+  <code>test_in_flight_review_reads_rubric_from_its_record_path</code>.
+</section>

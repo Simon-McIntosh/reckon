@@ -93,9 +93,7 @@ def _composed(record: dict, *, rubric: str | None = None) -> tuple[list[str], st
     return list(fields["write_paths"]), str(fields.get("head") or "")
 
 
-def _review_pointer(
-    paths: list[str], *, run_id: str = REVIEW, phase: str = ""
-) -> None:
+def _review_pointer(paths: list[str], *, run_id: str = REVIEW, phase: str = "") -> None:
     """A hand-dispatched review: a coordinator's own node id, no review role."""
     record = {
         "run_id": run_id,
