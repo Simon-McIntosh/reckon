@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-evidence-for" content="reckon:an-mcp-failure-names-its-cause">
+  <meta name="plan-verifies" content="reckon:an-mcp-failure-names-its-cause#s13">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="passed">
+  <title>The census partitions failures and reads in seconds | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-census-partitions-failures-landing" data-node="the-census-partitions-failures" data-reckon="landed" data-when="2026-10-27">
+  <h2>The census attributes each failure to one cause and skips log directories older than the window</h2>
+  <p>A failed connection is now attributed once, to the first signature in <code>CAUSES</code> order that its log carries, and every later signature it also carried is reported beside that cause under <code>also_carried</code>. The cause counts are therefore a partition of <code>failed</code>. On the real log tree for 2026-10-01T01:00:00Z to 2026-10-08T01:00:00Z the imas-cx row sums to its 1,635 failures (2,701 cause hits before the change) and the reckon row to its 1,021.</p>
+  <p>The walk descends a <code>mcp-logs-&lt;server&gt;</code> directory only when that directory's modification time is at or after the window start, walks both levels once for every tracked server, and overlaps the metadata round trips under a bounded thread pool (<code>WALK_WORKERS</code>). The census over that same real log tree finishes in 10.45 s and 14.43 s on two consecutive runs, against 29.15 s before the change. <code>directory_kind</code> is private again as <code>_directory_kind</code>, so <code>census</code> is the module's one public function. The doctor block states the storage-slow rule beside its count: a tool result whose payload names the error.</p>
+  <table id="the-census-partitions-failures-figures">
+    <caption>Gate, arm and real-tree figures</caption>
+    <thead>
+      <tr><th>Measure</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>tests/test_mcp_census.py</code> at head</td><td>9 passed, EXIT=0</td></tr>
+      <tr><td><code>tests/test_mcp_census.py</code> at base <code>c7c1bccc6</code> (git archive extraction)</td><td>6 passed, EXIT=0</td></tr>
+      <tr><td>Negative control (every-cause counting restored)</td><td>EXIT=1, <code>test_a_connection_is_attributed_to_one_cause</code> fails on the sum assertion, <code>8 == 7</code></td></tr>
+      <tr><td>Real-tree census, 2026-10-01T01:00:00Z–2026-10-08T01:00:00Z</td><td>10.45 s and 14.43 s (bound: under 20 s)</td></tr>
+      <tr><td>imas-cx cause counts vs <code>failed</code></td><td>1,635 vs 1,635</td></tr>
+      <tr><td>reckon cause counts vs <code>failed</code></td><td>1,021 vs 1,021</td></tr>
+    </tbody>
+  </table>
+  <p>The three new cases cover a connection carrying both <code>CONNECT_TIMEOUT</code> and the package-metadata line, which counts once under <code>CONNECT_TIMEOUT</code> with the sum equal to <code>failed</code>; a log directory whose modification time predates the window, which is never descended, with a live directory beside it counted as the positive control; and the doctor block's <code>storage-slow</code> rule.</p>
+</article>
+</body>
+</html>

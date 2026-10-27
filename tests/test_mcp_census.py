@@ -386,7 +386,8 @@ def test_doctor_prints_the_census_figures(tmp_path, monkeypatch):
     for cause, count in cause_counts.items():
         assert f"{cause}  {count}" in output
     summary = ", ".join(f"{tool} {count}" for tool, count in sorted(storage.items()))
-    assert f"storage-slow results: {summary}" in output
+    rule = "a tool result whose payload names the error"
+    assert f"storage-slow results ({rule}): {summary}" in output
 
     # The redirect means the real configuration home saw no write from the test.
     real_after = sorted(os.listdir(real_log_root)) if real_log_root.is_dir() else None
@@ -405,3 +406,105 @@ def test_storage_slow_counts_per_tool(tree):
     report = _census(tree)
     assert report["storage_slow"]["read_plan"] == 2
     assert report["storage_slow"]["roadmap"] == 1
+
+
+def test_a_connection_is_attributed_to_one_cause(tree):
+    """A failure carrying two signatures counts once, under CONNECT_TIMEOUT.
+
+    CONNECT_TIMEOUT precedes package_metadata in ``CAUSES``, so that is the
+    attribution. The later signature is reported beside it and never added to
+    its own count, so the cause counts are a partition of ``failed``.
+    """
+
+    _write_connection(
+        tree["log_root"],
+        "dual",
+        "imas-cx",
+        _instant(10)[0],
+        str(tree["checkout"]),
+        error=(
+            'Connection failed (CONNECT_TIMEOUT): MCP server "imas-cx" '
+            "timed out after 30000ms\n"
+            "Server stderr: error: Failed to generate package metadata for "
+            "`imas-standard-names @ editable+../imas-standard-names`"
+        ),
+    )
+
+    report = _census(tree)
+    row = report["servers"]["imas-cx"]
+    timeout = _cause(row, "CONNECT_TIMEOUT")
+    assert timeout["count"] == 2  # the fixture's own timeout plus the dual one
+    assert timeout["also_carried"] == {"package_metadata": 1}
+    # The cause counts partition the failures.
+    assert sum(c["count"] for c in row["causes"]) == 7
+    assert row["failed"] == 7
+    # The dual signature did not add to the metadata cause.
+    assert _cause(row, "package_metadata")["count"] == 1
+
+
+def test_a_log_directory_older_than_the_window_is_never_opened(tree):
+    """A log directory older than the window is skipped without being read.
+
+    The stale directory holds a connection whose filename stamp is inside the
+    window, so only the directory's own modification time can exclude it. A
+    live directory beside it is counted, so the absence is shown to be the
+    rule's work rather than an empty tree.
+    """
+
+    log_root = tree["log_root"]
+    checkout = str(tree["checkout"])
+    before_window = dt.datetime(2026, 9, 1, tzinfo=dt.UTC).timestamp()
+
+    # The positive control: a live directory, modified inside the window.
+    _write_connection(
+        log_root,
+        "live",
+        "reckon",
+        _instant(10)[0],
+        checkout,
+        error="Connection failed (CONNECTION_CLOSED): Connection closed",
+    )
+
+    # A directory whose own time predates the window, holding a file whose
+    # filename stamp is inside it: only the directory test can exclude this.
+    stale = _write_connection(
+        log_root,
+        "stale",
+        "reckon",
+        _instant(11)[0],
+        checkout,
+        error="Server stderr: error: No such file or directory (os error 2)",
+    )
+    os.utime(stale.parent, (before_window, before_window))
+
+    report = _census(tree)
+    row = report["servers"]["reckon"]
+    assert row["connections"] == 3  # the fixture's two, plus the live one
+    assert _cause(row, "CONNECTION_CLOSED")["count"] == 1  # the live one only
+    # The stale directory was never descended, so its missing-directory
+    # failure is absent while the live one above is present.
+    assert "missing_directory" not in {c["cause"] for c in row["causes"]}
+    assert sum(c["count"] for c in row["causes"]) == row["failed"]
+    assert sum(c["count"] for c in row["causes"]) == row["failed"]
+
+
+def test_doctor_names_the_storage_slow_rule(tmp_path, monkeypatch):
+    """The doctor block states what a storage-slow result is, beside its count."""
+
+    log_root = tmp_path / "cache" / "claude-cli-nodejs"
+    transcript_root = tmp_path / "projects"
+    log_root.mkdir(parents=True)
+    transcript_root.mkdir()
+    monkeypatch.setattr(mcp_census, "LOG_ROOT", log_root)
+    monkeypatch.setattr(mcp_census, "TRANSCRIPT_ROOT", transcript_root)
+    monkeypatch.setattr(
+        "reckon.project_maintenance_commands._project_environment_drift",
+        lambda: (None, []),
+    )
+
+    result = CliRunner().invoke(main, ["doctor"])
+
+    assert (
+        "storage-slow results (a tool result whose payload names the error)"
+        in result.output
+    )
