@@ -1713,6 +1713,21 @@ def record_response(
     }
     if action_value == "carried":
         response["section"] = finding_unit(record, str(finding_id))
+    # A carried answer hands the finding to a node; it is not an answer about
+    # the plan's prose, so it never displaces one. A finding already answered
+    # ``acted`` or ``declined`` keeps that answer: the earlier decision is the
+    # record, and a later carry would otherwise erase it from the map the
+    # dispatch gate reads while leaving it in the event list alone.
+    earlier = _stored_response(record, {"id": str(finding_id)})
+    if (
+        action_value == CARRIED_ACTION
+        and isinstance(earlier, Mapping)
+        and str(earlier.get("action") or "").strip().lower() in RESPONSE_ACTIONS
+    ):
+        committed = _committed_copy_of(record)
+        if committed is not None:
+            return committed
+        return store_plan_review(dict(record), base_dir=base_dir)
     updated = dict(record)
     responses = dict(updated.get("responses") or {})
     responses[str(finding_id)] = response
@@ -2037,6 +2052,23 @@ def with_carried_findings(done_when: str, findings: Iterable[Mapping[str, Any]])
     return f"{text}\n\n{block}" if text else block
 
 
+def _plan_revision(record: Mapping[str, Any]) -> str:
+    """The plan content revision a stored review read, as one comparable token.
+
+    The whole-plan fingerprint is the revision a review of the plan names; a
+    record that predates it falls back to the reviewed blob and then to the
+    plan version. A record naming none of them gets an empty token, which
+    groups it with every other unnameable record rather than inventing a
+    revision — grouping can only make the count smaller, so an unreadable
+    record can never add a refusal.
+    """
+    return (
+        str(record.get("plan_fingerprint") or "").strip()
+        or str(record.get("reviewed_blob_sha") or "").strip()
+        or str(record.get("plan_version") or "").strip()
+    )
+
+
 def reviews_for_unit_burst(
     project: str,
     plan_slug: str,
@@ -2052,6 +2084,14 @@ def reviews_for_unit_burst(
     its count again. The whole-plan fingerprint counts as a review of every
     unit when it matches, because a review that read the whole document read
     that unit too.
+
+    A burst is bounded to one plan revision: only the reviews that read the
+    same revision as the newest one carrying the unit's digest are counted. A
+    unit whose prose has not changed survives many revisions of the plan around
+    it, and a review of the plan after those later edits did not read that unit
+    again — only the units its change touched. Counting one review per revision
+    made a long-lived plan's unchanged sections refuse every composition the
+    plan ever asked for, which is the defect this bound exists to prevent.
     """
     location = _plan_location(project, plan_slug, plan_path)
     if location is None:
@@ -2076,7 +2116,10 @@ def reviews_for_unit_burst(
         if isinstance(per_unit, Mapping) and per_unit.get(unit) == wanted:
             hits.append(record)
     hits.sort(key=lambda record: str(record.get("dispatched_at") or ""))
-    return hits
+    if not hits:
+        return []
+    revision = _plan_revision(hits[-1])
+    return [record for record in hits if _plan_revision(record) == revision]
 
 
 def review_burst_refusal(
@@ -2095,16 +2138,36 @@ def review_burst_refusal(
     the loop the cap exists to stop. The refusal names the open findings the
     caller must carry or decline, because answering them — not reviewing again
     — is what closes the unit for dispatch.
+
+    A finding is open only when no stored review of the plan answers it. An
+    answer is written to the record the answering command resolved, which need
+    not be the record the cap counted: a finding raised by an earlier review of
+    the same burst is answered on that review, so reading answers from the
+    counted record alone names a finding the author has already answered and no
+    answer command can clear.
     """
     hits = reviews_for_unit_burst(
         project, plan_slug, unit, base_dir=base_dir, plan_path=plan_path
     )
     if len(hits) < MAX_REVIEWS_PER_EDIT:
         return None
+    answered: set[str] = set()
+    for record in list_plan_reviews(project, base_dir=base_dir):
+        if record.get("plan_slug") != plan_slug:
+            continue
+        responses = record.get("responses")
+        if not isinstance(responses, Mapping):
+            continue
+        for finding_id, response in responses.items():
+            if (
+                isinstance(response, Mapping)
+                and str(response.get("action") or "").strip()
+            ):
+                answered.add(str(finding_id))
     open_ids: list[str] = []
     for record in hits:
         for finding_id in unanswered_findings(record):
-            if finding_id not in open_ids:
+            if finding_id not in open_ids and finding_id not in answered:
                 open_ids.append(finding_id)
     named = ", ".join(open_ids) if open_ids else "none"
     return (

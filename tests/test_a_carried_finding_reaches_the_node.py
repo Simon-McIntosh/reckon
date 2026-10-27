@@ -378,6 +378,149 @@ def test_a_fresh_edit_resets_the_review_count(
     assert f"unit {plan_review.DOCUMENT_UNIT} " in result.output
 
 
+def test_an_unchanged_unit_does_not_hold_the_review_cap(
+    project: tuple[Path, Path, Path],
+) -> None:
+    config_home, _repo, plan_path = project
+    digests = plan_review._section_digests(plan_path.read_text(encoding="utf-8"))
+    # Three reviews of three different plan revisions, each carrying alpha's
+    # present digest because the edit that moved the plan touched other units.
+    # Alpha itself was not edited between them, so no review after the first
+    # read it: counting one review per plan revision would refuse every
+    # composition of a long-lived plan, which is what this arm forbids.
+    for number, review_run_id in enumerate(("r-review-1", "r-review-2", "r-review-3")):
+        _store_review(
+            plan_path,
+            config_home,
+            review_run_id=review_run_id,
+            findings=[
+                {
+                    "id": f"{review_run_id}-finding",
+                    "type": "reasoning",
+                    "anchor": f"{plan_path}:1",
+                    "text": "a finding about a unit that has not moved",
+                }
+            ],
+            section_digests=digests,
+            plan_fingerprint=f"{number + 1:064x}",
+        )
+
+    assert (
+        plan_review.review_burst_refusal(
+            "sample", "fixture", "alpha", base_dir=config_home / "crew" / "reviews"
+        )
+        is None
+    )
+    assert (
+        plan_review.compose_burst_refusal(
+            "sample", "fixture", base_dir=config_home / "crew" / "reviews"
+        )
+        is None
+    )
+
+
+def test_a_finding_answered_on_a_stored_record_is_not_named_open(
+    project: tuple[Path, Path, Path],
+) -> None:
+    config_home, _repo, plan_path = project
+    digests = plan_review._section_digests(plan_path.read_text(encoding="utf-8"))
+    for review_run_id, finding_id in (
+        ("r-review-1", "reasoning-1"),
+        ("r-review-2", "coverage-1"),
+    ):
+        _store_review(
+            plan_path,
+            config_home,
+            review_run_id=review_run_id,
+            findings=[
+                {
+                    "id": finding_id,
+                    "type": "reasoning",
+                    "anchor": f"{plan_path}:1",
+                    "text": "a finding on the reviewed prose",
+                }
+            ],
+            section_digests=digests,
+        )
+
+    answered = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "review",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--answer",
+            "reasoning-1",
+            "--acted",
+        ],
+    )
+    assert answered.exit_code == 0, answered.output
+
+    # Both reviews are of the one plan revision, so the unit is at its limit.
+    # reasoning-1 is answered on a stored record — the one the answering
+    # command wrote — so the refusal must not name it again; a finding named
+    # open after it was answered can never be cleared by another answer.
+    refusal = plan_review.review_burst_refusal(
+        "sample", "fixture", "alpha", base_dir=config_home / "crew" / "reviews"
+    )
+    assert refusal is not None
+    assert "reasoning-1" not in refusal
+    assert "coverage-1" in refusal
+
+
+def test_a_carried_answer_keeps_an_earlier_answer_that_names_an_action(
+    project: tuple[Path, Path, Path],
+) -> None:
+    config_home, _repo, plan_path = project
+    alpha_line = _line_of(plan_path, "Alpha ships")
+    _store_review(
+        plan_path,
+        config_home,
+        review_run_id="r-review",
+        findings=[
+            {
+                "id": "reasoning-1",
+                "type": "reasoning",
+                "anchor": f"{plan_path}:{alpha_line}",
+                "text": "alpha's mechanism must name the store it repairs",
+            }
+        ],
+    )
+
+    def answer(*flags: str) -> None:
+        result = CliRunner().invoke(
+            cli_main,
+            [
+                "crew",
+                "review",
+                "--project",
+                "sample",
+                "--plan",
+                "fixture",
+                "--answer",
+                "reasoning-1",
+                *flags,
+            ],
+        )
+        assert result.exit_code == 0, result.output
+
+    answer("--acted")
+    # A carry hands the finding to a node; it is not a later judgement about
+    # the prose, so it must leave the answer already on the record alone. A
+    # carry that replaced an acted answer would erase a decision the author
+    # made in the plan and the gate would read it as carried instead.
+    answer("--carried")
+
+    stored = plan_review.read_plan_review(
+        "sample", "fixture", base_dir=config_home / "crew" / "reviews"
+    )
+    assert stored is not None
+    assert stored["responses"]["reasoning-1"]["action"] == "acted"
+
+
 def test_two_findings_carry_across_two_dispatches(
     project: tuple[Path, Path, Path],
 ) -> None:
