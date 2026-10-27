@@ -1,0 +1,59 @@
+<section id="a-plan-review-reads-the-change-landing">
+  <h2>A plan review reads the change, and the gate holds only what changed</h2>
+
+  <p><strong>What changed.</strong> A composed plan review no longer re-reads the
+  whole plan, and one uncovered section no longer refuses the dispatch of every
+  other section. Two mechanisms carry it.
+
+  <p><strong>The review is given the change.</strong> A stored review records the
+  plan commit that carried the bytes it read:
+  <code>plan_commit_for</code> in <code>reckon/crew/plan_review.py</code> resolves
+  it from the reviewed blob with <code>git log --find-object</code> at the plan
+  path, and <code>write_review_sidecar</code> writes it into the delivery
+  sidecar, which
+  <code>delivered_report_record</code> carries onto the stored record. The next
+  composed review's scope (<code>review_scope</code>) then carries three blocks
+  and nothing else: that commit's diff of the plan file, restricted to the
+  changed lines of the units the review is asked about
+  (<code>_diff_for_units</code>, whose markers are each unit's own
+  <code>data-id</code> or decision block); the full text of each uncovered unit;
+  and the earlier findings with their answers, an unanswered one now shown as
+  <code>(unanswered)</code> rather than dropped. A plan's sections sit one per
+  line, so a hunk's context lines quote the neighbours a reviewer was not asked
+  about — which is why context lines are dropped rather than trusted to be
+  small.
+
+  <p><strong>The gate holds only the section dispatched.</strong>
+  <code>require_plan_reviewed</code> in <code>reckon/crew/routing.py</code>
+  narrows to <code>plan_review_units(node.section)</code> — the section itself
+  and the document unit that carries decisions, gates and dependencies — when a
+  caller names no units, so an authored edit to a section this dispatch does not
+  read no longer refuses content a review does cover. A dispatch naming no
+  section keeps the whole-plan check, because it reads the plan as a whole.
+  When no stored review covers any unit of the plan, the narrowing is set aside
+  and the refusal names the whole content the plan is owed a review of, so a
+  plan with no review at all still reads as unreviewed rather than as one
+  section's debt.
+
+  <p><strong>Measure.</strong> The gate command
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_plan_review_reads_the_change.py</code> reports
+  <code>4 passed</code>, <code>EXIT=0</code>. The nine test files importing
+  <code>reckon.crew.routing</code> and <code>reckon.crew.plan_review</code> report
+  <code>95 passed</code>, <code>EXIT=0</code> at both the base revision
+  <code>94e9068e0</code> and the head, so the change adds no failure to the
+  importer arms. The negative control removes the per-section narrowing
+  (<code>require_plan_reviewed</code> falls back to the plan-wide gate) and the
+  unedited-section arm fails: <code>1 failed, 3 passed</code>,
+  <code>EXIT=1</code>, the failure being
+  <code>test_unedited_section_dispatches_while_another_is_uncovered</code>, whose
+  refusal reads <em>uncovered units: b</em> for a dispatch of section
+  <code>a</code>.
+
+  <p><strong>What the test shows.</strong> A review composed after one section is
+  edited carries that section's diff line and full text, no other section's
+  text, and the earlier finding with its answer; the stored record names the
+  commit it read; a dispatch of the unedited section succeeds while the edited
+  one is uncovered; a dispatch of the edited section is refused until a review
+  covers it, and released by the review that does.
+</section>
