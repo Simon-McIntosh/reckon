@@ -784,9 +784,11 @@ def _validate_worker_mcp_servers(data: Mapping[str, Any], source: str | Path) ->
     """Check the reckon-owned worker MCP server list, which the schema omits.
 
     Absence is the shipped default — the project names no server, so its workers
-    start none of the checkout's own. A present declaration must hold a list of
-    names: a bare string is refused by name rather than read as a server called
-    after each of its characters, which is what iterating one would seed.
+    start none of the checkout's own. A present declaration must be a list of
+    names: a bare string would be read as a server called after each of its
+    characters, a mapping would seed its keys, and a list holding a non-string
+    would seed a value the operator never wrote as a name. The shape check is
+    the reader's, so the launch and the layer refuse a value the same way.
     """
     if WORKER_MCP_SERVERS_KEY not in data:
         return

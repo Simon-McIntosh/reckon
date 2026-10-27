@@ -292,22 +292,25 @@ def _declared_worker_mcp_servers(config: Mapping[str, Any] | None) -> list[str]:
 
     Read from the config under :data:`WORKER_MCP_SERVERS`. Absence names no
     server, so a project that asks for nothing starts none of the checkout's
-    own. A value that is present but not a list is refused by name: a bare
-    string would read as one server per character. Duplicates and empty names
-    are dropped so the seeded record names each server once.
+    own. A value that is present but is not a list of server names is refused
+    by name: a bare string would read as one server per character, a mapping
+    would seed its keys, and a list holding a non-string would seed a value the
+    operator never wrote as a name. Duplicates and empty names are dropped so
+    the seeded record names each server once.
     """
     if not isinstance(config, Mapping):
         return []
     declared = config.get(WORKER_MCP_SERVERS)
     if declared is None:
         return []
-    if not isinstance(declared, Iterable) or isinstance(declared, (str, bytes)):
+    if not isinstance(declared, list) or not all(
+        isinstance(name, str) for name in declared
+    ):
         raise WorkerMcpServersError()
     names: list[str] = []
     for name in declared:
-        text = str(name)
-        if text and text not in names:
-            names.append(text)
+        if name and name not in names:
+            names.append(name)
     return names
 
 

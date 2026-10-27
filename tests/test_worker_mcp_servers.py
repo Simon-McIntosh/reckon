@@ -91,6 +91,17 @@ def _project_checkout(root: Path) -> Path:
     return checkout
 
 
+# Declarations that are not a list of server names: a bare string, a mapping,
+# a tuple, and a list holding a value that is not a string. Each must be
+# refused by name rather than seeded as the servers the project asked for.
+MALFORMED_DECLARATIONS = [
+    pytest.param("imas-cx", id="bare-string"),
+    pytest.param({"imas-cx": None}, id="mapping"),
+    pytest.param(("imas-cx",), id="tuple"),
+    pytest.param(["imas-cx", 3], id="list-holding-a-non-string"),
+]
+
+
 def _resolve(root: Path, declaration: dict):
     """Resolve a flight configuration carrying ``declaration`` as its project layer.
 
@@ -252,21 +263,31 @@ def test_a_project_naming_its_servers_resolves_and_seeds_them(tmp_path: Path):
     assert not _server_starts(settings, "imas-dd")
 
 
-def test_a_declaration_that_is_not_a_list_is_refused_naming_the_key(tmp_path: Path):
-    """A bare string is refused by the flight resolution, naming the key."""
+@pytest.mark.parametrize("declaration", MALFORMED_DECLARATIONS)
+def test_a_declaration_that_is_not_a_list_is_refused_naming_the_key(
+    tmp_path: Path, declaration
+):
+    """A value that is not a list of strings is refused, naming the key."""
     with pytest.raises(flight.FlightConfigError) as excinfo:
-        _resolve(tmp_path, {"worker_mcp_servers": "imas-cx"})
+        _resolve(tmp_path, {"worker_mcp_servers": declaration})
     assert flight.WORKER_MCP_SERVERS_KEY in excinfo.value.key_path
     assert flight.WORKER_MCP_SERVERS_KEY in str(excinfo.value)
 
 
-def test_an_absent_declaration_names_no_server_and_a_string_is_refused():
-    """An absent key names no server; a bare string is refused, not read as none."""
+@pytest.mark.parametrize("declaration", MALFORMED_DECLARATIONS)
+def test_the_reader_refuses_a_declaration_that_is_not_a_list_of_strings(
+    declaration,
+):
+    """The one reader refuses the same values the layer refuses."""
+    with pytest.raises(ValueError, match="worker_mcp_servers"):
+        _worker_fence._declared_worker_mcp_servers({"worker_mcp_servers": declaration})
+
+
+def test_an_absent_declaration_names_no_server():
+    """An absent key names no server, and a well-formed list is read as given."""
     reader = _worker_fence._declared_worker_mcp_servers
     assert reader(None) == []
     assert reader({}) == []
-    with pytest.raises(ValueError, match="worker_mcp_servers"):
-        reader({"worker_mcp_servers": "imas-cx"})
     assert reader({"worker_mcp_servers": ["imas-cx", "imas-cx", ""]}) == ["imas-cx"]
 
 

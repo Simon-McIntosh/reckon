@@ -23,16 +23,16 @@
   holds it out of the generated model in <code>_schema_view</code> and validates it in <code>_validate_worker_mcp_servers</code>,
   so a project layer naming <code>worker_mcp_servers: [imas-cx]</code> resolves under the strict authoring read with no
   unknown key and no schema refusal, and a launch seeds a run home whose settings enable <code>imas-cx</code>.</p>
-  <p id="a-project-can-name-its-worker-mcp-servers-refusal">A declaration that is not a list is refused with a message naming the
-  key: the resolution raises <code>&lt;override&gt;: worker_mcp_servers: must be a list of MCP server names</code>, and the
-  reader <code>_declared_worker_mcp_servers</code> in <code>reckon/_worker_fence.py</code> raises
-  <code>WorkerMcpServersError</code> rather than reading a bare string as one server per character. An absent key still
-  names no server.</p>
+  <p id="a-project-can-name-its-worker-mcp-servers-refusal">A declaration that is not a list of strings is refused with a message
+  naming the key: the resolution raises <code>&lt;override&gt;: worker_mcp_servers: must be a list of MCP server names</code>,
+  and the reader <code>_declared_worker_mcp_servers</code> in <code>reckon/_worker_fence.py</code> raises
+  <code>WorkerMcpServersError</code> rather than seeding a bare string character by character, a mapping's keys, a
+  tuple's items or a list holding a non-string. An absent key still names no server.</p>
   <p id="a-project-can-name-its-worker-mcp-servers-gate">Gate on <code>tests/test_worker_mcp_servers.py</code> and
-  <code>tests/test_flight.py</code>: 93 passed at the head. The declared negative control, with
+  <code>tests/test_flight.py</code>: 100 passed at the head. The declared negative control, with
   <code>worker_mcp_servers</code> taken out of the reckon-owned keys, fails
   <code>test_a_project_naming_its_servers_resolves_and_seeds_them</code> with
-  <code>worker_mcp_servers: Extra inputs are not permitted</code> (1 failed, 8 passed).</p>
+  <code>worker_mcp_servers: Extra inputs are not permitted</code>.</p>
 </article>
 </body>
 </html>
