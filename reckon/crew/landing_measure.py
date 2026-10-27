@@ -154,96 +154,34 @@ def _imports_module(text: str, module: str) -> bool:
     )
 
 
-#: A leading ``NAME=value`` environment assignment rather than the program.
-_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
-
-#: Options whose following token is their value, not a test target. A token is
-#: only ever dropped as a target when it is positional: everything that
-#: follows one of these is kept, so a path-valued option survives narrowing.
-_VALUE_OPTIONS = frozenset(
-    {
-        "-k",
-        "-m",
-        "-p",
-        "-c",
-        "-o",
-        "-W",
-        "-n",
-        "-r",
-        "--basetemp",
-        "--rootdir",
-        "--confcutdir",
-        "--deselect",
-        "--ignore",
-        "--ignore-glob",
-        "--junitxml",
-        "--junit-xml",
-        "--maxfail",
-        "--tb",
-        "--timeout",
-        "--cov",
-        "--cov-report",
-        "--dist",
-        "--numprocesses",
-        "--maxprocesses",
-        "--splits",
-        "--group",
-        "--import-mode",
-        "--color",
-        "--capture",
-        "--durations",
-        "--durations-min",
-        "--log-level",
-        "--log-file",
-        "--log-format",
-        "--log-date-format",
-        "--override-ini",
-        "--randomly-seed",
-        "--html",
-        "--reruns",
-        "--reruns-delay",
-    }
-)
+def _target_name(token: str) -> str:
+    """A command token with the path spelling that names the same file removed."""
+    name = str(token).strip()
+    while name.startswith("./"):
+        name = name[2:]
+    return name.rstrip("/")
 
 
-def runner_argv(command: Sequence[str]) -> list[str]:
-    """The armed command with its positional test targets removed.
+def runner_argv(command: Sequence[str], test_files: Iterable[str] = ()) -> list[str]:
+    """The armed command with the node's own test files removed.
 
     The armed command is what the run's promotion runs, so a single id is
-    re-run through the same interpreter, environment, plugins and options.
-    Only positional arguments after the program are dropped: an environment
-    assignment, the program token and every option together with its value
-    stay, so a command of the shape
-    ``PYTHONPATH=. .venv/bin/python -m pytest --basetemp /tmp/bt tests/x.py``
-    keeps its interpreter and ``--basetemp /tmp/bt`` and loses only
-    ``tests/x.py``.
+    re-run through the same interpreter, environment, wrappers, plugins and
+    options. Which tokens are its test targets is not guessed from their
+    shape: they are exactly the node's test files the command was resolved
+    from, so every other token — an environment assignment, a ``timeout`` or
+    ``env`` prefix, an option and its value — is kept and only the files are
+    dropped.
     """
-    kept: list[str] = []
-    program_seen = False
-    expect_value = False
-    for token in command:
-        if expect_value:
-            kept.append(token)
-            expect_value = False
-            continue
-        if not program_seen:
-            kept.append(token)
-            if not token.startswith("-") and not _ASSIGNMENT.match(token):
-                program_seen = True
-            continue
-        if token.startswith("-"):
-            kept.append(token)
-            if "=" not in token and token in _VALUE_OPTIONS:
-                expect_value = True
-            continue
-        # A positional after the program is a test target: the narrowed run
-        # names its own.
-    return kept
+    targets = {_target_name(path) for path in test_files if str(path).strip()}
+    return [token for token in command if _target_name(token) not in targets]
 
 
-def isolated_command(command: Sequence[str], test_id: str) -> list[str]:
+def isolated_command(
+    command: Sequence[str], test_id: str, test_files: Iterable[str] = ()
+) -> list[str]:
     """The armed command narrowed to exactly one test id."""
-    return [*runner_argv(command), test_id]
+    return [*runner_argv(command, test_files), test_id]
 
 
 def _arm(
@@ -285,13 +223,16 @@ def measure_run(
     head_sha: str,
     base_tree: Path,
     logs_dir: Path,
+    test_files: Iterable[str] = (),
     run=None,
     repeats: int = REPEATS,
 ) -> Measurement:
     """Run the three readings for one delivered run and return the verdict.
 
-    ``run`` is the command runner, ``subprocess.run``-shaped, so a caller can
-    drive the measurement without executing a real suite.
+    ``test_files`` are the node's own test files, the ones the armed command
+    was resolved from; they are what a single id's re-run replaces. ``run`` is
+    the command runner, ``subprocess.run``-shaped, so a caller can drive the
+    measurement without executing a real suite.
     """
     runner = run or _RUN
     argv = shlex.split(command or "")
@@ -350,7 +291,7 @@ def measure_run(
 
     def narrowed(test_id: str, arm_tree: Path, arm: str, n: int) -> tuple[bool, str]:
         return _fails(
-            isolated_command(argv, test_id),
+            isolated_command(argv, test_id, test_files),
             test_id,
             arm_tree,
             logs / "isolated" / f"{_slug(test_id)}-{arm}-{n}.log",

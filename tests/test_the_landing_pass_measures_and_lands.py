@@ -142,7 +142,10 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
                 "plan": PLAN,
                 "section": "s1",
                 "role": "implement",
-                "write_paths": ["reckon/crew/queue_landing.py"],
+                "write_paths": [
+                    "reckon/crew/queue_landing.py",
+                    "tests/test_alpha.py",
+                ],
             },
         },
     )
@@ -309,19 +312,53 @@ def test_a_flaky_added_id_that_fails_as_often_at_base_as_at_head_lands(
     assert len(narrowed) == 6, calls
 
 
-def test_narrowing_keeps_the_program_its_assignments_and_option_values() -> None:
-    """Only positional test targets are dropped when one id is re-run.
+def test_narrowing_replaces_only_the_nodes_test_files_with_the_one_id() -> None:
+    """Every token but the node's own test files belongs to the run.
 
-    A path-valued option and an environment assignment are part of the run the
-    armed command describes; dropping either leaves a command that cannot run
-    its one id at all.
+    An armed command can carry an environment assignment, a shell wrapper, the
+    interpreter and options whose values are themselves paths. Narrowing to one
+    id replaces exactly the files the command was resolved from, so all of
+    those survive and the command still means what it meant.
     """
-    known = [
-        "PYTHONPATH=.",
+    cases = [
+        (
+            ["pytest", "--cov-config", "coveragerc", "tests/test_alpha.py"],
+            ["tests/test_alpha.py"],
+        ),
+        (
+            ["env", "PYTHONPATH=.", "python", "-m", "pytest", "tests/x.py"],
+            ["tests/x.py"],
+        ),
+        (["timeout", "300", "pytest", "-q", "tests/x.py"], ["tests/x.py"]),
+        (
+            [
+                "PYTHONPATH=.",
+                ".venv/bin/python",
+                "-m",
+                "pytest",
+                "-p",
+                "no:cacheprovider",
+                "-q",
+                "tests/a.py",
+                "tests/b.py",
+            ],
+            ["tests/a.py", "tests/b.py"],
+        ),
+    ]
+    for command, files in cases:
+        expected = [token for token in command if token not in set(files)]
+        assert landing_measure.isolated_command(command, REAL, files) == [
+            *expected,
+            REAL,
+        ]
+
+
+def test_an_option_value_that_is_not_a_node_test_file_survives_narrowing() -> None:
+    """A path-valued option keeps its value; only the armed files are dropped."""
+    command = [
         ".venv/bin/python",
         "-m",
         "pytest",
-        "-q",
         "--basetemp",
         "build/bt",
         "--deselect",
@@ -329,9 +366,9 @@ def test_narrowing_keeps_the_program_its_assignments_and_option_values() -> None
         "tests/test_alpha.py",
     ]
 
-    kept = landing_measure.isolated_command(known, REAL)
-    assert kept[:3] == ["PYTHONPATH=.", ".venv/bin/python", "-m"], kept
-    assert "pytest" in kept and "-q" in kept, kept
+    kept = landing_measure.isolated_command(command, REAL, ["tests/test_alpha.py"])
+
+    assert "build/bt" in kept, kept
     assert "tests/other.py::test_old" in kept, kept
     assert "tests/test_alpha.py" not in kept, kept
     assert kept[-1] == REAL

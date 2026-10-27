@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon.crew import landing_measure, recovery, runs
+from reckon.crew.promotion_records import _node_test_files
 from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
 
 _run_srun = subprocess.run
@@ -80,6 +81,7 @@ def _measure_delivery(
             head_sha=head,
             base_tree=base_tree,
             logs_dir=logs,
+            test_files=_node_test_files(pointer),
         )
     _record_suite_evidence(run_id, measured)
     return measured
