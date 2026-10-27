@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T16:03:46.990Z",
+  "dispatched_at": "2026-10-27T15:49:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1371",
+      "severity": "blocking",
+      "text": "blocking: _diff_for_units filters changed lines by data-id=\"<unit>\" or id=\"<unit>\", but a plan authored the way reckon-create writes it keeps each section's prose on lines that carry neither (docs/plans/a-queue-holds-the-whole-plan.html has 135 empty <section data-id> elements and all prose on separate lines); measured on a real \u00a719 edit, the filter kept 0 content lines from a diff with 2, so _changed_material emits a diff block of headers only and the reviewer never reads the change the mechanism exists to show"
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed evidence states \"A plan's sections sit one per line\", which is false for the plans reckon-create writes and is the premise the diff filter rests on, so the record documents a mechanism that does not work rather than one that does"
+    },
+    {
+      "file": "tests/test_a_plan_review_reads_the_change.py",
+      "line": "156",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares plan_commit against HEAD in a fixture with no commit after the reviewed bytes, so it passes on an implementation returning git rev-parse HEAD and cannot fail on the by-object lookup the landed code exists to provide"
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1263",
+      "severity": "non-blocking",
+      "text": "non-blocking: _git duplicates the git-capture wrapper reckon/served_code.py:91 already owns, adding a third private copy of the same capability rather than extending an owner"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against 94e9068e0; e85fa60 carries the plan_commit record (plan_review.py:1290 plan_commit_for, :2144 write_review_sidecar), the changed-material block (plan_review.py:1410 _changed_material) and the per-section narrowing (routing.py:2434 plan_review_units, :2569), and d537f8e adds only the evidence fragment.",
+    "done_when": "\u00a719's done_when names tests/test_a_plan_review_reads_the_change.py with four arms plus an importer comparison and a negative control, and the checked-in test carries all four (tests/test_a_plan_review_reads_the_change.py:151-216) with suite-head.log at 4 passed EXIT=0, the importer arms at 95 passed both revisions, and nc-mut.log at EXIT=1 with only the unedited-section arm failing.",
+    "goal": "the node's goal (plan \u00a719) is that a composed plan review carries the plan file's diff since the commit the review last read plus the full text of the uncovered units, and that the dispatch gate narrows to the dispatched section; reckon/crew/plan_review.py:1371 narrows the diff by unit markers and reckon/crew/routing.py:2569 narrows the gate, and the gate half is landed while the diff half carries no prose change on a plan authored by reckon-create.",
+    "manifest": "read; it states the gate command and its result (4 passed, EXIT=0), the importer arms (95 passed at both revisions), the negative control (1 failed, 3 passed, EXIT=1) and its outside_scope entry for reckon/crew/recovery_review_subject.py, the brief composer that still instructs a whole-plan read.",
+    "write_paths": "read the source manifest's declared paths \u2014 reckon/crew/plan_review.py, reckon/crew/routing.py, tests/test_a_plan_review_reads_the_change.py, docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html \u2014 and git diff --stat 94e9068e0..d537f8e24 shows exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_review_reads_the_change.py:196 fails if the narrowing is reverted (proved by nc-mut.log), but no assertion fails if _diff_for_units drops a real plan's prose, because the fixture at :40 puts the prose on the same line as the section marker",
+    "evidence": "the manifest and suite-head.log record 4 passed EXIT=0 and the negative control nc-mut.log records 1 failed EXIT=1, but no arm exercises the plan format reckon-create writes, so the gate passes on a shape production does not produce",
+    "fit": "the additions follow the module's own style of private helpers with long docstrings, as at reckon/crew/plan_review.py:339 _prose_texts, and introduce no plan or figure rubrics naming violation",
+    "goal_fidelity": "reckon/crew/plan_review.py:1371 _diff_for_units keeps only +/- lines carrying a unit's data-id or id marker, and a real plan's section prose sits on lines without that marker, so the change half of the goal reaches no reviewer",
+    "reuse": "reckon/crew/plan_review.py:1263 _git re-implements the generic git-capture wrapper reckon/served_code.py:91 _git already owns, and _plan_document_path at :1243 correctly extends the resolve_resource owner",
+    "scope_discipline": "git diff --stat 94e9068e0..d537f8e24 lists only the four declared paths; the (unanswered) rendering at reckon/crew/plan_review.py:1508 is a small behaviour addition beyond the goal"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (plan \u00a719) is that a composed plan review carries the plan file's diff since the commit the review last read plus the full text of the uncovered units, and that the dispatch gate narrows to the dispatched section; reckon/crew/plan_review.py:1371 narrows the diff by unit markers and reckon/crew/routing.py:2569 narrows the gate, and the gate half is landed while the diff half carries no prose change on a plan authored by reckon-create.\nVERDICT done_when: \u00a719's done_when names tests/test_a_plan_review_reads_the_change.py with four arms plus an importer comparison and a negative control, and the checked-in test carries all four (tests/test_a_plan_review_reads_the_change.py:151-216) with suite-head.log at 4 passed EXIT=0, the importer arms at 95 passed both revisions, and nc-mut.log at EXIT=1 with only the unedited-section arm failing.\nVERDICT write_paths: read the source manifest's declared paths \u2014 reckon/crew/plan_review.py, reckon/crew/routing.py, tests/test_a_plan_review_reads_the_change.py, docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html \u2014 and git diff --stat 94e9068e0..d537f8e24 shows exactly those four files and nothing else.\nVERDICT manifest: read; it states the gate command and its result (4 passed, EXIT=0), the importer arms (95 passed at both revisions), the negative control (1 failed, 3 passed, EXIT=1) and its outside_scope entry for reckon/crew/recovery_review_subject.py, the brief composer that still instructs a whole-plan read.\nVERDICT diff: read both commits against 94e9068e0; e85fa60 carries the plan_commit record (plan_review.py:1290 plan_commit_for, :2144 write_review_sidecar), the changed-material block (plan_review.py:1410 _changed_material) and the per-section narrowing (routing.py:2434 plan_review_units, :2569), and d537f8e adds only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:854, reckon/crew/queue_admission.py:2325, reckon/crew/recovery_review_subject.py:779\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:1371 _diff_for_units keeps only +/- lines carrying a unit's data-id or id marker, and a real plan's section prose sits on lines without that marker, so the change half of the goal reaches no reviewer\nSCORE evidence: 14\nJUSTIFICATION evidence: the manifest and suite-head.log record 4 passed EXIT=0 and the negative control nc-mut.log records 1 failed EXIT=1, but no arm exercises the plan format reckon-create writes, so the gate passes on a shape production does not produce\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff --stat 94e9068e0..d537f8e24 lists only the four declared paths; the (unanswered) rendering at reckon/crew/plan_review.py:1508 is a small behaviour addition beyond the goal\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_a_plan_review_reads_the_change.py:196 fails if the narrowing is reverted (proved by nc-mut.log), but no assertion fails if _diff_for_units drops a real plan's prose, because the fixture at :40 puts the prose on the same line as the section marker\nSCORE fit: 17\nJUSTIFICATION fit: the additions follow the module's own style of private helpers with long docstrings, as at reckon/crew/plan_review.py:339 _prose_texts, and introduce no plan or figure rubrics naming violation\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/plan_review.py:1263 _git re-implements the generic git-capture wrapper reckon/served_code.py:91 _git already owns, and _plan_document_path at :1243 correctly extends the resolve_resource owner\nFINDING reckon/crew/plan_review.py:1371 blocking: _diff_for_units filters changed lines by data-id=\"<unit>\" or id=\"<unit>\", but a plan authored the way reckon-create writes it keeps each section's prose on lines that carry neither (docs/plans/a-queue-holds-the-whole-plan.html has 135 empty <section data-id> elements and all prose on separate lines); measured on a real \u00a719 edit, the filter kept 0 content lines from a diff with 2, so _changed_material emits a diff block of headers only and the reviewer never reads the change the mechanism exists to show\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html:21 non-blocking: the landed evidence states \"A plan's sections sit one per line\", which is false for the plans reckon-create writes and is the premise the diff filter rests on, so the record documents a mechanism that does not work rather than one that does\nFINDING tests/test_a_plan_review_reads_the_change.py:156 non-blocking: the assertion compares plan_commit against HEAD in a fixture with no commit after the reviewed bytes, so it passes on an implementation returning git rev-parse HEAD and cannot fail on the by-object lookup the landed code exists to provide\nFINDING reckon/crew/plan_review.py:1263 non-blocking: _git duplicates the git-capture wrapper reckon/served_code.py:91 already owns, adding a third private copy of the same capability rather than extending an owner",
+  "review_run_id": "r-20261027T154706931709-review-of-a-plan-review-reads-the-change-d537f8e249e0",
+  "reviewed_base_sha": "94e9068e0fd965e58923d29b309f08216b80bb7c",
+  "reviewed_head_sha": "d537f8e249e0bb1ef0e84fafd700072a283c7966",
+  "reviewed_run_id": "r-20261027T122427654395-a-plan-review-reads-the-change",
+  "scores": {
+    "durability": 11,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 11,
+    "reuse": 15,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T16:08:17.797425+00:00",
+  "total": 85
+}
