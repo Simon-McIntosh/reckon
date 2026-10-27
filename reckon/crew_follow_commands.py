@@ -2113,6 +2113,13 @@ def _follow_watch_lines(
                         "run_id": None,
                         "line": line,
                     }
+            # The producers are not retired yet, so a subscriber holds the
+            # producer's lease open exactly as a follower reading the stream
+            # does, and records its own delivery lease beside its registration.
+            # Both writers throttle themselves, so a tight poll loop costs one
+            # read and no write on most passes. A reader on another host has
+            # only the lease by which to judge that this pane still delivers.
+            _renew_producer_lease()
             _tick()
             if lifetime_elapsed or consumer_gone or settled:
                 break
