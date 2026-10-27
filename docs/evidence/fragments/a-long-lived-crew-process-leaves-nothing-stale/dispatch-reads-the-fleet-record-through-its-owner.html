@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-long-lived-crew-process-leaves-nothing-stale">
+  <meta name="plan-title" content="Dispatch reads the fleet record through its owner">
+  <meta name="plan-evidence-for" content="reckon:a-long-lived-crew-process-leaves-nothing-stale">
+  <meta name="plan-verifies" content="reckon:a-long-lived-crew-process-leaves-nothing-stale#s4">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,fleet,resolver">
+  <title>Dispatch reads the fleet record through its owner — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="dispatch-reads-the-fleet-record-through-its-owner-landed" data-node="dispatch-reads-the-fleet-record-through-its-owner" data-reckon="landed" data-when="2026-10-27">
+  <h2>Dispatch reads the fleet record through its owner</h2>
+  <p id="dispatch-reads-the-fleet-record-through-its-owner-change"><code>reckon/crew/dispatch_launch.py</code> no longer resolves the fleet record's path itself. <code>_fleet_record_path</code> is deleted, together with its re-export from <code>reckon/crew/dispatch.py</code>, and <code>_read_fleet_record</code> asks the owner — <code>fleet_supervisor.state_directory()</code> joined with <code>fleet_supervisor.RECORD_NAME</code> — keeping only the <code>RECKON_FLEET_RECORD</code> override that tests and operators set. The two resolvers disagreed whenever <code>FLEET_NAME</code> was set: the owner put a named fleet's record under <code>…/fleet/fleets/&lt;name&gt;</code>, while the dispatcher's copy looked under the catch-all directory and found nothing, so a launch read an absent record as an absent fleet.</p>
+  <p id="dispatch-reads-the-fleet-record-through-its-owner-measure">Measure: <code>tests/test_dispatch_reads_the_fleet_record_through_its_owner.py</code> passes 3 of 3. With <code>FLEET_NAME=alpha</code> and <code>RECKON_FLEET_RECORD</code> unset it asserts the record written at <code>state_directory()/record.json</code> is read, and that <code>state_directory()</code> is the named fleet's own <code>…/fleet/fleets/alpha</code>. The negative control — the <code>XDG_STATE_HOME</code> default restored in <code>_read_fleet_record</code> — fails exactly that case at <code>EXIT=1</code>. The importer gate ran 131 test files at head (<code>1 failed, 1271 passed, 1 skipped</code>) and 130 at base (<code>1 failed, 1268 passed, 1 skipped</code>): the one failure is the same id in both arms, <code>tests/test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit</code>, a 20-second wall-clock bound that fails in the base tree as well when the node is loaded, so no failure is added by this change.</p>
+  <ul id="dispatch-reads-the-fleet-record-through-its-owner-cases">
+    <li id="dispatch-reads-the-fleet-record-through-its-owner-case-named">A named fleet's record is read where the owner resolves it.</li>
+    <li id="dispatch-reads-the-fleet-record-through-its-owner-case-override">An explicit <code>RECKON_FLEET_RECORD</code> still wins over the owner's path.</li>
+    <li id="dispatch-reads-the-fleet-record-through-its-owner-case-absent">A named fleet with no record reads as no record.</li>
+  </ul>
+</article>
+</body>
+</html>
