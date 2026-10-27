@@ -1,0 +1,106 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T16:15:25.819Z",
+  "dispatched_at": "2026-10-27T16:06:59Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261027T160334161152-plan-review-of-a-queue-holds-the-whole-plan/plan.html:182",
+      "id": "wiring-1",
+      "reason": "the followup is the record that drives the next beat, so as written it sends the next coordinator at landed sections and skips the entire remaining width; the earlier review raised the same shape against f-aqhwp-003, and the author resolved that one, which is why this one now carries the whole load.",
+      "text": "the open followup f-aqhwp-004, which is the driving record a coordinator executes, says \"\u00a710 (hold and release) is working on codex\", \"\u00a717 ... is dispatched on codex --after \u00a710\", \"\u00a715 is queued --after \u00a710\", and \"Drain the rest: \u00a710 and \u00a717, then \u00a715, \u00a711, \u00a712, \u00a713\", while the declarations mark \u00a710, \u00a711, \u00a712, \u00a715 and \u00a717 all `done`, and the followup names none of \u00a718 through \u00a728 \u2014 the eleven sections now `implementable` \u2014 so a coordinator working it reads a finished list and loads nothing new",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261027T160334161152-plan-review-of-a-queue-holds-the-whole-plan/plan.html:100",
+      "id": "done_when-1",
+      "reason": "the node would close green with its guidelines obligation unmeasured, so the instruction half of the change, which is the whole point of \u00a713, can silently not land.",
+      "text": "\u00a713's measure greps `skills/` for three names only, while the same section's body requires the edit skill's new rule, the `AGENTS.md` orchestration pointers and the user-global guidelines to change, and the count \"each of those three\" is itself ambiguous because the first item names two verbs (`crew queue hold` and `release`) \u2014 a worker can satisfy the grep without touching any of the other three files",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261027T160334161152-plan-review-of-a-queue-holds-the-whole-plan/plan.html:100",
+      "id": "reasoning-1",
+      "reason": "a node dispatched for \u00a713 would hunt for text that has already been replaced and could re-introduce the per-beat rule it was told to remove, and the section's remaining real work (the steering verbs, the `unloaded` check and the `plan-review-owed` hold) is mis-stated as a rewrite of text that is already correct.",
+      "text": "\u00a713 states \"`skills/reckon-build/SKILL.md` and `skills/reckon-build/references/sprint-orchestration.md` today tell a coordinator to dispatch every ready-idle section on each beat\" and that the repository's `AGENTS.md` \"carries the same rule in its orchestration pointers ('an idle lane with ready work is a defect \u2014 dispatch every ready-idle section each beat')\", but at HEAD the build skill already reads \"Queue the work you have chosen in one beat ... dispatch all of them in one beat, naming no lane\" (`skills/reckon-build/SKILL.md:141`), the reference reads \"Queue the chosen work after the review round\" (`sprint-orchestration.md:758`), and `AGENTS.md:31`\u2013`34` already carries the chosen-sections rule with \"never load a plan wholesale\"; the quoted sentence does not occur in `AGENTS.md` at all",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261027T160334161152-plan-review-of-a-queue-holds-the-whole-plan/plan.html:160",
+      "id": "reasoning-2",
+      "reason": "the arm either fails on a batch that is faster than \u00a728 asks for, or passes only because \u00a726 has not landed, so the node cannot be closed on it; the plan must either declare `s28 -> s26` or restate the measure as work per plan touched rather than as a whole-project build count.",
+      "text": "\u00a728's sixth arm requires \"`build_roadmap` is called once per project for the whole batch, counted by a patch on it\", but \u00a726 (`plan.html:152`, also `implementable`, in the same wave) makes a dispatch compute readiness from its own plan plus the plans its waits name, \"not by building the whole project\", and keeps the whole-project build only for the roadmap, drain view and MCP reads; once \u00a726 lands the batch's dispatch path may call `build_roadmap` zero times, and \u00a728 declares no wait on \u00a726, so the two are expected to be built concurrently",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261027T160334161152-plan-review-of-a-queue-holds-the-whole-plan/plan.html:13",
+      "id": "reasoning-3",
+      "reason": "`_remaining_effort_hours` (`reckon/roadmap.py:561`) multiplies this explicit total by remaining progress, so the roadmap understates the plan's remaining effort by a whole section exactly when the plan grows; the earlier review raised the same declaration against a different gap and the author corrected it, so leaving this one unfixed re-opens that defect.",
+      "text": "`plan-effort-hours` is `66.25` while the section declarations sum to `72.25`; the difference is exactly \u00a728's `6.0`, the section added in this change, so the declaration was not advanced with the section",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261027T160334161152-plan-review-of-a-queue-holds-the-whole-plan/plan.html:152",
+      "id": "anchors_resolve-1",
+      "reason": "the module and the mechanism are named correctly elsewhere in the section, so a worker resolves the real symbol by grepping `section_verdicts`; it costs a lookup, not a wrong path.",
+      "text": "\u00a726 cites \"the same verdict function the roadmap uses (`section_verdict`)\"; no function named `section_verdict` exists; the roadmap builds `section_verdicts` rows from `section_readiness_verdict` (`reckon/roadmap.py:3775`), so the pointer names nothing a worker can open",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "e74935728be6bec577eed00776938b7255c0c8cee6c3fba523fb321a5ece0c37",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 173,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T160334161152-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "7625eda15a32006ca6e2aeaeaf57275d1b8392df",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a726 (`plan.html:152`) cites the roadmap verdict function as `section_verdict`, which resolves to no symbol; the function is `section_readiness_verdict` (`reckon/roadmap.py:3775`).",
+    "done_when": "a finding \u2014 \u00a713's done-when (`plan.html:100`) measures three greps in `skills/` while its body requires five separate edits, including `AGENTS.md` and the user-global guidelines.",
+    "evidence_paths": "pass \u2014 no gate in the changed units writes to a session scratchpad or a node-local temporary directory; \u00a714 keeps the plan's durable evidence record at `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html`.",
+    "naming": "pass \u2014 `crew dispatch --batch`, `reckon/crew/dispatch_batch.py` and the new test names carry no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a713 (`plan.html:100`) argues from a skills and guidelines state that \u00a716 and its landing already replaced, and \u00a728's `build_roadmap` arm measures a call \u00a726 removes from the dispatch path.",
+    "single_goal": "pass \u2014 \u00a713, \u00a726, \u00a727 and \u00a728 each name one deliverable; \u00a728's skill edits are the same deliverable as its batch call, as \u00a716 already established.",
+    "wiring": "a finding \u2014 the open build-order followup f-aqhwp-004 (`plan.html:182`\u2013`186`) still lists a completed build order and omits every section from \u00a718 to \u00a728."
+  },
+  "section_digests": {
+    "_document": "af9d81954c54aaf0e1190a644c49ad6241e43b7988ec879c1cbea9334e73ac89",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "0175deba527e1465bc320fc575af25c9409a0162284bb8758a3d5e3881790bab",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "e8d19190fe8ad7ac0ada9570da1e1403020d996fade35345888d232283a712f3",
+    "s18": "c41a5f40b44fad7c9170e75afe458887ecf383dfbdfbd87f44b1aba18db385ce",
+    "s19": "3bd989d1975e3410388984d6b187e73537eb6741a9325640197d88ec68579fac",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s20": "e3da15974b68bf72291157c518b582815b1d27655fbe0c5f559443c25757980c",
+    "s21": "06bd207809ad20c61fa13df3421066efff9e2d5169ee08608d442702ca36bf63",
+    "s22": "47e2cfd2937f003b333a5627f777e7bc72cb16eaf677da44f2683b7c2cbe138b",
+    "s23": "8b0cff55659bab7a4f30061f3adc4d4e822c8679c7c659a592a131c825a356a8",
+    "s24": "e41f5feee9ab0bd1cb7371a93fa8f654ccd277325b302e34421d3b0ea907d869",
+    "s25": "d156187078ac0ab4d87d1398fe13f74eee443a0f2e48ed45f963ef238d8737d9",
+    "s26": "133da70fe62a7e9cdf38f8de746de39c6edb0b464906c6df7081dff26a73cc66",
+    "s27": "272f482e0766b56080b610bdbf7ac48bc9ddfa2ed1cfb8c8a85cd9ecd5b32d93",
+    "s28": "fc3ed35100a59866d58523eeb7a84a428754e74f458514d68df170c0882e014f",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T16:18:20.149796+00:00"
+}
