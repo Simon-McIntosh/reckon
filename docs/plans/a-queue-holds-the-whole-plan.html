@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="146">
+<meta name="plan-version" content="147">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -189,6 +189,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261027T072914986518-review-of-drain-week-view-0471cbaad252" data-who="reckon-build" data-when="2026-10-27T07:39:31Z">
     <div class="r-comment-body"><p>Parsed independent review of 25f6ed74bf8142b0a219e9aeabdc00bcc88f8d9a through 0471cbaad2527877aff2c55137e22332e217a506 stored with six scores, zero added failure IDs and no findings.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261027T050146365874-drain-week-view" data-who="reckon-build" data-when="2026-10-27T07:27:37Z">
+    <div class="r-comment-body"><p>An overdue awaiting-upstream request appears in stuck whenever admission resolves its waits to a different phase, including queued and blocked-upstream; the pending arm stays out. Base and final-head focused gates each have 35 passes and one identical inventory failure, with zero added ids; reversing the answer fails the blocked arm.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-s15-no-metered-admitter" data-who="reckon-42" data-when="2026-10-24T12:40:00Z">
     <div class="r-comment-body"><p><strong>Measured on this plan's own queue, 24 October 2026.</strong> Two §4 requests dispatched with <code>--backend codex</code> waited <code>awaiting-upstream</code> on §5; when §5 closed, the admit service moved both to <code>queued</code> within two minutes, as §2 intends. They then sat on the codex lane with nothing to launch them: the only admit service on the fleet runs <code>crew admit --lane clive</code>, and no pass ever read them. A request routed to a metered lane at dispatch launches at once only if it is ready at dispatch. One that becomes ready later needs an admission pass for its lane. §15's admission per lane must therefore include every metered lane a queued request is routed to, whether that is a pass per lane or one pass that walks every lane's ready requests. Its done-when should include a codex-routed request that becomes ready after dispatch and launches with no coordinator call. The two requests were discarded and re-dispatched by hand this time.</p></div>
