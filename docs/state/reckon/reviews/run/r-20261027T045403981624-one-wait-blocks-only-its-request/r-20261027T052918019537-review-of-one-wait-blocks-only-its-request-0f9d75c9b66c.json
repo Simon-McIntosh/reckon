@@ -1,0 +1,49 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:2510",
+    "reckon/crew/dispatch.py:2098"
+  ],
+  "completed_at": "2026-10-27T05:34:54Z",
+  "dispatched_at": "2026-10-27T05:30:32Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call sites",
+    "diff": "commit b21f39c67 replaces the existence check at tests/test_dead_wait_blocks_only_its_request.py:254 with a queued-phase check; commit 0f9d75c9 adds the base/head comparison to the evidence fragment:14-18.",
+    "done_when": "prompt.txt:107 requires five arms and a base comparison; repair-base-suite.log and repair-head-suite.log each record 5 passed with EXIT=0, and repair-phase-mutation-guard.log records the refused-phase regression failing.",
+    "goal": "prompt.txt:30 asks that one broken or in-flight wait leave other dispatches free; the two repair commits strengthen proof of the already implemented behavior in tests/test_dead_wait_blocks_only_its_request.py:254 and the evidence fragment:14.",
+    "manifest": "the reviewed manifest.md records complete, lists b21f39c67 and 0f9d75c9, and carries completed baseline_suite and after_suite receipts with zero failure ids.",
+    "write_paths": "manifest.md:3 declares the test and evidence fragment, and git diff 9013c654..0f9d75c9 changes only those two declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_dead_wait_blocks_only_its_request.py:254 fails if refusal restores a starting pointer, as repair-phase-mutation-guard.log shows with one failed test.",
+    "evidence": "the reviewed manifest.md baseline_suite and after_suite identify complete exact-command receipts at 9013c654 and 0f9d75c9, each with five passes and zero failure ids.",
+    "fit": "tests/test_dead_wait_blocks_only_its_request.py:254 uses the existing runs.read_pointer helper and the evidence fragment:14-18 follows its existing receipt prose.",
+    "goal_fidelity": "tests/test_dead_wait_blocks_only_its_request.py:254 now requires the queued state after a refused launch, which is the in-flight wait behavior named in prompt.txt:107.",
+    "reuse": "neither diff adds a definition; the capability search found the existing launch owner at reckon/crew/queue_admission.py:198 and its admission call at :2510.",
+    "scope_discipline": "the two commit diffs touch only tests/test_dead_wait_blocks_only_its_request.py:254 and the declared evidence fragment:14-18."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks that one broken or in-flight wait leave other dispatches free; the two repair commits strengthen proof of the already implemented behavior in tests/test_dead_wait_blocks_only_its_request.py:254 and the evidence fragment:14.\nVERDICT done_when: prompt.txt:107 requires five arms and a base comparison; repair-base-suite.log and repair-head-suite.log each record 5 passed with EXIT=0, and repair-phase-mutation-guard.log records the refused-phase regression failing.\nVERDICT write_paths: manifest.md:3 declares the test and evidence fragment, and git diff 9013c654..0f9d75c9 changes only those two declared paths.\nVERDICT manifest: the reviewed manifest.md records complete, lists b21f39c67 and 0f9d75c9, and carries completed baseline_suite and after_suite receipts with zero failure ids.\nVERDICT diff: commit b21f39c67 replaces the existence check at tests/test_dead_wait_blocks_only_its_request.py:254 with a queued-phase check; commit 0f9d75c9 adds the base/head comparison to the evidence fragment:14-18.\nCALL_SITES: reckon/crew/queue_admission.py:2510, reckon/crew/dispatch.py:2098\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_dead_wait_blocks_only_its_request.py:254 now requires the queued state after a refused launch, which is the in-flight wait behavior named in prompt.txt:107.\nSCORE evidence: 20\nJUSTIFICATION evidence: the reviewed manifest.md baseline_suite and after_suite identify complete exact-command receipts at 9013c654 and 0f9d75c9, each with five passes and zero failure ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commit diffs touch only tests/test_dead_wait_blocks_only_its_request.py:254 and the declared evidence fragment:14-18.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_dead_wait_blocks_only_its_request.py:254 fails if refusal restores a starting pointer, as repair-phase-mutation-guard.log shows with one failed test.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_dead_wait_blocks_only_its_request.py:254 uses the existing runs.read_pointer helper and the evidence fragment:14-18 follows its existing receipt prose.\nSCORE reuse: 20\nJUSTIFICATION reuse: neither diff adds a definition; the capability search found the existing launch owner at reckon/crew/queue_admission.py:198 and its admission call at :2510.\n",
+  "review_run_id": "r-20261027T052918019537-review-of-one-wait-blocks-only-its-request-0f9d75c9b66c",
+  "reviewed_base_sha": "9013c654472f1fbbfcb959debbd3cbc32b0ffd60",
+  "reviewed_head_sha": "0f9d75c9b66c98801371ff73fb3b241713f32056",
+  "reviewed_run_id": "r-20261027T045403981624-one-wait-blocks-only-its-request",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T05:38:13.345946+00:00",
+  "total": 120
+}
