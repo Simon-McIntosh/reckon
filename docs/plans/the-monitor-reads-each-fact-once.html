@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;,&quot;the-monitor-reads-each-fact-once#s8&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="63">
+<meta name="plan-version" content="64">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -207,7 +207,7 @@
     <p>This section is the next to edit <code>reckon/crew/station_store.py</code>, so it also takes the four non-blocking findings of §5's review. It deletes <code>store_at_runtime_root</code> and <code>default_store</code>, which have no caller and duplicate <code>StationStore.at_runtime_root</code>. It closes each day-file connection it opens: <code>sqlite3.Connection</code>'s context manager commits but does not close. And it replaces the assertion in <code>tests/test_the_station_store_is_node_local.py</code> that compares two outputs of the store with one against the fixture's three pointer paths. Done when, beside the measures above, <code>git grep -n "def store_at_runtime_root\|def default_store" reckon/</code> returns nothing, a test counts the store's open file descriptors before and after writing 50 events and finds them equal, and the replaced assertion compares the incremental store's pointer paths with the fixture's three paths.</p>
 
     <h2 id="s7">§7 — One station per node replaces the per-project producers</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="6.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p><code>reckon crew station</code> runs one process per node, held by a lock under the node-local
     runtime root §5 resolves, for every mounted project on the node. It is the only writer of every table but
     <code>cursors</code>. Each subscriber (§8) writes its own row there and no other, and SQLite's WAL mode
