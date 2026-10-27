@@ -421,32 +421,56 @@ def _review_pointer_rubric(
     The composed review fields select the record paths, including the rubric
     suffix and reviewed head. Reading those declared paths identifies the
     rubric a live review will write without treating its node id as a type tag.
+
+    The expected paths are computed from the reviewed run's directory, because
+    that is where the composer declares them: a run review writes its record
+    inside ``<the reviewed run>/review-records/`` so its fence reaches no other
+    run's record. Computing them from the reviewer's own directory — where the
+    review's own run files live — names a path no dispatch composes, so a live
+    review never matched and every review read as missing.
+
+    A declaration that names a head is authoritative for that head: a pointer
+    whose head-keyed path names an earlier revision than the run now carries is
+    not this run's review, and its headless spelling no longer stands for the
+    current one either. Only a declaration carrying no head at all falls back to
+    the headless match, because it cannot be told apart from one at any
+    revision.
     """
-    reviewer_run_id = str(pointer.get("run_id") or "")
     node = pointer.get("node") or {}
-    declared_paths = {str(path) for path in node.get("write_paths") or ()}
-    if not reviewer_run_id or not declared_paths:
+    declared = [Path(str(path)) for path in node.get("write_paths") or ()]
+    if not reviewed_run_id or not declared:
         return None
-    review_directory = runs.run_dir(reviewer_run_id)
+    reviewed_directory = review_module.run_review_record_directory(
+        runs.run_dir(reviewed_run_id)
+    )
+    inside = {path.name for path in declared if path.parent == reviewed_directory}
+    if not inside:
+        return None
+    names_a_head = any(
+        _review_record_subject(path)[1]
+        for path in declared
+        if path.parent == reviewed_directory
+    )
     for candidate in (review_module.FIGURE_REVIEW_RUBRIC, None):
-        expected = set(
-            review_module.run_review_record_paths(
-                review_directory,
+        expected = {
+            Path(path).name
+            for path in review_module.run_review_record_paths(
+                runs.run_dir(reviewed_run_id),
                 reviewed_run_id,
                 reviewed_head_sha=reviewed_head,
                 rubric=candidate,
             )
-        )
-        if declared_paths.intersection(expected):
-            return candidate or ""
-        if reviewed_head:
-            legacy = set(
-                review_module.run_review_record_paths(
-                    review_directory, reviewed_run_id, rubric=candidate
-                )
+        }
+        headless = {
+            Path(path).name
+            for path in review_module.run_review_record_paths(
+                runs.run_dir(reviewed_run_id), reviewed_run_id, rubric=candidate
             )
-            if declared_paths.intersection(legacy):
-                return candidate or ""
+        }
+        if reviewed_head and inside & (expected - headless):
+            return candidate or ""
+        if inside & headless and not names_a_head:
+            return candidate or ""
     return None
 
 
@@ -518,7 +542,11 @@ def _review_in_flight(
     The dispatch record the reflex wrote is read first, because it is the
     precise answer and it carries the head the attempt composed for; a review
     launched by a coordinator by hand carries no record, so the live pointers
-    are swept for one whose granted record paths name the same pair. A recorded
+    are swept for one whose granted record paths name the same pair — and that
+    sweep is not narrowed to runs that look like reviewers by their role or
+    minted id, because a hand dispatch chooses both freely. The granted path is
+    what the composer wrote for this run, so it names this run's review
+    whatever the pointer calls itself. A recorded
     run whose pointer is gone is not in flight — the review died — and the
     reflex is free to dispatch again rather than wait on a run that no longer
     exists: a promoted or abandoned review leaves no live pointer, and a sweep
@@ -555,13 +583,13 @@ def _review_in_flight(
     run_id = str(record.get("run_id") or "")
     candidates = list_live(project=project) if pointers is None else pointers
     for pointer in candidates:
-        if not _is_review_run(pointer):
-            continue
         pointer_rubric = _review_pointer_rubric(pointer, run_id, head)
         if pointer_rubric is not None:
             if pointer_rubric != (rubric or ""):
                 continue
             return str(pointer.get("run_id") or "")
+        if not _is_review_run(pointer):
+            continue
         if rubric == review_module.FIGURE_REVIEW_RUBRIC:
             continue
         reviewed, reviewed_head = _review_subject(pointer, project)
