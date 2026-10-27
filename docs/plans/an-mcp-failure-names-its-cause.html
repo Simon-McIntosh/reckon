@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="112">
+<meta name="plan-version" content="113">
 <meta name="plan-modified" content="2026-10-27">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -391,6 +391,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-20261023-s13-figure" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v100 on 2026-10-23: §1's imas-cx rows sum to 2,561 cause hits, not the 2,697 §13 quotes; the difference is the imas-cx half of the read-only row counted under both.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261027T095802804624-review-of-the-census-partitions-failures-716fe366acfc" data-who="reckon-build" data-when="2026-10-27T10:19:30.203Z">
+    <div class="r-comment-body"><p>§13 review of r-20261027T090831601478 at 716fe366a: total 113/120 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 20), zero added failures against base c7c1bccc6, two non-blocking findings (a duplicated assertion in tests/test_mcp_census.py:488 and an importer-arm log with no EXIT line in the reviewed run&#x27;s logs/importers-head.log); verdict on every checklist item is recorded in the stored record.</p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261023T093305442687-review-of-a-malformed-request-is-refused-before-storage-eea81d325b5f" data-who="reckon-build" data-when="2026-10-23T09:53:05.399Z">
     <div class="r-comment-body"><p>independent review of r-20261023T081540567684-a-malformed-request-is-refused-before-storage at base 3a985827baf90836c57d16ab069ec38c3cb80e24 / head eea81d325b5fda4e2f9843ff13c10123700efebb, total 74/120; one blocking finding (the live-field vocabulary copied into reckon/mcp.py:262 omits COMMON_RUN_FIELDS, so a crew view live read naming section is now refused though the view serves it), four non-blocking findings (a verbatim copy of reckon/crew/query.py:104 at reckon/mcp.py:336; the view pre-flight skips normalize_view's strip/lower at reckon/mcp.py:1222 and 2182; the runs view's field vocabulary is still consulted after the read at reckon/mcp.py:370; and the two test-docstring/assertion findings at tests/test_a_malformed_request_is_refused_before_storage.py:61 and :7), and one added failure (the pre-existing width test, a module this diff does not touch)</p></div>

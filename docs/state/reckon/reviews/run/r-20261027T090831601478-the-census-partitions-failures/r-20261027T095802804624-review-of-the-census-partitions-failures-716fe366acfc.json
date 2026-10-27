@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/project_maintenance_commands.py:1222"
+  ],
+  "completed_at": "2026-10-27T10:19:30.203Z",
+  "dispatched_at": "2026-10-27T10:02:16Z",
+  "findings": [
+    {
+      "file": "tests/test_mcp_census.py",
+      "line": "488",
+      "severity": "non-blocking",
+      "text": "non-blocking: this line repeats line 487 verbatim, so one partition assertion is written twice and reads as two guards."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T090831601478-the-census-partitions-failures/logs/importers-head.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer arm's log stops mid-run with no pytest summary and no EXIT= line and is absent from test_logs, while the manifest's checkpoint still calls it running beside status complete."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 1 production call site(s)",
+    "diff": "read commit by commit against c7c1bccc6; one commit, four files, carrying one-cause attribution, the private rename, the mtime-pruned walk and the doctor rule.",
+    "done_when": "the gate asserts the measure; the three cases are tests/test_mcp_census.py:411, :445 and :491, timing 14.87 s is in logs/census-real-tree-timing.log, and logs/negative-control.log is EXIT=1.",
+    "goal": "the goal is a census that partitions failures and reads in seconds; reckon/mcp_census.py:268 attributes one cause and :400 bounds the walk, which is it.",
+    "manifest": "read; 9 passed at head and 6 at base, negative control 8 == 7, timing 14.87 s, but its checkpoint calls an importer arm running beside status complete.",
+    "write_paths": "every diff path (reckon/mcp_census.py, reckon/project_maintenance_commands.py, tests/test_mcp_census.py, the evidence fragment) is inside the declared set."
+  },
+  "justifications": {
+    "durability": "tests/test_mcp_census.py:441 reddens when every-cause counting is restored (logs/negative-control.log), and :486 reddens if the mtime skip at reckon/mcp_census.py:352 goes.",
+    "evidence": "logs/gate-after.log 9 passed EXIT=0, logs/gate-base.log 6 passed EXIT=0, logs/negative-control.log the 8 == 7 red, and the timing log 14.87 s.",
+    "fit": "the module keeps its docstring, private-helper and CAUSES-order idioms at reckon/mcp_census.py:57-74, but tests/test_mcp_census.py:488 repeats line 487.",
+    "goal_fidelity": "reckon/mcp_census.py:268 attributes once and reports the rest under also_carried; the real-tree log reads 1635 == 1635 and 1021 == 1021.",
+    "reuse": "the walk helpers at reckon/mcp_census.py:332-408 extend the module's own former walk, and no os.scandir owner or ThreadPoolExecutor site in reckon/serve.py, reckon/ledger.py or reckon/velocity.py owns this capability.",
+    "scope_discipline": "only the three declared source paths and the declared docs/evidence fragment appear in the diff, with nothing unrelated."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a census that partitions failures and reads in seconds; reckon/mcp_census.py:268 attributes one cause and :400 bounds the walk, which is it.\nVERDICT done_when: the gate asserts the measure; the three cases are tests/test_mcp_census.py:411, :445 and :491, timing 14.87 s is in logs/census-real-tree-timing.log, and logs/negative-control.log is EXIT=1.\nVERDICT write_paths: every diff path (reckon/mcp_census.py, reckon/project_maintenance_commands.py, tests/test_mcp_census.py, the evidence fragment) is inside the declared set.\nVERDICT manifest: read; 9 passed at head and 6 at base, negative control 8 == 7, timing 14.87 s, but its checkpoint calls an importer arm running beside status complete.\nVERDICT diff: read commit by commit against c7c1bccc6; one commit, four files, carrying one-cause attribution, the private rename, the mtime-pruned walk and the doctor rule.\nCALL_SITES: reckon/project_maintenance_commands.py:1222\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_census.py:268 attributes once and reports the rest under also_carried; the real-tree log reads 1635 == 1635 and 1021 == 1021.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-after.log 9 passed EXIT=0, logs/gate-base.log 6 passed EXIT=0, logs/negative-control.log the 8 == 7 red, and the timing log 14.87 s.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: only the three declared source paths and the declared docs/evidence fragment appear in the diff, with nothing unrelated.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_mcp_census.py:441 reddens when every-cause counting is restored (logs/negative-control.log), and :486 reddens if the mtime skip at reckon/mcp_census.py:352 goes.\nSCORE fit: 18\nJUSTIFICATION fit: the module keeps its docstring, private-helper and CAUSES-order idioms at reckon/mcp_census.py:57-74, but tests/test_mcp_census.py:488 repeats line 487.\nSCORE reuse: 20\nJUSTIFICATION reuse: the walk helpers at reckon/mcp_census.py:332-408 extend the module's own former walk, and no os.scandir owner or ThreadPoolExecutor site in reckon/serve.py, reckon/ledger.py or reckon/velocity.py owns this capability.\nFINDING tests/test_mcp_census.py:488 non-blocking: this line repeats line 487 verbatim, so one partition assertion is written twice and reads as two guards.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T090831601478-the-census-partitions-failures/logs/importers-head.log:4 non-blocking: the importer arm's log stops mid-run with no pytest summary and no EXIT= line and is absent from test_logs, while the manifest's checkpoint still calls it running beside status complete.\n",
+  "review_run_id": "r-20261027T095802804624-review-of-the-census-partitions-failures-716fe366acfc",
+  "reviewed_base_sha": "c7c1bccc662b84712c387404e004875c2045477f",
+  "reviewed_head_sha": "716fe366acfc1e973e62574c5b6052a2f2262847",
+  "reviewed_run_id": "r-20261027T090831601478-the-census-partitions-failures",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T10:24:58.103563+00:00",
+  "total": 113
+}
