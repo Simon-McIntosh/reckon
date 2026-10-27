@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T00:51:31.174Z",
+  "dispatched_at": "2026-10-27T00:41:44Z",
+  "findings": [
+    {
+      "file": "tests/test_a_misnamed_delivered_review_is_filed.py",
+      "line": "200",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the stored record's review_run_id against REVIEW_RUN_ID, the same constant the test wrote into the delivered body on the line above, so it holds whenever any record carrying that id is filed and cannot distinguish the content arm's selection from a name-arm hit; the neighbouring stored.is_file() and crew check exit assertions are what actually redden when the content arm is removed"
+    },
+    {
+      "file": ".config/reckon/crew/runs/r-20261026T233710188941-a-misnamed-delivered-review-is-filed/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite records revision 4ccb18a6e while the reviewed head is fe785f530, and the final commit changed the sibling case under review, so the node's own recorded gate does not cover the test it lands last; I re-ran tests/test_a_misnamed_delivered_review_is_filed.py at fe785f530 and got 5 passed EXIT=0, so the gap is in the record rather than in the code"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/crew/review.py:3086 (file_delivered_run_review_report, the filing) and reckon/crew/promotion.py:2199 (_delivered_review_records, the dry-run receipt); both resolve the reviewed run's directory, so both reach the content arm",
+    "diff": "read commit by commit against 89065e610: 4ccb18a6e adds the content arm to reckon/crew/review.py with the test file, fe785f530 tightens the sibling case and lands the evidence fragment; three files, all inside scope",
+    "done_when": "the done_when names four cases in tests/test_a_misnamed_delivered_review_is_filed.py and both mutation controls; the manifest records gate-head.log, gate-base.log, gate-node-head.log and two negative-control logs",
+    "goal": "the node's goal is to file a delivered run-review record found by its content whatever its file name; reckon/crew/review.py:3022 adds _records_naming_this_review and reckon/crew/review.py:2995 appends its paths after the declared ones",
+    "manifest": "read; it states 5 passed EXIT=0 at 4ccb18a6e for the node's own file, 1 failed/2118 passed at head against 3 failed/2116 at base, and 0 added failures",
+    "write_paths": "read the manifest's declared paths; every path in the diff (reckon/crew/review.py, tests/test_a_misnamed_delivered_review_is_filed.py, docs/evidence/fragments/scoring-should-stop-a-promotion/a-misnamed-delivered-review-is-filed.html) is inside them"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to file a delivered run-review record found by its content in the reviewed run's review-records/ directory whatever its file name, and reckon/crew/review.py:3022 _records_naming_this_review selects a record by the review_run_id and reviewed_run_id pair it carries, with reckon/crew/review.py:2995 keeping the declared names first.\nVERDICT done_when: the done_when names four cases in tests/test_a_misnamed_delivered_review_is_filed.py plus two content-arm mutation controls; the manifest records gate-head.log (1 failed, 2118 passed), gate-base.log (3 failed, 2116 passed, with the node's first and fourth cases red at base), gate-node-head.log (5 passed) and both negative-control logs.\nVERDICT write_paths: the declared paths are reckon/crew/review.py, reckon/crew/promotion.py, tests/test_a_misnamed_delivered_review_is_filed.py and the fragment and figures directories; the diff touches review.py, the test file and the fragment, and promotion.py needed no edit because _delivered_review_records at reckon/crew/promotion.py:2199 calls the same resolution.\nVERDICT manifest: read; it states the node's five cases pass at 4ccb18a6e, the importer-population arms add zero failures against base 89065e610, and both mutations redden their named cases.\nVERDICT diff: read commit by commit against 89065e610: 4ccb18a6e adds the content arm and the four cases, fe785f530 replaces the sibling case's byte-identical delivered copy with one that omits the stored disposition and lands the evidence fragment; three files changed, all inside the declared scope, and the review.py docstring states the measured defect in mechanism terms with no plan label.\nCALL_SITES: reckon/crew/review.py:3086, reckon/crew/promotion.py:2199\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:3022 matches on both review_run_id and reviewed_run_id, so a sibling review's record is never selected and the goal's guarantee is the one the code enforces.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log and gate-node-head.log run at 4ccb18a6e while the reviewed head is fe785f530, so the node's own recorded gate does not cover the final commit's test change; I re-ran tests/test_a_misnamed_delivered_review_is_filed.py at fe785f530 (5 passed, EXIT=0).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff against 89065e610 touches only reckon/crew/review.py, tests/test_a_misnamed_delivered_review_is_filed.py and the fragment, all within the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the sibling case at tests/test_a_misnamed_delivered_review_is_filed.py:242 asserts the delivered copy differs from the stored one before promoting, so the mutation that drops the review_run_id check reddens it as logged in negative-control-any-record.log.\nSCORE fit: 16\nJUSTIFICATION fit: _records_naming_this_review at reckon/crew/review.py:3022 follows the module's docstring style and names its mechanism, though it globs and re-parses every record in the directory on each filing where the store's own index avoids that walk.\nSCORE reuse: 16\nJUSTIFICATION reuse: the store's keyed lookup record_for_review_run in reckon/crew/review_records.py:1229 answers by review_run_id but only over the project staging store, not the reviewed run's review-records/ directory, so no owner provides this capability and the addition extends rather than forks one.\nFINDING tests/test_a_misnamed_delivered_review_is_filed.py:200 non-blocking: the assertion reads back REVIEW_RUN_ID, the constant the test itself wrote into the delivered record's body, so it cannot distinguish the content arm's selection from a name-arm hit and survives the regression it appears to guard.\nFINDING .config/reckon/crew/runs/r-20261026T233710188941-a-misnamed-delivered-review-is-filed/manifest.md:18 non-blocking: after_suite names revision 4ccb18a6e while the reviewed head is fe785f530, and the final commit changes the sibling case under review, so the record's own gate does not cover the test it lands last.",
+  "review_run_id": "r-20261027T003847186950-review-of-a-misnamed-delivered-review-is-filed-fe785f5304f6",
+  "reviewed_base_sha": "89065e61034084bae02bd58126a30b100a57ef78",
+  "reviewed_head_sha": "fe785f5304f6f36cb9407a02a13ff40179e8d0a9",
+  "reviewed_run_id": "r-20261026T233710188941-a-misnamed-delivered-review-is-filed",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T01:15:33.389141+00:00",
+  "total": 103
+}
