@@ -133,7 +133,20 @@ def test_one_station_keeps_every_session_transition_once_across_restart(
                 handle.write(
                     json.dumps({"type": "assistant", "message": {"content": []}}) + "\n"
                 )
-        _wait_for(lambda: len(store.events()) >= 2 or first.poll() is not None)
+
+        # The events row and the consumed offset are written in one tick but
+        # are not atomic together, so wait for both facts before asserting
+        # either; asserting on the event count alone reads a half-applied tick.
+        def both_published() -> bool:
+            if len(store.events()) < 2:
+                return False
+            advanced = {row["path"]: row["consumed"] for row in store.stream_rows()}
+            return bool(advanced) and all(
+                advanced.get(path, 0) > offset
+                for path, offset in initial_offsets.items()
+            )
+
+        _wait_for(lambda: both_published() or first.poll() is not None)
         assert first.poll() is None, first.stderr.read()
         assert [(row["run"], row["audience"]) for row in store.events()] == [
             ("r-one", "session-one"),

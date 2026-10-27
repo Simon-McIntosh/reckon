@@ -3309,6 +3309,7 @@ def crew_watch(
         _emit_crew_result(result, pretty)
         return
 
+    from reckon.crew import dispatch_watch
     from reckon.crew.dispatch_watch import _scrub_session_identity
 
     # The producer outlives the session that armed it and sweeps every
@@ -3336,6 +3337,12 @@ def crew_watch(
             # the status rather than the JSON that is also printed above.
             sys.exit(1)
         return
+    # The station reads and classifies each fact once for the whole node, so it
+    # is requested before this process claims the producer seat. A node whose
+    # station is missing would otherwise have every producer re-derive the
+    # fleet from scratch. Outside a fleet allocation this is a no-op, and a
+    # held station is left alone.
+    dispatch_watch._ensure_node_station()
     # --exit-on-empty only means anything to the single-event mode, so asking
     # for it selects that mode rather than being silently ignored.
     single_event = once or exit_on_empty
