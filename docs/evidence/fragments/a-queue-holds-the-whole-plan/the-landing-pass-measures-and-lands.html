@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>the-landing-pass-measures-and-lands — landing record</title>
+</head>
+<body>
+<main>
+<section id="the-landing-pass-measures-and-lands-record">
+<h2>The landing pass measures the suite before it lands a run</h2>
+<p>A delivered implementation run is no longer landed on the run's accepted review
+alone. <code>reckon/crew/landing_measure.py</code> runs three readings before the
+landing: the run's armed command at the base revision and at the delivered head,
+the importer population (the test files importing each module the change
+touched) at both revisions in parallel with <code>-n 8</code>, and every test id
+that fails at the head and not at the base, re-run alone three times at each
+revision. An id is a regression only when it fails at the head more often than at
+the base, so a flake that fails as often at base as at head does not hold the
+landing.</p>
+<p><code>reckon/crew/queue_landing.py</code> refuses to land a run whose
+measurement names a regression, raises one obligation naming each real id with
+its isolated base and head results, and otherwise lands the run and records the
+suite pair as the run's evidence. On a landing it also records the landing beat
+through the same <code>edit_plan</code> ops a coordinator uses: the node's
+evidence anchor in the cumulative landing record, the section's declaration set
+to <code>done</code>, and the <code>c-close-&lt;section&gt;</code> comment
+linking to the anchor.</p>
+<p>A single id is re-run through the same command: the node's own test files —
+the ones the armed command was resolved from — are removed and the id appended,
+so the interpreter, any <code>env</code> or <code>timeout</code> wrapper,
+every option and its path value survive unchanged. An arm that cannot be
+started, or that exits non-zero without reporting the id, is unreadable and
+refuses the landing rather than reading as a failure at both revisions.</p>
+<p>The step runs inside the admission loop, so it is bounded. Every
+measurement subprocess — the suite arms, the population arms, each isolated
+re-run and the base checkout's <code>git worktree</code> calls — carries a
+wall-clock timeout from flight config
+(<code>landing.measure_timeout_seconds</code>, default 600 s). A timed-out arm
+is <em>unmeasurable</em>: no failure id is taken from a partial log, the landing
+is refused and the run's obligation is raised. A pass measures at most one
+delivered run (the rest are deferred in delivery order), a measurement is stored
+per run and head and reused while the head is unchanged, and the base checkout
+is built under the fleet's own node-local scratch root
+(<code>dispatch_launch.worker_scratch_root</code>, which rejects a shared-storage
+<code>TMPDIR</code>) and removed on every exit path, including a checkout that
+times out. A removal that fails or exceeds its bound leaves the repository's
+worktree registration behind, so it is pruned with
+<code>git worktree prune --expire now</code> under the same bound; a stale entry
+would otherwise make a later checkout of the same path fail. A measurement that
+raises is reported as itself, not as a base checkout that could not be built.
+A scratch root that cannot be created — full or unwritable — is a checkout that
+cannot be built like any other: it raises the same refusal, so that run's
+landing is refused and its obligation raised while the admission pass carries
+on. The admission loop calls the landing step unguarded, so an error escaping
+it would stop admission for every session.</p>
+<p>Measured on the node's gate: fifteen tests pass against a test suite with
+stubbed repositories and commands, covering a clean population landing with its
+armed suite pair recorded, a flaky added id landing, a real added id refused
+with one obligation naming it, the landing beat ticking the section, a run
+whose review is not accepted left untouched, narrowing across
+<code>--cov-config</code>, <code>env</code>, <code>timeout</code> and a
+multi-file command, an unreadable arm refusing the landing, a measurement that
+exceeds its bound refusing the landing with no scratch tree left behind, a pass
+with three delivered runs measuring exactly one, and a second pass reusing the
+stored measurement of an unchanged head, a failed worktree removal leaving no
+entry in <code>git worktree list</code>, and a measurement error that keeps its
+own message. The importer population — every test
+file importing <code>landing_measure</code>, <code>queue_landing</code> or
+<code>queue_admission</code> — shows no added failure at the delivered head.</p>
+</section>
+</main>
+</body>
+</html>
