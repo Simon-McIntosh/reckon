@@ -77,4 +77,16 @@
   same edit keeps <code>2</code> content lines, carries
   <code>eight read-backs</code> (the edit), and returns an empty block for the
   neighbouring unit <code>s20</code>.
+
+  <p><strong>Second repair: the unanswered finding still refuses.</strong>
+  Narrowing the coverage judgment also suppressed the unanswered-finding
+  refusal, because that check was gated on there being no scope. Six
+  plan-review tests went red at once, five of them on
+  <code>DID NOT RAISE PlanReviewMissingError</code>. A finding's identity names
+  no unit, so it cannot be attributed to the scope a request reads, and whether
+  the review that carried it was read is a property of the review rather than of
+  the unit — the refusal now stands whatever the scope. Measured: the six fail
+  with the narrowed gate restored (<code>6 failed</code>, <code>EXIT=1</code>)
+  and pass at the repair head (<code>6 passed</code>, <code>EXIT=0</code>);
+  thirteen plan-review test files report <code>132 passed</code>.
 </section>
