@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T13:51:24.459Z",
+  "dispatched_at": "2026-10-27T13:40:46Z",
+  "findings": [
+    {
+      "file": "tests/test_every_default_read_fits.py",
+      "line": "268",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sweep supplies the slug but never asserts the why view answered rather than refused \u2014 _served_why returns an error_response dict for a refusal (reckon/mcp.py:1483-1515) and the sweep at :307-317 only rejects error == 'response_over_budget', so a regression that refused a valid plan ref would stay green."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "none: the increment changes only a test file and a docs fragment, so no production module reaches it.",
+    "diff": "Two commits against base 53c5c34a1 \u2014 2d4d26445 changes the test (3 insertions, 1 deletion) and a5873c43c changes only the evidence fragment \u2014 inside the two files the goal names, each with a conventional subject and a body.",
+    "done_when": "The measure for this increment is tests/test_every_default_read_fits.py green at the head, recorded in logs/context-fits.log (4 passed, EXIT=0 at 2d4d26445, whose only delta to a5873c43c is the evidence fragment), against logs/why-fit-parity.log (1 failed, EXIT=1, extra ('read_plan','why')) on a tree whose fit test is byte-identical to the round base.",
+    "goal": "The reviewed increment's goal is to hold the why view to its budget row in the default-fit test; tests/test_every_default_read_fits.py:79 adds \"why\" to READ_PLAN_VIEWS and :268 supplies the slug it needs, so the row is enumerated and the view is actually called.",
+    "manifest": "Read at status complete; baseline_suite records 0 failures at 53c5c34a1 and after_suite 0 at 2d4d26445, both on tests/test_one_call_explains_any_ref.py, so added_failure_count is 0 and no failure id is added.",
+    "write_paths": "Both changed paths lie inside the source node's granted scope as extended by resume-3-advice (which names tests/test_every_default_read_fits.py) and the evidence fragment path in the source prompt's FENCE \u2014 SCOPE, so the diff stays inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "Removing \"why\" from READ_PLAN_VIEWS reddens tests/test_every_default_read_fits.py:290 with the extra ('read_plan','why') item, exactly as logs/why-fit-parity.log shows, and a why answer grown past its 24,000 row reddens the size check at :309, though neither assertion distinguishes a real answer from a refusal (the FINDING at :268).",
+    "evidence": "logs/context-fits.log records 4 passed EXIT=0 at 2d4d26445 and logs/why-fit-parity.log records the pre-fix 1 failed EXIT=1, but the green arm is stamped one commit before the reviewed head and the reproduction is stamped before the round base.",
+    "fit": "The change follows the file's own idiom at tests/test_every_default_read_fits.py:265-270, extending the same view-tuple and argument-dict pattern the other read_plan views use, and introduces no name the naming rules forbid.",
+    "goal_fidelity": "tests/test_every_default_read_fits.py:79 adds \"why\" to READ_PLAN_VIEWS and :268 passes the plan-001 slug, so the parity case and the per-view size sweep both now include the view.",
+    "reuse": "No definition is added; the search found the existing owners reckon/mcp_views.py:52 VIEW_NAMES and reckon/mcp_budget.py:36 VIEW_BUDGETS, and READ_PLAN_VIEWS stays an independent literal so the parity assertion at :290 is not derived from the production list it checks.",
+    "scope_discipline": "The diff touches only tests/test_every_default_read_fits.py and docs/evidence/fragments/the-mcp-answers-the-question-asked/one-call-explains-any-ref.html, both inside the granted scope, and carries nothing beyond enumerating the view and supplying its argument."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261027T133702918465-review-of-one-call-explains-any-ref-a5873c43cd1a",
+  "reviewed_base_sha": "53c5c34a107512803715298ca7ec334524f952a3",
+  "reviewed_head_sha": "a5873c43cd1a9f4f72853bc2d9d52388aaa46ad5",
+  "reviewed_run_id": "r-20261027T094422370525-one-call-explains-any-ref",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T13:58:22.869210+00:00",
+  "total": 109
+}
