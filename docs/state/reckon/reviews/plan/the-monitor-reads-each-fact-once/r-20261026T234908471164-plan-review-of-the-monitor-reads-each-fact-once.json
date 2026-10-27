@@ -1,0 +1,109 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-26T23:55:45.850Z",
+  "dispatched_at": "2026-10-26T23:50:23Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261026T234908471164-plan-review-of-the-monitor-reads-each-fact-once/plan.html:304",
+      "id": "done_when-1",
+      "reason": "as written the node's central measure passes on the unmodified tree, so \u00a710 would be closed on a test that never exercised its change; it must assert what the move actually buys (the station dispatches and no subscriber's sweep reads the fleet, per \u00a73's read budget) or trace the sweep count, not the review count.",
+      "text": "the negative control \"running the reflex per subscriber must fail the exactly-one test\" cannot fire: `dispatch_review_for_run` returns `dispatched: false` with \"a review is already in flight as a live run\" whenever `_review_in_flight` finds the pair (run, head) already standing (reckon/crew/recovery_review_dispatch.py:491-520, guard at :2127-2158), so three subscribers sweeping the same session in sequence produce exactly one review on today's code and the exactly-one test passes unfixed",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261026T234908471164-plan-review-of-the-monitor-reads-each-fact-once/plan.html:296",
+      "id": "reasoning-1",
+      "reason": "the same plan error sends a node to edit the writer and add a second consumer-visible meaning to a slot three other rules read, instead of a one-line change to the reader using a function already written and already used by the sibling withdrawal rule; the collision it risks is a run whose legitimate lift never fires.",
+      "text": "\u00a710 prescribes \"This section makes the advice door write the same stamp the reader takes\", but the advice door needs no new write: every resume launch goes through `_resume` and calls `_record_resume_supersedes_head` (resumption.py:1489), which stamps `resume_superseded_head` with the resume instant, and `_latest_resume_at` in the settle reader's own module already combines that stamp with `auto_resume.at` (recovery_review_dispatch.py:206-224, used 30 lines below at :1302) \u2014 the gap is that `review_settle_seconds_remaining` reads only one of the two stamps it is handed a reader for; meanwhile writing `auto_resume` from the advice door feeds `previous_lift` (recovery_liveness.py:1124, recovery_classification.py:718), whose `trigger` is compared against a wait declaration's signature at recovery_liveness.py:1073 and, on a match, reports a wait-key defect that stops that run's lift loop",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261026T234908471164-plan-review-of-the-monitor-reads-each-fact-once/plan.html:302",
+      "id": "wiring-1",
+      "reason": "the queue orders only what the plan declares, so as declared \u00a710 would launch ahead of \u00a78 and its gate could not be produced at all; declaring `s10: [...#s7, ...#s8]` is what makes the measure reachable.",
+      "text": "\u00a710's measure requires \"a running settle-aware subscriber\", and \u00a78 states that process's trace is \u00a710's measure (:266-267), yet `plan-section-depends-on` declares \u00a710 upstream of \u00a77 only (plan.html:23) with \u00a78 an unattached sibling, so \u00a710 is admitting-dispatchable before the subscriber it must trace exists",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "fb6abdc4817d15b06c267ba627ec05d184c4ca41e9e6a7b5a2cdb88c462fabb1",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 40,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-26T23:57:41.686694+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-26T23:57:53.842104+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "wiring-1",
+      "reason": "",
+      "when": "2026-10-26T23:58:06.313303+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-26T23:57:41.686694+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-26T23:57:53.842104+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-26T23:58:06.313303+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-reads-each-fact-once.v40.json",
+  "review_run_id": "r-20261026T234908471164-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "0405708cd4638d7f49d46c2a8ff651b11e96bdc1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `resumption.sweep` (reckon/crew/resumption.py:1768), `recovery_review_acceptance.dispatch_awaiting_reviews` (:377 of its module), `REVIEW_SETTLE_SECONDS` (recovery_review_dispatch.py:889), `review_settle_seconds_remaining` (:1258) and `runs.renew_producer_lease` (runs.py:2115) all resolve, and \u00a78 does name exactly two lease files.",
+    "done_when": "a finding \u2014 \u00a710's done-when (:298) and its first negative control (:304) claim that a per-subscriber reflex fails the exactly-one test, but today's reflex is already idempotent per run.",
+    "evidence_paths": "pass \u2014 \u00a710 declares no artefact paths; its gate is a trace and a test set, and the station's own records stay on the node-local runtime root \u00a75/\u00a77 resolve.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or changelog prose reach \u00a710's prose or the symbols it names.",
+    "reasoning": "a finding \u2014 \u00a710 cures the advice-resume settle gap on the writer side by making the advice door write `auto_resume`, when the settle reader can read the resume instant the shared launch path already records, and `auto_resume` is read by three other rules as the sweep's lift cache.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable, moving the review reflex and settle detection into the station; the advice-resume stamp is a clause of that same settle property.",
+    "wiring": "a finding \u2014 \u00a710's declared upstream is `the-monitor-reads-each-fact-once#s7` alone (plan.html:23), while its per-subscriber trace measure (:302) traces \"a running settle-aware subscriber\", a process only \u00a78 delivers."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "7a300de5c4503173169141ea41f8d98ac6424879c934cf9506132b543c2846e6",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-26T23:57:32.578776+00:00"
+}
