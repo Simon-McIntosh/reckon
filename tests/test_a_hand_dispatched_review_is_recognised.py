@@ -200,6 +200,25 @@ def test_a_review_of_an_earlier_head_is_not_the_review_at_this_head(
     assert recovery._review_in_flight(record) == REVIEW
 
 
+def test_a_partial_claim_on_the_record_is_not_the_runs_review(
+    repository: Path,
+) -> None:
+    """A run claiming only the legacy record path is a scope overlap, not a review."""
+    record = _source_pointer(repository)
+    paths, head = _composed(record)
+    assert head and len(paths) == 2, (head, paths)
+
+    # The headless spelling alone: the shape a coordinator delegates to another
+    # run to make the review dispatch refuse on a scope conflict. Nothing
+    # composed that pointer as a review, so it must not answer as one.
+    _review_pointer(paths[:1])
+    assert recovery._review_in_flight(record) == ""
+
+    # Control: the same pointer declaring what the composer granted is the review.
+    _review_pointer(paths)
+    assert recovery._review_in_flight(record) == REVIEW
+
+
 def test_a_figure_review_is_told_apart_from_a_content_review(
     repository: Path,
 ) -> None:

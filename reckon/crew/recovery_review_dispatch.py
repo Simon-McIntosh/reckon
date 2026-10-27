@@ -429,12 +429,21 @@ def _review_pointer_rubric(
     review's own run files live — names a path no dispatch composes, so a live
     review never matched and every review read as missing.
 
-    A declaration that names a head is authoritative for that head: a pointer
-    whose head-keyed path names an earlier revision than the run now carries is
-    not this run's review, and its headless spelling no longer stands for the
-    current one either. Only a declaration carrying no head at all falls back to
-    the headless match, because it cannot be told apart from one at any
+    A review of a run whose head resolves must declare the head-keyed path the
+    composer grants for that head, because that is where the dispatch it was
+    launched with sends its record: a declaration naming an earlier revision is
+    not this run's review at the head it carries now, and the legacy headless
+    spelling does not stand for it either. Only when the run's head cannot be
+    resolved does the headless declaration carry the match, because then there
+    is no head to name and no declaration to tell apart from one at any
     revision.
+
+    The head-keyed requirement is also what separates a review from a run that
+    merely claims part of the record scope. A coordinator delegates a write
+    claim over a run's review record to another run to force a refusal, and
+    that pointer declares the headless path alone: no dispatch of this run
+    composed it, so it must not answer as the review and silence the dispatch
+    whose refusal is the point.
     """
     node = pointer.get("node") or {}
     declared = [Path(str(path)) for path in node.get("write_paths") or ()]
@@ -446,13 +455,8 @@ def _review_pointer_rubric(
     inside = {path.name for path in declared if path.parent == reviewed_directory}
     if not inside:
         return None
-    names_a_head = any(
-        _review_record_subject(path)[1]
-        for path in declared
-        if path.parent == reviewed_directory
-    )
     for candidate in (review_module.FIGURE_REVIEW_RUBRIC, None):
-        expected = {
+        composed = [
             Path(path).name
             for path in review_module.run_review_record_paths(
                 runs.run_dir(reviewed_run_id),
@@ -460,16 +464,10 @@ def _review_pointer_rubric(
                 reviewed_head_sha=reviewed_head,
                 rubric=candidate,
             )
-        }
-        headless = {
-            Path(path).name
-            for path in review_module.run_review_record_paths(
-                runs.run_dir(reviewed_run_id), reviewed_run_id, rubric=candidate
-            )
-        }
-        if reviewed_head and inside & (expected - headless):
-            return candidate or ""
-        if inside & headless and not names_a_head:
+        ]
+        # The last name composed is the head-keyed one when a head resolved, and
+        # the headless one when it did not.
+        if composed[-1] in inside:
             return candidate or ""
     return None
 
