@@ -53,16 +53,31 @@
   non-local root itself — the reload still publishes under the station's
   runtime root.
 
+  <p><strong>The follower stops sweeping and reads the station's readings.</strong>
+  <code>_follow_watch_lines</code>' subscriber branch no longer calls
+  <code>_sweep_on_cadence</code>: the sweep runs once for every session on the
+  node, in the station, so a pane that swept beside it paid the same fleet
+  reads once per pane. The branch drives <code>StationSubscriber.wake</code>,
+  which is now the one poll loop a pane runs — the branch hands it the
+  per-pass checks that end an arming and nothing else. The settle judgement
+  moves with it: a pane reading a station takes each population's answer from
+  the reading the station wrote on its tick, and a pane reading a producer
+  keeps the live-pointer listing it has always used, so a node without a
+  station behaves exactly as before.
+
   <p><strong>Measure.</strong> Gate:
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_follower_is_a_station_subscriber.py
   tests/test_the_reflex_runs_once_in_the_station.py</code> reports
-  <code>7 passed</code>, <code>EXIT=0</code> at head <code>f0cd9b0f1</code>;
-  the same command at base <code>9e363fe50</code>, where the file does not yet
-  exist, reports no tests ran, <code>EXIT=4</code>. The 32 test files importing
-  the changed modules report <code>274 passed</code>, <code>EXIT=0</code> at
-  both base and head — no added failure. <code>ruff check</code> and
-  <code>ruff format --check</code> on the four staged paths add no finding and
-  no format regression against base.
+  <code>9 passed</code> for this node's file and <code>14 passed</code> for the
+  subscriber's, <code>EXIT=0</code> at head <code>5b6101130</code>; the same
+  command at base <code>9e363fe50</code>, where this node's file does not yet
+  exist, reports no tests ran, <code>EXIT=4</code>. The 60 test files importing
+  the changed modules report <code>491 passed</code> at base and
+  <code>500 passed</code> at head (the extra nine are this node's own cases) —
+  no added failure. <code>ruff check</code> and <code>ruff format --check</code>
+  on the staged paths add no finding: the two findings and the one unformatted
+  file the tree already carries are unchanged by this work.
 
   <p><strong>What the test shows, one property per failure it prevents.</strong>
   Three subscribers attached to one session add no sweep of their own: a tick
@@ -79,39 +94,50 @@
   snapshot of a tick carries that tick's own heartbeat. A reload materialises
   its image under the station's runtime root and leaves
   <code>checkout_trust._committed_tree_cache</code> the module's own function.
+  A pane reading a station runs no sweep, where the same recorder on the
+  producer path is called — the positive control that a zero could have been a
+  one. And a pane settles on the station's reading in both directions: it
+  stays open with no live pointer at all and leaves a working one on disk, each
+  the opposite of what the pointer listing would have decided.
 
-  <p><strong>The trace, with its positive control.</strong> A settle-aware
-  subscriber reading the station
-  (<code>StationSubscriber</code> polling and judging three populations, 1794
-  readings over 596 passes in 60 s) names <strong>no</strong> path under the
-  crew home; the only paths it opens are 26 under the node's runtime root, the
-  store it reads. The same 60 s trace of today's per-follower settle reader
+  <p><strong>The trace, with its positive control.</strong> Sixty seconds of
+  the delivered follower path — <code>_follow_watch_lines</code> reading the
+  station, the branch this node changed — name <strong>two</strong> paths under
+  the crew home and no others: the producer lease
+  <code>crew/watch/leases/&lt;project&gt;-&lt;hash&gt;.json</code> and its
+  <code>.lock</code>, renewed 592 times, which are the two leases a live pane
+  legitimately holds. Everything else it opens is the store under the node's
+  runtime root. The same 60 s trace, on the same fixture home, of today's
+  per-follower settle reader
   (<code>crew_follow_commands._population_has_live_work</code>, 596 samples)
   names <strong>1789</strong> crew-home paths — <code>live</code>,
   <code>live/</code> and <code>live/r-one.json</code>, the run directory it
-  lists — so a trace naming nothing is shown to be a trace that could have
-  named something. The full traces (615892 and 1010992 bytes) sit in the run
-  directory under <code>logs/after.trace</code> and <code>logs/before.trace</code>
-  — above the 300 KB a repository data file may carry — and the path extracts
-  are reproduced below.
+  lists — so a trace naming only the leases is shown to be a trace that could
+  have named the run directories. The full traces (1066006 and 966597 bytes,
+  both above the 300 KB a repository data file may carry) sit in the run
+  directory under <code>logs/after-follower.trace</code> and
+  <code>logs/before-follower.trace</code>, and the path extracts are
+  reproduced below.
 
   <p><strong>The extracts, verbatim.</strong> Paths are rewritten to
   <code>&lt;crew-home&gt;</code> (the fixture's <code>crew_home()</code>) and
   <code>&lt;runtime&gt;</code> (its station root); counts are occurrences in the
   full trace.
   <pre>
-settle-aware subscriber (StationSubscriber reading the station's live-work reading)
-revision f0cd9b0f1; 60 s; strace -f -e trace=openat,stat,newfstatat
-1794 population readings over 596 passes
-crew-home paths named: 0
+the delivered follower reading the station (_follow_watch_lines, subscriber branch)
+revision 5b6101130; 60 s; strace -f -e trace=openat,stat,newfstatat
+592 passes, 0 rows delivered (the fixture fleet is quiet)
+crew-home paths named: 1776 occurrences over 2 distinct paths
+  1184 &lt;crew-home&gt;/crew/watch/leases/fixture-f16d05ec6b29.json
+   592 &lt;crew-home&gt;/crew/watch/fixture-f16d05ec6b29.lock
 node-runtime-root paths named (distinct):
-      6 &lt;runtime&gt;/events/events-2026-10-27.sqlite3
-      5 &lt;runtime&gt;/station.sqlite3
-      2 &lt;runtime&gt;/station.sqlite3-wal
-      2 &lt;runtime&gt;/events/events-2026-10-27.sqlite3-wal
+      6 &lt;runtime&gt;/station.sqlite3
+      4 &lt;runtime&gt;/station.sqlite3-wal
+      4 &lt;runtime&gt;/station.sqlite3-journal
+      3 &lt;runtime&gt;
+      2 &lt;runtime&gt;/events/
+      2 &lt;runtime&gt;/events
       1 &lt;runtime&gt;/station.sqlite3-shm
-      1 &lt;runtime&gt;/station.sqlite3-journal
-      1 &lt;runtime&gt;/events/events-2026-10-27.sqlite3-shm
 
 today's per-follower settle reader (crew_follow_commands._population_has_live_work)
 revision 9e363fe50; 60 s; strace -f -e trace=openat,stat,newfstatat
@@ -123,28 +149,26 @@ distinct crew-home paths named:
     596 &lt;crew-home&gt;/crew/live
   </pre>
 
-  <p><strong>Negative control.</strong> Three declared mutations applied
+  <p><strong>Negative control.</strong> Five declared mutations applied
   together — the station requests no sweep, the settle reader takes
-  <code>auto_resume</code> alone, and the sweep is due only on change — turn
-  <code>4 failed, 3 passed</code>, <code>EXIT=1</code>:
+  <code>auto_resume</code> alone, the sweep is due only on change, the
+  follower's subscriber branch sweeps again, and its settle ignores the
+  station's reading — turn <code>6 failed, 3 passed</code>,
+  <code>EXIT=1</code>:
   <code>test_three_subscribers_share_one_sweep_run_in_the_station</code>,
   <code>test_a_session_launched_elsewhere_is_not_swept_here</code>,
-  <code>test_a_resumed_run_waits_its_settle_window_from_the_newest_resume</code>
-  and <code>test_a_quiet_resumed_run_is_swept_on_the_beats_clock</code>.
+  <code>test_a_resumed_run_waits_its_settle_window_from_the_newest_resume</code>,
+  <code>test_a_quiet_resumed_run_is_swept_on_the_beats_clock</code>,
+  <code>test_a_follower_reading_the_station_runs_no_sweep_of_its_own</code> and
+  <code>test_a_pane_settles_on_the_stations_reading_not_the_pointer_directory</code>.
+  All six pass at head, so each names one mechanism this section carries.
 
-  <p><strong>What remains, and why.</strong> Two items of this section's
-  done-when reach past this node's write scope. <code>StationSubscriber.wake</code>
-  is still the second poll loop beside the one
-  <code>_follow_watch_lines</code> drives; the surviving loop belongs in
-  <code>reckon/crew_follow_commands.py</code>, and the only other way to make it
-  exist once is to delete <code>wake</code> and its two call sites in
-  <code>tests/test_a_follower_is_a_station_subscriber.py</code> — both outside
-  the granted paths. And the same file is where a running follower stops
-  sweeping on its own cadence and calls
-  <code>StationSubscriber.live_work</code> instead of
-  <code>_population_has_live_work</code>, which is what turns the trace above
-  into a measurement of the delivered <code>follow</code> process rather than of
-  the module that process will read. Until that lands, a follower sweeps
-  <em>and</em> the station sweeps; both passes are idempotent, so the duplicate
-  costs reads rather than correctness.
+  <p><strong>What remains.</strong> Nothing in this section's done-when. The
+  follower half landed after the fence was widened to
+  <code>reckon/crew_follow_commands.py</code> and
+  <code>tests/test_a_follower_is_a_station_subscriber.py</code>, so the
+  subscriber branch no longer sweeps, it drives
+  <code>StationSubscriber.wake</code> as the one poll loop, and it judges each
+  population from the station's reading while the producer path keeps its own
+  behaviour unchanged.
 </section>
