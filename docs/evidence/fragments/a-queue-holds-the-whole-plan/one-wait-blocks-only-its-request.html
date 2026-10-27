@@ -1,0 +1,34 @@
+<section id="one-wait-blocks-only-its-request-landing">
+  <h2>One request's wait cannot refuse an unrelated dispatch</h2>
+  <p>An existing request's unresolved wait is now a leaf in the dispatch cycle
+  graph. A new batch still refuses its own missing request and a cycle through
+  an existing request. A <code>blocked-upstream</code> request holds no binding
+  write claim; a launched run continues to bind its paths.</p>
+  <p>Admission keeps its request pointer in <code>live/</code> during dispatch.
+  The dispatch ignores that request's own id for scope arbitration and node
+  deduplication, publishes a starting claim over the pointer, and restores the
+  waiting pointer atomically if a peer claim refuses the launch. A dispatch
+  waiting <code>--after</code> that request succeeded inside the refused launch
+  attempt.</p>
+  <p>The five focused arms passed at commit <code>65ea8e4da</code>:
+  <code>5 passed in 5.44s</code>. The repair base at <code>9013c6544</code>
+  passed the exact import command with five cases and no failures; the run
+  manifest records that receipt and the same command at the repair head, with
+  their failure-id delta. The pointer arm now requires <code>queued</code> after
+  the peer-scope refusal, so a lingering <code>starting</code> pointer fails.
+  The declared negative control restored the
+  raise for an existing request's unresolved ref and failed the cross-project
+  arm with <code>wait names missing request r-vanished</code>:
+  <code>1 failed in 2.84s</code>. Ruff check and format check passed on all four
+  changed source and test paths.</p>
+  <p>A later admission check exposed the old replacement-id assumption in two
+  re-hold arms. A real dispatch now re-queues after the lane's allowance falls
+  during admission. Whether it raises <code>LaneHeld</code> or returns a queued
+  record, the original run id remains the only live pointer, carrying the newer
+  hold reason, failure and failure time. A stale reported replacement id does
+  not move failure accounting. The focused repair base had 43 passes and three
+  failures; the first implementation head had 45 passes and one failure. The
+  two repaired arm ids disappeared from the failures. The remaining session-cap
+  expectation failed at both revisions and lies outside this node's write
+  grant.</p>
+</section>

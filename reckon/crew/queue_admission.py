@@ -222,19 +222,11 @@ def _launch_queued(
         node.brief = str(steering)
         node.brief_path = str(steering)
         node.brief_sha256 = ""
-    # The queued pointer claims the run's own write paths, so the shared path
-    # would refuse the launch as a scope conflict against the run itself. The
-    # request is held in memory by the caller, which writes it back if the
-    # launch does not survive, so the pointer is released here for the launch
-    # to re-publish under its own identity.
-    with contextlib.suppress(FileNotFoundError):
-        runs.pointer_path(str(pointer["run_id"])).unlink()
-    # An operator may discard the request this pass is holding, and the launch
-    # below hands the request's run directory to the shared dispatch path, whose
-    # refusal rollback removes it. A discard marker already in that directory
-    # would be removed with it, leaving the restore to write back a request
-    # nobody holds any more, so the departure is copied to the shared spool
-    # first — durable whatever the launch does to the directory.
+    # Keep the request visible while dispatch checks its own identity and
+    # other claims. A refused launch leaves the same pointer for dependents.
+    # An operator may discard the request this pass is holding. A later launch
+    # failure can remove its run directory, including a discard marker, so copy
+    # that marker to the shared spool before handing the request to dispatch.
     from reckon.crew.promotion import preserve_discard_record
 
     preserve_discard_record(str(pointer["run_id"]))
@@ -886,21 +878,19 @@ def _restore_queued(
 def _record_queued_failure(
     snapshot: Mapping[str, Any],
     failure: str,
-    requeued_run_id: str = "",
     *,
     moment: datetime | None = None,
     guard: Mapping[str, Any] | None = None,
 ) -> tuple[str, str | None]:
     """Return the retained request's id and any unrecoverable write error."""
     original_run_id = str(snapshot["run_id"])
-    run_id = requeued_run_id or str(snapshot["run_id"])
     failed_at = moment or _now()
 
     def annotate(current: dict[str, Any]) -> dict[str, Any]:
         return _stamp_failure(current, failure, moment=failed_at, guard=guard)
 
     try:
-        runs._mutate_pointer(run_id, annotate)
+        runs._mutate_pointer(original_run_id, annotate)
     except Exception as annotate_error:  # noqa: BLE001 - a failed write needs restoration
         try:
             _restore_queued(snapshot, failure, moment=failed_at, guard=guard)
@@ -909,7 +899,7 @@ def _record_queued_failure(
             restoration = f"restore {type(restore_error).__name__}: {restore_error}"
             return original_run_id, f"{annotation}; {restoration}"
         return original_run_id, None
-    return run_id, None
+    return original_run_id, None
 
 
 def _require_launched_record(candidate: Any) -> Mapping[str, Any]:
@@ -1321,7 +1311,13 @@ def _validated_batch_waits(
         owner = str(pointer.get("project") or project)
         edges[f"run:{run_id}"] = set()
         for ref in section_waits_for(pointer):
-            child, _ = target(ref, owner)
+            try:
+                child, _ = target(ref, owner)
+            except CrewError:
+                # Existing requests only supply cycle edges. An unresolved
+                # edge cannot complete a cycle through this dispatch's batch.
+                edges[f"run:{run_id}"].add(ref)
+                continue
             edges[f"run:{run_id}"].add(child)
             if not child.startswith("run:"):
                 section_edges(child)
@@ -2497,38 +2493,25 @@ def admit_once(
             first_report = not pointer.get("failure_reported_at")
             record = None
             failure = "dispatch did not return a launched record"
-            requeued_run_id = ""
             caught: Exception | None = None
             reported_id = str(pointer["run_id"])
             restore_error = None
-            # The queued pointer is released inside the launch below, so the
-            # request is named by a handover record for the whole of that gap —
-            # and until it is put back — so a dispatch arriving meanwhile reads
-            # the run being admitted rather than queueing a second copy.
+            # A handover identifies the admitted attempt while its original
+            # pointer remains published and dispatch checks the launch.
             runs.write_handover(pointer)
             try:
                 candidate = _launch_queued(
                     pointer, launcher=launcher, config_for=config_for
                 )
-                if (
-                    isinstance(candidate, Mapping)
-                    and candidate.get("phase") == "queued"
-                ):
-                    requeued_run_id = str(candidate.get("run_id") or "")
                 record = _require_launched_record(candidate)
             except Exception as exc:  # noqa: BLE001 - every dispatch failure keeps its request
                 caught = exc
                 failure = f"{type(exc).__name__}: {exc}"
-                if isinstance(exc, LaneHeld):
-                    queued = getattr(exc, "queued", None)
-                    if isinstance(queued, Mapping):
-                        requeued_run_id = str(queued.get("run_id") or "")
             finally:
                 if record is None:
                     reported_id, restore_error = _record_queued_failure(
                         snapshot,
                         failure,
-                        requeued_run_id,
                         moment=moment,
                         guard=_dependency_guard(pointer, config_for),
                     )
@@ -2564,10 +2547,6 @@ def admit_once(
                 result.setdefault(detail_key, {})[reported_id] = (
                     str(caught) if caught is not None else failure
                 )
-                if reported_id != str(pointer["run_id"]):
-                    result.setdefault("superseded", {})[reported_id] = str(
-                        pointer["run_id"]
-                    )
                 if restore_error is not None:
                     result.setdefault("restore_failure_detail", {})[reported_id] = (
                         restore_error

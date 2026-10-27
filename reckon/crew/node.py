@@ -1526,7 +1526,9 @@ class ClaimDisposition:
     unintegrated: tuple[str, ...] = ()
 
 
-WAITING_REQUEST_PHASES = frozenset({"queued", "awaiting-upstream", "held"})
+WAITING_REQUEST_PHASES = frozenset(
+    {"queued", "awaiting-upstream", "blocked-upstream", "held"}
+)
 
 
 def claim_disposition(

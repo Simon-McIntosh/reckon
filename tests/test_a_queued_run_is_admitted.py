@@ -367,37 +367,47 @@ def test_a_restore_write_error_is_reported_without_ending_the_pass(
 def test_a_requeued_hold_keeps_the_newer_pointer(
     admit_repo: Path, monkeypatch: pytest.MonkeyPatch, returns_queued: bool
 ) -> None:
-    _, resolve = _config_for()
-    runs.queue_dispatch(_queue(admit_repo, node_id="held", run_id="r-held"))
+    config, resolve = _config_for()
+    lane = _lane_document(admit_repo.parent, worker_slots=1)
+    config["backends"]["clive"]["lane_document"] = str(lane)
+    request = _queue(admit_repo, node_id="held", run_id="r-held")
+    request["hold"]["reason"] = "older allowance"
+    runs.queue_dispatch(request)
+    launch = queue_admission._launch_queued
+    newer_reasons: list[str] = []
 
-    def requeue(**kwargs):
-        pointer = _queue(admit_repo, node_id="held", run_id="r-requeued")
-        pointer["hold"] = {"held": True, "reason": "newer allowance"}
-        runs.queue_dispatch(pointer)
-        if returns_queued:
-            return runs.read_pointer("r-requeued")
-        held = LaneHeld({"state": "full", "detail": "newer allowance"})
-        held.queued = {"run_id": "r-requeued", "position": 1}
-        raise held
+    def requeue(pointer, **kwargs):
+        document = json.loads(lane.read_text(encoding="utf-8"))
+        document["admission"]["worker_slots"] = 0
+        document["admission"]["sessions"][SESSION]["worker_slots"] = 0
+        lane.write_text(json.dumps(document), encoding="utf-8")
+        try:
+            return launch(pointer, **kwargs)
+        except LaneHeld as held:
+            newer_reasons.append(str(held.gate["reason"]))
+            # The real dispatch has re-queued the original request. A stale
+            # reported id must not move failure accounting to a new pointer.
+            if returns_queued:
+                return {**runs.read_pointer("r-held"), "run_id": "r-requeued"}
+            held.queued["run_id"] = "r-requeued"
+            raise
 
-    monkeypatch.setattr(
-        importlib.import_module("reckon.crew.dispatch"), "dispatch", requeue
-    )
+    monkeypatch.setattr(queue_admission, "_launch_queued", requeue)
 
-    result = queue_admission.admit_once(config_for=resolve)
+    result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
 
-    pointer = runs.read_pointer("r-requeued")
+    pointer = runs.read_pointer("r-held")
     assert pointer["phase"] == "queued"
-    assert pointer["hold"]["reason"] == "newer allowance"
-    failure = (
-        "did not return a launched record" if returns_queued else "newer allowance"
-    )
+    assert newer_reasons
+    assert pointer["hold"]["reason"] == newer_reasons[0]
+    assert pointer["hold"]["reason"] != "older allowance"
+    failure = "did not return a launched record" if returns_queued else newer_reasons[0]
     assert failure in pointer["failure"]
     assert pointer["failure_at"]
-    assert not runs.pointer_path("r-held").exists()
-    assert "r-requeued" in result["held"] + result["failed"]
-    assert result["superseded"]["r-requeued"] == "r-held"
-    assert runs.pointer_path((result["held"] + result["failed"])[0]).exists()
+    assert not runs.pointer_path("r-requeued").exists()
+    assert [row["run_id"] for row in runs.list_live(project=PROJECT)] == ["r-held"]
+    assert result["held" if not returns_queued else "failed"] == ["r-held"]
+    assert not result.get("superseded")
 
 
 @pytest.mark.parametrize("returned", [None, {"run_id": "r-held", "phase": "queued"}])
