@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T02:23:06.470Z",
+  "dispatched_at": "2026-10-27T02:17:08Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261027T021448722262-plan-review-of-the-monitor-reads-each-fact-once/plan.html:317",
+      "id": "done_when-1",
+      "reason": "the section would send a node to delete a documented behaviour that neither its mechanism paragraph nor its measure preserves, and the deletion is silent because the measure cannot tell the two implementations apart.",
+      "text": "\u00a710 states \"The subscriber settles when the reading for every one of its populations says no live work\" and measures that a subscriber \"settles when the station's readings for all of its populations turn to no live work\", which drops the grace `_check_settle` applies today: the current code settles only after the population has held nothing unfinished for `FOLLOWER_SETTLE_GRACE_SECONDS` (120 s, reckon/crew_follow_commands.py:285), because an admission handover leaves a session with no unfinished run while a queued request is adopted (crew_follow_commands.py:1519-1534, and the grace logic at :1553-1559). A node implementing \u00a710's condition literally would end a pane on the first empty station reading and cut a pane off mid-handover, and the stated done-when passes for both the grace-keeping and the grace-dropping implementation",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "6d28c5faf4c6d495f1529d6dfb7f69bb96e0bf9efdb614513f7c1c50c3082f2a",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 56,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T021448722262-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "6bdeac51111ea50359feaba6b902883258ae4b9a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a710 cites exists at the named module: `resumption.sweep` (reckon/crew/resumption.py:1768, both passes, review pass at :2034), `recovery_review_acceptance.dispatch_awaiting_reviews` (:377), `runs.sweep_unfollowed_sessions` (reckon/crew/runs.py:3746), `review_settle_seconds_remaining` and `_latest_resume_at` (reckon/crew/recovery_review_dispatch.py:1258, :206), `REVIEW_SETTLE_SECONDS` (:889), `_check_settle`, `_population_has_live_work`, `FOLLOWER_SETTLE_SAMPLE_SECONDS` and `settle_populations` (reckon/crew_follow_commands.py:1517, :482, :312, :1505), `dispatch_review_for_run` (recovery_review_dispatch.py:2462); extensionless hrefs resolve as `.html`.",
+    "done_when": "a finding \u2014 \u00a710's drain-settle measure states the settle condition without the grace `_check_settle` applies today (plan.html:317-321).",
+    "evidence_paths": "pass \u2014 \u00a710's measures are named test files under `tests/` and a trace of the deployed process; no gate log is routed to a scratch or node-local path.",
+    "naming": "pass \u2014 \u00a710 introduces no plan label, stage name or ticket number into a symbol; the section reference to \"old \u00a781\" stays in the plan document, which is where plan labels belong.",
+    "reasoning": "pass \u2014 the added host rule matches the cited evidence: `sweep_unfollowed_sessions`'s docstring and its `_record_is_known_foreign` guard (reckon/crew/recovery_liveness.py:1145) state exactly the rationale \u00a710 now gives (\"a resume restarts a process on the host it runs on\"), and `resumption.sweep` filters only by session (resumption.py:1815-1818), carrying no host rule of its own as the plan says. The section's other \"today\" claims re-verified: `review_settle_seconds_remaining` reads only `auto_resume` (:1266) while `_latest_resume_at` returns the newer of the two stamps (:206-224); the follower calls `sweep(project, session=session)` on its cadence (crew_follow_commands.py:1790); `_population_has_live_work` counts an ownerless pointer in every session's reading (crew_follow_commands.py:503-509), matching \u00a710's ownerless rule; and the station caller \u00a710 relies on exists (`reckon/crew/station.py`, launched as `crew station` from reckon/crew/fleet_supervisor.py:1898).",
+    "single_goal": "pass \u2014 \u00a710 has one deliverable, moving the sweep and settle detection into the station; the settle-reader change at :299-306 is a prerequisite its own advice-settle measure requires, not a second goal.",
+    "wiring": "pass \u2014 s10 declares depends-on s7 and s8 (plan.html:23), both the station process its measure traces and the settle-aware subscriber it measures, and s12 declares s10 as its upstream."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "ff6e3a5f6468edeb23d1f2d9032467d757e2f38672f71a09d51bda5859035767",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T02:32:37.016672+00:00"
+}
