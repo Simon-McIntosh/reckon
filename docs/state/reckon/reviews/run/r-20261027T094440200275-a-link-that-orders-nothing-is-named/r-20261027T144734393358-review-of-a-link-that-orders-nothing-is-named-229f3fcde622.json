@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: after_suite (logs/armed-head.log, 229f3fcde) runs 7 tests to '7 passed' EXIT=0 with no failing id, so the head failing set is empty and the added set (head minus the base arm's four failing new cases in logs/armed-base.log) is empty.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/roadmap.py:4429 _build_roadmap",
+    "reckon/serve.py:1865",
+    "reckon/mcp.py:2316",
+    "reckon/mcp.py:3374",
+    "reckon/flight.py:2789",
+    "reckon/graph_target.py:204",
+    "reckon/crew/queue_order.py:36",
+    "reckon/crew/plan_review.py:3104"
+  ],
+  "completed_at": "2026-10-27T14:58:52.295Z",
+  "dispatched_at": "2026-10-27T14:49:52Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094440200275-a-link-that-orders-nothing-is-named/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered manifest's baseline_suite value is not valid JSON \u2014 after the closing brace it carries a duplicated fragment of four failure ids and a stray brace, so any reader that parses the field reports the base arm unreadable even though logs/armed-base.log is complete and ends EXIT=1; trimming the line to the object restores it without changing any result."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2042",
+      "severity": "non-blocking",
+      "text": "non-blocking: settled-link removes one occurrence of a ref from `remaining` and prints it as the set that removes the link, so a ref declared twice yields `set depends_on [\"x\"]` which leaves one copy behind; redundant-link guards this case explicitly (refs.count(ref) > 1 at :2188) while settled-link does not, so the two findings disagree about a duplicated declaration."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": "2189",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `parsed.slug not in adjacency.get(slug, set())` guard cannot be false for a candidate that reached this line, because adjacency carries every non-terminal plan's depends_on edge to an open target, including this one, so it reads as a safety check that never fires and hides which condition actually excludes a candidate."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit: fe3d85589 adds both emitters and the seven-case test, be1c86dd5 only reformats and freezes the closure's open_waits list as a default argument, and 229f3fcde adds the thirty-line evidence fragment; the implementation reads each plan's declared lists and section waits directly, matching the plan's stated design, and emits neither finding as a removal.",
+    "done_when": "the done_when's clauses are measured by the gate it names: tests/test_a_link_that_orders_nothing_is_named.py:78 builds the satisfied after and depends_on fixture and asserts both settled-links at severity info with ref and set, :110 is the open-section control asserting silence, :145 covers A-to-B, B-to-C, A-to-C reported once, and the recorded arms read 4 failed at base 107f292bc (logs/armed-base.log) and 7 passed at head (logs/armed-head.log).",
+    "goal": "the node's goal is to emit settled-link and redundant-link informational wiring findings in the roadmap; reckon/roadmap.py:1972 _settled_link_findings and reckon/roadmap.py:2138 _redundant_link_findings are called from _build_roadmap at reckon/roadmap.py:4429-4433 and both codes reach wiring_findings with ref, target and removal set in extra, as tests/test_a_link_that_orders_nothing_is_named.py:78 and :158 assert.",
+    "manifest": "the manifest records status complete, commits fe3d85589 be1c86dd5 229f3fcde, the four gate logs, the per-mount counts and both suite arms, but its baseline_suite line is malformed JSON whose tail duplicates four failure ids after the closing brace, so a reader that parses that field cannot read the base arm even though logs/armed-base.log itself is complete and ends EXIT=1.",
+    "write_paths": "the manifest declares reckon/roadmap.py, tests/test_a_link_that_orders_nothing_is_named.py, the evidence fragment and a figures directory; git diff --numstat 107f292bc 229f3fcde shows exactly three files at +283/+190/+30 and nothing outside the declared set, with no figure written because the done_when names no artifact."
+  },
+  "justifications": {
+    "durability": "the seven cases fail on the base revision (logs/armed-base.log: 4 failed) and the declared negative control reddens only the open-section control case (logs/negative-control.log: 1 failed, EXIT=1), so each guard names a code change that would redden it, including the open_waits guard the control removes.",
+    "evidence": "the done_when's measure is genuinely asserted and its arms are logged with revision, tree and command, but the manifest's baseline_suite field does not parse and the fragment's ruff claim has no recorded log, so the record is strong rather than complete.",
+    "fit": "the new helpers follow the surrounding _finding/extra idiom of reckon/roadmap.py:1630 and are named by what they measure, with no plan label, version or attribution in any symbol, test name or comment.",
+    "goal_fidelity": "reckon/roadmap.py:1972 and :2138 emit the two codes at severity info, each naming the ref and the subscribing set op (asserted at tests/test_a_link_that_orders_nothing_is_named.py:99 and :116), and the set forms they name are accepted by the store (reckon/_store.py:2597 for depends_on/after, reckon/_store_section_ops.py:452 for section_depends_on.<sid>).",
+    "reuse": "the additions build on the existing owners \u2014 parse_plan_ref (reckon/_schema.py:289), _plan_section_deps (reckon/roadmap.py:446), open_sections (reckon/_plan_html.py:1051), _section_satisfied and _finding \u2014 and a search for an existing reachability or redundancy mechanism found only _dependency_cycles (reckon/roadmap.py:2391), which detects cycles rather than implying paths, so _reachable_avoiding extends the module rather than forking an owner.",
+    "scope_discipline": "every path in git diff --numstat 107f292bc 229f3fcde is inside the four declared write paths, and nothing the goal does not imply was changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to emit settled-link and redundant-link informational wiring findings in the roadmap; reckon/roadmap.py:1972 _settled_link_findings and reckon/roadmap.py:2138 _redundant_link_findings are called from _build_roadmap at reckon/roadmap.py:4429-4433 and both codes reach wiring_findings with ref, target and removal set in extra, as tests/test_a_link_that_orders_nothing_is_named.py:78 and :158 assert.\nVERDICT done_when: the done_when's clauses are measured by the gate it names: tests/test_a_link_that_orders_nothing_is_named.py:78 builds the satisfied after and depends_on fixture and asserts both settled-links at severity info with ref and set, :110 is the open-section control asserting silence, :145 covers A-to-B, B-to-C, A-to-C reported once, and the recorded arms read 4 failed at base 107f292bc (logs/armed-base.log) and 7 passed at head (logs/armed-head.log).\nVERDICT write_paths: the manifest declares reckon/roadmap.py, tests/test_a_link_that_orders_nothing_is_named.py, the evidence fragment and a figures directory; git diff --numstat 107f292bc 229f3fcde shows exactly three files at +283/+190/+30 and nothing outside the declared set, with no figure written because the done_when names no artifact.\nVERDICT manifest: the manifest records status complete, commits fe3d85589 be1c86dd5 229f3fcde, the four gate logs, the per-mount counts and both suite arms, but its baseline_suite line is malformed JSON whose tail duplicates four failure ids after the closing brace, so a reader that parses that field cannot read the base arm even though logs/armed-base.log itself is complete and ends EXIT=1.\nVERDICT diff: read commit by commit: fe3d85589 adds both emitters and the seven-case test, be1c86dd5 only reformats and freezes the closure's open_waits list as a default argument, and 229f3fcde adds the thirty-line evidence fragment; the implementation reads each plan's declared lists and section waits directly, matching the plan's stated design, and emits neither finding as a removal.\nCALL_SITES: reckon/roadmap.py:4429 _build_roadmap, reckon/serve.py:1865, reckon/mcp.py:2316, reckon/mcp.py:3374, reckon/flight.py:2789, reckon/graph_target.py:204, reckon/crew/queue_order.py:36, reckon/crew/plan_review.py:3104\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1972 and :2138 emit the two codes at severity info, each naming the ref and the subscribing set op, and the set forms they name are accepted by the store (reckon/_store.py:2597, reckon/_store_section_ops.py:452).\nSCORE evidence: 16\nJUSTIFICATION evidence: the arms are logged with revision, tree and command and the base arm reddens, but the manifest's baseline_suite field does not parse and the fragment's ruff claim has no recorded log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --numstat 107f292bc 229f3fcde is inside the four declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the seven cases fail on the base revision (logs/armed-base.log: 4 failed) and the declared negative control reddens only the open-section control case (logs/negative-control.log: 1 failed, EXIT=1).\nSCORE fit: 19\nJUSTIFICATION fit: the helpers follow the _finding/extra idiom of reckon/roadmap.py:1630 and are named by what they measure, with no plan label or attribution in any symbol or comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: the additions extend parse_plan_ref (reckon/_schema.py:289), _plan_section_deps (reckon/roadmap.py:446), open_sections (reckon/_plan_html.py:1051) and _finding, and the only graph walk already present, _dependency_cycles at reckon/roadmap.py:2391, detects cycles rather than implying paths.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094440200275-a-link-that-orders-nothing-is-named/manifest.md:15 non-blocking: baseline_suite is not valid JSON \u2014 a duplicated tail of four failure ids follows the closing brace \u2014 so a parsing reader reports the base arm unreadable although logs/armed-base.log ends EXIT=1.\nFINDING reckon/roadmap.py:2042 non-blocking: settled-link removes one occurrence of a ref and prints it as the set that removes the link, so a ref declared twice yields a set that leaves a copy behind, while redundant-link guards the same case at :2188.\nFINDING reckon/roadmap.py:2189 non-blocking: the parsed.slug not in adjacency guard cannot be false after adjacency is populated, so it reads as a safety check that never fires.\nreviewed_base_sha: 107f292bc866551c30fe9f5c67d8b4d83af1ea09\nreviewed_head_sha: 229f3fcde622f83ba050db736f6c6231f6f68dab\n",
+  "review_run_id": "r-20261027T144734393358-review-of-a-link-that-orders-nothing-is-named-229f3fcde622",
+  "reviewed_base_sha": "107f292bc866551c30fe9f5c67d8b4d83af1ea09",
+  "reviewed_head_sha": "229f3fcde622f83ba050db736f6c6231f6f68dab",
+  "reviewed_run_id": "r-20261027T094440200275-a-link-that-orders-nothing-is-named",
+  "role": "review",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T15:02:24.103788+00:00",
+  "total": 112
+}
