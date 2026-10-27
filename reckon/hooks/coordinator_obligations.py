@@ -899,6 +899,32 @@ def reloading_line(*, project: str, session: str, document: Mapping[str, Any]) -
     )
 
 
+def stale_station_line(*, project: str, session: str, answer: Mapping[str, Any]) -> str:
+    """One line naming a stale station heartbeat and how old it is.
+
+    A quiet fleet and a stopped station look identical from the stored rows, so
+    the heartbeat's age is what separates them: past the stale window the answer
+    is reported with that age rather than served as current.
+    """
+    age = answer.get("heartbeat_age_seconds")
+    module = snapshot_module()
+    if age is None:
+        measured = "is stamped with no readable time"
+    else:
+        measured = f"is {_format_age(int(age))} old"
+    where = (
+        "the station's heartbeat"
+        if answer.get("source") == "station"
+        else "the exported station snapshot's heartbeat"
+    )
+    return (
+        f"reckon obligations for session {session} (project {project}) are not "
+        f"current: {where} {measured}, past the "
+        f"{int(module.STATION_STALE_SECONDS)}s stale window; run "
+        f"`reckon crew watch --ensure --project {project}` on this node"
+    )
+
+
 def inject(payload: dict[str, Any], text: str) -> None:
     """Write one prompt-mode additionalContext object, dismissing nothing."""
     event = str(payload.get("hook_event_name") or "UserPromptSubmit")
@@ -1001,6 +1027,22 @@ def _prompt(payload: dict[str, Any]) -> int:
         return 0
     project, session = located
     module = snapshot_module()
+    station = module.read_station_answer(project, session)
+    if station is not None:
+        if station.get("stale"):
+            inject(
+                payload,
+                stale_station_line(project=project, session=session, answer=station),
+            )
+            return 0
+        _inject_list(
+            payload,
+            project=project,
+            session=session,
+            obligations=recheck_worktree_held_rows(station["payload"], project=project),
+            reloading=False,
+        )
+        return 0
     document = module.read_snapshot(project, session)
     state, foreign_host = module.freshness_reading(document, project=project)
     if state == module.FRESH:
@@ -1247,14 +1289,18 @@ def _stop(payload: dict[str, Any]) -> int:
         return 0
     project, session = located
     module = snapshot_module()
-    document = module.read_snapshot(project, session)
-    state, foreign_host = module.freshness_reading(document, project=project)
-    if state == module.FRESH:
-        resolved = recheck_worktree_held_rows(
-            module.live_payload(document), project=project
-        )
+    station = module.read_station_answer(project, session)
+    if station is not None and not station.get("stale"):
+        resolved = recheck_worktree_held_rows(station["payload"], project=project)
     else:
-        resolved = derive_within_budget(project, session, stop_derivation_budget())
+        document = module.read_snapshot(project, session)
+        state, foreign_host = module.freshness_reading(document, project=project)
+        if state == module.FRESH:
+            resolved = recheck_worktree_held_rows(
+                module.live_payload(document), project=project
+            )
+        else:
+            resolved = derive_within_budget(project, session, stop_derivation_budget())
         if resolved is None:
             if not payload.get("stop_hook_active"):
                 reload_started_at, deferral = module.watch_reload_state(project)

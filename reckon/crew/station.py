@@ -14,7 +14,14 @@ from pathlib import Path
 from typing import Any
 
 from reckon import checkout_trust, flight
-from reckon.crew import follower_reload, recovery, recovery_watch, station_store, ticker
+from reckon.crew import (
+    follower_reload,
+    recovery,
+    recovery_watch,
+    station_obligations,
+    station_store,
+    ticker,
+)
 from reckon.crew.host_lease import HostLease, local_host
 from reckon.crew.run_paths import crew_home
 from reckon.crew_follow_commands import (
@@ -194,6 +201,16 @@ class Station:
                 events.append(event)
             self.store.record_tick(project, events, next_known, at=moment)
             published.extend(events)
+            # Each session's duties are derived from the same fleet reading
+            # this tick just committed, so a change the station published is a
+            # change the coordinator's obligations reflect on the same pass.
+            station_obligations.publish(
+                self.store,
+                project=project,
+                home=self.home,
+                changed=bool(events),
+                now=moment,
+            )
         self.store.heartbeat(now=moment)
         self.store.sweep_retention(now=moment)
         return published
