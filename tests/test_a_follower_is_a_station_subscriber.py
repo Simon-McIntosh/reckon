@@ -291,3 +291,80 @@ def test_a_day_file_that_cannot_be_opened_is_skipped(tmp_path, monkeypatch) -> N
 
     rows = store.events_for(project=PROJECT, audiences=[SESSION], after_id=0)
     assert [row["to_state"] for row in rows] == ["lift-granted"]
+
+
+def test_a_subscriber_keeps_renewing_its_delivery_lease(tmp_path, monkeypatch) -> None:
+    """The producers are not retired, so the pane keeps saying it still delivers.
+
+    A reader on another host cannot take the registration's advisory lock, so
+    the lease beside it is the only fact by which such a reader judges that this
+    pane is still delivering. A subscriber that writes it once and never renews
+    it reads as a dead pane one lease interval after it attached, while its rows
+    keep arriving.
+    """
+    import json
+
+    from reckon import cli as cli_module
+    from reckon.crew import follower_registration, runs, station
+    from reckon.crew.runs import crew_home
+    from reckon.crew_follow_commands import _StationRegistration
+
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    # A short interval, so the renewal cadence is measured rather than waited
+    # out: the writer throttles itself to half of whatever interval it reads.
+    monkeypatch.setattr(runs, "producer_lease_seconds", lambda: 0.4)
+
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    station.Station(writer, home=crew_home(), projects=dict)
+    writer.heartbeat()
+    subscriber = _subscriber(store, _Clock())
+
+    stop = threading.Event()
+
+    def reader() -> None:
+        list(
+            cli_module._follow_watch_lines(
+                PROJECT,
+                session=SESSION,
+                poll_interval=0.001,
+                stop=stop,
+                sweep=None,
+                subscriber=subscriber,
+                registration=_StationRegistration(subscriber),
+            )
+        )
+
+    thread = threading.Thread(target=reader, daemon=True)
+    thread.start()
+    lease = follower_registration.follower_lease_path(PROJECT, SESSION)
+
+    def renewed_at() -> float | None:
+        try:
+            return float(json.loads(lease.read_text())["renewed_at"])
+        except (OSError, ValueError, KeyError):
+            return None
+
+    try:
+        deadline = time.monotonic() + 8
+        first = None
+        while time.monotonic() < deadline and first is None:
+            time.sleep(0.02)
+            first = renewed_at()
+        assert first is not None, "the subscriber wrote no delivery lease"
+        later = first
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline and later <= first:
+            time.sleep(0.02)
+            later = renewed_at() or first
+    finally:
+        stop.set()
+        thread.join(timeout=5)
+
+    assert not thread.is_alive()
+    assert later > first, "the lease was written once and never renewed"
+    assert lease.is_relative_to(crew_home())
+    assert lease.exists(), "the subscriber wrote no delivery lease"
+    assert lease.is_relative_to(crew_home())
