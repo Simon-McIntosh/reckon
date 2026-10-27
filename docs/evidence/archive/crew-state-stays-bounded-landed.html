@@ -45,6 +45,11 @@
     <p>Run <code>r-20261024T043616104091-the-retention-sweep-verb-is-maintenance</code> landed at merge <code>d549d0066</code> (head <code>a50f5823d</code>, base <code>778e326d1</code>). <code>tests/test_skill_contracts.py</code> lists <code>("crew", "retention-sweep")</code> in <code>CREW_VERBS_OUTSIDE_ORCHESTRATION</code> with its reason: an operator-run maintenance surface, for a hand-run sweep or installing the timer, which itself runs <code>python -m reckon.crew.gc</code>, and no orchestrator invokes it. <code>test_every_registered_crew_verb_is_documented_or_exempt</code>, red on main since <code>81b4ea57e</code>, now passes. The coordinator's arms over that file show it failing at the base and passing at the head and at the merge with main. <code>test_review_skill_is_discovered_beside_the_other_reckon_skills</code> fails at all three and is not this section's. Review 115, with two test-hardening findings exempted.</p>
   </section>
 
+  <section id="s5">
+    <h2>§5 landing</h2>
+    <p>Run <code>r-20261027T093350429603-reload-images-live-on-node-local-storage</code> landed at merge <code>2f3a90803</code>. Reload images now live under the node-local runtime root, resolved through station_store.runtime_root_source and refused when the station's own proof finds the root on shared storage; the cross-node lease records in checkout_trust are deleted with the tests that asserted them. Coordinator importer measure, stacked with the census, worker-MCP and reload-image nodes on main ab0ababb1 over 144 test files: main 1695 passed, stack 1708 passed, the same one failure and one error at both, so none added. Review 113 of 120.</p>
+  </section>
+
 </main>
 </body>
 </html>

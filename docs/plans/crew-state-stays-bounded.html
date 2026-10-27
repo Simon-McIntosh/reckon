@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;the-monitor-reads-each-fact-once#s12&quot;],&quot;s5&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s7&quot;:[&quot;crew-state-stays-bounded#s3&quot;],&quot;s8&quot;:[&quot;crew-state-stays-bounded#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="44">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -108,7 +108,7 @@
     must be refused and left in place.</p>
 
     <h2 id="s5">§5 — Reload images live on node-local storage</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>When only the station reloads (the-monitor-reads-each-fact-once §7), the reload image cache moves to
     the node-local runtime root and the cross-node lease records in <code>checkout_trust</code>
     (<code>_record_lease_node</code>, <code>_prune_must_keep</code>'s host branch) are deleted, because no
@@ -291,7 +291,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261027T093350429603 over the commits it gained since 758aa0ac3 — 6bef06a9c (the cache's runtime root now passes station_store._refuse_nonlocal_root) and 35df7afba (the landing fragment states that proof and its arm figures) — scored 20/16/20/18/19/20 for goal_fidelity/evidence/scope_discipline/durability/fit/reuse, added_failure_count 0, and recorded two non-blocking findings: three cache tests now depend on the host mount table (measured red on a GPFS basetemp) and the head gate log's revision line names the working tree rather than the landed commit.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261027T093350429603-reload-images-live-on-node-local-storage" data-who="reckon-build" data-when="2026-10-27T11:19:53Z">
-    <div class="r-comment-body"><p>Reload images resolve from &lt;runtime root&gt;/reload-trees through station_store.runtime_root_source and pass that root through the station&#x27;s own _refuse_nonlocal_root proof, so a shared mount (including the TMPDIR fallback) is refused in the station&#x27;s words; the cross-node lease record (_record_lease_node, _lease_nodes, _lock_node_name, COMMITTED_TREE_LEASE_MARKER, the lease-window constant, the pin&#x27;s record writes and _prune_must_keep&#x27;s host branch) is deleted, leaving the local flock and the publish grace. Gate 35 passed EXIT=0; armed pair 6 failed/5 passed at base, 11 passed at head; negative control 6 failed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>Reload images resolve from &lt;runtime root&gt;/reload-trees through station_store.runtime_root_source and pass that root through the station's own _refuse_nonlocal_root proof, so a shared mount (including the TMPDIR fallback) is refused in the station's words; the cross-node lease record (_record_lease_node, _lease_nodes, _lock_node_name, COMMITTED_TREE_LEASE_MARKER, the lease-window constant, the pin's record writes and _prune_must_keep's host branch) is deleted, leaving the local flock and the publish grace. Gate 35 passed EXIT=0; armed pair 6 failed/5 passed at base, 11 passed at head; negative control 6 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="2026-10-27T13:00:00Z">
+    <div class="r-comment-body"><p>Section 5 landed at merge <code>2f3a90803</code>: Reload images now live under the node-local runtime root, resolved through station_store.runtime_root_source and refused when the station's own proof finds the root on shared storage; the cross-node lease records in checkout_trust are deleted with the tests that asserted them. Coordinator importer measure, stacked with the census, worker-MCP and reload-image nodes on main ab0ababb1 over 144 test files: main 1695 passed, stack 1708 passed, the same one failure and one error at both, so none added. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s5">evidence</a></p></div>
 </div>
 </section>
 </main>
