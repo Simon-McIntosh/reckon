@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="116">
+<meta name="plan-version" content="117">
 <meta name="plan-modified" content="2026-10-27">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -391,6 +391,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261027T101722589790-review-of-a-project-can-name-its-worker-mcp-servers-635ff0d947ad" data-who="reckon-build" data-when="2026-10-27T10:49:18.051Z">
     <div class="r-comment-body"><p>Independent review of the commits r-20261027T090503642997-a-project-can-name-its-worker-mcp-servers gained since its first review (d24d71b5b..635ff0d94): all six dimensions scored, total 115/120 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19, reuse 19), added_failure_count 0 derived from both arms of the reviewed run, and one non-blocking finding (reckon/_worker_fence.py:304 still reads a present null declaration as absence rather than refusing it). The gained commit repairs the prior review's mapping/tuple finding: the reader now accepts only a list of strings and both refusal tests are parametrised over bare string, mapping, tuple and list-holding-a-non-string.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261027T090503642997-a-project-can-name-its-worker-mcp-servers" data-who="reckon-build" data-when="2026-10-27T10:15:50Z">
+    <div class="r-comment-body"><p>worker_mcp_servers is a reckon-owned flight key whose one reader, _declared_worker_mcp_servers, accepts only a list of strings and refuses a bare string, a mapping, a tuple and a list holding a non-string with WorkerMcpServersError, which the flight layer turns into FlightConfigError naming the key; gate pair 100 passed at head against 91 at base, armed suite 16 at head against 7, and the declared mutation fails test_a_project_naming_its_servers_resolves_and_seeds_them (1 failed, 15 passed, EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-20261023-s13-figure" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v100 on 2026-10-23: §1's imas-cx rows sum to 2,561 cause hits, not the 2,697 §13 quotes; the difference is the imas-cx half of the read-only row counted under both.</p></div>
