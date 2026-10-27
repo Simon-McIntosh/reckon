@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Landed-work review, repair and re-review run without the orchestrator</title>
+<meta name="plan-project" content="reckon">
+<meta name="plan-slug" content="a-queue-holds-the-whole-plan">
+<meta name="plan-section" content="s22">
+<meta name="node" content="review-repair-runs-without-the-coordinator">
+</head>
+<body>
+<h2 id="review-repair-runs-without-the-coordinator-landed">Landed-work review, repair and re-review run without the orchestrator</h2>
+
+<section id="review-repair-runs-without-the-coordinator-summary" data-reckon="evidence">
+<h3 id="review-repair-runs-without-the-coordinator-what-landed">What landed</h3>
+<p id="review-repair-runs-without-the-coordinator-ids">A stored run review now carries an <code>id</code> on every mapping finding, stamped by the store from the shared <code>repair.finding_id</code> over the finding's own file, line and text. A repair answers a finding by that id, and the lifecycle reads the answer back, so the record on disk names the identity an answer targets rather than leaving each reader to re-derive it.</p>
+<p id="review-repair-runs-without-the-coordinator-measure">Measure: <code>tests/test_review_repair_runs_without_the_coordinator.py</code> — 2 passed. Importer subset (49 tests across the review store, lifecycle, blocking-severity and repair-answer files) — 49 passed, no new failures.</p>
+</section>
+
+<section id="review-repair-runs-without-the-coordinator-blocker" data-reckon="evidence">
+<h3 id="review-repair-runs-without-the-coordinator-blocker-head">Blocker: the round cap and escalation live outside the write grant</h3>
+<p id="review-repair-runs-without-the-coordinator-blocker-detail">The plan names the automatic repair's rounds as this node's work and lists the module set as the four review modules. A later refactor (<code>85c4e4813</code>, "split recovery behavior into sibling modules") moved the repair-round cap and dispatch into <code>reckon/crew/recovery_repair_dispatch.py</code>, which is not in this node's write grant. The one-round cap it enforces is proven live by <code>tests/test_one_automatic_repair_round_per_run.py</code> (3 passed), whose <code>test_a_second_round_on_a_new_head_hands_back</code> asserts the exact behaviour the plan asks to change; that test too is outside the grant. A self-widen through <code>reckon crew widen</code> is refused because <code>~/.config/reckon</code> is mounted read-only (only the run directory is writable), so the pointer lock and live pointer cannot be amended.</p>
+<p id="review-repair-runs-without-the-coordinator-blocker-ask">Required to finish: a grant covering <code>reckon/crew/recovery_repair_dispatch.py</code> and <code>tests/test_one_automatic_repair_round_per_run.py</code>, plus the dispose head-descent path (in <code>reckon/crew/review_records.py</code> and the <code>dispose</code> verb). With those, the second and third rounds, the fourth-round refusal with one escalation obligation, and the re-review brief carrying the head-to-head diff are implementable against the existing composer.</p>
+</section>
+</body>
+</html>
