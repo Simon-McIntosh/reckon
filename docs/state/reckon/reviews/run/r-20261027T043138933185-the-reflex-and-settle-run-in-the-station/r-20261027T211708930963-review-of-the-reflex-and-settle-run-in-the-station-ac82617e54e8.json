@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T21:29:10.026Z",
+  "dispatched_at": "2026-10-27T21:19:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "id": "f1a8c4b3603",
+      "line": 3960,
+      "severity": "non-blocking",
+      "text": "sweep_unfollowed_sessions still skips a session that holds any foreign pointer \u2014 the split-session defect this delta repairs at station.py:121 \u2014 so the watcher path (recovery_watch.py:2898, runs.py:4047) still leaves a split session unswept, and the repository now carries two contradictory host-sweep rules; it is outside the node's write scope and should be folded into a follow-up node."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "id": "fd900a1fd9f",
+      "line": 129,
+      "severity": "non-blocking",
+      "text": "the docstring calls the owner 'the session's first-sorted live run', but the min at station.py:141 ranges over every live pointer, terminal-phase pointers included, so a terminal run's host can own the session; the evidence fragment repeats the wording."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "id": "f7a618b4461",
+      "line": 174,
+      "severity": "non-blocking",
+      "text": "live_work_reading has no production caller after StationSubscriber.live_work moved to live_work_verdict, so a bool-only view of the same reading survives only for tests."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass - station.tick's two calls, the delegating _population_has_live_work, and _is_live's subscriber read with its None fallback were read at ac82617e5.",
+    "diff": "pass - five commits, 280 insertions, 102 deletions over five files, all inside scope; the change consolidates the live-work rule, makes a stale reading no answer and chooses one sweep owner per session.",
+    "done_when": "pass with caveat - tests/test_the_reflex_runs_once_in_the_station.py carries the measure; logs/armed2-head.log records 26 passed EXIT=0 at ac82617e5 and logs/armed2-base.log exits 4 because the file is absent at 9e363fe50, so the base comparison rests on logs/importers2-base.log (490 passed, 1 parallel-arm flake) against logs/importers2-head.log (503 passed).",
+    "goal": "pass - the station still runs one sweep per session and settle still reads the latest resume stamp, and this delta repairs the prior review's four findings: reckon/crew/station.py:121 one sweep owner, reckon/crew/station_subscriber.py:139 a stale reading as no answer, reckon/crew/station_subscriber.py:74 one owner for the live-work rule.",
+    "manifest": "pass - read; it records the armed pair, importer arms, trace pair, eight-mutation negative control and ruff delta, and its ruff position reproduces at head.",
+    "write_paths": "pass - every path in the diff from 4b2994225 to ac82617e5 is inside the manifest's declared paths or the widen it records for reckon/crew_follow_commands.py."
+  },
+  "plan": "reckon:the-monitor-reads-each-fact-once",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is that the station runs the review sweep and settle detection once for every session on the node and that settle reads the latest resume stamp; this delta keeps that landing and repairs the four findings the prior review carried \u2014 reckon/crew/station.py:121 names one sweep owner per session, reckon/crew/station_subscriber.py:139 makes a stale reading no answer, and reckon/crew/station_subscriber.py:74 gives the has-live-work rule one owner.\nVERDICT done_when: the done_when names tests/test_the_reflex_runs_once_in_the_station.py with the sweep-count, settle-window, quiet-resume and traceless-path measures; the manifest records 26 passed EXIT=0 at ac82617e5 in logs/armed2-head.log and EXIT=4 (file absent) at base 9e363fe50 in logs/armed2-base.log, with the importer arms at 490 passed plus 1 parallel-arm flake against 503 passed.\nVERDICT write_paths: the manifest declares reckon/crew/station.py, reckon/crew/station_subscriber.py, reckon/crew/recovery_review_dispatch.py, tests/test_the_reflex_runs_once_in_the_station.py and the evidence fragment, with reckon/crew_follow_commands.py recorded as a widen; every path in the delta from 4b2994225 to ac82617e5 is among them.\nVERDICT manifest: read at the reviewed run's manifest.md; it records the armed gate pair, the importer arms, the 60 s trace pair, the eight-mutation negative control and the ruff delta, and its ruff claim holds when measured at ac82617e5 \u2014 SIM103 at reckon/crew_follow_commands.py:90 and SIM115 at :1228 are the only findings and both pre-date the ruff fix, while crew_follow_commands.py is unformatted at base 4b2994225 and at head alike.\nVERDICT diff: read commit by commit from 4b2994225 to ac82617e5; five commits, 280 insertions and 102 deletions over five files \u2014 the live-work rule consolidated into station_subscriber.live_work_populations, live_work_verdict returning None for a stale or unreadable reading with crew_follow_commands._is_live falling back to the pointer listing, and station._sessions_to_sweep choosing one owner per session from its first-sorted pointer.\nCALL_SITES: reckon/crew/station.py:319 (live_work_populations in Station.tick), reckon/crew/station.py:343 (_sessions_to_sweep in Station.tick), reckon/crew_follow_commands.py:585 (_population_has_live_work delegating to station_subscriber.population_has_live_work), reckon/crew_follow_commands.py:1629 (_is_live reading subscriber.live_work with the None fallback at :1632), reckon/crew_follow_commands.py:2196 (_population_has_live_work in the arming loop)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:121 and reckon/crew/station_subscriber.py:139 answer the prior review's split-session and stale-reading defects, though the station and the watcher now hold two different host-sweep rules at reckon/crew/runs.py:3960.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/armed2-head.log records 26 passed EXIT=0 at ac82617e5 and logs/armed2-base.log exits 4 because the node's file is absent at 9e363fe50, so the base comparison rests on the importer arms (logs/importers2-base.log, logs/importers2-head.log) and the eight-mutation log rather than on the armed pair.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the delta from 4b2994225 is inside the manifest's declared write paths or the widen it records for reckon/crew_follow_commands.py, and no unrelated file is touched.\nSCORE durability: 16\nJUSTIFICATION durability: all three added cases redden under the recorded mutations (logs/negative-control2.log), and test_one_rule_decides_live_work_for_the_station_and_the_producer judges the station's persisted reading against the rule recomputed from the test's own pointers rather than against a value it passed in.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/station.py:141 reaches into recovery_liveness._record_is_known_foreign as before, and the docstring at reckon/crew/station.py:129 says \"first-sorted live run\" where the min ranges over every live pointer including terminal-phase ones.\nSCORE reuse: 11\nJUSTIFICATION reuse: the live-work judgement is now correctly owned once, but station._sessions_to_sweep restates the host-sweep ownership that reckon/crew/runs.py:3916 sweep_unfollowed_sessions already owns and contradicts it, so one capability now has two rules.\nFINDING reckon/crew/runs.py:3960 non-blocking: sweep_unfollowed_sessions still skips a session that holds any foreign pointer \u2014 the exact split-session defect this delta repairs at reckon/crew/station.py:121 \u2014 so the watcher path at reckon/crew/recovery_watch.py:2898 and reckon/crew/runs.py:4047 still leaves a session split across hosts unswept, and the repository now carries two contradictory host-sweep rules; it is outside the node's write scope, so it should be folded into a follow-up node rather than repaired here.\nFINDING reckon/crew/station.py:129 non-blocking: the docstring calls the owner \"the session's first-sorted live run\", but the min at reckon/crew/station.py:141 ranges over every pointer in the live directory, terminal-phase ones included (tests/test_the_reflex_runs_once_in_the_station.py writes phase=\"complete\" into live/ and the rule sees it), so a terminal run's host can be chosen as the owner; the evidence fragment repeats the same wording.\nFINDING reckon/crew/station_subscriber.py:174 non-blocking: live_work_reading has no production caller after StationSubscriber.live_work moved to live_work_verdict, so a bool-only view of the same reading survives only for tests, which is the kind of parallel surface this section exists to remove.",
+  "review_run_id": "r-20261027T211708930963-review-of-the-reflex-and-settle-run-in-the-station-ac82617e54e8",
+  "reviewed_base_sha": "4b29942255a141f113901d3beba117a3616b4f8a",
+  "reviewed_head_sha": "ac82617e54e83f234ba046dace86739754cdf1cf",
+  "reviewed_run_id": "r-20261027T043138933185-the-reflex-and-settle-run-in-the-station",
+  "rubric": "text",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 11,
+    "scope_discipline": 19
+  },
+  "section": "\u00a710",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T21:30:15.020263+00:00",
+  "total": 95
+}
