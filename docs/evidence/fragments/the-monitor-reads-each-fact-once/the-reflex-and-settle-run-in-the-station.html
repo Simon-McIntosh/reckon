@@ -90,9 +90,38 @@
   names <strong>1789</strong> crew-home paths — <code>live</code>,
   <code>live/</code> and <code>live/r-one.json</code>, the run directory it
   lists — so a trace naming nothing is shown to be a trace that could have
-  named something. Clipped path extracts are committed here; the full traces
-  (615892 and 1010992 bytes) sit in the run directory under
-  <code>logs/after.trace</code> and <code>logs/before.trace</code>.
+  named something. The full traces (615892 and 1010992 bytes) sit in the run
+  directory under <code>logs/after.trace</code> and <code>logs/before.trace</code>
+  — above the 300 KB a repository data file may carry — and the path extracts
+  are reproduced below.
+
+  <p><strong>The extracts, verbatim.</strong> Paths are rewritten to
+  <code>&lt;crew-home&gt;</code> (the fixture's <code>crew_home()</code>) and
+  <code>&lt;runtime&gt;</code> (its station root); counts are occurrences in the
+  full trace.
+  <pre>
+settle-aware subscriber (StationSubscriber reading the station's live-work reading)
+revision f0cd9b0f1; 60 s; strace -f -e trace=openat,stat,newfstatat
+1794 population readings over 596 passes
+crew-home paths named: 0
+node-runtime-root paths named (distinct):
+      6 &lt;runtime&gt;/events/events-2026-10-27.sqlite3
+      5 &lt;runtime&gt;/station.sqlite3
+      2 &lt;runtime&gt;/station.sqlite3-wal
+      2 &lt;runtime&gt;/events/events-2026-10-27.sqlite3-wal
+      1 &lt;runtime&gt;/station.sqlite3-shm
+      1 &lt;runtime&gt;/station.sqlite3-journal
+      1 &lt;runtime&gt;/events/events-2026-10-27.sqlite3-shm
+
+today's per-follower settle reader (crew_follow_commands._population_has_live_work)
+revision 9e363fe50; 60 s; strace -f -e trace=openat,stat,newfstatat
+596 samples; last reading live
+crew-home paths named: 1789
+distinct crew-home paths named:
+    597 &lt;crew-home&gt;/crew/live/r-one.json
+    596 &lt;crew-home&gt;/crew/live/
+    596 &lt;crew-home&gt;/crew/live
+  </pre>
 
   <p><strong>Negative control.</strong> Three declared mutations applied
   together — the station requests no sweep, the settle reader takes
