@@ -262,7 +262,13 @@ def test_the_figure_finding_is_disposed_onto_the_figure_record(
     assert recorded["1"]["node"] == FOLD_NODE
     # The record's own review material survives the rewrite, and the receipt's
     # answer reads back through the same rubric-selected reader a consumer uses.
-    assert stored["findings"] == FIGURE_FINDINGS
+    # The store stamps each finding with the id an answer names, so the record
+    # reads back as written apart from that stamp, which is derived here from
+    # what was written rather than compared against nothing.
+    assert stored["findings"] == [
+        {**finding, "id": repair_module.finding_id(finding)}
+        for finding in FIGURE_FINDINGS
+    ]
     assert (
         _figure_record(fixture)[review_module.FINDING_DISPOSITIONS_KEY]["1"]["node"]
         == FOLD_NODE

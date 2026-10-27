@@ -22,6 +22,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
 
 PROJECT = "proj"
@@ -184,14 +185,16 @@ def test_a_stored_review_round_trips_its_severity(
         PROJECT, RUN_ID, base_dir=base_dir, reviewed_head_sha=HEAD_SHA
     )
     assert stored is not None
-    assert stored["findings"] == [
-        {
-            "file": "tests/test_x.py",
-            "line": "12",
-            "text": "blocking: the guard never fires",
-            "severity": "blocking",
-        }
-    ]
+    # The store stamps each finding with the id an answer names, derived from
+    # the finding's own content, so the expected value derives it the same way
+    # from what was written rather than from the read.
+    written = {
+        "file": "tests/test_x.py",
+        "line": "12",
+        "text": "blocking: the guard never fires",
+        "severity": "blocking",
+    }
+    assert stored["findings"] == [written | {"id": repair_module.finding_id(written)}]
 
     read = review_module.read_review(
         PROJECT, RUN_ID, base_dir=base_dir, reviewed_head_sha=HEAD_SHA

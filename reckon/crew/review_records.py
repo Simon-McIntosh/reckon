@@ -1433,31 +1433,37 @@ def _indexed_head_matches(entry: Mapping[str, Any], named: str | None) -> bool:
     return actual.startswith(named) or named.startswith(actual)
 
 
-def _records_for_run_both_stores(
+def _committed_records_for_run(
     project: str,
     reviewed_run_id: str,
     *,
-    base_dir: str | Path | None = None,
+    root: str | Path | None = None,
 ) -> list[tuple[Path, dict[str, Any]]]:
-    """Every readable record for the run in either store, staging records first.
+    """Every readable committed record for the run, oldest key first.
 
-    A review round is stored in staging while it is live and committed into the
-    project's tree when a promotion lands it, and a run can be at either point:
-    the descent reader must see the same records the by-head selection sees, so
-    it enumerates both stores rather than the staging one alone.
+    Only the project's committed tree is enumerated. A staging review is a live
+    round keyed to the one head it read: once the run's work has moved past that
+    head, the round describes a revision the work is no longer at, and a
+    disposition recorded against it would retire a finding on a diff nobody read
+    of the work as it now stands. A committed review is the run's landed
+    evidence, which is what a descent from a later head is there to reach: the
+    repair moved the head on both sides, and the review of the ancestor remains
+    the record the finding belongs to.
     """
-    records = list(stored_records_for_run(project, reviewed_run_id, base_dir=base_dir))
-    committed = _review.committed_review_root(project)
-    if committed is not None:
-        run_directory = committed / _review.COMMITTED_RUN_DIRNAME / reviewed_run_id
-        if run_directory.is_dir():
-            for path in sorted(run_directory.glob("*.json")):
-                record = _committed_record_at(path)
-                if record is None:
-                    continue
-                if str(record.get("reviewed_run_id") or "").strip() != reviewed_run_id:
-                    continue
-                records.append((path, dict(record)))
+    committed = _review.committed_review_root(project, root=root)
+    if committed is None:
+        return []
+    run_directory = committed / _review.COMMITTED_RUN_DIRNAME / reviewed_run_id
+    if not run_directory.is_dir():
+        return []
+    records: list[tuple[Path, dict[str, Any]]] = []
+    for path in sorted(run_directory.glob("*.json")):
+        record = _committed_record_at(path)
+        if record is None:
+            continue
+        if str(record.get("reviewed_run_id") or "").strip() != reviewed_run_id:
+            continue
+        records.append((path, dict(record)))
     return records
 
 
@@ -1467,7 +1473,6 @@ def stored_review_descending_from(
     head: str,
     *,
     repository: str | Path | None,
-    base_dir: str | Path | None = None,
     rubric: str | None = None,
 ) -> tuple[Path | None, dict[str, Any] | None, str]:
     """Return a stored review whose head the run's head descends from.
@@ -1479,8 +1484,12 @@ def stored_review_descending_from(
     disposition against it stands: the finding it raises is work the repair was
     asked to answer, and the answers are written onto that record.
 
-    The newest matching record wins, so a run reviewed at several rounds
-    answers against the latest one whose head is still in the run's history.
+    The record must have been landed: only the project's committed tree is
+    searched, because that is the run's evidence about its own work, while a
+    staging round is a live round of a single head and stops describing the
+    work once the head has moved past it. The newest matching committed record
+    wins, so a run reviewed at several rounds answers against the latest one
+    whose head is still in the run's history.
     A head equal to the record's own is accepted without a git call. An empty
     ``head`` or no repository to check ancestry against yields nothing, which
     leaves the caller's refusal in place rather than accepting an unverifiable
@@ -1494,7 +1503,7 @@ def stored_review_descending_from(
     from reckon.crew import recovery as recovery_module
 
     for path, record in reversed(
-        _records_for_run_both_stores(project, reviewed_run_id, base_dir=base_dir)
+        _committed_records_for_run(project, reviewed_run_id, root=repository)
     ):
         if not _review._review_rubric_matches(record, rubric):
             continue

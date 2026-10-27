@@ -102,14 +102,25 @@ def _advance(repo: Path, name: str) -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
-def _store_at(tmp_path: Path, monkeypatch, base_sha: str, head_sha: str) -> None:
+def _store_at(
+    tmp_path: Path, monkeypatch, root: Path, base_sha: str, head_sha: str
+) -> None:
+    """Land the review in the project's committed tree, keyed to the head it read.
+
+    Only a landed review is reachable by descent: a staging round describes one
+    head, and once the work has moved past it the round is no longer evidence
+    about the work the run is now standing on.
+    """
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
-    review_module.store_review(
+    (root / "docs").mkdir(parents=True, exist_ok=True)
+    review_module.store_committed_review(
         {
             **_record([dict(FINDING)]),
+            "review_run_id": "r-review",
             "reviewed_base_sha": base_sha,
             "reviewed_head_sha": head_sha,
-        }
+        },
+        root=root,
     )
 
 
@@ -121,7 +132,7 @@ def test_a_review_is_found_from_a_later_head_by_descent(tmp_path, monkeypatch) -
     keeps a review of this work reachable after the repair it caused committed.
     """
     repo, reviewed_head = _repo(tmp_path)
-    _store_at(tmp_path, monkeypatch, reviewed_head, reviewed_head)
+    _store_at(tmp_path, monkeypatch, repo, reviewed_head, reviewed_head)
     later_head = _advance(repo, "two.txt")
     assert later_head != reviewed_head
 
@@ -149,10 +160,41 @@ def test_a_review_is_not_found_from_a_divergent_head(tmp_path, monkeypatch) -> N
     divergent_head = _advance(repo, "other.txt")
     _git(repo, "checkout", "-q", "main")
     reviewed_head = _advance(repo, "reviewed.txt")
-    _store_at(tmp_path, monkeypatch, reviewed_head, reviewed_head)
+    _store_at(tmp_path, monkeypatch, repo, reviewed_head, reviewed_head)
 
     _path, record, stored_head = review_records.stored_review_descending_from(
         PROJECT, RUN_ID, divergent_head, repository=repo
+    )
+
+    assert record is None
+    assert stored_head == ""
+
+
+def test_a_staging_round_keyed_to_another_head_is_not_reachable(
+    tmp_path, monkeypatch
+) -> None:
+    """A live round of one head stops describing the work once the head moves.
+
+    The negative control for the landed-only rule: a record of exactly this
+    shape, stored in staging rather than committed, names a revision the run's
+    work has moved past. Answering it would retire a finding on a diff nobody
+    read of the work as it now stands, so the descent reader leaves it alone and
+    a caller's by-head refusal stands.
+    """
+    repo, reviewed_head = _repo(tmp_path)
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    review_module.store_review(
+        {
+            **_record([dict(FINDING)]),
+            "reviewed_base_sha": reviewed_head,
+            "reviewed_head_sha": reviewed_head,
+        }
+    )
+    later_head = _advance(repo, "two.txt")
+    assert later_head != reviewed_head
+
+    _path, record, stored_head = review_records.stored_review_descending_from(
+        PROJECT, RUN_ID, later_head, repository=repo
     )
 
     assert record is None
