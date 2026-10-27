@@ -3089,12 +3089,21 @@ def crew_follow(
         }
 
     def stream_events(registration):
-        reloader = _FollowerReloader(
-            project,
-            registration,
-            deadline=deadline_epoch,
-            owner=owner,
-            color=getattr(grid, "color", False),
+        # A subscriber reads the station's rows rather than a producer's stream
+        # file, so it has nothing to reload onto: the station is the process
+        # that carries new code. Building a reloader here would materialise its
+        # tree under the crew home on the delivery path, which is exactly what
+        # the subscriber exists to avoid.
+        reloader = (
+            None
+            if subscriber is not None
+            else _FollowerReloader(
+                project,
+                registration,
+                deadline=deadline_epoch,
+                owner=owner,
+                color=getattr(grid, "color", False),
+            )
         )
 
         def poll(checkpoint) -> None:
@@ -3107,7 +3116,7 @@ def crew_follow(
             """
             if registration is not None and not registration.held:
                 registration.acquire()
-            if subscriber is None:
+            if reloader is not None:
                 reloader.poll(checkpoint)
 
         from reckon.crew import follow_checkpoint as history_module
