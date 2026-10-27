@@ -2576,6 +2576,69 @@ def _composed_review_options(
     return options
 
 
+WRITE_GRANTS_HEADING = "Reviewed run's write scope (every grant and its source)"
+
+
+def _write_grants_block(record: Mapping[str, Any]) -> str:
+    """The reviewed run's write scope with each path's grant source, or "".
+
+    A reviewer judges scope discipline against the manifest's orientation
+    paths, which are the ones the dispatch wrote. A path the run's own worker
+    widened to is not in that record, so without this block a self-grant reads
+    to the review as an out-of-scope change. Listing every declared path beside
+    the source of its grant lets the review count a self-grant as inside the
+    scope it was given.
+    """
+    from reckon.crew.dispatch_claims import declared_write_grants
+
+    grants = declared_write_grants(record)
+    if not grants:
+        return ""
+    lines = [WRITE_GRANTS_HEADING + ":"]
+    for grant in grants:
+        reason = f" — {grant['reason']}" if grant["reason"] else ""
+        lines.append(f"  {grant['path']} (source: {grant['source']}){reason}")
+    if any(grant["source"] == "worker" for grant in grants):
+        lines.append(
+            "A path whose source is worker is a self-grant: the run's own worker "
+            "widened its claim to it and recorded why, so a change there is "
+            "inside the run's declared scope."
+        )
+    return "\n".join(lines)
+
+
+def _list_write_grants_in_brief(
+    record: Mapping[str, Any], fields: Mapping[str, Any]
+) -> None:
+    """Append the grant list to a run review's composed brief, once.
+
+    The fields composer writes the brief before the dispatch decides whether it
+    launches, so the grant list is added on that file here rather than inside
+    the composition. A brief already carrying the heading is left alone, so the
+    same dispatch composed twice does not grow the text.
+    """
+    block = _write_grants_block(record)
+    if not block:
+        return
+    brief = str(fields.get("brief") or "").strip()
+    if not brief:
+        return
+    path = Path(brief)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return
+    if WRITE_GRANTS_HEADING in text:
+        return
+    text = text.rstrip("\n") + "\n\n" + block + "\n"
+    try:
+        path.write_text(text, encoding="utf-8")
+    except OSError:
+        return
+    if isinstance(fields, dict):
+        fields["brief_text"] = text
+
+
 def _dispatch_composed_review(
     record: Mapping[str, Any],
     fields: Mapping[str, Any],
@@ -2589,6 +2652,8 @@ def _dispatch_composed_review(
     """Launch either review subject from the shared fields and dispatch path."""
     run_id = str(record.get("run_id") or "")
     dispatch_subject = record if record.get("subject") == "plan" else run_id
+    if record.get("subject") != "plan":
+        _list_write_grants_in_brief(record, fields)
     rubric = str(fields.get("rubric") or "")
     profile = rubric if rubric == review_module.FIGURE_REVIEW_RUBRIC else None
 
