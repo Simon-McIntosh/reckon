@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="81">
+<meta name="plan-version" content="82">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -487,7 +487,10 @@
     <div class="r-comment-body"><p>Reviewed r-20261027T042852990093-obligations-read-the-station at 7778eecd3471 against base 20e65d881: goal fidelity 19, evidence 16, scope 20, durability 17, fit 17, reuse 19; two non-blocking findings (station.py:207 exports before the heartbeat is written so a starting station reads stale for up to 90 s; tests/:195 is a vacuous assertion after the resolver began delegating), added_failure_count 0 against the reviewed run's own gate logs.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
-    <div class="r-comment-body"><p>The station computes each live session&#x27;s obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+    <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261027T202938546292-review-of-the-reflex-and-settle-run-in-the-station-4b29942255a1" data-who="reckon-build" data-when="2026-10-27T20:44:33.695Z">
+    <div class="r-comment-body"><p>Independent review of r-20261027T043138933185-the-reflex-and-settle-run-in-the-station at head 4b29942255a141f113901d3beba117a3616b4f8a from base 9e363fe50e058ed2bd9cc3b2548eb6f8353aa3c4. Scored goal_fidelity 18, evidence 17, scope_discipline 17, durability 17, fit 16, reuse 13. Three non-blocking findings, no blocking finding.</p></div>
 </div>
 </section>
 </main>

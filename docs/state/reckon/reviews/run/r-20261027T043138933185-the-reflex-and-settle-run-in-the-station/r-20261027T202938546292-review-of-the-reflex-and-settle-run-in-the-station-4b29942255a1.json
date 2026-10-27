@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T20:44:33.695Z",
+  "dispatched_at": "2026-10-27T20:31:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station.py",
+      "id": "fe3e8991d83",
+      "line": 164,
+      "severity": "non-blocking",
+      "text": "_sessions_to_sweep drops a session entirely when ANY of its pointers is a known foreign host, while the predicate is host-local and symmetric: a session whose runs were launched on two hosts is skipped by the station on each of them, and a station-attached follower no longer sweeps at all (crew_follow_commands.py:2169 drives subscriber.wake and never _sweep_on_cadence), so that session's resume and review reflex runs nowhere until its pointers drain."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "id": "f46e3a86635",
+      "line": 127,
+      "severity": "non-blocking",
+      "text": "live_work_reading returns False for a reading older than 90 s, and its only caller (crew_follow_commands.py:1633 _is_live) reads False as 'no work', so a station stalled past the stale window settles every attached pane over live work after the grace; the docstring claims a stale reading 'answers nothing rather than a stale verdict', which the caller does not honour, and a station reload long enough to cross the window has the same effect."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "id": "fd1f4887bcc",
+      "line": 137,
+      "severity": "non-blocking",
+      "text": "_live_work_populations re-states the live-work judgement that crew_follow_commands.py:585 _population_has_live_work already owns (skip a terminal phase, count an ownerless pointer for every session), so one rule now lives in two modules and a change to either the terminal vocabulary or the unowned rule must be made in both."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass - every production entry point was read at 4b2994225: Station.tick from reckon/crew/station.py:416, StationSubscriber.live_work from reckon/crew_follow_commands.py:1633, subscriber.wake from reckon/crew_follow_commands.py:2172, and review_settle_seconds_remaining from reckon/crew/recovery_review_acceptance.py:462.",
+    "diff": "pass - read commit by commit from 9e363fe50 to 4b2994225: seven commits, 921 insertions and 41 deletions over six files, production confined to reckon/crew/station.py, reckon/crew/station_subscriber.py, reckon/crew/recovery_review_dispatch.py and reckon/crew_follow_commands.py plus one evidence fragment.",
+    "done_when": "pass - the done_when names tests/test_the_reflex_runs_once_in_the_station.py; logs/armed2-head.log records 23 passed EXIT=0 at 4b2994225, and logs/armed2-base.log exits 4 because that file does not exist at 9e363fe50, so the base arm carries no comparison of its own and the importer arms carry it instead (logs/importers2-base.log 491 passed, logs/importers2-head.log 500 passed over the same 60 files plus the 9 new cases).",
+    "goal": "pass - the goal is that the station run the review sweep and settle detection once per session and that settle read the latest resume stamp; reckon/crew/station.py:59 SweepBeat with the per-session request at :365 runs the sweep from Station.tick, reckon/crew/station_subscriber.py:74 writes and :99 reads the has-live-work reading a pane settles by, and reckon/crew/recovery_review_dispatch.py:1285 dates the window from _latest_resume_at.",
+    "manifest": "pass - read at the reviewed run's manifest.md; it records the armed pair, the importer arms, the 60 s trace pair, the five-mutation negative control and the ruff position, and its ruff claim holds when measured in the reviewed worktree: reckon/crew_follow_commands.py:90 SIM103 and :1235 SIM115 are the only findings on the changed source files and both pre-date the change, with no finding on the new test file.",
+    "write_paths": "pass - every path in the diff from 9e363fe50 to 4b2994225 lies inside the six declared paths or the widen the manifest records for reckon/crew_follow_commands.py; the manifest's changed_paths additionally names tests/test_a_follower_is_a_station_subscriber.py, which the diff does not touch, and no file outside the granted set is modified."
+  },
+  "plan": "reckon:the-monitor-reads-each-fact-once",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the station run the review sweep and settle detection once per session and that settle read the latest resume stamp; reckon/crew/station.py:59 SweepBeat and the request loop at station.py:365 satisfy it from Station.tick, and reckon/crew/recovery_review_dispatch.py:1285 dates the window from _latest_resume_at.\nVERDICT done_when: the done_when names tests/test_the_reflex_runs_once_in_the_station.py; logs/armed2-head.log records 23 passed EXIT=0 at 4b2994225 while logs/armed2-base.log exits 4 because the file is absent at 9e363fe50, and logs/importers2-base.log and logs/importers2-head.log carry the base comparison at 491 against 500 passed.\nVERDICT write_paths: every path in the diff lies inside the declared set plus reckon/crew_follow_commands.py, which the manifest records as granted by crew widen; the manifest's changed_paths also names tests/test_a_follower_is_a_station_subscriber.py, which the diff does not touch.\nVERDICT manifest: read; it records the armed pair, the importer arms, the 60 s trace pair and the five-mutation negative control, and its ruff claim holds in the reviewed worktree, where only reckon/crew_follow_commands.py:90 SIM103 and :1235 SIM115 remain and both pre-date the change.\nVERDICT diff: read commit by commit from 9e363fe50 to 4b2994225; six files, 921 insertions and 41 deletions, production confined to reckon/crew/station.py, reckon/crew/station_subscriber.py, reckon/crew/recovery_review_dispatch.py and reckon/crew_follow_commands.py.\nVERDICT call_sites: Station.tick (reckon/crew/station.py:416), StationSubscriber.live_work (reckon/crew_follow_commands.py:1633), subscriber.wake (reckon/crew_follow_commands.py:2172) and review_settle_seconds_remaining (reckon/crew/recovery_review_acceptance.py:462) were read at 4b2994225.\nCALL_SITES: reckon/crew/station.py:416, reckon/crew_follow_commands.py:1633, reckon/crew_follow_commands.py:2172, reckon/crew/recovery_review_acceptance.py:462\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:365 requests each session's sweep from the station's own tick and reckon/crew/station_subscriber.py:74 writes the reading a pane settles by, so both halves of the goal are reachable from production.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/armed2-head.log records 23 passed EXIT=0 at the reviewed head, logs/importers2-head.log records 500 passed against 491 at base, and logs/negative-control2.log reddens six tests, with the caveat that logs/armed2-base.log exits 4 without running a test.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff against 9e363fe50 is inside the declared write paths or the widen the manifest records, and no unrelated file is touched.\nSCORE durability: 17\nJUSTIFICATION durability: five mutations applied together redden six tests including test_a_follower_reading_the_station_runs_no_sweep_of_its_own and test_a_pane_settles_on_the_stations_reading_not_the_pointer_directory (logs/negative-control2.log), so the assertions fail on the reinstated regression, though the mixed-host session case the filter creates has no test.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/station.py:137 and :164 reach into node._TERMINAL_RUN_PHASES and recovery_liveness._record_is_known_foreign, private helpers of other modules, where the surrounding modules read them through a re-export.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/station.py:137 restates the live-work judgement reckon/crew_follow_commands.py:585 already owns rather than extending it, though _latest_resume_at (recovery_review_dispatch.py:206) and _record_is_known_foreign are reused rather than copied.\nFINDING reckon/crew/station.py:164 non-blocking: a session whose pointers span two hosts is dropped by every station's _sessions_to_sweep and is no longer swept by any attached follower, so its resume and review reflex runs nowhere.\nFINDING reckon/crew/station_subscriber.py:127 non-blocking: a stale reading returns False, which crew_follow_commands.py:1633 reads as 'no work', so a station stalled past 90 s settles panes over live work although the docstring says a stale reading answers nothing.\nFINDING reckon/crew/station.py:137 non-blocking: _live_work_populations re-states the rule crew_follow_commands.py:585 already owns, so one judgement now lives in two modules.",
+  "review_run_id": "r-20261027T202938546292-review-of-the-reflex-and-settle-run-in-the-station-4b29942255a1",
+  "reviewed_base_sha": "9e363fe50e058ed2bd9cc3b2548eb6f8353aa3c4",
+  "reviewed_head_sha": "4b29942255a141f113901d3beba117a3616b4f8a",
+  "reviewed_run_id": "r-20261027T043138933185-the-reflex-and-settle-run-in-the-station",
+  "rubric": "text",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 17
+  },
+  "section": "\u00a710",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T20:45:13.996245+00:00",
+  "total": 98
+}
