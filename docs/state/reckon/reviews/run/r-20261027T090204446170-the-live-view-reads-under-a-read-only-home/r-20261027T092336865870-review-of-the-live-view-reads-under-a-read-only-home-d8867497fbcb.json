@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_views.py:4224",
+    "reckon/crew/runs.py:3212",
+    "reckon/crew.py:140"
+  ],
+  "completed_at": "2026-10-27T09:45:31.713Z",
+  "dispatched_at": "2026-10-27T09:27:43Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T090204446170-the-live-view-reads-under-a-read-only-home/head-gate.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate's header line names revision 9e14c1d, its base, while its tree carried the fix, so the log misstates the revision it measured; head-suite.log separately names d8867497f and the result is sound."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "3659",
+      "severity": "non-blocking",
+      "text": "non-blocking: _probe_seat_read_only tolerates an absent seat (FileNotFoundError) but lets any other OSError from path.open(rb) \u2014 an unreadable seat, EACCES on a mode-000 file \u2014 propagate, so a read the node exists to make non-writing can still fail on a seat it cannot open."
+    }
+  ],
+  "item_verdicts": {},
+  "justifications": {},
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to let the crew live view read a project's runs without creating or writing the watch lock; reckon/crew/runs.py:3648 adds _probe_seat_read_only, which opens the seat rb and creates nothing on the way to an answer.\nVERDICT done_when: the done_when names a read-only-watch-directory test that fails at base and passes at head; tests/test_live_view_reads_under_a_read_only_home.py:87 builds that fixture and head-gate.log records 19 passed EXIT=0 against 2 failed EXIT=1 at base.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/runs.py, tests/test_live_view_reads_under_a_read_only_home.py, the evidence fragment); every path the diff touches is inside them, and the declared docs/figures/ subtree was left unused.\nVERDICT manifest: read; it records status complete, the two commits, both suite arms with their literal command and EXIT lines, and names the gate and negative-control logs.\nVERDICT diff: read both commits against 9e14c1d; reckon/crew/runs.py rewrites project_watch_visibility to call a new _probe_seat_read_only and makes _reconcile_watch_record report an unrepaired record instead of raising, tests/test_live_view_reads_under_a_read_only_home.py adds two cases, and the landing fragment records the measure \u2014 three files, 217 insertions and 15 deletions.\nCALL_SITES: reckon/mcp_views.py:4224, reckon/crew/runs.py:3212, reckon/crew/watch_seat_version_current via reckon/crew/runs.py:3212, reckon/crew.py:140\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3657 opens the seat rb and returns an absent seat as empty rather than creating it, so the read itself takes no write.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_live_view_reads_under_a_read_only_home.py:87 builds a genuinely read-only watch directory and asserts both runs return, and head-gate.log shows 19 passed EXIT=0 against base-gate.log 2 failed EXIT=1, though head-gate.log's header names the base revision 9e14c1d rather than the revision its tree carried.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three changed paths \u2014 reckon/crew/runs.py, tests/test_live_view_reads_under_a_read_only_home.py and the fragment \u2014 are inside the manifest's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_live_view_reads_under_a_read_only_home.py:96 asserts not seat.exists() after the read and line 120 asserts the stale record survives unchanged, each of which reddens when the lock acquisition is restored to its create-and-lock form, as negative-control.log records.\nSCORE fit: 19\nJUSTIFICATION fit: _probe_seat_read_only at reckon/crew/runs.py:3648 follows the module's open(rb) + _read_watch_record idiom already used at reckon/crew/runs.py:3187 and introduces no name the naming rules forbid.\nSCORE reuse: 17\nJUSTIFICATION reuse: the helper reuses watch_lock_path and _read_watch_record and extracts the lock probe project_watch_visibility already held inline; it is a fourth read-only-RB-READ seat reader beside reckon/crew_follow_commands.py:410 and reckon/crew/watch_unit.py:158, but none of those probes the advisory lock, so no owner is duplicated.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T090204446170-the-live-view-reads-under-a-read-only-home/head-gate.log:1 non-blocking: the head gate's header line names revision 9e14c1d, its base, while its tree carried the fix, so the log misstates the seat reader it measured; head-suite.log separately names d8867497f and the result is sound.\nFINDING reckon/crew/runs.py:3659 non-blocking: _probe_seat_read_only tolerates an absent seat (FileNotFoundError) but lets any other OSError from path.open(rb) \u2014 an unreadable seat, EACCES on a mode-000 file \u2014 propagate, so a read the node exists to make non-writing can still fail on a seat it cannot open.\n",
+  "review_run_id": "r-20261027T092336865870-review-of-the-live-view-reads-under-a-read-only-home-d8867497fbcb",
+  "reviewed_base_sha": "9e14c1d16894b4de59ade66b54df7f4356ddcac2",
+  "reviewed_head_sha": "d8867497fbcb08c39fe3813acee08c529a52e519",
+  "reviewed_run_id": "r-20261027T090204446170-the-live-view-reads-under-a-read-only-home",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T09:48:05.744161+00:00",
+  "total": 109
+}
