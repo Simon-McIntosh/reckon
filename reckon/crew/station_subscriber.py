@@ -33,6 +33,7 @@ from typing import Any
 
 from reckon._timestamps import parse_utc
 from reckon.crew import station_store, ticker
+from reckon.crew.follow_checkpoint import cap_history
 
 # How old the station's heartbeat may be before a subscriber says so. The
 # station beats once a tick, so this is many missed ticks rather than one slow
@@ -249,7 +250,7 @@ class StationSubscriber:
             last = self.history[-1]
             if str(last.get("kind") or "") == "format-changed":
                 return
-        capped = _cap_history(
+        capped = cap_history(
             [*self.history, row],
             now=float(at),
             max_rows=max_rows,
@@ -452,22 +453,6 @@ def _event_from_row(row: Mapping[str, Any]) -> dict[str, Any]:
     rebuilt.setdefault("observed_at", row.get("time"))
     rebuilt["station_event_id"] = int(row["id"])
     return rebuilt
-
-
-def _cap_history(
-    rows: list[dict[str, Any]],
-    *,
-    now: float,
-    max_rows: int,
-    max_seconds: float,
-) -> list[dict[str, Any]]:
-    cutoff = float(now) - float(max_seconds)
-    fresh = [row for row in rows if float(row.get("at") or 0.0) >= cutoff]
-    if max_rows == 0:
-        return []
-    if max_rows > 0 and len(fresh) > max_rows:
-        return fresh[-max_rows:]
-    return fresh
 
 
 def _lift_states(rows: Iterable[Mapping[str, Any]]) -> list[tuple[str, str]]:
