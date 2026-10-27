@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-title" content="A section can wait on a followup">
+  <meta name="plan-summary" content="The ref grammar carries slug@f-id: a section waits on one followup of another plan, blocked while it is open and ready when it resolves, and a ref to a followup that does not exist is a dangling-hard-dependency.">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s6">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-tags" content="refs,sections,dependencies,followups,roadmap">
+  <title>A section can wait on a followup — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-section-can-wait-on-a-followup" data-reckon="landed" data-when="2026-10-27">
+  <h2 id="a-section-can-wait-on-a-followup-title">A section can wait on a followup</h2>
+  <p id="a-section-can-wait-on-a-followup-change"><code>reckon/_schema.py</code> extends the one plan-ref grammar to <code>[project:]slug[#section][@followup]</code>: <code>PlanRef</code> carries a <code>followup</code> beside <code>stage</code>, so a section can declare a wait on one followup of another plan (<code>plan-section-depends-on</code> holding <code>{"s1": ["y@f-1"]}</code>) rather than on the whole section that followup belongs to. In <code>reckon/roadmap.py</code> a followup ref resolves against the target plan's own followup records: the waiting section is held while that followup reads <code>open</code> and released when it is resolved, and a ref naming a followup the target does not carry is reported as <code>dangling-hard-dependency</code> while still holding its section. Section-scoped blockers are now classified by the section that declared them rather than by the presence of a section anchor, so a followup wait never vetoes the whole plan. <code>PLAN-FORMAT.md</code>, <code>skills/reckon-edit/SKILL.md</code> and the regenerated <code>docs/_shared/plan.schema.json</code> (written by <code>write_json_schema()</code>, never hand-edited)  state the extended grammar in the same commit as the parser change, and every malformed-ref refusal names the <code>@followup</code> suffix. A ref that names both a section and a followup (<code>y#s2@f-1</code>) registers its section half as a declared wait, so prose naming <code>y#s2</code> is not reported as an undeclared wait it had in fact declared, while a followup-only ref registers none. <code>reckon/_store_section_ops.py</code> accepts the same grammar at the surface a coordinator actually writes a wait through: <code>set section_depends_on.&lt;sid&gt;</code> takes a ref naming a stage, a followup, or both, and both of its refusal messages give <code>[project:]slug[#section][@followup]</code>.</p>
+  <p id="a-section-can-wait-on-a-followup-measure">The gate reads <code>11 passed</code>, <code>EXIT=0</code> at the head and <code>10 failed, 1 passed</code>, <code>EXIT=1</code> on the base revision <code>43a85b819</code> with the new suite in place (<code>logs/head-arm4.log</code>, <code>logs/baseline-arm4.log</code>). On the base the ref does not parse: the followup assertions have no <code>PlanRef.followup</code> to read, the waiting section carries no readiness row at all, the store op refuses <code>gate-plan@c-open</code>, and the section-half helper does not exist. The one case green on both arms is the negative guard — no dangling finding for a live followup — which cannot fire on the base either.</p>
+  <p id="a-section-can-wait-on-a-followup-control">The declared mutation — a followup wait treated as satisfied whatever the followup’s status — turns the head suite red: <code>4 failed, 7 passed</code>, <code>EXIT=1</code>, with <code>test_a_section_is_blocked_while_its_followup_is_open</code>, <code>test_a_section_wait_never_holds_its_whole_plan</code>, <code>test_a_ref_to_a_followup_that_does_not_exist_is_dangling</code> and <code>test_the_store_op_accepts_a_followup_ref_and_the_roadmap_reads_it</code> (<code>logs/mutation-followup-always-satisfied.log</code>). Two further mutations were run against the repairs, one log each: classifying a followup wait as a plan blocker fails <code>test_a_section_wait_never_holds_its_whole_plan</code> alone (<code>1 failed, 10 passed</code>, <code>logs/mutation-plan-blocker.log</code>), and dropping the combined ref’s section half fails the two section-half cases (<code>2 failed, 9 passed</code>, <code>logs/mutation-section-half-dropped.log</code>). The source was restored from a copy taken before the first mutation, and the head arm was re-run at the committed tree.</p>
+</article>
+</body>
+</html>

@@ -233,7 +233,8 @@ _PROJECT_SEGMENT = r"[A-Za-z0-9][A-Za-z0-9_-]*"
 _PLAN_REF_RE = re.compile(
     rf"^(?:(?P<project>{_PROJECT_SEGMENT}):)?"
     rf"(?P<slug>{_REF_SEGMENT})"
-    rf"(?:#(?P<stage>{_REF_SEGMENT}))?$"
+    rf"(?:#(?P<stage>{_REF_SEGMENT}))?"
+    rf"(?:@(?P<followup>{_REF_SEGMENT}))?$"
 )
 
 # ``<meta>`` readers for declarations that are authored markup rather than
@@ -255,14 +256,26 @@ LINK_LIST_FIELDS = (
 
 
 class PlanRef:
-    """A parsed plan reference. ``project is None`` ⇒ local (same-project)."""
+    """A parsed plan reference. ``project is None`` ⇒ local (same-project).
 
-    __slots__ = ("project", "slug", "stage")
+    ``stage`` names a section anchor (``#s3``); ``followup`` names one
+    followup of the target plan (``@f-1``), a wait that is satisfied when that
+    followup resolves rather than when a whole section is declared done.
+    """
 
-    def __init__(self, project: str | None, slug: str, stage: str | None) -> None:
+    __slots__ = ("followup", "project", "slug", "stage")
+
+    def __init__(
+        self,
+        project: str | None,
+        slug: str,
+        stage: str | None,
+        followup: str | None = None,
+    ) -> None:
         self.project = project
         self.slug = slug
         self.stage = stage
+        self.followup = followup
 
     def is_external(self, owning_project: str = "") -> bool:
         """True when the ref points outside ``owning_project``. A qualifier
@@ -274,14 +287,19 @@ class PlanRef:
 
 
 def parse_plan_ref(ref: str) -> PlanRef | None:
-    """Parse ``[project:]slug[#stage]`` — returns ``None`` on a malformed ref
-    (empty segments, more than one ``:``, illegal characters)."""
+    """Parse ``[project:]slug[#stage][@followup]`` — returns ``None`` on a
+    malformed ref (empty segments, more than one ``:``, illegal characters)."""
     if not isinstance(ref, str):
         return None
     m = _PLAN_REF_RE.match(ref.strip())
     if m is None:
         return None
-    return PlanRef(m.group("project"), m.group("slug"), m.group("stage"))
+    return PlanRef(
+        m.group("project"),
+        m.group("slug"),
+        m.group("stage"),
+        m.group("followup"),
+    )
 
 
 # ── Plan wiring ──────────────────────────────────────────────────────────────
@@ -568,18 +586,19 @@ def section_dependency_refusals(
                     str(ref),
                     (
                         f"section_depends_on[{section!r}]: malformed plan ref "
-                        f"{ref!r} — expected [project:]slug[#section]"
+                        f"{ref!r} — expected [project:]slug[#section][@followup]"
                     ),
                 )
                 continue
-            if not parsed.stage:
+            if not parsed.stage and not parsed.followup:
                 refuse(
                     "invalid-section-dependency",
                     section,
                     str(ref),
                     (
                         f"section_depends_on[{section!r}]: ref {ref!r} names no "
-                        "target section — expected slug#section"
+                        "target section or followup — expected slug#section or "
+                        "slug@followup"
                     ),
                 )
                 continue
@@ -588,6 +607,11 @@ def section_dependency_refusals(
                 str(parsed.project) if external else owning_project, parsed.slug
             )
             if target is None:
+                continue
+            if parsed.followup:
+                # Whether the named followup exists and has resolved is read by
+                # the roadmap from the target plan's own followup records; here
+                # the ref grammar only has to accept it.
                 continue
             if parsed.stage not in declared_section_identities(target):
                 refuse(
@@ -949,11 +973,14 @@ class SectionRecord(BaseModel):
     attempts: int = Field(ge=0, strict=True, description="Tool-owned launch count")
     status: str = Field(json_schema_extra=_enum(SECTION_DECLARATION_ENUM))
     links: list[str] = Field(
-        description="Plan refs, using [project:]slug[#section]",
+        description="Plan refs, using [project:]slug[#section][@followup]",
         json_schema_extra={
             "items": {
                 "type": "string",
-                "pattern": rf"^\s*(?:{_PROJECT_SEGMENT}:)?{_REF_SEGMENT}(?:#{_REF_SEGMENT})?\s*$",
+                "pattern": (
+                    rf"^\s*(?:{_PROJECT_SEGMENT}:)?{_REF_SEGMENT}"
+                    rf"(?:#{_REF_SEGMENT})?(?:@{_REF_SEGMENT})?\s*$"
+                ),
             }
         },
     )
@@ -984,7 +1011,8 @@ class SectionRecord(BaseModel):
         for ref in value:
             if parse_plan_ref(ref) is None:
                 raise ValueError(
-                    f"links: malformed plan ref {ref!r}; expected [project:]slug[#section]"
+                    f"links: malformed plan ref {ref!r}; "
+                    "expected [project:]slug[#section][@followup]"
                 )
         return value
 

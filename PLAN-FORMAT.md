@@ -127,10 +127,11 @@ Every link-list meta (`plan-depends-on`, `plan-blocks`, `plan-informs`,
 with one grammar:
 
 ```
-ref     :=  [ project ":" ] slug [ "#" stage ]
-project :=  a key in mounts.json           (e.g. nova, norma, imas-ambix)
-slug    :=  a plan slug in that project
-stage   :=  an optional section/stage anchor
+ref      :=  [ project ":" ] slug [ "#" stage ] [ "@" followup ]
+project  :=  a key in mounts.json           (e.g. nova, norma, imas-ambix)
+slug     :=  a plan slug in that project
+stage    :=  an optional section/stage anchor
+followup :=  an optional followup id on the target plan (e.g. f-tfcv-007)
 ```
 
 - A **bare slug is a local ref** — resolved inside the owning project, exactly
@@ -138,6 +139,13 @@ stage   :=  an optional section/stage anchor
 - A **`project:`-qualified ref is an external ref** into another mounted
   project (`nova:nova-spine-refactor`). A qualifier naming the owning project
   itself reads as local.
+- A **`@followup` suffix names one followup of the target plan**, and the ref
+  is satisfied when that followup resolves rather than when a whole section
+  lands (`plan-section-depends-on` holding `{"s5": ["other-plan@f-1"]}`). It is
+  what a section wait on *one* followup needs: declaring the section that
+  followup belongs to holds the waiting section for the whole section instead.
+  A followup the target plan does not carry is reported as
+  `dangling-hard-dependency`, and the waiting section stays held.
 - Malformed refs (empty segments, two colons, spaces) are **rejected at the
   write boundary** (`validate_for_write`).
 
