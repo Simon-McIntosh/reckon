@@ -43,11 +43,21 @@
       <td>25 passed, <code>EXIT=0</code></td>
     </tr>
     <tr>
-      <td>declared mutation: restore the plan-status read</td>
+      <td>repair gate, base <code>02e72411c</code></td>
+      <td>base extraction</td>
+      <td>25 passed, <code>EXIT=0</code></td>
+    </tr>
+    <tr>
+      <td>repair gate, after</td>
+      <td>head <code>c3b642292</code></td>
+      <td>26 passed, <code>EXIT=0</code></td>
+    </tr>
+    <tr>
+      <td>declared mutation: the target plan's status stands in for its section</td>
       <td>head + mutation</td>
       <td>
-        <code>1 failed, 24 passed</code>, <code>EXIT=1</code> —
-        <code>test_section_readiness_is_the_roadmap_verdict_not_the_row_status</code>
+        <code>1 failed, 25 passed</code>, <code>EXIT=1</code> —
+        <code>test_read_plan_resolves_a_section_wait_through_the_target_plan</code>
       </td>
     </tr>
   </tbody>
@@ -56,12 +66,34 @@
 <p id="one-derivation-per-fact-outside">
   The read path's rows are built in <code>reckon/mcp.py</code>
   (<code>_resolve_plan_ref</code>), which is outside this node's write scope and
-  does not yet carry the roadmap's <code>satisfied</code> verdict. Until it
-  does, <code>read_plan</code> reaches the fallback arm of
-  <code>_section_target_satisfied</code>, which reproduces the owner's answer
-  from the row's status and declaration. The parity guard holds the projection
-  against the roadmap's verdict for the row shape the roadmap itself emits, so
-  the row enrichment lands under the guard rather than beside it.
+  does not yet carry the roadmap's <code>satisfied</code> verdict. The
+  projection therefore resolves the target itself rather than trusting the
+  row's status: <code>_section_target_plan</code> reads the target plan through
+  the row's own scope, and <code>_section_target_satisfied</code> asks the
+  roadmap's <code>_section_satisfied</code> over that plan's declared section
+  identities. A ref to a section the target never declares holds, whatever the
+  plan's status says; a target that cannot be read holds too, because an
+  unobserved target is no evidence that it landed.
+</p>
+
+<p id="one-derivation-per-fact-profile">
+  The reviewer's finding was correct and is answered by
+  <code>c3b642292</code>: the earlier change added a branch for a
+  row-carried verdict that no production row reaches, leaving the status
+  reading in place. The guard now runs the production path — rows built by
+  <code>_section_dependency_rows</code> from two authored plans, one terminal
+  with an undeclared section and one open with a declared-done section — so a
+  regression to the status reading fails a test rather than an argument.
+</p>
+
+<p id="one-derivation-per-fact-conflict">
+  One existing test now contradicts this rule and is outside this node's write
+  scope: <code>tests/test_section_edge_stays_off_plan_blocking.py</code>
+  <code>test_satisfied_section_wait_leaves_no_section_row</code> asserts that a
+  wait on a section a shipped plan never declares reports no row. The roadmap
+  holds that edge (<code>_section_scoped_edges</code> requires the section to be
+  declared), so the assertion encodes the status reading being removed and needs
+  the coordinator's dispatch to update it.
 </p>
 
 </section>
