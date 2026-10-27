@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="45">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -291,8 +291,9 @@
     resume stamp (<code>recovery_review_dispatch.review_settle_seconds_remaining</code>), and a resumed worker
     that writes nothing produces no change at the moment the window passes.</p>
     <p>Today the settle reader, <code>review_settle_seconds_remaining</code>, takes only the sweep's own
-    <code>auto_resume</code> stamp. Every resume, the advice door's included, already records the resume
-    instant through <code>resume_superseded_head</code>, and <code>_latest_resume_at</code> in the same module
+    <code>auto_resume</code> stamp. Every resume of a run whose tree yields a head, the advice door's
+    included, already records the resume instant through <code>resume_superseded_head</code> (a run with no
+    readable head has no head to review at, so there is nothing for its settle window to protect), and <code>_latest_resume_at</code> in the same module
     already returns the newer of the two stamps. This section makes the settle reader use
     <code>_latest_resume_at</code>, so a run resumed by a coordinator's <code>crew resume --advice</code> waits
     the same settle window an automatic resume does (old §81). The advice door writes nothing new, and
@@ -300,8 +301,13 @@
     <p>A review is already dispatched once per run and head whatever the subscriber count, because
     <code>dispatch_review_for_run</code> refuses a pair already in flight. What the move buys is the sweep
     itself: today each subscriber runs <code>resumption.sweep</code>, and its reads of the fleet, on its own
-    cadence. Done when tests show that with three subscribers attached for one session, the sweep runs once
-    per change in the station and in no subscriber; a run resumed by advice is not reviewed until its settle
+    cadence. The follower's drain settle moves with it: today <code>_check_settle</code> samples the population
+    every <code>FOLLOWER_SETTLE_SAMPLE_SECONDS</code> through <code>_population_has_live_work</code>, which lists
+    and opens the live pointer directory. The station records each project's has-live-work reading in its
+    station table on every tick, and the subscriber settles on that reading. Done when tests show that with
+    three subscribers attached for one session, the sweep runs once per change in the station and in no
+    subscriber; a subscriber settles when the station's reading for its project turns to no live work, and
+    not before; a run resumed by advice is not reviewed until its settle
     window has passed; and a resumed run whose worker writes nothing after the resume is reviewed once the
     window has passed, with no further change to its files. Measure: a 60 s
     <code>strace -f -e trace=openat,stat,newfstatat</code> of a running settle-aware subscriber (the process
