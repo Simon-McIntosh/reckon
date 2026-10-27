@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:2364",
+    "reckon/flight.py:1439"
+  ],
+  "completed_at": "2026-10-27T10:49:18.051Z",
+  "dispatched_at": "2026-10-27T10:35:19Z",
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": 304,
+      "severity": "non-blocking",
+      "text": "a present declaration whose value is null returns [] as absence rather than being refused, so a project layer writing `worker_mcp_servers:` (YAML null, which the schema view also pops so the strict read cannot catch it) silently names no server \u2014 the same silent no-op the node exists to remove, and the goal says any value that is not a list is refused. The parametrised refusal set at tests/test_worker_mcp_servers.py:94 does not include a null declaration."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit 635ff0d94 against its base d24d71b5b: four files, 50 insertions and 24 deletions, tightening the reader's shape check to a list of strings, parametrising both refusal tests, and updating the fragment's gate figure to 100 passed.",
+    "done_when": "the done_when names tests/test_worker_mcp_servers.py, a resolve that seeds imas-cx and a refusal of a bare string naming the key; this commit parametrises both over MALFORMED_DECLARATIONS (bare-string, mapping, tuple, list-holding-a-non-string) at tests/test_worker_mcp_servers.py:94, and the manifest's gate pair runs tests/test_flight.py with it: 100 passed at head against 91 at base.",
+    "goal": "the node's goal is that worker_mcp_servers is a reckon-owned flight key a project can declare, refusing a value that is not a list; this commit completes the refusal half at reckon/_worker_fence.py:301, which now accepts only a list whose every entry is a string, where the base admitted any non-string iterable.",
+    "manifest": "read; it records 16 passed at head against 7 at base on tests/test_worker_mcp_servers.py and 100 against 91 with tests/test_flight.py, names every log path, and its negative-control.log carries the declared mutation, FAILED test_a_project_naming_its_servers_resolves_and_seeds_them and EXIT=1.",
+    "write_paths": "read the dispatch scope in the reviewed run's prompt.txt:69-74 and the manifest's declared paths; the four paths changed by d24d71b5b..635ff0d94 (reckon/flight.py, reckon/_worker_fence.py, tests/test_worker_mcp_servers.py, the evidence fragment) are all inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that worker_mcp_servers is a reckon-owned flight key a project can declare, refusing a value that is not a list; this commit completes the refusal half at reckon/_worker_fence.py:301, which now accepts only a list whose every entry is a string, where the base admitted any non-string iterable.\nVERDICT done_when: the done_when names tests/test_worker_mcp_servers.py, a resolve that seeds imas-cx and a refusal of a bare string naming the key; this commit parametrises both over MALFORMED_DECLARATIONS at tests/test_worker_mcp_servers.py:94, and the manifest's gate pair runs tests/test_flight.py with it: 100 passed at head against 91 at base.\nVERDICT write_paths: read the dispatch scope in the reviewed run's prompt.txt:69-74; the four paths changed by d24d71b5b..635ff0d94 are all inside them.\nVERDICT manifest: read; it records 16 passed at head against 7 at base on tests/test_worker_mcp_servers.py and 100 against 91 with tests/test_flight.py, and negative-control.log carries the declared mutation, FAILED test_a_project_naming_its_servers_resolves_and_seeds_them and EXIT=1.\nVERDICT diff: read commit 635ff0d94 against its base d24d71b5b: four files, 50 insertions and 24 deletions, tightening the reader's shape check to a list of strings and parametrising both refusal tests.\nCALL_SITES: reckon/_backends.py:2364, reckon/flight.py:1439\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_worker_fence.py:301 now refuses a mapping, a tuple and a list holding a mapping or non-string that the base admitted, completing the goal's refusal half; only a present null at line 304 escapes.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head.log and gate-pair-head.log each carry their revision, tree, literal command and an EXIT= line, and negative-control.log shows the FAILED id, so the done_when's gate is measured and recorded rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all four paths in commit 635ff0d94 sit inside the declared write paths at the reviewed run's prompt.txt:69-74, and the diff carries no change the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_worker_mcp_servers.py:275 fails for the mapping and tuple params if the reader's `not isinstance(declared, list)` at reckon/_worker_fence.py:301 is reverted to the base's Iterable check, so the guard reddens on the exact regression this commit repairs.\nSCORE fit: 19\nJUSTIFICATION fit: the tightened check and its tests follow the surrounding style of reckon/_worker_fence.py:275 and introduce no plan label or ticket reference.\nSCORE reuse: 19\nJUSTIFICATION reuse: the shape check stays in the single reader at reckon/_worker_fence.py:290 and reckon/flight.py:783 delegates to it, extending the flight per-key validator family rather than adding a second capability.\nFINDING reckon/_worker_fence.py:304 non-blocking: a present null declaration is read as absence rather than refused, so a `worker_mcp_servers:` typo still silently names no server, and the parametrised refusal set does not cover it.",
+  "review_run_id": "r-20261027T101722589790-review-of-a-project-can-name-its-worker-mcp-servers-635ff0d947ad",
+  "reviewed_base_sha": "d24d71b5bfb57656d7706edccd015ca061c13729",
+  "reviewed_failure_derivation": "baseline_suite (revision 9e14c1d1, gate-base.log) and after_suite (revision 635ff0d94, gate-head.log) in the reviewed manifest each record completed=true, exit_status=0, failure_count=0 and failure_ids=[], so the change adds no failing test id; the gate pair logs corroborate 91 passed at base and 100 at head.",
+  "reviewed_head_sha": "635ff0d947ade56e39d98b624d7636aec73c636b",
+  "reviewed_run_id": "r-20261027T090503642997-a-project-can-name-its-worker-mcp-servers",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T10:57:16.842734+00:00",
+  "total": 115
+}
