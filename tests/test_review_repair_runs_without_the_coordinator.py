@@ -251,3 +251,31 @@ def test_a_repair_moves_the_head_and_the_disposition_still_lands(
     assert result.exit_code == 0, result.output
     stored = json.loads(review_file.read_text(encoding="utf-8"))
     assert stored[review_module.FINDING_DISPOSITIONS_KEY]["0"]["kind"] == "folded"
+
+
+def test_the_worker_prompt_asks_for_a_rubric_self_check() -> None:
+    """The invariant prefix carries the contract, on every node and project."""
+    from reckon.crew import prompts
+
+    assert "CONTRACT — YOUR RUBRIC SELF-CHECK BEFORE DELIVERY" in (
+        prompts.INVARIANT_PROMPT_PREFIX
+    )
+    assert "`rubric.<dimension>: <state>`" in prompts.INVARIANT_PROMPT_PREFIX
+
+
+def test_a_rubric_self_check_reads_what_the_manifest_records() -> None:
+    """Each review dimension is answered by its own line, and silence is not a pass."""
+    from reckon.crew import prompts
+
+    dimensions = review_module.REVIEW_DIMENSIONS
+    answered = "\n".join(f"rubric.{dimension}: answered" for dimension in dimensions)
+    assert prompts.missing_rubric_self_checks(answered, dimensions) == []
+
+    partial = answered.replace(f"rubric.{dimensions[0]}: answered\n", "")
+    assert prompts.missing_rubric_self_checks(partial, dimensions) == [dimensions[0]]
+
+    # A heading with no state records nothing, so it is reported as absent.
+    empty = answered.replace(
+        f"rubric.{dimensions[-1]}: answered", f"rubric.{dimensions[-1]}:"
+    )
+    assert prompts.missing_rubric_self_checks(empty, dimensions) == [dimensions[-1]]

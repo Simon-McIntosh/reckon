@@ -58,6 +58,27 @@ FALSIFIABLE_EVIDENCE_CONTRACT = (
     "  tree, so an unfilled field reads as no work."
 )
 
+# The rubric self-check contract. A delivery is judged against a rubric of
+# dimensions, and a worker that records its own reading of each one before it
+# delivers gives a reviewer the same answers while the work is still in the
+# worker's hands, when a gap costs one more turn rather than a whole round.
+# The manifest is the store because the manifest is the record a coordinator
+# and a repair already read, so the self-check travels with the delivery rather
+# than in a channel nobody inspects. An absent line is reported as absent, not
+# as a passing verdict: a rubric that credits silence is one that always
+# passes. Kept as a standalone constant so a test can compose with it masked
+# out and diff against the live prompt, which proves the addition is removable
+# and scoped.
+RUBRIC_SELF_CHECK_CONTRACT = (
+    "CONTRACT — YOUR RUBRIC SELF-CHECK BEFORE DELIVERY\n"
+    "  Before you deliver, record one line per review dimension in your manifest:\n"
+    "  `rubric.<dimension>: <state>`. State each dimension against the work you\n"
+    "  are about to deliver rather than against what you intended to do. Write\n"
+    "  `rubric.<dimension>: answered` for a dimension you have answered; for one\n"
+    "  you have not, write what is missing. A dimension with no line is reported\n"
+    "  as no self-check at all, never as a passing one."
+)
+
 # The write-fence rule, embedded in every composed prompt beside the two
 # contracts above. It lives here for the same reason its siblings do: the
 # prompt embeds no protocol reference by design, so a rule carried only by a
@@ -437,6 +458,8 @@ def _invariant_prompt_prefix() -> str:
         + "\n\n"
         + FALSIFIABLE_EVIDENCE_CONTRACT
         + "\n\n"
+        + RUBRIC_SELF_CHECK_CONTRACT
+        + "\n\n"
         + FENCE_WRITE_GRANT_CONTRACT
         + "\n\nNODE     "
     )
@@ -444,6 +467,28 @@ def _invariant_prompt_prefix() -> str:
 
 INVARIANT_PROMPT_PREFIX = _invariant_prompt_prefix()
 INVARIANT_PROMPT_BOUNDARY = len(INVARIANT_PROMPT_PREFIX)
+
+# A rubric self-check line, matched on the manifest text. The state must carry
+# something: an empty value is the same silence as an absent line, and reading
+# it as a check would credit the worker for a heading.
+_RUBRIC_SELF_CHECK_LINE = re.compile(
+    r"^rubric\.([A-Za-z0-9_.-]+):[ \t]*\S", re.MULTILINE
+)
+
+
+def missing_rubric_self_checks(
+    manifest_text: str, dimensions: Iterable[str]
+) -> list[str]:
+    """Return the dimensions a manifest records no rubric self-check for.
+
+    The reader a delivery's reviewer consults, so the same function answers for
+    the prompt that asks for the lines and for anyone auditing a delivered
+    manifest. A dimension whose line is absent or carries no state is reported;
+    the call never turns silence into a pass.
+    """
+    recorded = set(_RUBRIC_SELF_CHECK_LINE.findall(manifest_text or ""))
+    return [dimension for dimension in dimensions if dimension not in recorded]
+
 
 # ── Prompt composition ──────────────────────────────────────────────────────
 
