@@ -2431,6 +2431,26 @@ ADMISSION_REVIEW_UNITS: ContextVar[Iterable[str] | None] = ContextVar(
 )
 
 
+def plan_review_units(section: str) -> set[str]:
+    """The plan units one dispatch of ``section`` reads.
+
+    The unit is the section itself and the document unit, which carries the
+    plan's decisions, gates and dependencies: a change to either is a change
+    this dispatch must have been reviewed against, while a section elsewhere
+    in the plan is another dispatch's business. Every spelling of a section
+    resolves to one identity through :func:`reckon._plan_html.section_record_id`,
+    which is the identity a stored review records its coverage under. A
+    dispatch naming no section reads the plan as a whole, so its caller asks
+    for no narrowing.
+    """
+    from reckon._plan_html import DOCUMENT_UNIT, section_record_id
+
+    units = {DOCUMENT_UNIT}
+    if str(section).strip():
+        units.add(section_record_id(section))
+    return units
+
+
 def _plan_review_exempt(node: TaskNode) -> bool:
     """Whether a node is exempt from the plan-review gate.
 
@@ -2539,15 +2559,24 @@ def require_plan_reviewed(
     nothing to report.
 
     ``units`` narrows the coverage judgment to the units the caller's request
-    actually reads — at admission, the request's own section and the document
-    unit that carries the plan's decisions, gates and dependencies. A plan edit
-    elsewhere then no longer strands that request. A caller naming no units
-    keeps the whole-plan check, which is what a direct dispatch asks: an
-    authored edit anywhere in the plan is that dispatch's business.
+    actually reads — the request's own section and the document unit that
+    carries the plan's decisions, gates and dependencies. A plan edit elsewhere
+    then no longer strands that request. A dispatch of a section narrows to its
+    own units even when the caller names none, so another section's uncovered
+    edit does not refuse it. A dispatch naming no section keeps the whole-plan
+    check, because it reads the plan as a whole. When no stored review covers
+    any unit of the plan, the narrowing is set aside and the refusal names the
+    whole content the plan is owed a review of.
     """
 
     if units is None:
         units = ADMISSION_REVIEW_UNITS.get()
+    if units is None and str(getattr(node, "section", "") or "").strip():
+        # A dispatch of one section reads that section and the document unit,
+        # so an authored edit to a section it does not read no longer refuses
+        # content a review does cover. The units a caller names win over this
+        # default, and a dispatch naming no section keeps the whole-plan check.
+        units = plan_review_units(node.section)
     scope = None if units is None else {str(unit) for unit in units}
     if allow_unreviewed or _plan_review_exempt(node):
         return None
@@ -2607,6 +2636,11 @@ def require_plan_reviewed(
         project, node.plan, plan=resource.path
     )
     record = plan_review.read_plan_review(project, node.plan, plan=resource.path)
+    if scope is not None and not _records:
+        # No stored review covers any of the plan, so the review this dispatch
+        # is owed is a review of all of it, and the refusal names every unit
+        # uncovered rather than only the ones this request reads.
+        scope = None
     if scope is not None:
         # Only the units this caller reads decide its hold. A unit the plan
         # carries and the review never read is another request's business.
@@ -2641,9 +2675,10 @@ def require_plan_reviewed(
             if finding not in unanswered
         ]
     # A finding's identity names no unit, so an unanswered one cannot be
-    # attributed to the caller's scope; the narrowed admission check answers
-    # only whether the units it reads are covered.
-    if unanswered and scope is None:
+    # attributed to the caller's scope: narrowing the coverage judgment to the
+    # units a request reads says nothing about whether the review that carried
+    # the finding was read, so the refusal stands whatever the scope.
+    if unanswered:
         return _plan_review_verdict(
             enforce,
             f"the review of plan {node.plan!r} leaves {len(unanswered)} "

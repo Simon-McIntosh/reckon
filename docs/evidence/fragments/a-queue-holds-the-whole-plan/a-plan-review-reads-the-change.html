@@ -1,0 +1,92 @@
+<section id="a-plan-review-reads-the-change-landing">
+  <h2>A plan review reads the change, and the gate holds only what changed</h2>
+
+  <p><strong>What changed.</strong> A composed plan review no longer re-reads the
+  whole plan, and one uncovered section no longer refuses the dispatch of every
+  other section. Two mechanisms carry it.
+
+  <p><strong>The review is given the change.</strong> A stored review records the
+  plan commit that carried the bytes it read:
+  <code>plan_commit_for</code> in <code>reckon/crew/plan_review.py</code> resolves
+  it from the reviewed blob with <code>git log --find-object</code> at the plan
+  path, and <code>write_review_sidecar</code> writes it into the delivery
+  sidecar, which
+  <code>delivered_report_record</code> carries onto the stored record. The next
+  composed review's scope (<code>review_scope</code>) then carries three blocks
+  and nothing else: the changed lines of each unit the review is asked about,
+  taken between that commit's text and the file as it stands; the full text of
+  each uncovered unit; and the earlier findings with their answers, an
+  unanswered one now shown as <code>(unanswered)</code> rather than dropped.
+
+  <p>A plan is authored with a section's heading, its
+  <code>&lt;section data-id&gt;</code> element and its prose each on their own
+  line, and only the element names the section, so filtering a whole-file diff
+  by the unit's identity keeps an empty element and drops every word the unit
+  says. <code>_unit_lines</code> instead reads each unit's own lines out of the
+  plan text by the structural spans <code>_plan_html.plan_headings</code>
+  already attributes prose with, and <code>_diff_for_units</code> compares a
+  unit's lines as reviewed with its lines now
+  (<code>difflib.unified_diff</code>), so the block carries the change and no
+  other unit's text.
+
+  <p><strong>The gate holds only the section dispatched.</strong>
+  <code>require_plan_reviewed</code> in <code>reckon/crew/routing.py</code>
+  narrows to <code>plan_review_units(node.section)</code> — the section itself
+  and the document unit that carries decisions, gates and dependencies — when a
+  caller names no units, so an authored edit to a section this dispatch does not
+  read no longer refuses content a review does cover. A dispatch naming no
+  section keeps the whole-plan check, because it reads the plan as a whole.
+  When no stored review covers any unit of the plan, the narrowing is set aside
+  and the refusal names the whole content the plan is owed a review of, so a
+  plan with no review at all still reads as unreviewed rather than as one
+  section's debt.
+
+  <p><strong>Measure.</strong> The gate command
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_plan_review_reads_the_change.py</code> reports
+  <code>4 passed</code>, <code>EXIT=0</code>. The nine test files importing
+  <code>reckon.crew.routing</code> and <code>reckon.crew.plan_review</code> report
+  <code>95 passed</code>, <code>EXIT=0</code> at both the base revision
+  <code>94e9068e0</code> and the head, so the change adds no failure to the
+  importer arms. The negative control removes the per-section narrowing
+  (<code>require_plan_reviewed</code> falls back to the plan-wide gate) and the
+  unedited-section arm fails: <code>1 failed, 3 passed</code>,
+  <code>EXIT=1</code>, the failure being
+  <code>test_unedited_section_dispatches_while_another_is_uncovered</code>, whose
+  refusal reads <em>uncovered units: b</em> for a dispatch of section
+  <code>a</code>.
+
+  <p><strong>What the test shows.</strong> A review composed after one section is
+  edited carries that section's diff line and full text, no other section's
+  text, and the earlier finding with its answer; the stored record names the
+  commit it read; a dispatch of the unedited section succeeds while the edited
+  one is uncovered; a dispatch of the edited section is refused until a review
+  covers it, and released by the review that does. The fixture is authored the
+  way the plan writer emits one — heading, section element and prose on
+  separate lines — so a filter keyed on the section element alone is measured
+  against the shape real plans have.
+
+  <p><strong>Repair: finding fdfadd51963.</strong> The first version filtered a
+  whole-file diff for lines naming a unit's <code>data-id</code>. Measured on
+  the plan this section belongs to, an edit to §19's prose produced a two-line
+  diff and the filter kept zero content lines, so the reviewer was handed a
+  block of headers. The reproduction: <code>git diff</code> of the file after a
+  one-word change to the section's first paragraph keeps
+  <code>two content lines</code>; the marker filter keeps
+  <code>0</code>. With <code>_unit_lines</code> and the per-unit comparison the
+  same edit keeps <code>2</code> content lines, carries
+  <code>eight read-backs</code> (the edit), and returns an empty block for the
+  neighbouring unit <code>s20</code>.
+
+  <p><strong>Second repair: the unanswered finding still refuses.</strong>
+  Narrowing the coverage judgment also suppressed the unanswered-finding
+  refusal, because that check was gated on there being no scope. Six
+  plan-review tests went red at once, five of them on
+  <code>DID NOT RAISE PlanReviewMissingError</code>. A finding's identity names
+  no unit, so it cannot be attributed to the scope a request reads, and whether
+  the review that carried it was read is a property of the review rather than of
+  the unit — the refusal now stands whatever the scope. Measured: the six fail
+  with the narrowed gate restored (<code>6 failed</code>, <code>EXIT=1</code>)
+  and pass at the repair head (<code>6 passed</code>, <code>EXIT=0</code>);
+  thirteen plan-review test files report <code>132 passed</code>.
+</section>
