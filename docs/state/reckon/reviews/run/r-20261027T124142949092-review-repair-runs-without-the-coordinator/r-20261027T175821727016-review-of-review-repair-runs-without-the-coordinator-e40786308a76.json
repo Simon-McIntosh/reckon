@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T18:18:01.127Z",
+  "dispatched_at": "2026-10-27T18:00:55Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": 1506,
+      "severity": "blocking",
+      "text": "root=repository changes which tree the descent reads (the run's worktree rather than the main checkout where the landed record lives); reproduced: descent from the reviewed run's worktree returns no record while the same call against /home/ITER/mcintos/Code/reckon returns the landed record at reviews/run/<run>/r-...-4d29026493fd.json, so a hand-resumed repair is refused as before the fix."
+    },
+    {
+      "file": "tests/test_review_repair_runs_without_the_coordinator.py",
+      "line": 123,
+      "severity": "non-blocking",
+      "text": "the fixture stores the committed record into the same repository it searches, so the descent arm cannot fail on a wrong-tree lookup and passes on a layout production never has."
+    },
+    {
+      "file": "tests/test_a_finding_says_whether_it_blocks.py",
+      "line": 197,
+      "severity": "non-blocking",
+      "text": "the expected id is derived with the same repair.finding_id the store stamps with (also tests/test_review_scoring.py:284 and tests/test_crew_dispose_answers_a_figure_finding.py:269), so a constant-returning id function would leave all three green."
+    },
+    {
+      "file": "manifest.md",
+      "line": 30,
+      "severity": "non-blocking",
+      "text": "baseline_suite/after_suite cover 5c41e9e07 -> 4d2902649 and no gate log names the reviewed head e40786308; the importer logs cited at manifest.md:22 carry no revision, tree or command header."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": 1436,
+      "severity": "non-blocking",
+      "text": "the new enumeration duplicates the committed run-directory walk at promotion_checks.py:2655-2672 rather than extending an owner."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the review covers the single commit 4d2902649..e40786308, which replaces _records_for_run_both_stores with _committed_records_for_run in reckon/crew/review_records.py:1436 so a staging round keyed to another revision is refused again; the mechanism duplicates a production read from a tree that is not the one holding the record (finding below).\nVERDICT done_when: the reviewed node's done_when asks that a run repaired by a hand resume stay reviewable; the landed change keeps that only for a record already in the project's committed tree, and its own arm (tests/test_review_repair_runs_without_the_coordinator.py:105) now stores the record into the same repository it searches, so the arm passes on a layout production does not have.\nVERDICT write_paths: the node's declared write paths are docs/evidence/fragments/a-queue-holds-the-whole-plan/review-repair-runs-without-the-coordinator.html, reckon/crew/review_records.py and the five test files named in this dispatch; every path in e40786308 is one of them and nothing else changed.\nVERDICT manifest: read the reviewed run's manifest.md; it records status complete and commit e40786308, but baseline_suite (manifest.md:30) and after_suite (manifest.md:31) name 5c41e9e07 and 4d2902649, and gate-head.log is headed b9e421aea, so no gate log in the run directory names the reviewed head.\nVERDICT diff: read e40786308 commit by commit against 4d2902649; it replaces one record-enumeration helper, passes root=repository to committed_review_root at reckon/crew/review_records.py:1506, drops the base_dir parameter from stored_review_descending_from, adds one staging-refusal arm, and derives the stamped finding id in three test files.\nCALL_SITES: reckon/crew_run_commands.py:727 (the dispose command's descent call, passing repository=tree), reckon/crew/review_records.py:1506 (the introduced root argument)\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: the committed-only rule at reckon/crew/review_records.py:1436 is right and pins the regression, but the same call also changes which tree is read and thereby loses the review the descent exists to find (reckon/crew/review_records.py:1506).\nSCORE evidence: 12\nJUSTIFICATION evidence: the recorded pair baseline-suite.log (11 passed, EXIT=0 at 5c41e9e07330cf2d0f28a5ea0bb58905e82baf3f) and after-suite.log (13 passed, EXIT=0 at 4d2902649) stops one commit short of the reviewed head, and the importer logs the manifest cites (manifest.md:22) carry no revision, tree or command header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in e40786308 lies inside the declared grant and the evidence fragment at docs/evidence/fragments/a-queue-holds-the-whole-plan/review-repair-runs-without-the-coordinator.html is appended rather than rewritten.\nSCORE durability: 13\nJUSTIFICATION durability: the new arm at tests/test_review_repair_runs_without_the_coordinator.py:173 reddens if the both-stores reader returns, but the descent arm at tests/test_review_repair_runs_without_the_coordinator.py:123 writes the record into the very repository it then searches, so it cannot fail on the root regression at reckon/crew/review_records.py:1506.\nSCORE fit: 18\nJUSTIFICATION fit: _committed_records_for_run at reckon/crew/review_records.py:1436 follows the module's reader shape and its docstring carries no plan, ticket or version identifier.\nSCORE reuse: 15\nJUSTIFICATION reuse: promotion_checks.py:2655-2672 (_committed_round_identities-style enumeration of committed_root/run/<id>/*.json) already walks the same directory for the same run, and the new helper at reckon/crew/review_records.py:1436 re-implements that walk instead of extending it.\nFINDING reckon/crew/review_records.py:1506 blocking: passing root=repository to committed_review_root changes which tree the descent reads \u2014 the run's worktree instead of the mounts-registered main checkout every other committed reader uses (review_records.py:583, recovery_memo.py:402, promotion_checks.py:596) \u2014 and the landed review is written to the main checkout, so for a live run the descent returns nothing; reproduced against this run's own data at e40786308: stored_review_descending_from('reckon', 'r-20261027T124142949092-review-repair-runs-without-the-coordinator', 'e40786308...', repository=<the run's worktree>) returned (None, None, '') while the same call with repository='/home/ITER/mcintos/Code/reckon' returned the landed record at .../reviews/run/<run>/r-...-4d29026493fd.json, so a hand-resumed repair is refused exactly as it was before the fix; a 2204-vs-2199 count of docs/state/reckon/reviews/run confirms the record is absent from the worktree and present in the main checkout.\nFINDING tests/test_review_repair_runs_without_the_coordinator.py:123 non-blocking: _store_at writes the committed record into the same repository it hands the reader as `repository`, so the fixture cannot distinguish a committed-tree rule from a wrong-tree lookup and passes on a layout production never has, which is why the blocking defect above is invisible to the node's own gate.\nFINDING tests/test_a_finding_says_whether_it_blocks.py:197 non-blocking: the expected id is computed with repair_module.finding_id from the same value the store is handed, so an id function that regressed to a constant would leave this assertion, tests/test_review_scoring.py:284 and tests/test_crew_dispose_answers_a_figure_finding.py:269 green; the assertions do catch an omitted stamp, which is the defect they were added for.\nFINDING manifest.md:30 non-blocking: the recorded baseline_suite/after_suite pair is the earlier round's (5c41e9e07 -> 4d2902649) and no gate log in the run directory is headed at the reviewed head e40786308, so the run's evidence does not measure the change this review reads.",
+  "review_run_id": "r-20261027T175821727016-review-of-review-repair-runs-without-the-coordinator-e40786308a76",
+  "reviewed_base_sha": "4d29026493fde7fe028f087443b16ffc4e7bb5d3",
+  "reviewed_head_sha": "e40786308a767b7a3de1faa2c1a74ff157d90a9a",
+  "reviewed_run_id": "r-20261027T124142949092-review-repair-runs-without-the-coordinator",
+  "scores": {
+    "durability": 13,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 11,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T18:20:46.147905+00:00",
+  "total": 88
+}
