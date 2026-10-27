@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;,&quot;the-monitor-reads-each-fact-once#s8&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="79">
+<meta name="plan-version" content="81">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -268,7 +268,7 @@
     still writes its checkpoint under <code>runs.follower_dir</code> each time it draws a row must fail the trace measure.</p>
 
     <h2 id="s9">§9 — Obligations and hooks read the station</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
     <p>The station computes each session's obligations once per change into its <code>obligations</code>
     table, each with its remedy (old §87), and every unreconciled run is one. The obligations hook
     (<code>reckon/hooks/coordinator_obligations.py</code>) and <code>crew view obligations</code> query the
@@ -484,7 +484,10 @@
     <div class="r-comment-body"><p>Reviewed run r-20261027T042852990093-obligations-read-the-station at efa4d1237 against base 20e65d881: one blocking finding (station_obligations.py:263 freezes the exported heartbeat whenever the fleet is unchanged, so an off-node reader reports a healthy quiet station stale after 120 s; demonstrated at t0+121 s returning export None, heartbeat t0 and read_station_answer stale=True age=121), scores goal_fidelity 11 evidence 13 scope_discipline 19 durability 13 fit 16 reuse 5, added_failure_count 0 against the reviewed run's own gate logs.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T132905430962-review-of-obligations-read-the-station-7778eecd3471" data-who="reckon-build" data-when="2026-10-27T13:44:23.580Z">
-    <div class="r-comment-body"><p>Reviewed r-20261027T042852990093-obligations-read-the-station at 7778eecd3471 against base 20e65d881: goal fidelity 19, evidence 16, scope 20, durability 17, fit 17, reuse 19; two non-blocking findings (station.py:207 exports before the heartbeat is written so a starting station reads stale for up to 90 s; tests/:195 is a vacuous assertion after the resolver began delegating), added_failure_count 0 against the reviewed run&#x27;s own gate logs.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261027T042852990093-obligations-read-the-station at 7778eecd3471 against base 20e65d881: goal fidelity 19, evidence 16, scope 20, durability 17, fit 17, reuse 19; two non-blocking findings (station.py:207 exports before the heartbeat is written so a starting station reads stale for up to 90 s; tests/:195 is a vacuous assertion after the resolver began delegating), added_failure_count 0 against the reviewed run's own gate logs.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
+    <div class="r-comment-body"><p>The station computes each live session&#x27;s obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
 </div>
 </section>
 </main>
