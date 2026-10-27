@@ -38,11 +38,12 @@
   content review in both directions. The declared negative control — compute the
   expected paths from the reviewer's directory again — fails all four arms.
 
-  <p><strong>One out-of-scope fixture.</strong>
-  <code>tests/test_figure_review.py</code> builds its in-flight fixture with
+  <p><strong>One fixture followed the corrected layout.</strong>
+  <code>tests/test_figure_review.py</code> built its in-flight fixture with
   <code>runs.run_dir("review-run")</code>, the reviewer's own directory, so its
-  figure arm asserts the layout this change corrects. It is outside this node's
-  write scope and is recorded for the coordinator; the correction is
-  <code>review_directory = runs.run_dir(RUN_ID)</code> in
-  <code>test_in_flight_review_reads_rubric_from_its_record_path</code>.
+  figure arm asserted the spelling this change corrects. It now composes the
+  directory from the reviewed run's own record
+  (<code>runs.run_dir(project["record"]["run_id"])</code>) and keeps calling
+  <code>run_review_record_paths</code>, so the fixture and the matcher name one
+  directory rather than restating the layout twice.
 </section>
