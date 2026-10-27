@@ -35,14 +35,22 @@
   whole plan counts for every unit when its fingerprint matches — so two
   reviews of one edit burst are the most a unit may spend. A third is refused,
   naming the open findings its author must carry or decline. A fresh edit is a
-  new digest, which starts the count again.
+  new digest, which starts the count again. The command that composes a
+  whole-plan review consults it (<code>compose_burst_refusal</code>, called from
+  the review command's wrapper in <code>reckon/crew_run_commands.py</code>), so
+  a third composition is refused before anything is dispatched; a dry run is
+  left alone, so a caller can inspect the refusal before hitting it.
 
   <p><strong>The surface.</strong> <code>reckon crew review --answer FINDING
   --carried</code> is the third answer beside <code>--acted</code> and
   <code>--declined</code>. Its answer branch lives in
-  <code>reckon/crew_run_commands.py</code> and calls
-  <code>plan_review.answer_finding</code>, which resolves the covering review
-  that raised the finding exactly as the existing answer branch does.
+  <code>reckon/crew_run_commands.py</code> and runs the review verb's own answer
+  branch with the action named (<code>plan_review.answering_as</code>), so the
+  covering-review resolution — the delivered-store read, the design-review
+  fallback and the two-review ambiguity refusal — exists once. A carried answer
+  joins the same heading on a later dispatch rather than being dropped because
+  the heading is already there: the clause is keyed on the finding ids the
+  done-when already names.
 
   <p><strong>Measure.</strong> The gate command
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
