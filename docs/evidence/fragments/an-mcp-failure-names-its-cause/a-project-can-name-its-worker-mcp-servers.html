@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-mcp-failure-names-its-cause">
+  <meta name="plan-title" content="A project can name its worker MCP servers">
+  <meta name="plan-evidence-for" content="reckon:an-mcp-failure-names-its-cause">
+  <meta name="plan-verifies" content="reckon:an-mcp-failure-names-its-cause#s11">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="flight-config,worker-mcp-servers,schema-refusal">
+  <title>A project can name its worker MCP servers — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-project-can-name-its-worker-mcp-servers" data-reckon="landed" data-when="2026-10-27">
+  <h2>A project can name its worker MCP servers</h2>
+  <p id="a-project-can-name-its-worker-mcp-servers-outcome"><code>worker_mcp_servers</code> is a reckon-owned flight key: <code>reckon/flight.py</code>
+  holds it out of the generated model in <code>_schema_view</code> and validates it in <code>_validate_worker_mcp_servers</code>,
+  so a project layer naming <code>worker_mcp_servers: [imas-cx]</code> resolves under the strict authoring read with no
+  unknown key and no schema refusal, and a launch seeds a run home whose settings enable <code>imas-cx</code>.</p>
+  <p id="a-project-can-name-its-worker-mcp-servers-refusal">A declaration that is not a list is refused with a message naming the
+  key: the resolution raises <code>&lt;override&gt;: worker_mcp_servers: must be a list of MCP server names</code>, and the
+  reader <code>_declared_worker_mcp_servers</code> in <code>reckon/_worker_fence.py</code> raises
+  <code>WorkerMcpServersError</code> rather than reading a bare string as one server per character. An absent key still
+  names no server.</p>
+  <p id="a-project-can-name-its-worker-mcp-servers-gate">Gate on <code>tests/test_worker_mcp_servers.py</code> and
+  <code>tests/test_flight.py</code>: 93 passed at the head. The declared negative control, with
+  <code>worker_mcp_servers</code> taken out of the reckon-owned keys, fails
+  <code>test_a_project_naming_its_servers_resolves_and_seeds_them</code> with
+  <code>worker_mcp_servers: Extra inputs are not permitted</code> (1 failed, 8 passed).</p>
+</article>
+</body>
+</html>

@@ -89,6 +89,13 @@ PLAN_REVIEW_GATE_DEFAULT = "report"
 SPRINT_RECENT_DAYS_KEY = "sprint_recent_days"
 DEFAULT_SPRINT_RECENT_DAYS = 14
 
+# The MCP servers a project lets its workers start. Reckon-owned in the same
+# sense as the recent-closed window above: no provider-neutral schema names it,
+# so the resolved config carries it, a layer may set it, and the schema check is
+# shown a copy without it. A launch reads it to seed the run home's harness
+# whether the project's own ``.mcp.json`` servers start at all.
+WORKER_MCP_SERVERS_KEY = "worker_mcp_servers"
+
 # The lanes a pick may reach only on the terms a policy states, keyed by lane
 # name and read from the host layer and the project layer like any other key. A
 # reserved lane is offered for a non-review node at the declared difficulty
@@ -411,6 +418,7 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     cleaned.pop(HARNESS_HOME_FILES, None)
     cleaned.pop(HARNESS_HOME_ADJACENT_FILES, None)
     cleaned.pop(SPRINT_RECENT_DAYS_KEY, None)
+    cleaned.pop(WORKER_MCP_SERVERS_KEY, None)
     cleaned.pop(PICKER_RESERVED_LANES_KEY, None)
     review = cleaned.get(REVIEW_KEY)
     if isinstance(review, Mapping):
@@ -770,6 +778,27 @@ def _validate_sprint_recent_days(data: Mapping[str, Any], source: str | Path) ->
             SPRINT_RECENT_DAYS_KEY,
             "must be a non-negative whole number of days",
         )
+
+
+def _validate_worker_mcp_servers(data: Mapping[str, Any], source: str | Path) -> None:
+    """Check the reckon-owned worker MCP server list, which the schema omits.
+
+    Absence is the shipped default — the project names no server, so its workers
+    start none of the checkout's own. A present declaration must hold a list of
+    names: a bare string is refused by name rather than read as a server called
+    after each of its characters, which is what iterating one would seed.
+    """
+    if WORKER_MCP_SERVERS_KEY not in data:
+        return
+    from reckon._worker_fence import (
+        WorkerMcpServersError,
+        _declared_worker_mcp_servers,
+    )
+
+    try:
+        _declared_worker_mcp_servers(data)
+    except WorkerMcpServersError as exc:
+        raise FlightConfigError(source, WORKER_MCP_SERVERS_KEY, exc.constraint) from exc
 
 
 def _validate_picker_reserved_lanes(
@@ -1405,6 +1434,7 @@ def validate_layer(
                 )
 
     _validate_sprint_recent_days(data, source)
+    _validate_worker_mcp_servers(data, source)
     _validate_picker_reserved_lanes(data, source)
 
     for backend_name, backend in (data.get("backends") or {}).items():
