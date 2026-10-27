@@ -16,6 +16,7 @@ from reckon.crew.dispatch import (
 )
 from reckon.crew.node import (
     CrewError,
+    is_test_path,
 )
 from reckon.crew.reports import (
     parse_manifest,
@@ -30,6 +31,7 @@ from reckon.crew.routing import (
 from reckon.crew.runs import (
     _live_worktree_claims,
     _manifest_freshness,
+    _repository_relative_scope,
     _write_json,
     capture_run_session,
     drain,  # noqa: F401 - importable so a caller can substitute the fleet reading's drain
@@ -331,49 +333,37 @@ SCOPED_SUITE_PLACEHOLDER = "{node_test_files}"
 
 
 def _node_test_files(record: Mapping[str, Any]) -> list[str]:
-    """The node's fenced write paths that are test files, sorted and repo-relative.
+    """The node's fenced write paths that are tests, sorted and repo-relative.
 
     A scoped suite command names the tests a node's own change can reach rather
     than the whole suite, so the files it runs come from the fenced write scope
-    the node was dispatched with. Only ``test_*.py`` files count: a node's
-    scope also carries the modules it edits, the manifests and the evidence
-    fragments it delivers, and none of those is a test.
+    the node was dispatched with. Which paths count as tests is the dispatcher's
+    own rule rather than a second one written here: a node scoped to
+    ``tests/body_test.py`` is a node writing a check under ``is_test_path``, so
+    the scoped command has to measure it, and a narrower rule would arm the gate
+    and then silently record no observation for it.
 
-    The paths are returned relative to the run's worktree when they sit inside
-    it, because the same command is run against two trees — the base and the
-    head — and an absolute path into one of them names the wrong tree in the
-    other.
+    The paths are named relative to the run's tree because the same command runs
+    against two trees — the base and the head — and an absolute path into one of
+    them names the wrong tree in the other.
     """
     node = record.get("node")
     write_paths = node.get("write_paths") if isinstance(node, Mapping) else None
     if isinstance(write_paths, (str, bytes)) or not isinstance(write_paths, Sequence):
         return []
-    roots = [
-        Path(str(record[key])).expanduser()
-        for key in ("worktree", "repo")
-        if str(record.get(key) or "").strip()
-    ]
+    repo_text = str(record.get("worktree") or record.get("repo") or "").strip()
+    repo = Path(repo_text).expanduser() if repo_text else None
     files: set[str] = set()
     for entry in write_paths:
         text = str(entry or "").strip()
-        if not text:
+        if not text or not is_test_path(text):
             continue
-        path = Path(text).expanduser()
-        if path.suffix != ".py" or not path.name.startswith("test_"):
-            continue
-        if not path.is_absolute():
-            files.add(path.as_posix())
-            continue
-        for root in roots:
-            try:
-                files.add(path.relative_to(root).as_posix())
-            except ValueError:
-                continue
-            break
-        else:
+        relative = _repository_relative_scope(text, repo)
+        if relative is None:
             # Outside the run's own tree: a default role path under the run
             # directory names the run, not the repository's tests.
             continue
+        files.add(relative)
     return sorted(files)
 
 

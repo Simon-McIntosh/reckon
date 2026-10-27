@@ -22,8 +22,10 @@ from click.testing import CliRunner
 
 from reckon import flight
 from reckon.cli import main as cli_main
+from reckon.crew import repair
 from reckon.crew import review as review_module
 from reckon.crew.promotion_records import _node_test_files, _scoped_suite_command
+from reckon.crew.recovery_repair_dispatch import _reviewed_run_suite_command
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
@@ -249,6 +251,65 @@ def test_the_declared_command_measures_the_nodes_fenced_test_files(
     suite_delta = json.loads(result.output)["record"]["suite_delta"]
     assert suite_delta["suite_command"] == resolved
     assert suite_delta["after_suite"]["command"] == resolved
+
+
+def test_a_test_under_the_tests_directory_counts_by_the_dispatchers_rule() -> None:
+    """A scope entry the dispatcher reads as a check is measured, not skipped.
+
+    ``is_test_path`` treats any path under a ``tests/`` directory as a test, so
+    a node scoped to ``tests/body_test.py`` writes a check under that rule. A
+    narrower ``test_*.py`` rule here would arm the gate and then resolve it to
+    no file, silently recording no observation for a node whose check exists.
+    """
+    record = {
+        "suite_command": SCOPED,
+        "worktree": "/repo",
+        "node": {"write_paths": ["tests/body_test.py"]},
+    }
+    assert _node_test_files(record) == ["tests/body_test.py"]
+    assert _scoped_suite_command(record) == SCOPED.replace(
+        "{node_test_files}", "tests/body_test.py"
+    )
+
+
+def _repair_review() -> dict[str, object]:
+    return {
+        "project": PROJECT,
+        "reviewed_run_id": "r-reviewed",
+        "reviewed_head_sha": "a" * 40,
+        "status": "parsed",
+        "findings": [{"file": "reckon/crew/promotion_records.py", "text": "a defect"}],
+    }
+
+
+def test_a_repair_brief_carries_the_resolved_command_not_the_placeholder() -> None:
+    """An armed repair inherits the files its run was measured on, not a brace."""
+    record = {
+        "suite_command": SCOPED,
+        "worktree": "/repo",
+        "node": {"write_paths": NODE_WRITE_PATHS},
+    }
+    inherited = _reviewed_run_suite_command(record)
+    assert inherited == RESOLVED
+
+    node = repair.compose_repair_node(_repair_review(), suite_command=inherited)
+    assert node is not None
+    done_when = str(node["done_when"])
+    assert RESOLVED in done_when
+    assert "{node_test_files}" not in done_when
+
+
+def test_a_repair_of_a_scope_holding_no_test_file_is_unarmed() -> None:
+    """A scoped declaration that resolves to nothing names no command."""
+    record = {
+        "suite_command": SCOPED,
+        "worktree": "/repo",
+        "node": {"write_paths": ["reckon/crew/promotion_records.py"]},
+    }
+    assert _reviewed_run_suite_command(record) == ""
+    node = repair.compose_repair_node(_repair_review(), suite_command="")
+    assert node is not None
+    assert "baseline_suite" not in str(node["done_when"])
 
 
 def test_the_declaration_resolves_to_the_nodes_fenced_test_files() -> None:
