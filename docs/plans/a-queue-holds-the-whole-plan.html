@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="159">
+<meta name="plan-version" content="160">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -473,6 +473,9 @@
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261027T135927250215-review-of-a-worker-widens-to-an-unclaimed-path-39046ccfbcc5" data-who="reckon-build" data-when="2026-10-27T14:11:14.216Z">
     <div class="r-comment-body"><p>Independent review of a-worker-widens-to-an-unclaimed-path at 39046ccfbcc5 stored as parsed — goal_fidelity 19, evidence 12, scope_discipline 19, durability 18, fit 17, reuse 18 — with two non-blocking findings: the base-revision gate arm collected nothing so the done-when's base comparison is unmeasured, and _list_write_grants_in_brief swallows OSError so an unamendable brief dispatches without the grant list; added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261027T123148256109-a-worker-widens-to-an-unclaimed-path" data-who="reckon-build" data-when="2026-10-27T13:57:13.961Z">
+    <div class="r-comment-body"><p>`reckon crew widen` now admits a run&#x27;s own live worker as a self-widen that must state `--reason` and refuses any other process naming a run it is not; the grant is recorded on the live pointer&#x27;s `write_grants` with its path, reason, timestamp and source `worker`, a peer&#x27;s launched or waiting claim still refuses the added path naming the holder, and the run review brief lists every declared path with the source of its grant as inside the run&#x27;s declared scope — measured at 6 passed, 0 failed in `tests/test_a_worker_widens_to_an_unclaimed_path.py`.</p></div>
 </div>
 </section>
 </main>
