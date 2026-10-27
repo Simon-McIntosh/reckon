@@ -1276,9 +1276,14 @@ def review_settle_seconds_remaining(record: Mapping[str, Any]) -> float:
     revision the run no longer carries, so the reflex waits the settle window
     out from the run's own resume stamp before composing. A run with no resume
     stamp is settled already.
+
+    The stamp read is the newest resume of either kind, because a resume a
+    coordinator drove with advice moves the head exactly as an automatic one
+    does and records its own instant: reading the sweep's stamp alone would
+    date such a run from whatever automatic resume it last had, and compose a
+    review of the head the advice door was called to move past.
     """
-    resume = record.get("auto_resume")
-    resumed_at = parse_utc(resume.get("at")) if isinstance(resume, Mapping) else None
+    resumed_at = _latest_resume_at(record)
     if resumed_at is None:
         return 0.0
     elapsed = (datetime.now(tz=UTC) - resumed_at).total_seconds()
