@@ -23,6 +23,8 @@ mismatch.
 from __future__ import annotations
 
 import copy
+import json
+from html import escape
 from pathlib import Path
 
 import pytest
@@ -85,6 +87,81 @@ def test_schedule_lane_count_and_chain_far_end_equal_the_schedule_return(
     _rendered, _returned, pairs = _case(tmp_path, monkeypatch, with_rollup=True)
     messages = _messages(pairs, "schedule")
     assert messages == [], "\n".join(messages)
+
+
+def test_read_plan_resolves_a_section_wait_through_the_target_plan(tmp_path):
+    """The production path resolves readiness from the target, not its status.
+
+    The dependency rows here are the ones ``read_plan`` builds, resolved from
+    two authored plans: a terminal plan that declares no ``s9`` and an open
+    whose ``s1`` is declared done. The first is a ref to a section that does
+    not exist, which the roadmap holds whatever the plan's status says; the
+    second is satisfied. A reader that tests the row's status clears both, so
+    the two rows are the disagreement and its control.
+    """
+
+    import reckon.mcp as mcp_module
+    from reckon import mcp_views
+    from reckon._plan_html import write_state
+
+    project = "sample"
+    root = tmp_path / project
+    docs = root / "docs"
+    docs.mkdir(parents=True)
+
+    def plan(slug: str, *, status: str, declarations=None, section_depends_on=None):
+        state = {
+            "slug": slug,
+            "title": slug,
+            "summary": "A plan whose sections can wait on their own.",
+            "version": 3,
+            "type": "plan",
+            "status": status,
+            "impl": 0.4,
+        }
+        if declarations:
+            state["section_declarations"] = dict(declarations)
+        bare = (
+            '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+            f'<meta name="docs-project" content="{project}">'
+            f"<title>{slug}</title></head>"
+            '<body><main class="plan-doc"></main></body></html>'
+        )
+        html = write_state(bare, state)
+        if section_depends_on:
+            meta = (
+                '<meta name="plan-section-depends-on" content="'
+                + escape(json.dumps(section_depends_on), quote=True)
+                + '">'
+            )
+            html = html.replace("<title>", meta + "<title>", 1)
+        (docs / f"{slug}.html").write_text(html, encoding="utf-8")
+        return html
+
+    plan(
+        "target",
+        status="shipped",
+        declarations={"s1": "done"},
+    )
+    owner_html = plan(
+        "owner",
+        status="active",
+        declarations={"s5": "implementable", "s6": "implementable"},
+        section_depends_on={"s5": ["target#s9"], "s6": ["target#s1"]},
+    )
+
+    rows = mcp_module._section_dependency_rows(owner_html, project, str(root))
+    assert sorted(row["ref"] for row in rows) == ["target#s1", "target#s9"]
+    published = {
+        row["section"]: row["ready"]
+        for row in mcp_views._section_blocking(rows, checkout=str(root))
+    }
+
+    assert published == {"s5": False}, (
+        "a wait on a section the target never declares must hold, and a wait "
+        f"on a declared-done section must not; published {published!r} from "
+        f"rows {[dict(row) for row in rows]!r}"
+    )
 
 
 def test_section_readiness_is_the_roadmap_verdict_not_the_row_status():

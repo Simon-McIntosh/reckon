@@ -2638,35 +2638,64 @@ def _section_gate_blockers(data: dict[str, Any]) -> list[dict[str, Any]]:
     return section_holding
 
 
-def _section_target_satisfied(dep: dict[str, Any]) -> bool:
+def _section_target_plan(
+    dep: dict[str, Any], checkout: str | None
+) -> dict[str, Any] | None:
+    """Read the plan a section-scoped row points at, through the row's own scope."""
+
+    project = str(dep.get("project") or "")
+    slug = str(dep.get("slug") or "")
+    if not project or not slug:
+        return None
+    from reckon._store import read_plan
+
+    try:
+        data, _version = read_plan(
+            project, slug, None if dep.get("scope") == "external" else checkout
+        )
+    except Exception:  # noqa: BLE001 — resolution must degrade, not raise
+        return None
+    return data or None
+
+
+def _section_target_satisfied(dep: dict[str, Any], checkout: str | None = None) -> bool:
     """Whether a section-scoped row's target is satisfied, from its owner.
 
     Readiness is the roadmap's answer, never the status a section-scoped row
     also carries: that status names the target plan or the section's own
     declaration, and neither is the readiness of the section the row names. An
-    undeclared section of a completed plan is unsatisfied as an edge target
-    while its plan's status reads terminal, so the two readings disagree on a
+    undeclared section of a terminal plan is unsatisfied as an edge target
+    while its plan's status reads completed, so the two readings disagree on a
     real fixture and only the roadmap's is published here.
 
-    A row resolved by the roadmap carries that verdict in ``satisfied``. A row
-    resolved without it is handed to the same owner over what it holds, so the
-    rule stays in one place instead of being restated as a status set.
+    A row resolved by the roadmap carries that verdict in ``satisfied``. Every
+    other row is resolved the way the roadmap resolves its own: the target's
+    declared section identities and :func:`reckon.roadmap._section_satisfied`
+    over the target plan's own state. A target that cannot be read holds its
+    waiting section, because an unobserved target is no evidence that it
+    landed.
     """
 
     verdict = dep.get("satisfied")
     if verdict is not None:
         return bool(verdict)
-    if not dep.get("found"):
+    stage = str(dep.get("stage") or "")
+    if not dep.get("found") or not stage:
         return False
+    target = _section_target_plan(dep, checkout)
+    if target is None:
+        return False
+    from reckon._schema import declared_section_identities
     from reckon.roadmap import _section_satisfied
 
-    stage = str(dep.get("stage") or "")
-    status = str(dep.get("status") or "")
-    declarations = {stage: status} if stage else None
-    return _section_satisfied({"status": status}, stage, declarations)
+    declarations = target.get("section_declarations")
+    found_section = stage in declared_section_identities(target, declarations)
+    return found_section and _section_satisfied(target, stage, declarations)
 
 
-def _section_blocking(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _section_blocking(
+    deps: list[dict[str, Any]], *, checkout: str | None = None
+) -> list[dict[str, Any]]:
     """Report the sections that wait, each beside the targets it waits for.
 
     A section-scoped row holds one section of the owning plan, so it is
@@ -2683,7 +2712,7 @@ def _section_blocking(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for dep in deps:
         if not is_section_scoped(dep):
             continue
-        if _section_target_satisfied(dep):
+        if _section_target_satisfied(dep, checkout):
             continue
         target = {
             "ref": dep.get("ref", ""),
@@ -2834,6 +2863,7 @@ def _summary(
     *,
     deps: list[dict[str, Any]],
     include_prompts: bool,
+    checkout: str | None = None,
 ) -> dict[str, Any]:
     if include_prompts:
         raise ViewRequestError(
@@ -2869,7 +2899,7 @@ def _summary(
         "warnings": list(data.get("compatibility_warnings") or []),
     }
     if selector.type == "plan":
-        result["section_blocking"] = _section_blocking(deps)
+        result["section_blocking"] = _section_blocking(deps, checkout=checkout)
         result["section_gate_blockers"] = _section_gate_blockers(data)
         result["sections"] = list(data.get("sections") or [])
         result["todos"] = list(data.get("todos") or [])
@@ -2883,8 +2913,16 @@ def _detail(
     *,
     deps: list[dict[str, Any]],
     include_prompts: bool,
+    checkout: str | None = None,
 ) -> dict[str, Any]:
-    result = _summary(selector, version, data, deps=deps, include_prompts=False)
+    result = _summary(
+        selector,
+        version,
+        data,
+        deps=deps,
+        include_prompts=False,
+        checkout=checkout,
+    )
     result["view"] = "detail"
     result["metadata"] = {
         key: data[key]
@@ -3216,6 +3254,7 @@ def resource_view(
             data,
             deps=dependencies,
             include_prompts=include_prompts,
+            checkout=provenance.get("checkout"),
         )
     elif selected == "detail":
         result = _detail(
@@ -3224,6 +3263,7 @@ def resource_view(
             data,
             deps=dependencies,
             include_prompts=include_prompts,
+            checkout=provenance.get("checkout"),
         )
     elif selected == "history":
         page, pagination = paginate(
