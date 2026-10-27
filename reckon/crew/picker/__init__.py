@@ -95,12 +95,53 @@ def _append_crew_log_line(name: str, row: Mapping[str, Any]) -> None:
         return
 
 
-def _record_pick_timings(line: dict[str, Any], *, latency_ms: float) -> None:
-    """Append one timing line under the crew home, best effort and bounded."""
+#: The outcomes whose timing line carries its excluded candidates. A routed
+#: pick's candidates were all eligible, so listing them would grow the log on
+#: every successful pick without answering anything; a refusal or a fallback is
+#: exactly where a reader needs to know which lanes were turned away and why.
+_EXCLUSION_OUTCOMES = frozenset({"refuse", "fallback"})
+
+
+def _reason_code(reason: str) -> str:
+    """Return a reason's code: its text before the first colon, else itself.
+
+    A reason reads ``context-fit`` or ``reserved-lane: codex is reserved while
+    ...``; the code is the stable prefix a reader counts by, so the prose after
+    the colon never has to be matched.
+    """
+    return reason.split(":", 1)[0].strip()
+
+
+def _record_pick_timings(
+    line: dict[str, Any],
+    *,
+    latency_ms: float,
+    excluded: list[dict[str, Any]] | None = None,
+    estimated_context: int | None = None,
+) -> None:
+    """Append one timing line under the crew home, best effort and bounded.
+
+    A refusal or a fallback also records each excluded candidate with its
+    reason code and the node's estimated context, so a refusal whose node shape
+    is otherwise lost can still be diagnosed from the log. A routed pick
+    records neither: every candidate was eligible, so the fields would grow the
+    log on every successful pick without answering anything.
+    """
     try:
         line["within_bound"] = latency_ms <= _dispatch_bound_seconds() * 1000
     except Exception:  # noqa: BLE001 - a pick never fails on its own record
         return
+    if line.get("outcome") in _EXCLUSION_OUTCOMES:
+        line["exclusions"] = [
+            {
+                "backend": candidate.get("backend"),
+                "model": candidate.get("model"),
+                "reason_code": _reason_code(reason),
+            }
+            for candidate in (excluded or ())
+            for reason in (candidate.get("reasons") or ())
+        ]
+        line["estimated_context"] = estimated_context
     _append_crew_log_line(PICK_TIMINGS_LOG, line)
 
 
@@ -518,6 +559,8 @@ def pick(
             **stages,
         },
         latency_ms=latency_ms,
+        excluded=excluded,
+        estimated_context=request.estimated_context,
     )
     return Selection(
         action=action,

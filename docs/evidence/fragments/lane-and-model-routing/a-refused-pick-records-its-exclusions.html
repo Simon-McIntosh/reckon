@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="lane-and-model-routing">
+  <meta name="plan-title" content="A refused pick records its exclusions">
+  <meta name="plan-summary" content="A refused or fallen-back pick's timing row now names every excluded candidate with its backend, model and reason code, plus the node's estimated context, so a refusal whose node shape is otherwise lost can be diagnosed from the log. A routed row records neither field.">
+  <meta name="plan-evidence-for" content="reckon:lane-and-model-routing">
+  <meta name="plan-verifies" content="reckon:lane-and-model-routing#s56">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,pick-timings,refusal,exclusions,diagnosis">
+  <title>A refused pick records its exclusions — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-refused-pick-records-its-exclusions-landing" data-node="a-refused-pick-records-its-exclusions" data-reckon="landed" data-when="2026-10-27">
+  <h2>A refused pick records its exclusions</h2>
+  <p id="a-refused-pick-records-its-exclusions-summary">The pick-timings log named a refusal's outcome and its one-line reason but not which lanes were excluded or on what ground, so diagnosing the 58 refusals of 26–27 October meant re-running a pick by hand to see that the local lane failed on context fit and codex on its tier term. A refusal of a node whose shape is lost could not be diagnosed at all. <code>_record_pick_timings</code> in <code>reckon/crew/picker/__init__.py</code> now shapes the line for a <code>refuse</code> or <code>fallback</code> outcome: an <code>exclusions</code> list naming each excluded candidate's <code>backend</code>, <code>model</code> and <code>reason_code</code>, and the node's <code>estimated_context</code>. A reason code is the reason's text before its first colon, or the whole reason when it carries none, so <code>context-fit</code> stands alone and <code>reserved-lane: codex is reserved …</code> yields <code>reserved-lane</code> — the stable prefix a reader counts by, without matching prose that changes. A routed pick records neither field, so the log grows only where a reader needs it.</p>
+  <p id="a-refused-pick-records-its-exclusions-measure">Gate: <code>tests/test_a_refused_pick_records_its_exclusions.py</code> <code>3 passed</code>, <code>EXIT=0</code> at the head. Its three arms: a refused pick (every candidate excluded, so nothing is offered) lists each excluded lane with its code and the estimated context; a fallback pick (Jev raises, the default lane is chosen) lists the same; a routed pick carries neither <code>exclusions</code> nor <code>estimated_context</code>. The base arm, from a clean extraction of the base revision with the new test file copied in, reads <code>2 failed, 1 passed</code>, <code>EXIT=1</code> — the two exclusion cases fail on the absent field, the routed case passes because the base also records no exclusions. The importer arm — nine test files exercising the pick and the timing log, among them <code>tests/test_pick_records_its_stage_times.py</code> and <code>tests/test_hold_records_its_state.py</code> — reads <code>75 passed</code>, <code>EXIT=0</code> at both base and head: no added failure. Ruff <code>check</code> and <code>format --check</code> add no finding on either changed path. Negative control: dropping the <code>exclusions</code> assignment leaves the refused and fallback arms failing on <code>KeyError: 'exclusions'</code> (<code>2 failed, 1 passed</code>, <code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>
