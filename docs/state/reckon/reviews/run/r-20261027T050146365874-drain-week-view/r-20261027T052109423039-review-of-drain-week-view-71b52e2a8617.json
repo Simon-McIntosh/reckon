@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived directly from reviewed run logs: base-suite.log:42-44 and after-suite.log:42-44 each end EXIT=1 and name only tests/test_crew_runs_view.py::test_drain_reports_an_unreadable_inventory_as_unknown; the head adds no failure id.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_views.py:4240 (crew view drain)",
+    "reckon/crew_run_commands.py:1370 (crew drain CLI)",
+    "reckon/crew/obligations.py:1723 (obligations closure read)"
+  ],
+  "completed_at": "2026-10-27T05:28:27Z",
+  "dispatched_at": "2026-10-27T05:22:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 2138,
+      "text": "blocking: every awaiting-upstream pointer older than an hour enters stuck even while its declared upstream is still unlanded; a normal dependency wait is falsely reported as stalled, usually without an admission verdict."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 2156,
+      "text": "blocking: a landed row's dispatched_at is copied from queue created_at by reckon/crew/promotion.py:1412, so launches_24h omits a run that waited over a day in the queue and launched recently; the test's landed rows have no dispatched_at stamp."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "VERDICT diff: read 3f4b3fccc6b916c64a06a8a242793f65259af3c4 and 71b52e2a8617bebee323621851e5cb90c801367f separately; reckon/crew/runs.py:2050-2216 adds the summary, tests/test_drain_week_view.py:1-150 adds three tests, and the second commit adds the six-line evidence fragment.",
+    "done_when": "VERDICT done_when: prompt.txt:105-106 calls for a 120-request hand count, 24-hour measures, old-request verdicts and two 500-pointer MCP reads; after-suite.log:4-5,43 records the timings and 33 passes, while the fixture omits a queue-to-launch delay.",
+    "goal": "VERDICT goal: the goal in prompt.txt:30 is one project and plan view of queued work; reckon/crew/runs.py:2216 adds the week result, but its stuck list and recent launch count misstate normal queue history.",
+    "manifest": "VERDICT manifest: manifest.md records both commits, the serial base and head arms, the phase-split negative control and the 500-pointer read; base-suite.log:42-44 and after-suite.log:42-44 have the same single failure id.",
+    "write_paths": "VERDICT write_paths: prompt.txt:69-73 grants reckon/crew/runs.py, tests/test_drain_week_view.py and the evidence fragment path; git diff from 25f6ed74 to 71b52e2a touches exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_drain_week_view.py:88-127 reddens if the phase split or latest verdict regresses (negative-control.log:77-79), but it does not reject false stuck rows or a launch measured from queue creation.",
+    "evidence": "after-suite.log:4-5,42-44 records 0.708 s and 0.593 s MCP reads and the same failure id as base-suite.log:42-44, but tests/test_drain_week_view.py:76-81 gives landed rows no dispatch stamps.",
+    "fit": "reckon/crew/runs.py:2061-2068 extends the existing drain in place, uses the existing ledger and pointer APIs, and adds no forbidden source name.",
+    "goal_fidelity": "reckon/crew/runs.py:2137-2150 marks normal old dependency waits stuck, and :2156-2162 cannot count recent launches of runs queued more than a day earlier.",
+    "reuse": "the capability search for drain and phase summaries found reckon/crew/runs.py:2050 as the existing owner; _drain_week_view extends that owner and is reached by drain at :2216.",
+    "scope_discipline": "git diff 25f6ed74..71b52e2a changes only reckon/crew/runs.py, tests/test_drain_week_view.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-week-view.html, all granted in prompt.txt:69-73."
+  },
+  "node": "review-of-drain-week-view-71b52e2a8617",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal in prompt.txt:30 is one project and plan view of queued work; reckon/crew/runs.py:2216 adds the week result, but its stuck list and recent launch count misstate normal queue history.\nVERDICT done_when: prompt.txt:105-106 calls for a 120-request hand count, 24-hour measures, old-request verdicts and two 500-pointer MCP reads; after-suite.log:4-5,43 records the timings and 33 passes, while the fixture omits a queue-to-launch delay.\nVERDICT write_paths: prompt.txt:69-73 grants reckon/crew/runs.py, tests/test_drain_week_view.py and the evidence fragment path; git diff from 25f6ed74 to 71b52e2a touches exactly those three paths.\nVERDICT manifest: manifest.md records both commits, the serial base and head arms, the phase-split negative control and the 500-pointer read; base-suite.log:42-44 and after-suite.log:42-44 have the same single failure id.\nVERDICT diff: read 3f4b3fccc6b916c64a06a8a242793f65259af3c4 and 71b52e2a8617bebee323621851e5cb90c801367f separately; reckon/crew/runs.py:2050-2216 adds the summary, tests/test_drain_week_view.py:1-150 adds three tests, and the second commit adds the six-line evidence fragment.\nCALL_SITES: reckon/mcp_views.py:4240 (crew view drain), reckon/crew_run_commands.py:1370 (crew drain CLI), reckon/crew/obligations.py:1723 (obligations closure read)\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2137-2150 marks normal old dependency waits stuck, and :2156-2162 cannot count recent launches of runs queued more than a day earlier.\nSCORE evidence: 14\nJUSTIFICATION evidence: after-suite.log:4-5,42-44 records 0.708 s and 0.593 s MCP reads and the same failure id as base-suite.log:42-44, but tests/test_drain_week_view.py:76-81 gives landed rows no dispatch stamps.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 25f6ed74..71b52e2a changes only reckon/crew/runs.py, tests/test_drain_week_view.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-week-view.html, all granted in prompt.txt:69-73.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_drain_week_view.py:88-127 reddens if the phase split or latest verdict regresses (negative-control.log:77-79), but it does not reject false stuck rows or a launch measured from queue creation.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/runs.py:2061-2068 extends the existing drain in place, uses the existing ledger and pointer APIs, and adds no forbidden source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search for drain and phase summaries found reckon/crew/runs.py:2050 as the existing owner; _drain_week_view extends that owner and is reached by drain at :2216.\nFINDING reckon/crew/runs.py:2138 blocking: every awaiting-upstream pointer older than an hour enters stuck even while its declared upstream is still unlanded; a normal dependency wait is falsely reported as stalled, usually without an admission verdict.\nFINDING reckon/crew/runs.py:2156 blocking: a landed row's dispatched_at is copied from queue created_at by reckon/crew/promotion.py:1412, so launches_24h omits a run that waited over a day in the queue and launched recently; the test's landed rows have no dispatched_at stamp.",
+  "review_run_id": "r-20261027T052109423039-review-of-drain-week-view-71b52e2a8617",
+  "reviewed_assertions": [
+    "tests/test_drain_week_view.py:62 checks only the fixture length; no production-code change can make it fail, so it is not counted as a regression guard.",
+    "tests/test_drain_week_view.py:88-100 and :104-122 use independent literal phase and held-reason counts; they fail if the summarizer collapses buckets, misattributes plans, or changes these fixture counts.",
+    "tests/test_drain_week_view.py:101-103, :113-114 and :124 use literal recent launch, landing and estimate values; they fail if the coded arithmetic for the populated timestamps changes, but the landed fixture has no dispatched_at and cannot catch queue-time substitution.",
+    "tests/test_drain_week_view.py:125-127 compares against the later literal verdict and fails if the earlier verdict replaces it; it does not assert that healthy awaiting-upstream requests are absent from stuck.",
+    "tests/test_drain_week_view.py:134 fails if a zero landing rate produces a numeric estimate instead of null.",
+    "tests/test_drain_week_view.py:148 and :150 fail if the MCP result loses the 500 queued requests or its measured read takes at least 30 seconds."
+  ],
+  "reviewed_base_sha": "25f6ed74bf8142b0a219e9aeabdc00bcc88f8d9a",
+  "reviewed_head_sha": "71b52e2a8617bebee323621851e5cb90c801367f",
+  "reviewed_node": "drain-week-view",
+  "reviewed_run_id": "r-20261027T050146365874-drain-week-view",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T05:26:43.602660+00:00",
+  "total": 98
+}
