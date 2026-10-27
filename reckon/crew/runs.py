@@ -2095,6 +2095,9 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
     project_view = empty()
     plans: dict[str, dict[str, Any]] = {}
     landed_ids = {str(record.get("run_id") or "") for record in landed["runs"]}
+    wait_cache: dict[str, Any] = {}
+    dead_sections: set[tuple[str, str]] | None = None
+    live_for_waits: list[dict[str, Any]] | None = None
 
     def targets(plan: str) -> tuple[dict[str, Any], dict[str, Any]]:
         return project_view, plans.setdefault(plan, empty())
@@ -2118,15 +2121,37 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
         if not isinstance(hold, Mapping):
             hold = {}
         reason = str(hold.get("reason") or pointer.get("reason") or "unspecified")
-        phase_start = parse_utc(
-            hold.get("started_at")
-            if phase == "held"
-            else pointer.get("queued_at")
-            if phase == "queued"
-            else pointer.get("failure_at")
-            if phase == "launch-failed"
-            else pointer.get("created_at")
-        )
+        if phase == "held":
+            phase_stamp = hold.get("started_at")
+        elif phase == "queued":
+            phase_stamp = pointer.get("queued_at")
+        elif phase == "launch-failed":
+            phase_stamp = pointer.get("failure_at")
+        elif phase == "awaiting-upstream":
+            phase_stamp = pointer.get("waits_at") or pointer.get("created_at")
+        else:
+            phase_stamp = pointer.get("created_at")
+        phase_start = parse_utc(phase_stamp)
+        overdue = phase_start is not None and phase_start < hour_ago
+        stuck = overdue and phase in {"queued", "launch-failed"}
+        if overdue and phase == "awaiting-upstream":
+            from reckon.crew import queue_admission
+
+            if live_for_waits is None:
+                live_for_waits = _list_live_records()
+                dead_sections = queue_admission._dead_sections(live_for_waits)
+            assert dead_sections is not None
+            docs_dir = Path(str(pointer.get("repo") or "") or ".") / "docs"
+            stuck = (
+                queue_admission.resolve_waits(
+                    pointer,
+                    live=live_for_waits,
+                    docs_dir=docs_dir,
+                    cache=wait_cache,
+                    dead_sections=dead_sections,
+                )
+                == queue_admission.QUEUED_PHASE
+            )
         for view in targets(plan):
             view["phases"][bucket] += 1
             view["remaining"] += 1
@@ -2134,11 +2159,7 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
                 view["held_reasons"][reason] = view["held_reasons"].get(reason, 0) + 1
             if started is not None and day_ago <= started <= now:
                 view["launches_24h"] += 1
-            if (
-                phase in {"queued", "launch-failed"}
-                and phase_start is not None
-                and phase_start < hour_ago
-            ):
+            if stuck:
                 view["stuck"].append(
                     {
                         "run_id": str(pointer.get("run_id") or ""),
