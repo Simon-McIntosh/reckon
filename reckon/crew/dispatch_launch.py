@@ -36,7 +36,9 @@ from reckon._timestamps import (
 )
 from reckon.env_duration import read_duration_override
 from reckon.crew.fleet_supervisor import (
+    RECORD_NAME,
     REQUEST_FIFO_NAME,
+    state_directory,
 )
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
@@ -2198,20 +2200,18 @@ FLEET_SPAWN_ACK_BOUND_SECONDS = 10.0
 FLEET_REQUEST_POLL_SECONDS = 0.02
 
 
-def _fleet_record_path() -> Path:
-    """Where the fleet record that publishes the batch step's location lives."""
-    override = os.environ.get(FLEET_RECORD_PATH_ENV, "").strip()
-    if override:
-        return Path(override)
-    state_home = os.environ.get("XDG_STATE_HOME", "").strip()
-    base = Path(state_home) if state_home else Path.home() / ".local" / "state"
-    return base / "fleet" / "record.json"
-
-
 def _read_fleet_record() -> dict[str, Any] | None:
-    """The published fleet record, or None when none is readable."""
+    """The published fleet record, or None when none is readable.
+
+    The fleet's supervisor owns where that record lives, so its path is asked
+    of ``fleet_supervisor.state_directory`` rather than rebuilt here: a second
+    resolver drifts from the owner and then reads a path that holds no record,
+    which a spawn decision must not mistake for an absent fleet.
+    """
+    override = os.environ.get(FLEET_RECORD_PATH_ENV, "").strip()
+    path = Path(override) if override else state_directory() / RECORD_NAME
     try:
-        payload = json.loads(_fleet_record_path().read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
     return payload if isinstance(payload, Mapping) else None
