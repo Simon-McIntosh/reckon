@@ -1,0 +1,69 @@
+<section data-reckon="fragment" id="one-call-explains-any-ref" data-node="one-call-explains-any-ref">
+
+<h2 id="one-call-explains-any-ref-h">One call explains any ref</h2>
+
+<p id="one-call-explains-any-ref-summary">
+  <code>read_plan(view="why", project, slug[, section])</code> answers the
+  question a coordinator otherwise settles by reading a plan, then a pointer
+  file, then messaging a peer. One call reports the ref's own state (its section
+  declaration, never the containing plan's status), what it declares it waits on
+  and — transitively, to a bounded depth — what each of those waits on in turn,
+  each wait carrying its kind; the sections that declare they wait on it; the
+  runs and sessions working on it now with the paths they hold; and the plan's
+  last five events. A ref that does not resolve is refused with the nearest refs
+  that do. No MCP tool and no CLI verb was added: it is one value of
+  <code>read_plan</code>'s existing <code>view</code> parameter.
+</p>
+
+<p id="one-call-explains-any-ref-owners">
+  Every fact is read from the owner that already answers it, never derived
+  again. Waits come from <code>_schema.section_depends_on</code> over the plan
+  markup the roadmap reads (<code>roadmap._plan_authored_html</code>), and their
+  state from <code>roadmap.dependency_row_state</code> and
+  <code>roadmap._section_satisfied</code>. Runs come from
+  <code>mcp_views.partition_live_runs</code>, so a run reads the same here as it
+  does on a roadmap row and in <code>crew live</code>; the paths each run holds
+  are the dispatch scope claims its pointer already carries. The kinds are the
+  shared vocabulary in <code>live_run_classification</code>. The composition
+  lives in the new module <code>reckon/why_view.py</code>; <code>reckon/mcp.py</code>
+  routes the view and bounds it.
+</p>
+
+<p id="one-call-explains-any-ref-measure">
+  The gate fixture is the shape the question takes: section <code>alpha#s1</code>
+  waits on <code>beta#s1</code>, <code>beta#s1</code> waits on
+  <code>gamma#s1</code>, a live run targets <code>beta#s1</code> and holds
+  <code>reckon/held.py</code>, and an open followup names <code>alpha</code> §1.
+  The read names the wait on <code>beta#s1</code> with kind
+  <code>section-dependency</code>, its <code>runs</code> and
+  <code>held_paths</code>, the depth-2 wait on <code>gamma#s1</code>, the
+  followup, at most five events, and the answer's serialised size is inside the
+  view's contract. Eight tests pass at the base-plus-change head (43 with
+  <code>tests/test_mcp_tools.py</code>); on the base revision the same read is
+  refused <code>invalid_view</code> — <em>Unknown MCP response view 'why'</em> —
+  and the gate log records that base probe beside a base arm that cannot run the
+  test file at all because it does not exist there.
+</p>
+
+<p id="one-call-explains-any-ref-control">
+  The declared negative control removes the frontier advance in
+  <code>_transitive_waits</code>, so only direct waits are named; the
+  wait-chain assertion then fails and nothing else does —
+  <code>1 failed, 7 passed</code>, <code>EXIT=1</code> — while the same suite at
+  the head is <code>8 passed</code>, <code>EXIT=0</code>, and
+  <code>tests/test_mcp_tools.py</code> is green in both arms. The adjacent
+  importer arm is unchanged across revisions: 88 passed at both the base and the
+  head.
+</p>
+
+<p id="one-call-explains-any-ref-scope">
+  Two declarations the plan makes live outside this node's write scope.
+  <code>reckon/mcp_views.py</code> owns <code>VIEW_NAMES</code> and
+  <code>reckon/mcp_budget.py</code> owns the §2 budget table; both are outside
+  the granted paths, so the vocabulary-completeness test and the default-fit
+  test do not yet enumerate <code>why</code>, and this view declares and enforces
+  its own figure (<code>WHY_VIEW_BUDGET = 24_000</code>) until that row is
+  registered in the one table.
+</p>
+
+</section>
