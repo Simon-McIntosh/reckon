@@ -2072,6 +2072,11 @@ E  assert 5 == 90</pre>
     <p>Run <code>r-20261026T235634845006-the-misfiled-index-sees-an-in-place-rewrite</code> landed at merge <code>2fe7dbf5a</code>. The misfiled-review index now keys its validity on per-file stat identities, so a stored record rewritten in place with a new head or run id is found on the next lookup, and a run with its own file at another head still finds its misfiled record at the asked head; one whole-store pass per process bounds a large session. Coordinator arms over 174 importer files of review_records.py and review.py: head 1573 passed, merged with main 1573 passed, base 4 failed (the new cases), zero added. Review 109 of 120.</p>
   </section>
 
+  <section id="s26">
+    <h2>§26 landing</h2>
+    <p>Run <code>r-20261027T050311464366-a-run-record-carries-its-suite-command</code> landed at merge <code>e6e05dcc0</code>. Dispatch now resolves an armed suite template through promotion's own substitution over the node's fenced test files, records suite_command_resolved and suite_gate beside the template on the run record, and states the resolved command in the worker prompt, so an armed worker is told the suite its promotion re-runs. The armed command passes at the head (2 passed); the declared mutation, storing the template verbatim, fails both cases. Coordinator arms over 293 test files importing the changed modules: head 2803 passed and merged with main 2804 passed; the three ids the head showed over the base and the two the merge showed over main each passed three serial runs of three at every revision, so none is added. Review 109 of 120.</p>
+  </section>
+
 </main>
 </body>
 </html>
