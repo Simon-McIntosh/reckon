@@ -1,0 +1,48 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T13:15:34.678Z",
+  "dispatched_at": "2026-10-27T12:58:27Z",
+  "findings": [
+    {
+      "file": "tests/test_a_section_can_wait_on_a_followup.py",
+      "line": 267,
+      "severity": "non-blocking",
+      "text": "the store-op case declares only gate-plan@c-open, so the evidence record's claim that set section_depends_on.<sid> takes 'a stage, a followup, or both' has its combined slug#sN@f-id arm unasserted at that surface; a regression refusing a combined ref in _validated_refs would redden no case."
+    },
+    {
+      "file": "reckon/_store_section_ops.py",
+      "line": 436,
+      "severity": "non-blocking",
+      "text": "no assertion covers the two refusal messages now naming [project:]slug[#section][@followup], although the evidence record states both do, so a revert of the wording would leave the suite green."
+    },
+    {
+      "file": "reckon/_store_section_ops.py",
+      "line": 449,
+      "severity": "non-blocking",
+      "text": "apply_section_depends_on_set's docstring still says each ref is checked against the [project:]slug#section grammar, contradicting the followup-only and combined forms the function now accepts."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to extend the ref grammar to slug@f-id so a section can wait on one followup, satisfied when it resolves; reckon/_store_section_ops.py:421-456 makes the write surface a coordinator actually uses accept that ref.\nVERDICT done_when: the plan's s6 done_when names a followup wait held while open, ready on resolve, and dangling-hard-dependency for a missing followup; tests/test_a_section_can_wait_on_a_followup.py asserts all three and the gate ran that file, recording EXIT=0 at the head and EXIT=1 at the base.\nVERDICT write_paths: the node declares eight paths, extended by the run's second resume advice to include reckon/_store_section_ops.py; all four files in the diff are inside that scope.\nVERDICT manifest: read; it records status complete, gate '11 passed' EXIT=0 at 065f8e1cd and '10 failed, 1 passed' EXIT=1 at 43a85b819 with the new suite, three mutation logs, and an outside_scope row for two imas-ambix conformance ids.\nVERDICT diff: read commit by commit against b552765df; 9ed7be1fc repairs the store-op validator and factors section-half registration into _normalized_section_ref_for, and 065f8e1cd rewrites three lines of the evidence fragment to cite the new gate and mutation logs.\nCALL_SITES: reckon/_store.py:2986 apply_section_depends_on_set to _validated_refs, reckon/mcp_edit_plan.py:1869 apply_ops, reckon/roadmap.py:3730 _normalized_section_ref_for inside _build_roadmap reached via build_roadmap at reckon/serve.py:1865, reckon/mcp.py:2316, reckon/mcp.py:3374, reckon/flight.py:2757, reckon/crew/plan_review.py:3104, reckon/crew/queue_order.py:36, reckon/graph_target.py:204\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_store_section_ops.py:433 now admits a ref with a followup and no stage, so the one surface a coordinator writes a wait through can declare y@f-1.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head-arm5.log reads '11 passed' EXIT=0 at 065f8e1cd and logs/baseline-arm4.log reads '10 failed, 1 passed' EXIT=1 at 43a85b819 with the same test file, and the three mutation logs each end EXIT=1 with the ids the record names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff b552765df..065f8e1cd touches only reckon/_store_section_ops.py, reckon/roadmap.py, tests/test_a_section_can_wait_on_a_followup.py and the evidence fragment, all inside the declared scope after the resume advice added _store_section_ops.py, and the fragment changed 3 lines rather than being rewritten.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_section_can_wait_on_a_followup.py:256 and :260-261 redden if _normalized_section_ref_for returns 'y#' or drops the combined section half, and :267 reddens if the store op refuses the ref, each corroborated by a mutation log.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/roadmap.py:1683 keeps the surrounding mechanism-commenting idiom and introduces no forbidden name, though reckon/_store_section_ops.py:451 leaves the docstring describing the pre-change grammar.\nSCORE reuse: 20\nJUSTIFICATION reuse: _normalized_section_ref_for at reckon/roadmap.py:1683 wraps the existing _normalized_section_ref owner rather than adding a second parser, and the store-op test reuses the existing fixture instead of building a second docs tree.\nFINDING tests/test_a_section_can_wait_on_a_followup.py:267 non-blocking: the store-op case declares only gate-plan@c-open, so the combined slug#sN@f-id acceptance at that surface is unasserted although the evidence record claims the op takes a stage, a followup, or both.\nFINDING reckon/_store_section_ops.py:436 non-blocking: the refusal messages naming [project:]slug[#section][@followup] are not covered by any assertion, so reverting that wording would leave the suite green.\nFINDING reckon/_store_section_ops.py:449 non-blocking: apply_section_depends_on_set's docstring still states the [project:]slug#section grammar, contradicting the followup-only and combined refs the function now accepts.\n",
+  "review_run_id": "r-20261027T123939720978-review-of-a-section-can-wait-on-a-followup-065f8e1cde4d",
+  "reviewed_base_sha": "b552765dfba0ceb722d6b4aae9b86c734c89b29f",
+  "reviewed_commits": [
+    "9ed7be1fc",
+    "065f8e1cd"
+  ],
+  "reviewed_head_sha": "065f8e1cde4d16f9ccf4f74385cd2b2065fae60d",
+  "reviewed_run_id": "r-20261027T092250673290-a-section-can-wait-on-a-followup",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T13:18:49.978727+00:00",
+  "total": 112
+}
