@@ -222,19 +222,11 @@ def _launch_queued(
         node.brief = str(steering)
         node.brief_path = str(steering)
         node.brief_sha256 = ""
-    # The queued pointer claims the run's own write paths, so the shared path
-    # would refuse the launch as a scope conflict against the run itself. The
-    # request is held in memory by the caller, which writes it back if the
-    # launch does not survive, so the pointer is released here for the launch
-    # to re-publish under its own identity.
-    with contextlib.suppress(FileNotFoundError):
-        runs.pointer_path(str(pointer["run_id"])).unlink()
-    # An operator may discard the request this pass is holding, and the launch
-    # below hands the request's run directory to the shared dispatch path, whose
-    # refusal rollback removes it. A discard marker already in that directory
-    # would be removed with it, leaving the restore to write back a request
-    # nobody holds any more, so the departure is copied to the shared spool
-    # first — durable whatever the launch does to the directory.
+    # Keep the request visible while dispatch checks its own identity and
+    # other claims. A refused launch leaves the same pointer for dependents.
+    # An operator may discard the request this pass is holding. A later launch
+    # failure can remove its run directory, including a discard marker, so copy
+    # that marker to the shared spool before handing the request to dispatch.
     from reckon.crew.promotion import preserve_discard_record
 
     preserve_discard_record(str(pointer["run_id"]))
@@ -1321,7 +1313,13 @@ def _validated_batch_waits(
         owner = str(pointer.get("project") or project)
         edges[f"run:{run_id}"] = set()
         for ref in section_waits_for(pointer):
-            child, _ = target(ref, owner)
+            try:
+                child, _ = target(ref, owner)
+            except CrewError:
+                # Existing requests only supply cycle edges. An unresolved
+                # edge cannot complete a cycle through this dispatch's batch.
+                edges[f"run:{run_id}"].add(ref)
+                continue
             edges[f"run:{run_id}"].add(child)
             if not child.startswith("run:"):
                 section_edges(child)

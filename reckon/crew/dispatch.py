@@ -1208,6 +1208,21 @@ def _recorded_capability(
     return None
 
 
+@contextlib.contextmanager
+def _request_claim_restored_on_refusal(run_id, request):
+    """Return an admitted request to its waiting phase without an absent pointer."""
+    try:
+        yield
+    except Exception:
+        from reckon.crew.promotion import discard_recorded
+
+        if discard_recorded(run_id):
+            _release_launch_claim(run_id)
+        else:
+            _write_json(pointer_path(run_id), request)
+        raise
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -1491,6 +1506,7 @@ def dispatch(
         []
         if shadow_lineage
         else _repository_scope_claims(
+            exclude_run_ids=(admitted_from,) if admission_launch else (),
             candidate_paths=candidate_paths,
             candidate_repositories=candidate_repositories,
         )
@@ -1699,6 +1715,12 @@ def dispatch(
             node_id=node.id,
             include_handovers=not admission_launch,
         )
+        if (
+            admission_launch
+            and existing is not None
+            and str(existing.get("run_id")) == admitted_from
+        ):
+            existing = None
         existing_phase = (
             str(existing.get("phase") or "") if existing is not None else ""
         )
@@ -2049,6 +2071,9 @@ def dispatch(
     )
     if resolution.local:
         agent["local"] = True
+    # An admitted request already has a pointer. Save it so a refusal can
+    # restore the waiting phase atomically after this starting claim replaces it.
+    request_pointer = read_pointer(run_id) if admission_launch else None
     claim_published = not shadow_lineage
     # The moment this dispatch's claim is registered, held so the admission
     # checks below can order it against a peer still composing its own claim.
@@ -2069,7 +2094,11 @@ def dispatch(
             brief=brief,
             registered_at=claim_registered_at,
         )
-    with _claim_released_on_refusal(run_id, claim_published):
+    with (
+        _request_claim_restored_on_refusal(run_id, request_pointer)
+        if admission_launch
+        else _claim_released_on_refusal(run_id, claim_published)
+    ):
         # A dispatch that would exceed a resource bound — the placement's
         # admitted partition cores or the login memory slice — refuses before
         # anything is created or spawned. A fallback backend resolved above
@@ -2979,7 +3008,19 @@ def dispatch(
             # without a manifest. Unlinking first clears the claim, and the run
             # directory follows, so a refusal is indistinguishable from a
             # dispatch that never ran.
-            _release_launch_claim(run_id)
+            from reckon.crew.promotion import discard_recorded
+
+            restore_request = (
+                admission_launch
+                and admitted_from == run_id
+                and spawned_pid is None
+                and request_pointer is not None
+                and not discard_recorded(run_id)
+            )
+            if restore_request:
+                _write_json(pointer_path(run_id), request_pointer)
+            else:
+                _release_launch_claim(run_id)
             # A refusal can land before the worktree exists — the creation
             # itself is the first thing inside this guard — and there is then
             # nothing of this run's to remove. The pre-existing worktree of an
