@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="157">
+<meta name="plan-version" content="158">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -209,6 +209,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-s11-frictions-20261024" data-who="reckon-42" data-when="2026-10-24T19:30:00Z">
     <div class="r-comment-body"><p><strong>Two more frictions from building this plan through its own queue, 24 October 2026, for §11 and §13.</strong> First, a ready node whose write paths overlap a <em>launched</em> run's claim is refused with <code>scope-conflict</code> rather than queued to launch after that run, so nodes sharing a hot file (<code>reckon/crew/queue_admission.py</code> took six of this plan's nodes) must be hand-sequenced by the coordinator; the queue's own overlap rule, which launches overlapping queued requests in turn, should apply to a ready dispatch too. Second, the review reflex refuses to review a run whose previous review carries an undisposed blocking finding, while <code>crew dispose</code> refuses a disposition for a review that names an older head than the run's; after a repair round both refuse, and the coordinator had to author a review brief for the new head by hand three times. A repaired head should either supersede the older review's findings or accept their disposition.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261027T134044726932-review-of-plan-edit-holds-own-units-66cbc109c01c" data-who="reckon-build" data-when="2026-10-27T14:07:14.219Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261027T063158683216-plan-edit-holds-own-units at head 66cbc109c (base c4333460f): 98/120 — goal_fidelity 18, evidence 12, scope_discipline 15, durability 17, fit 16, reuse 20; one blocking finding (the landed change adds tests/test_queue_dag_waits.py::test_closed_upstream_blocks_its_waiter[blocked]) and three non-blocking findings (uncached per-pointer gate on the admission path, three 100644-&gt;100755 mode changes, no recorded ruff receipt).</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-s12-waiting-is-not-a-duty" data-who="reckon-42" data-when="2026-10-24T09:00:00Z">
     <div class="r-comment-body"><p><strong>Found while loading this plan's own width, 24 October 2026.</strong> Each request correctly parked <code>awaiting-upstream</code> appears on the owning session's obligations as <code>run-queued</code>, and the Stop hook refuses to end the turn until every one is acknowledged. With five requests waiting that took one acknowledgement each; with a week of queued work it would make every turn end in an acknowledgement sweep. A request waiting on an upstream that has not landed is not a duty the coordinator owes, so the obligations view should leave it out, or roll the waiting requests into one informational line, and keep only <code>blocked-upstream</code>, a refusal or an hour-long stall as obligations. A second friction, for §11: <code>crew widen</code> on a running run is refused when a request that is only queued claims the same path, although a queued request's claims are checked at launch; and a widen made while the worker process is still alive returns no error and changes nothing.</p></div>
@@ -466,7 +469,7 @@
     <div class="r-comment-body"><p>One admitted request keeps its original run id through real dispatch re-holds and no-launch outcomes; both formerly failing arms pass at head, with zero added failures in the four-file admission gate.</p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261027T135927250215-review-of-a-worker-widens-to-an-unclaimed-path-39046ccfbcc5" data-who="reckon-build" data-when="2026-10-27T14:11:14.216Z">
-    <div class="r-comment-body"><p>Independent review of a-worker-widens-to-an-unclaimed-path at 39046ccfbcc5 stored as parsed — goal_fidelity 19, evidence 12, scope_discipline 19, durability 18, fit 17, reuse 18 — with two non-blocking findings: the base-revision gate arm collected nothing so the done-when&#x27;s base comparison is unmeasured, and _list_write_grants_in_brief swallows OSError so an unamendable brief dispatches without the grant list; added_failure_count 0.</p></div>
+    <div class="r-comment-body"><p>Independent review of a-worker-widens-to-an-unclaimed-path at 39046ccfbcc5 stored as parsed — goal_fidelity 19, evidence 12, scope_discipline 19, durability 18, fit 17, reuse 18 — with two non-blocking findings: the base-revision gate arm collected nothing so the done-when's base comparison is unmeasured, and _list_write_grants_in_brief swallows OSError so an unamendable brief dispatches without the grant list; added_failure_count 0.</p></div>
 </div>
 </section>
 </main>

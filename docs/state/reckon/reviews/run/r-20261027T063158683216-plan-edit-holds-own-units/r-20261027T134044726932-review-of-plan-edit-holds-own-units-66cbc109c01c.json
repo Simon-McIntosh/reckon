@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_queue_dag_waits.py::test_closed_upstream_blocks_its_waiter[blocked]"
+  ],
+  "completed_at": "2026-10-27T14:07:14.219Z",
+  "dispatched_at": "2026-10-27T13:44:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "1153",
+      "severity": "blocking",
+      "text": "blocking: RUN_FAILED_STATUSES drops \"blocked\", so a head that reads blocked no longer closes its waiter as blocked-upstream, and tests/test_queue_dag_waits.py::test_closed_upstream_blocks_its_waiter[blocked] (parametrize [\"blocked\", \"failed\"] at tests/test_queue_dag_waits.py:293) goes red: the reviewed run's own suite pair records 2 failed at base and 3 failed at head with that id added (logs/base_suite.log, logs/head_suite.log), while the done-when requires the test files importing the changed modules to add no failure against the base revision; the repair is to drop \"blocked\" from that parametrisation and add an abandoned case under a scope grant, or to drop the blocked upstream waiter behaviour from this node."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "2825",
+      "severity": "non-blocking",
+      "text": "non-blocking: _plan_review_owed runs the whole gate once per queued pointer on every admission pass with no per-pass cache, resolving the flight config (plan_review.review_coverage calls flight.resolve when config is None), listing stored reviews and re-reading the plan each time, while _rederive_waits at :2033 deliberately caches its plan read for the same pass; fold a per-pass cache keyed by (project, plan) into the same node."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the diff changes the file mode of reckon/crew/obligations.py, reckon/crew/queue_admission.py and reckon/crew/routing.py from 100644 to 100755 (git diff --summary), churn that carries no content reason and lands on the primary branch on merge."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T063158683216-plan-edit-holds-own-units/manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when requires ruff check and ruff format --check to pass on the changed paths, and the worker ran both in-session, but the manifest's tests/test_logs lines record no ruff command or result and no ruff log sits under logs/, so the recorded gate omits that half of the measure."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal holds a queued request only when its own section or the document unit is uncovered and releases it when a review covers them; reckon/crew/queue_admission.py:2255 composes those units and :2293 asks the existing gate over them, and :2378 releases the holds on a later pass.\nVERDICT done_when: the done-when names tests/test_plan_edit_never_strands.py plus a serial base/head suite delta and a ruff pass; logs/head6.log records 9 passed EXIT=0 on that file, logs/reproduce_base.log records 7 failed against the base modules, logs/negative_control.log reddens two arms, but the delta is +1 rather than the zero required and no ruff receipt is recorded.\nVERDICT write_paths: the source prompt fences six paths; the diff of c4333460f..66cbc109c changes five of them and nothing else, so the scope holds.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, commits a01099540 and 66cbc109c, readable baseline_suite and after_suite receipts, and an outside_scope entry that correctly names the single added failure.\nVERDICT diff: read both commits against c4333460f; a01099540 adds the narrowed gate, the automatic hold and release, the wait re-derivation and the new test module, and 66cbc109c adds only the landing fragment, for five changed paths total.\nCALL_SITES: reckon/crew/queue_admission.py:261 _launch_queued, reckon/crew/queue_admission.py:2825 admit_once, reckon/crew/queue_admission.py:2399 _release_plan_review_holds, reckon/crew/queue_admission.py:2424 advance_waiting_requests, reckon/crew/dispatch_plan.py:854 require_plan_reviewed, reckon/crew/obligations.py:1670 obligations\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:2255 narrows the gate to the request's own section and the document unit, :2341 writes the plan-review-owed hold, and :2378 releases only automatic holds, which is what the goal states.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate is measured and recorded in logs/head6.log, logs/base_suite.log and logs/head_suite.log, but after_suite adds tests/test_queue_dag_waits.py::test_closed_upstream_blocks_its_waiter[blocked] over base_suite while the done-when asks for no added failure, and the ruff half of the measure is unrecorded.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every changed path is inside the six declared at reckon/crew/queue_admission.py and its siblings, but the diff also carries a 100644->100755 mode change on three files and a run-status behaviour change the plan section 11 text does not name.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative_control.log reddens tests/test_plan_edit_never_strands.py:264 and :307 when :2332's units argument is reverted to None, and :347 fails if the automatic flag is ignored, but the blocked-status change at :1153 is guarded only by a new arm that contradicts tests/test_queue_dag_waits.py:307.\nSCORE fit: 16\nJUSTIFICATION fit: the additions follow the module idiom and introduce no prohibited name, but the launch-narrowing travels through a ContextVar at reckon/crew/routing.py:2429 rather than a dispatch argument, and the three mode changes are noise.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/crew and reckon/_plan_html found the existing owners and the change extends them rather than forking: section_record_id and DOCUMENT_UNIT at reckon/crew/queue_admission.py:2265, derive_wait_refs at :2057, require_plan_reviewed at :2325 and plan_review.review_invocation at reckon/crew/obligations.py:1676.\nFINDING reckon/crew/queue_admission.py:1153 blocking: RUN_FAILED_STATUSES drops \"blocked\", so tests/test_queue_dag_waits.py::test_closed_upstream_blocks_its_waiter[blocked] (parametrize [\"blocked\", \"failed\"] at tests/test_queue_dag_waits.py:293) goes red, and the base/head suite receipts record 2 failed at base against 3 at head with that id added, while the done-when requires zero added failures; repair by dropping \"blocked\" from that parametrisation and adding an abandoned case under a scope grant, or by dropping the blocked-upstream change from this node.\nFINDING reckon/crew/queue_admission.py:2825 non-blocking: _plan_review_owed runs the whole gate once per queued pointer per pass with no per-pass cache, while _rederive_waits at :2033 caches its plan read for the same pass; fold a per-pass cache keyed by (project, plan) into the same node.\nFINDING reckon/crew/routing.py:1 non-blocking: the diff changes the file mode of obligations.py, queue_admission.py and routing.py from 100644 to 100755 with no content reason.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T063158683216-plan-edit-holds-own-units/manifest.md:9 non-blocking: the done-when requires ruff check and ruff format --check on the changed paths, and neither a ruff command nor a ruff result is recorded in the manifest or under logs/.",
+  "review_run_id": "r-20261027T134044726932-review-of-plan-edit-holds-own-units-66cbc109c01c",
+  "reviewed_base_sha": "c4333460f581ea4586b97944508664e31187785c",
+  "reviewed_head_sha": "66cbc109c01c1dc1f6441eb3454fcfeec0e0ddb9",
+  "reviewed_run_id": "r-20261027T063158683216-plan-edit-holds-own-units",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T14:22:01.687832+00:00",
+  "total": 98
+}
