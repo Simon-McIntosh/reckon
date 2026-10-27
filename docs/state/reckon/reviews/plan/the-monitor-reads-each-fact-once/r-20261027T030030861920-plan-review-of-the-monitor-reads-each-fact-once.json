@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T03:47:02.659Z",
+  "dispatched_at": "2026-10-27T03:24:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261027T030030861920-plan-review-of-the-monitor-reads-each-fact-once/plan.html:319",
+      "id": "done_when-1",
+      "reason": "the section must either carry the `saw_live` hinge into the station/subscriber contract or add the arming-before-pointer case and its control to the done-when; without it a node implements \u00a710 literally and reintroduces the dispatch-settles-its-own-follower race the current code exists to prevent.",
+      "text": "the drain-settle measure settles a subscriber on \"the station's readings for all of its populations have read no live work for the grace\" and declares three drain-settle controls (own-session-only, ownerless/unscoped, no-grace handover), but none of the four covers a subscriber armed while its populations are *already* empty: today `_check_settle` refuses to settle at all until it has seen live work (`saw_live` stays false and the function returns, reckon/crew_follow_commands.py:1495, 1555, with the reason stated in the code: \"a dispatch asks the host for this follower before it publishes the run's pointer, so a follower that settled on its first empty reading would leave before its own run appeared\"). A station that records a per-(project, session) \"no live work\" reading from its first tick will have carried that reading for longer than the grace by the time a freshly armed subscriber first polls, so the subscriber settles and exits before the dispatch that armed it publishes its run's pointer \u2014 and every case and negative control \u00a710 declares still passes, because not one of them arms a subscriber against an empty population.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f32de51f478368f2b268ad8b14d35d1a746c4a9b2208a46cb1ef5138853b8115",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 59,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T030030861920-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "c161d287bb261aa3449e7dcd4b24a53908339011",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each symbol \u00a710 cites resolves at this revision: `resumption.sweep` (reckon/crew/resumption.py:1768, no host filter, session-scoped only, as the section claims), `runs.sweep_unfollowed_sessions` (reckon/crew/runs.py:3746, whose docstring states the host rule \u00a710 borrows), `recovery_review_acceptance.dispatch_awaiting_reviews` (recovery_review_acceptance.py:377), `recovery_review_dispatch.review_settle_seconds_remaining` (:1258, reading `auto_resume` alone as claimed), `recovery_review_dispatch._latest_resume_at` (:206, returning the newer of the two stamps), `_check_settle`/`_population_has_live_work`/`settle_populations`/`FOLLOWER_SETTLE_SAMPLE_SECONDS`/`FOLLOWER_SETTLE_GRACE_SECONDS` (reckon/crew_follow_commands.py:482, 1505, 1517, 285, 312). No `<a href>` in \u00a710 to resolve.",
+    "done_when": "a finding \u2014 the drain-settle measure (plan.html:319-322) carries no case for a subscriber armed while its populations already read no live work, so the mechanism it specifies can drop `_check_settle`'s `saw_live` hinge and still pass every case and negative control the section declares.",
+    "evidence_paths": "pass \u2014 \u00a710 declares no implementation gate paths (it is the authored plan), and what it does point a later reader at are repository modules and symbols rather than a temporary or session-local location.",
+    "naming": "pass \u2014 \u00a710 names no plan label, stage name or ticket number in a symbol, and \"old \u00a781\" is a carried-section reference in plan prose, which is the plan's own cross-reference grammar rather than code naming.",
+    "reasoning": "pass \u2014 all three checks hold on the text as written: the stated cause (per-follower redundant sweep and settle reads) is the one the section's own cited callers show (`resumption.sweep` per follower, `_check_settle` scanning `_list_live_records` per second), the mechanisms produce the measured outcomes, and the production caller is named (the station's tick loop, \u00a77). The one gap \u2014 the `saw_live` hinge the replacement mechanism would drop \u2014 is reported under `done_when`, because it is the measure's missing case that lets it through.",
+    "single_goal": "pass \u2014 \"the review reflex and settle run once, in the station\" is one move: both per-follower cadences become the station's, and the advice-door settle reader is the same mechanism reached from the other side.",
+    "wiring": "pass \u2014 \u00a710's `plan-section-depends-on` entry declares s7 and s8 (plan.html:23), both of which exist, and the two nodes it names are exactly the ones its measure needs: the station that runs the sweep (\u00a77) and the subscriber whose trace it takes (`the process \u00a78 delivers`, plan.html:328)."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "77704890843e6a14d231d32a4d3bc08240b8364976a6eb170830cb2f51e2f3e9",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T03:53:49.423604+00:00"
+}
