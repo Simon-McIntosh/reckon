@@ -23,8 +23,8 @@
   <title>A Long-Lived Crew Process Leaves Nothing Stale | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="10">
-<meta name="plan-modified" content="2026-10-26">
+<meta name="plan-version" content="11">
+<meta name="plan-modified" content="2026-10-27">
 <meta name="plan-blocks" content="the-monitor-reads-each-fact-once#s7">
 </head>
 <body>
@@ -81,7 +81,10 @@
     <div class="r-comment-body"><p>§3 landed: head <code>0def2d8a7</code>, review 110/120; the inherited child is reaped by the existing reaper. <a href="/reckon/evidence/archive/a-long-lived-crew-process-leaves-nothing-stale-landed.html#s3">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261024T110802029357-a-reexec-reaps-the-children-it-inherits" data-who="reckon-build" data-when="2026-10-24T23:18:51.596Z">
-    <div class="r-comment-body"><p>A re-exec now adopts every pid the kernel lists as this process&#x27;s child, with no run record, so the shared reaper collects the children the old image stranded; queue_admission.admit_until_stopped and recovery_watch.watch_ticker call it once at start-up. tests/test_a_reexec_reaps_the_children_it_inherits.py passes 5/5 at this change (file absent at base); the 124-file importer gate adds 0 failures; the negative control without the child scan leaves the inherited child a zombie and fails the first case at EXIT=1.</p></div>
+    <div class="r-comment-body"><p>A re-exec now adopts every pid the kernel lists as this process's child, with no run record, so the shared reaper collects the children the old image stranded; queue_admission.admit_until_stopped and recovery_watch.watch_ticker call it once at start-up. tests/test_a_reexec_reaps_the_children_it_inherits.py passes 5/5 at this change (file absent at base); the 124-file importer gate adds 0 failures; the negative control without the child scan leaves the inherited child a zombie and fails the first case at EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261027T011007124894-review-of-dispatch-reads-the-fleet-record-through-its-owner-5ba926658974" data-who="reckon-build" data-when="2026-10-27T01:18:05.470Z">
+    <div class="r-comment-body"><p>review: parsed record for r-20261027T000925847062-dispatch-reads-the-fleet-record-through-its-owner at base 6fc5168f1135c315fa1a752fb208cc0fdf43592e / head 5ba92665897432964ef81d2c20014d278770f695 scores goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 17, reuse 20 (total 109) with 0 added failures and three non-blocking findings (a docstring at reckon/crew/watch_unit.py:213 that the change falsified outside its fence, ambiguous provenance on the red arm&#x27;s header, and an absence assertion that passes under the pre-change resolver).</p></div>
 </div>
 </section>
 </main>

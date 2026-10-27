@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:2396 (_spawn_through_fleet reads the record to decide the fleet spawn)",
+    "reckon/crew/dispatch_watch.py:362 (_start_watch_producer reads the record for the same decision)",
+    "reckon/crew/dispatch_watch.py:481",
+    "reckon/crew/watch_unit.py:216 (fleet_record_node reads through the dispatch_launch owner)"
+  ],
+  "completed_at": "2026-10-27T01:18:05.470Z",
+  "dispatched_at": "2026-10-27T01:12:28Z",
+  "findings": [
+    {
+      "line": 213,
+      "path": "reckon/crew/watch_unit.py",
+      "severity": "non-blocking",
+      "summary": "the fleet_record_node docstring still says dispatch_launch resolves the record from RECKON_FLEET_RECORD and XDG_STATE_HOME; XDG_STATE_HOME ceased to be an input when the duplicate resolver was deleted, so a reader is told about a resolution that no longer happens. The file is outside this node's declared write paths, so it could not be corrected here"
+    },
+    {
+      "line": 1,
+      "path": "negative-control.log",
+      "severity": "non-blocking",
+      "summary": "the red arm's header names revision 6fc5168f (the base) with 'mutation applied on top' and records no mutation diff, and its traceback places the failing assertion at test line 60 while the landed head file carries it at line 58, so the arm cannot be shown from the record to be a reversion of the landed head; the failing id and EXIT=1 are present, which is what admission reads"
+    },
+    {
+      "line": 81,
+      "path": "tests/test_dispatch_reads_the_fleet_record_through_its_owner.py",
+      "severity": "non-blocking",
+      "summary": "the no-record case asserts only that the owner directory is absent and the read returns None, which the pre-change XDG_STATE_HOME resolver satisfies identically, so it guards against a crash rather than against the regression; durability rests on the named-fleet case at line 58 and the override case at line 72, both of which do redden on reversion"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites",
+    "diff": "read commit by commit from 6fc5168f to 5ba926658: d9b3b1a71 deletes `_fleet_record_path` and its dispatch.py re-export, rewrites `_read_fleet_record` to ask state_directory() for the directory, and adds the 81-line test file; 5ba926658 adds only the evidence fragment HTML, so the code measured by the head gate arm is the head code",
+    "done_when": "the done_when names `git grep -n 'def _fleet_record_path' reckon/` returning nothing, the FLEET_NAME=alpha read case, the override precedence case, a negative control restoring the XDG_STATE_HOME default, no added importer-test failure, and a zero ruff delta; tests/test_dispatch_reads_the_fleet_record_through_its_owner.py:46-81 asserts the first three and the other three are recorded in the reviewed run's manifest and gate logs. The new test file appears in the head arm's own file list, so its 3 tests are inside the 1271 passed",
+    "goal": "the node goal is dispatch reading the fleet record through fleet_supervisor.state_directory while keeping only the RECKON_FLEET_RECORD override; reckon/crew/dispatch_launch.py:2211-2212 does exactly that and the duplicate `_fleet_record_path` resolver is gone from the tree at 5ba926658",
+    "manifest": "read in full at the run directory: it records status complete, both importer arms at 1 failed/1271 passed/1 skipped (head, d9b3b1a71) and 1 failed/1268 passed/1 skipped (base, 6fc5168f) with the same single failing id in both, the negative control at 1 failed/2 passed EXIT=1, and a zero ruff delta",
+    "write_paths": "the node's declared write paths are reckon/crew/dispatch_launch.py, reckon/crew/dispatch.py and tests/test_dispatch_reads_the_fleet_record_through_its_owner.py, with the evidence fragment path added in the manifest's orientation list; the diff touches exactly those four paths and nothing else"
+  },
+  "justifications": {
+    "durability": "reinstating the XDG_STATE_HOME resolver reddens tests/test_dispatch_reads_the_fleet_record_through_its_owner.py:58 with `assert None == {'job_id': '4242', ...}` as negative-control.log records, and dropping the override reddens line 72 by returning {'source': 'owner'}; the absence case at line 81 can pass under either resolver, so it is not counted.",
+    "evidence": "tests/test_dispatch_reads_the_fleet_record_through_its_owner.py:58 asserts the read equals the payload written at the owner-resolved directory and gate-head.log's summary line records the importer arm at 1 failed/1271 passed with the same id as gate-base.log's 1 failed/1268 passed; the record loses points because negative-control.log names the base revision as its arm and shows its assertion at a different line from the landed file, and the ruff delta is claimed rather than logged.",
+    "fit": "the rewritten docstring at reckon/crew/dispatch_launch.py:2204-2208 states the mechanism (the owner owns the path, a second resolver drifts) in the surrounding module's idiom, adding no plan, ticket or version name; the one blemish is the now-false reference to this resolver left at reckon/crew/watch_unit.py:213.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:2211-2212 keeps the RECKON_FLEET_RECORD override and otherwise joins state_directory() with RECORD_NAME, and the deleted resolver leaves no `def _fleet_record_path` anywhere under reckon/.",
+    "scope_discipline": "every path in the 6fc5168f..5ba926658 diff (dispatch.py, dispatch_launch.py, the new test file, the evidence fragment) is inside the declared write paths, and the write-side path that needed correcting but lay outside the fence, reckon/crew/watch_unit.py:213, was left untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is dispatch reading the fleet record through fleet_supervisor.state_directory while keeping only the RECKON_FLEET_RECORD override; reckon/crew/dispatch_launch.py:2211-2212 does exactly that and the duplicate `_fleet_record_path` resolver is gone from the tree at 5ba926658.\nVERDICT done_when: the done_when names `git grep -n 'def _fleet_record_path' reckon/` returning nothing, the FLEET_NAME=alpha read case, the override precedence case, a negative control restoring the XDG_STATE_HOME default, no added importer-test failure and a zero ruff delta; tests/test_dispatch_reads_the_fleet_record_through_its_owner.py:46-81 asserts the first three, the arms are recorded in the manifest, and the new file is inside the head arm's own list so its 3 tests sit within the 1271 passed.\nVERDICT write_paths: the declared paths are reckon/crew/dispatch_launch.py, reckon/crew/dispatch.py and tests/test_dispatch_reads_the_fleet_record_through_its_owner.py plus the manifest-declared evidence fragment; the diff touches exactly those four and nothing else.\nVERDICT manifest: read in full; it records complete, head 1 failed/1271 passed/1 skipped at d9b3b1a71 against base 1 failed/1268 passed/1 skipped at 6fc5168f with the same failing id in both, the negative control at 1 failed/2 passed EXIT=1, and a zero ruff delta.\nVERDICT diff: read commit by commit from 6fc5168f to 5ba926658; d9b3b1a71 deletes the duplicate resolver and its re-export and adds the test, and 5ba926658 adds only the evidence fragment, so the head gate arm measured the landed code.\nCALL_SITES: reckon/crew/dispatch_launch.py:2396, reckon/crew/dispatch_watch.py:362, reckon/crew/dispatch_watch.py:481, reckon/crew/watch_unit.py:216\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2211-2212 keeps the RECKON_FLEET_RECORD override and otherwise joins state_directory() with RECORD_NAME, and no `def _fleet_record_path` remains under reckon/.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_dispatch_reads_the_fleet_record_through_its_owner.py:58 asserts the read against the payload written at the owner path and gate-head.log records 1 failed/1271 passed matching gate-base.log's single failing id, but negative-control.log:1 names the base revision and its assertion line differs from the landed file, and the ruff delta is claimed rather than logged.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the 6fc5168f..5ba926658 diff is inside the declared write paths, and reckon/crew/watch_unit.py:213, which the change falsified but lay outside the fence, was correctly left untouched.\nSCORE durability: 18\nJUSTIFICATION durability: restoring the XDG_STATE_HOME resolver reddens tests/test_dispatch_reads_the_fleet_record_through_its_owner.py:58 and dropping the override reddens line 72, while the absence case at line 81 passes under either resolver and is not counted.\nSCORE fit: 17\nJUSTIFICATION fit: the rewritten docstring at reckon/crew/dispatch_launch.py:2204-2208 states the mechanism in the module's idiom with no plan or ticket name, the one blemish being the now-false reference at reckon/crew/watch_unit.py:213.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner fleet_supervisor.state_directory (reckon/crew/fleet_supervisor.py:329) that fleet_migrate.py:230 and fleet_migrate.py:836 already call, and deletes the duplicate rather than forking a third resolver.\nFINDING reckon/crew/watch_unit.py:213 non-blocking: the fleet_record_node docstring still says dispatch_launch resolves the record from RECKON_FLEET_RECORD and XDG_STATE_HOME, but XDG_STATE_HOME ceased to be an input when the duplicate resolver was deleted; the file is outside this node's fence so it is recorded, not repaired.\nFINDING negative-control.log:1 non-blocking: the red arm names base revision 6fc5168f with 'mutation applied on top', records no mutation diff, and shows its failing assertion at test line 60 where the landed file carries it at line 58, so the record cannot show the arm was a reversion of the landed head even though the failing id and EXIT=1 are present.\nFINDING tests/test_dispatch_reads_the_fleet_record_through_its_owner.py:81 non-blocking: the no-record case asserts only an absent directory and a None read, which the pre-change resolver satisfies identically, so it guards against a crash rather than against the regression the change repairs.",
+  "review_run_id": "r-20261027T011007124894-review-of-dispatch-reads-the-fleet-record-through-its-owner-5ba926658974",
+  "reviewed_base_sha": "6fc5168f1135c315fa1a752fb208cc0fdf43592e",
+  "reviewed_head_sha": "5ba92665897432964ef81d2c20014d278770f695",
+  "reviewed_run_id": "r-20261027T000925847062-dispatch-reads-the-fleet-record-through-its-owner",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T01:20:00+00:00",
+  "total": 109
+}
