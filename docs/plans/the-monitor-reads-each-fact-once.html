@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="68">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -452,6 +452,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261027T045950194125-review-of-a-lift-row-reads-as-a-lift-4112d7fe4231" data-who="reckon-build" data-when="2026-10-27T05:05:34.764Z">
     <div class="r-comment-body"><p>Independent review of a-lift-row-reads-as-a-lift at head 4112d7fe423163695922e63d7b0bae188e395f45 from base 54f4934f3dd3b2238d514f8b4e085958da53395c: all six checklist items answered, total 99/120 (goal_fidelity 16, evidence 16, scope_discipline 19, durability 17, fit 18, reuse 13), added_failure_count 0 over the reviewed run's own base/head gate logs; three non-blocking findings — a merged grant is drawn twice because the grant's own row is emitted before the merged copy, the replaced lift id is inferred from event order rather than read from the producer's record, and _lift_line duplicates the trailing-cell scaffolding of _reset_line.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261027T043434060437-a-lift-row-reads-as-a-lift" data-who="reckon-build" data-when="2026-10-27T05:10:05Z">
+    <div class="r-comment-body"><p>A lift row now prints the producer&#x27;s own clause (form, scope, id) instead of only the run-state transition, and a grant plus the end of the lift it replaced are drawn as one row naming both — the uncapped grant and the id it replaces — so the grant no longer reads as landed; gate: the 19:11Z event pair renders 1 row containing uncapped+granted+replaces and 0 rows containing landed, head 645 passed / base 642 passed with only the 3 negative-control cases failing.</p></div>
 </div>
 </section>
 </main>
