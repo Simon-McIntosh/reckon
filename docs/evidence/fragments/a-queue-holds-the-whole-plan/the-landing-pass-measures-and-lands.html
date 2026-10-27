@@ -47,7 +47,12 @@ times out. A removal that fails or exceeds its bound leaves the repository's
 worktree registration behind, so it is pruned with
 <code>git worktree prune --expire now</code> under the same bound; a stale entry
 would otherwise make a later checkout of the same path fail. A measurement that
-raises is reported as itself, not as a base checkout that could not be built.</p>
+raises is reported as itself, not as a base checkout that could not be built.
+A scratch root that cannot be created — full or unwritable — is a checkout that
+cannot be built like any other: it raises the same refusal, so that run's
+landing is refused and its obligation raised while the admission pass carries
+on. The admission loop calls the landing step unguarded, so an error escaping
+it would stop admission for every session.</p>
 <p>Measured on the node's gate: fifteen tests pass against a test suite with
 stubbed repositories and commands, covering a clean population landing with its
 armed suite pair recorded, a flaky added id landing, a real added id refused
