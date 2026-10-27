@@ -3382,15 +3382,26 @@ def _reconcile_watch_record(project: str, record: Mapping[str, Any]) -> bool:
     if not _record_producer_dead(record, project=project):
         return False
     path = watch_lock_path(project)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = path.open("a+b")
+    except OSError:
+        # A read-only config home cannot repair the record. Report it
+        # unrepaired rather than failing the read that found it; a writable
+        # reader repairs it as before.
+        return False
+    with handle:
         try:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             # A live producer claimed the seat since this record was read.
             return False
-        _write_watch_record(handle, {})
-        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        try:
+            _write_watch_record(handle, {})
+        except OSError:
+            return False
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
         return True
 
 
@@ -3634,24 +3645,38 @@ def watch_observer_alive(registration: Mapping[str, Any]) -> bool | None:
     )
 
 
+def _probe_seat_read_only(project: str) -> tuple[bool, dict[str, Any]]:
+    """Read a project's seat lock state without creating or writing its file.
+
+    A reader must answer under a read-only config home, where opening the seat
+    for update fails and creating it is impossible, so an absent seat reads as
+    an empty seat rather than being created on demand. A present seat is opened
+    read-only and its advisory lock probed from that descriptor, which
+    ``flock`` permits whatever mode the file was opened in.
+    """
+    path = watch_lock_path(project)
+    try:
+        handle = path.open("rb")
+    except FileNotFoundError:
+        return False, {}
+    with handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return True, _read_watch_record(handle)
+        else:
+            registration = _read_watch_record(handle)
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            return False, registration
+
+
 def project_watch_visibility(
     project: str, *, session: str | None = None
 ) -> dict[str, Any]:
     """Describe whether a project's pointers have a live watcher and reader."""
     arming_line = _watch_arming_line(project)
     attach_line = _watch_attach_line(project, session=session)
-    path = watch_lock_path(project)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
-        try:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            seat_held = True
-            registration = _read_watch_record(handle)
-        else:
-            seat_held = False
-            registration = _read_watch_record(handle)
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    seat_held, registration = _probe_seat_read_only(project)
 
     holder = _fresh_watch_holder(project, registration)
     if holder is not None:
