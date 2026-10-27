@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:2356",
+    "reckon/crew/dispatch_claims.py:1110"
+  ],
+  "completed_at": "2026-10-27T07:15:43.620Z",
+  "dispatched_at": "2026-10-27T07:08:22Z",
+  "findings": [
+    {
+      "file": "logs/head-arm-loadfile.log",
+      "line": 4,
+      "severity": "non-blocking",
+      "text": "Every arm log prints module.__file__ and cwd as the base extraction while its tree line names the arm, so the head arm does not establish by its own log which code ran, and manifest.md:17 reports a measurement_module value no log printed."
+    },
+    {
+      "file": "logs/head-arm-loadfile.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "The command header carries the literal placeholder '<120 population test files>' rather than the expanded list, and the population lives only in /tmp scratch, so neither arm is reproducible from the run directory although the done-when requires a literal command."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": 2580,
+      "severity": "non-blocking",
+      "text": "'suite_gate': suite_gate or 'unarmed' records unarmed for a project that declares no suite command, which _resolved_suite_gate's docstring calls a different fact from a declaration this node's scope empties, so a record reader cannot distinguish them."
+    },
+    {
+      "file": "manifest.md",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "The run records no ruff check or ruff format --check result although its done-when requires both to add no findings on the staged paths; re-running them at the head arm shows them clean (1 pre-existing S608 at prompts.py:807, also at base prompts.py:779; format --check reports 4 files already formatted), so the requirement is met but unrecorded."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch.py:2356 (_compose_dispatch_prompt) and reckon/crew/dispatch_claims.py:1110 (compose_prompt) are the only production paths that reach the changed signature; no other composer exists in reckon/.",
+    "diff": "Read both commits against a62f63172 (a4d530ed9 feat(crew) and d97ac8c40 docs(evidence)); the production change threads suite_command and suite_gate from dispatch through _compose_dispatch_prompt into compose_prompt and adds suite_command_resolved/suite_gate to the run record, all inside the declared scope.",
+    "done_when": "The done-when's two cases and its negative control are present in tests/test_a_run_record_carries_its_suite_command.py:148 and :174, the mutation reddens both (logs/negative-control.log 2 failed, EXIT=1) and the node gate is 2 passed EXIT=0, but the done-when's ruff clause and its 'literal command on every log' clause are not recorded by the run (finding recorded).",
+    "goal": "The node goal is to resolve the armed suite command at dispatch and name it in the worker prompt; reckon/crew/dispatch.py:1201 adds _resolved_suite_gate, dispatch.py:2391 resolves before the prompt is composed, and reckon/crew/prompts.py:736 emits a FENCE \u2014 SUITE block naming the resolved string.",
+    "manifest": "Read the reviewed run's manifest.md; it states node gate 2 passed EXIT=0, base and head population arms at 1222 passed 1 skipped EXIT=0 under -n 8 --dist loadfile, and the negative control 2 failed EXIT=1, but records no ruff result and no literal population command (findings recorded).",
+    "write_paths": "Every path in the diff is inside the declared scope: reckon/crew/dispatch.py, reckon/crew/dispatch_claims.py, reckon/crew/prompts.py, tests/test_a_run_record_carries_its_suite_command.py and the permitted landing fragment docs/evidence/fragments/scoring-should-stop-a-promotion/a-run-record-carries-its-suite-command.html; no figure was written, which the run's done-when allows."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to resolve the armed suite command at dispatch and name it in the worker prompt; reckon/crew/dispatch.py:1201 adds _resolved_suite_gate and prompts.py:736 emits the resolved string, so the goal is met.\nVERDICT done_when: the two cases and the negative control exist at tests/test_a_run_record_carries_its_suite_command.py:148 and :174, the mutation reddens both (logs/negative-control.log, 2 failed, EXIT=1), and the node gate is 2 passed EXIT=0; the ruff clause and the literal-command clause are not recorded.\nVERDICT write_paths: read the declared list in manifest.md:3; all five changed paths lie inside it and the landing fragment is the permitted one.\nVERDICT manifest: read; it states 2 passed EXIT=0, both arms 1222 passed 1 skipped EXIT=0 and the mutation 2 failed EXIT=1, and records no ruff result.\nVERDICT diff: read commit by commit against a62f63172; a4d530ed9 changes dispatch.py, dispatch_claims.py and prompts.py, d97ac8c40 adds the evidence fragment, and nothing outside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:2356, reckon/crew/dispatch_claims.py:1110\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1201 resolves through promotion's own _scoped_suite_command and prompts.py:736 names the resolved command, exactly the plan's deliverable.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/node-gate.log records 2 passed EXIT=0 and logs/negative-control.log records the red 2 failed EXIT=1, but the population-arm headers are self-contradictory and no ruff result is recorded anywhere.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path is inside the six declared write paths, with the fragment at the permitted scope path and no figure written.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_run_record_carries_its_suite_command.py:166 compares record['suite_command_resolved'] against the literal 'uv run pytest tests/test_node_measure.py -q' rather than the template handed in, so restoring the verbatim template reddens it.\nSCORE fit: 16\nJUSTIFICATION fit: dispatch.py:1224 uses the deferred import idiom already used by reckon/crew/recovery_repair_dispatch.py:662 and introduces no plan label, though dispatch.py:2580's 'unarmed' default contradicts the docstring at dispatch.py:1218.\nSCORE reuse: 20\nJUSTIFICATION reuse: dispatch.py:1226 calls promotion_records._scoped_suite_command rather than reimplementing the substitution, extending the owner the plan names.\nFINDING logs/head-arm-loadfile.log:4 non-blocking: every arm log prints module.__file__ and cwd as the base extraction while its tree line names the arm, so the head arm does not establish by its own log which code ran, and manifest.md:17 reports a measurement_module value no log printed.\nFINDING logs/head-arm-loadfile.log:3 non-blocking: the command header carries the literal placeholder '<120 population test files>' rather than the expanded list, and the population lives only in /tmp scratch, so neither arm is reproducible from the run directory although the done-when requires a literal command.\nFINDING reckon/crew/dispatch.py:2580 non-blocking: 'suite_gate': suite_gate or 'unarmed' records unarmed for a project that declares no suite command, which _resolved_suite_gate's docstring calls a different fact from a declaration this node's scope empties, so a record reader cannot distinguish them.\nFINDING manifest.md:24 non-blocking: the run records no ruff check or ruff format --check result although its done-when requires both to add no findings on the staged paths; I re-ran them and they are clean (1 pre-existing S608 at prompts.py:807, also present at base prompts.py:779; format --check reports 4 files already formatted), so the requirement is met but unrecorded.\n",
+  "review_run_id": "r-20261027T070623518314-review-of-a-run-record-carries-its-suite-command-d97ac8c40d82",
+  "reviewed_base_sha": "a62f63172eff26dc03784fd5797cfd147cf4a8f4",
+  "reviewed_head_sha": "d97ac8c40d820a0940530afbc78046eaa4e7cd91",
+  "reviewed_run_id": "r-20261027T050311464366-a-run-record-carries-its-suite-command",
+  "reviewer": "review-of-a-run-record-carries-its-suite-command-d97ac8c40d82",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T07:15:44.229591+00:00",
+  "total": 109
+}
