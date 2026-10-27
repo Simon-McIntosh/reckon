@@ -251,7 +251,7 @@ def test_queued_pointer_survives_refused_launch_and_own_launch_proceeds(
             pointer, launcher=scope_cases._launcher([]), config_for=lambda _: config
         )
     assert observed == [True]
-    assert runs.pointer_path("r-queued").exists()
+    assert runs.read_pointer("r-queued")["phase"] == "queued"
     runs.pointer_path("r-peer").unlink()
     monkeypatch.setattr(dispatch_module, "dispatch", real_dispatch)
     launched = queue_admission._launch_queued(
