@@ -1,0 +1,40 @@
+<section id="crew-watch-ensures-the-station" data-node="crew-watch-ensures-the-station">
+  <h3 id="crew-watch-ensures-the-station-result">crew watch requests the node station before it takes the producer seat</h3>
+  <p><code>reckon crew watch</code> now requests the node station through
+  <code>dispatch_watch._ensure_node_station</code> before it claims the producer seat. The call sits
+  after the <code>--ensure</code> branch and before either the following loop or the single-event
+  <code>watch()</code>, so every route that holds the seat passes it. Outside a fleet allocation it is
+  a no-op, and a station already holding the node is left alone.</p>
+  <p>The station restart test was asserting on stored events before every stream's consumed offset had
+  advanced. The two are written in one tick but not atomically together, so the test read a
+  half-applied tick and failed on the offset assertion. It now waits for both facts — two stored
+  events and every stream offset past its initial value — before asserting either.</p>
+
+  <h3 id="crew-watch-ensures-the-station-measure">Measured</h3>
+  <table id="crew-watch-ensures-the-station-table">
+    <thead><tr><th>Measure</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr id="crew-watch-ensures-the-station-importers">
+        <td>Importer population, files referencing <code>reckon/crew_follow_commands.py</code></td>
+        <td>437 passed, 1 failed (<code>test_follow_sweep_cadence.py::test_the_rate_guard_holds_across_many_calls_in_one_interval</code>), exit 1</td>
+        <td>440 passed, 0 failed, exit 0 — 0 added failure ids; the base-only failure passed at head</td>
+      </tr>
+      <tr id="crew-watch-ensures-the-station-restart">
+        <td><code>test_one_station_keeps_every_session_transition_once_across_restart</code>, <code>pytest -n 8</code>, 10 consecutive runs</td>
+        <td>fails on the offset assertion (reproduced before the repair)</td>
+        <td>10 of 10 passed, exit 0</td>
+      </tr>
+      <tr id="crew-watch-ensures-the-station-ruff">
+        <td>Ruff findings on the staged paths</td>
+        <td><code>crew_follow_commands.py</code>: 2 existing findings (SIM103, SIM115)</td>
+        <td>the same 2 findings; 0 added. Both test files pass <code>ruff format --check</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p id="crew-watch-ensures-the-station-negative">Negative control: with the
+  <code>dispatch_watch._ensure_node_station()</code> call removed, the station-request case
+  <code>test_crew_watch_requests_the_node_station_before_the_producer_seat</code> fails, 1 failed and
+  1 passed, exit 1; the log is <code>negative-control-station-skip.log</code> in the run directory. The
+  head arm ran at committed revision <code>396737a8d</code>; the base arm at the extracted
+  <code>d6d6ce65d</code>.</p>
+</section>
