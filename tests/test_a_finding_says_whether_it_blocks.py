@@ -195,6 +195,11 @@ def test_a_stored_review_round_trips_its_severity(
         "severity": "blocking",
     }
     assert stored["findings"] == [written | {"id": repair_module.finding_id(written)}]
+    # Deriving the expectation through the same function would agree with an id
+    # function that returned one value for everything, so the identity is shown
+    # to separate two findings as well as to name this one.
+    other = {**written, "line": "13"}
+    assert repair_module.finding_id(other) != repair_module.finding_id(written)
 
     read = review_module.read_review(
         PROJECT, RUN_ID, base_dir=base_dir, reviewed_head_sha=HEAD_SHA

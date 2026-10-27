@@ -18,6 +18,7 @@ repair reads what changed rather than re-reading the whole review.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -102,25 +103,50 @@ def _advance(repo: Path, name: str) -> str:
     return _git(repo, "rev-parse", "HEAD")
 
 
-def _store_at(
-    tmp_path: Path, monkeypatch, root: Path, base_sha: str, head_sha: str
-) -> None:
-    """Land the review in the project's committed tree, keyed to the head it read.
+def _registered_checkout(tmp_path: Path) -> Path:
+    """A main checkout holding the project's landed reviews, beside the worktree.
+
+    A run's own tree holds the work and the new head; the record a promotion
+    landed lives in the checkout the project is mounted at. A fixture that
+    stores and searches one tree cannot tell a correct lookup from one that
+    reads the wrong tree, so the two are separate directories here and nothing
+    is committed into the store tree.
+    """
+    checkout = tmp_path / "main-checkout"
+    (checkout / "docs" / "state" / PROJECT).mkdir(parents=True)
+    _git(checkout, "init", "-q", "-b", "main")
+    _git(checkout, "config", "user.email", "worker@example.invalid")
+    _git(checkout, "config", "user.name", "Worker")
+    (checkout / "docs" / "state" / PROJECT / ".gitkeep").write_text(
+        "", encoding="utf-8"
+    )
+    _git(checkout, "add", f"docs/state/{PROJECT}/.gitkeep")
+    _git(checkout, "commit", "-q", "-m", "chore: seed")
+    home = Path(os.environ.get("RECKON_HOME") or (tmp_path / "config"))
+    home.mkdir(parents=True, exist_ok=True)
+    (home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(checkout / "docs")}), encoding="utf-8"
+    )
+    return checkout
+
+
+def _store_at(tmp_path: Path, monkeypatch, base_sha: str, head_sha: str) -> Path:
+    """Land the review in the registered checkout, keyed to the head it read.
 
     Only a landed review is reachable by descent: a staging round describes one
     head, and once the work has moved past it the round is no longer evidence
     about the work the run is now standing on.
     """
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
-    (root / "docs").mkdir(parents=True, exist_ok=True)
-    review_module.store_committed_review(
+    checkout = _registered_checkout(tmp_path)
+    return review_module.store_committed_review(
         {
             **_record([dict(FINDING)]),
             "review_run_id": "r-review",
             "reviewed_base_sha": base_sha,
             "reviewed_head_sha": head_sha,
         },
-        root=root,
+        root=checkout,
     )
 
 
@@ -132,7 +158,7 @@ def test_a_review_is_found_from_a_later_head_by_descent(tmp_path, monkeypatch) -
     keeps a review of this work reachable after the repair it caused committed.
     """
     repo, reviewed_head = _repo(tmp_path)
-    _store_at(tmp_path, monkeypatch, repo, reviewed_head, reviewed_head)
+    _store_at(tmp_path, monkeypatch, reviewed_head, reviewed_head)
     later_head = _advance(repo, "two.txt")
     assert later_head != reviewed_head
 
@@ -144,6 +170,32 @@ def test_a_review_is_found_from_a_later_head_by_descent(tmp_path, monkeypatch) -
     assert path is not None
     assert stored_head == reviewed_head
     assert record["reviewed_head_sha"] == reviewed_head
+
+
+def test_the_landed_review_is_read_from_the_registered_checkout(
+    tmp_path, monkeypatch
+) -> None:
+    """The run's worktree holds the work, not the landed record of it.
+
+    The store resolves from the checkout the project is mounted at, as the
+    by-head selection does, while the run's tree supplies only the ancestry
+    check. Searching the worktree finds nothing, which is what a hand-resumed
+    repair would hit if the record were looked up beside the work instead of in
+    the checkout that holds it.
+    """
+    repo, reviewed_head = _repo(tmp_path)
+    record_path = _store_at(tmp_path, monkeypatch, reviewed_head, reviewed_head)
+    assert record_path.is_relative_to(tmp_path / "main-checkout")
+    assert not (repo / "docs").exists(), "the worktree holds no landed review"
+    later_head = _advance(repo, "two.txt")
+
+    path, record, stored_head = review_records.stored_review_descending_from(
+        PROJECT, RUN_ID, later_head, repository=repo
+    )
+
+    assert record is not None
+    assert path == record_path
+    assert stored_head == reviewed_head
 
 
 def test_a_review_is_not_found_from_a_divergent_head(tmp_path, monkeypatch) -> None:
@@ -160,7 +212,7 @@ def test_a_review_is_not_found_from_a_divergent_head(tmp_path, monkeypatch) -> N
     divergent_head = _advance(repo, "other.txt")
     _git(repo, "checkout", "-q", "main")
     reviewed_head = _advance(repo, "reviewed.txt")
-    _store_at(tmp_path, monkeypatch, repo, reviewed_head, reviewed_head)
+    _store_at(tmp_path, monkeypatch, reviewed_head, reviewed_head)
 
     _path, record, stored_head = review_records.stored_review_descending_from(
         PROJECT, RUN_ID, divergent_head, repository=repo
@@ -183,6 +235,9 @@ def test_a_staging_round_keyed_to_another_head_is_not_reachable(
     """
     repo, reviewed_head = _repo(tmp_path)
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    # The project is mounted and its checkout exists, so the refusal comes from
+    # the round being unlanded rather than from no store resolving at all.
+    _registered_checkout(tmp_path)
     review_module.store_review(
         {
             **_record([dict(FINDING)]),
@@ -245,10 +300,11 @@ def test_a_repair_moves_the_head_and_the_disposition_still_lands(
     from reckon.crew import runs
 
     repo, reviewed_head = _repo(tmp_path)
-    (repo / "docs" / "state" / PROJECT).mkdir(parents=True)
-    (isolated_reckon_home / "mounts.json").write_text(
-        json.dumps({PROJECT: str(repo / "docs")}), encoding="utf-8"
-    )
+    # The landed review lives in the checkout the project is mounted at, which
+    # is not the run's worktree: the repair's new head exists only in the tree
+    # the run is working in, and the record it answers lives in the checkout.
+    checkout = _registered_checkout(tmp_path)
+    assert checkout != repo
     review_file = review_module.store_committed_review(
         {
             **_record([dict(FINDING)]),
@@ -256,7 +312,7 @@ def test_a_repair_moves_the_head_and_the_disposition_still_lands(
             "reviewed_base_sha": reviewed_head,
             "reviewed_head_sha": reviewed_head,
         },
-        root=repo,
+        root=checkout,
     )
     repaired_head = _advance(repo, "repaired.txt")
     assert repaired_head != reviewed_head

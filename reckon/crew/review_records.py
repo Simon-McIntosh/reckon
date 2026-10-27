@@ -1436,21 +1436,22 @@ def _indexed_head_matches(entry: Mapping[str, Any], named: str | None) -> bool:
 def _committed_records_for_run(
     project: str,
     reviewed_run_id: str,
-    *,
-    root: str | Path | None = None,
 ) -> list[tuple[Path, dict[str, Any]]]:
-    """Every readable committed record for the run, oldest key first.
+    """Every readable landed record for the run, oldest key first.
 
-    Only the project's committed tree is enumerated. A staging review is a live
-    round keyed to the one head it read: once the run's work has moved past that
-    head, the round describes a revision the work is no longer at, and a
-    disposition recorded against it would retire a finding on a diff nobody read
-    of the work as it now stands. A committed review is the run's landed
-    evidence, which is what a descent from a later head is there to reach: the
-    repair moved the head on both sides, and the review of the ancestor remains
-    the record the finding belongs to.
+    The tree is resolved from the project's registered checkout, as the by-head
+    selection resolves it, because that is where a promotion commits the run's
+    reviews; a run's own worktree holds the work, not the passed record of it.
+    Only the committed tree is enumerated. A staging review is a live round
+    keyed to the one head it read: once the run's work has moved past that head,
+    the round describes a revision the work is no longer at, and a disposition
+    recorded against it would retire a finding on a diff nobody read of the work
+    as it now stands. A committed review is the run's landed evidence, which is
+    what a descent from a later head is there to reach: the repair moved the
+    head on, and the review of the ancestor remains the record the finding
+    belongs to.
     """
-    committed = _review.committed_review_root(project, root=root)
+    committed = _review.committed_review_root(project)
     if committed is None:
         return []
     run_directory = committed / _review.COMMITTED_RUN_DIRNAME / reviewed_run_id
@@ -1487,9 +1488,13 @@ def stored_review_descending_from(
     The record must have been landed: only the project's committed tree is
     searched, because that is the run's evidence about its own work, while a
     staging round is a live round of a single head and stops describing the
-    work once the head has moved past it. The newest matching committed record
-    wins, so a run reviewed at several rounds answers against the latest one
-    whose head is still in the run's history.
+    work once the head has moved past it. That tree resolves from the project's
+    registered checkout, where a promotion commits the record, so the lookup
+    works from a worker's worktree as well as from the main checkout.
+    ``repository`` is the run's own tree and is used only for the ancestry
+    check, because the run's new head exists nowhere else. The newest matching
+    committed record wins, so a run reviewed at several rounds answers against
+    the latest one whose head is still in the run's history.
     A head equal to the record's own is accepted without a git call. An empty
     ``head`` or no repository to check ancestry against yields nothing, which
     leaves the caller's refusal in place rather than accepting an unverifiable
@@ -1502,9 +1507,7 @@ def stored_review_descending_from(
     from reckon.crew import merge as merge_module
     from reckon.crew import recovery as recovery_module
 
-    for path, record in reversed(
-        _committed_records_for_run(project, reviewed_run_id, root=repository)
-    ):
+    for path, record in reversed(_committed_records_for_run(project, reviewed_run_id)):
         if not _review._review_rubric_matches(record, rubric):
             continue
         _, _, carries, stored_head = _review.carried_revision_pair(record)
