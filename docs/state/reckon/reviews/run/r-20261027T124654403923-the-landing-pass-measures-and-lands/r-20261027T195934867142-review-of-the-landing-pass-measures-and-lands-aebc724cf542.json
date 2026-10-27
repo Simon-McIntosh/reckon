@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T20:08:34.733Z",
+  "dispatched_at": "2026-10-27T20:02:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "id": "f34d3c40ae0",
+      "line": 164,
+      "severity": "blocking",
+      "text": "reckon/crew/landing_measure.py:164 blocking: the isolated re-run is not isolated. isolated_command returns [*command, test_id], so with an armed command like `pytest -q tests/test_alpha.py` each 'alone' arm re-runs the whole file, and _fails at line 308 returns True on ANY FAILED id in the output rather than on the id it narrowed to; a test that already fails at the base inflates that id's base count to the head count, so a genuine regression reads as not-real (head == base) and the run lands, defeating the flake/regression separation the node exists to provide."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "f8cdd92f70d",
+      "line": 289,
+      "severity": "non-blocking",
+      "text": "reckon/crew/queue_landing.py:289 non-blocking: _measure_delivery is called outside the try/except that guards _land, so a ValueError from base_checkout (git worktree add fails), a changed_paths error or an unwritable run directory propagates out of land_once and tears down the whole admission pass instead of refusing that one run and raising its obligation as the plan requires."
+    },
+    {
+      "file": "tests/test_the_landing_pass_measures_and_lands.py",
+      "id": "ffe3affebc0",
+      "line": 210,
+      "severity": "non-blocking",
+      "text": "tests/test_the_landing_pass_measures_and_lands.py:210 non-blocking: the stub keys isolation on `\"::\" in argv[-1]` and ignores the armed suite files already in argv, so no assertion could detect the non-isolated re-run; the durability of the flake arm rests on _is_real alone and not on the reading that feeds it."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261027T195934867142-review-of-the-landing-pass-measures-and-lands-aebc724cf542",
+  "reviewed_base_sha": "9e363fe50e058ed2bd9cc3b2548eb6f8353aa3c4",
+  "reviewed_checklist": {
+    "done_when": "the five fixture tests named in the node's done-when, plus ruff on the changed paths",
+    "goal": "Land an accepted run from the landing pass by measuring its suite there, with flakes told apart from regressions",
+    "write_paths": [
+      "reckon/crew/queue_landing.py",
+      "reckon/crew/landing_measure.py",
+      "tests/test_the_landing_pass_measures_and_lands.py",
+      "docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html",
+      "docs/figures/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands"
+    ]
+  },
+  "reviewed_commit": "aebc724cf542e3bb5c52122ea29c9b6bb6208171",
+  "reviewed_head_sha": "aebc724cf542e3bb5c52122ea29c9b6bb6208171",
+  "reviewed_run_id": "r-20261027T124654403923-the-landing-pass-measures-and-lands",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T20:10:15.673399+00:00",
+  "total": 97
+}
