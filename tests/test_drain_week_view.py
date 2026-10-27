@@ -5,11 +5,15 @@ from __future__ import annotations
 import json
 import time
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
 from reckon import mcp
-from reckon.crew import runs
+from reckon.crew import queue_admission, runs
+from tests import test_a_queued_request_waits_on_its_dependencies as upstream_fixtures
+
+chain_repo = upstream_fixtures.chain_repo
 
 
 @pytest.fixture
@@ -37,6 +41,8 @@ def _request(number: int, phase: str, plan: str, now: datetime) -> dict:
             "started_at": stamp,
             "reason": "plan-review-owed" if number % 2 else "operator",
         }
+    if phase == "awaiting-upstream":
+        request["waits"] = ["unlanded#upstream"]
     if phase in {"working", "complete", "failed"}:
         request["launched_at"] = (now - timedelta(hours=3)).isoformat()
     return request
@@ -130,6 +136,55 @@ def test_week_view_counts_each_request_and_uses_the_last_admission_verdict(
     )
 
 
+def test_old_upstream_wait_is_stuck_only_when_admission_would_advance_it(
+    chain_repo: Path,
+) -> None:
+    upstream_fixtures._declare(chain_repo, "s1")
+    now = datetime.now(UTC)
+    ready = _request(501, "awaiting-upstream", upstream_fixtures.PLAN, now)
+    waiting = _request(502, "awaiting-upstream", upstream_fixtures.PLAN, now)
+    for request, run_id, section, upstream in (
+        (ready, "r-ready", "s2", "s1"),
+        (waiting, "r-waiting", "s3", "s2"),
+    ):
+        request.update(
+            {
+                "run_id": run_id,
+                "project": upstream_fixtures.PROJECT,
+                "repo": str(chain_repo),
+                "node": {"plan": upstream_fixtures.PLAN, "section": section},
+                "waits": [f"{upstream_fixtures.PLAN}#{upstream}"],
+                "waits_at": (now - timedelta(hours=2)).isoformat(),
+            }
+        )
+        runs._write_json(runs.pointer_path(run_id), request)
+    live = [ready, waiting]
+    cache = {}
+    assert (
+        queue_admission.resolve_waits(
+            ready, live=live, docs_dir=chain_repo / "docs", cache=cache
+        )
+        == "queued"
+    )
+    assert (
+        queue_admission.resolve_waits(
+            waiting, live=live, docs_dir=chain_repo / "docs", cache=cache
+        )
+        == "awaiting-upstream"
+    )
+    (runs.crew_home() / "admission-verdicts.jsonl").write_text(
+        json.dumps(
+            {"pointers": [{"run_id": "r-ready", "verdict": "held-for-allowance"}]}
+        )
+        + "\n"
+    )
+
+    stuck = runs.drain(upstream_fixtures.PROJECT)["week"]["project"]["stuck"]
+    assert [(row["run_id"], row["last_verdict"]) for row in stuck] == [
+        ("r-ready", "held-for-allowance")
+    ]
+
+
 def test_recent_launch_of_a_landed_request_uses_the_worker_stamp(
     queue_home, monkeypatch
 ) -> None:
@@ -173,12 +228,14 @@ def test_mcp_drain_reads_five_hundred_pointers_inside_deadline(
 ) -> None:
     now = datetime.now(UTC)
     for number in range(500):
-        request = _request(number, "queued", "north", now)
+        phase = "queued" if number % 2 == 0 else "awaiting-upstream"
+        request = _request(number, phase, "north", now)
         runs._write_json(runs.pointer_path(request["run_id"]), request)
     for _arm in ("cold", "warm"):
         started = time.monotonic()
         result = mcp._crew("week-project", view="drain")
         elapsed = time.monotonic() - started
-        assert result["week"]["project"]["phases"]["queued"] == 500
+        assert result["week"]["project"]["phases"]["queued"] == 250
+        assert result["week"]["project"]["phases"]["awaiting-upstream"] == 250
         print(f"{_arm} MCP drain: {elapsed:.3f} s for 500 pointers")
         assert elapsed < 30, f"MCP drain took {elapsed:.3f} s"
