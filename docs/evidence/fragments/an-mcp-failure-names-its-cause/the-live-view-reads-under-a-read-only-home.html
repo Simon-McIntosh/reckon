@@ -1,0 +1,53 @@
+<section id="the-live-view-reads-under-a-read-only-home-landing">
+  <h2>A fenced worker can read the crew live view</h2>
+
+  <p><strong>What changed.</strong> <code>project_watch_visibility</code> in
+  <code>reckon/crew/runs.py</code> used to create the project's watch directory
+  and open the seat lock for update on its way to an answer, so a worker whose
+  fence mounts the config home read-only failed with <code>[Errno 30] Read-only
+  file system</code> (or <code>[Errno 13] Permission denied</code> on a
+  permission-fenced directory) before it could report the project's runs. The
+  read now goes through <code>_probe_seat_read_only</code>, which opens the seat
+  <code>rb</code> and probes its advisory lock from that descriptor — <code>flock</code>
+  permits an exclusive probe whatever mode the file was opened in — creating
+  nothing and writing nothing. An absent seat reads as an empty seat instead of
+  being created on demand. <code>_reconcile_watch_record</code>, the
+  repair-on-read repair, still repairs a stale record where the home is
+  writable, and now reports the record unrepaired rather than raising when the
+  home refuses the open: a dead seat under a read-only home reads as
+  <code>unwatched</code>.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_live_view_reads_under_a_read_only_home.py</code>
+  with <code>tests/test_crew_view_serves_every_view.py</code>,
+  <code>tests/test_crew_watch_visibility.py</code> and
+  <code>tests/test_crew_watch_ensure.py</code>, run with
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q</code>.
+  Each arm is a log whose first line names its revision and its last line reads
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change)</td>
+        <td><code>9e14c1d</code> + <code>2aaaf947f</code></td>
+        <td><strong>19 passed</strong>, exit 0</td></tr>
+      <tr><td>base (new tests copied into a scratch extraction)</td>
+        <td><code>9e14c1d</code></td>
+        <td>2 failed, 17 passed, exit 1 — both new tests raise
+          <code>PermissionError</code> on the watch lock</td></tr>
+      <tr><td>negative control (lock acquisition restored to create-and-lock)</td>
+        <td>mutated head</td>
+        <td><strong>2 failed</strong>, exit 1 — both new tests raise
+          <code>PermissionError</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The new test builds a fixture crew home, seeds the project's live
+  pointers, asserts the watch directory really refuses a write, and then calls
+  the live view: it returns both runs with <code>ok: true</code> and creates no
+  seat file. A second case writes a dead seat record, makes the watch directory
+  and its seat file read-only, and asserts the read reports the seat
+  <code>unwatched</code> without erasing it.</p>
+</section>
