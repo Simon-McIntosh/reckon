@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T21:40:06.429Z",
+  "dispatched_at": "2026-10-27T21:32:23Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html#s26",
+      "id": "done_when-1",
+      "reason": "an arm that passes on the unfixed code silently retires the one part of \u00a726's measure that a node could have got wrong, leaving the per-section read-count arm as the only discriminating control.",
+      "text": "the arm \"`project_section_readiness` calls `build_roadmap` once\" already passes at the base revision: `reckon/crew/plan_review.py:3355` builds the roadmap exactly once today (the \"build the roadmap once\" form landed with \u00a78 at commit d8d4f0cc49), so the arm measures nothing and cannot fail; \u00a726's own profile claim (\"build_roadmap ran twice (22 s)\") describes pre-\u00a78 code",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html#s14",
+      "id": "done_when-2",
+      "reason": "a drain whose counters never increment reports zero DAG-order violations and a 3:1 split from an unread ledger, and without a seeded violation the evidence cannot tell a clean drain from a blind counter.",
+      "text": "\u00a714 is the section that proves the whole plan, and its done-when declares no negative control: every measure is a zero count or a percentage read from the ledger and the drain view, with nothing showing the instrument itself reports a violation when one occurs",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html#s20",
+      "id": "single_goal-1",
+      "reason": "one verdict cannot close a section where the carried path can be correct while the cap is wrong, which is exactly the shape of the revert this section already carries.",
+      "text": "\u00a720 carries two separable deliverables: the third answer `--carried` that appends finding text to a node's done-when, and the per-unit cap of two reviews that refuses a third; they touch different code paths (dispatch_plan.py versus the review counter) and had to be reverted together on 27 October",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-queue-holds-the-whole-plan.html#s21",
+      "id": "reasoning-1",
+      "reason": "a node whose only named write target is a description cannot derive its write scope, and the rubric's own \u00a728 rule that a described file \"yields no path\" applies to this section's own scope as much as to a batch entry.",
+      "text": "\u00a721 says \"the producer (the crew watch loop)\" composes the review and gives its write path as \"the producer module that runs the watch sweep\", which is a description where a path is required; no module under `reckon/crew/` currently composes a plan review in a watch sweep (a grep for plan-review composition across `watch_unit.py`, `dispatch_watch.py`, `recovery_watch.py` and `lift_watch.py` finds none)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "370cfeb4a7b1e1e68ab0f65067720ccb9a551694",
+  "plan_fingerprint": "9e4a1dde645d312b6a76e2cf1ba2bcec3601654fc5775496c304c1fa963920ba",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 200,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T213007554466-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "740ea0a0bfe54c106cd0e3fbfc36a35322106fb9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all 20 modules named as owner paths or write paths exist (`landing_measure.py` is declared new, not cited as existing); the 6 commit shas in the followups (7b20186d6, 40c51dd8a, 228a44039, 54290305f, 52228208a, 3e92d1cfe) all resolve to commits; `section_readiness_verdict`, `_done_when_paragraph`, `_WRITE_PATHS_SENTENCE`, `code_review_paths_from_plan`, `section_prose`, `_review_pointer_rubric`, `_review_in_flight`, `_readiness_rows`, `admit_once`, `_validated_batch_waits`, `_launch_queued`, `run_review_record_paths` all exist; extensionless hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a726's arm \"`project_section_readiness` calls `build_roadmap` once\" already holds at the base revision, and \u00a714 declares no negative control at all.",
+    "evidence_paths": "pass \u2014 every implementable section names its gate as a test file in the repository plus logs under the run directory, and \u00a714's drain evidence sits on the durable `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html` (present).",
+    "naming": "pass \u2014 the proposed test files (`test_a_carried_finding_reaches_the_node.py`, `test_the_landing_pass_measures_and_lands.py`, `test_a_batch_queues_the_chosen_sections.py`, \u2026) and symbols are named by mechanism, with no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a721's producer is never named as a caller or a module, so its mechanism may be reached by nothing.",
+    "single_goal": "a finding \u2014 \u00a720 carries two independent deliverables (the `--carried` answer path and the twice-review cap) whose arms land and revert separately.",
+    "wiring": "pass \u2014 every `plan-section-depends-on` ref names a section that exists in this plan or a mounted plan, `plan-after` names `a-held-dispatch-waits-its-fair-turn` (present), and the outbound edge the plan relies on (`imas-ambix:local-lane-admission-control` \u00a727 waiting on \u00a74) is declared in `s14`'s waits."
+  },
+  "section_digests": {
+    "_document": "af9d81954c54aaf0e1190a644c49ad6241e43b7988ec879c1cbea9334e73ac89",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "b2f3a4dc4441527ebac138fcd2583e79959e677a2bb235937905ef5260c68abe",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "e8d19190fe8ad7ac0ada9570da1e1403020d996fade35345888d232283a712f3",
+    "s18": "c41a5f40b44fad7c9170e75afe458887ecf383dfbdfbd87f44b1aba18db385ce",
+    "s19": "3bd989d1975e3410388984d6b187e73537eb6741a9325640197d88ec68579fac",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s20": "1650ed742b05d1b8454fbb0792d83df930c357b4929ce75b0b82b8574b007375",
+    "s21": "06bd207809ad20c61fa13df3421066efff9e2d5169ee08608d442702ca36bf63",
+    "s22": "47e2cfd2937f003b333a5627f777e7bc72cb16eaf677da44f2683b7c2cbe138b",
+    "s23": "8b0cff55659bab7a4f30061f3adc4d4e822c8679c7c659a592a131c825a356a8",
+    "s24": "e41f5feee9ab0bd1cb7371a93fa8f654ccd277325b302e34421d3b0ea907d869",
+    "s25": "d156187078ac0ab4d87d1398fe13f74eee443a0f2e48ed45f963ef238d8737d9",
+    "s26": "abf23ffa47584798ae7c0303cda18d5e3ded7f690e2e692a13f35b2c021f2813",
+    "s27": "272f482e0766b56080b610bdbf7ac48bc9ddfa2ed1cfb8c8a85cd9ecd5b32d93",
+    "s28": "cd767c148ee02023bec11cd941361b5cc37e14d542a4c6a132a48261b3b2497b",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T21:41:18.930758+00:00"
+}
