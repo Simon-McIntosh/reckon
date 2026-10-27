@@ -95,6 +95,11 @@
     <p>Run <code>r-20261027T090503642997-a-project-can-name-its-worker-mcp-servers</code> landed at merge <code>28ec17334</code>. worker_mcp_servers is a reckon-owned flight key, so a project can name its worker MCP servers in its own flight configuration, and any value that is not a list of strings is refused naming the key, at layer resolution and in _declared_worker_mcp_servers. Coordinator importer measure, stacked with the census, worker-MCP and reload-image nodes on main ab0ababb1 over 144 test files: main 1695 passed, stack 1708 passed, the same one failure and one error at both, so none added. Review 115 of 120.</p>
   </section>
 
+  <section id="s10">
+    <h2>§10 landing</h2>
+    <p>Run <code>r-20261027T090204446170-the-live-view-reads-under-a-read-only-home</code> landed at merge <code>43c6870be</code>. The crew live view now reads a project's seat lock read-only and creates nothing under the watch directory, and the reconcile-on-read repair reports an unrepaired record rather than raising when the home refuses the write, so a fenced worker with a read-only config home can call it. Coordinator measure over the 130 test files that reach the watch, follower and live-view paths: main 988 passed, merged 986 passed; the five ids that differed each passed three serial runs of three at both, so none is added. Write sites a session-scoped read still reaches (watch_unit, follower_registration, host_lease) and an unreadable seat are carried as a new section. Review 109 of 120.</p>
+  </section>
+
 </main>
 </body>
 </html>

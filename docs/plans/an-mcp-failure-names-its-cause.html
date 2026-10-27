@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="119">
+<meta name="plan-version" content="120">
 <meta name="plan-modified" content="2026-10-27">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -131,7 +131,7 @@
 </section>
 
     <h2 id="s10">§10 — A fenced worker can read the crew live view</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> §4 found that <code>crew(view="live")</code> fails inside a worker's fence
       after about 20 s with <code>[Errno 30] Read-only file system</code> on
       <code>~/.config/reckon/crew/watch/&lt;project&gt;-&lt;hash&gt;.lock</code>. The live view takes an advisory
@@ -260,10 +260,11 @@
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §17</pre>
     <p class="r-fu-outcome">§17 landed by merge 106868d9a; every MCP tool refuses a malformed request before storage.</p>
     </article>
-<article class="r-fu" data-id="f-amfnic-010" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23 10:00" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-amfnic-010" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23 10:00" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §10" data-resolved-at="2026-10-27T13:17:37+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">A fenced worker can read the crew live view</h4>
     <div class="r-fu-body"><p>§10 is implementable and no open followup named it.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §10</pre>
+    <p class="r-fu-outcome">Section 10 landed at merge 43c6870be. The crew live view now reads a project's seat lock read-only and creates nothing under the watch directory, and the reconcile-on-read repair reports an unrepaired record rather than raising when the home refuses the write, so a fenced worker with a read-only config home can call it. Coordinator measure over the 130 test files that reach the watch, follower and live-view paths: main 988 passed, merged 986 passed; the five ids that differed each passed three serial runs of three at both, so none is added. Write sites a session-scoped read still reaches (watch_unit, follower_registration, host_lease) and an unreadable seat are carried as a new section.</p>
     </article>
 <article class="r-fu" data-id="f-amfnic-011" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23 10:00" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §11" data-resolved-at="2026-10-27T13:01:24+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">A project can name its worker MCP servers</h4>
@@ -385,7 +386,10 @@
     <div class="r-comment-body"><p>Review of r-20261027T090204446170-the-live-view-reads-under-a-read-only-home at head d8867497f (base 9e14c1d) — scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 17; two non-blocking findings (head-gate.log header names the base revision; _probe_seat_read_only does not tolerate an unopenable seat); added_failure_count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261027T090204446170-the-live-view-reads-under-a-read-only-home" data-who="reckon-build" data-when="2026-10-27T09:22:10.552Z">
-    <div class="r-comment-body"><p>The live view reads a project&#x27;s seat lock read-only through a new _probe_seat_read_only (open &quot;rb&quot;, flock probe from that descriptor) and creates nothing, and the reconcile-on-read repair reports an unrepaired record instead of raising when the home refuses the write; measured head 19 passed EXIT=0 against base 2 failed 17 passed EXIT=1, negative control 2 failed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>The live view reads a project's seat lock read-only through a new _probe_seat_read_only (open "rb", flock probe from that descriptor) and creates nothing, and the reconcile-on-read repair reports an unrepaired record instead of raising when the home refuses the write; measured head 19 passed EXIT=0 against base 2 failed 17 passed EXIT=1, negative control 2 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-10-27T13:20:00Z">
+    <div class="r-comment-body"><p>Section 10 landed at merge <code>43c6870be</code>: The crew live view now reads a project's seat lock read-only and creates nothing under the watch directory, and the reconcile-on-read repair reports an unrepaired record rather than raising when the home refuses the write, so a fenced worker with a read-only config home can call it. Coordinator measure over the 130 test files that reach the watch, follower and live-view paths: main 988 passed, merged 986 passed; the five ids that differed each passed three serial runs of three at both, so none is added. Write sites a session-scoped read still reaches (watch_unit, follower_registration, host_lease) and an unreadable seat are carried as a new section. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s10">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-20261023-s11-anchor" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v100 on 2026-10-23: <code>_declared_worker_mcp_servers</code> is defined in <code>reckon/_worker_fence.py</code>; <code>reckon/_backends.py</code> only imports it. Correct §11's write path before dispatch.</p></div>
