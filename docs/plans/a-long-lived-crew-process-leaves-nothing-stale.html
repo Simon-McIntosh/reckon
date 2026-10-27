@@ -23,7 +23,7 @@
   <title>A Long-Lived Crew Process Leaves Nothing Stale | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-modified" content="2026-10-27">
 <meta name="plan-blocks" content="the-monitor-reads-each-fact-once#s7">
 </head>
@@ -85,6 +85,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261027T011007124894-review-of-dispatch-reads-the-fleet-record-through-its-owner-5ba926658974" data-who="reckon-build" data-when="2026-10-27T01:18:05.470Z">
     <div class="r-comment-body"><p>review: parsed record for r-20261027T000925847062-dispatch-reads-the-fleet-record-through-its-owner at base 6fc5168f1135c315fa1a752fb208cc0fdf43592e / head 5ba92665897432964ef81d2c20014d278770f695 scores goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 17, reuse 20 (total 109) with 0 added failures and three non-blocking findings (a docstring at reckon/crew/watch_unit.py:213 that the change falsified outside its fence, ambiguous provenance on the red arm's header, and an absence assertion that passes under the pre-change resolver).</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261027T000925847062-dispatch-reads-the-fleet-record-through-its-owner" data-who="reckon-build" data-when="2026-10-27T01:08:16.198Z">
+    <div class="r-comment-body"><p>land: §4 deletes dispatch&#x27;s duplicate fleet-record resolver — `_read_fleet_record` now asks `fleet_supervisor.state_directory()` for the directory and joins `RECORD_NAME`, keeping only the `RECKON_FLEET_RECORD` override; new test 3/3 green at head and the negative control (restoring the XDG_STATE_HOME default) fails the FLEET_NAME case at EXIT=1; importer gate 131 files at head 1 failed/1271 passed and 130 at base 1 failed/1268 passed, the one failure identical in both arms</p></div>
 </div>
 </section>
 </main>
