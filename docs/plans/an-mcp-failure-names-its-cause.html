@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="118">
+<meta name="plan-version" content="119">
 <meta name="plan-modified" content="2026-10-27">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -383,6 +383,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261027T092336865870-review-of-the-live-view-reads-under-a-read-only-home-d8867497fbcb" data-who="reckon-build" data-when="2026-10-27T09:45:31.713Z">
     <div class="r-comment-body"><p>Review of r-20261027T090204446170-the-live-view-reads-under-a-read-only-home at head d8867497f (base 9e14c1d) — scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19, reuse 17; two non-blocking findings (head-gate.log header names the base revision; _probe_seat_read_only does not tolerate an unopenable seat); added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261027T090204446170-the-live-view-reads-under-a-read-only-home" data-who="reckon-build" data-when="2026-10-27T09:22:10.552Z">
+    <div class="r-comment-body"><p>The live view reads a project&#x27;s seat lock read-only through a new _probe_seat_read_only (open &quot;rb&quot;, flock probe from that descriptor) and creates nothing, and the reconcile-on-read repair reports an unrepaired record instead of raising when the home refuses the write; measured head 19 passed EXIT=0 against base 2 failed 17 passed EXIT=1, negative control 2 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-20261023-s11-anchor" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v100 on 2026-10-23: <code>_declared_worker_mcp_servers</code> is defined in <code>reckon/_worker_fence.py</code>; <code>reckon/_backends.py</code> only imports it. Correct §11's write path before dispatch.</p></div>
