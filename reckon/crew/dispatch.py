@@ -495,32 +495,23 @@ def _launch_yielded_queued_request(
 ) -> Mapping[str, Any] | None:
     """Launch one queued request through the admission pass's own path.
 
-    The pointer is released inside the launch, so it is held in memory here and
-    written back carrying the failure when the launch does not survive — the
-    release-and-restore the admission pass performs — so freeing a lane slot for
-    an older request can never lose that request. The launched run record is
-    returned, or ``None`` when the launch did not land.
+    The request keeps its run id through launch and any re-queue. A failed
+    launch annotates that same pointer, so yielding a lane slot to an older
+    request cannot lose or duplicate it.
     """
     from reckon.crew import queue_admission, runs as runs_module
 
     snapshot = dict(pointer)
     runs_module.write_handover(pointer)
     record: Mapping[str, Any] | None = None
-    requeued_run_id = ""
     caught: Exception | None = None
     try:
         candidate = queue_admission._launch_queued(
             pointer, launcher=launcher, config_for=None
         )
-        if isinstance(candidate, Mapping) and candidate.get("phase") == "queued":
-            requeued_run_id = str(candidate.get("run_id") or "")
         record = queue_admission._require_launched_record(candidate)
     except Exception as exc:  # noqa: BLE001 - every launch failure keeps its request
         caught = exc
-        if isinstance(exc, LaneHeld):
-            queued = getattr(exc, "queued", None)
-            if isinstance(queued, Mapping):
-                requeued_run_id = str(queued.get("run_id") or "")
     finally:
         if record is None:
             queue_admission._record_queued_failure(
@@ -528,7 +519,6 @@ def _launch_yielded_queued_request(
                 f"{type(caught).__name__}: {caught}"
                 if caught is not None
                 else "dispatch did not return a launched record",
-                requeued_run_id,
                 moment=moment,
             )
         runs_module.clear_handover(pointer)
@@ -1688,6 +1678,10 @@ def dispatch(
     backend = resolution.backend_settings
     launch_kind = resolution.launch
     run_id = resolution.run_id
+    if admission_launch and admitted_from and run_id != admitted_from:
+        raise CrewError(
+            f"admitted request {admitted_from!r} resolved a different run id {run_id!r}"
+        )
     lane_allowance = resolution.lane_allowance or {}
     local_backend = str(config.get("local_backend") or "")
     is_local = backend_name == local_backend and bool(local_backend)
