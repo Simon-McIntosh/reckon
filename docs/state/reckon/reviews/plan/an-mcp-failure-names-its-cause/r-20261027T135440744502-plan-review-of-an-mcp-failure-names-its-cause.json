@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T14:05:04.892Z",
+  "dispatched_at": "2026-10-27T13:57:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261027T135440744502-plan-review-of-an-mcp-failure-names-its-cause/plan.html:216",
+      "id": "done_when-1",
+      "reason": "without the seat kept mode 000 the section ships one of its three repairs with no arm that could fail, so a builder may pass the gate having left the PermissionError propagating.",
+      "text": "the fixture \"holds \u2026 a mode-000 seat\" and then \"makes every file under the crew home mode 0444\", so the chmod sweep rewrites the seat to 0444 and the change \"An unreadable seat reads as an unknown holder rather than raising\" is never exercised: at the base, `_probe_seat_read_only` (reckon/crew/runs.py:3658-3661) opens a 0444 seat read-only without error, so no arm of the test can fail on that mechanism",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261027T135440744502-plan-review-of-an-mcp-failure-names-its-cause/plan.html:216",
+      "id": "done_when-2",
+      "reason": "the Change promises reads never unlink, and the gate as written cannot tell \"reported stale\" from \"unlink attempted and swallowed\"; one writable-home arm asserting the dead lease file survives the read would settle it.",
+      "text": "the byte-identical assertion and the dead-lease arm run only on a 0444/0555 tree, where no write can succeed, so an implementation that merely catches `OSError` in `release_holder` (reckon/crew/host_lease.py:149-160) passes the gate while a read on a normal writable home still unlinks the stale lease",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261027T135440744502-plan-review-of-an-mcp-failure-names-its-cause/plan.html:216",
+      "id": "anchors_resolve-1",
+      "reason": "the coordinator fences exclusive scopes from the declared write paths, so the decisive edit lands unoutfenced, and a builder following the spec literally is blocked at a file its section does not grant.",
+      "text": "\u00a718 names `_fresh_watch_holder` bare and declares its write paths as `reckon/crew/follower_registration.py`, `reckon/crew/host_lease.py`, `reckon/crew/runs.py` and the test file, but `_fresh_watch_holder` is defined in `reckon/crew/watch_unit.py:41` and it is that body that calls `lease.release_holder(holder)` (:52); to make a read report the stale lease rather than unlink it, a builder must edit `watch_unit.py`",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261027T135440744502-plan-review-of-an-mcp-failure-names-its-cause/plan.html:216",
+      "id": "evidence_paths-1",
+      "reason": "the document's convention already places gate logs under the run directory and earlier reviews of \u00a710 and \u00a711 were answered on that basis, so naming it would restate the convention rather than change what the builder does.",
+      "text": "\u00a718 states a negative control but names no path for its log, where \u00a716 and \u00a717 name \"the run directory\"",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "14b71513872d4b2f403f8852733a7d0bf67c66e8428d08a81e4ba9999aeb5a52",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 128,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T135440744502-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "bf7e94eb3f184e26a0b053a29395b20ef73a803d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a718 names `_fresh_watch_holder` without its module and omits `reckon/crew/watch_unit.py` from its write paths, where that function is defined and where the stale lease is released (plan.html:216).",
+    "done_when": "a finding \u2014 \u00a718's fixture makes every file under the crew home 0444, which erases the mode-000 seat it also places there (plan.html:216).",
+    "evidence_paths": "a finding \u2014 \u00a718 names no durable log path for its negative control (plan.html:216), unlike \u00a713, \u00a715, \u00a716 and \u00a717 in the same document.",
+    "naming": "pass \u2014 the heading follows the document's `\u00a7N \u2014 \u2026` convention, and the test filename describes behaviour with no plan label.",
+    "reasoning": "a finding \u2014 the Change's \"a stale lease seen during a read is reported stale rather than unlinked\" is implemented in `_fresh_watch_holder` (reckon/crew/watch_unit.py:41-54), which the declared write paths do not reach, and its done-when cannot distinguish that mechanism from an OSError swallow inside `release_holder`.",
+    "single_goal": "pass \u2014 \u00a718 carries one deliverable: no read path it names takes a lock it must create or writes anything.",
+    "wiring": "pass \u2014 the sole open followup f-amfnic-018 (plan.html:280) names \u00a718, the only section declared `implementable` (plan.html:24), and its prompt matches the section id."
+  },
+  "section_digests": {
+    "_document": "a3709cd54e75999376d4c5d921632d1c47a7ba1c767f52ebb63d9d3b54b27d56",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "ba5d0db257057d6dede25c9555898552abc78e291d39b953a7da192229ffbd2f",
+    "s12": "371c3889cd142db38637604c178d996b86294895ad0edc5534d1731f0271fefe",
+    "s13": "79a2b6dff46b0ddd765c409edeb1596fe9bbdf3e4c884875a0e137630010b0db",
+    "s14": "9c62796a08277a796de0c39af58a83a98ae5b16d930532f934636d24dad5d4c5",
+    "s15": "2cc785cc7428c93e41c236ddb2a247143254032421d61d555e7da335bcaf3734",
+    "s16": "144aaa17b20cffc95b3b9ca1166d7efa4069f736dbf892de8f81914afcd8bb31",
+    "s17": "81144ffa35b8763d57edc6f75fe9526743f0644d38d442d3c684e76396ebd7f2",
+    "s18": "8f47682f9566ed3cd91db89f77405cc52763a9ed094f3b0f832f54b6013ed4a1",
+    "s2": "3a0632a9c77266389bb16c116a82d809d3c62b98f0ca44f8c9f8eb4ccde7a18e",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "16d91b56539888d5683fc9808616b764742e6c7e93516541ff6dc793aec9fc84",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T14:08:40.928501+00:00"
+}
