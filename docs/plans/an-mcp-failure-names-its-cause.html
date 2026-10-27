@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="115">
+<meta name="plan-version" content="116">
 <meta name="plan-modified" content="2026-10-27">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -173,7 +173,7 @@
 </section>
 
     <h2 id="s13">§13 — The census partitions failures and reads in seconds</h2>
-<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> §2's census counts a failed connection once for every cause its log carries, so the cause counts
       do not partition <code>failed</code>: imas-cx shows 2,697 cause hits over 1,635 failed connections. Each failed connection is now
       attributed to one cause, the first in the census module's own <code>CAUSES</code> order that its log carries, and the census reports how many failures also carried each later
@@ -400,6 +400,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261027T090831601478-the-census-partitions-failures" data-who="reckon-build" data-when="2026-10-27T09:51:42.731Z">
     <div class="r-comment-body"><p>§13 landed at 716fe366a: each failed connection is attributed once, to the first signature in CAUSES order, with later signatures reported under also_carried so cause counts sum to failed (real tree 2026-10-01..08: imas-cx 1,635 = 1,635 and reckon 1,021 = 1,021, against 2,701 cause hits over 1,635 before); the walk now visits both directory levels once per server, skips a server log directory whose mtime predates the window, and overlaps the metadata round trips, taking the real-tree census from 29.15 s to 14.87 s; directory_kind is private; the doctor block states its storage-slow rule.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-10-27T12:50:00Z">
+    <div class="r-comment-body"><p>Section 13 landed at merge <code>9c9290630</code>: The MCP census now attributes each failed connection to one cause, the first in CAUSES order, and reports later signatures as also carried, so cause counts sum to failures (imas-cx 1,635 of 1,635 against 2,701 cause hits before). It skips server log directories older than the window, taking the real-tree census from 29.2 s to 14.9 s. Coordinator importer measure, stacked with the census, worker-MCP and reload-image nodes on main ab0ababb1 over 144 test files: main 1695 passed, stack 1708 passed, the same one failure and one error at both, so none added. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s13">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261023T093305442687-review-of-a-malformed-request-is-refused-before-storage-eea81d325b5f" data-who="reckon-build" data-when="2026-10-23T09:53:05.399Z">
     <div class="r-comment-body"><p>independent review of r-20261023T081540567684-a-malformed-request-is-refused-before-storage at base 3a985827baf90836c57d16ab069ec38c3cb80e24 / head eea81d325b5fda4e2f9843ff13c10123700efebb, total 74/120; one blocking finding (the live-field vocabulary copied into reckon/mcp.py:262 omits COMMON_RUN_FIELDS, so a crew view live read naming section is now refused though the view serves it), four non-blocking findings (a verbatim copy of reckon/crew/query.py:104 at reckon/mcp.py:336; the view pre-flight skips normalize_view's strip/lower at reckon/mcp.py:1222 and 2182; the runs view's field vocabulary is still consulted after the read at reckon/mcp.py:370; and the two test-docstring/assertion findings at tests/test_a_malformed_request_is_refused_before_storage.py:61 and :7), and one added failure (the pre-existing width test, a module this diff does not touch)</p></div>
