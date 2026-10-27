@@ -276,6 +276,10 @@ def test_the_read_names_what_waits_on_the_ref(why_fixture):
     (waiting,) = answer["waited_on_by"]
     assert waiting["ref"] == f"{WAITING_PLAN}#{WAITING_SECTION}"
     assert waiting["kind"] == SECTION_DEPENDENCY_BLOCKER
+    # The waiting section's own declaration, never its plan's status: the plan
+    # is active while s1 is implementable, so a fallback to the container reads
+    # "active" here and the row would blame the wrong thing.
+    assert waiting["state"] == "implementable"
 
 
 def test_the_read_carries_at_most_five_events(why_fixture):

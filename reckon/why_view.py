@@ -115,7 +115,7 @@ def why_answer(
         "what": _what(plan_row, data, slug, wanted, authored),
         "holds": _holds_for(slug, wanted, plans, states),
         "waits_on": waits,
-        "waited_on_by": _waited_on_by(slug, wanted, plans, read_edges),
+        "waited_on_by": _waited_on_by(slug, wanted, plans, states, read_edges),
         "runs": _runs_on(run_rows, slug, wanted),
         "followups": _open_followups(data, wanted),
     }
@@ -360,7 +360,7 @@ def _run_holds(holders: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
-def _waited_on_by(slug, section, plans, edges) -> list[dict[str, Any]]:
+def _waited_on_by(slug, section, plans, states, edges) -> list[dict[str, Any]]:
     """The sections of this project whose roadmap edge names this ref."""
 
     from reckon.roadmap import dependency_row_state
@@ -381,7 +381,7 @@ def _waited_on_by(slug, section, plans, edges) -> list[dict[str, Any]]:
                         "state": dependency_row_state(
                             plans[waiting_slug],
                             waiting_section,
-                            None,
+                            states.of(waiting_slug).get("section_declarations"),
                         ),
                         "satisfied": bool(edge.get("satisfied")),
                     }

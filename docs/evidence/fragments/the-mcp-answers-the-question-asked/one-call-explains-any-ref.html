@@ -69,6 +69,20 @@
   head.
 </p>
 
+<p id="one-call-explains-any-ref-review-repair">
+  A review of the landed head found one blocking defect in what waits on a ref:
+  the <code>waited_on_by</code> rows passed no declarations, so
+  <code>roadmap.dependency_row_state</code> fell back to the waiting plan's
+  status and the row reported its container's state instead of the waiting
+  section's own. The rows now pass the authored declarations
+  (<code>states.of(waiting_slug).get("section_declarations")</code>), and the
+  test asserts the section's declaration where it differs from the plan's
+  status — <em>implementable</em> against <em>active</em>, so a fallback reads
+  the wrong value. Reverting the repair reproduces it: 1 failed, 9 passed,
+  <code>EXIT=1</code>; with it, 10 passed and 45 with
+  <code>tests/test_mcp_tools.py</code>.
+</p>
+
 <p id="one-call-explains-any-ref-scope">
   The budget row is registered: <code>reckon/mcp_budget.py</code> declares
   <code>("read_plan", "why")</code> at 24,000 and the view reads it, so no fork
