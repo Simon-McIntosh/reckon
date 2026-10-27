@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/cli.py:395",
+    "reckon/crew_follow_commands.py:2933",
+    "reckon/crew_follow_commands.py:3077",
+    "reckon/crew_follow_commands.py:3194",
+    "reckon/crew/station.py:135"
+  ],
+  "completed_at": "2026-10-27T09:06:51.080Z",
+  "dispatched_at": "2026-10-27T08:58:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "3338",
+      "severity": "blocking",
+      "text": "neither the station-gap nor the station-stale event has a branch in the consumer loop, so a text pane renders them through format_watch_transition, which ignores the \"line\" field; a direct probe of that call on the head revision returns '--:--:--  ?          unknown                              new -> halted            -   0w  0h  0d  0q'. The plan's skip line and stale-heartbeat line are therefore unmet for the human pane, and the tests at tests/test_a_follower_is_a_station_subscriber.py:163 and :189 pass anyway because they assert the event payload rather than the printed output."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": "451",
+      "severity": "non-blocking",
+      "text": "_cap_history duplicates reckon/crew/follow_checkpoint.py:416 cap_history (same arguments, same window-then-count trim, differing only in tolerating a missing \"at\" key), so one trimming rule now has two owners; it duplicates rather than wraps or extends the existing owner."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "126",
+      "severity": "non-blocking",
+      "text": "_StationRegistration.held returns True unconditionally, so on the subscriber path a second follower claiming the same session is never detected and both write the same cursors row, where the producer path it replaces refuses the second holder through the advisory lock in reckon/crew/follower_registration.py:389."
+    },
+    {
+      "file": "logs/trace-measure-60s.log",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "the recorded trace names /crew/watch and /crew/live as well as the two lease files, so the done_when's \"names no path under the crew home other than those two lease files\" is met in substance but not as literally written."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 thirteen commits read from c30c057d4 to ab7098ee0; seven land the subscriber, the shared reader, the per-project cursor and the follow wiring, six are documentation and one figure.",
+    "done_when": "partial \u2014 the recorded arms pass (logs/gate-pane-suites.log 55 passed EXIT=0, logs/after-armed.log 21 passed EXIT=0), but the ruff clause has no log and the 60 s trace names two crew-home directories beyond the two leases (logs/trace-measure-60s.log:17-18).",
+    "goal": "pass \u2014 StationSubscriber at reckon/crew/station_subscriber.py:114 reads its session's rows from the station after a stored (sequence, day) cursor, and reckon/crew_follow_commands.py:3077 selects it inside `crew follow`.",
+    "manifest": "pass \u2014 the manifest carries the commits, the gate commands and their logs, the negative control's three red cases, and an honest outside_scope entry.",
+    "write_paths": "pass \u2014 every changed path in the diff is inside the ten declared write paths; reckon/crew/follow_checkpoint.py is declared and untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_follower_is_a_station_subscriber.py:89, :142, :163 and :313 guard the stored place, while :163 and :189 assert event payloads and pass over the dropped pane line.",
+    "evidence": "logs/gate-pane-suites.log (55 passed EXIT=0) and logs/after-armed.log (21 passed EXIT=0) are real, but they assert the stale and skip events as payloads rather than asserting the pane prints them.",
+    "fit": "reckon/crew/station_subscriber.py:1-25 and :114 follow the module's docstring and naming idiom and carry no plan or ticket label.",
+    "goal_fidelity": "the read-after-stored-cursor deliverable is landed at reckon/crew/station_subscriber.py:303, but the two plan-mandated pane lines it emits at :338 and :406 never reach a text pane.",
+    "reuse": "reckon/crew/station_subscriber.py:451 duplicates reckon/crew/follow_checkpoint.py:416 cap_history rather than reusing it.",
+    "scope_discipline": "all eight changed paths sit inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (crew follow becomes a subscriber that reads its session's rows from the node station after a stored cursor) against the landed diff; reckon/crew/station_subscriber.py:114 StationSubscriber implements the read-after-cursor delivery path and reckon/crew_follow_commands.py:3077 wires it into crew follow, so the deliverable is present.\nVERDICT done_when: read the done_when against logs/gate-pane-suites.log (55 passed EXIT=0), logs/after-armed.log (21 passed EXIT=0), logs/baseline-armed.log (EXIT=4, the new test file does not exist at base so nothing was collected), logs/baseline-suite.log and logs/after-suite.log (1 failed 488 passed / 1 failed 497 passed, same test id) and logs/trace-measure-60s.log; the gate covers the pane tests, the retargeted freshness case, the six new cases and the 60 s trace, but no log records the done_when's ruff clause and the trace names two crew-home directories beyond the two leases (logs/trace-measure-60s.log:17-18).\nVERDICT write_paths: read the ten declared paths in the done_when / manifest against the diff's eight changed paths; every changed path is inside the declared scope, and reckon/crew/follow_checkpoint.py is declared but untouched.\nVERDICT manifest: read the manifest's landing, checkpoint, commit list and baseline_suite/after_suite entries; it reports the gate's figures, states the negative control's three red cases, and discloses under outside_scope both the stale every-module allowlist row and the extra crew-home stamps the trace shows.\nVERDICT diff: read all thirteen commits from c30c057d4 to ab7098ee0 - seven crew source/test commits, five documentation commits and one figure commit; the code lands the subscriber, the single shared day-file reader, the per-project cursor key and the follow wiring, and the docs commits only annotate them.\nCALL_SITES: reckon/cli.py:395, reckon/crew_follow_commands.py:2933, reckon/crew_follow_commands.py:3077, reckon/crew_follow_commands.py:3194, reckon/crew/station.py:135\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the read-after-stored-cursor deliverable is landed in reckon/crew/station_subscriber.py:303 poll, but two plan-mandated pane lines it emits (reckon/crew/station_subscriber.py:338 station-gap, :406 station-stale) never reach a text pane.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate's recorded runs (logs/gate-pane-suites.log 55 passed EXIT=0, logs/after-armed.log 21 passed EXIT=0) are real, but they assert the stale and skip events as payloads rather than asserting the pane prints them, and logs/trace-measure-60s.log:17-18 shows crew/watch and crew/live named beyond the two leases the done_when bounds the trace to.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all eight changed paths in the diff (reckon/crew/station.py, reckon/crew/station_store.py, reckon/crew/station_subscriber.py, reckon/crew_follow_commands.py, the two test files, the evidence fragment and the figure) sit inside the manifest's declared write paths.\nSCORE durability: 14\nJUSTIFICATION durability: the cursor cases at tests/test_a_follower_is_a_station_subscriber.py:89, :142, :163 and :313 redden if the stored place, the day-file attach or the project key regresses, but the skip-line and stale-line cases at :163 and :189 assert the yielded event dict while the pane drops its line, so the defect they were written for passes them.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/station_subscriber.py:1-25 and :114 follow the module's existing docstring and naming idiom and carry no plan, phase or ticket label.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/station_subscriber.py:451 re-implements reckon/crew/follow_checkpoint.py:416 cap_history for the same signature and semantics, and :85 re-implements the private age formatter at reckon/_backends.py:909, in a node that declared follow_checkpoint.py writable.\nFINDING reckon/crew_follow_commands.py:3338 blocking: neither the station-gap nor the station-stale event has a branch in the consumer loop, so a text pane renders them through format_watch_transition, which ignores the line field; a direct probe of that call on the head revision returns a bogus 'unknown new -> halted' ticker row. The plan's skip line and stale-heartbeat line are therefore unmet for the human pane, and the tests at tests/test_a_follower_is_a_station_subscriber.py:163 and :189 pass anyway because they assert the event payload rather than the printed output.\nFINDING reckon/crew/station_subscriber.py:451 non-blocking: _cap_history duplicates reckon/crew/follow_checkpoint.py:416 cap_history (same arguments, same window-then-count trim, differing only in tolerating a missing at key), so one trimming rule now has two owners and a later fix must be made twice; it duplicates rather than wraps or extends the existing owner.\nFINDING reckon/crew_follow_commands.py:126 non-blocking: _StationRegistration.held returns True unconditionally, so on the subscriber path a second follower claiming the same session is never detected and both write the same cursors row, where the producer path it replaces refuses the second holder through the advisory lock in reckon/crew/follower_registration.py:389.\nFINDING logs/trace-measure-60s.log:18 non-blocking: the recorded trace names /crew/watch and /crew/live as well as the two lease files, so the done_when's 'names no path under the crew home other than those two lease files' is met in substance (both are directory lookups on the retained lease and recovery-sweep paths, carrying no record content) but not as literally written.",
+  "review_run_id": "r-20261027T085707817895-review-of-a-follower-is-a-station-subscriber-ab7098ee0093",
+  "reviewed_base_sha": "c30c057d4921f78af11a68ae3b4f0f94ff11a66a",
+  "reviewed_head_sha": "ab7098ee0093cd43fa78beb1172368f2e11a6ea9",
+  "reviewed_run_id": "r-20261027T042459263998-a-follower-is-a-station-subscriber",
+  "scores": {
+    "durability": 14,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 4,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T09:07:35.060758+00:00",
+  "total": 82
+}
