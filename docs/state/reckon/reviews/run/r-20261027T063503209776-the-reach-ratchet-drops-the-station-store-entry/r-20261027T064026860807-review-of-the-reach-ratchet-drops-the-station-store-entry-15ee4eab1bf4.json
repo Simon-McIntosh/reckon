@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_derivation": "Source baseline_suite/after_suite were empty; derived from the gate logs the manifest names in test_logs and confirmed by a review-side re-run. Head arm (head-gate.log, revision 15ee4eab1bf4a39eb2c71da80ba48ed78e2e286d, re-run at the reviewed worktree): '1 passed', EXIT=0, failure_ids []. Base arm (negative-control-base.log, revision a62f63172eff26dc03784fd5797cfd147cf4a8f4, head test file with the allowlist row reinstated, re-produced in this review's base worktree): '1 failed', EXIT=1, failure_ids [tests/test_every_module_is_reached.py::test_every_module_is_reached]. Set difference (after minus baseline) is empty, so 0 added failures.",
+  "added_failure_ids": [],
+  "after_failure_ids": [],
+  "baseline_failure_ids": [
+    "tests/test_every_module_is_reached.py::test_every_module_is_reached"
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/station.py:17",
+    "reckon/crew/station.py:122",
+    "reckon/crew/station.py:203",
+    "reckon/crew_follow_commands.py:42"
+  ],
+  "completed_at": "2026-10-27T06:48:44.339Z",
+  "dispatched_at": "2026-10-27T06:41:27Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 25,
+      "severity": "non-blocking",
+      "text": "The artifacts line quotes 'head-gate.log EXIT=0 with 1 passed in 7.54s' but head-gate.log's own summary line reads '1 passed in 7.51s'; a metric quoted from a gate log must be that log's own line so the record reconciles with the log it cites."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit 15ee4eab1 against base a62f63172: one commit, one file, one deletion of the 'reckon.crew.station_store' allowlist row, no other change.",
+    "done_when": "the done_when names the pytest command on tests/test_every_module_is_reached.py plus ruff on the staged path; the manifest records that command and its baseline_suite and after_suite records at manifest.md:22-23 name baseline-suite.log and head-gate.log for the two arms, whose first lines carry the matching revisions, and ruff check 'All checks passed!' plus ruff format --check '1 file already formatted' re-ran clean on that path in this review.",
+    "goal": "The node goal is to delete the one stale ALLOWLIST row for reckon.crew.station_store; the diff against base deletes exactly that line at tests/test_every_module_is_reached.py:31.",
+    "manifest": "Read at 2026-10-27T06:46Z; it reports status complete, the single-row deletion, the base-arm failure message and the head-arm pass, and carries structured baseline_suite and after_suite records at manifest.md:22-23 pointing at baseline-suite.log and head-gate.log.",
+    "write_paths": "The declared write path is tests/test_every_module_is_reached.py; every path in the diff is that one file, so the scope was held."
+  },
+  "justifications": {
+    "durability": "No assertion was added by this node; the guard is the pre-existing _violations stale branch at tests/test_every_module_is_reached.py:52-56, and the base-arm log shows that branch reddening on the reinstated row with the exact stale-entry message.",
+    "evidence": "Both arms carry a structured record at manifest.md:22-23 with a command, exit status, completed flag and failure ids, backed by baseline-suite.log and head-gate.log, and a review-side re-run reproduced both first-hand (base a62f6317 fails with the stale-entry message, head 15ee4eab1 passes); the only gap is the artifacts line quoting a head-gate timing its own log does not carry.",
+    "fit": "The change keeps the surrounding ALLOWLIST dict form at tests/test_every_module_is_reached.py:25-30 and the commit carries a conventional subject and a body with no plan, sprint or ticket identifier.",
+    "goal_fidelity": "The whole diff is the single deleted ALLOWLIST row 'reckon.crew.station_store' at tests/test_every_module_is_reached.py:31, which is exactly the change the goal names.",
+    "reuse": "No definition is added; the change edits data inside the existing ratchet test, which is the repository's sole owner of the allowlist capability, so nothing is forked.",
+    "scope_discipline": "git diff a62f6317..15ee4eab is 1 file changed, 1 deletion, 0 insertions, entirely inside the declared write path tests/test_every_module_is_reached.py."
+  },
+  "node": "review-of-the-reach-ratchet-drops-the-station-store-entry-15ee4eab1bf4",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to delete the one stale ALLOWLIST row for reckon.crew.station_store; the diff against base deletes exactly that line at tests/test_every_module_is_reached.py:31.\nVERDICT done_when: the done_when names the pytest command on tests/test_every_module_is_reached.py plus ruff on the staged path; the manifest records that command and its baseline_suite and after_suite records at manifest.md:22-23 name baseline-suite.log and head-gate.log for the two arms, whose first lines carry the matching revisions, and ruff check 'All checks passed!' plus ruff format --check '1 file already formatted' re-ran clean on that path in this review.\nVERDICT write_paths: the declared write path is tests/test_every_module_is_reached.py; every path in the diff is that one file, so the scope was held.\nVERDICT manifest: read at 2026-10-27T06:46Z; it reports status complete, the single-row deletion, the base-arm failure message and the head-arm pass, and carries structured baseline_suite and after_suite records at manifest.md:22-23 pointing at baseline-suite.log and head-gate.log.\nVERDICT diff: read commit 15ee4eab1 against base a62f63172: one commit, one file, one deletion of the 'reckon.crew.station_store' allowlist row, no other change.\nCALL_SITES: reckon/crew/station.py:17, reckon/crew/station.py:122, reckon/crew/station.py:203, reckon/crew_follow_commands.py:42\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the whole diff is the single deleted ALLOWLIST row 'reckon.crew.station_store' at tests/test_every_module_is_reached.py:31, which is exactly the change the goal names.\nSCORE evidence: 18\nJUSTIFICATION evidence: both arms carry a structured record at manifest.md:22-23 with command, exit status, completed flag and failure ids backed by baseline-suite.log and head-gate.log, and a review-side re-run reproduced both first-hand, with only the artifacts timing quote unreconciled.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff a62f6317..15ee4eab is 1 file changed, 1 deletion, 0 insertions, entirely inside tests/test_every_module_is_reached.py.\nSCORE durability: 17\nJUSTIFICATION durability: no assertion was added; the guard is the pre-existing stale branch at tests/test_every_module_is_reached.py:52-56 and the base-arm log shows it reddening on the reinstated row with the stale-entry message.\nSCORE fit: 20\nJUSTIFICATION fit: the change keeps the ALLOWLIST dict form at tests/test_every_module_is_reached.py:25-30 and the commit carries a conventional subject and body with no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change edits data inside the existing ratchet test, the repository's sole owner of the allowlist capability.\nFINDING manifest.md:25 non-blocking: the artifacts line quotes 'head-gate.log EXIT=0 with 1 passed in 7.54s' where head-gate.log's own summary line reads '1 passed in 7.51s', so the record does not reconcile with the log it cites.",
+  "review_observations": "The source run was still live and rewriting its own records while this review ran: between the first read (status in-progress, baseline_suite/after_suite empty, unheaded gate logs) and 2026-10-27T06:46Z it repaired all three, so those early findings were dropped rather than reported. The reviewed commit 15ee4eab1bf4a39eb2c71da80ba48ed78e2e286d did not change.",
+  "review_run_id": "r-20261027T064026860807-review-of-the-reach-ratchet-drops-the-station-store-entry-15ee4eab1bf4",
+  "reviewed_base_sha": "a62f63172eff26dc03784fd5797cfd147cf4a8f4",
+  "reviewed_head_sha": "15ee4eab1bf4a39eb2c71da80ba48ed78e2e286d",
+  "reviewed_run_id": "r-20261027T063503209776-the-reach-ratchet-drops-the-station-store-entry",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T06:51:05.965640+00:00",
+  "total": 115
+}
