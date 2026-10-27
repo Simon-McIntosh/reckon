@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T12:45:49.592Z",
+  "dispatched_at": "2026-10-27T12:27:15Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-one-call-explains-any-ref-e96f42c10cd3",
+      "recorded_at": "2026-10-27T13:12:02.314168+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/why_view.py",
+      "line": "381",
+      "severity": "blocking",
+      "text": "blocking: _waited_on_by passes None for the declarations (dependency_row_state(plans[waiting_slug], waiting_section, None)) where the code before this commit passed the authored ones, and plans[waiting_slug] is an _inventory_row dict (reckon/mcp_discovery.py:266) that carries no section_declarations, so dependency_row_state (reckon/roadmap.py:652) falls back to the waiting plan's status; every waited_on_by row therefore reports the containing plan's state instead of the waiting section's declaration, breaking the rule that a row-level dependency never reports its container's status, and the file's own per-ref answer at reckon/why_view.py:145 gets it right. Repair: pass states.of(waiting_slug).get('section_declarations')."
+    },
+    {
+      "file": "tests/test_one_call_explains_any_ref.py",
+      "line": "241",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert held['satisfied'] is False holds for the pre-increment implementation, for the new edge-derived one and for a hardcoded False, and no case in the file constructs a satisfied edge, so the commit's central claim that a wait carries the roadmap's satisfaction judgement is unguarded: reverting _waits_of to the raw section_depends_on map leaves every assertion green, and the edge's status key (rendered as state_kind at reckon/why_view.py:263) is never asserted either; the fixture sets every section to implementable, so one done section would give the missing positive control."
+    },
+    {
+      "file": "reckon/why_view.py",
+      "line": "252",
+      "severity": "non-blocking",
+      "text": "non-blocking: this increment drops the project qualification the previous code applied, so target = plans.get(str(parsed.slug or '')) resolves an external ref such as 'other:alpha#s4' against a local plan named alpha whenever one exists, and _waited_on_by (reckon/why_view.py:371) likewise treats a local waiter on an external edge as a waiter on the local ref because it tests parsed.slug but not parsed.project; roadmap rows carry scope 'external' precisely to keep the two apart."
+    },
+    {
+      "file": "reckon/mcp_budget.py",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: registering ('read_plan', 'why') without the owed one-line 'why' in tests/test_every_default_read_fits.py's READ_PLAN_VIEWS turns test_every_view_declares_a_row_and_the_rows_name_every_view red at the landed head, as logs/why-fit-parity.log shows (1 failed, extra item ('read_plan', 'why')); the worker records it under outside_scope and did not widen scope, so it needs the follow-up node the two out-of-scope declarations describe rather than a re-dispatch of this node."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/mcp.py:1166 _read_plan_tool view validation, reckon/mcp.py:1583 _read_plan_view routing into _served_why, reckon/mcp.py:1517 _served_why reading the budget through reckon/mcp_budget.py:71 view_budget",
+    "diff": "Read the single commit 9f247ff8a..e96f42c10: 410 insertions and 262 deletions over five files (reckon/why_view.py, reckon/mcp.py, reckon/mcp_budget.py, tests/test_one_call_explains_any_ref.py, the evidence fragment), all inside the declared scope, committed as fix(mcp) with a body stating what changed and why.",
+    "done_when": "The gate is tests/test_one_call_explains_any_ref.py run beside tests/test_mcp_tools.py; logs/why-gate-head-repair.log records 45 passed, EXIT=0 at revision e96f42c10, and the diff adds the two cases the repair dispatch asked for (a plan-level ref names its section's run, a gate and an open decision each arrive as a hold with its own kind); the base arm could not run the file (exit 4, logs/why-gate-base.log) so the base evidence is the recorded invalid_view probe rather than a failing test.",
+    "goal": "The source node's goal is one read_plan view that explains any ref: its state, its transitive waits with their kinds, what waits on it, the runs and sessions with their held paths, and its last five events; this increment rewires the waits onto roadmap._section_scoped_edges (reckon/why_view.py:252 _section_edges), adds a holds list carrying gate and decision kinds from plan_blocker_state/_decision_rows (reckon/why_view.py:346 _named_holds), and makes a plan-level ref name the runs on its sections (reckon/why_view.py:411 _runs_on), so every element the goal names is now emitted, though the state field on a waited_on_by row reports the wrong thing (reckon/why_view.py:381).",
+    "manifest": "Read at status complete; it names the gate command and eight log paths, records the repaired negative control at 1 failed / 9 passed with EXIT=1, and names the two owed out-of-scope declarations in evidence_inputs rather than claiming them landed.",
+    "write_paths": "Read from the source manifest and prompt.txt: reckon/mcp.py, reckon/why_view.py, tests/test_one_call_explains_any_ref.py, docs/evidence/fragments/the-mcp-answers-the-question-asked/one-call-explains-any-ref.html and docs/figures/..., and resume-1-advice.txt widens that with reckon/mcp_budget.py; all five paths in the diff are inside that set and the declared docs/figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_one_call_explains_any_ref.py:241 asserts satisfied is False, which is true of both the old and the new implementation and of a hardcoded False, and no case exercises a satisfied edge, so the increment's central claim that a wait carries the roadmap's own judgement is unguarded.",
+    "evidence": "logs/why-gate-head-repair.log records 45 passed with EXIT=0 at e96f42c10 and logs/why-negative-control-repair.log records the declared mutation reddening exactly the wait-chain assertion, though the base arm is a probe and the required ruff pass has no log on disk.",
+    "fit": "The module keeps the surrounding idiom (lazy roadmap/mcp imports, the shared live_run_classification vocabulary, one small helper per fact) though the refactored helpers at reckon/why_view.py:112 and :418 drop the parameter annotations the rest of the module carries.",
+    "goal_fidelity": "Every element the goal names is emitted, but reckon/why_view.py:381 makes each waited_on_by row report the waiting plan's status instead of the waiting section's declaration.",
+    "reuse": "The waits, holds and size contract now come from their owners (roadmap._section_scoped_edges, plan_blocker_state, _decision_rows, run_blocker_rows, VIEW_BUDGETS) rather than forking them, but reckon/why_view.py:548 _PlanStates re-parses the plan file where roadmap._plan_authored_state already memoises that read, and _waited_on_by passes None rather than asking that owner for declarations.",
+    "scope_discipline": "All five changed paths sit inside the declared write paths, including reckon/mcp_budget.py which resume-1-advice.txt explicitly adds; the only drift is an incidental change to _waited_on_by's state field (reckon/why_view.py:381), a field the repair dispatch never asked about."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261027T122259490881-review-of-one-call-explains-any-ref-e96f42c10cd3",
+  "reviewed_base_sha": "9f247ff8a47d913cf74ffb728cc6a804dadaf8ec",
+  "reviewed_head_sha": "e96f42c10cd3b5ea65840558cc43a4b2d403fb15",
+  "reviewed_run_id": "r-20261027T094422370525-one-call-explains-any-ref",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 14,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T13:10:06.836525+00:00",
+  "total": 89
+}
