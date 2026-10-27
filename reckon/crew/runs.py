@@ -1931,6 +1931,42 @@ def _project_executable_remainder(project: str) -> tuple[int | None, int | None]
     return (sum(remainders) if remainders else None), uncovered_plans
 
 
+def _drain_plan_states(project: str) -> list[tuple[str, dict[str, Any]]] | None:
+    """Read live plans without publishing the plan index or any other file."""
+    from reckon import _plan_html, resources
+
+    docs_dir = _docs_dir_for_project(project)
+    if docs_dir is None:
+        return None
+    plans: list[tuple[str, dict[str, Any]]] = []
+    try:
+        for path in sorted(docs_dir.rglob("*.html")):
+            resource = resources.identify_resource(docs_dir, path, project)
+            if resource is None or resource.type != "plan" or resource.archived:
+                continue
+            plans.append((resource.slug, _plan_html.read_state_file(path)))
+    except (OSError, ValueError):
+        return None
+    return plans
+
+
+def _drain_executable_remainder(
+    plans: list[tuple[str, dict[str, Any]]] | None,
+) -> tuple[int | None, int | None]:
+    """Derive the closure count from the same read-only plan inventory."""
+    from reckon._schema import plan_executable_remainder
+
+    if not plans:
+        return None, None
+    remainders = [plan_executable_remainder(state) for _slug, state in plans]
+    return (
+        sum(remainder for remainder in remainders if remainder is not None)
+        if any(remainder is not None for remainder in remainders)
+        else None,
+        sum(remainder is None for remainder in remainders),
+    )
+
+
 def _drain_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
     """One live pointer's closure row, the drain's own classification."""
     from reckon.crew.recovery import (
@@ -1952,6 +1988,63 @@ def _drain_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
         "disposition_valid": valid,
         "unreconciled": not valid,
     }
+
+
+def _unloaded_sections(
+    project: str,
+    pointers: Iterable[Mapping[str, Any]],
+    plans: list[tuple[str, dict[str, Any]]] | None,
+) -> dict[str, list[str]]:
+    """Name declared work with neither a request nor a reachable promotion."""
+    from reckon import _plan_html, ledger
+    from reckon._schema import is_implementable_section
+    from reckon.crew.dispatch_sections import project_mount_repository
+    from reckon.crew.promotion_scope import _revision_is_ancestor
+
+    if plans is None:
+        return {}
+
+    def identity(record: Mapping[str, Any]) -> tuple[str, str]:
+        node = record.get("node")
+        if not isinstance(node, Mapping):
+            node = {}
+        return (
+            str(node.get("plan") or record.get("plan") or ""),
+            _plan_html.section_record_id(node.get("section") or record.get("section")),
+        )
+
+    covered = {identity(pointer) for pointer in pointers}
+    pending: dict[tuple[str, str], str] = {}
+    for slug, state in plans:
+        for section, classification in (
+            state.get("section_declarations") or {}
+        ).items():
+            key = (slug, _plan_html.section_record_id(section))
+            if is_implementable_section(classification) and key not in covered:
+                pending[key] = str(section)
+
+    checkout = project_mount_repository(project) if pending else None
+    if checkout is not None:
+        landed, _version = ledger.load(project, use_index=False)
+        for record in landed["runs"]:
+            key = identity(record)
+            if key not in pending:
+                continue
+            revision = str(record.get("promoted_revision") or "").strip()
+            if not revision:
+                continue
+            try:
+                if _revision_is_ancestor(checkout, revision, "HEAD"):
+                    pending.pop(key)
+            except CrewError:
+                continue
+
+    unloaded: dict[str, list[str]] = {}
+    for (slug, _section), name in pending.items():
+        unloaded.setdefault(slug, []).append(name)
+    for sections in unloaded.values():
+        sections.sort()
+    return unloaded
 
 
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
@@ -1980,11 +2073,13 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     # unproven answer is carried no further than the row, because the
     # closure fence turns on whether the worker lives now rather than on
     # what a pointer's writer recorded at launch.
-    rows = [_drain_row(pointer) for pointer in list_live(project=project)]
+    pointers = list_live(project=project)
+    rows = [_drain_row(pointer) for pointer in pointers]
 
     counted, peers = _partition_session_rows(rows, session)
     unreconciled = sum(1 for row in counted if row["unreconciled"])
-    executable_remainder, uncovered_plans = _project_executable_remainder(project)
+    plans = _drain_plan_states(project)
+    executable_remainder, uncovered_plans = _drain_executable_remainder(plans)
     result = {
         "project": project,
         "live_pointers": len(counted),
@@ -1997,6 +2092,7 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
         ),
         "dispositions": list(RUN_DRAIN_DISPOSITIONS),
         "runs": counted,
+        "unloaded": _unloaded_sections(project, pointers, plans),
     }
     if session is not None:
         result.update(
