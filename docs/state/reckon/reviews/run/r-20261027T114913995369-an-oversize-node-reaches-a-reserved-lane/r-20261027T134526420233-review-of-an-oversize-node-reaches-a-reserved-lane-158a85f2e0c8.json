@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T14:02:11.914Z",
+  "dispatched_at": "2026-10-27T13:50:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": 1849,
+      "severity": "non-blocking",
+      "text": "the waiver re-derives the reason-prefix classification inline with a literal \"reserved-lane: \" startswith test rather than extending the prefix test `_excluded_only_on_context` at snapshot.py:1329-1332, so the module now holds two copies of the prefix split and a future change to either reason spelling would silently change the waiver's scope with no failing test"
+    },
+    {
+      "file": "tests/test_an_oversize_node_reaches_a_reserved_lane.py",
+      "line": 285,
+      "severity": "non-blocking",
+      "text": "the new case exercises only a paused lane gate as the second exclusion, so the budget-ceiling, review-exclusion and in-harness terms the same len check is meant to protect are read from the shared mechanism rather than measured by any case"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal asks that a shared lane no unreserved lane can fit be offered a reserved lane once the size terms are satisfied, and the two new commits read are the repair commit 852b43fb0 and its evidence commit 158a85f2e; snapshot.py:1841-1852 now bases the offer on the reserved candidate's whole reason list being the policy's own terms, so the reserved candidate promises no more than the size / attempt terms it substitutes for.\nVERDICT done_when: the done_when names tests/test_an_oversize_node_reaches_a_reserved_lane.py and the five case shapes the review records (the offer with the note, the small node refused, the window at its ceiling, the lane whose own window is exceeded, and a non-context exclusion earning no waiver); all five exist, all pass, and the added case at :285 adds the paused-gate shape the earlier review found missing.\nVERDICT write_paths: the two new commits touch only reckon/crew/picker/snapshot.py, tests/test_an_oversize_node_reaches_a_reserved_lane.py and docs/evidence/fragments/lane-and-model-routing/an-oversize-node-reaches-a-reserved-lane.html, all within the node's five declared write paths and the figures directory unused by these commits.\nVERDICT manifest: read; it records status complete, a gate at 6 passed EXIT=0 at the repair base 5a6e2e8bf and 7 passed EXIT=0 at head 852b43fb0, a negative control that reinstates the blanket reasons clear and fails exactly the new case (1 failed, 6 passed, EXIT=1), and ruff clean on the three changed paths.\nVERDICT diff: read commit by commit against base 5a6e2e8bf; 852b43fb0 adds the reasons-list filter at snapshot.py:1841-1852, replaces candidate.reasons.clear() with a per-reason removal at :1874-1875, and adds test_the_waiver_removes_only_the_policys_own_term at :285; 158a85f2e edits two fragment paragraphs; every path and line is inside the goal's reach.\nCALL_SITES: reckon/crew/picker/__init__.py:318 (pick()'s default snapshotter = snapshot.candidates), reckon/crew/picker/__init__.py:390 (the snapshotter call), reckon/crew/picker/replay.py:14 (replay drives pick()), reckon/crew/dispatch_picker.py:448, reckon/crew_dispatch_commands.py:940\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: snapshot.py:1841-1852 admits the reserved candidate on its own context fit and only when its reasons are the policy's own, and :1874-1875 removes those terms alone, so a lane another rule removed keeps its exclusion, which is exactly the goal's tier/attempts waiver and nothing more.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at after-repair.log records 7 passed EXIT=0 at 852b43fb0 against baseline-repair.log 6 passed EXIT=0, and negative-control-repair.log shows the reinstated blanket clear failing exactly the new case (1 failed, 6 passed, EXIT=1); independently re-run now for 7 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of 5a6e2e8bf..158a85f2e is snapshot.py, the node's own test file and one evidence-fragment paragraphs, all inside the five declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_oversize_node_reaches_a_reserved_lane.py:302-305 fail if the blanket reasons clear is put back (the negative control at negative-control-repair.log shows the red), but no case exercises a budget-ceiling or review-exclusion reason, so the same len check is read rather than measured for those terms.\nSCORE fit: 18\nJUSTIFICATION fit: snapshot.py:1841-1845 follows the module's comment-then-code idiom and explains the mechanism, and the fix introduces no plan or ticket label.\nSCORE reuse: 16\nJUSTIFICATION reuse: the new filter at snapshot.py:1849 re-encodes the prefix split that _excluded_only_on_context at :1332 performs rather than extracting one helper beside it; no general reason-prefix owner exists, so the duplication is the module's own.\nFINDING reckon/crew/picker/snapshot.py:1849 non-blocking: the waiver re-derives the reason-prefix split inline with a literal \"reserved-lane: \" startswith test beside _excluded_only_on_context at :1329-1332, so the module holds two copies of the same splitting, and a future change to either reason spelling would silently change the waiver's scope with no failing test.\nFINDING tests/test_an_oversize_node_reaches_a_reserved_lane.py:285 non-blocking: the new case proves only the paused lane gate as a second exclusion, so the budget-ceiling, review-exclusion and in-harness terms the same check protects are read from the shared mechanism rather than measured by any case.",
+  "review_run_id": "r-20261027T134526420233-review-of-an-oversize-node-reaches-a-reserved-lane-158a85f2e0c8",
+  "reviewed_base_sha": "5a6e2e8bf09ba7987bc40f43de30ae51f0f1a290",
+  "reviewed_head_sha": "158a85f2e0c83099a119dc557e0e54cba952702f",
+  "reviewed_run_id": "r-20261027T114913995369-an-oversize-node-reaches-a-reserved-lane",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T14:06:06.286545+00:00",
+  "total": 108
+}
