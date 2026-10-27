@@ -14,7 +14,7 @@ from click.testing import CliRunner
 from reckon import cli, crew_dispatch_commands
 from reckon.crew import queue_admission, queue_edit, runs
 from reckon.crew.dispatch_admission import LaneHeld
-from reckon.crew.node import TaskNode
+from reckon.crew.node import BudgetHold, TaskNode
 from tests import test_a_queued_request_waits_on_its_dependencies as dependency_tests
 from tests import test_dispatch_names_its_backend as backend_tests
 
@@ -369,6 +369,32 @@ def test_ready_pace_hold_launches_on_open_local_lane(
     assert run["route_mode"] == "fallback"
     assert run["route_fallback"]["from_backend"] == METERED
     assert "hard ceiling" in run["route_fallback"]["reason"]
+
+
+def test_spent_credit_lift_holds_a_picked_route_without_local_fallback(
+    repository: Path,
+    routing: tuple[dict, dict],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, _state = routing
+    _open_local(config)
+    budget_verdict = dispatch_module._budget_verdict
+
+    def spent_credit_lift(**kwargs):
+        verdict = budget_verdict(**kwargs)
+        if kwargs["backend_name"] == METERED:
+            verdict.update(
+                held=True,
+                reason="credit lift has spent its cap",
+                credit_lift={"id": "spent-credit-lift"},
+            )
+        return verdict
+
+    monkeypatch.setattr(dispatch_module, "_budget_verdict", spent_credit_lift)
+    with pytest.raises(BudgetHold) as held:
+        _dispatch(repository, config, "picked-credit-cap")
+    assert "credit lift has spent its cap" in held.value.verdict["reason"]
+    assert runs.list_live(project=PROJECT) == []
 
 
 def test_ready_pace_hold_falls_back_on_dispatch(

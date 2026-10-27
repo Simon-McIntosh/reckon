@@ -1643,7 +1643,8 @@ def dispatch(
             ceiling = float(budget_module.policy(config)["utilisation_ceiling_pct"])
             utilisation = state.get("utilisation_pct")
             if (
-                state.get("headroom") == "known"
+                not verdict.get("credit_lift")
+                and state.get("headroom") == "known"
                 and isinstance(utilisation, (int, float))
                 and utilisation >= ceiling
             ):
@@ -1674,7 +1675,19 @@ def dispatch(
             if waiting_on_upstream:
                 verdict = {**verdict, "held": False}
             else:
-                if caller_named_route and not admission_launch:
+                if (
+                    caller_named_route
+                    and not admission_launch
+                    and not verdict.get("credit_lift")
+                    and resolve_budget_fallback(
+                        config,
+                        node.role,
+                        node.spec_level,
+                        resolution.backend,
+                        resolution.backend_settings,
+                    )
+                    is None
+                ):
                     queued, position = queue_dispatch(
                         _queued_request_record(
                             run_id=resolution.run_id,
@@ -1713,6 +1726,8 @@ def dispatch(
                         watch_override=watch_override,
                     )
                     raise held
+                if route == "picker" and verdict.get("credit_lift"):
+                    raise _actionable_budget_hold(verdict, config=budget_config)
                 if route == "picker" and not admission_launch:
                     fallback_name = str(config.get("local_backend") or "")
                     substitute = (
