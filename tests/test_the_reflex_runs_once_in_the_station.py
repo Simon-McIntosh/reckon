@@ -23,12 +23,15 @@ from __future__ import annotations
 import json
 import os
 import socket
+import threading
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from reckon import checkout_trust
+from reckon import crew_follow_commands as follow_commands
 from reckon.crew import (
     recovery_review_dispatch,
     station,
@@ -195,6 +198,132 @@ def test_a_quiet_resumed_run_is_swept_on_the_beats_clock(
     assert len(sweeps.calls) == 1
     node.tick(now=MOMENT + timedelta(seconds=station.SWEEP_BEAT_SECONDS + 1))
     assert len(sweeps.calls) == 2
+
+
+def _reading(
+    store: station_store.StationStore,
+    *,
+    project_live: bool,
+    sessions: list[str] | None = None,
+    unowned: bool = False,
+) -> None:
+    station_subscriber.record_live_work(
+        store,
+        PROJECT,
+        at=datetime.now(tz=UTC),
+        project_live=project_live,
+        unowned=unowned,
+        sessions=sessions or [],
+    )
+
+
+def _spawn_follower(
+    events: list[dict],
+    stop: threading.Event,
+    *,
+    subscriber: station_subscriber.StationSubscriber | None,
+    sweeps=None,
+):
+    """Run one arming on a thread, as the session host runs a child."""
+
+    def run() -> None:
+        events.extend(
+            follow_commands._follow_watch_lines(
+                PROJECT,
+                session=SESSION,
+                poll_interval=0.01,
+                settle=True,
+                settle_interval=0.2,
+                sweep=sweeps,
+                stop=stop,
+                subscriber=subscriber,
+            )
+        )
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    return thread
+
+
+def _settles(events: list[dict]) -> list[dict]:
+    return [
+        event
+        for event in events
+        if event.get("event") == follow_commands.FOLLOWER_SETTLE_EVENT
+    ]
+
+
+def test_a_follower_reading_the_station_runs_no_sweep_of_its_own(
+    home: Path, tmp_path: Path
+) -> None:
+    """The sweep a pane used to run on its cadence now runs only in the station."""
+    base = crew_home()
+    _pointer(base, "r-one")
+    store = station_store.StationStore(tmp_path / "station")
+    _reading(store, project_live=True, sessions=[SESSION])
+    subscriber = station_subscriber.StationSubscriber(store, PROJECT, session=SESSION)
+
+    panes = _Sweeps()
+    from_station: list[dict] = []
+    stop = threading.Event()
+    thread = _spawn_follower(from_station, stop, subscriber=subscriber, sweeps=panes)
+    try:
+        time.sleep(1.0)
+        assert panes.calls == [], "a pane reading the station swept beside it"
+    finally:
+        stop.set()
+        thread.join(5.0)
+    assert not thread.is_alive()
+
+    # The positive control: the same recorder on the producer path still sees
+    # the sweep the follower has always run, so a count of zero is a real
+    # absence rather than a recorder that could never have been called.
+    from_producer: list[dict] = []
+    stop = threading.Event()
+    thread = _spawn_follower(from_producer, stop, subscriber=None, sweeps=panes)
+    try:
+        time.sleep(1.0)
+        assert panes.calls, "the producer path stopped sweeping"
+    finally:
+        stop.set()
+        thread.join(5.0)
+    assert not thread.is_alive()
+
+
+def test_a_pane_settles_on_the_stations_reading_not_the_pointer_directory(
+    home: Path, tmp_path: Path
+) -> None:
+    """The station's reading is the judgement, in both directions.
+
+    A pane that read the pointer directory would decide the opposite of the
+    reading in each direction here: it would stay open with no pointer at all
+    and leave with a working one, which is exactly the listing the station
+    replaces.
+    """
+    base = crew_home()
+    store = station_store.StationStore(tmp_path / "station")
+    _reading(store, project_live=True, sessions=[SESSION])
+    subscriber = station_subscriber.StationSubscriber(store, PROJECT, session=SESSION)
+
+    events: list[dict] = []
+    stop = threading.Event()
+    thread = _spawn_follower(events, stop, subscriber=subscriber, sweeps=_Sweeps())
+    try:
+        # No live pointer has ever been written, so a listing would call the
+        # fleet drained and leave; the station reads work and the pane stays.
+        time.sleep(0.5)
+        assert _settles(events) == [], "a pane settled on a live station reading"
+
+        # A working pointer is on disk, so a listing would keep the pane open;
+        # the station reads the fleet drained and the pane settles.
+        _pointer(base, "r-one")
+        _reading(store, project_live=False)
+        thread.join(20.0)
+        assert not thread.is_alive(), "the pane did not leave on a drained reading"
+        assert len(_settles(events)) == 1, _settles(events)
+    finally:
+        stop.set()
+        thread.join(5.0)
 
 
 def test_the_station_writes_the_reading_a_pane_settles_by(

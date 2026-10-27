@@ -481,8 +481,16 @@ class StationSubscriber:
         interval: float = 0.1,
         sleeper=time.sleep,
         stale_interval: float = 5.0,
+        each_pass=None,
     ) -> Iterator[Mapping[str, Any]]:
         """Yield this pane's rows until ``stop`` is set.
+
+        This is the one poll loop a pane runs: the follow command's subscriber
+        branch drives it rather than keeping a loop of its own, so the rows a
+        pane paints and the rows a test reads arrive by the same path.
+        ``each_pass`` is that caller's own per-pass work — the checks that end
+        an arming — and returning false from it ends the loop, exactly as
+        ``stop`` does.
 
         The station's heartbeat is checked on its own cadence rather than on
         every pass, and its line is printed once — a subscriber that repeated it
@@ -504,6 +512,8 @@ class StationSubscriber:
                     "run_id": None,
                     "line": line,
                 }
+            if each_pass is not None and not each_pass():
+                return
             sleeper(interval)
             if stale_reported and stale_interval and self.stale_line() is None:
                 stale_reported = False
