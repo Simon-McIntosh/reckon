@@ -28,4 +28,12 @@
   <code>uncovered units: s3</code>. The declared negative control restored the
   whole-plan admission check and failed the section-2-launches arm with three
   held sections where the edit touched two, <code>EXIT=1</code>.</p>
+  <p>The suite over every test file that imports the changed modules ran serially
+  at both revisions. The base revision gave <code>2 failed, 635 passed,
+  1 error</code> in 15m59s; the repair head gave <code>3 failed, 634 passed,
+  1 error</code> in 19m36s. The one added failure is
+  <code>test_closed_upstream_blocks_its_waiter[blocked]</code>, which asserts the
+  behaviour this section changes — a blocked manifest closing its waiter — and
+  sits outside this node's write grant, so it is recorded for the coordinator
+  rather than edited here.</p>
 </section>
