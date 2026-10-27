@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
-  <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;,&quot;the-monitor-reads-each-fact-once#s8&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -290,22 +290,28 @@
     needed because a settle window expires on the clock, <code>REVIEW_SETTLE_SECONDS</code> from the run's
     resume stamp (<code>recovery_review_dispatch.review_settle_seconds_remaining</code>), and a resumed worker
     that writes nothing produces no change at the moment the window passes.</p>
-    <p>Today the settle reader takes only the sweep's own <code>auto_resume</code> stamp. The advice door in
-    <code>resumption</code> records <code>resume_superseded_head</code> and withdraws a queued review but
-    writes no resume stamp, so an advice-resumed run reads as settled at once. This section makes the advice
-    door write the same stamp the reader takes, so a run resumed by a coordinator's
-    <code>crew resume --advice</code> waits the same settle window an automatic resume does (old §81).</p>
-    <p>Done when tests show a delivered run gets exactly one review dispatched with three subscribers
-    attached for its session; a run resumed by advice is not reviewed until its settle window has passed;
-    and a resumed run whose worker writes nothing after the resume is reviewed once the window has passed,
-    with no further change to its files. Measure: a 60 s
-    <code>strace -f -e trace=openat,stat,newfstatat</code> of a running settle-aware subscriber names no path under the
-    crew home other than the two lease files §8 allows, because settle detection now reads the station.
-    Negative controls: running the reflex per subscriber must fail the exactly-one test; an advice door that
-    writes no resume stamp must fail the advice-settle test; a station that evaluates settle only on change
-    must fail the quiet-run test; and the same 60 s trace of a subscriber running today's per-follower settle
-    reader must name the run directories it lists, so a trace naming nothing is shown to be a trace that
-    could have named something.</p>
+    <p>Today the settle reader, <code>review_settle_seconds_remaining</code>, takes only the sweep's own
+    <code>auto_resume</code> stamp. Every resume, the advice door's included, already records the resume
+    instant through <code>resume_superseded_head</code>, and <code>_latest_resume_at</code> in the same module
+    already returns the newer of the two stamps. This section makes the settle reader use
+    <code>_latest_resume_at</code>, so a run resumed by a coordinator's <code>crew resume --advice</code> waits
+    the same settle window an automatic resume does (old §81). The advice door writes nothing new, and
+    <code>auto_resume</code> stays the sweep's own record.</p>
+    <p>A review is already dispatched once per run and head whatever the subscriber count, because
+    <code>dispatch_review_for_run</code> refuses a pair already in flight. What the move buys is the sweep
+    itself: today each subscriber runs <code>resumption.sweep</code>, and its reads of the fleet, on its own
+    cadence. Done when tests show that with three subscribers attached for one session, the sweep runs once
+    per change in the station and in no subscriber; a run resumed by advice is not reviewed until its settle
+    window has passed; and a resumed run whose worker writes nothing after the resume is reviewed once the
+    window has passed, with no further change to its files. Measure: a 60 s
+    <code>strace -f -e trace=openat,stat,newfstatat</code> of a running settle-aware subscriber (the process
+    §8 delivers) names no path under the crew home other than the two lease files §8 allows, because settle
+    detection now reads the station.
+    Negative controls: a subscriber that still runs the sweep must fail the sweep-count test; a settle reader
+    that takes <code>auto_resume</code> alone must fail the advice-settle test; a station that evaluates settle
+    only on change must fail the quiet-run test; and the same 60 s trace of a subscriber running today's
+    per-follower settle reader must name the run directories it lists, so a trace naming nothing is shown to
+    be a trace that could have named something.</p>
 
     <h2 id="s11">§11 — A lift row reads as a lift</h2>
 <section data-reckon="section" data-id="s11" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
