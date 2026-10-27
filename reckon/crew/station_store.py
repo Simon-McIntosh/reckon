@@ -229,6 +229,21 @@ def _day_file_name(day: date) -> str:
     return f"{DAY_FILE_PREFIX}{day.isoformat()}{DAY_FILE_SUFFIX}"
 
 
+# The operational errors a read of a day file can meet and recover from on its
+# own: the file's schema is being written, the file is being unlinked by
+# retention, or its writer holds the file this instant.
+_READ_RACES = (
+    "no such table",
+    "database is locked",
+    "unable to open database file",
+)
+
+
+def _is_a_read_race(error: sqlite3.OperationalError) -> bool:
+    text = str(error).lower()
+    return any(marker in text for marker in _READ_RACES)
+
+
 def _day_from_name(name: str) -> date | None:
     """The UTC day a day file's name encodes, or None for a foreign name.
 
@@ -1088,12 +1103,16 @@ class StationStore:
                     parameters,
                 ).fetchall()
                 collected.extend(dict(row) for row in rows)
-            except sqlite3.OperationalError:
-                # A day file exists from the moment its writer opens it, and
-                # its schema is written a statement later, so a reader can
-                # attach it in that window. Nothing is stored in it yet, and a
-                # row written to it afterwards carries a higher id than the
-                # cursor this read advances to, so it is read on the next poll.
+            except sqlite3.OperationalError as error:
+                # A day file exists from the moment its writer opens it and its
+                # schema is written a statement later, so a reader can attach
+                # it in that window; retention can also unlink one between the
+                # listing and the attach. Neither loses a row for good: a row
+                # written afterwards carries a higher id than the cursor this
+                # read advances to, so the next poll reaches it. Any other
+                # failure is the store's own and is raised.
+                if not _is_a_read_race(error):
+                    raise
                 continue
             finally:
                 connection.execute("DETACH DATABASE day")
