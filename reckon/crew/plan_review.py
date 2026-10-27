@@ -2115,7 +2115,16 @@ def reviews_for_unit_burst(
         per_unit = record.get("section_digests")
         if isinstance(per_unit, Mapping) and per_unit.get(unit) == wanted:
             hits.append(record)
-    hits.sort(key=lambda record: str(record.get("dispatched_at") or ""))
+    # Order by the stamp the store writes. ``store_plan_review`` stamps
+    # ``timestamp`` on every record; ``dispatched_at`` is carried only by a
+    # committed record, so sorting on it alone leaves every key equal and makes
+    # "newest" whichever record the listing happened to return last.
+    hits.sort(
+        key=lambda record: (
+            str(record.get("timestamp") or ""),
+            int(record.get("plan_version") or 0),
+        )
+    )
     if not hits:
         return []
     revision = _plan_revision(hits[-1])

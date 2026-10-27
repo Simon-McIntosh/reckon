@@ -120,9 +120,11 @@ def _store_review(
     responses: dict | None = None,
     section_digests: dict | None = None,
     plan_fingerprint: str | None = None,
+    timestamp: str | None = None,
 ) -> None:
     plan_review.store_plan_review(
         {
+            **({"timestamp": timestamp} if timestamp else {}),
             "project": "sample",
             "plan_slug": "fixture",
             "plan_version": 1,
@@ -417,6 +419,67 @@ def test_an_unchanged_unit_does_not_hold_the_review_cap(
         )
         is None
     )
+
+
+def test_the_burst_counts_at_the_newest_revision_whatever_the_listing_order(
+    project: tuple[Path, Path, Path],
+    monkeypatch,
+) -> None:
+    config_home, _repo, plan_path = project
+    digests = plan_review._section_digests(plan_path.read_text(encoding="utf-8"))
+    # One review at an old plan revision and two at the revision the plan
+    # carries now, each carrying alpha's present digest. The listing is then
+    # handed back newest first, the reverse of what the store produces: a
+    # bound that sorts on a field the store never writes leaves every key
+    # equal, so the last element reads as "newest" and the cap counts at the
+    # old revision instead, letting a third review of the current edit through.
+    _store_review(
+        plan_path,
+        config_home,
+        review_run_id="r-old",
+        findings=[],
+        section_digests=digests,
+        plan_fingerprint=f"{1:064x}",
+        timestamp="2026-01-01T00:00:00+00:00",
+    )
+    for number, review_run_id in enumerate(("r-new-1", "r-new-2"), start=2):
+        _store_review(
+            plan_path,
+            config_home,
+            review_run_id=review_run_id,
+            findings=[
+                {
+                    "id": f"{review_run_id}-finding",
+                    "type": "reasoning",
+                    "anchor": f"{plan_path}:1",
+                    "text": "a finding about the edit the plan carries now",
+                }
+            ],
+            section_digests=digests,
+            plan_fingerprint=f"{2:064x}",
+            timestamp=f"2026-02-0{number}T00:00:00+00:00",
+        )
+
+    stored = plan_review.list_plan_reviews
+    monkeypatch.setattr(
+        plan_review,
+        "list_plan_reviews",
+        lambda project=None, *, base_dir=None: list(
+            reversed(stored(project, base_dir=base_dir))
+        ),
+    )
+
+    counted = plan_review.reviews_for_unit_burst(
+        "sample", "fixture", "alpha", base_dir=config_home / "crew" / "reviews"
+    )
+    assert [record.get("review_run_id") for record in counted] == ["r-new-1", "r-new-2"]
+
+    refused = plan_review.review_burst_refusal(
+        "sample", "fixture", "alpha", base_dir=config_home / "crew" / "reviews"
+    )
+    assert refused is not None
+    assert "r-new-1-finding" in refused
+    assert "r-new-2-finding" in refused
 
 
 def test_a_finding_answered_on_a_stored_record_is_not_named_open(
