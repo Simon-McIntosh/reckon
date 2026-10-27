@@ -25,13 +25,21 @@ through the same <code>edit_plan</code> ops a coordinator uses: the node's
 evidence anchor in the cumulative landing record, the section's declaration set
 to <code>done</code>, and the <code>c-close-&lt;section&gt;</code> comment
 linking to the anchor.</p>
-<p>Measured on the node's gate: six tests pass against a fixture repository with
-stubbed test commands, covering a clean population landing with its armed suite
-pair recorded, a flaky added id landing, a real added id refused with one
-obligation naming it, the landing beat ticking the section, and a run whose
-review is not accepted left untouched. The importer population
-(<code>tests/test_queue_landing.py</code> at the base revision
-<code>9e363fe50</code> and at the head) adds no failures: 8 passed at both arms.</p>
+<p>A single id is re-run through the same command: the node's own test files —
+the ones the armed command was resolved from — are removed and the id appended,
+so the interpreter, any <code>env</code> or <code>timeout</code> wrapper,
+every option and its path value survive unchanged. An arm that cannot be
+started, or that exits non-zero without reporting the id, is unreadable and
+refuses the landing rather than reading as a failure at both revisions.</p>
+<p>Measured on the node's gate: ten tests pass against a test suite with
+stubbed repositories and commands, covering a clean population landing with its
+armed suite pair recorded, a flaky added id landing, a real added id refused
+with one obligation naming it, the landing beat ticking the section, a run
+whose review is not accepted left untouched, narrowing across
+<code>--cov-config</code>, <code>env</code>, <code>timeout</code> and a
+multi-file command, and an unreadable arm refusing the landing. The importer
+population (<code>tests/test_queue_landing.py</code>) adds no failures: 8
+passed at both arms, at <code>ccaf5a1c3</code> and at the delivered head.</p>
 </section>
 </main>
 </body>
