@@ -1234,6 +1234,226 @@ SCOPE_ANSWERED_FINDINGS = 20
 # The characters of each answered finding's text the scope quotes: enough to
 # recognise the finding, while a reviewer's long evidence stays in its record.
 SCOPE_FINDING_CHARS = 280
+# The characters of plan diff and of each unit's full text the scope carries.
+# A review reads the change and the units it is asked about, not the whole
+# plan, so the material is bounded by what a reviewer can hold rather than by
+# the size of the document: a diff past this bound and a unit past this bound
+# are truncated with an elision, and the reviewer still holds the plan path.
+SCOPE_DIFF_CHARS = 12000
+SCOPE_UNIT_CHARS = 8000
+
+
+def _plan_document_path(project: str, plan_slug: str) -> Path | None:
+    """The plan file a project's slug resolves to, or ``None`` when it does not."""
+    from reckon._store import _docs_dir_for_project
+    from reckon.resources import ResourceCollision, resolve_resource
+
+    docs = _docs_dir_for_project(project)
+    if docs is None:
+        return None
+    try:
+        resource = resolve_resource(
+            docs, project, plan_slug, "plan", include_archived=False
+        )
+    except (OSError, ResourceCollision):
+        return None
+    return None if resource is None else Path(resource.path)
+
+
+def _git(repo: Path, *args: str) -> str | None:
+    """Run one read-only git command in ``repo``, or answer ``None``."""
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo), *args],
+            capture_output=True,
+            check=False,
+            timeout=20,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.decode("utf-8", "replace")
+
+
+def plan_commit_for(
+    project: str,
+    plan_slug: str,
+    reviewed_blob_sha: str,
+    *,
+    plan_path: str | Path | None = None,
+) -> str | None:
+    """The commit of the plan file that carried the reviewed bytes.
+
+    A review records the bytes the reviewer actually read rather than whatever
+    the plan says later, so the commit a later review diffs from is the one
+    that wrote those bytes. The lookup is by object: ``git log --find-object``
+    lists the commits that changed how many times the blob occurs at the path,
+    and the oldest of them is the one that added it, whichever revisions have
+    since written the file past it. A plan edited but never committed, a
+    project with no resolvable checkout and a git failure all answer ``None``
+    rather than a guessed revision, so a caller can tell "no commit" from "the
+    current one".
+    """
+    sha = str(reviewed_blob_sha or "").strip()
+    if not sha:
+        return None
+    repo = _project_repo_root(project)
+    path = (
+        Path(plan_path)
+        if plan_path is not None
+        else _plan_document_path(project, plan_slug)
+    )
+    if path is None or repo is None:
+        return None
+    try:
+        relative = path.resolve().relative_to(repo.resolve())
+    except (OSError, ValueError):
+        return None
+    output = _git(
+        repo, "log", "--format=%H", f"--find-object={sha}", "--", str(relative)
+    )
+    if output is None:
+        return None
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    return lines[-1] if lines else None
+
+
+def _plan_diff_since(
+    project: str,
+    plan_slug: str,
+    commit: str,
+    *,
+    plan_path: str | Path | None = None,
+) -> str | None:
+    """The plan file's diff from ``commit`` to the working tree, or ``None``.
+
+    The diff is taken against the working tree rather than against ``HEAD`` so
+    an edit still to be committed is part of the change the review reads; the
+    path is the one plan the review is about, so a peer's edit to another plan
+    never appears in it.
+    """
+    repo = _project_repo_root(project)
+    path = (
+        Path(plan_path)
+        if plan_path is not None
+        else _plan_document_path(project, plan_slug)
+    )
+    if path is None or repo is None or not commit:
+        return None
+    try:
+        relative = path.resolve().relative_to(repo.resolve())
+    except (OSError, ValueError):
+        return None
+    return _git(repo, "diff", str(commit), "--", str(relative))
+
+
+def _clip(text: str, limit: int) -> str:
+    """Bound a block of review material, marking what was left out."""
+    squeezed = text.rstrip()
+    if len(squeezed) <= limit:
+        return squeezed
+    return squeezed[:limit].rstrip() + "\n… (truncated)"
+
+
+def _unit_markers(unit: str) -> tuple[str, ...]:
+    """The strings that identify one unit in a plan file's own text."""
+    if unit == DOCUMENT_UNIT:
+        return (
+            'data-reckon="decisions"',
+            'data-reckon="gates"',
+            'data-reckon="waits"',
+            'class="r-decisions"',
+        )
+    return (f'data-id="{unit}"', f'id="{unit}"')
+
+
+def _diff_for_units(diff: str, uncovered: Iterable[str]) -> str:
+    """The changed lines of a plan diff that belong to the units asked about.
+
+    A plan's sections sit on one line each, so a hunk's context lines quote
+    the neighbouring sections a review was not asked about. Only the added and
+    removed lines naming an uncovered unit are kept, with the hunk headers, so
+    the material a reviewer reads is the change to its own units and nothing
+    of another section's text.
+    """
+    markers = tuple(marker for unit in uncovered for marker in _unit_markers(str(unit)))
+    kept: list[str] = []
+    for line in diff.splitlines():
+        if line.startswith(("diff --git", "index ", "--- ", "+++ ", "@@")):
+            kept.append(line)
+            continue
+        if not line.startswith(("+", "-")):
+            continue
+        if any(marker in line for marker in markers):
+            kept.append(line)
+    return "\n".join(kept)
+
+
+def _changed_material(
+    project: str,
+    plan_slug: str,
+    *,
+    plan: Mapping[str, Any] | str | Path,
+    uncovered: Iterable[str],
+    prior: Iterable[Mapping[str, Any]],
+) -> str:
+    """The change a composed review reads, as a block of its brief.
+
+    A review of an edited plan reads what changed rather than the whole plan:
+    the diff of the plan file since the commit the last review read, then the
+    full text of each unit the coverage predicate left uncovered and of no
+    other unit. The commit comes from the newest prior review that recorded
+    one, and a review composed before any record carried a commit falls back
+    to the commit that wrote the bytes that review read, so a plan reviewed
+    under either record shape is read as a change.
+    """
+    path = (
+        Path(plan)
+        if isinstance(plan, (str, Path)) and Path(plan).is_file()
+        else _plan_document_path(project, plan_slug)
+    )
+    if not path:
+        return ""
+    commit = ""
+    for record in sorted(
+        prior, key=lambda item: int(item.get("plan_version") or 0), reverse=True
+    ):
+        recorded = str(record.get("plan_commit") or "").strip()
+        if recorded:
+            commit = recorded
+            break
+        commit = (
+            plan_commit_for(
+                project,
+                plan_slug,
+                str(record.get("reviewed_blob_sha") or ""),
+                plan_path=path,
+            )
+            or ""
+        )
+        if commit:
+            break
+    lines: list[str] = []
+    diff = (
+        _plan_diff_since(project, plan_slug, commit, plan_path=path) if commit else None
+    )
+    if diff:
+        focused = _diff_for_units(diff, uncovered)
+        if focused:
+            lines.append(
+                f"The plan file's change since the review read it ({commit}), "
+                "changed lines of the units this review is asked to read:"
+            )
+            lines.append("```diff")
+            lines.append(_clip(focused, SCOPE_DIFF_CHARS))
+            lines.append("```")
+    prose = _prose_texts(path)
+    for unit in sorted(uncovered):
+        text = prose.get(unit) or ""
+        lines.append(f"Full text of {unit}, the unit this review is asked to read:")
+        lines.append(_clip(text, SCOPE_UNIT_CHARS) or "(no authored text)")
+    return "\n".join(lines) + ("\n" if lines else "")
 
 
 def review_scope(
@@ -1283,12 +1503,16 @@ def review_scope(
             if not isinstance(finding, Mapping):
                 continue
             response = _stored_response(record, finding)
-            if response is None:
-                continue
-            reason = str(response.get("reason") or "").strip()
             text = " ".join(str(finding.get("text") or "").split())
             if len(text) > SCOPE_FINDING_CHARS:
                 text = text[: SCOPE_FINDING_CHARS - 1].rstrip() + "…"
+            if response is None:
+                answered.append(
+                    f"- {finding.get('id')} [{finding.get('anchor') or 'plan'}] "
+                    f"{text} -> (unanswered)"
+                )
+                continue
+            reason = str(response.get("reason") or "").strip()
             answered.append(
                 f"- {finding.get('id')} [{finding.get('anchor') or 'plan'}] "
                 f"{text} -> {response.get('action')}{': ' + reason if reason else ''}"
@@ -1308,6 +1532,11 @@ def review_scope(
             "raise one again unless the plan has since changed what it describes:"
         )
         lines.extend(answered[:SCOPE_ANSWERED_FINDINGS])
+    material = _changed_material(
+        project, plan_slug, plan=plan, uncovered=uncovered, prior=prior
+    )
+    if material:
+        lines.append(material.rstrip())
     return "\n".join(lines) + "\n"
 
 
@@ -1914,6 +2143,7 @@ def write_review_sidecar(
     rubric: str | None = None,
     report_path: Path | None = None,
     payload: Mapping[str, Any] | None = None,
+    plan_path: str | Path | None = None,
     store_error: str | None = None,
     name: str = _REVIEW_SIDECAR_NAME,
 ) -> Path:
@@ -1946,6 +2176,14 @@ def write_review_sidecar(
             "rubric": str(rubric),
             "report_path": str(Path(report_path)),
         }
+        commit = plan_commit_for(
+            str(project),
+            str(plan_slug),
+            str(reviewed_blob_sha),
+            plan_path=plan_path,
+        )
+        if commit:
+            payload["plan_commit"] = commit
     else:
         payload = dict(payload)
     if store_error is not None:
@@ -2142,6 +2380,7 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
         "review_run_id": report_path.parent.name,
         "rubric_items": parsed["rubric_items"],
         "absent_items": parsed["absent_items"],
+        "plan_commit": str(sidecar.get("plan_commit") or ""),
     }
 
 
