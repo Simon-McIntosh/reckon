@@ -309,6 +309,51 @@ def test_a_flaky_added_id_that_fails_as_often_at_base_as_at_head_lands(
     assert len(narrowed) == 6, calls
 
 
+def test_a_preexisting_failure_in_the_same_file_does_not_mask_a_regression(
+    delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The isolated arm must run the id alone, not the file it lives in.
+
+    ``test_existing`` already fails at the base. A narrowed run that still
+    names the file re-runs that failure too, so the added id would read as
+    failing equally at both revisions and the regression would land.
+    """
+    _accept(base=str(delivery["base"]), head=str(delivery["head"]))
+    landed = _land(monkeypatch)
+    calls: list[dict] = []
+
+    def run(argv, *, cwd, capture_output=True, text=True, check=False):
+        arm = "base" if str(cwd).endswith("base-tree") else "head"
+        calls.append({"argv": list(argv), "arm": arm})
+        files = [token for token in argv if token.endswith(".py")]
+        nodes = [token for token in argv if "::" in token]
+        if files:
+            # pytest runs every target it is given, so the file's own failures
+            # are reported whatever else the command names.
+            failures = ["tests/test_alpha.py::test_existing"]
+            if arm == "head":
+                failures.append(REAL)
+            output = "".join(f"FAILED {node} - AssertionError\n" for node in failures)
+            return _completed(argv, 1, output)
+        assert nodes, argv
+        failed = arm == "head" and nodes[0] == REAL
+        output = f"FAILED {nodes[0]} - AssertionError\n" if failed else "1 passed\n"
+        return _completed(argv, 1 if failed else 0, output)
+
+    monkeypatch.setattr(landing_measure, "_RUN", run)
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [], result
+    assert landed == []
+    guard = result["obligations"][0]["guard"]
+    assert REAL in guard and "3/3 at head and 0/3 at base" in guard, guard
+    narrowed = [call for call in calls if "::" in call["argv"][-1]]
+    assert narrowed and not any(
+        token.endswith(".py") for token in narrowed[0]["argv"]
+    ), narrowed
+
+
 def test_a_real_added_id_is_not_landed_and_one_obligation_names_it(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:

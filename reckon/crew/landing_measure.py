@@ -154,14 +154,30 @@ def _imports_module(text: str, module: str) -> bool:
     )
 
 
-def isolated_command(command: Sequence[str], test_id: str) -> list[str]:
-    """The armed command narrowed to one test id.
+#: What a token that names a test target looks like, as opposed to an option
+#: or an option's value: a path separator, a ``.py`` suffix or a node id.
+_TARGET_HINT = re.compile(r"/|\.py$|::")
 
-    The armed command is what the run's promotion runs, so running one id
-    through it keeps the interpreter, plugins and options that produced the
-    suite reading rather than guessing a second runner.
+
+def runner_argv(command: Sequence[str]) -> list[str]:
+    """The armed command with its test targets removed, keeping its options.
+
+    The armed command is what the run's promotion runs, so a single id is
+    re-run through the same interpreter, plugins and options. Its own test
+    targets are dropped: leaving them in would run the whole file again and
+    any failure already present there would be counted against the id.
     """
-    return [*command, test_id]
+    kept: list[str] = []
+    for token in command:
+        if kept and not token.startswith("-") and _TARGET_HINT.search(token):
+            continue
+        kept.append(token)
+    return kept
+
+
+def isolated_command(command: Sequence[str], test_id: str) -> list[str]:
+    """The armed command narrowed to exactly one test id."""
+    return [*runner_argv(command), test_id]
 
 
 def _arm(
@@ -271,6 +287,7 @@ def measure_run(
             "base": [
                 _fails(
                     meta,
+                    test_id,
                     base_tree,
                     logs / "isolated" / f"{_slug(test_id)}-base-{n}.log",
                     runner,
@@ -280,6 +297,7 @@ def measure_run(
             "head": [
                 _fails(
                     meta,
+                    test_id,
                     tree,
                     logs / "isolated" / f"{_slug(test_id)}-head-{n}.log",
                     runner,
@@ -302,10 +320,21 @@ def measure_run(
     )
 
 
-def _fails(command: Sequence[str], tree: Path, log_path: Path, runner) -> bool:
-    """Whether one isolated run reported the id it was narrowed to as failing."""
+def _fails(
+    command: Sequence[str], test_id: str, tree: Path, log_path: Path, runner
+) -> bool:
+    """Whether one isolated run reported *this* id as failing.
+
+    Only the narrowed id counts: a failure the run reports for anything else
+    is the pre-existing population the base arm already carries, and counting
+    it here would make a regression read as failing equally at both revisions.
+    A run that could not be read is counted as a failure, so an unmeasurable
+    arm refuses the landing rather than clearing it.
+    """
     arm = _arm(command, tree, log_path, runner)
-    return not arm.readable or bool(arm.failure_ids)
+    if not arm.readable:
+        return True
+    return test_id in arm.failure_ids
 
 
 def _slug(test_id: str) -> str:
