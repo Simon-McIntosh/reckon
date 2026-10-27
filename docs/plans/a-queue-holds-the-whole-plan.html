@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="161">
+<meta name="plan-version" content="162">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -218,6 +218,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261027T134044726932-review-of-plan-edit-holds-own-units-66cbc109c01c" data-who="reckon-build" data-when="2026-10-27T14:07:14.219Z">
     <div class="r-comment-body"><p>Independent review of run r-20261027T063158683216-plan-edit-holds-own-units at head 66cbc109c (base c4333460f): 98/120 — goal_fidelity 18, evidence 12, scope_discipline 15, durability 17, fit 16, reuse 20; one blocking finding (the landed change adds tests/test_queue_dag_waits.py::test_closed_upstream_blocks_its_waiter[blocked]) and three non-blocking findings (uncached per-pointer gate on the admission path, three 100644-&gt;100755 mode changes, no recorded ruff receipt).</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261027T063158683216-plan-edit-holds-own-units" data-who="reckon-build" data-when="2026-10-27T14:25:08Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/plan-edit-holds-own-units.html</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-s12-waiting-is-not-a-duty" data-who="reckon-42" data-when="2026-10-24T09:00:00Z">
     <div class="r-comment-body"><p><strong>Found while loading this plan's own width, 24 October 2026.</strong> Each request correctly parked <code>awaiting-upstream</code> appears on the owning session's obligations as <code>run-queued</code>, and the Stop hook refuses to end the turn until every one is acknowledged. With five requests waiting that took one acknowledgement each; with a week of queued work it would make every turn end in an acknowledgement sweep. A request waiting on an upstream that has not landed is not a duty the coordinator owes, so the obligations view should leave it out, or roll the waiting requests into one informational line, and keep only <code>blocked-upstream</code>, a refusal or an hour-long stall as obligations. A second friction, for §11: <code>crew widen</code> on a running run is refused when a request that is only queued claims the same path, although a queued request's claims are checked at launch; and a widen made while the worker process is still alive returns no error and changes nothing.</p></div>
