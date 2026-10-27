@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "ab0ababb132cb4505e222efdc31eb1fc07712ef8",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:549 (pick's one call to _record_pick_timings)",
+    "reckon/crew/dispatch_picker.py:448 (production dispatch path importing and calling pick)",
+    "reckon/crew_dispatch_commands.py:940 (production CLI path importing and calling pick)"
+  ],
+  "completed_at": "2026-10-27T12:56:18.226Z",
+  "dispatched_at": "2026-10-27T12:46:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/__init__.py",
+      "line": "126",
+      "severity": "non-blocking",
+      "text": "non-blocking: the branch is keyed on outcome membership in _EXCLUSION_OUTCOMES at :134, so a held pick with excluded candidates records neither field, yet the comment at :98-101 and the docstring at :126-128 describe only a routed pick as the silent case, so a reader diagnosing a hold sees no exclusions and the prose says that cannot happen."
+    }
+  ],
+  "head_log_revision": "3ed8ed34fed40384baebf4e74f81805069494453",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against ab0ababb132cb4505e222efdc31eb1fc07712ef8; 3ed8ed34f adds _reason_code, _EXCLUSION_OUTCOMES, the exclusion branch in _record_pick_timings and the new test file, and 8744a0075 adds the data-when attribute and the measure prose to the evidence fragment, with no hunk outside those three files.",
+    "done_when": "read the review prompt's evidence fence; it names tests/test_a_refused_pick_records_its_exclusions.py with a refused arm, a fallback arm and a routed arm, and those three arms are what the file asserts at tests/test_a_refused_pick_records_its_exclusions.py:155, :192 and :218.",
+    "goal": "the node's goal is \"Record each excluded lane and its reason code on a refused or fallen-back pick's timing row\", and reckon/crew/picker/__init__.py:134-144 writes exactly that row shape for the outcomes in _EXCLUSION_OUTCOMES at :102.",
+    "manifest": "read; it records gate-head.log 3 passed EXIT=0, gate-base.log 2 failed 1 passed EXIT=1, importers-head.log and importers-base.log 75 passed EXIT=0 each, and negative-control.log 2 failed 1 passed EXIT=1, every log present on disk under the run directory.",
+    "write_paths": "read the scope fence; its four paths are reckon/crew/picker/__init__.py, tests/test_a_refused_pick_records_its_exclusions.py, docs/evidence/fragments/lane-and-model-routing/a-refused-pick-records-its-exclusions.html and docs/figures/lane-and-model-routing/a-refused-pick-records-its-exclusions, and all three files in the diff are inside that set with nothing written to the fourth."
+  },
+  "justifications": {
+    "durability": "tests/test_a_refused_pick_records_its_exclusions.py:159-171 compares the row against literals the test never hands the code, and negative-control.log shows it reddening with KeyError: 'exclusions' when the assignment at reckon/crew/picker/__init__.py:135 is dropped, though the estimated_context assertion at :158 only echoes the value the test supplied.",
+    "evidence": "the gate runs the one file the done_when names and its logs record 3 passed at head against a base arm of 2 failed with the exclusion ids, though the done_when's review-excluded-backend and in-harness-backend codes are untested because only the colon-less context-fit path is exercised at tests/test_a_refused_pick_records_its_exclusions.py:160.",
+    "fit": "the new block at reckon/crew/picker/__init__.py:98-145 follows the module's own \"#:\"-annotated constant and long-docstring idiom set at :22-26, and introduces no plan, version or ticket name.",
+    "goal_fidelity": "reckon/crew/picker/__init__.py:134-144 sets exclusions (backend, model, reason_code per candidate-reason) and estimated_context on exactly the refuse and fallback outcomes, and leaves both off every other outcome.",
+    "reuse": "the search over reckon/crew for an owner of reason-code extraction or exclusion-on-timing-row found none \u2014 the nearest colon-prefix helpers (reckon/crew/node.py:1015, reckon/crew/review.py:815) parse different vocabularies \u2014 and the branch reuses the excluded list already computed at reckon/crew/picker/__init__.py:446 rather than rebuilding it.",
+    "scope_discipline": "every path in git diff --stat ab0ababb..8744a0075 is one of the declared write paths, and nothing outside the fence was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Record each excluded lane and its reason code on a refused or fallen-back pick's timing row\", and reckon/crew/picker/__init__.py:134-144 writes exactly that row shape for the outcomes in _EXCLUSION_OUTCOMES at :102.\nVERDICT done_when: read the review prompt's evidence fence; it names tests/test_a_refused_pick_records_its_exclusions.py with a refused arm, a fallback arm and a routed arm, and those three arms are what the file asserts at tests/test_a_refused_pick_records_its_exclusions.py:155, :192 and :218.\nVERDICT write_paths: read the scope fence; its four paths are reckon/crew/picker/__init__.py, tests/test_a_refused_pick_records_its_exclusions.py, docs/evidence/fragments/lane-and-model-routing/a-refused-pick-records-its-exclusions.html and docs/figures/lane-and-model-routing/a-refused-pick-records-its-exclusions, and all three files in the diff are inside that set with nothing written to the fourth.\nVERDICT manifest: read; it records gate-head.log 3 passed EXIT=0, gate-base.log 2 failed 1 passed EXIT=1, importers-head.log and importers-base.log 75 passed EXIT=0 each, and negative-control.log 2 failed 1 passed EXIT=1, every log present on disk under the run directory.\nVERDICT diff: read commit by commit against ab0ababb132cb4505e222efdc31eb1fc07712ef8; 3ed8ed34f adds _reason_code, _EXCLUSION_OUTCOMES, the exclusion branch in _record_pick_timings and the new test file, and 8744a0075 adds the data-when attribute and the measure prose to the evidence fragment, with no hunk outside those three files.\nCALL_SITES: reckon/crew/picker/__init__.py:549 (pick's one call to _record_pick_timings), reckon/crew/dispatch_picker.py:448 (production dispatch path importing and calling pick), reckon/crew_dispatch_commands.py:940 (production CLI path importing and calling pick)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/picker/__init__.py:134-144 sets exclusions (backend, model, reason_code per candidate-reason) and estimated_context on exactly the refuse and fallback outcomes, and leaves both off every other outcome.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate runs the one file the done_when names and its logs record 3 passed at head against a base arm of 2 failed with the exclusion ids, though the done_when's review-excluded-backend and in-harness-backend codes are untested because only the colon-less context-fit path is exercised at tests/test_a_refused_pick_records_its_exclusions.py:160.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat ab0ababb..8744a0075 is one of the declared write paths, and nothing outside the fence was touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_refused_pick_records_its_exclusions.py:159-171 compares the row against literals the test never hands the code, and negative-control.log shows it reddening with KeyError: 'exclusions' when the assignment at reckon/crew/picker/__init__.py:135 is dropped, though the estimated_context assertion at :158 only echoes the value the test supplied.\nSCORE fit: 19\nJUSTIFICATION fit: the new block at reckon/crew/picker/__init__.py:98-145 follows the module's own \"#:\"-annotated constant and long-docstring idiom set at :22-26, and introduces no plan, version or ticket name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search over reckon/crew for an owner of reason-code extraction or exclusion-on-timing-row found none \u2014 the nearest colon-prefix helpers (reckon/crew/node.py:1015, reckon/crew/review.py:815) parse different vocabularies \u2014 and the branch reuses the excluded list already computed at reckon/crew/picker/__init__.py:446 rather than rebuilding it.\nFINDING reckon/crew/picker/__init__.py:126 non-blocking: the branch is keyed on outcome membership in _EXCLUSION_OUTCOMES at :134, so a held pick with excluded candidates records neither field, yet the comment at :98-101 and the docstring at :126-128 describe only a routed pick as the silent case, so a reader diagnosing a hold sees no exclusions and the prose says that cannot happen.",
+  "review_run_id": "r-20261027T123737205651-review-of-a-refused-pick-records-its-exclusions-8744a0075c29",
+  "reviewed_base_sha": "ab0ababb132cb4505e222efdc31eb1fc07712ef8",
+  "reviewed_head_sha": "8744a0075c297e90833a3e2362503e8e3aa75157",
+  "reviewed_run_id": "r-20261027T115304605383-a-refused-pick-records-its-exclusions",
+  "rubric": "",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T13:01:31.333001+00:00",
+  "total": 117
+}
