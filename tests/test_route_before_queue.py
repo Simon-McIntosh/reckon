@@ -324,7 +324,7 @@ def test_pace_hold_falls_back_when_a_picked_request_becomes_ready(
     run = runs.read_pointer(request_id)
     assert run["backend"] == LOCAL
     assert run["route_fallback"]["from_backend"] == METERED
-    assert "codex pace window is held" in run["route_fallback"]["reason"]
+    assert "hard ceiling" in run["route_fallback"]["reason"]
     assert run["admit_request"]["route_fallback"] == run["route_fallback"]
 
 
