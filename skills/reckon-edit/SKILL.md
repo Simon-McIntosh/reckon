@@ -238,9 +238,11 @@ body/outcome, author **HTML, never markdown**:
 - **Keep relationship metadata current.** If a plan now clearly depends on,
   blocks, or is informed by another live doc, update `plan-depends-on`,
   `plan-blocks`, and/or `plan-informs` in the same edit. Use slug lists, not
-  file paths. The relation grammar is `[project:]slug[#section]` — a section
-  anchor names one section rather than a whole plan, which is what a gate
-  needs. If the plan is implementable and now declares no wire at all, fill the
+  file paths. The relation grammar is `[project:]slug[#section][@followup]` —
+  a section anchor names one section rather than a whole plan, and an
+  `@followup` suffix names one followup of the target plan, satisfied when that
+  followup resolves rather than when a whole section lands. If the plan is
+  implementable and now declares no wire at all, fill the
   checklist below before finishing; `reckon audit` reports `unwired-plan` if
   you do not.
 - **Run `roadmap(project)` after every relationship, sprint, status, or
@@ -286,7 +288,11 @@ section numbering do not hold a downstream request.
   plan's section supplies the anchored evidence, while the
   `plan-section-depends-on` head meta (`{"s5": ["other-plan#s3"]}`, authored
   markup a state write leaves untouched) covers the plan-shaped case, a section
-  held until another plan's section lands.
+  held until another plan's section lands. When the wait is on one followup
+  rather than a whole section, name that followup — `{"s5":
+  ["other-plan@f-1"]}` — so the section is released the moment the followup
+  resolves. A ref to a followup the target plan does not carry is reported by
+  the roadmap as `dangling-hard-dependency`, and the section stays held.
 - **no to all three and it is research or reference this plan reads** →
   `informs`.
 - **no to all three for every candidate and nothing downstream waits on this

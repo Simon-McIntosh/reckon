@@ -1506,13 +1506,14 @@ def _section_scoped_edges(
             continue
         for ref in refs:
             parsed = parse_plan_ref(str(ref))
-            if parsed is None or not parsed.stage:
+            if parsed is None or not (parsed.stage or parsed.followup):
                 continue
             row: dict[str, Any] = {
                 "ref": str(ref),
                 "source_section": waiting_section,
-                "stage": parsed.stage,
             }
+            if parsed.stage:
+                row["stage"] = parsed.stage
             if parsed.is_external(project):
                 blocking = _blocking_row(plan, str(ref))
                 row.update(
@@ -1527,6 +1528,8 @@ def _section_scoped_edges(
                         "satisfied": blocking is None,
                     }
                 )
+                if parsed.followup:
+                    row["followup"] = parsed.followup
                 rows.append(row)
                 continue
             target = all_plans.get(parsed.slug)
@@ -1554,6 +1557,58 @@ def _section_scoped_edges(
                 )
                 continue
             authored = _plan_authored_state(target, docs_dir, project, parsed.slug)
+            if parsed.followup:
+                # A followup wait is satisfied when that one followup resolves,
+                # not when a whole section lands, so it reads the target's own
+                # followup records rather than its section declarations. A ref
+                # naming a followup the target does not carry holds its waiting
+                # section and is reported: an edge that can never be satisfied
+                # must not read as no edge at all.
+                followup = next(
+                    (
+                        item
+                        for item in _plan_followups(
+                            target, docs_dir, project, parsed.slug
+                        )
+                        if isinstance(item, Mapping)
+                        and str(item.get("id") or "") == parsed.followup
+                    ),
+                    None,
+                )
+                resolved = followup is not None and (
+                    str(followup.get("status") or "open") != "open"
+                )
+                row.update(
+                    {
+                        "scope": "local",
+                        "slug": parsed.slug,
+                        "found": True,
+                        "status": _status(target),
+                        "followup": parsed.followup,
+                        "followup_found": followup is not None,
+                        "followup_status": (
+                            str(followup.get("status") or "open")
+                            if followup is not None
+                            else ""
+                        ),
+                        "satisfied": resolved,
+                    }
+                )
+                rows.append(row)
+                if followup is None:
+                    findings.append(
+                        _finding(
+                            "dangling-hard-dependency",
+                            "error",
+                            (
+                                f"{slug}: section dependency {ref!r} names no "
+                                f"followup {parsed.followup!r} on {parsed.slug}"
+                            ),
+                            slug=slug,
+                            extra={"ref": str(ref), "section": waiting_section},
+                        )
+                    )
+                continue
             declarations = authored.get("section_declarations")
             section_found = parsed.stage in declared_section_identities(authored)
             row.update(
@@ -3490,11 +3545,19 @@ def _build_roadmap(
         dependency_blockers = [
             row for row in dependency_rows.get(slug, []) if not row.get("satisfied")
         ]
+        # A section-scoped edge is one a section declared, whether it names a
+        # target section (``slug#sN``) or one followup of the target plan
+        # (``slug@f-id``); either way the wait belongs to the declaring section
+        # and never vetoes the whole plan.
         plan_dependency_blockers = [
-            row for row in dependency_blockers if not row.get("stage")
+            row
+            for row in dependency_blockers
+            if not row.get("stage") and not row.get("source_section")
         ]
         section_dependency_blockers = [
-            row for row in dependency_blockers if row.get("stage")
+            row
+            for row in dependency_blockers
+            if row.get("stage") or row.get("source_section")
         ]
         authored = _plan_authored_state(plan, docs_dir, project, slug)
         decision_sections_map = _plan_decision_sections(plan, docs_dir, project, slug)
@@ -3648,7 +3711,7 @@ def _build_roadmap(
         # landed section is a record of work, not work still in flight.
         for edge in mapped_edges:
             waiting_section = str(edge.get("source_section") or "")
-            if waiting_section:
+            if waiting_section and not edge.get("followup"):
                 declared_section_refs.setdefault((slug, waiting_section), set()).add(
                     _normalized_section_ref(project, str(edge.get("ref") or ""))
                 )
