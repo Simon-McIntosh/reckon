@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="48">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -303,17 +303,21 @@
     itself: today each subscriber runs <code>resumption.sweep</code>, and its reads of the fleet, on its own
     cadence. The follower's drain settle moves with it: today <code>_check_settle</code> samples the population
     every <code>FOLLOWER_SETTLE_SAMPLE_SECONDS</code> through <code>_population_has_live_work</code>, which lists
-    and opens the live pointer directory. The station records each project's has-live-work reading in its
-    station table on every tick, and the subscriber settles on that reading. Done when tests show that with
+    and opens the live pointer directory, judging each population separately: the subscriber's own session
+    and every session it has observed (<code>settle_populations</code>), each filtered by pointer owner. The
+    station records a has-live-work reading per (project, session) on every tick, and the subscriber settles
+    when the reading for every one of its populations says no live work. Done when tests show that with
     three subscribers attached for one session, the sweep runs once per change in the station and in no
-    subscriber; a subscriber settles when the station's reading for its project turns to no live work, and
-    not before; a run resumed by advice is not reviewed until its settle
+    subscriber; a subscriber settles when the station's readings for all of its populations turn to no live
+    work, and not while any one of them still reads live work; a run resumed by advice is not reviewed until its settle
     window has passed; and a resumed run whose worker writes nothing after the resume is reviewed once the
     window has passed, with no further change to its files. Measure: a 60 s
     <code>strace -f -e trace=openat,stat,newfstatat</code> of a running settle-aware subscriber (the process
     §8 delivers) names no path under the crew home other than the two lease files §8 allows, because settle
     detection now reads the station.
-    Negative controls: a subscriber that still runs the sweep must fail the sweep-count test; a settle reader
+    Negative controls: a subscriber that settles on its own session's reading alone, while an observed
+    session still reads live work, must fail the drain-settle test; a subscriber that still runs the sweep
+    must fail the sweep-count test; a settle reader
     that takes <code>auto_resume</code> alone must fail the advice-settle test; a station that evaluates settle
     only on change must fail the quiet-run test; and the same 60 s trace of a subscriber running today's
     per-follower settle reader must name the run directories it lists, so a trace naming nothing is shown to
