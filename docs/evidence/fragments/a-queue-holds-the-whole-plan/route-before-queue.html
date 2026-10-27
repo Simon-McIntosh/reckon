@@ -15,6 +15,14 @@
   default, waits for an upstream section, then checks the launched model key
   and agent model. Edited routes and recorded local fallbacks retain their
   named backend without a new picker decision.</p>
+  <p>A queued move now launches on its explicit destination even when the
+  request retains a picker choice for a different backend. A spent credit lift
+  keeps its budget hold, while a named backend with a configured substitute
+  still reaches that substitute's own budget check. At the repair base the
+  focused gate had 3 failures and 60 passes; at the repaired head it passed
+  65 tests. The exact route gate rose from 10 to 12 passing tests. Reversing
+  the move fix made its regression test launch beta instead of clive; reversing
+  the budget fix made four targeted checks fail.</p>
   <p>At commit <code>1f0303dbdd60b1c8e6475ebfef93e6a2690962bc</code>, the focused
   head gate passed 58 tests; the same existing importer files passed 49 at the
   merged base, for zero added failures. Nine new route tests cover ready
