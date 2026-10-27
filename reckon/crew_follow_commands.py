@@ -121,21 +121,61 @@ def _follow_render_event(
 class _StationRegistration:
     """A subscriber's registration, in the shape the wait pass expects.
 
-    The registration is the pane's own row in the node's store rather than a
-    lock under the crew home. The wait pass only asks whether it is held, so a
-    small adapter keeps the delivery lease — which a reader on another host
-    still reads — renewing exactly as before.
+    Two panes over one session must not both hold it: the store's row holds one
+    session's place, so a second pane writing it would move the first pane's
+    cursor and checkpoint. The claim is therefore the follower registration the
+    producer path already takes — the same advisory lock, beside the same
+    delivery lease — rather than a lock of its own, and a second pane reads the
+    same rows without keeping a place until the claim passes to it.
     """
 
-    def __init__(self, subscriber) -> None:
+    def __init__(
+        self,
+        subscriber,
+        *,
+        project: str | None = None,
+        session: str | None = None,
+        delivery: str = "unknown",
+        scope: Mapping[str, Any] | None = None,
+    ) -> None:
+        from reckon.crew import follower_registration
+
         self.subscriber = subscriber
+        self.delivery = delivery
+        self.scope = dict(scope or {})
+        # A session-less pane registers nothing: the registration names a
+        # session, and one that names none has no claim to contend for.
+        self._claim = (
+            follower_registration._FollowerRegistration(
+                project, session, delivery=delivery, scope=self.scope
+            )
+            if project is not None and session is not None
+            else None
+        )
+        if self._claim is None:
+            subscriber.persist = True
 
     @property
     def held(self) -> bool:
-        return True
+        return True if self._claim is None else self._claim.held
 
     def acquire(self) -> bool:
-        return True
+        """Take the session's claim, writing the pane's row only while held."""
+        if self._claim is None:
+            return True
+        held = self._claim.acquire()
+        self.subscriber.persist = held
+        if held:
+            self.subscriber.register(delivery=self.delivery, scope=self.scope)
+        return held
+
+    def release(self) -> None:
+        if self._claim is None:
+            return
+        if self._claim.held:
+            self.subscriber.detach()
+        self.subscriber.persist = False
+        self._claim.release()
 
 
 def _station_subscriber_for(
@@ -3373,17 +3413,21 @@ def crew_follow(
     try:
         if subscriber is not None:
             # The subscriber's place and registration are its row in the node's
-            # store, so nothing under the crew home is opened to hold them.
-            if session is not None:
-                subscriber.register(
-                    delivery=delivery,
-                    scope={"runs": list(run_ids)},
-                )
+            # store, so nothing under the crew home is opened to hold them. The
+            # claim on the session is the same registration the producer path
+            # takes; a second pane over one session streams without it.
+            registration = _StationRegistration(
+                subscriber,
+                project=project,
+                session=session,
+                delivery=delivery,
+                scope={"runs": list(run_ids)},
+            )
             try:
-                stream_events(_StationRegistration(subscriber))
+                registration.acquire()
+                stream_events(registration)
             finally:
-                if session is not None:
-                    subscriber.detach()
+                registration.release()
                 subscriber.store.close()
             return
         if session is None:

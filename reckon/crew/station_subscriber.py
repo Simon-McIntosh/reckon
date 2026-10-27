@@ -162,6 +162,12 @@ class StationSubscriber:
         self._generation = store.event_generation()
         self._data_version = store.data_version()
         self._first_poll = True
+        # Whether this pane may write the session's row. The row holds one
+        # session's place, and a second pane reading the same rows would move
+        # the first pane's cursor and checkpoint out from under it, so only the
+        # pane holding the session's registration writes. It still draws what
+        # it reads; it keeps no place of its own until the claim passes to it.
+        self.persist = True
 
     # ── the place ────────────────────────────────────────────────────────
 
@@ -216,6 +222,8 @@ class StationSubscriber:
 
     def save_checkpoint(self, *, at: float | None = None) -> None:
         """Persist the pane's memory — the states and lift groups it was shown."""
+        if not self.persist:
+            return
         checkpoint = {
             "reported": {str(k): str(v) for k, v in self.path.reported.items()},
             "lift_groups": sorted(self.path.lift_groups),
@@ -237,6 +245,8 @@ class StationSubscriber:
         max_seconds: float = HISTORY_SECONDS,
     ) -> None:
         """Record one rendered row in the store, bounded as the file log was."""
+        if not self.persist:
+            return
         row = {
             "kind": str(kind),
             "at": float(at),
@@ -362,7 +372,7 @@ class StationSubscriber:
             if day is not None:
                 last_day = day.isoformat()
             delivered.extend(self.path.feed(event, now=moment))
-        if last_id != self.cursor or last_day != self.cursor_day:
+        if self.persist and (last_id != self.cursor or last_day != self.cursor_day):
             self.store.write_cursor(
                 self.project,
                 self.audience,

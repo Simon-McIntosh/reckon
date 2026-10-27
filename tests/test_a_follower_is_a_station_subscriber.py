@@ -436,6 +436,123 @@ def test_a_station_line_reaches_the_pane_as_the_sentence_it_carries(
     assert [event["line"] for event in stream] == [skipped, stale]
 
 
+def test_a_second_pane_of_one_session_waits_for_the_claim_and_takes_it_over(
+    tmp_path, monkeypatch
+) -> None:
+    """Only the pane holding the session's registration writes that row.
+
+    The row is one session's place."""
+    from reckon import crew_follow_commands as follow
+
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    writer.heartbeat()
+    clock = _Clock()
+    first = _subscriber(store, clock)
+    second = _subscriber(store, clock)
+
+    one = follow._StationRegistration(
+        first, project=PROJECT, session=SESSION, delivery="stream"
+    )
+    two = follow._StationRegistration(
+        second, project=PROJECT, session=SESSION, delivery="json"
+    )
+
+    assert one.acquire() is True
+    assert one.held is True
+    assert store.read_cursor(PROJECT, SESSION)["registration"]["delivery"] == "stream"
+
+    assert two.acquire() is False, "a second pane took the claim the first holds"
+    assert two.held is False
+    assert second.persist is False
+
+    _write(writer, BASE, _event(from_state="", to_state="lift-granted"))
+    clock.now += 1
+    drawn = list(second.poll())
+    clock.now += ticker.SETTLE_WINDOW + 1
+    drawn += list(second.flush())
+    assert [row["to_state"] for row in drawn] == ["lift-granted"]
+    assert second.cursor == 0, "the refused pane moved the holder's place"
+    held_row = store.read_cursor(PROJECT, SESSION)
+    assert held_row["cursor"] == 0 and held_row["checkpoint"] is None
+    assert held_row["registration"]["delivery"] == "stream"
+
+    one.release()
+    assert store.read_cursor(PROJECT, SESSION)["registration"] is None
+    assert two.acquire() is True, "the claim did not pass to the waiting pane"
+    assert two.held is True
+    assert second.persist is True
+    assert store.read_cursor(PROJECT, SESSION)["registration"]["delivery"] == "json"
+    two.release()
+    assert second.persist is False
+
+
+def test_follow_reads_the_station_where_the_node_runs_one(
+    tmp_path, monkeypatch
+) -> None:
+    """The wired command, not the subscriber alone: the pane prints the row.
+
+    A node with a beaten station and a matching crew home delivers from the
+    station's store; the row below exists nowhere else, so a follower that fell
+    back to a producer's stream could not print it.
+    """
+    from click.testing import CliRunner
+
+    from reckon import cli as cli_module
+    from reckon import crew_follow_commands as follow
+    from reckon.crew import station_store
+    from reckon.crew.runs import crew_home
+
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    runtime = tmp_path / "runtime"
+    store = station_store.StationStore(runtime)
+    store.set_station_value(station_store.CREW_HOME_KEY, str(crew_home()))
+    store.heartbeat()
+    writer = station_store.StationStore(runtime)
+    writer.write_event(
+        audience=SESSION,
+        at=BASE,
+        project=PROJECT,
+        run="r-station",
+        kind="transition",
+        from_state="",
+        to_state="lift-granted",
+        payload=_event(run="r-station", from_state="load", to_state="lift-granted"),
+    )
+    writer.close()
+
+    monkeypatch.setattr(
+        station_store.StationStore,
+        "at_runtime_root",
+        classmethod(lambda cls, **_kw: station_store.StationStore(runtime)),
+    )
+    monkeypatch.setattr(follow, "_hand_off_from_follower", lambda *_a, **_kw: False)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "follow",
+            "--project",
+            PROJECT,
+            "--session",
+            SESSION,
+            "--lifetime",
+            "3s",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "r-station" in result.output, result.output
+    store.close()
+
+
 def test_a_day_file_that_cannot_be_opened_is_skipped(tmp_path, monkeypatch) -> None:
     """A day file that cannot be opened holds nothing to deliver.
 
