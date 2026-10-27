@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:2180 and :2330 call _review_in_flight from the reflex",
+    "reckon/crew/obligations.py:489 _reflex_review_in_flight calls recovery._review_in_flight",
+    "reckon/crew/obligations.py:514 and :603 _current_review_in_flight",
+    "reckon/crew/obligation_snapshot.py:1136 calls _current_review_in_flight"
+  ],
+  "completed_at": "2026-10-27T23:51:53.629Z",
+  "dispatched_at": "2026-10-27T23:46:14Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-hand-dispatched-review-is-recognised.html",
+      "id": "f5a88bd206b",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "The Measure paragraph still says the file 'shows four arms' and that the negative control 'fails all four arms' (line 44), while tests/test_a_hand_dispatched_review_is_recognised.py now carries five arms and logs/negative_control.log records five failures; the counts are correct for the earlier commits but stale for the head this fragment is committed at."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T164240538276-a-hand-dispatched-review-is-recognised/logs/after.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T164240538276-a-hand-dispatched-review-is-recognised/logs/baseline.log"
+  },
+  "item_verdicts": {
+    "diff": "Read the one commit c1e7bf6619 from 2b7e4e373abd504a282a881da172c446152d47ab: it replaces the headless-set arithmetic in recovery_review_dispatch.py:455-467 with a single head-keyed membership test, adds tests/test_a_hand_dispatched_review_is_recognised.py:203-218, and rewrites the fragment's 'One path names both sides' paragraph.",
+    "done_when": "tests/test_a_hand_dispatched_review_is_recognised.py carries the four arms the done_when names plus the fifth added at line 203; logs/baseline.log records 4 failed EXIT=1 and logs/after.log records 14 passed EXIT=0 at c1e7bf66, and the gate command in after.log matches the suite the fence names.",
+    "goal": "The goal is that the in-flight review matcher compute expected record paths from the reviewed run's directory; over the commits gained since the previous review, c1e7bf6619 tightens recovery_review_dispatch.py:455-467 so only the head-keyed name the composer grants stands as the review at a resolved head, consistent with that goal.",
+    "manifest": "Read; it records commits a629631761 through c1e7bf6619, 14 passed on the node suite, 9 passed on the reflex sweep, 5 failed on the negative control and 2586 passed / 2 failed on the importer sweep, and the header revision and EXIT line of each cited log match those claims.",
+    "write_paths": "The source fence grants five paths; the diff touches reckon/crew/recovery_review_dispatch.py, tests/test_a_hand_dispatched_review_is_recognised.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-hand-dispatched-review-is-recognised.html, all granted, and tests/test_review_in_flight_by_record_path.py is granted but unchanged in this commit."
+  },
+  "justifications": {
+    "durability": "tests/test_a_hand_dispatched_review_is_recognised.py:213 asserts the empty answer for a headless-only claim; reinstating the 2b7e4e37 branch (inside & headless and not names_a_head at recovery_review_dispatch.py:462-472 in that revision) makes that assertion red, and logs/negative_control.log shows the arm failing under the recorded mutation.",
+    "evidence": "The gate named by the done_when ran and its result is on disk: logs/baseline.log records 4 failed EXIT=1, logs/after.log records 14 passed EXIT=0 at c1e7bf66, and logs/negative_control.log records 5 failed EXIT=1 with the new arm among them, though the fixture prose in the landing fragment still reports four arms.",
+    "fit": "The edit keeps the module's docstring idiom and uses no forbidden name, but recovery_review_dispatch.py:464-466 depends on run_review_record_paths appending the head-keyed name last (review.py:3004-3016), an ordering the surrounding comment states rather than checking.",
+    "goal_fidelity": "c1e7bf6619 narrows the match in reckon/crew/recovery_review_dispatch.py:455-467 to the head-keyed name the composer grants, which is the same directed behaviour the goal states (expected paths computed from the reviewed run's directory) with a partial claim excluded.",
+    "reuse": "No definition is added; the matcher continues to call the owner review.py:2997 run_review_record_paths and review.py:2992 run_review_record_directory, the same pair recovery_review_subject.py:866-874 composes with, and a capability search over reckon/crew found no second matcher.",
+    "scope_discipline": "The single commit touches reckon/crew/recovery_review_dispatch.py, tests/test_a_hand_dispatched_review_is_recognised.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-hand-dispatched-review-is-recognised.html, every one inside the source node's five granted write paths, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is that the in-flight review matcher compute expected record paths from the reviewed run's directory; over the commits gained since the previous review, c1e7bf6619 tightens recovery_review_dispatch.py:455-467 so only the head-keyed name the composer grants stands as the review at a resolved head, consistent with that goal.\nVERDICT done_when: tests/test_a_hand_dispatched_review_is_recognised.py carries the four arms the done_when names plus the fifth added at line 203; logs/baseline.log records 4 failed EXIT=1 and logs/after.log records 14 passed EXIT=0 at c1e7bf66, and the gate command in after.log matches the suite the fence names.\nVERDICT write_paths: The source fence grants five paths; the diff touches reckon/crew/recovery_review_dispatch.py, tests/test_a_hand_dispatched_review_is_recognised.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-hand-dispatched-review-is-recognised.html, all granted, and tests/test_review_in_flight_by_record_path.py is granted but unchanged in this commit.\nVERDICT manifest: Read; it records commits a629631761 through c1e7bf6619, 14 passed on the node suite, 9 passed on the reflex sweep, 5 failed on the negative control and 2586 passed / 2 failed on the importer sweep, and the header revision and EXIT line of each cited log match those claims.\nVERDICT diff: Read the one commit c1e7bf6619 from 2b7e4e373abd504a282a881da172c446152d47ab: it replaces the headless-set arithmetic in recovery_review_dispatch.py:455-467 with a single head-keyed membership test, adds tests/test_a_hand_dispatched_review_is_recognised.py:203-218, and rewrites the fragment's 'One path names both sides' paragraph.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:2180 and :2330 call _review_in_flight from the reflex, reckon/crew/obligations.py:489 _reflex_review_in_flight calls recovery._review_in_flight, reckon/crew/obligations.py:514 and :603 _current_review_in_flight, reckon/crew/obligation_snapshot.py:1136 calls _current_review_in_flight\nSCORE goal_fidelity: 19\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 18\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: c1e7bf6619 narrows the match in reckon/crew/recovery_review_dispatch.py:455-467 to the head-keyed name the composer grants, which is the same directed behaviour the goal states (expected paths computed from the reviewed run's directory) with a partial claim excluded.\nJUSTIFICATION evidence: The gate named by the done_when ran and its result is on disk: logs/baseline.log records 4 failed EXIT=1, logs/after.log records 14 passed EXIT=0 at c1e7bf66, and logs/negative_control.log records 5 failed EXIT=1 with the new arm among them, though the fixture prose in the landing fragment still reports four arms.\nJUSTIFICATION scope_discipline: The single commit touches reckon/crew/recovery_review_dispatch.py, tests/test_a_hand_dispatched_review_is_recognised.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-hand-dispatched-review-is-recognised.html, every one inside the source node's five granted write paths, and nothing else.\nJUSTIFICATION durability: tests/test_a_hand_dispatched_review_is_recognised.py:213 asserts the empty answer for a headless-only claim; reinstating the 2b7e4e37 branch (inside & headless and not names_a_head at recovery_review_dispatch.py:462-472 in that revision) makes that assertion red, and logs/negative_control.log shows the arm failing under the recorded mutation.\nJUSTIFICATION fit: The edit keeps the module's docstring idiom and uses no forbidden name, but recovery_review_dispatch.py:464-466 depends on run_review_record_paths appending the head-keyed name last (review.py:3004-3016), an ordering the surrounding comment states rather than checking.\nJUSTIFICATION reuse: No definition is added; the matcher continues to call the owner review.py:2997 run_review_record_paths and review.py:2992 run_review_record_directory, the same pair recovery_review_subject.py:866-874 composes with, and a capability search over reckon/crew found no second matcher.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/a-hand-dispatched-review-is-recognised.html:37 non-blocking: The Measure paragraph still says the file 'shows four arms' and that the negative control 'fails all four arms' (line 44), while tests/test_a_hand_dispatched_review_is_recognised.py now carries five arms and logs/negative_control.log records five failures; the counts are correct for the earlier commits but stale for the head this fragment is committed at.",
+  "review_run_id": "r-20261027T234447993606-review-of-a-hand-dispatched-review-is-recognised-c1e7bf661932",
+  "reviewed_base_sha": "2b7e4e373abd504a282a881da172c446152d47ab",
+  "reviewed_head_sha": "c1e7bf66193293450f398635d349381295ab541f",
+  "reviewed_run_id": "r-20261027T164240538276-a-hand-dispatched-review-is-recognised",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T00:05:00+00:00",
+  "total": 113
+}
