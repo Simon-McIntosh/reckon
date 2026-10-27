@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T15:56:07.743Z",
+  "dispatched_at": "2026-10-27T15:38:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 46,
+      "severity": "blocking",
+      "text": "The reviewed node's done_when carries an arm 'the worker prompt asks for a rubric self-check recorded in the manifest before delivery', and the plan section names prompts.py for it, but reckon/crew/prompts.py is unchanged across 411ddcee..5c41e9e07 and no rubric self-check mechanism exists anywhere in reckon/crew; the arm is unimplemented and the manifest does not disclose the gap."
+    },
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": 891,
+      "severity": "non-blocking",
+      "text": "The done_when asks for 'one escalation obligation naming the open findings', but the escalation is written only to the durable pointer's repair_dispatch field and reckon/crew/obligations.py reads neither REPAIR_DISPATCH_FIELD nor the 'escalated' status, so no obligation row surfaces it; the test asserts the pointer row rather than the obligation the measure names. The manifest discloses this under evidence_inputs."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": 1506,
+      "severity": "non-blocking",
+      "text": "stored_review_descending_from reaches for the private merge._is_ancestor while reckon/crew/promotion_scope.py:2426 already owns _revision_is_ancestor for the same head/base ancestry question used by dispatch_claims; two private ancestor call paths now exist for one capability."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to run landed-work review, repair and diff re-review for up to three rounds with no coordinator and keep a hand-repaired run reviewable; reckon/crew/recovery_repair_dispatch.py:884-895 opens the second and third rounds and records one escalation, and reckon/crew/review_records.py:1461 accepts a review from a later head, but the goal's rubric self-check prompt arm is absent.\nVERDICT done_when: the done_when names tests/test_review_repair_runs_without_the_coordinator.py and tests/test_one_automatic_repair_round_per_run.py; both ran in the recorded gate (89 passed, EXIT=0), but the rubric-self-check arm has no test and the escalation arm is measured as a pointer row, not the obligation the done_when states.\nVERDICT write_paths: the operative grant in the reviewed run's live pointer node.write_paths holds 13 paths (the four review_repair_dispatch/test_one_automatic/review_records/crew_run_commands additions were granted by the resume advice); 9 of the 10 changed paths lie inside it and tests/test_a_disposed_finding_ends_its_repair_round.py lies outside, as the manifest states.\nVERDICT manifest: read the reviewed run's manifest; it records status complete, four commits, gate-head.log 89 passed EXIT=0 and gate-base.log 1 failed 82 passed EXIT=1, a negative control forcing the one-round cap, and one out-of-scope path under blockers/outside_scope, but it does not disclose the missing rubric self-check arm.\nVERDICT diff: read 0d986a361, b9e421aea, 76b9f1829 and 5c41e9e07 against 411ddcee; the code changes stamp finding ids in review.py, bound repair rounds in recovery_repair_dispatch.py, add stored_review_descending_from and the dispose descent in crew_run_commands.py, and add diff/answers to compose_repair_brief in repair.py.\nCALL_SITES: reckon/crew/recovery_repair_dispatch.py:dispatch_repair_for_run\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:884 bounds rounds and record escalation and reckon/crew/review_records.py:1461 adds the descent, but reckon/crew/prompts.py:46 was never extended with the done_when's rubric self-check arm.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate-head.log 89 passed EXIT=0 and gate-base.log 1 failed 82 passed EXIT=1 are recorded, but tests/test_one_automatic_repair_round_per_run.py:302 asserts the pointer escalation rather than an obligation and no gate covers the self-check arm.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: 9 of 10 changed paths are inside the live pointer's node.write_paths and only tests/test_a_disposed_finding_ends_its_repair_round.py:224 lies outside, disclosed in the manifest blockers: and outside_scope: fields.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_one_automatic_repair_round_per_run.py is proven by a real negative control (`AUTOMATIC_REPAIR_ROUND_LIMIT=1` fails the second, third and escalation arms) and tests/test_review_repair_runs_without_the_coordinator.py:146 adds a divergent-head negative for the descent, though the self-check arm has no test.\nSCORE fit: 16\nJUSTIFICATION fit: the new names are mechanism-named and free of plan labels, but reckon/crew/review_records.py:1506 borrows merge._is_ancestor where promotion_scope owns the sibling ancestor helper.\nSCORE reuse: 17\nJUSTIFICATION reuse: the additions extend owners (repair.finding_id in review.py:2856, blocking_findings in recovery_repair_dispatch.py:611, stored_records_for_run in review_records.py:1446) and reuse same_revision and _is_ancestor rather than forking them.\nFINDING reckon/crew/prompts.py:46 blocking: the done_when's rubric self-check arm is unimplemented and undisclosed; prompts.py is unchanged and no self-check mechanism exists.\nFINDING reckon/crew/recovery_repair_dispatch.py:891 non-blocking: the escalation is recorded on the pointer only and no obligation row surfaces it, so a coordinator reading obligations sees nothing.\nFINDING reckon/crew/review_records.py:1506 non-blocking: a second private ancestor call path is introduced beside promotion_scope._revision_is_ancestor.\n",
+  "review_run_id": "r-20261027T153610734313-review-of-review-repair-runs-without-the-coordinator-5c41e9e07330",
+  "reviewed_base_sha": "411ddcee698b3b31ffa368762f827a48bf0d6c44",
+  "reviewed_head_sha": "5c41e9e07330cf2d0f28a5ea0bb58905e82baf3f",
+  "reviewed_run_id": "r-20261027T124142949092-review-repair-runs-without-the-coordinator",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 13,
+    "reuse": 17,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T16:10:03.492986+00:00",
+  "total": 91
+}
