@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="117">
+<meta name="plan-version" content="118">
 <meta name="plan-modified" content="2026-10-27">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -146,7 +146,7 @@
       open the project's watch lock for the live read, and <code>tests/test_live_view_reads_under_a_read_only_home.py</code>.</p>
 
     <h2 id="s11">§11 — A project can name its worker MCP servers</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> §7 seeds the worker setting from a project's <code>worker_mcp_servers</code>, but no project
       can declare one: the generated flight model (<code>reckon/_flight_schema.py</code>, built from
       <code>reckon/schema/flight.yaml</code>) refuses unknown top-level keys, so the opt-in half is inert. <code>reckon/flight.py</code>
@@ -265,10 +265,11 @@
     <div class="r-fu-body"><p>§10 is implementable and no open followup named it.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §10</pre>
     </article>
-<article class="r-fu" data-id="f-amfnic-011" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23 10:00" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §11" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-amfnic-011" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-23 10:00" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §11" data-resolved-at="2026-10-27T13:01:24+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">A project can name its worker MCP servers</h4>
     <div class="r-fu-body"><p>§11 is implementable and no open followup named it.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §11</pre>
+    <p class="r-fu-outcome">Section 11 landed at merge 28ec17334. worker_mcp_servers is a reckon-owned flight key, so a project can name its worker MCP servers in its own flight configuration, and any value that is not a list of strings is refused naming the key, at layer resolution and in _declared_worker_mcp_servers. Coordinator importer measure, stacked with the census, worker-MCP and reload-image nodes on main ab0ababb1 over 144 test files: main 1695 passed, stack 1708 passed, the same one failure and one error at both, so none added.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -394,6 +395,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261027T090503642997-a-project-can-name-its-worker-mcp-servers" data-who="reckon-build" data-when="2026-10-27T10:15:50Z">
     <div class="r-comment-body"><p>worker_mcp_servers is a reckon-owned flight key whose one reader, _declared_worker_mcp_servers, accepts only a list of strings and refuses a bare string, a mapping, a tuple and a list holding a non-string with WorkerMcpServersError, which the flight layer turns into FlightConfigError naming the key; gate pair 100 passed at head against 91 at base, armed suite 16 at head against 7, and the declared mutation fails test_a_project_naming_its_servers_resolves_and_seeds_them (1 failed, 15 passed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-close-s11" data-who="reckon-build" data-when="2026-10-27T12:55:00Z">
+    <div class="r-comment-body"><p>Section 11 landed at merge <code>28ec17334</code>: worker_mcp_servers is a reckon-owned flight key, so a project can name its worker MCP servers in its own flight configuration, and any value that is not a list of strings is refused naming the key, at layer resolution and in _declared_worker_mcp_servers. Coordinator importer measure, stacked with the census, worker-MCP and reload-image nodes on main ab0ababb1 over 144 test files: main 1695 passed, stack 1708 passed, the same one failure and one error at both, so none added. <a href="/reckon/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s11">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-20261023-s13-figure" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Content review of v100 on 2026-10-23: §1's imas-cx rows sum to 2,561 cause hits, not the 2,697 §13 quotes; the difference is the imas-cx half of the read-only row counted under both.</p></div>
