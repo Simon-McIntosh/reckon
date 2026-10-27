@@ -901,6 +901,73 @@ class StationStore:
             for row in self.stream_rows()
         }
 
+    # ── computed obligations ─────────────────────────────────────────────
+
+    def write_obligation(
+        self, session: str, payload: Mapping[str, Any], *, changed_at: datetime
+    ) -> None:
+        """Store one session's computed obligations, replacing any earlier row.
+
+        The table is keyed by session, which is the identity the derivation is
+        asked for; the project is carried inside the stored payload, so a
+        reader can refuse a row written for another project's session of the
+        same name rather than serving it.
+        """
+        connection = self.connect()
+        connection.execute(
+            "INSERT INTO obligations (session, changed_at, payload) VALUES (?, ?, ?) "
+            "ON CONFLICT(session) DO UPDATE SET changed_at = excluded.changed_at, "
+            "payload = excluded.payload",
+            (
+                str(session),
+                changed_at.astimezone(UTC).isoformat(),
+                json.dumps(dict(payload), sort_keys=True),
+            ),
+        )
+        connection.commit()
+
+    def read_obligation(self, session: str) -> dict[str, Any] | None:
+        """One stored row, or None when the session has none."""
+        row = (
+            self.connect()
+            .execute(
+                "SELECT session, changed_at, payload FROM obligations WHERE session = ?",
+                (str(session),),
+            )
+            .fetchone()
+        )
+        if row is None:
+            return None
+        return {
+            "session": str(row["session"]),
+            "changed_at": row["changed_at"],
+            "payload": json.loads(str(row["payload"]) if row["payload"] else "{}"),
+        }
+
+    def obligation_rows(self) -> list[dict[str, Any]]:
+        """Every stored obligation row, ordered by session."""
+        rows = (
+            self.connect()
+            .execute(
+                "SELECT session, changed_at, payload FROM obligations ORDER BY session"
+            )
+            .fetchall()
+        )
+        return [
+            {
+                "session": str(row["session"]),
+                "changed_at": row["changed_at"],
+                "payload": json.loads(str(row["payload"]) if row["payload"] else "{}"),
+            }
+            for row in rows
+        ]
+
+    def delete_obligation(self, session: str) -> None:
+        """Remove one session's row."""
+        connection = self.connect()
+        connection.execute("DELETE FROM obligations WHERE session = ?", (str(session),))
+        connection.commit()
+
     # ── events, day files and retention ──────────────────────────────────
 
     def day_files(self) -> list[Path]:

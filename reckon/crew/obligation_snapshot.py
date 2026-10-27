@@ -276,6 +276,193 @@ def read_snapshot(project: str, session: str) -> dict[str, Any] | None:
     return document if isinstance(document, dict) else None
 
 
+# ── Station reader ──────────────────────────────────────────────────────────
+
+
+def station_runtime_candidate(
+    *,
+    environ: Mapping[str, str] | None = None,
+    run_user_root: str | Path | None = None,
+) -> tuple[Path | None, str]:
+    """The node's station root and which candidate produced it.
+
+    The order is the session host's -- this node's runtime directory, then the
+    per-user runtime directory, then ``TMPDIR`` -- repeated here because the
+    prompt hook loads this module by file path and must not import the crew
+    package to reach the host's own resolver. A test pins the two against each
+    other so the copies cannot drift.
+    """
+    env = os.environ if environ is None else environ
+    runtime = str(env.get("XDG_RUNTIME_DIR") or "").strip()
+    if runtime:
+        return Path(runtime), "runtime-directory"
+    run_user = (
+        Path(run_user_root)
+        if run_user_root is not None
+        else Path(f"/run/user/{os.getuid()}")
+    )
+    if run_user.is_dir():
+        return run_user, "per-user-runtime"
+    scratch = str(env.get("TMPDIR") or "").strip()
+    if scratch:
+        return Path(scratch), "scratch"
+    return None, "none"
+
+
+# The station's store file, named where an on-node reader can find it without
+# importing the store module (which pulls the crew package in). A test pins it
+# against :data:`reckon.crew.station_store.DATABASE_NAME`.
+STATION_DATABASE_NAME = "station.sqlite3"
+STATION_SNAPSHOT_NAME = "station-snapshot.json"
+
+# A heartbeat older than this is reported stale rather than trusted: the
+# station writes it on every tick, so this is a station that stopped.
+STATION_STALE_SECONDS = FRESHNESS_WINDOW_SECONDS
+
+
+def station_snapshot_path(project: str, *, home: str | Path | None = None) -> Path:
+    """Where a station republishes one project's snapshot for off-node readers."""
+    base = Path(home) if home is not None else crew_home()
+    return base / "obligations" / _project_token(project) / STATION_SNAPSHOT_NAME
+
+
+def station_heartbeat_age(value: Any, *, now: datetime | None = None) -> int | None:
+    """How many seconds ago the station beat, or None when the stamp is unreadable."""
+    stamped = _parse_instant(value)
+    if stamped is None:
+        return None
+    instant = _utc_now() if now is None else now
+    return max(0, int((instant - stamped).total_seconds()))
+
+
+def _read_station_document(
+    project: str, session: str, *, environ: Mapping[str, str] | None = None
+) -> tuple[dict[str, Any], str] | None:
+    """The session's document from the node's station store, with its heartbeat.
+
+    An absent store, a missing row, a row written for another project and an
+    unreadable database all answer None: a reader falls through to the exported
+    snapshot and then to the producer reading it had before the station existed.
+    """
+    import sqlite3
+
+    root, _source = station_runtime_candidate(
+        environ=os.environ if environ is None else environ
+    )
+    if root is None:
+        return None
+    database = root / STATION_DATABASE_NAME
+    if not database.is_file():
+        return None
+    try:
+        connection = sqlite3.connect(
+            f"{database.as_uri()}?mode=ro", uri=True, timeout=1.0
+        )
+        try:
+            row = connection.execute(
+                "SELECT payload FROM obligations WHERE session = ?", (session,)
+            ).fetchone()
+            beat = connection.execute(
+                "SELECT value FROM station WHERE key = 'heartbeat'"
+            ).fetchone()
+        finally:
+            connection.close()
+    except sqlite3.Error:
+        # A read-only handle cannot open a WAL database until its shared-memory
+        # file exists, so a station that has just started is read through an
+        # ordinary handle; the statements below are reads either way.
+        try:
+            connection = sqlite3.connect(database, timeout=1.0)
+            try:
+                row = connection.execute(
+                    "SELECT payload FROM obligations WHERE session = ?", (session,)
+                ).fetchone()
+                beat = connection.execute(
+                    "SELECT value FROM station WHERE key = 'heartbeat'"
+                ).fetchone()
+            finally:
+                connection.close()
+        except sqlite3.Error:
+            return None
+    if row is None:
+        return None
+    try:
+        wrapper = json.loads(str(row[0]))
+    except ValueError:
+        return None
+    document = wrapper.get("document") if isinstance(wrapper, Mapping) else None
+    if (
+        not isinstance(document, Mapping)
+        or str(document.get("project") or "") != project
+    ):
+        return None
+    return dict(document), ("" if beat is None else str(beat[0]))
+
+
+def _read_station_export(
+    project: str, session: str, *, home: str | Path | None = None
+) -> dict[str, Any] | None:
+    """The session's document from the snapshot a station exported, or None."""
+    try:
+        text = station_snapshot_path(project, home=home).read_text(encoding="utf-8")
+    except OSError:
+        return None
+    try:
+        snapshot = json.loads(text)
+    except ValueError:
+        return None
+    if not isinstance(snapshot, Mapping):
+        return None
+    sessions = snapshot.get("sessions")
+    if not isinstance(sessions, Mapping):
+        return None
+    document = sessions.get(session)
+    if not isinstance(document, Mapping):
+        return None
+    exported = dict(document)
+    exported.setdefault("project", snapshot.get("project"))
+    station = snapshot.get("station")
+    beat = station.get("heartbeat") if isinstance(station, Mapping) else None
+    exported["_station_heartbeat"] = beat
+    return exported
+
+
+def read_station_answer(
+    project: str,
+    session: str,
+    *,
+    now: datetime | None = None,
+    environ: Mapping[str, str] | None = None,
+    home: str | Path | None = None,
+) -> dict[str, Any] | None:
+    """One session's obligations from the station, or None when it cannot answer.
+
+    The station on this node is read first, then the snapshot a station exported
+    for readers off its node. The answer carries the payload in the shape the
+    derivation returns, the station heartbeat's age, and whether that age makes
+    it stale -- a station can be quiet because the fleet is quiet, which is not
+    the same thing as a station that stopped, and only the age separates them.
+    """
+    instant = _utc_now() if now is None else now
+    found = _read_station_document(project, session, environ=environ)
+    source = "station"
+    if found is None:
+        exported = _read_station_export(project, session, home=home)
+        if exported is None:
+            return None
+        beat = exported.pop("_station_heartbeat", None)
+        found = (exported, "" if beat is None else str(beat))
+        source = "snapshot"
+    document, heartbeat = found
+    age = station_heartbeat_age(heartbeat, now=instant)
+    return {
+        "source": source,
+        "payload": live_payload(document),
+        "heartbeat_age_seconds": age,
+        "stale": age is None or age > STATION_STALE_SECONDS,
+    }
+
+
 # ── Model catalogue notices ─────────────────────────────────────────────────
 
 
