@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="The back half promoted behind reviews">
+  <meta name="plan-summary" content="Every promoted work node of the plan from §5 on carried a stored, parsed review whose reviewed head is the head that was promoted: 22 promoted work nodes, 22 stored parsed reviews, 0 review waivers, median review wall time 911.0 s over 22 review runs. One recorded completion at §5c never landed and carries no review; it is named. Eleven review-role runs at §5 or later are exempt from the review gate by role. The census reads the ledger through reckon.ledger.load, because the aggregate file alone carries 121 of the plan's 137 rows. Counts are reproduced by one command, census_reviews.py, whose log ends in EXIT=0, and the same command over §1 or later finds two promoted nodes with no stored review, so the instrument can report an absence.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="passed">
+  <title>The back half promoted behind reviews | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The back half promoted behind reviews</h1>
+
+    <section id="the-back-half-promoted-behind-reviews-question">
+      <h2>What was measured</h2>
+      <p>§5 of the plan asked whether every promoted node from its fifth section on carried a stored,
+        parsed review, with no waiver. The population is read from the crew ledger by run id: every run
+        of the plan whose section ordinal is five or more, whose role is not <code>review</code>, and
+        whose work landed. A run counts as landed when its gate passed, or when it recorded a
+        promoted revision or a commit — the §12 run
+        <code>recover-launches-only-what-it-is-asked</code> landed under
+        <code>pre-existing-failure</code> and the §14 run
+        <code>a-failed-staging-reads-its-row-back</code> under <code>negative-result</code>, and
+        each carries a review, so excluding them by gate would have mis-stated the population.</p>
+      <p>Each landed run's stored review is read from
+        <code>docs/state/reckon/reviews/run/&lt;reviewed run&gt;/&lt;review run&gt;.json</code>. A run
+        reviewed more than once has one record per head; the record that gated promotion is the one
+        whose <code>reviewed_base_sha</code>/<code>reviewed_head_sha</code> pair matches the pair
+        the ledger row's own <code>review</code> snapshot carries. The review's wall time is the
+        reviewing run's <code>wall_seconds</code> from the ledger.</p>
+      <p>The ledger is read through <code>reckon.ledger.load</code> rather than by opening the
+        aggregate file. The aggregate
+        <code>docs/state/reckon/crew.json</code> carries 121 of this plan's 137 rows; the later §10
+        to §24 runs own individual files under <code>docs/state/reckon/runs/&lt;run id&gt;.json</code>,
+        which only the project's own reader unions in. A census written against the aggregate alone
+        would have reported the whole back half as absent.</p>
+    </section>
+
+    <section id="the-back-half-promoted-behind-reviews-population">
+      <h2>The promoted runs, §5 onward</h2>
+      <p>Twenty-two promoted work nodes. Every one carries a stored record whose status is
+        <code>parsed</code>, whose reviewed head is the promoted head, and which was stored by its
+        own reviewing run. No promotion used a review waiver, and no promotion used the resume or
+        boundary waiver.</p>
+      <table>
+        <thead>
+          <tr><th>section</th><th>run id</th><th>gate</th><th>review total</th><th>review wall [s]</th><th>waiver</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>§6</td><td><code>r-20260921T145710848706-the-figure-directory-is-granted-like-the-evidence-record</code></td><td>passed</td><td>98</td><td>1329</td><td>none</td></tr>
+          <tr><td>§5g</td><td><code>r-20260922T102849199872-the-review-prompt-asks-whether-an-assertion-can-fail</code></td><td>passed</td><td>96</td><td>1262</td><td>none</td></tr>
+          <tr><td>§5c</td><td><code>r-20260922T103004298925-the-parser-records-which-revision-a-review-read</code></td><td>passed</td><td>91</td><td>2073</td><td>none</td></tr>
+          <tr><td>§5c</td><td><code>r-20260922T204226780149-a-review-names-the-revision-it-read</code></td><td>passed</td><td>89</td><td>585</td><td>none</td></tr>
+          <tr><td>§5c</td><td><code>r-20260923T034147872298-promotion-reads-the-review-of-the-head-it-promotes</code></td><td>passed</td><td>92</td><td>3020</td><td>none</td></tr>
+          <tr><td>§5c</td><td><code>r-20260923T114013855846-review-store-reads-and-fences-by-head</code></td><td>passed</td><td>85</td><td>2106</td><td>none</td></tr>
+          <tr><td>§5c</td><td><code>r-20261001T075619492612-a-promoted-row-names-its-reviewed-revision</code></td><td>passed</td><td>91</td><td>518</td><td>none</td></tr>
+          <tr><td>§9</td><td><code>r-20261002T053524312179-promotion-picks-the-descendant-commit</code></td><td>passed</td><td>91</td><td>1489</td><td>none</td></tr>
+          <tr><td>§10</td><td><code>r-20261002T094216061961-review-obligation-reads-the-head</code></td><td>passed</td><td>90</td><td>1240</td><td>none</td></tr>
+          <tr><td>§12</td><td><code>r-20261003T070755624002-recover-launches-only-what-it-is-asked</code></td><td>failed (classified)</td><td>93</td><td>386</td><td>none</td></tr>
+          <tr><td>§14</td><td><code>r-20261019T123112426653-a-failed-staging-reads-its-row-back</code></td><td>failed (classified)</td><td>no total recorded</td><td>1093</td><td>none</td></tr>
+          <tr><td>§14</td><td><code>r-20261019T144547844196-a-reverted-ledger-row-reads-absent</code></td><td>passed</td><td>no total recorded</td><td>624</td><td>none</td></tr>
+          <tr><td>§15</td><td><code>r-20261019T164023450593-a-tracked-landing-write-restores-under-a-held-lock</code></td><td>passed</td><td>107</td><td>1253</td><td>none</td></tr>
+          <tr><td>§16</td><td><code>r-20261019T172337901170-a-joined-path-list-is-refused</code></td><td>passed</td><td>104</td><td>721</td><td>none</td></tr>
+          <tr><td>§17</td><td><code>r-20261020T091743111139-a-landing-write-waits-out-a-held-index-lock</code></td><td>passed</td><td>108</td><td>794</td><td>none</td></tr>
+          <tr><td>§6</td><td><code>r-20261020T123953902126-the-review-reflex-dispatches-a-figure-review</code></td><td>passed</td><td>86</td><td>693</td><td>none</td></tr>
+          <tr><td>§18</td><td><code>r-20261020T162019236766-a-figure-review-keeps-the-text-review</code></td><td>passed</td><td>107</td><td>454</td><td>none</td></tr>
+          <tr><td>§22</td><td><code>r-20261020T162222764520-the-figure-rubrics-unreached-parser-is-removed</code></td><td>passed</td><td>111</td><td>493</td><td>none</td></tr>
+          <tr><td>§19</td><td><code>r-20261020T165831599907-a-blocking-figure-finding-refuses-promotion</code></td><td>passed</td><td>100</td><td>926</td><td>none</td></tr>
+          <tr><td>§20</td><td><code>r-20261020T170036775023-the-repair-reflex-resumes-on-a-figure-finding</code></td><td>passed</td><td>98</td><td>510</td><td>none</td></tr>
+          <tr><td>§24</td><td><code>r-20261020T233334327629-crew-dispose-answers-a-figure-finding</code></td><td>passed</td><td>109</td><td>896</td><td>none</td></tr>
+          <tr><td>§23</td><td><code>r-20261020T235804952254-the-repair-dispatch-reads-the-figure-review</code></td><td>passed</td><td>112</td><td>1100</td><td>none</td></tr>
+        </tbody>
+      </table>
+      <p>The two §14 records carry no <code>total</code>: both were reviewed under the six-dimension
+        rubric with a reused dimension, whose record stores a per-dimension score without a total.
+        They are <code>parsed</code> records and are counted; the figure is absent from the record,
+        not from the census.</p>
+    </section>
+
+    <section id="the-back-half-promoted-behind-reviews-wall-time">
+      <h2>Median review wall time</h2>
+      <p>The twenty-two review runs' wall times, in seconds, are
+        <code>386, 454, 493, 510, 518, 585, 624, 693, 721, 794, 896, 926, 1093, 1100, 1240, 1253,
+        1262, 1329, 1489, 2073, 2106, 3020</code>. The median is <strong>911.0 s</strong>, about
+        fifteen minutes per review. The two extremes are the §12 review at 386 s and the §5c
+        promotion-reads-the-review-of-the-head-it-promotes review at 3020 s.</p>
+    </section>
+
+    <section id="the-back-half-promoted-behind-reviews-absence">
+      <h2>Runs with no stored review, or with a waiver</h2>
+      <p><strong>No promoted run in this population lacks a stored review, and none used a
+        waiver.</strong> Two runs are named because they are the cases the measure must not
+        silently drop:</p>
+      <ul>
+        <li><code>r-20260921T090942172410-a-review-records-the-revision-it-read</code> (§5c) is the
+          one recorded completion at §5 or later that did not land: gate <code>failed</code>,
+          classification <code>infrastructure-failure</code>, no commit and no promoted revision,
+          review <code>null</code>. It is not in the promoted population, and it carries no stored
+          review. Its gate never fired the review guard, because
+          <code>_require_review_waiver</code> computes <code>unreviewed</code> only when the verdict
+          is <code>passed</code>; a failed completion is never gated on a review. That is the one
+          hole this measure exposes, and it is a property of a completion that landed nothing.</li>
+        <li>Eleven <code>review</code>-role runs at §5 or later are exempt from the review gate by
+          role, not by waiver, and are excluded from the population: one at §6 (gate passed), and
+          ten whose gate is recorded <code>not-run</code> — the review runs at §5c (five, one of
+          them a re-review), §5g, §9, §10 and §12. A review is not reviewed; the exemption is on
+          the role and appears in no <code>review_waiver</code> field.</li>
+      </ul>
+    </section>
+
+    <section id="the-back-half-promoted-behind-reviews-findings-acted-on">
+      <h2>Findings a coordinator acted on</h2>
+      <p>A finding counts as acted on only where a landed change implements it: a later node, a
+        commit, or a re-review recording it <code>FIXED at repaired head</code>. Indices are
+        0-based in the stored record's <code>findings</code> array.</p>
+      <ul>
+        <li><code>r-20260922T103004298925-the-parser-records-which-revision-a-review-read</code>,
+          finding <strong>0</strong> — nothing on the live path wrote or asked for the canonical
+          revision pair. Acted on: <code>reckon/crew/prompts/review.md</code> now asks for
+          <code>reviewed_base_sha</code>/<code>reviewed_head_sha</code> beside the emitted form
+          (lines 103–104).</li>
+        <li>… the same run, finding <strong>1</strong> — the canonical key inherited two sha widths
+          with no normalisation. Acted on by the §5c node
+          <code>a-review-names-the-revision-it-read</code> (commit <code>315081c6</code>), whose
+          evidence anchor <code>s5c-revision-canonical-key</code> records the five spellings
+          normalised to the full 40-character form and a partial record filed as
+          <code>status=incomplete</code> rather than as current.</li>
+        <li>… the same run, finding <strong>2</strong> — the promoted row could not name the
+          revision its review read, because <code>ledger_block</code> reduced a record to status,
+          scores, absent and total. Acted on by the §5c node
+          <code>a-promoted-row-names-its-reviewed-revision</code>: <code>ledger_block</code> in
+          <code>reckon/crew/review.py</code> now carries <code>reviewed_base_sha</code> and
+          <code>reviewed_head_sha</code> onto the block (<code>carried_revision_pair</code>).</li>
+        <li>… the same run, finding <strong>3</strong> — the landing record did not link the
+          evidence anchor it landed. <strong>Not acted on</strong>: a grep of
+          <code>docs/plans/scoring-should-stop-a-promotion.html</code> for
+          <code>s5c-revision-canonical-key</code> returns 0.</li>
+        <li><code>r-20260922T204226780149-a-review-names-the-revision-it-read</code>, finding
+          <strong>0</strong> — <code>read_review</code> still returned the newest record, and
+          promotion still called it without a head. Acted on by the §5c node
+          <code>review-store-reads-and-fences-by-head</code>: the store's head-aware selection
+          <code>select_review_for_head</code> is the read path, used by promotion at
+          <code>reckon/crew/promotion_release.py:974</code> and by the obligations view and the
+          queue-landing check. Evidence anchor <code>s5c-head-key-three-surfaces</code>.</li>
+        <li>… the same run, finding <strong>1</strong> — the tautological membership assertion.
+          Acted on, recorded in the same re-review as <em>FIXED at repaired head</em>: the test
+          now asserts a stored-then-read record.</li>
+        <li>… the same run, finding <strong>2</strong> — a partial record occupied the legacy path
+          a complete record holds. Acted on, recorded as <em>FIXED at repaired head</em>:
+          <code>_incomplete_review_path</code> now routes a partial record away from the current
+          path.</li>
+        <li>… the same run, finding <strong>3</strong> (residual) — <code>_incomplete_review_path</code>
+          derives its identity from an optional <code>review_run_id</code>, so two partial records
+          sharing it collide. <strong>Not acted on</strong>: the function still keys on
+          <code>_partial_identity(record)</code>.</li>
+        <li><code>r-20261001T075619492612-a-promoted-row-names-its-reviewed-revision</code>, finding
+          <strong>0</strong> — <code>load_review_prompt</code> had no caller in <code>reckon/</code>,
+          so no reviewer read the prompt section that asks for the revision. Acted on:
+          <code>reckon/crew/recovery_review_subject.py:449</code> now calls it when the review
+          brief is composed.</li>
+        <li>… the same run, finding <strong>1</strong> — a carried key set to null still lands on
+          the row as a null value. <strong>Not acted on</strong>:
+          <code>carried_revision_pair</code> still carries the key through when its value is null.</li>
+        <li><code>r-20261020T165831599907-a-blocking-figure-finding-refuses-promotion</code>, prior
+          review at head <code>b91979eb</code>, finding <strong>0</strong> — the node's test answered
+          a figure finding through <code>store_review</code> because <code>crew dispose</code> could
+          not reach a figure finding. Acted on by the §24 node
+          <code>crew-dispose-answers-a-figure-finding</code> (commit <code>4afe4806</code>), which
+          is the section's stated reason for existing.</li>
+        <li><code>r-20261020T170036775023-the-repair-reflex-resumes-on-a-figure-finding</code>,
+          finding <strong>0</strong> — <code>dispatch_repair_for_run</code> returned early whenever
+          the text review carried no finding, so a clean text review with a blocking figure finding
+          was declined. Acted on by the §23 node
+          <code>the-repair-dispatch-reads-the-figure-review</code> (commit <code>0cba56f4</code>),
+          which swaps in the merged review where the function reads the stored review.</li>
+      </ul>
+      <p>Every other finding in these twenty-two records is a recorded follow-on with no landed
+        change behind it. They are the backlog the plan's reviews left, and this measure does not
+        claim otherwise.</p>
+    </section>
+
+    <section id="the-back-half-promoted-behind-reviews-reproduction">
+      <h2>The command and its counts</h2>
+      <p>One command reproduces every count above. It was run from the run directory, with the
+        worktree on <code>PYTHONPATH</code> so <code>reckon.ledger</code> resolves:</p>
+      <pre><code>PYTHONPATH=&lt;worktree&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/python -I \
+  census_reviews.py --repo &lt;worktree&gt; --runs /home/ITER/mcintos/.config/reckon/crew/runs</code></pre>
+      <p>Its log (<code>census.log</code>) ends in <code>EXIT=0</code> and reports:</p>
+      <pre><code>nodes_total          22
+nodes_with_review    22
+nodes_without_review 0
+nodes_with_waiver    0
+review_runs          11
+unpromoted_rows      1
+review_wall_times_s  [386, 454, 493, 510, 518, 585, 624, 693, 721, 794, 896, 926, 1093,
+                      1100, 1240, 1253, 1262, 1329, 1489, 2073, 2106, 3020]
+median_review_wall_s 911.0
+EXIT=0</code></pre>
+      <p><strong>Positive control.</strong> The same command with <code>--first-section 1</code>
+        (<code>census-control-section1.log</code>, <code>EXIT=0</code>) widens the population to 59
+        promoted nodes and reports <code>nodes_without_review 2</code>, naming
+        <code>r-20260921T061250080434-reuse-map-review-reflex</code> and
+        <code>r-20260921T061448262664-measure-unreviewed-promotion-exposure</code>. The instrument
+        therefore reports a missing review when one is missing, so its zero at §5 or later is a
+        measurement rather than a blind spot. The earliest plan nodes predate the review
+        requirement, which is why the count is not zero across the whole plan.</p>
+    </section>
+
+    <section id="the-back-half-promoted-behind-reviews-scope">
+      <h2>What this does not say</h2>
+      <p>The measure answers whether a review was stored and read at the promoted head. It does not
+        judge the review's quality, and it does not claim the findings were acted on: the acted-on
+        list above names the ones with a landed change behind them and no others. It also does not
+        reach a completion that landed nothing, because that path never consults a review — named
+        above so the limit of the measure is on the record rather than implied.</p>
+    </section>
+  </main>
+</body>
+</html>
