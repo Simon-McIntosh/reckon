@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:follower_row_path",
+    "reckon/crew/ticker.py:RowPolicy._feed_lift",
+    "reckon/crew/ticker.py:Ticker.render"
+  ],
+  "completed_at": "2026-10-27T05:05:34.764Z",
+  "dispatched_at": "2026-10-27T05:00:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "2381",
+      "severity": "non-blocking",
+      "text": "the merge appends a copy of the grant after the grant's own row was already appended at ticker.py:2352, so a grant that replaces another is drawn twice at the same clock time; the gate at tests/test_a_lift_row_reads_as_a_lift.py:131 counts only rows containing \"replaces\" and passes whatever the plain grant row does."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "2365",
+      "severity": "non-blocking",
+      "text": "the replaced lift id is inferred from stream order (the last in-force row for the (group, session) key) rather than read from the producer's own record, so a replay whose anchor starts after the grant draws the end as landed again \u2014 the original defect \u2014 and the manifest records the structural field as outside this node's scope."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "3156",
+      "severity": "non-blocking",
+      "text": "_lift_line duplicates the trailing-cell, spend, stats and paint scaffolding of _reset_line at ticker.py:3117 instead of extending that owner, so the next change to the trailing-cell rules must be made in two places."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from 54f4934f to 4112d7fe \u2014 5f9538d2b adds lift_clause, the _lift_in_force pairing in RowPolicy._feed_lift, the clause cell and _lift_line, plus the new test file, and 4112d7fe4 adds the evidence fragment; every hunk is inside the declared scope.",
+    "done_when": "the done_when names the 19:11Z event pair and requires one row containing uncapped, granted and replaces and no row containing landed; tests/test_a_lift_row_reads_as_a_lift.py:123-152 feeds that pair through follower_row_path and asserts exactly those two facts, and the manifest records the gate at head 3 passed / base 3 failed.",
+    "goal": "the goal asks for a lift row to name the lift's form and scope, read granted/ended/replaced by, and key on the lift id; reckon/crew/ticker.py:377 composes the producer's own detail clause (form, scope, id) and appends \"replaces <id>\", and the clause is appended to every LIFT_STATES row at ticker.py:3076 and drawn as the whole row for a merged grant at ticker.py:3156, so all four properties are present, though a merged grant is drawn twice (its own row plus the merged copy) and a standalone ended row still carries the run-state word \"landed\" before its \"lift ended\" clause.",
+    "manifest": "read in full; it records status complete, the two commits, both gate logs with their summary lines (head 645 passed EXIT=0, base 642 passed 3 failed EXIT=1), the negative-control log, the revision pair and the outside_scope entries, and its after_suite block names revision 54f4934f for the head arm where the head log's own header names that revision only as the base the tree was measured from.",
+    "write_paths": "the four declared paths are reckon/crew/ticker.py, tests/test_a_lift_row_reads_as_a_lift.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-lift-row-reads-as-a-lift.html and the figures directory; the diff's three files are all inside that set and the figures directory is untouched."
+  },
+  "justifications": {
+    "durability": "the base arm of tests/test_a_lift_row_reads_as_a_lift.py fails all three cases, so the assertions redden on the reverted painter, but tests/test_a_lift_row_reads_as_a_lift.py:131 counts only rows containing \"replaces\" and so cannot see the duplicate grant row or the replay-order path.",
+    "evidence": "tests/test_a_lift_row_reads_as_a_lift.py:123 is the gate the done_when names and its head/base results are recorded, but the done_when's ruff clause has no log under test_logs and the record's after_suite names the base revision.",
+    "fit": "the additions at reckon/crew/ticker.py:377 and ticker.py:3156 follow the module's existing clause-helper and row-line idiom and introduce no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/ticker.py:2351 emits the grant row and ticker.py:2381 emits a second merged copy of it, so one grant is drawn twice on the pane while the goal asks for one row naming both.",
+    "reuse": "reckon/crew/ticker.py:3156 _lift_line repeats the clock/spend/stats/tail-cell and paint scaffolding of the existing clause-row owner _reset_line at ticker.py:3117 without extending it.",
+    "scope_discipline": "every hunk in `git diff 54f4934f 4112d7fe` is under one of the manifest's four declared write paths, and no other file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks for a lift row to name the lift's form and scope, read granted/ended/replaced by, and key on the lift id; reckon/crew/ticker.py:377 composes the producer's own detail clause (form, scope, id) and appends \"replaces <id>\", and the clause is appended to every LIFT_STATES row at ticker.py:3076 and drawn as the whole row for a merged grant at ticker.py:3156, so all four properties are present, though a merged grant is drawn twice (its own row plus the merged copy) and a standalone ended row still carries the run-state word \"landed\" before its \"lift ended\" clause.\nVERDICT done_when: the done_when names the 19:11Z event pair and requires one row containing uncapped, granted and replaces and no row containing landed; tests/test_a_lift_row_reads_as_a_lift.py:123-152 feeds that pair through follower_row_path and asserts exactly those two facts, and the manifest records the gate at head 3 passed / base 3 failed.\nVERDICT write_paths: the four declared paths are reckon/crew/ticker.py, tests/test_a_lift_row_reads_as_a_lift.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-lift-row-reads-as-a-lift.html and the figures directory; the diff's three files are all inside that set and the figures directory is untouched.\nVERDICT manifest: read in full; it records status complete, the two commits, both gate logs with their summary lines (head 645 passed EXIT=0, base 642 passed 3 failed EXIT=1), the negative-control log, the revision pair and the outside_scope entries, and its after_suite block names revision 54f4934f for the head arm where the head log's own header names that revision only as the base the tree was measured from.\nVERDICT diff: read commit by commit from 54f4934f to 4112d7fe \u2014 5f9538d2b adds lift_clause, the _lift_in_force pairing in RowPolicy._feed_lift, the clause cell and _lift_line, plus the new test file, and 4112d7fe4 adds the evidence fragment; every hunk is inside the declared scope.\nCALL_SITES: reckon/crew_follow_commands.py:follower_row_path, reckon/crew/ticker.py:RowPolicy._feed_lift, reckon/crew/ticker.py:Ticker.render\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:2351 emits the grant row and ticker.py:2381 emits a second merged copy of it, so one grant is drawn twice on the pane while the goal asks for one row naming both.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_lift_row_reads_as_a_lift.py:123 is the gate the done_when names and its head/base results are recorded, but the done_when's ruff clause has no log under test_logs and the record's after_suite names the base revision.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every hunk in `git diff 54f4934f 4112d7fe` is under one of the manifest's four declared write paths, and no other file is touched.\nSCORE durability: 17\nJUSTIFICATION durability: the base arm of tests/test_a_lift_row_reads_as_a_lift.py fails all three cases, so the assertions redden on the reverted painter, but tests/test_a_lift_row_reads_as_a_lift.py:131 counts only rows containing \"replaces\" and so cannot see the duplicate grant row or the replay-order path.\nSCORE fit: 18\nJUSTIFICATION fit: the additions at reckon/crew/ticker.py:377 and ticker.py:3156 follow the module's existing clause-helper and row-line idiom and introduce no plan, ticket or version label.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/ticker.py:3156 _lift_line repeats the clock/spend/stats/tail-cell and paint scaffolding of the existing clause-row owner _reset_line at ticker.py:3117 without extending it.\nFINDING reckon/crew/ticker.py:2381 non-blocking: the merge appends a copy of the grant after the grant's own row was already appended at ticker.py:2352, so a grant that replaces another is drawn twice at the same clock time; the gate at tests/test_a_lift_row_reads_as_a_lift.py:131 counts only rows containing \"replaces\" and passes whatever the plain grant row does.\nFINDING reckon/crew/ticker.py:2365 non-blocking: the replaced lift id is inferred from stream order (the last in-force row for the (group, session) key) rather than read from the producer's own record, so a replay whose anchor starts after the grant draws the end as landed again \u2014 the original defect \u2014 and the manifest records the structural field as outside this node's scope.\nFINDING reckon/crew/ticker.py:3156 non-blocking: _lift_line duplicates the trailing-cell, spend, stats and paint scaffolding of _reset_line at ticker.py:3117 instead of extending that owner, so the next change to the trailing-cell rules must be made in two places.",
+  "review_run_id": "r-20261027T045950194125-review-of-a-lift-row-reads-as-a-lift-4112d7fe4231",
+  "reviewed_base_sha": "54f4934f3dd3b2238d514f8b4e085958da53395c",
+  "reviewed_head_sha": "4112d7fe423163695922e63d7b0bae188e395f45",
+  "reviewed_run_id": "r-20261027T043434060437-a-lift-row-reads-as-a-lift",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T05:09:09.592698+00:00",
+  "total": 99
+}
