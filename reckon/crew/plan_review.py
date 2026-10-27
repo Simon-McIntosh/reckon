@@ -59,7 +59,9 @@ import json
 import re
 import shlex
 import subprocess
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -1353,29 +1355,39 @@ def _plan_text_at(
     return _git(repo, "show", f"{commit}:{relative}")
 
 
-def _unit_lines(text: str) -> dict[str, list[str]]:
-    """Each authored unit's own lines, in document order, out of file text.
+def _unit_line_pairs(text: str) -> list[tuple[str, str]]:
+    """Each line of a plan file with the authored unit it belongs to.
 
     A section's extent comes from the same structural spans the prose reader
     attributes text with, so a line belongs to the unit whose section contains
     it however the markup is laid out — heading, section element and prose
     each on their own line, as the plan writer emits them, or all on one.
-    Lines outside every section belong to the document unit.
+    Lines outside every section belong to the document unit. Both readers of
+    that attribution — the per-unit line buckets and the line-to-unit map a
+    finding anchor resolves through — are folds over this one walk.
     """
     spans = [
         (heading.span[0], heading.span[1], heading.identity)
         for heading in _plan_html.plan_headings(text)
         if heading.level == 2 and heading.identity and not heading.machinery
     ]
-    buckets: dict[str, list[str]] = {DOCUMENT_UNIT: []}
+    pairs: list[tuple[str, str]] = []
     offset = 0
     for raw in text.splitlines(keepends=True):
         identity = next(
             (unit for low, high, unit in spans if low <= offset < high),
             DOCUMENT_UNIT,
         )
-        buckets.setdefault(identity, []).append(raw.rstrip("\r\n"))
+        pairs.append((identity, raw.rstrip("\r\n")))
         offset += len(raw)
+    return pairs
+
+
+def _unit_lines(text: str) -> dict[str, list[str]]:
+    """Each authored unit's own lines, in document order, out of file text."""
+    buckets: dict[str, list[str]] = {DOCUMENT_UNIT: []}
+    for identity, line in _unit_line_pairs(text):
+        buckets.setdefault(identity, []).append(line)
     return buckets
 
 
@@ -1682,7 +1694,7 @@ def record_response(
     and is not left as a modified tracked file; a record not yet promoted is
     written to the staging store as before.
     """
-    action_value = str(action or "").strip().lower()
+    action_value = str(_ANSWER_OVERRIDE.get() or action or "").strip().lower()
     if action_value not in ANSWER_ACTIONS:
         raise ValueError(f"response action {action!r} is not one of {ANSWER_ACTIONS}")
     known = finding_ids(record)
@@ -1779,6 +1791,30 @@ def declined_recurrence(
 CARRIED_HEADING = "Carried review findings:"
 MAX_REVIEWS_PER_EDIT = 2
 
+# The answer verbs read ``--acted`` and ``--declined`` into one call that
+# records ``acted`` or ``declined``; a carried answer is the third action and
+# reaches the same resolution through this override rather than a second copy
+# of it.
+_ANSWER_OVERRIDE: ContextVar[str | None] = ContextVar(
+    "plan_review_answer_override", default=None
+)
+
+
+@contextmanager
+def answering_as(action: str) -> Iterator[None]:
+    """Record the next answers on this thread as ``action``.
+
+    The answer verb resolves the covering review, refuses an ambiguous one and
+    writes the response in one place. A caller that answers a finding in a
+    different way reuses that resolution and names its action here, so the
+    covering-review rules exist once.
+    """
+    token = _ANSWER_OVERRIDE.set(action)
+    try:
+        yield
+    finally:
+        _ANSWER_OVERRIDE.reset(token)
+
 
 def _line_unit_map(text: str) -> dict[int, str]:
     """Map each 1-based line number of a plan document to the unit it belongs to.
@@ -1789,21 +1825,10 @@ def _line_unit_map(text: str) -> dict[int, str]:
     the document unit. The map is what turns a finding's ``<path>:<line>``
     anchor into the unit the finding is about.
     """
-    spans = [
-        (heading.span[0], heading.span[1], heading.identity)
-        for heading in _plan_html.plan_headings(text)
-        if heading.level == 2 and heading.identity and not heading.machinery
-    ]
-    mapping: dict[int, str] = {}
-    offset = 0
-    for number, raw in enumerate(text.splitlines(keepends=True), start=1):
-        unit = next(
-            (identity for low, high, identity in spans if low <= offset < high),
-            DOCUMENT_UNIT,
-        )
-        mapping[number] = unit
-        offset += len(raw)
-    return mapping
+    return {
+        number: identity
+        for number, (identity, _line) in enumerate(_unit_line_pairs(text), start=1)
+    }
 
 
 def _reviewed_plan_text(
@@ -1981,22 +2006,34 @@ def carried_findings_for_section(
 def with_carried_findings(done_when: str, findings: Iterable[Mapping[str, Any]]) -> str:
     """Append carried findings to a node's done-when under their own heading.
 
-    The heading is the marker a reviewer reads the carried clauses by, so the
-    text is appended once: a done-when already carrying it is returned
-    unchanged, which keeps a re-dispatch or a queue edit from accumulating a
-    second copy of the same finding.
+    The heading is the marker a reviewer reads the carried clauses by, and a
+    finding is appended once: a done-when that already names its id is
+    returned unchanged, which keeps a re-dispatch or a queue edit from
+    accumulating a second copy. A different finding carried later joins the
+    same heading rather than being dropped, so two findings carried across two
+    dispatches both reach the node.
     """
     rows = [row for row in findings if str(row.get("text") or "").strip()]
     if not rows:
         return done_when
     text = str(done_when or "").rstrip()
-    if CARRIED_HEADING in text:
+    present = CARRIED_HEADING in text
+    known: set[str] = set()
+    if present:
+        tail = text.split(CARRIED_HEADING, 1)[1]
+        for line in tail.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("-") and ":" in stripped:
+                known.add(stripped[1:].split(":", 1)[0].strip())
+    fresh = [row for row in rows if str(row.get("id") or "").strip() not in known]
+    if not fresh:
         return done_when
-    lines = [CARRIED_HEADING]
-    lines.extend(
-        f"- {row.get('id')}: {str(row.get('text') or '').strip()}" for row in rows
-    )
-    block = "\n".join(lines)
+    lines = [
+        f"- {row.get('id')}: {str(row.get('text') or '').strip()}" for row in fresh
+    ]
+    if present:
+        return f"{text}\n" + "\n".join(lines)
+    block = "\n".join([CARRIED_HEADING, *lines])
     return f"{text}\n\n{block}" if text else block
 
 
@@ -2077,95 +2114,37 @@ def review_burst_refusal(
     )
 
 
-def answer_finding(
+def compose_burst_refusal(
     project: str,
     plan_slug: str,
-    finding_id: str,
     *,
-    action: str,
-    reason: str | None = None,
-    by: str = "",
-    review_run: str = "",
-    plan_path: str | Path | None = None,
     base_dir: str | Path | None = None,
-) -> dict[str, Any]:
-    """Resolve the covering review that raised a finding and record one answer.
+    plan_path: str | Path | None = None,
+) -> str | None:
+    """The refusal a composed whole-plan review must carry, or None.
 
-    A plan may carry more than one covering review — the newest content review
-    and its design review — and a finding only one of them raised is answered on
-    the review that raised it. A finding raised by both is an ambiguous answer
-    unless ``review_run`` names which review answers it. Returns the rewritten
-    record and the ids still unanswered; raises :class:`ValueError` with the
-    refusal when no covering review raises the finding or the selection is
-    ambiguous, and the store's own refusal for an unknown action or a
-    reasonless decline.
+    A whole-plan review reads every unit, so it is a further review of each of
+    them: if any unit has already spent :data:`MAX_REVIEWS_PER_EDIT` reviews on
+    the edit it carries now, composing another would re-review prose that has
+    had the reviews it was owed. The sections are checked before the document
+    unit so the refusal names the tightest limit first.
     """
-    store_delivered_reviews(project, plan_slug)
-    record = read_plan_review(
-        project,
-        plan_slug,
-        plan=Path(plan_path) if plan_path is not None else None,
-        base_dir=base_dir,
-    )
-    design = newest_design_review(project, plan_slug, base_dir=base_dir)
-    if record is None and design is not None and finding_id in finding_ids(design):
-        record = design
-    if record is None:
-        raise ValueError(
-            f"no stored review for {project}:{plan_slug} raises {finding_id!r}"
+    location = _plan_location(project, plan_slug, plan_path)
+    if location is None:
+        return None
+    try:
+        text = location[1].read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    units = sorted(unit for unit in _section_digests(text) if unit != DOCUMENT_UNIT)
+    units.append(DOCUMENT_UNIT)
+    for unit in units:
+        refusal = review_burst_refusal(
+            project, plan_slug, unit, base_dir=base_dir, plan_path=plan_path
         )
-    if (
-        finding_id not in finding_ids(record)
-        and design is not None
-        and finding_id in finding_ids(design)
-    ):
-        record = design
-    covering: list[Mapping[str, Any]] = []
-    seen: set[str] = set()
-    for candidate in (record, design):
-        if candidate is None or finding_id not in finding_ids(candidate):
-            continue
-        identity = str(candidate.get("review_run_id") or "")
-        if identity in seen:
-            continue
-        seen.add(identity)
-        covering.append(candidate)
-    if review_run:
-        matched = [
-            candidate
-            for candidate in covering
-            if str(candidate.get("review_run_id") or "") == review_run
-        ]
-        if not matched:
-            raise ValueError(
-                f"--review-run {review_run!r} does not raise finding "
-                f"{finding_id!r} for {project}:{plan_slug}"
-            )
-        record = matched[0]
-    elif len(covering) == 1:
-        record = covering[0]
-    elif len(covering) > 1:
-        named = ", ".join(
-            repr(str(candidate.get("review_run_id") or "unattributed"))
-            for candidate in covering
-        )
-        raise ValueError(
-            f"finding {finding_id!r} is carried by {len(covering)} covering "
-            f"reviews; name --review-run to choose which one answers it: {named}"
-        )
-    path = record_response(
-        record,
-        finding_id,
-        action=action,
-        reason=reason,
-        by=by,
-        base_dir=base_dir,
-    )
-    updated = json.loads(path.read_text(encoding="utf-8"))
-    return {
-        "record": updated,
-        "unanswered": unanswered_findings(updated),
-    }
+        if refusal:
+            return refusal
+    return None
 
 
 # ── The per-day review summary ──────────────────────────────────────────────

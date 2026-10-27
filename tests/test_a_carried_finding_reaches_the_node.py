@@ -287,17 +287,26 @@ def test_a_third_review_of_one_edit_burst_is_refused(
             section_digests=digests,
         )
 
-    refusal = plan_review.review_burst_refusal(
-        "sample",
-        "fixture",
-        "alpha",
-        base_dir=config_home / "crew" / "reviews",
+    # Composing the review is what the cap governs, so the refusal is shown at
+    # the command that composes one rather than by calling the helper.
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "review",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--session",
+            "s-test",
+        ],
     )
 
-    assert refusal is not None
-    assert "carry or decline" in refusal
-    assert "r-review-1-finding" in refusal
-    assert "r-review-2-finding" in refusal
+    assert result.exit_code != 0, result.output
+    assert "carry or decline" in result.output
+    assert "r-review-1-finding" in result.output
+    assert "r-review-2-finding" in result.output
 
 
 def test_a_fresh_edit_resets_the_review_count(
@@ -329,10 +338,15 @@ def test_a_fresh_edit_resets_the_review_count(
 
     # A fresh edit is a new digest for the unit, so the two reviews of the
     # previous prose no longer count against this one and the unit may be
-    # reviewed again.
+    # reviewed again. Both units carry a review here, so both are edited: a
+    # whole-plan composition is refused while any unit it would read is at its
+    # limit, and an unedited unit is still at its own.
     plan_path.write_text(
         PLAN_HTML.replace(
             "Alpha ships one measured change.", "Alpha ships two measured changes."
+        ).replace(
+            "Beta ships another measured change.",
+            "Beta ships a third measured change.",
         ),
         encoding="utf-8",
     )
@@ -343,3 +357,89 @@ def test_a_fresh_edit_resets_the_review_count(
         )
         is None
     )
+    # The composition is still refused, but for the document unit, whose
+    # decisions state no edit touched — the edited section is no longer the
+    # unit at its limit.
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "review",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--session",
+            "s-test",
+        ],
+    )
+    assert result.exit_code != 0, result.output
+    assert "unit alpha " not in result.output
+    assert f"unit {plan_review.DOCUMENT_UNIT} " in result.output
+
+
+def test_two_findings_carry_across_two_dispatches(
+    project: tuple[Path, Path, Path],
+) -> None:
+    config_home, _repo, plan_path = project
+    alpha_line = _line_of(plan_path, "Alpha ships")
+    findings = [
+        {
+            "id": "reasoning-1",
+            "type": "reasoning",
+            "anchor": f"{plan_path}:{alpha_line}",
+            "text": "alpha's mechanism must name the store it repairs",
+        },
+        {
+            "id": "coverage-1",
+            "type": "coverage",
+            "anchor": f"{plan_path}#alpha",
+            "text": "alpha's done-when names no negative control",
+        },
+    ]
+    _store_review(plan_path, config_home, review_run_id="r-review", findings=findings)
+
+    def carry(finding_id: str) -> None:
+        result = CliRunner().invoke(
+            cli_main,
+            [
+                "crew",
+                "review",
+                "--project",
+                "sample",
+                "--plan",
+                "fixture",
+                "--answer",
+                finding_id,
+                "--carried",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+
+    carry("reasoning-1")
+    first = crew.plan_dispatch(
+        node=_node(config_home, section="alpha"),
+        config=CONFIG,
+        project="sample",
+        repo=_repo,
+        base="HEAD",
+    )
+    assert "alpha's mechanism must name the store it repairs" in first.node.done_when
+    assert "alpha's done-when names no negative control" not in first.node.done_when
+
+    carry("coverage-1")
+    # The second dispatch starts from the done-when the first one produced, as
+    # a queue edit or a re-dispatch does. The second finding joins the heading
+    # the first created instead of being dropped because the heading exists.
+    again = _node(config_home, section="alpha", name="alpha-node-again")
+    again.done_when = first.node.done_when
+    second = crew.plan_dispatch(
+        node=again,
+        config=CONFIG,
+        project="sample",
+        repo=_repo,
+        base="HEAD",
+    )
+    assert second.node.done_when.count(plan_review.CARRIED_HEADING) == 1
+    assert "alpha's mechanism must name the store it repairs" in second.node.done_when
+    assert "alpha's done-when names no negative control" in second.node.done_when

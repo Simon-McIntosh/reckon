@@ -17,6 +17,7 @@ from reckon.crew_dispatch_commands import (
     _lane_paused_detail,
     _resolved_flight,
     _resolved_gc_repo,
+    _run_review,
     crew,
     crew_review,
 )
@@ -66,19 +67,60 @@ def _answer_carried_finding(pretty, **params):
     answer = str(params.get("answer") or "").strip()
     if not answer:
         refuse("--carried requires --answer FINDING_ID")
+    session = str(params.get("session") or "").strip()
     project = str(params.get("project") or "").strip()
-    try:
-        result = plan_review.answer_finding(
+    # The answer's covering-review resolution, its two-review ambiguity refusal
+    # and the record it writes belong to the review verb, so a carried answer
+    # runs through that branch with its action named rather than resolving the
+    # covering review a second time here.
+    with plan_review.answering_as(plan_review.CARRIED_ACTION):
+        _run_review(
             project,
             plan_slug,
-            answer,
-            action="carried",
-            by=str(params.get("session") or ""),
+            "",
+            (),
+            session,
+            "design",
+            False,
+            dry_run=False,
+            pretty=pretty,
+            answer=answer,
+            acted=True,
+            declined=None,
             review_run=str(params.get("review_run") or ""),
         )
-    except (ValueError, OSError) as exc:
-        refuse(str(exc))
-    _emit(result, pretty)
+
+
+def _compose_burst_refusal(params: Mapping[str, Any]) -> str | None:
+    """The cap's refusal for a whole-plan composition, or None.
+
+    A review of the whole plan is a review of every unit the plan carries, so
+    it is composed only while each of them still has one left in its edit
+    burst. Every other subject — an answer, a code neighbourhood, a portfolio,
+    a sprint — is left to the verb, which refuses or composes it as before; a
+    dry run is left alone too, because it dispatches nothing and is how a
+    caller inspects a refusal before hitting it.
+    """
+    from reckon.crew import plan_review
+
+    plan_slug = str(params.get("plan_slug") or "").strip()
+    if not plan_slug or str(params.get("answer") or "").strip():
+        return None
+    if params.get("dry_run"):
+        return None
+    if any(
+        (
+            params.get("around_plan"),
+            params.get("paths"),
+            params.get("portfolio"),
+            params.get("sprint_id"),
+        )
+    ):
+        return None
+    if str(params.get("rubric") or "") == plan_review.PORTFOLIO_REVIEW_RUBRIC:
+        return None
+    project = str(params.get("project") or "").strip()
+    return plan_review.compose_burst_refusal(project, plan_slug)
 
 
 def _install_carried_answer() -> None:
@@ -111,6 +153,12 @@ def _install_carried_answer() -> None:
             pretty = kwargs.get("pretty", False)
             params.pop("pretty", None)
             return _answer_carried_finding(pretty, **params)
+        refusal = _compose_burst_refusal(kwargs)
+        if refusal:
+            _emit(
+                {"error": "crew_error", "detail": refusal}, kwargs.get("pretty", False)
+            )
+            raise click.exceptions.Exit(1)
         return original(**kwargs)
 
     crew_review.callback = callback
