@@ -256,7 +256,7 @@ def test_running_follower_reloads_without_stream_or_registration_gap(
     assert [row.get("node") for row in rows] == [
         f"node-{number}" for number in range(1, 24)
     ], "the replacement left no gap and repeated no row"
-    registration = store.read_cursor("session-a")["registration"]
+    registration = store.read_cursor("proj", "session-a")["registration"]
     assert registration is not None, "the pane's registration survived the replacement"
     assert registration["pid"] == os.getpid()
     assert subscriber.cursor_day is not None

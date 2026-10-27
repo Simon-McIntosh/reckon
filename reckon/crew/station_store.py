@@ -74,7 +74,25 @@ EVENT_GENERATION_KEY = "events_generation"
 # another fleet's rows, and delivering them would hand a pane a stranger's fleet.
 CREW_HOME_KEY = "crew_home"
 
-_SCHEMA = """
+# A subscriber's place is keyed by the project whose events it reads as well as
+# by its audience: a session-less follower uses one audience for every project
+# it watches, so the key without the project would give two such followers one
+# place, one checkpoint and one history between them.
+_CURSOR_TABLE = """CREATE TABLE IF NOT EXISTS cursors (
+    project      TEXT NOT NULL DEFAULT '',
+    audience     TEXT NOT NULL,
+    cursor       INTEGER NOT NULL DEFAULT 0,
+    day          TEXT,
+    checkpoint   TEXT,
+    history      TEXT,
+    registration TEXT,
+    updated_at   TEXT,
+    PRIMARY KEY (project, audience)
+);
+"""
+
+_SCHEMA = (
+    """
 CREATE TABLE IF NOT EXISTS pointers (
     path       TEXT PRIMARY KEY,
     signature  TEXT NOT NULL,
@@ -93,15 +111,9 @@ CREATE TABLE IF NOT EXISTS streams (
     fold_state  TEXT NOT NULL,
     observation TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS cursors (
-    audience     TEXT PRIMARY KEY,
-    cursor       INTEGER NOT NULL DEFAULT 0,
-    day          TEXT,
-    checkpoint   TEXT,
-    history      TEXT,
-    registration TEXT,
-    updated_at   TEXT
-);
+"""
+    + _CURSOR_TABLE
+    + """
 CREATE TABLE IF NOT EXISTS obligations (
     session    TEXT PRIMARY KEY,
     changed_at TEXT,
@@ -118,6 +130,7 @@ CREATE TABLE IF NOT EXISTS station (
     value TEXT
 );
 """
+)
 
 _DAY_SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
@@ -343,11 +356,43 @@ class StationStore:
 
     @staticmethod
     def _ensure_cursor_columns(connection: sqlite3.Connection) -> None:
-        """Add the columns a subscriber's row grew, keeping the cursors already stored."""
+        """Give the cursors table the shape callers read, keeping its rows.
+
+        A store written before cursors were keyed by project cannot gain a
+        primary key by ``ALTER TABLE``, so its table is rebuilt: the rows move
+        into the current shape under an empty project, and the table they came
+        from is dropped. Columns a row grew later are added in place, which
+        keeps a store written before them readable without a rebuild.
+        """
         columns = {
             str(row["name"])
             for row in connection.execute("PRAGMA table_info(cursors)").fetchall()
         }
+        if "project" not in columns:
+            kept = [
+                name
+                for name in (
+                    "cursor",
+                    "day",
+                    "checkpoint",
+                    "history",
+                    "registration",
+                    "updated_at",
+                )
+                if name in columns
+            ]
+            connection.execute("ALTER TABLE cursors RENAME TO cursors_before_projects")
+            connection.execute(_CURSOR_TABLE)
+            if kept:
+                # The only interpolation is a list of column names taken from
+                # the table's own PRAGMA output, filtered against a fixed tuple.
+                names = ", ".join(kept)
+                connection.execute(
+                    f"INSERT INTO cursors (project, audience, {names}) "  # noqa: S608
+                    f"SELECT '', audience, {names} FROM cursors_before_projects"
+                )
+            connection.execute("DROP TABLE cursors_before_projects")
+            return
         for name, kind in (
             ("day", "TEXT"),
             ("checkpoint", "TEXT"),
@@ -716,8 +761,8 @@ class StationStore:
 
     # ── subscribers' cursors ─────────────────────────────────────────────
 
-    def read_cursor(self, audience: str) -> dict[str, Any]:
-        """One subscriber's stored place, or an empty record when it has none.
+    def read_cursor(self, project: str, audience: str) -> dict[str, Any]:
+        """One subscriber's stored place in one project, or an empty record.
 
         The row carries everything the pane's poll path needs — its event
         sequence, the UTC day that sequence belongs to, the pane's checkpoint
@@ -727,15 +772,17 @@ class StationStore:
         row = (
             self.connect()
             .execute(
-                "SELECT audience, cursor, day, checkpoint, history, registration, "
-                "updated_at FROM cursors WHERE audience = ?",
-                (audience,),
+                "SELECT project, audience, cursor, day, checkpoint, history, "
+                "registration, updated_at FROM cursors "
+                "WHERE project = ? AND audience = ?",
+                (str(project), audience),
             )
             .fetchone()
         )
         if row is None:
             return {}
         record: dict[str, Any] = {
+            "project": str(row["project"]),
             "audience": str(row["audience"]),
             "cursor": int(row["cursor"] or 0),
             "day": row["day"],
@@ -749,13 +796,16 @@ class StationStore:
     def cursor_rows(self) -> list[dict[str, Any]]:
         rows = (
             self.connect()
-            .execute("SELECT audience FROM cursors ORDER BY audience")
+            .execute("SELECT project, audience FROM cursors ORDER BY project, audience")
             .fetchall()
         )
-        return [self.read_cursor(str(row["audience"])) for row in rows]
+        return [
+            self.read_cursor(str(row["project"]), str(row["audience"])) for row in rows
+        ]
 
     def write_cursor(
         self,
+        project: str,
         audience: str,
         *,
         cursor: int | None = None,
@@ -771,7 +821,7 @@ class StationStore:
         only the cursor does not rewrite the pane's checkpoint and history, and
         a field explicitly set to ``None`` clears it.
         """
-        existing = self.read_cursor(audience)
+        existing = self.read_cursor(project, audience)
         values: dict[str, Any] = {
             "cursor": int(existing.get("cursor", 0)) if cursor is None else int(cursor),
             "day": existing.get("day") if day is None else day,
@@ -786,13 +836,15 @@ class StationStore:
         }
         connection = self.connect()
         connection.execute(
-            "INSERT INTO cursors (audience, cursor, day, checkpoint, history, "
-            "registration, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?) "
-            "ON CONFLICT(audience) DO UPDATE SET cursor = excluded.cursor, "
-            "day = excluded.day, checkpoint = excluded.checkpoint, "
-            "history = excluded.history, registration = excluded.registration, "
+            "INSERT INTO cursors (project, audience, cursor, day, checkpoint, "
+            "history, registration, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(project, audience) DO UPDATE SET "
+            "cursor = excluded.cursor, day = excluded.day, "
+            "checkpoint = excluded.checkpoint, history = excluded.history, "
+            "registration = excluded.registration, "
             "updated_at = excluded.updated_at",
             (
+                str(project),
                 audience,
                 values["cursor"],
                 values["day"],
@@ -1017,45 +1069,10 @@ class StationStore:
         self, *, audience: str | None = None, after_id: int = 0
     ) -> list[dict[str, Any]]:
         """Read the events after ``after_id``, attaching each existing day file."""
-        connection = self.connect()
-        collected: list[dict[str, Any]] = []
-        for path in self.day_files():
-            try:
-                connection.execute("ATTACH DATABASE ? AS day", (str(path),))
-            except sqlite3.OperationalError as error:
-                # Retention can unlink a day file between the listing and its
-                # attach; a file that is already gone holds nothing to read.
-                if not _is_a_read_race(error):
-                    raise
-                continue
-            try:
-                columns = {
-                    str(row["name"])
-                    for row in connection.execute("PRAGMA day.table_info(events)")
-                }
-                if "payload" in columns:
-                    query = (
-                        "SELECT id, time, project, audience, run, kind, from_state, "
-                        "to_state, detail, duty, payload FROM day.events WHERE id > ?"
-                    )
-                else:
-                    query = (
-                        "SELECT id, time, project, audience, run, kind, from_state, "
-                        "to_state, detail, duty, NULL AS payload FROM day.events "
-                        "WHERE id > ?"
-                    )
-                parameters: list[Any] = [after_id]
-                if audience is not None:
-                    query += " AND audience = ?"
-                    parameters.append(audience)
-                collected.extend(
-                    dict(row)
-                    for row in connection.execute(query, parameters).fetchall()
-                )
-            finally:
-                connection.execute("DETACH DATABASE day")
-        collected.sort(key=lambda event: int(event["id"]))
-        return collected
+        return self._read_events(
+            after_id=after_id,
+            audiences=None if audience is None else (audience,),
+        )
 
     def oldest_day(self) -> date | None:
         """The UTC day of the oldest day file still held, or None when none is."""
@@ -1082,8 +1099,32 @@ class StationStore:
         caller whose cursor is older than retention passes the oldest held day
         and is served from there.
         """
+        return self._read_events(
+            after_id=after_id,
+            project=project,
+            audiences=audiences,
+            from_day=from_day,
+        )
+
+    def _read_events(
+        self,
+        *,
+        after_id: int = 0,
+        project: str | None = None,
+        audiences: Iterable[str] | None = None,
+        from_day: date | None = None,
+    ) -> list[dict[str, Any]]:
+        """Read the rows after ``after_id`` from every day file that can be opened.
+
+        One reader serves both callers: ``events`` asks for the whole station or
+        one audience, and ``events_for`` narrows to a project and a set of
+        audiences from a day onward. The attach, the schema probe that decides
+        how the payload is selected, the guard that treats a missing file or a
+        missing schema as a race, and the id sort exist once here, so the two
+        entry points cannot drift apart.
+        """
         connection = self.connect()
-        wanted = sorted({str(audience) for audience in audiences})
+        wanted = sorted({str(audience) for audience in audiences or ()})
         collected: list[dict[str, Any]] = []
         for path in self.day_files():
             day = _day_from_name(path.name)
@@ -1108,18 +1149,21 @@ class StationStore:
                 payload_column = (
                     "payload" if "payload" in columns else "NULL AS payload"
                 )
-                parameters: list[Any] = [int(after_id), project]
-                audience_clause = ""
+                parameters: list[Any] = [int(after_id)]
+                clauses = ""
+                if project is not None:
+                    clauses += " AND project = ?"
+                    parameters.append(str(project))
                 if wanted:
                     placeholders = ", ".join("?" for _ in wanted)
-                    audience_clause = f" AND audience IN ({placeholders})"
+                    clauses += f" AND audience IN ({placeholders})"
                     parameters.extend(wanted)
                 # Only fixed column names and placeholder runs are interpolated
                 # here; every value a caller supplies is bound below.
                 rows = connection.execute(
                     "SELECT id, time, project, audience, run, kind, from_state, "  # noqa: S608
                     f"to_state, detail, duty, {payload_column} FROM day.events "
-                    f"WHERE id > ? AND project = ?{audience_clause}",
+                    f"WHERE id > ?{clauses}",
                     parameters,
                 ).fetchall()
                 collected.extend(dict(row) for row in rows)

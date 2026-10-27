@@ -11,6 +11,7 @@ reading what the pane received.
 
 from __future__ import annotations
 
+import sqlite3
 import threading
 import time
 from datetime import UTC, datetime, timedelta
@@ -172,7 +173,7 @@ def test_a_cursor_older_than_retention_resumes_with_one_skip_line(tmp_path) -> N
     assert len(writer.day_files()) == 1
 
     store.write_cursor(
-        SESSION, cursor=0, day=gone.date().isoformat(), at=datetime.now(tz=UTC)
+        PROJECT, SESSION, cursor=0, day=gone.date().isoformat(), at=datetime.now(tz=UTC)
     )
     clock = _Clock()
     subscriber = _subscriber(store, clock)
@@ -260,12 +261,111 @@ def test_the_registration_is_the_subscribers_own_row(tmp_path) -> None:
     store = _store(tmp_path)
     subscriber = _subscriber(store, _Clock())
     subscriber.register(pid=4321, host="node-a", delivery="stream", scope={"runs": []})
-    row = store.read_cursor(SESSION)
+    row = store.read_cursor(PROJECT, SESSION)
     assert row["registration"]["pid"] == 4321
     assert row["registration"]["delivery"] == "stream"
 
     subscriber.detach()
-    assert store.read_cursor(SESSION)["registration"] is None
+    assert store.read_cursor(PROJECT, SESSION)["registration"] is None
+
+
+def test_a_store_written_before_cursors_were_keyed_by_project_still_opens(
+    tmp_path,
+) -> None:
+    """An older store keeps its rows and gains the current cursor shape.
+
+    A primary key cannot be added to a table in place, so the migration rebuilds
+    it; a node whose store predates the project key must still open, and the
+    places it already held must still be readable rather than dropped.
+    """
+    root = tmp_path / "runtime"
+    root.mkdir()
+    connection = sqlite3.connect(root / station_store.DATABASE_NAME)
+    connection.executescript(
+        """
+        CREATE TABLE cursors (
+            audience     TEXT PRIMARY KEY,
+            cursor       INTEGER NOT NULL DEFAULT 0,
+            day          TEXT,
+            checkpoint   TEXT,
+            history      TEXT,
+            registration TEXT,
+            updated_at   TEXT
+        );
+        INSERT INTO cursors (audience, cursor, day) VALUES ('session-old', 7, '2026-10-20');
+        """
+    )
+    connection.commit()
+    connection.close()
+
+    store = station_store.StationStore(root)
+    store.heartbeat()
+
+    kept = store.read_cursor("", "session-old")
+    assert kept["cursor"] == 7, "the rebuild dropped the place the store held"
+    assert kept["day"] == "2026-10-20"
+
+    store.write_cursor("proj", "session-old", cursor=9)
+    assert store.read_cursor("proj", "session-old")["cursor"] == 9
+    assert store.read_cursor("", "session-old")["cursor"] == 7
+
+
+def test_two_session_less_subscribers_over_two_projects_hold_separate_places(
+    tmp_path,
+) -> None:
+    """A session-less pane reads as the audience ``*`` in every project it watches.
+
+    The project is part of the key, so two such panes keep two places: keyed on
+    the audience alone they would share one row, and the second pane would open
+    the first's cursor and checkpoint and then skip its own earlier rows or
+    replay rows it had already drawn.
+    """
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    writer.heartbeat()
+
+    def write(project: str, run: str, at: datetime) -> int:
+        return writer.write_event(
+            audience="*",
+            at=at,
+            project=project,
+            run=run,
+            kind="transition",
+            from_state="blocked",
+            to_state="completed_unpromoted",
+            payload={
+                "project": project,
+                "event": "transition",
+                "run_id": run,
+                "node": run,
+                "session": None,
+                "from_state": "blocked",
+                "to_state": "completed_unpromoted",
+                "observed_at": at.isoformat(),
+            },
+        )
+
+    alpha_id = write("alpha", "r-alpha", BASE)
+    beta_id = write("beta", "r-beta", BASE + timedelta(seconds=1))
+
+    clock = _Clock()
+    alpha = StationSubscriber(store, "alpha", session=None, clock=clock)
+    beta = StationSubscriber(store, "beta", session=None, clock=clock)
+
+    drawn_alpha = _deliver(alpha, clock)
+    drawn_beta = _deliver(beta, clock)
+    assert [row["run_id"] for row in drawn_alpha] == ["r-alpha"]
+    assert [row["run_id"] for row in drawn_beta] == ["r-beta"]
+
+    alpha.note_delivered(drawn_alpha[0])
+    beta.note_delivered(drawn_beta[0])
+
+    alpha_row = store.read_cursor("alpha", "*")
+    beta_row = store.read_cursor("beta", "*")
+    assert alpha_row["cursor"] == alpha_id, "the two panes share one place"
+    assert beta_row["cursor"] == beta_id
+    assert alpha_row["checkpoint"]["reported"] == {"r-alpha": "completed_unpromoted"}
+    assert beta_row["checkpoint"]["reported"] == {"r-beta": "completed_unpromoted"}
 
 
 def test_a_day_file_that_cannot_be_opened_is_skipped(tmp_path, monkeypatch) -> None:

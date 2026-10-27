@@ -133,7 +133,7 @@ class StationSubscriber:
         self.clock = clock
         self.stale_seconds = stale_seconds
         self.audience = session or "*"
-        self._row = store.read_cursor(self.audience)
+        self._row = store.read_cursor(self.project, self.audience)
         checkpoint = self._row.get("checkpoint") or {}
         reported = checkpoint.get("reported") if isinstance(checkpoint, Mapping) else {}
         lift_groups = (
@@ -199,13 +199,13 @@ class StationSubscriber:
             "scope": dict(scope or {}),
             "attached_at": datetime.now(tz=UTC).isoformat(),
         }
-        self.store.write_cursor(self.audience, registration=record)
-        self._row = self.store.read_cursor(self.audience)
+        self.store.write_cursor(self.project, self.audience, registration=record)
+        self._row = self.store.read_cursor(self.project, self.audience)
 
     def detach(self) -> None:
         """Release the registration, keeping the place the pane reached."""
-        self.store.write_cursor(self.audience, registration=None)
-        self._row = self.store.read_cursor(self.audience)
+        self.store.write_cursor(self.project, self.audience, registration=None)
+        self._row = self.store.read_cursor(self.project, self.audience)
 
     def save_checkpoint(self, *, at: float | None = None) -> None:
         """Persist the pane's memory — the states and lift groups it was shown."""
@@ -214,8 +214,8 @@ class StationSubscriber:
             "lift_groups": sorted(self.path.lift_groups),
             "written_at": float(self.clock() if at is None else at),
         }
-        self.store.write_cursor(self.audience, checkpoint=checkpoint)
-        self._row = self.store.read_cursor(self.audience)
+        self.store.write_cursor(self.project, self.audience, checkpoint=checkpoint)
+        self._row = self.store.read_cursor(self.project, self.audience)
 
     def append_history(
         self,
@@ -250,8 +250,8 @@ class StationSubscriber:
             max_seconds=max_seconds,
         )
         self.history = capped
-        self.store.write_cursor(self.audience, history=capped)
-        self._row = self.store.read_cursor(self.audience)
+        self.store.write_cursor(self.project, self.audience, history=capped)
+        self._row = self.store.read_cursor(self.project, self.audience)
 
     def note_delivered(self, event: Mapping[str, Any]) -> None:
         """Record the state a delivered row left its run in, for a later re-arm."""
@@ -357,9 +357,13 @@ class StationSubscriber:
             delivered.extend(self.path.feed(event, now=moment))
         if last_id != self.cursor or last_day != self.cursor_day:
             self.store.write_cursor(
-                self.audience, cursor=last_id, day=last_day, at=_moment(at=moment)
+                self.project,
+                self.audience,
+                cursor=last_id,
+                day=last_day,
+                at=_moment(at=moment),
             )
-            self._row = self.store.read_cursor(self.audience)
+            self._row = self.store.read_cursor(self.project, self.audience)
         if delivered:
             self.save_checkpoint(at=moment)
         return delivered
