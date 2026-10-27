@@ -76,6 +76,7 @@ READ_PLAN_VIEWS = (
     "raw",
     "schema",
     "section",
+    "why",
 )
 AUDIT_VIEWS = ("summary", "detail", "raw")
 CREW_VIEWS = (
@@ -264,7 +265,7 @@ def _calls(project: str) -> list[tuple[str, str, dict[str, Any]]]:
     ]
     for view in READ_PLAN_VIEWS:
         arguments: dict[str, Any] = {"project": project, "view": view}
-        if view in {"summary", "detail", "history", "raw", "section"}:
+        if view in {"summary", "detail", "history", "raw", "section", "why"}:
             arguments["slug"] = "plan-001"
         if view == "section":
             arguments["section"] = "s1"
