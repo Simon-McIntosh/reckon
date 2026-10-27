@@ -424,21 +424,29 @@ def test_a_finding_answered_on_a_stored_record_is_not_named_open(
 ) -> None:
     config_home, _repo, plan_path = project
     digests = plan_review._section_digests(plan_path.read_text(encoding="utf-8"))
-    for review_run_id, finding_id in (
-        ("r-review-1", "reasoning-1"),
-        ("r-review-2", "coverage-1"),
-    ):
+    # Both reviews read the one plan revision and both raise reasoning-1, so
+    # both are counted for the burst. The answer is written on the review it
+    # was resolved against, which leaves the other record's copy of the
+    # finding unanswered; the refusal must read the answer from the record the
+    # command wrote rather than from the record it counted.
+    for review_run_id in ("r-review-1", "r-review-2"):
         _store_review(
             plan_path,
             config_home,
             review_run_id=review_run_id,
             findings=[
                 {
-                    "id": finding_id,
+                    "id": "reasoning-1",
                     "type": "reasoning",
                     "anchor": f"{plan_path}:1",
                     "text": "a finding on the reviewed prose",
-                }
+                },
+                {
+                    "id": "coverage-1",
+                    "type": "coverage",
+                    "anchor": f"{plan_path}:1",
+                    "text": "another finding, left unanswered",
+                },
             ],
             section_digests=digests,
         )
@@ -459,10 +467,9 @@ def test_a_finding_answered_on_a_stored_record_is_not_named_open(
     )
     assert answered.exit_code == 0, answered.output
 
-    # Both reviews are of the one plan revision, so the unit is at its limit.
-    # reasoning-1 is answered on a stored record — the one the answering
-    # command wrote — so the refusal must not name it again; a finding named
-    # open after it was answered can never be cleared by another answer.
+    # reasoning-1 is answered on a stored record, so the refusal must not name
+    # it again: a finding named open after it was answered can never be
+    # cleared by another answer.
     refusal = plan_review.review_burst_refusal(
         "sample", "fixture", "alpha", base_dir=config_home / "crew" / "reviews"
     )
