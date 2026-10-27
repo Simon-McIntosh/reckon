@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Source manifest baseline_suite and after_suite name repair-base-suite.log (3 passed, EXIT=0) and repair-final-suite.log (4 passed, EXIT=0), both completed with no failure ids; repair-red-suite.log names two failures before the source repair.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/runs.py:2219 (drain calls the week view)",
+    "reckon/mcp_views.py:4240 (MCP drain read)",
+    "reckon/crew_run_commands.py:1370 (CLI drain read)",
+    "reckon/crew/obligations.py:1723 (obligations closure read)"
+  ],
+  "completed_at": "2026-10-27T05:53:33Z",
+  "dispatched_at": "2026-10-27T05:49:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 2138,
+      "text": "blocking: excluding every awaiting-upstream request from stuck also hides one whose upstream landed more than an hour ago but whose admission phase failed to advance; the plan requires every phase admission should have moved to name its last verdict."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "VERDICT diff: read each commit from 71b52e2a8617bebee323621851e5cb90c801367f through 711a6844dac91ac5b9d06a417f7aad03cf77b6d8; tests/test_drain_week_view.py:128-161 adds three assertions, reckon/crew/runs.py:2138 and :2156-2165 changes the two counts, and the evidence fragment records their red and green results.",
+    "done_when": "VERDICT done_when: prompt.txt:104-106 requires hand counts, 24-hour measures, a last verdict and two 500-pointer reads under 30 s; after-suite.log:4-5 records 0.708 s and 0.593 s, and repair-red-suite.log:137-140 plus repair-final-suite.log:5-6 show both added regression checks red then four passing.",
+    "goal": "VERDICT goal: prompt.txt:30 asks for one project and plan drain view; reckon/crew/runs.py:2138 and :2159 repair the two previously reviewed miscounts, while :2138 still hides an overdue ready upstream wait.",
+    "manifest": "VERDICT manifest: manifest.md records the three repair commits, a 3-pass base arm, 4-pass final arm and the reversed-source control; repair-base-suite.log:5-6 and repair-final-suite.log:5-6 confirm zero added failing ids.",
+    "write_paths": "VERDICT write_paths: prompt.txt:69-73 grants reckon/crew/runs.py, tests/test_drain_week_view.py and the evidence fragment; git show for 60cd1002, 9371fc493 and 711a6844 shows only those three paths."
+  },
+  "justifications": {
+    "durability": "JUSTIFICATION durability: tests/test_drain_week_view.py:128-130 and :159-161 fail when the repaired source is reversed as repair-negative-control.log:138-141 shows, though :128-130 cannot detect an overdue ready upstream wait hidden by the broad exclusion.",
+    "evidence": "JUSTIFICATION evidence: repair-red-suite.log:137-140 and repair-final-suite.log:5-6 establish a red then green focused gate, while after-suite.log:4-5 records the original 500-pointer timing; the broader suite and lint were not rerun at the repair head.",
+    "fit": "JUSTIFICATION fit: reckon/crew/runs.py:2138 and :2156-2165 follow the existing drain summary and ledger receipt conventions without adding a forbidden source name.",
+    "goal_fidelity": "JUSTIFICATION goal_fidelity: reckon/crew/runs.py:2138 removes false stalls for normal upstream waits, but also excludes a wait still in that phase after its upstream lands and admission should move it.",
+    "reuse": "JUSTIFICATION reuse: a capability search for drain and 24-hour throughput summaries in reckon/crew found the existing owner at reckon/crew/runs.py:2061, which the repair edits in place without adding a definition.",
+    "scope_discipline": "JUSTIFICATION scope_discipline: git show of 60cd1002, 9371fc493 and 711a6844 changes only the three granted paths in prompt.txt:69-73 and only the prior review findings and their evidence."
+  },
+  "node": "review-of-drain-week-view-711a6844dac9",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for one project and plan drain view; reckon/crew/runs.py:2138 and :2159 repair the two previously reviewed miscounts, while :2138 still hides an overdue ready upstream wait.\nVERDICT done_when: prompt.txt:104-106 requires hand counts, 24-hour measures, a last verdict and two 500-pointer reads under 30 s; after-suite.log:4-5 records 0.708 s and 0.593 s, and repair-red-suite.log:137-140 plus repair-final-suite.log:5-6 show both added regression checks red then four passing.\nVERDICT write_paths: prompt.txt:69-73 grants reckon/crew/runs.py, tests/test_drain_week_view.py and the evidence fragment; git show for 60cd1002, 9371fc493 and 711a6844 shows only those three paths.\nVERDICT manifest: manifest.md records the three repair commits, a 3-pass base arm, 4-pass final arm and the reversed-source control; repair-base-suite.log:5-6 and repair-final-suite.log:5-6 confirm zero added failing ids.\nVERDICT diff: read each commit from 71b52e2a8617bebee323621851e5cb90c801367f through 711a6844dac91ac5b9d06a417f7aad03cf77b6d8; tests/test_drain_week_view.py:128-161 adds three assertions, reckon/crew/runs.py:2138 and :2156-2165 changes the two counts, and the evidence fragment records their red and green results.\nCALL_SITES: reckon/crew/runs.py:2219 (drain calls the week view), reckon/mcp_views.py:4240 (MCP drain read), reckon/crew_run_commands.py:1370 (CLI drain read), reckon/crew/obligations.py:1723 (obligations closure read)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2138 removes false stalls for normal upstream waits, but also excludes a wait still in that phase after its upstream lands and admission should move it.\nSCORE evidence: 17\nJUSTIFICATION evidence: repair-red-suite.log:137-140 and repair-final-suite.log:5-6 establish a red then green focused gate, while after-suite.log:4-5 records the original 500-pointer timing; the broader suite and lint were not rerun at the repair head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show of 60cd1002, 9371fc493 and 711a6844 changes only the three granted paths in prompt.txt:69-73 and only the prior review findings and their evidence.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_drain_week_view.py:128-130 and :159-161 fail when the repaired source is reversed as repair-negative-control.log:138-141 shows, though :128-130 cannot detect an overdue ready upstream wait hidden by the broad exclusion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/runs.py:2138 and :2156-2165 follow the existing drain summary and ledger receipt conventions without adding a forbidden source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search for drain and 24-hour throughput summaries in reckon/crew found the existing owner at reckon/crew/runs.py:2061, which the repair edits in place without adding a definition.\nFINDING reckon/crew/runs.py:2138 blocking: excluding every awaiting-upstream request from stuck also hides one whose upstream landed more than an hour ago but whose admission phase failed to advance; the plan requires every phase admission should have moved to name its last verdict.",
+  "review_run_id": "r-20261027T054746199619-review-of-drain-week-view-711a6844dac9",
+  "reviewed_assertions": [
+    "tests/test_drain_week_view.py:128-130 fails if the older implementation again puts any of the fixture's two-hour ordinary awaiting-upstream requests in stuck; repair-red-suite.log:97-98 confirms that negative control, but the assertion also accepts hiding a ready wait.",
+    "tests/test_drain_week_view.py:159 and :160 fail if a landed worker queued two days ago and launched two hours ago is counted from dispatched_at or omitted at project or plan level; repair-red-suite.log:133 shows the count was zero before the repair.",
+    "tests/test_drain_week_view.py:161 fails if the one-hour-old completed ledger row is omitted from the 24-hour landing count; this is an existing mechanism rather than a distinct repair regression.",
+    "No added assertion compares the result to the same value passed into the code under test; the launch expectation is literal 1 and the input stamps straddle the 24-hour boundary."
+  ],
+  "reviewed_base_sha": "71b52e2a8617bebee323621851e5cb90c801367f",
+  "reviewed_head_sha": "711a6844dac91ac5b9d06a417f7aad03cf77b6d8",
+  "reviewed_node": "drain-week-view",
+  "reviewed_run_id": "r-20261027T050146365874-drain-week-view",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T05:51:40.299673+00:00",
+  "total": 110
+}
