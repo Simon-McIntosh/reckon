@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T11:20:53.610Z",
+  "dispatched_at": "2026-10-27T11:02:41Z",
+  "findings": [
+    {
+      "file": "reckon/why_view.py",
+      "line": "397",
+      "severity": "non-blocking",
+      "text": "non-blocking: _runs_on at this line looks up run_rows on the (slug, section) pair and a plan-level ref uses section \"\" which no dispatch pointer carries, so why(alpha) silently answers runs: [] while alpha#s3 is held; an empty list reads as \"nobody is working on it\"."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": "1456",
+      "severity": "non-blocking",
+      "text": "non-blocking: the view vocabulary and its size contract are forked into WHY_VIEW and WHY_VIEW_BUDGET, while reckon/mcp_views.py:52 VIEW_NAMES and reckon/mcp_budget.py:22 VIEW_BUDGETS carry no \"why\" row, so the per-view fit test never enumerates it and the plan's \"within its row of the \u00a72 table\" has no row; the worker records this under outside_scope and it needs a node."
+    },
+    {
+      "file": "reckon/why_view.py",
+      "line": "238",
+      "severity": "non-blocking",
+      "text": "non-blocking: the waits are read from the raw section_depends_on map rather than the roadmap's _section_scoped_edges (reckon/roadmap.py:1446), so the kinds the module docstring claims -- gate, decision, run-blocked -- are never emitted and the why answer can disagree with a roadmap row about whether a section is held."
+    },
+    {
+      "file": "tests/test_one_call_explains_any_ref.py",
+      "line": "266",
+      "severity": "non-blocking",
+      "text": "non-blocking: the size assertion compares the answer to WHY_VIEW_BUDGET, the constant _fit_why trims to, so a regression raising that constant keeps the test green; line 256 has the same shape against MAX_EVENTS and the goal's five, so neither declared figure is guarded from an independent source."
+    },
+    {
+      "file": "reckon/why_view.py",
+      "line": "48",
+      "severity": "non-blocking",
+      "text": "non-blocking: the constant's comment reads \"the goal fixes this at five\", citing the dispatch goal a future reader has no access to, where the mechanism (at most five events per answer) is the fact worth stating."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094422370525-one-call-explains-any-ref/logs/why-gate-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T094422370525-one-call-explains-any-ref/logs/why-gate-base.log"
+  },
+  "item_verdicts": {
+    "call_sites": "reckon/mcp.py:921 _read_plan view dispatch, reckon/mcp.py:3691 read_plan tool registration, reckon/mcp_deadlines.py:595 response_budget branch into reckon/mcp_budget.py:231 bound_response",
+    "diff": "Read all four commits from 43a85b819 (b3610a54f, 94742f7a1, 5a97a66d6, 9f247ff8a); 1041 insertions and 5 deletions across four files, all inside the declared scope, the last dropping one unused parameter from _events and nothing else.",
+    "done_when": "The gate file tests/test_one_call_explains_any_ref.py asserts each named element on the alpha#s1 -> beta#s1 -> gamma#s1 fixture; the manifest names the command and logs/why-gate-head.log records 43 passed at 9f247ff8a; the base refusal is a probe in logs/why-gate-base.log because the test file does not exist at the base revision.",
+    "goal": "The goal is one read_plan view that explains any ref in one call; reckon/mcp.py:1463 _served_why plus reckon/why_view.py:64 why_answer land it, reporting state, transitive waits, waited_on_by, runs with held paths, followups, five events and nearest-ref refusals, but a plan-level ref lists no runs (reckon/why_view.py:397) and only the section-dependency kind is emitted.",
+    "manifest": "Read; it records status complete, the gate command, five log paths, an honestly unreadable base arm (exit 4, completed false) and a negative control at 1 failed / 7 passed.",
+    "write_paths": "Read from the manifest; the diff touches reckon/mcp.py, reckon/why_view.py, tests/test_one_call_explains_any_ref.py and docs/evidence/fragments/the-mcp-answers-the-question-asked/one-call-explains-any-ref.html, all inside the four declared paths; the declared docs/figures directory is unused."
+  },
+  "justifications": {
+    "durability": "tests/test_one_call_explains_any_ref.py:266 and :256 compare the answer against WHY_VIEW_BUDGET and MAX_EVENTS, the same constants the code enforces, so raising either leaves them green while the wait-chain assertion is genuinely guarded.",
+    "evidence": "logs/why-gate-head.log records 43 passed at 9f247ff8a and logs/why-negative-control.log records 1 failed / 7 passed on the declared mutation, though the base arm is a probe rather than a failing test.",
+    "fit": "reckon/why_view.py:48 comments \"the goal fixes this at five\", citing the dispatch goal rather than the mechanism, in a module that otherwise follows the surrounding lazy-import and docstring idiom.",
+    "goal_fidelity": "reckon/why_view.py:397 keys runs on the (slug, section) pair so a plan-level ref reports runs: [] even while a run works on one of its sections, and only the section-dependency kind is ever emitted.",
+    "reuse": "reckon/why_view.py:238 re-derives per-section blocker rows from the raw section_depends_on map instead of wrapping reckon/roadmap.py:1446 _section_scoped_edges, though it does reuse dependency_row_state, _section_satisfied and partition_live_runs.",
+    "scope_discipline": "every one of the four changed paths in the diff is inside the write paths declared in the manifest; none of the commits reaches outside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one read_plan view that explains any ref in one call; reckon/mcp.py:1463 _served_why plus reckon/why_view.py:64 why_answer land it, reporting state, transitive waits, waited_on_by, runs with held paths, followups, five events and nearest-ref refusals, but a plan-level ref lists no runs (reckon/why_view.py:397).\nVERDICT done_when: the gate file tests/test_one_call_explains_any_ref.py asserts each named element on the alpha#s1 -> beta#s1 -> gamma#s1 fixture; the manifest names the command and logs/why-gate-head.log records 43 passed at 9f247ff8a, while the base refusal is a probe in logs/why-gate-base.log because the test file does not exist at the base revision.\nVERDICT write_paths: read from the manifest; the diff touches reckon/mcp.py, reckon/why_view.py, tests/test_one_call_explains_any_ref.py and docs/evidence/fragments/the-mcp-answers-the-question-asked/one-call-explains-any-ref.html, all inside the four declared paths; the declared docs/figures directory is unused.\nVERDICT manifest: read; it records status complete, the gate command, five log paths, an honestly unreadable base arm (exit 4, completed false) and a negative control at 1 failed / 7 passed.\nVERDICT diff: read all four commits from 43a85b819 (b3610a54f, 94742f7a1, 5a97a66d6, 9f247ff8a); 1041 insertions and 5 deletions across four files, all inside the declared scope, the last dropping one unused parameter from _events and nothing else.\nCALL_SITES: reckon/mcp.py:3691, reckon/mcp.py:921, reckon/mcp_deadlines.py:595, reckon/mcp_budget.py:231\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/why_view.py:397 keys runs on the (slug, section) pair so a plan-level ref reports runs: [] even while a run works on one of its sections, and only the section-dependency kind is ever emitted.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/why-gate-head.log records 43 passed at 9f247ff8a and logs/why-negative-control.log records 1 failed / 7 passed on the declared mutation, though the base arm is a probe rather than a failing test.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every one of the four changed paths in the diff is inside the write paths declared in the manifest; none of the commits reaches outside them.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_one_call_explains_any_ref.py:266 and :256 compare the answer against WHY_VIEW_BUDGET and MAX_EVENTS, the same constants the code enforces, so raising either leaves them green while the wait-chain assertion is genuinely guarded.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/why_view.py:48 comments \"the goal fixes this at five\", citing the dispatch goal rather than the mechanism, in a module that otherwise follows the surrounding lazy-import and docstring idiom.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/why_view.py:238 re-derives per-section blocker rows from the raw section_depends_on map instead of wrapping reckon/roadmap.py:1446 _section_scoped_edges, though it does reuse dependency_row_state, _section_satisfied and partition_live_runs.\nFINDING reckon/why_view.py:397 non-blocking: _runs_on looks up run_rows on (slug, section) and a plan-level ref uses section \"\" which no dispatch pointer carries, so why(alpha) silently answers runs: [] while alpha#s3 is held; an empty list reads as \"nobody is working on it\".\n\nFINDING reckon/mcp.py:1456 non-blocking: the view vocabulary and its size contract are forked into WHY_VIEW and WHY_VIEW_BUDGET, while reckon/mcp_views.py:52 VIEW_NAMES and reckon/mcp_budget.py:22 VIEW_BUDGETS carry no \"why\" row, so the per-view fit test never enumerates it and the plan's \"within its row of the \u00a72 table\" has no row; the worker records this under outside_scope and it needs a node.\nFINDING reckon/why_view.py:238 non-blocking: the waits are read from the raw section_depends_on map rather than the roadmap's _section_scoped_edges (reckon/roadmap.py:1446), so the kinds the module docstring claims -- gate, decision, run-blocked -- are never emitted and the why answer can disagree with a roadmap row about whether a section is held.\nFINDING tests/test_one_call_explains_any_ref.py:266 non-blocking: the size assertion compares the answer to WHY_VIEW_BUDGET, the constant _fit_why trims to, so a regression raising WHY_VIEW_BUDGET would keep it green; line 256 has the same shape against MAX_EVENTS and the goal's five.\nFINDING reckon/why_view.py:48 non-blocking: the constant's comment reads \"the goal fixes this at five\", citing the dispatch goal a future reader has no access to, where the mechanism (at most five events per answer) is the fact worth stating.\n",
+  "review_run_id": "r-20261027T103931124911-review-of-one-call-explains-any-ref-9f247ff8a47d",
+  "reviewed_base_sha": "43a85b8193fd3ed31af01db8d02a99a6b2795a31",
+  "reviewed_head_sha": "9f247ff8a47d913cf74ffb728cc6a804dadaf8ec",
+  "reviewed_run_id": "r-20261027T094422370525-one-call-explains-any-ref",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 15,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T11:48:10.536094+00:00",
+  "total": 91
+}
