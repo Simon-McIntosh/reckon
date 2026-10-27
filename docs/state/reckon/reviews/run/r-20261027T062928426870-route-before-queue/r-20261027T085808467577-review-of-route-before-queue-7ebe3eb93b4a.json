@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    "tests/test_route_before_queue.py:301 compares the queued pointer's stored model with the literal astra supplied at dispatch; it fails if queueing drops or changes the stored selection, though it alone would not catch launch-time drift.",
+    "tests/test_route_before_queue.py:304 fails if admission does not launch the released request, and line 306 fails if it launches on local.",
+    "tests/test_route_before_queue.py:307-308 compare the launched model key and agent model against literal astra/model-astra while the lane default is sol/model-sol; restoring deterministic queued replay makes both fail, and the reverse-commit log records the model-key failure.",
+    "tests/test_route_before_queue.py:327 requires the actual fallback reason to contain the picker hard-ceiling verdict, and fails if that reason is lost or changed; the unchanged line 328 compares two fields derived from the same fallback map and is not counted as independent proof of its reason."
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_sessions.py:1696",
+    "reckon/crew/queue_admission.py:376",
+    "reckon/crew/queue_admission.py:2594",
+    "reckon/crew/queue_admission.py:2607",
+    "reckon/crew/dispatch.py:518"
+  ],
+  "completed_at": "2026-10-27T09:07:11Z",
+  "dispatched_at": "2026-10-27T08:59:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "275",
+      "severity": "blocking",
+      "text": "blocking: _await_moved_launch passes an explicit destination as backend_override, but replay_pick stays true for an unedited picker request and plan_dispatch replaces that destination with picker_selection.backend (dispatch_plan.py:575-580); crew move can launch on the old lane while stamping the requested lane as the move."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "The four commits 5d7cd24683ed7457ff2edc59eba92c5b85e78434 through 7ebe3eb93b4a8cca6aca6e8af5bc3673fa140666 add a nondefault-model test, replay stored picker routing, update the fragment, and change the fallback-reason assertion.",
+    "done_when": "resume-2-advice.txt requires an answered finding, exact base/head route gates, and a red reverse-commit control; repair-base.log and repair-head-final.log complete with 9 and 10 passes, and repair-negative-control.log fails the model assertion.",
+    "goal": "prompt.txt:30 requires picker routing through the queue; reckon/crew/queue_admission.py:237-276 now preserves a picked model on ordinary admission, but its replay also overrides an explicit queued move.",
+    "manifest": "manifest.md reports complete, names the four repair commits and the answered finding, and records complete zero-failure base/head route gates and the red reverse-commit log.",
+    "write_paths": "prompt.txt:70-75 and resume-2-advice.txt grant the fragment, queue_admission.py and test file; all three paths changed from e342eff679bd6e0f3b42295ee35bb97c426d6b5d to 7ebe3eb93b4a8cca6aca6e8af5bc3673fa140666 are granted."
+  },
+  "justifications": {
+    "durability": "tests/test_route_before_queue.py:307-308 fails when queued admission reverts to deterministic routing, as repair-negative-control.log demonstrates, but it does not exercise an explicit queued move.",
+    "evidence": "repair-base.log and repair-head-final.log record complete 9-pass and 10-pass route gates, while repair-negative-control.log shows the new model assertion failing as sol versus astra.",
+    "fit": "reckon/crew/queue_admission.py:237-276 reuses dispatch's picker resolution but omits the existing backend_override destination when choosing whether to replay the pick.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:275 restores the stored model but also lets that pick displace the destination supplied by the queued move path.",
+    "reuse": "The capability search found the model resolver in reckon/crew/dispatch_plan.py:214 and its existing direct-pick test in tests/test_a_picked_model_is_the_model_launched.py:180; queue_admission.py:275 extends that owner through queued dispatch.",
+    "scope_discipline": "The e342eff679bd6e0f3b42295ee35bb97c426d6b5d..7ebe3eb93b4a8cca6aca6e8af5bc3673fa140666 diff changes only queue_admission.py, tests/test_route_before_queue.py and the declared fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 requires picker routing through the queue; reckon/crew/queue_admission.py:237-276 now preserves a picked model on ordinary admission, but its replay also overrides an explicit queued move.\nVERDICT done_when: resume-2-advice.txt requires an answered finding, exact base/head route gates, and a red reverse-commit control; repair-base.log and repair-head-final.log complete with 9 and 10 passes, and repair-negative-control.log fails the model assertion.\nVERDICT write_paths: prompt.txt:70-75 and resume-2-advice.txt grant the fragment, queue_admission.py and test file; all three paths changed from e342eff679bd6e0f3b42295ee35bb97c426d6b5d to 7ebe3eb93b4a8cca6aca6e8af5bc3673fa140666 are granted.\nVERDICT manifest: manifest.md reports complete, names the four repair commits and the answered finding, and records complete zero-failure base/head route gates and the red reverse-commit log.\nVERDICT diff: The four commits 5d7cd24683ed7457ff2edc59eba92c5b85e78434 through 7ebe3eb93b4a8cca6aca6e8af5bc3673fa140666 add a nondefault-model test, replay stored picker routing, update the fragment, and change the fallback-reason assertion.\nCALL_SITES: reckon/crew/dispatch_sessions.py:1696, reckon/crew/queue_admission.py:376, reckon/crew/queue_admission.py:2594, reckon/crew/queue_admission.py:2607, reckon/crew/dispatch.py:518\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:275 restores the stored model but also lets that pick displace the destination supplied by the queued move path.\nSCORE evidence: 18\nJUSTIFICATION evidence: repair-base.log and repair-head-final.log record complete 9-pass and 10-pass route gates, while repair-negative-control.log shows the new model assertion failing as sol versus astra.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The e342eff679bd6e0f3b42295ee35bb97c426d6b5d..7ebe3eb93b4a8cca6aca6e8af5bc3673fa140666 diff changes only queue_admission.py, tests/test_route_before_queue.py and the declared fragment.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_route_before_queue.py:307-308 fails when queued admission reverts to deterministic routing, as repair-negative-control.log demonstrates, but it does not exercise an explicit queued move.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/queue_admission.py:237-276 reuses dispatch's picker resolution but omits the existing backend_override destination when choosing whether to replay the pick.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found the model resolver in reckon/crew/dispatch_plan.py:214 and its existing direct-pick test in tests/test_a_picked_model_is_the_model_launched.py:180; queue_admission.py:275 extends that owner through queued dispatch.\nFINDING reckon/crew/queue_admission.py:275 blocking: _await_moved_launch passes an explicit destination as backend_override, but replay_pick stays true for an unedited picker request and plan_dispatch replaces that destination with picker_selection.backend (dispatch_plan.py:575-580); crew move can launch on the old lane while stamping the requested lane as the move.\n",
+  "review_run_id": "r-20261027T085808467577-review-of-route-before-queue-7ebe3eb93b4a",
+  "reviewed_base_sha": "e342eff679bd6e0f3b42295ee35bb97c426d6b5d",
+  "reviewed_head_sha": "7ebe3eb93b4a8cca6aca6e8af5bc3673fa140666",
+  "reviewed_run_id": "r-20261027T062928426870-route-before-queue",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T09:09:50.988532+00:00",
+  "total": 108
+}
