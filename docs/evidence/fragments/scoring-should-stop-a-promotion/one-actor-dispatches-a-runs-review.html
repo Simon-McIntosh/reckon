@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="One actor dispatches a run's review">
+  <meta name="plan-summary" content="The review reflex and the review-missing obligation both dispatched the same review: following the obligation's printed command collided with the reflex's own claim on the review JSON path, and the loser showed as dispatched then withdrawn. The obligation now reads the reflex's own arming rule, runs.follower_state for the run's session, and when a follower is live it names the reflex as the owner with the window that follower's sweep cadence gives, instead of printing a command it can only lose. With no live follower the dispatch command prints as before, because nothing else would launch the review. The node gate passes 3 tests, EXIT=0; the declared mutation restores the unconditional command and reddens both armed-follower cases (2 failed, 1 passed, EXIT=1) while the no-follower case still passes.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="passed">
+  <title>One actor dispatches a run's review | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>One actor dispatches a run's review</h1>
+
+    <section id="one-actor-dispatches-a-runs-review-defect">
+      <h2>The defect</h2>
+      <p>A run entering <code>scoring</code> is owed a review, and two surfaces answered that
+        duty with the same dispatch. The review reflex composes it from the follower's own
+        sweep (<code>dispatch_awaiting_reviews</code>), and the <code>review-missing</code>
+        obligation printed the identical <code>reckon crew dispatch --role review</code>
+        line as the duty's next action. The race fix keeps the first registered review, so
+        nothing was lost — but a coordinator following the printed line lost the race and
+        saw its review dispatched then withdrawn, and the reflex's claim on the review JSON
+        path was spent on work the coordinator had already done.</p>
+    </section>
+
+    <section id="one-actor-dispatches-a-runs-review-change">
+      <h2>The change</h2>
+      <p><code>reckon/crew/obligations</code>'s review duty now asks the reflex's own
+        question before printing a command: whether the session that dispatched the run has
+        a live follower registration, read through <code>runs.follower_state</code> — the
+        same reader the sweep uses to decide whose runs it may act for. While that follower
+        is live and the row is <code>scoring</code>, the duty's next action becomes a
+        statement that the reflex owns the dispatch, naming the session and the window the
+        follower's sweep cadence gives, read from
+        <code>resumption.DEFAULT_SWEEP_SECONDS</code> rather than restated. The row also
+        carries <code>review_owner: reflex</code> so a reader sees the ownership as a field
+        rather than parsing the sentence. With no live follower the row is unchanged and the
+        dispatch command prints, because nothing else would launch that review.</p>
+      <p>Because the registration is now an input to the derivation, the snapshot parity
+        case in <code>tests/test_obligations_snapshot_is_published.py</code> takes its
+        expected payload inside the registration it already held while the snapshot was
+        written. That case passed at both arms after the move (13 passed each), which is
+        the evidence the fixture edit is neutral and not a second behaviour change.</p>
+    </section>
+
+    <section id="one-actor-dispatches-a-runs-review-evidence">
+      <h2>Evidence</h2>
+      <ul>
+        <li>Focused gate, 3 tests, <code>EXIT=0</code>: an armed follower reads
+          <code>review-missing</code> with no <code>reckon crew dispatch</code> in its next
+          action, names the review reflex, the session and the 120 s window, and carries
+          <code>review_owner: reflex</code>; a stored record at an earlier head reads the
+          same way; with no armed follower the row still prints the dispatch command.</li>
+        <li>Declared mutation — the unconditional command restored in a scratch extraction
+          of the node commit — reddens both armed-follower cases
+          (<strong>2 failed, 1 passed</strong>, <code>EXIT=1</code>) while the
+          no-armed-follower case still passes, so the guard is what the two cases measure.</li>
+        <li>Importer population, 57 test files that import
+          <code>reckon.crew.obligations</code>, both arms from <code>git archive</code>
+          extractions on node-local disk with the main checkout's <code>.env</code> linked:
+          base <code>f7d3f476d</code> gives 325 passed, 10 errors; after
+          <code>c9ce8c287</code> gives 325 passed, 10 errors — <strong>no added
+          failure</strong>. The 10 errors are identical in both arms and are
+          <code>pytest-timeout</code> at 300 s in the two ledger fixtures
+          (<code>test_held_worktree_records_match_each_record_once.py</code>,
+          <code>test_the_held_worktree_read_is_bounded.py</code>) under <code>-n 8</code>
+          on eight CPUs; each fixture's own timeout, not a code failure, and present at
+          base.</li>
+        <li><code>ruff check</code> and <code>ruff format --check</code> are clean on both
+          staged paths and on the fixture.</li>
+      </ul>
+    </section>
+
+    <section id="one-actor-dispatches-a-runs-review-scope">
+      <h2>Scope note</h2>
+      <p>The fixture repair in <code>tests/test_obligations_snapshot_is_published.py</code>
+        is outside this node's declared write paths. It is the direct consequence of the
+        in-scope change — the parity case compared two derivations across a released
+        follower registration, and the registration is now an input — and leaving it would
+        have turned the importer population red at the merged head. Recorded here and in
+        the manifest's <code>outside_scope</code> for the coordinator.</p>
+    </section>
+  </main>
+</body>
+</html>

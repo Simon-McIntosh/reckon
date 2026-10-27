@@ -236,9 +236,12 @@ def test_the_snapshot_carries_the_derivation_over_unmodified_files(
         assert acquired is True
         _wait_for_sweep()
         stored = obligation_snapshot.read_snapshot(PROJECT, SESSION)
+        # The follower registration is an input to the derivation: while it is
+        # held a review duty names the reflex as the owner of the dispatch, so
+        # the comparison below must not cross its release.
+        expected = obligations_module.obligations(PROJECT, SESSION)
 
     assert stored is not None
-    expected = obligations_module.obligations(PROJECT, SESSION)
     assert expected["obligations"], "the parity case must compare a non-empty list"
     # The age fields are the one deliberate rebasing: the snapshot stores the
     # instant each age is measured from, so reading it at the instant it was

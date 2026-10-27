@@ -94,6 +94,8 @@ DUTY_ROW_FIELDS = (
     "head",
     "reviewed_head",
     "review_tier",
+    # Set when an armed follower, rather than the coordinator, will dispatch it.
+    "review_owner",
     "refused_at",
     "queued_at",
     "worker_slots",
@@ -117,6 +119,13 @@ REVIEW_QUEUED_BOUND_SECONDS = 30 * 60
 # The status the review reflex records on a run's pointer when the lane refused
 # the attempt as paused; the refusal instant it carries is the bound's origin.
 REVIEW_LANE_PAUSED_STATUS = "lane-paused"
+
+# How long a duty may tell a coordinator the reflex will take. The review reflex
+# runs on the follower's own sweep cadence, so the expectation a duty prints is
+# that cadence rather than a figure of this module's own: a window the follower
+# does not keep would send a coordinator to dispatch by hand exactly when the
+# reflex was about to.
+DEFAULT_SWEEP_SECONDS_FALLBACK = 120
 
 # A queued request the session itself has to unblock before anything can launch
 # it: the admission refusal is a condition of the session rather than of the
@@ -405,6 +414,58 @@ def _reflex_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     """
     return recovery._recorded_review_is_live(
         pointer.get(recovery.REVIEW_DISPATCH_FIELD)
+    )
+
+
+def _reflex_owns_review(project: str, pointer: Mapping[str, Any]) -> bool:
+    """Whether an armed follower will dispatch this run's review by itself.
+
+    The reflex reaches a run only from inside the follower of the session that
+    dispatched it: the sweep takes the session its registration names, and a run
+    another session owns is that coordinator's to compose. So the question a
+    printed duty answers is the follower's own liveness for the run's session,
+    read from the reader the reflex itself uses (:func:`runs.follower_state`) so
+    a duty cannot claim a dispatch the sweep would not make.
+    """
+    session = str(pointer.get("session") or "")
+    if not session:
+        return False
+    try:
+        state = runs.follower_state(project, session)
+    except (OSError, ValueError, CrewError):
+        return False
+    return bool(state.get("live"))
+
+
+def _reflex_review_window_seconds() -> int:
+    """The window a duty may expect the reflex's next sweep within.
+
+    The review pass runs on the follower's sweep cadence, so the expectation is
+    read from that cadence rather than restated here.
+    """
+    try:
+        from reckon.crew.resumption import DEFAULT_SWEEP_SECONDS
+    except Exception:  # noqa: BLE001 - a printed expectation must not raise
+        return DEFAULT_SWEEP_SECONDS_FALLBACK
+    return int(DEFAULT_SWEEP_SECONDS)
+
+
+def _reflex_review_command(project: str, pointer: Mapping[str, Any]) -> str:
+    """The duty's next action while an armed reflex owns the dispatch.
+
+    Following the dispatch a missing review prints collides with the reflex's
+    own claim on the review JSON path: the race fix keeps the first registered
+    review, so nothing is lost, but the loser shows as dispatched then
+    withdrawn. Naming the reflex as the owner, with the window its cadence
+    gives, is what leaves one actor dispatching a run's review.
+    """
+    session = str(pointer.get("session") or "")
+    window = _reflex_review_window_seconds()
+    return (
+        f"the review reflex owns this dispatch: session {session!r} has an armed "
+        "follower, which composes the review for this run on its next sweep — "
+        f"expected within about {window} s (the follower's sweep cadence); "
+        "no manual dispatch is needed"
     )
 
 
@@ -1007,6 +1068,16 @@ def _review_duty_item(
             item.update(queued)
         elif superseded:
             item["kind"] = "review-missing"
+    if (
+        item["kind"] == "review-missing"
+        and classification == "scoring"
+        and _reflex_owns_review(project, pointer)
+    ):
+        # One actor owns review dispatch. While an armed follower will compose
+        # this review, the duty names that reflex and its window instead of
+        # printing a command whose run collides with the reflex's own claim.
+        item["next_command"] = _reflex_review_command(project, pointer)
+        item["review_owner"] = "reflex"
     return item
 
 
