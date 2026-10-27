@@ -15,9 +15,11 @@ Everything here runs against a synthetic operator home, a synthetic project
 checkout and a synthetic run directory in ``tmp_path`` and never touches the
 real ``~/.claude`` or ``~/.claude.json``.
 
-The declared negative control removes the seeded settings write. The default
-project's server then reads enabled and the test fails; running this file with
-``WORKER_MCP_SETTINGS_MUTATION=1`` reproduces that red log.
+Two mutations each reproduce a red log. ``WORKER_MCP_OWNED_KEY_MUTATION=1``
+takes ``worker_mcp_servers`` out of the reckon-owned keys, so the flight
+resolution refuses the declaration as an unknown key and the resolve test
+fails. ``WORKER_MCP_SETTINGS_MUTATION=1`` removes the seeded settings write, so
+the default project's server reads enabled and the settings tests fail.
 """
 
 from __future__ import annotations
@@ -28,12 +30,31 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _backends, _worker_fence
+from reckon import _backends, _worker_fence, flight
 
 NEGATIVE_CONTROL_MUTATION = (
+    "take worker_mcp_servers out of the reckon-owned keys; the resolve raises "
+    "the schema refusal and the test fails"
+)
+SETTINGS_MUTATION = (
     "remove the seeded settings write that disables project MCP servers; the "
     "no-worker_mcp_servers case then reads the project server enabled and fails"
 )
+OWNED_KEY_MUTATION_ENV = "WORKER_MCP_OWNED_KEY_MUTATION"
+SETTINGS_MUTATION_ENV = "WORKER_MCP_SETTINGS_MUTATION"
+
+
+def _unowned_schema_view(real):
+    """The declared mutation: the schema view keeps ``worker_mcp_servers``."""
+
+    def view(data):
+        cleaned = real(data)
+        if flight.WORKER_MCP_SERVERS_KEY in data:
+            cleaned[flight.WORKER_MCP_SERVERS_KEY] = data[flight.WORKER_MCP_SERVERS_KEY]
+        return cleaned
+
+    return view
+
 
 # The servers a fixture project registers in its ``.mcp.json``, none of which
 # a worker should start unless the project names it.
@@ -70,6 +91,34 @@ def _project_checkout(root: Path) -> Path:
     return checkout
 
 
+# Declarations that are not a list of server names: a bare string, a mapping,
+# a tuple, and a list holding a value that is not a string. Each must be
+# refused by name rather than seeded as the servers the project asked for.
+MALFORMED_DECLARATIONS = [
+    pytest.param("imas-cx", id="bare-string"),
+    pytest.param({"imas-cx": None}, id="mapping"),
+    pytest.param(("imas-cx",), id="tuple"),
+    pytest.param(["imas-cx", 3], id="list-holding-a-non-string"),
+]
+
+
+def _resolve(root: Path, declaration: dict):
+    """Resolve a flight configuration carrying ``declaration`` as its project layer.
+
+    The declaration is resolved the way a project's own layer is, through the
+    same layer validation a launch reads, and with the strict authoring read so
+    a key the running schema does not declare is refused by name rather than
+    silently reported.
+    """
+    return flight.resolve(
+        overrides=declaration,
+        host_path=root / "host" / "flight.yaml",
+        project_path=root / "project" / "flight.yaml",
+        catalogue_path=root / "absent-catalogue.yaml",
+        strict=True,
+    )
+
+
 def _launch(home: Path, run: Path, backend: dict, *, fence_config: dict | None = None):
     return _backends.launch_plan(
         backend_name=str(backend["command"]),
@@ -104,12 +153,15 @@ def _server_starts(settings: dict, name: str) -> bool:
 
 @pytest.fixture(autouse=True)
 def _apply_declared_mutation(monkeypatch):
-    """The declared negative control: the seeded settings write is removed."""
-    if not os.environ.get("WORKER_MCP_SETTINGS_MUTATION"):
-        return
-    monkeypatch.setattr(
-        _worker_fence, "_seed_worker_mcp_settings", lambda home, servers: None
-    )
+    """The declared negative controls, each behind its own switch."""
+    if os.environ.get(OWNED_KEY_MUTATION_ENV):
+        monkeypatch.setattr(
+            flight, "_schema_view", _unowned_schema_view(flight._schema_view)
+        )
+    if os.environ.get(SETTINGS_MUTATION_ENV):
+        monkeypatch.setattr(
+            _worker_fence, "_seed_worker_mcp_settings", lambda home, servers: None
+        )
 
 
 def test_the_default_project_disables_its_servers_and_keeps_reckon(tmp_path: Path):
@@ -195,22 +247,69 @@ def test_the_operator_home_is_never_written(tmp_path: Path):
     assert after == before
 
 
-def test_an_absent_or_malformed_declaration_names_no_server():
-    """A missing, empty or non-list worker_mcp_servers names no server."""
-    declare = _backends._declared_worker_mcp_servers
-    assert declare(None) == []
-    assert declare({}) == []
-    assert declare({"worker_mcp_servers": "imas-cx"}) == []
-    assert declare({"worker_mcp_servers": ["imas-cx", "imas-cx", ""]}) == ["imas-cx"]
+def test_a_project_naming_its_servers_resolves_and_seeds_them(tmp_path: Path):
+    """A flight config naming imas-cx resolves and seeds the run home with it."""
+    home = _operator_home(tmp_path)
+    run = tmp_path / "run"
+    run.mkdir()
+    resolved = _resolve(tmp_path, {"worker_mcp_servers": ["imas-cx"]})
+    assert resolved.config["worker_mcp_servers"] == ["imas-cx"]
+
+    plan = _launch(home, run, CLAUDE_BACKEND, fence_config=dict(resolved.config))
+
+    settings = _settings(plan)
+    assert settings[_backends.ENABLED_PROJECT_MCP_SERVERS_KEY] == ["imas-cx"]
+    assert _server_starts(settings, "imas-cx")
+    assert not _server_starts(settings, "imas-dd")
+
+
+@pytest.mark.parametrize("declaration", MALFORMED_DECLARATIONS)
+def test_a_declaration_that_is_not_a_list_is_refused_naming_the_key(
+    tmp_path: Path, declaration
+):
+    """A value that is not a list of strings is refused, naming the key."""
+    with pytest.raises(flight.FlightConfigError) as excinfo:
+        _resolve(tmp_path, {"worker_mcp_servers": declaration})
+    assert flight.WORKER_MCP_SERVERS_KEY in excinfo.value.key_path
+    assert flight.WORKER_MCP_SERVERS_KEY in str(excinfo.value)
+
+
+@pytest.mark.parametrize("declaration", MALFORMED_DECLARATIONS)
+def test_the_reader_refuses_a_declaration_that_is_not_a_list_of_strings(
+    declaration,
+):
+    """The one reader refuses the same values the layer refuses."""
+    with pytest.raises(ValueError, match="worker_mcp_servers"):
+        _worker_fence._declared_worker_mcp_servers({"worker_mcp_servers": declaration})
+
+
+def test_an_absent_declaration_names_no_server():
+    """An absent key names no server, and a well-formed list is read as given."""
+    reader = _worker_fence._declared_worker_mcp_servers
+    assert reader(None) == []
+    assert reader({}) == []
+    assert reader({"worker_mcp_servers": ["imas-cx", "imas-cx", ""]}) == ["imas-cx"]
 
 
 if __name__ == "__main__":  # pragma: no cover - reproduces the red log
     import sys
     import tempfile
 
-    if os.environ.get("WORKER_MCP_SETTINGS_MUTATION"):
+    if os.environ.get(SETTINGS_MUTATION_ENV):
         _worker_fence._seed_worker_mcp_settings = lambda home, servers: None
-    print(NEGATIVE_CONTROL_MUTATION)
+    if os.environ.get(OWNED_KEY_MUTATION_ENV):
+        flight._schema_view = _unowned_schema_view(flight._schema_view)
+        print(NEGATIVE_CONTROL_MUTATION)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            try:
+                _resolve(root, {"worker_mcp_servers": ["imas-cx"]})
+            except flight.FlightConfigError as exc:
+                print("refused:", exc)
+                sys.exit(1)
+            print("resolved without refusal")
+            sys.exit(0)
+    print(SETTINGS_MUTATION)
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         home = _operator_home(root)
@@ -224,4 +323,4 @@ if __name__ == "__main__":  # pragma: no cover - reproduces the red log
         )
         print("imas-cx starts:", _server_starts(settings, "imas-cx"))
 
-    sys.exit(1 if os.environ.get("WORKER_MCP_SETTINGS_MUTATION") else 0)
+    sys.exit(1 if os.environ.get(SETTINGS_MUTATION_ENV) else 0)

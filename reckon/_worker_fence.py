@@ -272,24 +272,45 @@ def seed_harness_home(
         _seed_worker_mcp_settings(home, worker_mcp_servers)
 
 
+class WorkerMcpServersError(ValueError):
+    """A project's ``worker_mcp_servers`` declaration is not a list.
+
+    Raised rather than read as an empty declaration, because a bare string
+    would iterate character by character and seed one server per letter while
+    reporting, to the operator and to the flight check alike, that the project
+    asked for nothing.
+    """
+
+    constraint = "must be a list of MCP server names"
+
+    def __init__(self) -> None:
+        super().__init__(f"{WORKER_MCP_SERVERS}: {self.constraint}")
+
+
 def _declared_worker_mcp_servers(config: Mapping[str, Any] | None) -> list[str]:
     """Return the worker MCP servers a resolved flight config names, in order.
 
-    Read from the config under :data:`WORKER_MCP_SERVERS`. Absence, or a value
-    that is not a list — a bare string would iterate character by character —
-    names no server, so a project that asks for nothing starts none. Duplicates
-    and empty names are dropped so the seeded record names each server once.
+    Read from the config under :data:`WORKER_MCP_SERVERS`. Absence names no
+    server, so a project that asks for nothing starts none of the checkout's
+    own. A value that is present but is not a list of server names is refused
+    by name: a bare string would read as one server per character, a mapping
+    would seed its keys, and a list holding a non-string would seed a value the
+    operator never wrote as a name. Duplicates and empty names are dropped so
+    the seeded record names each server once.
     """
     if not isinstance(config, Mapping):
         return []
     declared = config.get(WORKER_MCP_SERVERS)
-    if not isinstance(declared, Iterable) or isinstance(declared, (str, bytes)):
+    if declared is None:
         return []
+    if not isinstance(declared, list) or not all(
+        isinstance(name, str) for name in declared
+    ):
+        raise WorkerMcpServersError()
     names: list[str] = []
     for name in declared:
-        text = str(name)
-        if text and text not in names:
-            names.append(text)
+        if name and name not in names:
+            names.append(name)
     return names
 
 
