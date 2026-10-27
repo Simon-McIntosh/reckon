@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T00:15:05Z",
+  "dispatched_at": "2026-10-27T00:09:27Z",
+  "findings": [
+    {
+      "file": "docs/_shared/flight.schema.json",
+      "line": 2522,
+      "severity": "non-blocking",
+      "text": "project_weights advertises object and null map values, while reckon/flight.py:1104-1118 refuses every value except a positive finite number, so the published editor schema accepts configurations that strict runtime resolution rejects."
+    }
+  ],
+  "notes": "VERDICT goal: the source goal in the run prompt asks for weighted project choice; reckon/crew/queue_admission.py:2234 uses configured weights for admission and :2290 for reported placement.\nVERDICT done_when: the source prompt's measure names the 3:1 and 1:1 splits, no idle slots, lane-wide allowance, schema, serial importer delta, and Ruff; the source manifest and base-review-gate.log/head-review-gate.log record 318 and 343 passes with zero added failure IDs, and negative-control-final.log fails the 3:1 assertion under first-come order.\nVERDICT write_paths: the source prompt grants the schema, queue, flight, review dispatch, weighted test, evidence fragment, and figure paths; each of the seven worker-owned commits after e87def46 changes only those paths, while the merge's other files are outside this node's authored delta.\nVERDICT manifest: the source manifest names all seven post-review worker commits, 11 changed paths, complete baseline_suite and after_suite receipts, the final-head negative control, and status complete.\nVERDICT diff: read 9c152ab, 424daaf, 6d3190c, de00b05, c308184, 103ea0c, and 5ffc9a7 commit by commit against reviewed base e87def46; the reviewed head 5ffc9a7 adds schema declaration, weighted placement, configuration reading, held-review allowance, tests, figure, and evidence.\nCALL_SITES: reckon/crew/queue_admission.py:2234 fair_share_admission_order, reckon/crew/queue_admission.py:2290 queued_placements, reckon/crew/queue_admission.py:411 _session_allowance_read, reckon/crew/dispatch_plan.py:974 dispatch allowance, reckon/crew/recovery_review_dispatch.py:1950 _reroute_held_review, reckon/crew/query.py:426 live rows, reckon/crew/obligations.py:1544 obligations\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:2234 and reckon/crew/recovery_review_dispatch.py:1903 connect weighted order and lane-wide review eligibility to production paths, and reckon/schema/flight.yaml:1125 declares the weights.\nSCORE evidence: 18\nJUSTIFICATION evidence: the completed source base-review-gate.log and head-review-gate.log record 318 and 343 passes with zero added failures, and negative-control-final.log records a first-come mutation failing tests/test_queue_weighted_fair_share.py:69.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the seven worker-owned commits alter only paths granted in the source prompt, including reckon/crew/recovery_review_dispatch.py and docs/_shared/flight.schema.json.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_queue_weighted_fair_share.py:69, :216, :248, and :385 would fail under first-come selection, dropped schema weights, unweighted placement, and review rerouting on zero session slots respectively; the final-head mutation demonstrably fails :69.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/flight.py:1096 validates the new setting in the existing flight validation path, though docs/_shared/flight.schema.json:2522 exposes values runtime refuses.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability search found flight's existing declared_project_weights at reckon/flight.py:1038 and admission_order at reckon/crew/queue_order.py; the new validation and placement changes extend those owners without adding a competing order.\nFINDING docs/_shared/flight.schema.json:2522 non-blocking: project_weights advertises object and null map values, while reckon/flight.py:1104-1118 refuses every value except a positive finite number, so the published editor schema accepts configurations that strict runtime resolution rejects.",
+  "project": "reckon",
+  "review_run_id": "r-20261027T000736494760-review-of-queue-fair-share-by-weight-5ffc9a795422",
+  "reviewed_base_sha": "e87def46d908c9eca69b3759d6ddeff49f0496dc",
+  "reviewed_head_sha": "5ffc9a795422564af0438c6f8d158cffb22f2788",
+  "reviewed_run_id": "r-20261024T230608002476-queue-fair-share-by-weight",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T00:16:05.334895+00:00",
+  "total": 112
+}
