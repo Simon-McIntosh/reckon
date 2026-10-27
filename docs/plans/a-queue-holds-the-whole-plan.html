@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="187">
+<meta name="plan-version" content="188">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -522,6 +522,9 @@
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261027T180248521309-review-of-a-plan-review-reads-the-change-c5b465fe2de5" data-who="reckon-build" data-when="2026-10-27T18:16:14.943Z">
     <div class="r-comment-body"><p>Independent review of r-20261027T122427654395-a-plan-review-reads-the-change at c5b465fe2 recorded. Scores goal_fidelity 18, evidence 15, scope_discipline 17, durability 15, fit 16, reuse 5, over base 94e9068e0. Four non-blocking findings: routing.py:2434 duplicates plan_review_units already owned at queue_admission.py:2255; plan_review.py:1263 adds a third git helper beside served_code.py:93 and routing.py:537; the source manifest's artifacts line cites importer-repair-head.log for a 99-passed claim that log does not carry; routing.py:2639's whole-plan fallback branch has no assertion.</p></div>
 </div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261027T184115722436-review-of-a-plan-review-reads-the-change-6b15e3a6892a" data-who="reckon-build" data-when="2026-10-27T18:59:30.793Z">
+    <div class="r-comment-body"><p>review record stored for run r-20261027T122427654395-a-plan-review-reads-the-change at reviewed_head_sha 6b15e3a6892a577e1a3de02a8687a4d803ce6137 from base c5b465fe2de5b7e6a3384c238582513231da4f82, parsed, six dimensions scored, zero added failures, no findings.</p></div>
+</div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261027T153610734313-review-of-review-repair-runs-without-the-coordinator-5c41e9e07330" data-who="reckon-build" data-when="2026-10-27T15:56:07.743Z">
     <div class="r-comment-body"><p>Independent review of r-20261027T124142949092-review-repair-runs-without-the-coordinator filed at reviewed_base_sha 411ddcee698b3b31ffa368762f827a48bf0d6c44 / reviewed_head_sha 5c41e9e07330cf2d0f28a5ea0bb58905e82baf3f: scores goal_fidelity 13, evidence 14, scope_discipline 15, durability 16, fit 16, reuse 17; added_failure_count 0. Three findings: one blocking (the done_when's rubric-self-check prompt arm is unimplemented in reckon/crew/prompts.py and undisclosed) and two non-blocking (escalation recorded on the pointer rather than as an obligation; a second private ancestor helper used where promotion_scope owns one).</p></div>
 </div>
@@ -532,7 +535,7 @@
     <div class="r-comment-body"><p>The review of 4d2902649..e40786308 is stored at the .at-e40786308a767b7a3de1faa2c1a74ff157d90a9a record and passes `reckon crew check --review --record` with ok true. It scores goal_fidelity 11, evidence 12, scope_discipline 19, durability 13, fit 18, reuse 15; added_failure_count 0 from the reviewed run's own baseline_suite (11 passed, EXIT=0) and after_suite (13 passed, EXIT=0) logs. One blocking finding: passing root=repository at review_records.py:1506 makes the dispose descent read the run's worktree instead of the main checkout where the landed review record lives, and a probe against this run's own data returns no record from the worktree and the landed record from the main checkout.</p></div>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261027T184414709729-review-of-review-repair-runs-without-the-coordinator-e52fe40d1134" data-who="reckon-build" data-when="2026-10-27T18:56:49.245Z">
-    <div class="r-comment-body"><p>Reviewed r-20261027T124142949092-review-repair-runs-without-the-coordinator at base e40786308 over the two commits it gained since its last review, 03783f681 and e52fe40d1, and stored a parsed record scoring all six dimensions (19/15/20/19/19/18) with two non-blocking findings; the previous review&#x27;s blocking finding is repaired — the descent now resolves the landed store from the project&#x27;s registered checkout and uses the run&#x27;s worktree only for the ancestry test, reproduced against this run&#x27;s own data from its worktree.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261027T124142949092-review-repair-runs-without-the-coordinator at base e40786308 over the two commits it gained since its last review, 03783f681 and e52fe40d1, and stored a parsed record scoring all six dimensions (19/15/20/19/19/18) with two non-blocking findings; the previous review's blocking finding is repaired — the descent now resolves the landed store from the project's registered checkout and uses the run's worktree only for the ancestry test, reproduced against this run's own data from its worktree.</p></div>
 </div>
 <div class="r-comment" data-section="s28" data-id="c-s28-extend-queue-requests" data-who="" data-when="">
     <div class="r-comment-body"><p>The batch store already exists in one form. <code>queue_requests</code> in <code>reckon/crew/dispatch.py</code>, wrapped in <code>reckon/crew/queue_admission.py</code>, stores a batch for one project and raises on the first refusal. §28 extends that path to take entries from several projects and to return a result per entry, rather than adding a second batch path beside it. Its write paths include <code>reckon/crew/dispatch.py</code> and <code>reckon/crew/queue_admission.py</code> for that reason.</p></div>
