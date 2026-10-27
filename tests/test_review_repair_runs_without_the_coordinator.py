@@ -1,0 +1,379 @@
+"""A stored finding carries the id an answer names, from the moment it is stored.
+
+The reflex answers a stored finding by identity: a repair says which finding it
+acted on, and the lifecycle reads that answer back. A finding stored without an
+id can be answered by nothing, so this file pins the identity to the record on
+disk rather than to a reader that re-derives it. The id is the shared
+``repair.finding_id`` function of the finding's own file, line and text, so the
+stored id and the id a repair brief prints are one value.
+
+A stored review is keyed to the head it read, so a disposition naming the run
+rather than that head must be accepted only when the run's current head descends
+from it: an ancestor check is what distinguishes a review of this work from the
+same run's earlier or divergent revision. And the re-review brief a later round
+composes carries the diff from the head last reviewed to the new one, so the
+repair reads what changed rather than re-reading the whole review.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+from pathlib import Path
+
+from reckon.crew import repair as repair_module
+from reckon.crew import review as review_module
+from reckon.crew import review_lifecycle, review_records
+
+PROJECT = "sample"
+RUN_ID = "r-reviewed"
+FINDING = {
+    "file": "reckon/crew/thing.py",
+    "line": "10",
+    "text": "off-by-one in the loop",
+}
+
+
+def _record(findings: list[dict]) -> dict:
+    return {
+        "project": PROJECT,
+        "reviewed_run_id": RUN_ID,
+        "status": "parsed",
+        "scores": dict(zip(review_module.REVIEW_DIMENSIONS, (10,) * 6, strict=True)),
+        "total": 60,
+        "findings": findings,
+    }
+
+
+def _store(tmp_path: Path, monkeypatch, findings: list[dict]) -> dict:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    path = review_module.store_review(_record(findings))
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_a_stored_review_s_findings_carry_the_shared_id(tmp_path, monkeypatch) -> None:
+    """The record on disk carries the id ``repair.finding_id`` derives for it."""
+    stored = _store(tmp_path, monkeypatch, [dict(FINDING)])
+
+    findings = stored["findings"]
+    assert len(findings) == 1
+    expected = repair_module.finding_id(FINDING)
+    assert findings[0]["id"] == expected
+    # The identity is not positional: it derives from the finding's own content.
+    assert expected.startswith(repair_module.FINDING_ID_PREFIX)
+
+
+def test_a_declined_finding_is_answerable_by_its_stored_id(
+    tmp_path, monkeypatch
+) -> None:
+    """An answered stored finding leaves the lifecycle's open set.
+
+    Without the stored id the lifecycle can neither match nor be given the
+    answer, so this is the behaviour the stamped id enables.
+    """
+    stored = _store(tmp_path, monkeypatch, [dict(FINDING)])
+    stored["responses"] = {stored["findings"][0]["id"]: {"action": "declined"}}
+
+    assert review_lifecycle._run_open(stored) is False
+
+
+def _git(repo: Path, *arguments: str) -> str:
+    return subprocess.run(
+        ["git", *arguments], cwd=repo, check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+def _repo(tmp_path: Path) -> tuple[Path, str]:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _git(repo, "config", "user.email", "worker@example.invalid")
+    _git(repo, "config", "user.name", "Worker")
+    (repo / "one.txt").write_text("one\n", encoding="utf-8")
+    _git(repo, "add", "one.txt")
+    _git(repo, "commit", "-q", "-m", "chore: seed")
+    return repo, _git(repo, "rev-parse", "HEAD")
+
+
+def _advance(repo: Path, name: str) -> str:
+    (repo / name).write_text(name + "\n", encoding="utf-8")
+    _git(repo, "add", name)
+    _git(repo, "commit", "-q", "-m", "chore: " + name)
+    return _git(repo, "rev-parse", "HEAD")
+
+
+def _registered_checkout(tmp_path: Path) -> Path:
+    """A main checkout holding the project's landed reviews, beside the worktree.
+
+    A run's own tree holds the work and the new head; the record a promotion
+    landed lives in the checkout the project is mounted at. A fixture that
+    stores and searches one tree cannot tell a correct lookup from one that
+    reads the wrong tree, so the two are separate directories here and nothing
+    is committed into the store tree.
+    """
+    checkout = tmp_path / "main-checkout"
+    (checkout / "docs" / "state" / PROJECT).mkdir(parents=True)
+    _git(checkout, "init", "-q", "-b", "main")
+    _git(checkout, "config", "user.email", "worker@example.invalid")
+    _git(checkout, "config", "user.name", "Worker")
+    (checkout / "docs" / "state" / PROJECT / ".gitkeep").write_text(
+        "", encoding="utf-8"
+    )
+    _git(checkout, "add", f"docs/state/{PROJECT}/.gitkeep")
+    _git(checkout, "commit", "-q", "-m", "chore: seed")
+    home = Path(os.environ.get("RECKON_HOME") or (tmp_path / "config"))
+    home.mkdir(parents=True, exist_ok=True)
+    (home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(checkout / "docs")}), encoding="utf-8"
+    )
+    return checkout
+
+
+def _store_at(tmp_path: Path, monkeypatch, base_sha: str, head_sha: str) -> Path:
+    """Land the review in the registered checkout, keyed to the head it read.
+
+    Only a landed review is reachable by descent: a staging round describes one
+    head, and once the work has moved past it the round is no longer evidence
+    about the work the run is now standing on.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    checkout = _registered_checkout(tmp_path)
+    return review_module.store_committed_review(
+        {
+            **_record([dict(FINDING)]),
+            "review_run_id": "r-review",
+            "reviewed_base_sha": base_sha,
+            "reviewed_head_sha": head_sha,
+        },
+        root=checkout,
+    )
+
+
+def test_a_review_is_found_from_a_later_head_by_descent(tmp_path, monkeypatch) -> None:
+    """A head descending from the reviewed one resolves that stored review.
+
+    The stored record is keyed to the head it read, so selecting by the run's
+    current head alone finds nothing once the run has moved. Descent is what
+    keeps a review of this work reachable after the repair it caused committed.
+    """
+    repo, reviewed_head = _repo(tmp_path)
+    _store_at(tmp_path, monkeypatch, reviewed_head, reviewed_head)
+    later_head = _advance(repo, "two.txt")
+    assert later_head != reviewed_head
+
+    path, record, stored_head = review_records.stored_review_descending_from(
+        PROJECT, RUN_ID, later_head, repository=repo
+    )
+
+    assert record is not None
+    assert path is not None
+    assert stored_head == reviewed_head
+    assert record["reviewed_head_sha"] == reviewed_head
+
+
+def test_the_landed_review_is_read_from_the_registered_checkout(
+    tmp_path, monkeypatch
+) -> None:
+    """The run's worktree holds the work, not the landed record of it.
+
+    The store resolves from the checkout the project is mounted at, as the
+    by-head selection does, while the run's tree supplies only the ancestry
+    check. Searching the worktree finds nothing, which is what a hand-resumed
+    repair would hit if the record were looked up beside the work instead of in
+    the checkout that holds it.
+    """
+    repo, reviewed_head = _repo(tmp_path)
+    record_path = _store_at(tmp_path, monkeypatch, reviewed_head, reviewed_head)
+    assert record_path.is_relative_to(tmp_path / "main-checkout")
+    assert not (repo / "docs").exists(), "the worktree holds no landed review"
+    later_head = _advance(repo, "two.txt")
+
+    path, record, stored_head = review_records.stored_review_descending_from(
+        PROJECT, RUN_ID, later_head, repository=repo
+    )
+
+    assert record is not None
+    assert path == record_path
+    assert stored_head == reviewed_head
+
+
+def test_a_review_is_not_found_from_a_divergent_head(tmp_path, monkeypatch) -> None:
+    """A head outside the reviewed one's history resolves nothing.
+
+    The negative control for the arm above: without the ancestry test, any
+    stored record for the run would be accepted against any head, which is the
+    same as not keying the record to a revision at all.
+    """
+    repo, seed = _repo(tmp_path)
+    # The divergent commit branches from the seed, so the reviewed head that
+    # lands on main afterwards is not in its history.
+    _git(repo, "checkout", "-q", "-b", "divergent", seed)
+    divergent_head = _advance(repo, "other.txt")
+    _git(repo, "checkout", "-q", "main")
+    reviewed_head = _advance(repo, "reviewed.txt")
+    _store_at(tmp_path, monkeypatch, reviewed_head, reviewed_head)
+
+    _path, record, stored_head = review_records.stored_review_descending_from(
+        PROJECT, RUN_ID, divergent_head, repository=repo
+    )
+
+    assert record is None
+    assert stored_head == ""
+
+
+def test_a_staging_round_keyed_to_another_head_is_not_reachable(
+    tmp_path, monkeypatch
+) -> None:
+    """A live round of one head stops describing the work once the head moves.
+
+    The negative control for the landed-only rule: a record of exactly this
+    shape, stored in staging rather than committed, names a revision the run's
+    work has moved past. Answering it would retire a finding on a diff nobody
+    read of the work as it now stands, so the descent reader leaves it alone and
+    a caller's by-head refusal stands.
+    """
+    repo, reviewed_head = _repo(tmp_path)
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    # The project is mounted and its checkout exists, so the refusal comes from
+    # the round being unlanded rather than from no store resolving at all.
+    _registered_checkout(tmp_path)
+    review_module.store_review(
+        {
+            **_record([dict(FINDING)]),
+            "reviewed_base_sha": reviewed_head,
+            "reviewed_head_sha": reviewed_head,
+        }
+    )
+    later_head = _advance(repo, "two.txt")
+    assert later_head != reviewed_head
+
+    _path, record, stored_head = review_records.stored_review_descending_from(
+        PROJECT, RUN_ID, later_head, repository=repo
+    )
+
+    assert record is None
+    assert stored_head == ""
+
+
+def test_the_re_review_brief_carries_the_diff_and_the_answers() -> None:
+    """A later round's brief names what changed and what was already answered.
+
+    The repair reads one brief, so a round that opened after a further commit
+    must carry the diff from the head last reviewed and the answers already
+    recorded, rather than making the repair rediscover either.
+    """
+    review = _record([dict(FINDING)])
+    review["findings"][0]["id"] = repair_module.finding_id(FINDING)
+    diff = "diff --git a/two.txt b/two.txt\n+two\n"
+
+    brief = repair_module.compose_repair_brief(
+        review,
+        review["findings"],
+        diff=diff,
+        answers=[{"id": "fdeadbeef00", "action": "declined", "detail": "covered"}],
+    )
+
+    assert "Changes since the last reviewed head" in brief
+    assert "+two" in brief
+    assert "Answers already recorded on this review:" in brief
+    assert "[fdeadbeef00] declined: covered" in brief
+
+    node = repair_module.compose_repair_node(review, diff=diff)
+    assert node is not None
+    assert "+two" in node["brief"]
+
+
+def test_a_repair_moves_the_head_and_the_disposition_still_lands(
+    tmp_path, isolated_reckon_home
+) -> None:
+    """A hand-resumed repair leaves the run reviewable: the disposition is accepted.
+
+    The review is stored at the head it read and the repair then commits, so the
+    run's live head is a descendant rather than that head. Disposing through the
+    CLI must answer the stored review rather than refuse for a head mismatch,
+    which is what keeps a worker-repaired run inside the review lifecycle.
+    """
+    from click.testing import CliRunner
+
+    from reckon.cli import main as cli_main
+    from reckon.crew import runs
+
+    repo, reviewed_head = _repo(tmp_path)
+    # The landed review lives in the checkout the project is mounted at, which
+    # is not the run's worktree: the repair's new head exists only in the tree
+    # the run is working in, and the record it answers lives in the checkout.
+    checkout = _registered_checkout(tmp_path)
+    assert checkout != repo
+    review_file = review_module.store_committed_review(
+        {
+            **_record([dict(FINDING)]),
+            "review_run_id": "r-review",
+            "reviewed_base_sha": reviewed_head,
+            "reviewed_head_sha": reviewed_head,
+        },
+        root=checkout,
+    )
+    repaired_head = _advance(repo, "repaired.txt")
+    assert repaired_head != reviewed_head
+    runs._write_json(
+        runs.pointer_path(RUN_ID),
+        {
+            "run_id": RUN_ID,
+            "project": PROJECT,
+            "process_alive": False,
+            "repo": str(repo),
+            "worktree": str(repo),
+            "node": {"id": RUN_ID, "plan": "fixture", "section": "s2"},
+        },
+    )
+
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "dispose",
+            "--project",
+            PROJECT,
+            "--run",
+            RUN_ID,
+            "--finding",
+            "0",
+            "--kind",
+            "folded",
+            "--node",
+            "fix-a",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    stored = json.loads(review_file.read_text(encoding="utf-8"))
+    assert stored[review_module.FINDING_DISPOSITIONS_KEY]["0"]["kind"] == "folded"
+
+
+def test_the_worker_prompt_asks_for_a_rubric_self_check() -> None:
+    """The invariant prefix carries the contract, on every node and project."""
+    from reckon.crew import prompts
+
+    assert "CONTRACT — YOUR RUBRIC SELF-CHECK BEFORE DELIVERY" in (
+        prompts.INVARIANT_PROMPT_PREFIX
+    )
+    assert "`rubric.<dimension>: <state>`" in prompts.INVARIANT_PROMPT_PREFIX
+
+
+def test_a_rubric_self_check_reads_what_the_manifest_records() -> None:
+    """Each review dimension is answered by its own line, and silence is not a pass."""
+    from reckon.crew import prompts
+
+    dimensions = review_module.REVIEW_DIMENSIONS
+    answered = "\n".join(f"rubric.{dimension}: answered" for dimension in dimensions)
+    assert prompts.missing_rubric_self_checks(answered, dimensions) == []
+
+    partial = answered.replace(f"rubric.{dimensions[0]}: answered\n", "")
+    assert prompts.missing_rubric_self_checks(partial, dimensions) == [dimensions[0]]
+
+    # A heading with no state records nothing, so it is reported as absent.
+    empty = answered.replace(
+        f"rubric.{dimensions[-1]}: answered", f"rubric.{dimensions[-1]}:"
+    )
+    assert prompts.missing_rubric_self_checks(empty, dimensions) == [dimensions[-1]]

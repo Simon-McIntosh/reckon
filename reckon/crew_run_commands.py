@@ -606,9 +606,11 @@ def crew_dispose(
     naming a rubric answers the text review rather than failing on an argument
     it never had to know about.
     """
+    from reckon.crew import merge as merge_module
     from reckon.crew import obligations as obligations_module
     from reckon.crew import recovery, review_dispositions, runs
     from reckon.crew import review as review_module
+    from reckon.crew import review_records as review_records_module
 
     # The run's own project is the store the disposition is written to, so
     # --project is optional and a disagreeing one is refused rather than
@@ -643,6 +645,7 @@ def crew_dispose(
     # A code review scores no dimensions, so its only disposition space is its
     # findings: a dimension named against one is refused by name rather than
     # resolved to a dimension no code review carries.
+    tree: Path | None = None
     code_key = review_dispositions.code_review_identity(reviewed_run_id)
     if code_key and named_dimension:
         raise click.ClickException(
@@ -693,7 +696,7 @@ def crew_dispose(
             # The revision the run's work is at, named by the refusal below when
             # the store's record describes another; the record itself is
             # selected through the reading both readers share.
-            head, _tree = recovery._review_head_and_tree(pointer)
+            head, tree = recovery._review_head_and_tree(pointer)
         try:
             if pointer is None:
                 stored, described = recovery.select_review_for_head(
@@ -707,6 +710,31 @@ def crew_dispose(
             raise click.ClickException(
                 f"cannot read the stored review for run {reviewed_run_id!r}: {exc}"
             ) from exc
+    if stored is None and described:
+        # A repair moves the run's head past the revision its review read. The
+        # by-head selection then finds no record describing the new head, but a
+        # review of an ancestor is still the run's own evidence about the work
+        # under review, so a disposition against it stands: the finding it
+        # raises is the work the repair was asked to answer. Accept that record
+        # and write the disposition onto it rather than refusing outright.
+        repository = tree
+        if repository is None:
+            try:
+                repository = merge_module.project_repository(project)
+            except merge_module.MergeError:
+                repository = None
+        _descent_path, descent_record, _descent_head = (
+            review_records_module.stored_review_descending_from(
+                project,
+                reviewed_run_id,
+                head,
+                repository=repository,
+                rubric=rubric,
+            )
+        )
+        if descent_record is not None:
+            stored = descent_record
+            described = ""
     if stored is None:
         if described:
             raise click.ClickException(
