@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-evidence-for" content="reckon:scoring-should-stop-a-promotion">
+  <meta name="plan-verifies" content="reckon:scoring-should-stop-a-promotion#s13">
+  <meta name="plan-verdict" content="pass">
+  <title>The armed suite command runs the node's own test files | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="the-consequence-gate-runs-the-nodes-tests-landing" data-node="the-consequence-gate-runs-the-nodes-tests" data-reckon="landed" data-when="2026-10-27">
+  <h2>The armed suite command is scoped to the node's own fenced test files</h2>
+  <p><code>gates.suite_command</code> took only a literal command, so arming the promotion-consequence gate meant naming the whole suite. An armed node runs the pair twice, at its base and at its head, and the whole suite measured 720&ndash;762&nbsp;s, which is most of a node's budget for tests its change cannot reach. The declaration may now carry <code>{node_test_files}</code>, which promotion resolves against the node's own fenced write paths, so one project-level declaration measures each node on exactly the tests its scope holds.</p>
+  <p><strong>What changed.</strong> <code>reckon/crew/promotion_records.py</code> resolves the declared command before comparing it with either arm: the placeholder is replaced by the <code>test_*.py</code> entries among the run record's <code>node.write_paths</code>, sorted, and named relative to the run's tree because the base and head arms run in different trees. Non-test scope entries &mdash; the modules a node edits, its landing fragment, its figure directory &mdash; are not tests and are dropped. A declaration without the placeholder is taken as written, so an existing literal arming is unchanged. A scoped declaration over a node whose scope holds no test file resolves to nothing, and promotion then records no suite observation, which is the state an unarmed project is in. The resolved command is what the suite delta records, so a reader sees which files were measured. <code>docs/state/reckon/flight.yaml</code> now arms reckon with <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q {node_test_files}</code>.</p>
+  <p><strong>The measure.</strong> A promotion whose pair ran the resolved command promotes with <code>suite_delta.status: clean</code> and records that command on both arms; a pair over the whole suite is refused naming both arms' <code>command_matches_suite_command</code>; a pair over another node's test file is refused the same way; a record with no <code>suite_command</code> promotes with <code>suite_delta: null</code>, recording no suite observation. The declared negative control &mdash; the declaration removed &mdash; reddens both file-linked cases: <code>test_the_project_arms_the_gate_with_a_scoped_command</code> and <code>test_the_declared_command_measures_the_nodes_fenced_test_files</code> fail (<code>2 failed, 9 passed</code>, <code>EXIT=1</code>), so the checks are bound to the declaration rather than to a constant copied into the test.</p>
+  <p><strong>Evidence.</strong> New test <code>tests/test_the_consequence_gate_runs_the_nodes_tests.py</code> (11 passed). Every test file importing <code>reckon/crew/promotion_records.py</code> ran at both arms, each from a <code>git archive</code> extraction on node-local disk with the main environment's <code>.env</code> linked: base <code>dd2ef875a</code> <code>94 passed</code> (<code>EXIT=0</code>, 608&nbsp;s), head <code>8f6f24571</code> <code>1 failed, 104 passed</code> (<code>EXIT=1</code>, 1048&nbsp;s; the 11 extra tests are the new file). The one added id is <code>tests/test_promotion_records_the_pick.py::test_promotion_waits_for_the_in_flight_pick_and_records_it</code>, whose own assertion is that a detached picker thread sets an event within 5&nbsp;s; it failed with &ldquo;the advisory pick never started&rdquo; while that arm shared the node with this node's negative-control run at load average 37&ndash;58, and it passes at the base arm. The node's change does not reach that code path. <code>ruff check</code> is clean on both staged paths and <code>ruff format --check</code> adds no reformatting hunk to the pre-existing ones in <code>promotion_records.py</code>.</p>
+</article>
+</body>
+</html>
