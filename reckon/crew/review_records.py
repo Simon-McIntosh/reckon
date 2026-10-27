@@ -616,15 +616,42 @@ def stored_record(
         candidates.extend(directory.glob(f"{reviewed_run_id}*.at-*.json"))
     existing = {path.resolve(): path for path in candidates if path.is_file()}
     if existing:
-        return _record_with_merged_answers(
-            project,
-            reviewed_run_id,
-            _select_stored_record(
-                list(existing.values()),
+        selected = _select_stored_record(
+            list(existing.values()),
+            reviewed_head_sha,
+            rubric=rubric,
+            skipped=skipped,
+        )
+        # The run's own files hold no record at the named head. A record of the
+        # same run filed under another reviewer's run id can still sit at that
+        # head, so the store is asked for one before the absence is reported: a
+        # run's own file settles where its review is filed only for the heads
+        # that file carries. A lookup naming no head is not searched, because
+        # the newest record of the run is what it asked for and one of the
+        # run's own files is that record.
+        #
+        # The store is asked through the index, which names the file the search
+        # would find without reading any of them; a run whose entries carry no
+        # record at this head is answered from the run's own files rather than
+        # by walking the store, which is what keeps a miss on a head mismatch as
+        # cheap as it was.
+        if (
+            selected[1] is None
+            and reviewed_head_sha is not None
+            and _indexed_at_head(directory, reviewed_run_id, reviewed_head_sha)
+        ):
+            filed = _record_filed_elsewhere(
+                directory,
+                reviewed_run_id,
                 reviewed_head_sha,
                 rubric=rubric,
                 skipped=skipped,
-            ),
+            )
+            selected = filed if filed[1] is not None else selected
+        return _record_with_merged_answers(
+            project,
+            reviewed_run_id,
+            selected,
             committed=committed,
             base_dir=base_dir,
             skipped=skipped,
@@ -762,10 +789,72 @@ def _record_filed_elsewhere(
     """
     if not directory.is_dir():
         return None, None
-    candidates = _store_index(directory).get(reviewed_run_id)
-    if not candidates:
-        return None, None
     named = None if reviewed_head_sha is None else reviewed_head_sha.strip().lower()
+    candidates = _store_index(directory).get(reviewed_run_id) or []
+    found = _filed_match(
+        candidates, reviewed_run_id, named, rubric=rubric, skipped=skipped
+    )
+    if found is not None:
+        return found
+    # The index answers from the facts it read when it last walked the store,
+    # and a record rewritten in place leaves the store's entries where they
+    # were: revalidate this run's own entries from their files' stat identities
+    # first, then -- for a run the index holds no entry for at all, the shape a
+    # record rewritten to name another run leaves -- the whole store, once.
+    found = _filed_match(
+        _revalidated_entries(candidates),
+        reviewed_run_id,
+        named,
+        rubric=rubric,
+        skipped=skipped,
+    )
+    if found is not None:
+        return found
+    refreshed = _filed_match(
+        _refresh_store_entries(directory).get(reviewed_run_id) or [],
+        reviewed_run_id,
+        named,
+        rubric=rubric,
+        skipped=skipped,
+    )
+    return refreshed if refreshed is not None else (None, None)
+
+
+def _indexed_at_head(
+    directory: Path, reviewed_run_id: str, reviewed_head_sha: str
+) -> bool:
+    """Whether the index holds any record of this run at the named head.
+
+    Answered from the entries this run has, revalidated from their files' own
+    stat identities so a record rewritten in place is seen, and from no other
+    file: a store of thousands of records is not walked to answer a question
+    about one run.
+    """
+    named = reviewed_head_sha.strip().lower()
+    entries = _store_index(directory).get(reviewed_run_id) or []
+    return any(
+        _indexed_head_matches(entry, named) for entry in _revalidated_entries(entries)
+    )
+
+
+def _filed_match(
+    candidates: Iterable[dict[str, Any]],
+    reviewed_run_id: str,
+    named: str | None,
+    *,
+    rubric: str | None = None,
+    skipped: list[dict[str, str]] | None = None,
+) -> tuple[Path, dict[str, Any]] | None:
+    """Return the newest candidate whose current content answers this lookup.
+
+    The file each candidate names is read again, so the answer is the record's
+    current content rather than the facts the index holds for it, and its
+    content is re-checked against what the index selected on: a record rewritten
+    since the index was read must not answer a request it no longer matches. The
+    newest candidate that does match is returned carrying
+    :data:`MISFILED_KEY`, because a file sitting at another run's path is what
+    this lookup exists to report.
+    """
     for entry in sorted(candidates, key=lambda item: item["mtime_ns"], reverse=True):
         if not _indexed_head_matches(entry, named):
             continue
@@ -794,7 +883,7 @@ def _record_filed_elsewhere(
         record = dict(record)
         record[_review.MISFILED_KEY] = True
         return path, record
-    return None, None
+    return None
 
 
 # ── The store index ─────────────────────────────────────────────────────────
@@ -813,6 +902,7 @@ _STORE_INDEXES: dict[
         dict[str, list[dict[str, Any]]],
         dict[str, list[dict[str, Any]]],
         list[dict[str, Any]],
+        bool,
     ],
 ] = {}
 
@@ -1182,9 +1272,69 @@ def _store_indexes(
     else:
         entries = _update_store_entries(directory, entries)
         reviewed, review_runs = _index_maps(entries)
-    _STORE_INDEXES[directory] = (identity, reviewed, review_runs, entries)
+    _STORE_INDEXES[directory] = (identity, reviewed, review_runs, entries, False)
     _persist_store_entries(directory, entries)
     return reviewed, review_runs
+
+
+# A record rewritten in place -- a disposition recorded on a stored review, a
+# record re-filed under another run id -- keeps its name, its inode and the
+# store's entries, so the directory's stat identity does not move and the index
+# above would go on answering from the facts it first read. The two refreshes
+# below key validity on each file's own stat identity instead: one for the files
+# a lookup already holds entries for, which is a handful of stats, and one for
+# the whole store for the miss no entry explains.
+
+
+def _revalidated_entries(entries: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Return ``entries`` with the ones whose file moved re-read from disk.
+
+    Each file is stat'ed once and compared against the identity the index holds
+    for it, so a record rewritten in place is re-read and a record whose file
+    has gone stops answering. A file that no longer parses yields no entry,
+    the same rule the build and update passes apply.
+    """
+    refreshed: list[dict[str, Any]] = []
+    for entry in entries:
+        path = entry["path"]
+        try:
+            info = path.stat()
+        except OSError:
+            continue
+        if not stat.S_ISREG(info.st_mode):
+            continue
+        if entry["identity"] == _stat_identity(info):
+            refreshed.append(entry)
+            continue
+        reread = _index_entry(path, info)
+        if reread is not None:
+            refreshed.append(reread)
+    return refreshed
+
+
+def _refresh_store_entries(
+    directory: Path,
+) -> dict[str, list[dict[str, Any]]]:
+    """Revalidate every entry from its file's identity, once per process.
+
+    This is the pass a store of thousands of records cannot afford per lookup:
+    it stats every record file, and on a store of several thousand records that
+    costs seconds. It is therefore paid at most once per store directory and per
+    process, and only for a lookup no entry the index holds can explain -- a
+    record rewritten in place to name a run the index has no entry for at all.
+    Every later miss answers from the refreshed index.
+    """
+    cached = _STORE_INDEXES.get(directory)
+    if cached is None:
+        return _store_index(directory)
+    identity, reviewed, review_runs, entries, refreshed = cached
+    if refreshed:
+        return reviewed
+    entries = _update_store_entries(directory, entries)
+    reviewed, review_runs = _index_maps(entries)
+    _STORE_INDEXES[directory] = (identity, reviewed, review_runs, entries, True)
+    _persist_store_entries(directory, entries)
+    return reviewed
 
 
 def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
