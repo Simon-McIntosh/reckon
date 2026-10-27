@@ -36,10 +36,11 @@ from reckon.live_run_classification import (
     SECTION_DEPENDENCY_BLOCKER,
 )
 
-#: The most characters one ``why`` answer may return by role. This is the
-#: contract the view is built to, and the read enforces it before the answer
-#: leaves: the §2 table in ``reckon/mcp_budget.py`` owns the same figure for
-#: ``read_plan``, and this view joins it once that row is registered there.
+#: The most characters one ``why`` answer may return. This is the contract the
+#: view is built to, and the read enforces it before the answer leaves, so a
+#: wide wait graph is trimmed rather than refused. It is the same figure a
+#: ``read_plan`` default view is held to in ``reckon/mcp_budget.py``, and this
+#: view joins that table once its own row is registered there.
 WHY_VIEW_BUDGET = 24_000
 #: How many sections of a wait chain are walked before the answer says it
 #: stopped, so a cycle or a very deep graph cannot make one read unbounded.
