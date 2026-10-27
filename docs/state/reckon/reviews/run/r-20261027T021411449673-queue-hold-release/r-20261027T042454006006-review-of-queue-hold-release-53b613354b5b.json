@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    "tests/test_queue_hold_release.py:58-64 fails if override ranking or held phase changes; the latter constant comparison alone would not catch a coordinated rename, but literal held checks at lines 100 and 123 do.",
+    "tests/test_queue_hold_release.py:70-78 fails if the remaining queued request vanishes, but cannot detect held occupancy because the test prefilters the ordering input.",
+    "tests/test_queue_hold_release.py:95-105 fails if admission launches the held request, release fails to launch it next, or hold/release destroys the saved override; the pre-hold record is separate from the persisted post-release record.",
+    "tests/test_queue_hold_release.py:116-136 fails if a plan selector misses either phase, changes another plan, loses waits or override, or counts the 25-hour hold toward queue age.",
+    "tests/test_queue_hold_release.py:141-143 fails if a launched run is held or the refusal omits crew stop.",
+    "tests/test_queue_hold_release.py:153-161 fails if a session selector touches the other session or release leaves its request held.",
+    "tests/test_queue_hold_release.py:183-185 fails if a 25-hour hold has zero or duplicate obligations or loses its reason.",
+    "tests/test_queue_hold_release.py:192-197 fails if a held pointer is classified as running, loses its reason, or suggests observe rather than release; classification-base.log reproduced running before the repair.",
+    "tests/test_queue_hold_release.py:207-216 fails if CLI and MCP adapters diverge in their returned rows, though a shared wrong implementation would still compare equal; the other behavioral assertions guard correctness.",
+    "tests/test_crew_help_names_its_state.py:43-44 and tests/test_run_verbs_share_one_identity_grammar.py:88-89,119-120 fail if the new verbs disappear from help or reject a matching project before reaching their own phase checks."
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2142",
+    "reckon/crew_run_commands.py:2156",
+    "reckon/mcp.py:2591",
+    "reckon/mcp_crew_actions.py:309",
+    "reckon/crew/queue_admission.py:2382",
+    "reckon/crew/obligations.py:1615",
+    "reckon/crew/recovery_classification.py:956"
+  ],
+  "completed_at": "2026-10-27T04:32:46Z",
+  "dispatched_at": "2026-10-27T04:27:14Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "line": "1437",
+      "severity": "non-blocking",
+      "text": "non-blocking: The added plan-read refusal wrapper and audit rewrites at lines 3316-3340 are unrelated to queue hold/release and are not reached by its gate; disposition exempted because they remain inside the granted file and no changed result was observed."
+    },
+    {
+      "file": "tests/test_queue_hold_release.py",
+      "line": "70",
+      "severity": "non-blocking",
+      "text": "non-blocking: The ordering assertion supplies a manually filtered queued list, so removing held-pointer filtering from fair_share_admission_order still leaves this assertion green and a competing-session occupancy regression untested; disposition folded into a queue-hold-release occupancy regression node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Five commits from 1d8ccfc4f91a7dcd161e37ba1827d8bf6ee921c8 through 53b613354b5ba9ebe67496cfccd4a82dc337b0a2 add the queue verbs, tests, reader classification, and evidence across eleven paths; mcp.py also changes unrelated plan read and audit code.",
+    "done_when": "prompt.txt:108-109 requires queue ordering, plan and session selectors, refusal, obligations, MCP parity, and gates; head-focused.log records 55 passed, direct-importers-committed.log records 62 passed, and negative-control-retry.log records the held-launch mutation failing.",
+    "goal": "prompt.txt:30 requests hold and release for one request, plan, or session while retaining place; queue_edit.py:364-475 implements those selectors and restores phase and queue age.",
+    "manifest": "manifest.md reports complete at head 53b613354b5ba9ebe67496cfccd4a82dc337b0a2 with five commits, explicit paths, a 1-failure/61-pass base gate and a 62-pass/0-failure committed gate.",
+    "write_paths": "prompt.txt:69-80 grants ten paths, resume-1-advice.txt grants recovery_classification.py, and the base-to-head diff changes only those eleven paths."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_hold_release.py:95-105 would fail if a held request launched or release failed, and lines 191-197 would fail if held were classified as running; lines 70-78 prefilter the ordering input and cannot test held occupancy.",
+    "evidence": "negative-control-retry.log:1-45 shows the held-launch mutation fails the skip assertion, while direct-importers-base.log and direct-importers-committed.log record a completed 1-to-0 failure delta.",
+    "fit": "reckon/crew/queue_edit.py:364-475 extends the existing queue steering owner and uses its pointer locks and CrewError idiom; the new definitions carry behavior names.",
+    "goal_fidelity": "reckon/crew/queue_edit.py:364-475 selects a request, plan, or session, stores the prior phase, pauses queue age, and restores the request on release.",
+    "reuse": "The capability search found the existing queue steering owner at reckon/crew/queue_edit.py:180-360, the rank owner at reckon/crew/queue_order.py:109-199, and the MCP dispatcher at reckon/mcp_crew_actions.py:362; the additions extend or wrap these owners.",
+    "scope_discipline": "The diff stays within prompt.txt:69-80 plus the explicit widened grant in resume-1-advice.txt, but reckon/mcp.py:1437 and 3320 change unrelated plan read and audit behavior."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 requests hold and release for one request, plan, or session while retaining place; queue_edit.py:364-475 implements those selectors and restores phase and queue age.\nVERDICT done_when: prompt.txt:108-109 requires queue ordering, plan and session selectors, refusal, obligations, MCP parity, and gates; head-focused.log records 55 passed, direct-importers-committed.log records 62 passed, and negative-control-retry.log records the held-launch mutation failing.\nVERDICT write_paths: prompt.txt:69-80 grants ten paths, resume-1-advice.txt grants recovery_classification.py, and the base-to-head diff changes only those eleven paths.\nVERDICT manifest: manifest.md reports complete at head 53b613354b5ba9ebe67496cfccd4a82dc337b0a2 with five commits, explicit paths, a 1-failure/61-pass base gate and a 62-pass/0-failure committed gate.\nVERDICT diff: Five commits from 1d8ccfc4f91a7dcd161e37ba1827d8bf6ee921c8 through 53b613354b5ba9ebe67496cfccd4a82dc337b0a2 add the queue verbs, tests, reader classification, and evidence across eleven paths; mcp.py also changes unrelated plan read and audit code.\nCALL_SITES: reckon/crew_run_commands.py:2142, reckon/crew_run_commands.py:2156, reckon/mcp.py:2591, reckon/mcp_crew_actions.py:309, reckon/crew/queue_admission.py:2382, reckon/crew/obligations.py:1615, reckon/crew/recovery_classification.py:956\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_edit.py:364-475 selects a request, plan, or session, stores the prior phase, pauses queue age, and restores the request on release.\nSCORE evidence: 18\nJUSTIFICATION evidence: negative-control-retry.log:1-45 shows the held-launch mutation fails the skip assertion, while direct-importers-base.log and direct-importers-committed.log record a completed 1-to-0 failure delta.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: The diff stays within prompt.txt:69-80 plus the explicit widened grant in resume-1-advice.txt, but reckon/mcp.py:1437 and 3320 change unrelated plan read and audit behavior.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_queue_hold_release.py:95-105 would fail if a held request launched or release failed, and lines 191-197 would fail if held were classified as running; lines 70-78 prefilter the ordering input and cannot test held occupancy.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_edit.py:364-475 extends the existing queue steering owner and uses its pointer locks and CrewError idiom; the new definitions carry behavior names.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found the existing queue steering owner at reckon/crew/queue_edit.py:180-360, the rank owner at reckon/crew/queue_order.py:109-199, and the MCP dispatcher at reckon/mcp_crew_actions.py:362; the additions extend or wrap these owners.\nFINDING reckon/mcp.py:1437 non-blocking: The added plan-read refusal wrapper and audit rewrites at lines 3316-3340 are unrelated to queue hold/release and are not reached by its gate; disposition exempted because they remain inside the granted file and no changed result was observed.\nFINDING tests/test_queue_hold_release.py:70 non-blocking: The ordering assertion supplies a manually filtered queued list, so removing held-pointer filtering from fair_share_admission_order still leaves this assertion green and a competing-session occupancy regression untested; disposition folded into a queue-hold-release occupancy regression node.\n",
+  "review_run_id": "r-20261027T042454006006-review-of-queue-hold-release-53b613354b5b",
+  "reviewed_base_sha": "1d8ccfc4f91a7dcd161e37ba1827d8bf6ee921c8",
+  "reviewed_head_sha": "53b613354b5ba9ebe67496cfccd4a82dc337b0a2",
+  "reviewed_run_id": "r-20261027T021411449673-queue-hold-release",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T04:34:54.272070+00:00",
+  "total": 108
+}
