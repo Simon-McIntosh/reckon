@@ -374,6 +374,23 @@ def limit_reset_text(event: Mapping[str, Any], *, paced: bool | None = None) -> 
     return " · ".join(part for part in parts if part)
 
 
+def lift_clause(event: Mapping[str, Any]) -> str:
+    """One lift row's own clause: its form, scope and id, as the producer named them.
+
+    A lift row carries its naming clause in ``detail``, the free-text field the
+    producer composes, and the renderer prints it so the row reads as a lift
+    rather than as the run-state word its transition maps to. A row a grant
+    supersedes carries the id it replaced in ``lift_replaces``, appended here so
+    one row names both the grant and the lift it replaced.
+    """
+    clause = str(event.get("detail") or "").strip()
+    replaced = str(event.get("lift_replaces") or "").strip()
+    if replaced:
+        rule = f"replaces {replaced}"
+        return f"{clause}, {rule}" if clause else rule
+    return clause
+
+
 # The internal state the row policy writes onto a review run's launch row, so
 # the pane draws the reviewed run as being in review. It is a pane word of its
 # own rather than a producer state: the reviewed run's own state never changes
@@ -1513,6 +1530,14 @@ class RowPolicy:
         self._lift_groups: set[str] = {
             str(group) for group in (lift_groups or ()) if group
         }
+        # (group, session) -> the lift row this pane last drew as in force: a
+        # grant, or the baseline standing for one. A grant supersedes the lift
+        # standing on its group and scope, and a producer writes the grant
+        # before the end of the lift it replaced, so an end whose lift id is not
+        # the one this pane drew as in force is the lift that grant replaced.
+        # The two are drawn as one row naming both, and the group stays in
+        # force because the replacement still covers it.
+        self._lift_in_force: dict[tuple[str, str], Mapping[str, Any]] = {}
         # One grant is one event, but the followers of a pane each write the same
         # pane, and every project's producer sweeps the whole lift document into
         # its own stream, so the same grant reaches this pane once per project
@@ -2308,6 +2333,8 @@ class RowPolicy:
         """
         group = str(event.get("node") or "")
         lift_id = str(event.get("lift_id") or "")
+        session = str(event.get("session") or "")
+        key = (group, session)
         claim = self._lift_claim if lift_id else None
 
         if to_state == LIMIT_RESET:
@@ -2321,6 +2348,7 @@ class RowPolicy:
                 return out
             if group:
                 self._lift_groups.add(group)
+                self._lift_in_force[key] = event
             out.append(event)
             return out
 
@@ -2332,9 +2360,29 @@ class RowPolicy:
             if claim is not None and not claim(lift_id, to_state):
                 if group:
                     self._lift_groups.discard(group)
+                self._lift_in_force.pop(key, None)
+                return out
+            standing = self._lift_in_force.get(key)
+            replaced = (
+                str(standing.get("lift_id") or "") if standing is not None else ""
+            )
+            if standing is not None and replaced and replaced != lift_id:
+                # The producer writes the grant before the end of the lift it
+                # replaced, so this end belongs to the lift the pane drew last
+                # as in force, and the two are one row naming both. The group
+                # stays in force: the replacement covers it, and a reload
+                # baseline for it must not draw again.
+                merged = dict(standing)
+                merged["lift_replaces"] = lift_id
+                merged["observed_at"] = event.get("observed_at") or merged.get(
+                    "observed_at"
+                )
+                merged["session"] = event.get("session") or merged.get("session")
+                out.append(merged)
                 return out
             if group:
                 self._lift_groups.discard(group)
+            self._lift_in_force.pop(key, None)
             out.append(event)
             return out
 
@@ -2347,6 +2395,7 @@ class RowPolicy:
             return out
         if group:
             self._lift_groups.add(group)
+            self._lift_in_force[key] = event
         out.append(event)
         return out
 
@@ -2903,6 +2952,12 @@ class Ticker:
         row_project = str(event.get("project") or "").strip() or self._project
         model_width = self._model_width(row_project)
         raw_to_state = str(event.get("to_state") or "unknown")
+        # A grant that replaced the lift standing on its group and scope is one
+        # row naming both, drawn as a lift clause rather than as the transition
+        # its pane word would make: the lead read the end of the replaced lift
+        # as the fresh grant having landed.
+        if raw_to_state in LIFT_STATES and event.get("lift_replaces"):
+            return self._lift_line(event)
         typed_state = str(event.get("recovery_classification") or "")
         # The compatibility lifecycle state may group several stops as blocked.
         # The row spells the cause-specific type when the producer supplied one.
@@ -3013,6 +3068,18 @@ class Ticker:
         cells.extend(self._spend_cells(event, to_state))
         cells.append((" " * GAP, None))
         cells.extend(self._stats(event))
+        # A lift row carries its own naming clause after the figures, so it
+        # reads as the lift it is — form, scope and id — rather than as the
+        # run-state word its transition maps to. The clause takes the room the
+        # pane has left and is cut like any other cell, so it never wraps.
+        if raw_to_state in LIFT_STATES:
+            clause = lift_clause(event)
+            spare = self._grid_width() - sum(len(text) for text, _ in cells)
+            if clause and spare > GAP + 1:
+                text = elide(clause, spare - GAP)
+                if text:
+                    cells.append((" " * GAP, None))
+                    cells.append((text, "dim"))
         # The trailing cells, in reading order. Each is added only where the
         # pane has the room for it, because a cell appended past the pane's edge
         # would wrap the row, which costs a quarter of the visible history.
@@ -3075,6 +3142,49 @@ class Ticker:
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
             (" " * GAP, None),
             (elide(limit_reset_text(event, paced=self._paced_groups[key]), room), None),
+            (" " * GAP, None),
+            *spend,
+            (" " * GAP, None),
+            *stats,
+        ]
+        shadow = is_shadow(event)
+        return "".join(
+            self._paint(text, "dim" if shadow and style is not None else style)
+            for text, style in cells
+        )
+
+    def _lift_line(self, event: Mapping[str, Any]) -> str:
+        """One grant that replaced another, as a clause naming both.
+
+        The row is a lift rather than a run, so it carries no transition: its
+        stage, the group in its job cell, and the clause its producer composed
+        — form, scope and id — followed by the id of the lift it replaced. The
+        clause is cut to the pane like every other cell, so it never wraps.
+        The elapsed and counter cells keep their places after it, so the row
+        lines up with the fleet rows beneath it.
+        """
+        spend = self._spend_cells(event, LIFT_STAGE)
+        stats = self._stats(event)
+        group = str(event.get("node") or "")
+        job = _job_name(group, event.get("role"))
+        tail = (
+            GAP
+            + sum(len(text) for text, _ in spend)
+            + GAP
+            + sum(len(text) for text, _ in stats)
+        )
+        room = self._grid_width() - CLOCK - GAP - ROLE - GAP - NODE - GAP - tail
+        cells: list[tuple[str, Any]] = [
+            (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
+            (" " * GAP, None),
+            (f"{LIFT_STAGE:<{ROLE}}", "dim"),
+            (" " * GAP, None),
+            (
+                f"{self._job_cell(job, LIFT_STAGE, group, ''):<{NODE}}",
+                self.hue(group),
+            ),
+            (" " * GAP, None),
+            (elide(lift_clause(event), room), None),
             (" " * GAP, None),
             *spend,
             (" " * GAP, None),
