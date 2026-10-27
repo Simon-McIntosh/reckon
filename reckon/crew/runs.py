@@ -2135,7 +2135,7 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
             if started is not None and day_ago <= started <= now:
                 view["launches_24h"] += 1
             if (
-                phase in {"awaiting-upstream", "queued", "launch-failed"}
+                phase in {"queued", "launch-failed"}
                 and phase_start is not None
                 and phase_start < hour_ago
             ):
@@ -2153,12 +2153,15 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
     for record in landed["runs"]:
         plan = str(record.get("plan") or "")
         completed = parse_utc(record.get("completed_at"))
-        dispatched = parse_utc(record.get("dispatched_at"))
+        worker_exit = record.get("worker_exit")
+        if not isinstance(worker_exit, Mapping):
+            worker_exit = {}
+        launched = parse_utc(worker_exit.get("launched_at"))
         for view in targets(plan):
             view["phases"]["landed"] += 1
             if completed is not None and day_ago <= completed <= now:
                 view["landings_24h"] += 1
-            if dispatched is not None and day_ago <= dispatched <= now:
+            if launched is not None and day_ago <= launched <= now:
                 view["launches_24h"] += 1
 
     for view in (project_view, *plans.values()):
