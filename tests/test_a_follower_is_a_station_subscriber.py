@@ -86,16 +86,23 @@ def _deliver(subscriber: StationSubscriber, clock: _Clock) -> list[dict]:
 
 
 def test_a_row_is_delivered_exactly_once_across_a_subscriber_restart(tmp_path) -> None:
-    """The place is the store's, so a fresh process continues rather than replays."""
+    """The place is the store's, so a fresh process continues rather than replays.
+
+    The row is a lift grant, which the pane draws every time it is fed: a run
+    transition repeated after a restart would be suppressed by the pane's own
+    memory of the state it shows, so only a row the memory does not suppress
+    can show that the place itself survived.
+    """
     store = _store(tmp_path)
     writer = _store(tmp_path)
     writer.heartbeat()
-    _write(writer, BASE)
+    _write(writer, BASE, _event(from_state="", to_state="lift-granted"))
     clock = _Clock()
 
     first = _subscriber(store, clock)
     delivered = _deliver(first, clock)
-    assert [row["to_state"] for row in delivered] == ["completed_unpromoted"]
+    assert [row["to_state"] for row in delivered] == ["lift-granted"]
+    assert first.cursor > 0
 
     restarted = _subscriber(store, clock)
     assert _deliver(restarted, clock) == [], "a restart must not redeliver the row"
@@ -210,7 +217,10 @@ def test_a_subscriber_wakes_on_a_day_file_event_and_on_nothing_else(tmp_path) ->
 
     The heartbeat is never written, so nothing but an event can move the
     generation the subscriber waits on, and the pane's own cursor writes are
-    commits to the main database it must not read as news.
+    commits to the main database it must not read as news. The row is a lift
+    grant, which the pane draws on arrival: a run transition is held for the
+    settle window, and this case is about what wakes the loop rather than about
+    when a held row is released.
     """
     store = _store(tmp_path)
     writer = _store(tmp_path)
@@ -229,7 +239,7 @@ def test_a_subscriber_wakes_on_a_day_file_event_and_on_nothing_else(tmp_path) ->
         time.sleep(0.2)
         assert received == [], "an idle store wakes the pane with nothing"
 
-        _write(writer, BASE)
+        _write(writer, BASE, _event(from_state="", to_state="lift-granted"))
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline and not received:
             time.sleep(0.01)
