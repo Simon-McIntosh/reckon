@@ -1,0 +1,93 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "difference of the reviewed run's own arms: after_suite records exit_status 0, completed true, failure_count 0, failure_ids [] at 51db21544 (logs/after-arm.log ends '4 passed in 1.90s' / 'EXIT=0'), and baseline_suite records exit_status 4, completed false, failure_count 0, failure_ids [] at 9e363fe50 because the new test file does not exist at base (logs/baseline-arm.log: 'ERROR: file or directory not found' / 'no tests ran' / 'EXIT=4'); the head arm is clean, so no failure is added.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:739",
+    "reckon/crew/dispatch.py:1023",
+    "reckon/crew/dispatch_sessions.py:1708",
+    "reckon/crew_dispatch_commands.py:1798",
+    "reckon/crew/recovery_review_dispatch.py:2888",
+    "reckon/crew_run_commands.py:84"
+  ],
+  "completed_at": "2026-10-27T20:16:57.721Z",
+  "dispatched_at": "2026-10-27T20:08:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2045",
+      "severity": "non-blocking",
+      "text": "non-blocking: review_burst_refusal is never consulted by any production path \u2014 the composed-review gate in reckon/crew/recovery_review_dispatch.py and the plan-review subject composer do not call it \u2014 so the plan's third clause is dead code and a unit can still be reviewed a third time, which is the loop the section exists to stop; the reviewed manifest records the gap under outside_scope, so it folds into a node dispatched with the composer in scope."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "2080",
+      "severity": "non-blocking",
+      "text": "non-blocking: answer_finding re-implements the covering-review resolution already owned by reckon/crew_dispatch_commands.py:2564 (store_delivered_reviews, read_plan_review, the design-review fallback and the two-review ambiguity refusal), so two answer paths must now be changed together or they drift; folding means moving --carried into crew_dispatch_commands._review_options and _run_review and deleting the copy."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1783",
+      "severity": "non-blocking",
+      "text": "non-blocking: _line_unit_map recomputes exactly the heading spans and line-offset walk that _unit_lines at reckon/crew/plan_review.py:1356 already performs, giving the repository a second owner of which unit a plan line belongs to; one should be derived from the other."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1993",
+      "severity": "non-blocking",
+      "text": "non-blocking: with_carried_findings returns the done-when unchanged whenever the heading is already present, so a second, different finding carried to the same section between two dispatches of one node object is silently dropped; the idempotence guard keys on the heading rather than on the finding ids already delivered."
+    },
+    {
+      "file": "tests/test_a_carried_finding_reaches_the_node.py",
+      "line": "297",
+      "severity": "non-blocking",
+      "text": "non-blocking: the cap is asserted by calling review_burst_refusal directly, so the test proves a helper returns a string rather than that a composed review is refused; no assertion fails if the refusal is never consulted at the point a review is composed."
+    },
+    {
+      "file": "tests/test_a_carried_finding_reaches_the_node.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: section 20 asks that the test files importing reckon.crew.plan_review add no failures against the base revision, but logs/importer-subset-head.log runs six modules at the head only, while a search of tests/ finds dozens of modules referencing plan_review; the against-the-base half is unmeasured for the rest."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read all three commits against 9e363fe50; 51db21544 adds the carried action, the anchor-to-unit resolution, the dispatch delivery and the cap (plan_review.py +429, dispatch_plan.py +18, crew_run_commands.py +91, the new test +345), and 45d5fb23c and c99e54475 add the evidence fragment 54 and 7 lines respectively, with no out-of-scope file.",
+    "done_when": "section 20's measure names tests/test_a_carried_finding_reaches_the_node.py, a base-revision arm over the tests importing reckon.crew.plan_review, and a negative control that drops the carried text from the dispatch; the after arm records 4 passed EXIT=0 and logs/negative-control.log records 1 failed, 3 passed EXIT=1, but logs/importer-subset-head.log covers six modules at the head only, and no arm exercises the cap through a production path.",
+    "goal": "the node goal is that a plan-review finding answered --carried is recorded against the unit its anchor names, reaches that section's next dispatch as a Carried review findings: clause, and that the same module refuses a third composed review of one edit burst and starts the count again on a fresh edit; reckon/crew/plan_review.py:1932 and reckon/crew/dispatch_plan.py:739 deliver the carried text and reckon/crew_run_commands.py:84 exposes --carried, but the burst cap at reckon/crew/plan_review.py:2045 has no production caller, so a third composed review is never actually refused.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T123902746570-a-carried-finding-reaches-the-node/manifest.md; status complete, commits 51db21544, 45d5fb23c and c99e54475, it records the four-passed gate and the negative control, and its outside_scope field states plainly that the burst cap is not yet consulted and that --carried should move into crew_dispatch_commands._review_options/_run_review.",
+    "write_paths": "the reviewed run's fence names reckon/crew/plan_review.py, reckon/crew/dispatch_plan.py, reckon/crew_run_commands.py, tests/test_a_carried_finding_reaches_the_node.py, the evidence fragment and a figures directory (prompt.txt:77-83); the diff of 9e363fe50..c99e54475 changes exactly the five non-figure paths and nothing else."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log reddens test_a_carried_finding_reaches_here_and_not_another_section when the append at reckon/crew/dispatch_plan.py:739 is guarded off, but tests/test_a_carried_finding_reaches_the_node.py:297 can only fail if review_burst_refusal itself changes, never if a composed review goes un-refused.",
+    "evidence": "logs/after-arm.log ends 4 passed EXIT=0 and logs/negative-control.log 1 failed, 3 passed EXIT=1, but logs/importer-subset-head.log measures six test modules at the head only against a done_when that names every test importing reckon.crew.plan_review.",
+    "fit": "reckon/crew_run_commands.py:84 replaces crew_review.callback at import time and restates the answer validation already in reckon/crew_dispatch_commands.py:2536, so the review verb's surface depends on import order rather than on its own declaration.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2045 defines review_burst_refusal, and a search of reckon/ finds no production caller, so the goal's third clause never fires and the loop the section exists to stop stays open.",
+    "reuse": "reckon/crew/plan_review.py:2080 answer_finding duplicates the covering-review resolver owned by reckon/crew_dispatch_commands.py:2564, and reckon/crew/plan_review.py:1783 _line_unit_map re-implements the span attribution already performed by _unit_lines at reckon/crew/plan_review.py:1356.",
+    "scope_discipline": "every path in the diff of 9e363fe50..c99e54475 is one of the five fenced write paths quoted at prompt.txt:78-82, and no concurrent node's path is touched."
+  },
+  "node": "review-of-a-carried-finding-reaches-the-node-c99e54475b41",
+  "node:reviewed": "a-carried-finding-reaches-the-node",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a plan-review finding answered --carried is recorded against the unit its anchor names, reaches that section's next dispatch as a Carried review findings: clause, and that the same module refuses a third composed review of one edit burst and starts the count again on a fresh edit; reckon/crew/plan_review.py:1932 and reckon/crew/dispatch_plan.py:739 deliver the carried text and reckon/crew_run_commands.py:84 exposes --carried, but the burst cap at reckon/crew/plan_review.py:2045 has no production caller, so a third composed review is never actually refused.\nVERDICT done_when: section 20's measure names tests/test_a_carried_finding_reaches_the_node.py, a base-revision arm over the tests importing reckon.crew.plan_review, and a negative control that drops the carried text from the dispatch; the after arm records 4 passed EXIT=0 and logs/negative-control.log records 1 failed, 3 passed EXIT=1, but logs/importer-subset-head.log covers six modules at the head only, and no arm exercises the cap through a production path.\nVERDICT write_paths: the reviewed run's fence names reckon/crew/plan_review.py, reckon/crew/dispatch_plan.py, reckon/crew_run_commands.py, tests/test_a_carried_finding_reaches_the_node.py, the evidence fragment and a figures directory (prompt.txt:77-83); the diff of 9e363fe50..c99e54475 changes exactly the five non-figure paths and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T123902746570-a-carried-finding-reaches-the-node/manifest.md; status complete, commits 51db21544, 45d5fb23c and c99e54475, it records the four-passed gate and the negative control, and its outside_scope field states plainly that the burst cap is not yet consulted and that --carried should move into crew_dispatch_commands._review_options/_run_review.\nVERDICT diff: read all three commits against 9e363fe50; 51db21544 adds the carried action, the anchor-to-unit resolution, the dispatch delivery and the cap (plan_review.py +429, dispatch_plan.py +18, crew_run_commands.py +91, the new test +345), and 45d5fb23c and c99e54475 add the evidence fragment 54 and 7 lines respectively, with no out-of-scope file.\nCALL_SITES: reckon/crew/dispatch_plan.py:739, reckon/crew/dispatch.py:1023, reckon/crew/dispatch_sessions.py:1708, reckon/crew_dispatch_commands.py:1798, reckon/crew/recovery_review_dispatch.py:2888, reckon/crew_run_commands.py:84\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2045 defines review_burst_refusal, and a search of reckon/ finds no production caller, so the goal's third clause never fires and the loop the section exists to stop stays open.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/after-arm.log ends 4 passed EXIT=0 and logs/negative-control.log 1 failed, 3 passed EXIT=1, but logs/importer-subset-head.log measures six test modules at the head only against a done_when that names every test importing reckon.crew.plan_review.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff of 9e363fe50..c99e54475 is one of the five fenced write paths quoted at prompt.txt:78-82, and no concurrent node's path is touched.\nSCORE durability: 14\nJUSTIFICATION durability: logs/negative-control.log reddens test_a_carried_finding_reaches_here_and_not_another_section when the append at reckon/crew/dispatch_plan.py:739 is guarded off, but tests/test_a_carried_finding_reaches_the_node.py:297 can only fail if review_burst_refusal itself changes, never if a composed review goes un-refused.\nSCORE fit: 12\nJUSTIFICATION fit: reckon/crew_run_commands.py:84 replaces crew_review.callback at import time and restates the answer validation already in reckon/crew_dispatch_commands.py:2536, so the review verb's surface depends on import order rather than on its own declaration.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/plan_review.py:2080 answer_finding duplicates the covering-review resolver owned by reckon/crew_dispatch_commands.py:2564, and reckon/crew/plan_review.py:1783 _line_unit_map re-implements the span attribution already performed by _unit_lines at reckon/crew/plan_review.py:1356.\nFINDING reckon/crew/plan_review.py:2045 non-blocking: review_burst_refusal is never consulted by any production path \u2014 the composed-review gate in reckon/crew/recovery_review_dispatch.py and the plan-review subject composer do not call it \u2014 so the plan's third clause is dead code and a unit can still be reviewed a third time, which is the loop the section exists to stop; the reviewed manifest records the gap under outside_scope, so it folds into a node dispatched with the composer in scope.\nFINDING reckon/crew/plan_review.py:2080 non-blocking: answer_finding re-implements the covering-review resolution already owned by reckon/crew_dispatch_commands.py:2564 (store_delivered_reviews, read_plan_review, the design-review fallback and the two-review ambiguity refusal), so two answer paths must now be changed together or they drift; folding means moving --carried into crew_dispatch_commands._review_options and _run_review and deleting the copy.\nFINDING reckon/crew/plan_review.py:1783 non-blocking: _line_unit_map recomputes exactly the heading spans and line-offset walk that _unit_lines at reckon/crew/plan_review.py:1356 already performs, giving the repository a second owner of which unit a plan line belongs to; one should be derived from the other.\nFINDING reckon/crew/plan_review.py:1993 non-blocking: with_carried_findings returns the done-when unchanged whenever the heading is already present, so a second, different finding carried to the same section between two dispatches of one node object is silently dropped; the idempotence guard keys on the heading rather than on the finding ids already delivered.\nFINDING tests/test_a_carried_finding_reaches_the_node.py:297 non-blocking: the cap is asserted by calling review_burst_refusal directly, so the test proves a helper returns a string rather than that a composed review is refused; no assertion fails if the refusal is never consulted at the point a review is composed.\nFINDING tests/test_a_carried_finding_reaches_the_node.py:1 non-blocking: section 20 asks that the test files importing reckon.crew.plan_review add no failures against the base revision, but logs/importer-subset-head.log runs six modules at the head only, while a search of tests/ finds dozens of modules referencing plan_review; the against-the-base half is unmeasured for the rest.",
+  "review_run_id": "r-20261027T200436344698-review-of-a-carried-finding-reaches-the-node-c99e54475b41",
+  "reviewed_base_sha": "9e363fe50e058ed2bd9cc3b2548eb6f8353aa3c4",
+  "reviewed_head_sha": "c99e54475b41e4c0b39c8fc34e94a3ab426117e5",
+  "reviewed_run_id": "r-20261027T123902746570-a-carried-finding-reaches-the-node",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 12,
+    "goal_fidelity": 13,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T20:14:59+00:00",
+  "total": 76
+}
