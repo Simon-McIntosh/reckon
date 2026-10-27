@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="62">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -314,12 +314,20 @@
     station records a has-live-work reading per (project, session) on every tick, plus one project-wide
     reading for an unscoped subscriber, whose population (<code>session=None</code>) is every non-terminal run
     in the project. A pointer with no recorded owner keeps every session's reading and the project-wide one
-    live, as it does today. The subscriber settles when the reading for every one of its populations has said
-    no live work for <code>FOLLOWER_SETTLE_GRACE_SECONDS</code>, the grace <code>_check_settle</code> keeps today
-    because an admission handover leaves a session with no unfinished run while a queued request is adopted. Done when tests show that with
+    live, as it does today. The subscriber keeps <code>_check_settle</code>'s decision rule unchanged and
+    changes only where each population's reading comes from: the station's reading replaces the directory
+    listing in <code>_population_has_live_work</code>. The rule kept includes the populations it judges, the
+    <code>FOLLOWER_SETTLE_GRACE_SECONDS</code> grace that covers an admission handover, and the refusal to
+    settle a pane that has never seen live work (<code>saw_live</code>), because a dispatch asks for its
+    follower before it publishes the run's pointer. Done when tests show that with
     three subscribers attached for one session, the sweep runs once per change in the station and in no
-    subscriber; a subscriber settles once the station's readings for all of its populations have read no live
-    work for the grace, and not while any one of them still reads live work or before the grace has passed; a run resumed by advice is not reviewed until its settle
+    subscriber; the existing settle tests
+    (<code>tests/test_a_pane_settles_when_no_work_is_live.py</code>,
+    <code>tests/test_a_pane_does_not_settle_during_admission.py</code>, <code>tests/test_follow_settled_rows.py</code>,
+    <code>tests/test_follower_settles_a_promoted_row.py</code>) pass against the subscriber reading the station; a
+    subscriber settles once the station's readings for all of its populations have read no live work for the
+    grace, and not while any one of them still reads live work or before the grace has passed; a subscriber
+    armed while its populations already read no live work does not settle until it has seen live work; a run resumed by advice is not reviewed until its settle
     window has passed; a resumed run whose worker writes nothing after the resume is reviewed once the
     window has passed, with no further change to its files; and a run whose provider hold ends while no file
     in the fleet changes is resumed on the station's beat; and a lapsed run launched on another host is not
@@ -331,7 +339,8 @@
     session still reads live work, must fail the drain-settle test; a station that leaves an ownerless live
     pointer out of a session's reading, or gives an unscoped subscriber no project-wide reading, must fail
     the drain-settle test's ownerless and unscoped cases; a subscriber that settles on the first
-    empty reading, without the grace, must fail the drain-settle test's handover case; a subscriber that still runs the sweep
+    empty reading, without the grace, must fail the drain-settle test's handover case; a subscriber without
+    the saw-live rule must fail the armed-while-empty case; a subscriber that still runs the sweep
     must fail the sweep-count test; a settle reader
     that takes <code>auto_resume</code> alone must fail the advice-settle test; a station that evaluates settle
     only on change must fail the quiet-run test; a station that runs only the sweep's review pass, or runs
