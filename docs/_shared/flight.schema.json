@@ -2462,15 +2462,81 @@
             "title": "PlacementRequirement",
             "type": "object"
         },
+        "ProjectWeight": {
+            "additionalProperties": false,
+            "description": "One project's share of local queue admissions.",
+            "properties": {
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "weight": {
+                    "description": "Positive share of local queue admissions for one project.",
+                    "minimum": 1e-09,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                }
+            },
+            "required": [
+                "name"
+            ],
+            "title": "ProjectWeight",
+            "type": "object"
+        },
+        "ProjectWeight__identifier_optional": {
+            "additionalProperties": false,
+            "description": "One project's share of local queue admissions.",
+            "properties": {
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "weight": {
+                    "description": "Positive share of local queue admissions for one project.",
+                    "minimum": 1e-09,
+                    "type": [
+                        "number",
+                        "null"
+                    ]
+                }
+            },
+            "required": [],
+            "title": "ProjectWeight",
+            "type": "object"
+        },
         "QueueConfig": {
             "additionalProperties": false,
-            "description": "The project-wide queued request bound.",
+            "description": "Project-wide queue depth and fair-use weights.",
             "properties": {
                 "max_requests": {
                     "description": "Maximum queued non-review requests in one project. The runtime default is 500 when no layer sets this value.",
                     "minimum": 1,
                     "type": [
                         "integer",
+                        "null"
+                    ]
+                },
+                "project_weights": {
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/ProjectWeight__identifier_optional"
+                            },
+                            {
+                                "description": "Positive share of local queue admissions for one project.",
+                                "minimum": 1e-09,
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "description": "Positive fair-use weight for each project sharing the local queue. Projects without a declared weight have equal weight of one.",
+                    "type": [
+                        "object",
                         "null"
                     ]
                 }

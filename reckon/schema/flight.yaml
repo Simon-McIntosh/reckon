@@ -1122,6 +1122,19 @@ slots:
     range: integer
     minimum_value: 1
 
+  project_weights:
+    description: >-
+      Positive fair-use weight for each project sharing the local queue.
+      Projects without a declared weight have equal weight of one.
+    range: ProjectWeight
+    multivalued: true
+    inlined: true
+
+  weight:
+    description: Positive share of local queue admissions for one project.
+    range: float
+    minimum_value: 0.000000001
+
   directory_grace:
     description: >-
       How long a finished run's directory is kept after the moment nothing can
@@ -1192,9 +1205,16 @@ classes:
       - directory_grace
 
   QueueConfig:
-    description: The project-wide queued request bound.
+    description: Project-wide queue depth and fair-use weights.
     slots:
       - max_requests
+      - project_weights
+
+  ProjectWeight:
+    description: One project's share of local queue admissions.
+    slots:
+      - name
+      - weight
 
   ReviewSuite:
     description: >-

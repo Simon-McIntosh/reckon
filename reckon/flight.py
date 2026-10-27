@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import os
 import re
 import shutil
@@ -148,13 +149,19 @@ GC_KEY = "gc"
 GC_RUN_FILE_MAX_MB_KEY = "run_file_max_mb"
 DEFAULT_RUN_FILE_MAX_MB = 256
 
+# Fair-use weights: the share of the lane each project's queued work is meant
+# to take. Declared per project under the ``queue`` namespace, defaulting to
+# equal weight, which is the behaviour a configuration that omits them keeps.
+QUEUE_KEY = "queue"
+QUEUE_PROJECT_WEIGHTS_KEY = "project_weights"
+DEFAULT_PROJECT_WEIGHT = 1.0
+
 # How many requests one project may hold queued. Depth is a property of the
 # project's plan rather than of the session that loaded it: a coordinator
 # queues a plan's whole width in one pass, so the bound exists to stop a
 # runaway loop rather than to ration a session's share. The ``queue``
 # namespace is reckon-owned in the same sense as ``gc`` above: a layer may set
 # it, and a resolved config that never did falls back here.
-QUEUE_KEY = "queue"
 QUEUE_MAX_REQUESTS_KEY = "max_requests"
 DEFAULT_QUEUE_MAX_REQUESTS = 500
 
@@ -1028,6 +1035,90 @@ def run_file_max_mb(config: Mapping[str, Any] | None) -> int:
     return int(value)
 
 
+def declared_project_weights(
+    config: Mapping[str, Any] | None,
+) -> dict[str, float]:
+    """The project weights one resolved configuration declares.
+
+    Only the projects the configuration actually names are returned, with no
+    default filled in, so a caller merging several configurations' declarations
+    can tell a declared weight from an absent one. A weight that is not a
+    positive finite number is treated as absent rather than read as zero: a
+    zero-weight project would never launch, and a weight is a share of the lane
+    rather than a switch.
+    """
+    queue = (config or {}).get(QUEUE_KEY)
+    declared = (
+        queue.get(QUEUE_PROJECT_WEIGHTS_KEY) if isinstance(queue, Mapping) else None
+    )
+    if not isinstance(declared, Mapping):
+        return {}
+    weights: dict[str, float] = {}
+    for project, value in declared.items():
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            continue
+        weight = float(value)
+        if not math.isfinite(weight) or weight <= 0:
+            continue
+        weights[str(project)] = weight
+    return weights
+
+
+def project_weights(
+    config: Mapping[str, Any] | None, projects: Iterable[str] = ()
+) -> dict[str, float]:
+    """Each named project's fair-use weight, defaulting to equal weight.
+
+    The weights are declared per project in flight configuration under
+    ``queue.project_weights``. A project the configuration does not name -- and
+    every project when the key is absent -- carries the equal default of
+    ``1.0``, so a configuration that never mentions weights keeps the plain
+    admission order it had. Every project named in ``projects`` is returned, so
+    a caller reads one figure for every project it is about to rank.
+    """
+    weights = declared_project_weights(config)
+    return {
+        str(project): weights.get(str(project), DEFAULT_PROJECT_WEIGHT)
+        for project in projects
+    }
+
+
+def fair_use_weights_configured(config: Mapping[str, Any] | None) -> bool:
+    """Whether the configuration declares any project weight at all.
+
+    Admission reads the lane's figure lane-wide once weights are configured,
+    because the split between sessions is then reckon's own setting rather than
+    the router's per-session share.
+    """
+    return bool(declared_project_weights(config))
+
+
+def _validate_project_weights(data: Mapping[str, Any], source: str | Path) -> None:
+    """Refuse weights that cannot grant a positive share of the local queue."""
+    queue = data.get(QUEUE_KEY)
+    if not isinstance(queue, Mapping) or QUEUE_PROJECT_WEIGHTS_KEY not in queue:
+        return
+    weights = queue[QUEUE_PROJECT_WEIGHTS_KEY]
+    if not isinstance(weights, Mapping):
+        return  # The generated schema reports the shape error.
+    for project, value in weights.items():
+        try:
+            positive = (
+                not isinstance(value, bool)
+                and isinstance(value, (int, float))
+                and math.isfinite(float(value))
+                and value > 0
+            )
+        except OverflowError:
+            positive = False
+        if not positive:
+            raise FlightConfigError(
+                source,
+                f"queue.project_weights.{project}",
+                "must be a positive finite number",
+            )
+
+
 def queue_max_requests(config: Mapping[str, Any] | None) -> int:
     """How many requests one project may hold queued at once.
 
@@ -1300,6 +1391,7 @@ def validate_layer(
             source, key_path, first.get("msg", "is invalid")
         ) from exc
 
+    _validate_project_weights(data, source)
     _validate_harness_home_files(data, source)
     _validate_plan_review_gate(data, source)
     review = data.get(REVIEW_KEY)

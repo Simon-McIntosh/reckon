@@ -267,9 +267,18 @@ class GcConfig(ConfiguredBaseModel):
 
 class QueueConfig(ConfiguredBaseModel):
     """
-    The project-wide queued request bound.
+    Project-wide queue depth and fair-use weights.
     """
     max_requests: int | None = Field(default=None, description="""Maximum queued non-review requests in one project. The runtime default is 500 when no layer sets this value.""", ge=1)
+    project_weights: dict[str, Union[float, ProjectWeight]] | None = Field(default=None, description="""Positive fair-use weight for each project sharing the local queue. Projects without a declared weight have equal weight of one.""")
+
+
+class ProjectWeight(ConfiguredBaseModel):
+    """
+    One project's share of local queue admissions.
+    """
+    name: str = Field(default=..., description="""Map key for an inlined entry.""")
+    weight: float | None = Field(default=None, description="""Positive share of local queue admissions for one project.""", ge=1e-09)
 
 
 class ReviewSuite(ConfiguredBaseModel):
@@ -779,6 +788,7 @@ RoutingConfig.model_rebuild()
 ReviewConfig.model_rebuild()
 GcConfig.model_rebuild()
 QueueConfig.model_rebuild()
+ProjectWeight.model_rebuild()
 ReviewSuite.model_rebuild()
 ReviewPopulation.model_rebuild()
 ReviewTiers.model_rebuild()
