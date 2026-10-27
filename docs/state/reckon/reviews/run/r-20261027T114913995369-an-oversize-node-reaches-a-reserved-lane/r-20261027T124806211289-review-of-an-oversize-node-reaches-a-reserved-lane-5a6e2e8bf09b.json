@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T13:29:18.862Z",
+  "dispatched_at": "2026-10-27T13:19:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": 1865,
+      "severity": "blocking",
+      "text": "candidate.reasons.clear() on the waiver path erases every reason on the candidate, not only the reserved-lane tier reason, so a reserved lane already excluded for another rule is offered anyway"
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": 1826,
+      "severity": "non-blocking",
+      "text": "the waiver requires a non-empty unreserved set, so a configuration with no unreserved candidate never reaches it"
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": 1329,
+      "severity": "non-blocking",
+      "text": "_excluded_only_on_context re-implements the reason-code split owned by reckon/crew/picker/__init__.py:105"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal asks that a node no unreserved lane can fit be offered a reserved lane with only its tier and attempts terms waived; reckon/crew/picker/snapshot.py:1811-1886 does offer that lane, but the waiver also discards unrelated exclusion reasons at :1865, so it waives more than the two terms the goal names.\nVERDICT done_when: the done_when names tests/test_an_oversize_node_reaches_a_reserved_lane.py and its cases, and all of them exist (six tests, gate log 6 passed EXIT=0), but the gate asserts nothing about a reserved candidate that already carries a budget-ceiling or lane-gate reason, which is where the set-wide waiver misbehaves.\nVERDICT write_paths: the manifest declares five write paths; the diff touches four of them (reckon/crew/picker/snapshot.py, reckon/crew/picker/types.py, tests/test_an_oversize_node_reaches_a_reserved_lane.py, docs/evidence/fragments/lane-and-model-routing/an-oversize-node-reaches-a-reserved-lane.html) and nothing outside them.\nVERDICT manifest: read; it records status complete, the gate at 6 passed EXIT=0, importer arms at 1 failed/395 passed head against 4 failed/392 passed base with no head-only failure id, and a negative control at 2 failed/4 passed EXIT=1.\nVERDICT diff: read commit by commit over c9c8628fd, fb9bde66e, ca3ea4cc1 and 5a6e2e8bf against ab0ababb1; the change is a set-wide re-judgement appended to candidates() plus a waive_tier term in _reserved_lane_exclusion, a Candidate note field, an availability-probe extraction reused by both paths, one new test file and one evidence fragment.\nCALL_SITES: reckon/crew/picker/__init__.py:359 (pick()'s default snapshotter), reckon/crew/picker/__init__.py:431 (the pick() call), reckon/crew/picker/replay.py:57, reckon/crew/picker/prompts.py:_candidate_state, reckon/crew/dispatch_picker.py:544\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:1865 clears every reason on the waived candidate, so a lane the goal does not release (budget-held or lane-gate-paused) is offered too, which is more than \"with its tier and attempts terms waived\".\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate command is recorded at gate-head.log with its EXIT=0 line and the importer arms are recorded at importers-base.log and importers-head.log, but no measured case exercises a reserved candidate carrying an independent exclusion reason.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff, including the new tests/test_an_oversize_node_reaches_a_reserved_lane.py and the evidence fragment, is inside the five write paths declared at reckon manifest.md.\nSCORE durability: 12\nJUSTIFICATION durability: the five behavioural tests at tests/test_an_oversize_node_reaches_a_reserved_lane.py:212-289 each redden on the mechanism they guard (the negative control at negative-control.log shows two of them red), but no assertion fails if the waiver clears a budget-ceiling or lane-gate reason, so the defect at snapshot.py:1865 survives them; test_the_policy_is_keyed_by_the_lane_the_state_reads at :292 pins an unchanged helper and guards nothing this change added.\nSCORE fit: 16\nJUSTIFICATION fit: the waiver block at reckon/crew/picker/snapshot.py:1811-1886 follows the module's comment-then-code idiom and its long explanatory comment style, and introduces no plan or ticket identifier.\nSCORE reuse: 14\nJUSTIFICATION reuse: the availability probe is properly extracted into one _candidate_availability shared by both paths at reckon/crew/picker/snapshot.py:1336, but _excluded_only_on_context at :1329 re-implements the reason-code split that reckon/crew/picker/__init__.py:105 (_reason_code) already owns.\nFINDING reckon/crew/picker/snapshot.py:1865 blocking: candidate.reasons.clear() on the waiver path erases every reason on the candidate, not only the reserved-lane tier reason, so a reserved lane already excluded for another rule is offered anyway; the budget-ceiling reason (appended at snapshot.py:1637 through _budget_exclusion_reasons) and the lane-gate reason (:1640) are built before the reserved-lane check, the candidate is still filed into reserved_withheld at :1697, and still_withheld at :1841 re-judges only the policy's own terms, so an oversize node reaches a lane the dispatch budget verdict withheld or whose lane gate is paused; this contradicts the plan's \"The lane's window ceiling and its budget verdict still apply\", the code's own comment at :1816-1818 and the evidence fragment's \"a candidate held by one of those is left exactly as it was\".\nFINDING reckon/crew/picker/snapshot.py:1826 non-blocking: the waiver is gated on `unreserved` being non-empty, so a configuration with no unreserved candidate at all (every backend covered by a reserved-lane policy, or the unreserved lanes derived or absent) never reaches the waiver, although the plan's condition \"the set has no unreserved candidate left\" is then satisfied; the shipped configuration declares a local lane, so reachability is low.\nFINDING reckon/crew/picker/snapshot.py:1329 non-blocking: _excluded_only_on_context matches the literal prefix \"context-fit: \" rather than going through the reason-code owner at reckon/crew/picker/__init__.py:105, so a future caller that emits the reason in another spelling would silently disable the waiver with no failing test.",
+  "review_run_id": "r-20261027T124806211289-review-of-an-oversize-node-reaches-a-reserved-lane-5a6e2e8bf09b",
+  "reviewed_base_sha": "ab0ababb132cb4505e222efdc31eb1fc07712ef8",
+  "reviewed_head_sha": "5a6e2e8bf09ba7987bc40f43de30ae51f0f1a290",
+  "reviewed_run_id": "r-20261027T114913995369-an-oversize-node-reaches-a-reserved-lane",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 12,
+    "reuse": 14,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T13:30:19.485037+00:00",
+  "total": 87
+}
