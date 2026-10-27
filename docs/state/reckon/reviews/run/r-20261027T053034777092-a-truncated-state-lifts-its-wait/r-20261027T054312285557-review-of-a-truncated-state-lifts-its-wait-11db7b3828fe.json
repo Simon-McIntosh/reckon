@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T053034777092-a-truncated-state-lifts-its-wait/logs/coordinator-arms/head.log",
+    "revision": "11db7b3828fe1ba597f32db873784a73a9216c39"
+  },
+  "baseline_suite": {
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 1,
+    "failure_ids": [
+      "tests/test_picker_prefers_lifted_lane.py::test_an_elevated_node_routes_to_the_lifted_lane_and_the_lift_is_recorded"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T053034777092-a-truncated-state-lifts-its-wait/logs/coordinator-arms/base.log",
+    "revision": "165f4ac8ac736d36c251a897ba5cb81e5e8701c0"
+  },
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/resumption.py:1817",
+    "reckon/crew/recovery_classification.py:732"
+  ],
+  "completed_at": "2026-10-27T05:50:52Z",
+  "dispatched_at": "2026-10-27T05:45:27Z",
+  "findings": [
+    {
+      "file": "tests/test_a_truncated_state_lifts_its_wait.py",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: observed is compared with the same printed value supplied to the probe, so this assertion cannot catch an equality-only matching regression; exempted because the independent outcome assertions at lines 35 and 39 fail under that regression."
+    },
+    {
+      "file": "gate-focused.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the passing eight-case log labels its revision as the base although it ran against a changed working tree, making that header unsuitable as a head receipt; exempted because gate-head.log:1-7 identifies the implementation commit and records the passing importer gate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "commits 8a1a9be8ddc846fd4a1cf9e0efdfd52a10589fdd and 11db7b3828fe1ba597f32db873784a73a9216c39 change two wait readers, add the eight-case test, and add the evidence fragment at docs/evidence/fragments/crew-observability-truth/a-truncated-state-lifts-its-wait.html:12-24.",
+    "done_when": "the live run record at crew/live/r-20261027T053034777092-a-truncated-state-lifts-its-wait.json:468 names four cases in both readers; tests/test_a_truncated_state_lifts_its_wait.py:13-39 exercises all eight and logs/coordinator-arms/base.log:68 versus head.log:23 show zero added failures, while the manifest claims lint results without a separate receipt.",
+    "goal": "the live run record at crew/live/r-20261027T053034777092-a-truncated-state-lifts-its-wait.json:470 asks for truncated-state matching in both readers, which reckon/crew/resumption.py:1537 and reckon/crew/recovery_wait.py:532 implement.",
+    "manifest": "the reviewed run's manifest.md:5-21 names both commits, the 60-pass importer gate, and the two-case red equality control; gate-focused.log:1 incorrectly labels its passing working-tree run as base.",
+    "write_paths": "the live run record at crew/live/r-20261027T053034777092-a-truncated-state-lifts-its-wait.json:515-520 declares five paths and the base-to-head diff changes four of those paths only."
+  },
+  "justifications": {
+    "durability": "tests/test_a_truncated_state_lifts_its_wait.py:16-19 gives independent expected outcomes and lines 35 and 39 fail on the two truncated cases when equality-only matching is restored, as negative-control.log:68-71 records.",
+    "evidence": "gate-head.log:1-7 records 60 passing importer tests and logs/coordinator-arms/base.log:68 and head.log:23 record zero added failures, although gate-focused.log:1 has a misleading revision header and the manifest's lint claims have no dedicated log.",
+    "fit": "reckon/crew/resumption.py:1534-1547 and reckon/crew/recovery_wait.py:529-543 extend the existing reader idiom without forbidden source names, though the separate matching expressions remain parallel.",
+    "goal_fidelity": "reckon/crew/resumption.py:1537-1547 and reckon/crew/recovery_wait.py:532-543 both match a trailing-plus prefix to a declared terminal state while retaining exact matching for full tokens.",
+    "reuse": "reckon/crew/resumption.py:1496 and reckon/crew/recovery_wait.py:474 are the existing owners of these distinct sweep and classifier verdicts; a capability search of reckon/crew found no separate truncated-state matcher to extend.",
+    "scope_discipline": "the diff's four paths are within crew/live/r-20261027T053034777092-a-truncated-state-lifts-its-wait.json:515-520, with only minor incidental formatting at reckon/crew/recovery_wait.py:963-966."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the live run record at crew/live/r-20261027T053034777092-a-truncated-state-lifts-its-wait.json:470 asks for truncated-state matching in both readers, which reckon/crew/resumption.py:1537 and reckon/crew/recovery_wait.py:532 implement.\nVERDICT done_when: the live run record at crew/live/r-20261027T053034777092-a-truncated-state-lifts-its-wait.json:468 names four cases in both readers; tests/test_a_truncated_state_lifts_its_wait.py:13-39 exercises all eight and logs/coordinator-arms/base.log:68 versus head.log:23 show zero added failures, while the manifest claims lint results without a separate receipt.\nVERDICT write_paths: the live run record at crew/live/r-20261027T053034777092-a-truncated-state-lifts-its-wait.json:515-520 declares five paths and the base-to-head diff changes four of those paths only.\nVERDICT manifest: the reviewed run's manifest.md:5-21 names both commits, the 60-pass importer gate, and the two-case red equality control; gate-focused.log:1 incorrectly labels its passing working-tree run as base.\nVERDICT diff: commits 8a1a9be8ddc846fd4a1cf9e0efdfd52a10589fdd and 11db7b3828fe1ba597f32db873784a73a9216c39 change two wait readers, add the eight-case test, and add the evidence fragment at docs/evidence/fragments/crew-observability-truth/a-truncated-state-lifts-its-wait.html:12-24.\nCALL_SITES: reckon/crew/resumption.py:1817, reckon/crew/recovery_classification.py:732\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1537-1547 and reckon/crew/recovery_wait.py:532-543 both match a trailing-plus prefix to a declared terminal state while retaining exact matching for full tokens.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log:1-7 records 60 passing importer tests and logs/coordinator-arms/base.log:68 and head.log:23 record zero added failures, although gate-focused.log:1 has a misleading revision header and the manifest's lint claims have no dedicated log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's four paths are within crew/live/r-20261027T053034777092-a-truncated-state-lifts-its-wait.json:515-520, with only minor incidental formatting at reckon/crew/recovery_wait.py:963-966.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_truncated_state_lifts_its_wait.py:16-19 gives independent expected outcomes and lines 35 and 39 fail on the two truncated cases when equality-only matching is restored, as negative-control.log:68-71 records.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/resumption.py:1534-1547 and reckon/crew/recovery_wait.py:529-543 extend the existing reader idiom without forbidden source names, though the separate matching expressions remain parallel.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/resumption.py:1496 and reckon/crew/recovery_wait.py:474 are the existing owners of these distinct sweep and classifier verdicts; a capability search of reckon/crew found no separate truncated-state matcher to extend.\nFINDING tests/test_a_truncated_state_lifts_its_wait.py:34 non-blocking: observed is compared with the same printed value supplied to the probe, so this assertion cannot catch an equality-only matching regression; exempted because the independent outcome assertions at lines 35 and 39 fail under that regression.\nFINDING gate-focused.log:1 non-blocking: the passing eight-case log labels its revision as the base although it ran against a changed working tree, making that header unsuitable as a head receipt; exempted because gate-head.log:1-7 identifies the implementation commit and records the passing importer gate.",
+  "review_run_id": "r-20261027T054312285557-review-of-a-truncated-state-lifts-its-wait-11db7b3828fe",
+  "reviewed_base_sha": "165f4ac8ac736d36c251a897ba5cb81e5e8701c0",
+  "reviewed_head_sha": "11db7b3828fe1ba597f32db873784a73a9216c39",
+  "reviewed_run_id": "r-20261027T053034777092-a-truncated-state-lifts-its-wait",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T05:53:07.098064+00:00",
+  "total": 114
+}
