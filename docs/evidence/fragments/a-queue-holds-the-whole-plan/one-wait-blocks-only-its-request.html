@@ -21,4 +21,14 @@
   arm with <code>wait names missing request r-vanished</code>:
   <code>1 failed in 2.84s</code>. Ruff check and format check passed on all four
   changed source and test paths.</p>
+  <p>A later admission check exposed the old replacement-id assumption in two
+  re-hold arms. A real dispatch now re-queues after the lane's allowance falls
+  during admission. Whether it raises <code>LaneHeld</code> or returns a queued
+  record, the original run id remains the only live pointer, carrying the newer
+  hold reason, failure and failure time. A stale reported replacement id does
+  not move failure accounting. The focused repair base had 43 passes and three
+  failures; the first implementation head had 45 passes and one failure. The
+  two repaired arm ids disappeared from the failures. The remaining session-cap
+  expectation failed at both revisions and lies outside this node's write
+  grant.</p>
 </section>

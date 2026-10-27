@@ -385,8 +385,11 @@ def test_a_requeued_hold_keeps_the_newer_pointer(
             return launch(pointer, **kwargs)
         except LaneHeld as held:
             newer_reasons.append(str(held.gate["reason"]))
+            # The real dispatch has re-queued the original request. A stale
+            # reported id must not move failure accounting to a new pointer.
             if returns_queued:
-                return runs.read_pointer("r-held")
+                return {**runs.read_pointer("r-held"), "run_id": "r-requeued"}
+            held.queued["run_id"] = "r-requeued"
             raise
 
     monkeypatch.setattr(queue_admission, "_launch_queued", requeue)
