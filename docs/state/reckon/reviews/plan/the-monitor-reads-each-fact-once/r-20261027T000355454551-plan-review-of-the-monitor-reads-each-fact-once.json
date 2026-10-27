@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T00:14:19.291Z",
+  "dispatched_at": "2026-10-27T00:04:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261027T000355454551-plan-review-of-the-monitor-reads-each-fact-once/plan.html:307",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a710 as written leaves the subscriber listing the live directory every second, so its own 60 s trace measure names crew-home paths and the node blocks or ships the read it was written to remove.",
+      "text": "\u00a710's measure is \"a 60 s strace of a running settle-aware subscriber (the process \u00a78 delivers) names no path under the crew home other than the two lease files \u00a78 allows, because settle detection now reads the station\", and \u00a78 defers exactly that trace to \u00a710 (plan.html:267), but the settle-aware follower also samples its population every second through `_check_settle` \u2192 `_population_has_live_work` \u2192 `runs._list_live_records`, which globs and opens `crew_home()/live` (crew_follow_commands.py:1517-1567 and :482-506, FOLLOWER_SETTLE_SAMPLE_SECONDS = 1.0 at :312), and \u00a710's section body moves only the sweep and the review settle window's stamp reader \u2014 it never states that the follower's drain-settle population read moves into the station or how the follower learns it has drained",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261027T000355454551-plan-review-of-the-monitor-reads-each-fact-once/plan.html:293",
+      "id": "reasoning-2",
+      "reason": "a resume with no readable head leaves nothing to review at a head anyway, so the fix (`_latest_resume_at`) is still correct for every run the done-when exercises; only the absolute word \"Every\" overstates the evidence.",
+      "text": "\u00a710 states \"Every resume, the advice door's included, already records the resume instant through `resume_superseded_head`\", but `_record_resume_supersedes_head` writes nothing when the run's tree yields no head (resumption.py:1284-1301), so that resume leaves no instant for `_latest_resume_at` and the settle reader would read it as settled at once",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "39436ca399ba8def99070ca7509a6a7a16c3f4ca114632487d1da372e9720ea9",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 43,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T000355454551-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "678445ff02422d7979655e5b5ea6b0b24c383803",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `resumption.sweep`, `recovery_review_acceptance.dispatch_awaiting_reviews`, `review_settle_seconds_remaining`, `resume_superseded_head`, `_latest_resume_at` and `dispatch_review_for_run` all resolve; every cited commit resolves and the extensionless plan/research hrefs resolve as `<path>.html`.",
+    "done_when": "pass \u2014 \u00a710 states measurable outcomes with four controls, one of which (\"a settle reader that takes `auto_resume` alone must fail the advice-settle test\") reddens the code as it stands today at recovery_review_dispatch.py:1266.",
+    "evidence_paths": "pass \u2014 \u00a710 names no scratchpad or node-local path; the trace and test evidence follow the plan's repository evidence convention.",
+    "naming": "pass \u2014 \u00a710's prose names mechanisms and code symbols; no ticket, sprint or stage label reaches a symbol or a comment in the code it prescribes.",
+    "reasoning": "a finding \u2014 \u00a710's trace measure is asserted over a settle-aware subscriber, but the follower's drain-settle live-pointer sampling is not among the mechanisms \u00a710 moves, so the measure cannot pass as written.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable: run the review reflex and settle evaluation once, in the station.",
+    "wiring": "pass \u2014 \u00a710 now declares `s7` and `s8` upstream (plan.html:23), which is what its measure needs (the settle-aware subscriber is \u00a78's process), and `s12` still declares \u00a710."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "c88186bafcceae37b083a5d6b5b199e27de10915afcd2f6d70f5283422ee0818",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T00:15:04.719925+00:00"
+}
