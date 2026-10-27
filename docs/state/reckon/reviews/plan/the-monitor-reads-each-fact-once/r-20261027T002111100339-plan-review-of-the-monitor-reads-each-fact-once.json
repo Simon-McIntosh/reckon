@@ -1,0 +1,88 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T00:30:56.434Z",
+  "dispatched_at": "2026-10-27T00:21:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261027T002111100339-plan-review-of-the-monitor-reads-each-fact-once/plan.html:307",
+      "id": "reasoning-1",
+      "reason": "the unit the station stores and the done-when asserts must be (project, session), or the drain-settle node is built against the wrong key and its gate passes a pane that never settles on a peer's work.",
+      "text": "\u00a710 states \"The station records each project's has-live-work reading in its station table on every tick, and the subscriber settles on that reading\", but the reading it must stand in for is per session, not per project: `_population_has_live_work(project, *, session)` filters pointers by owner (`if session is not None and owner and owner != session: continue`, crew_follow_commands.py:501) and `_check_settle` settles only when every population in `settle_populations = (session, *sorted(observed_sessions - {None}))` is empty (:1505, :1550), while the done-when repeats the wrong granularity (\"the station's reading for its project\", :310); a node implementing \u00a710 literally stores one boolean per project, so a session's pane either stays open while a peer session in the same project still has a live run, or must re-derive per-session granularity the station was supposed to hold.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261027T002111100339-plan-review-of-the-monitor-reads-each-fact-once/plan.html:310",
+      "id": "done_when-1",
+      "reason": "without a control for the \"not before\" half, the node's gate cannot show the drain-settle guard fires, which is exactly the measure the new sentence exists to add.",
+      "text": "the newly added drain-settle measure \"a subscriber settles when the station's reading for its project turns to no live work, and not before\" declares no negative control, and the four \u00a710 lists (sweep-count, advice-settle, quiet-run, and the trace positive control at :316-320) falsify the sweep, the review-settle reader, the beat and the reads, but none falsifies the drain-settle itself: a subscriber that settled on the first empty tick regardless of the station reading, or that settled while the reading still said live work, would leave every listed control green.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "1a295a5820e76a600a6eb8989d9f135c9eec05270210a097715f96d6b4b54f6d",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 45,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-10-27T00:39:40.069223+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-10-27T00:39:54.022317+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-27T00:39:54.022317+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "reason": "",
+      "when": "2026-10-27T00:39:40.069223+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-reads-each-fact-once.v45.json",
+  "review_run_id": "r-20261027T002111100339-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "82dd9450b835dfe1ad377d5717178fdee8d59d60",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a710 cites resolves today: `review_settle_seconds_remaining` (recovery_review_dispatch.py:1258, reading `auto_resume` alone at :1266), `_latest_resume_at` (:206, returning the newer of `auto_resume.at` and `resume_superseded_head.at` at :91-96), `resume_superseded_head` (written as `{\"head\": head, \"at\": _utc_now()}` at resumption.py:1302, empty when there is no head at :1300-1301), `FOLLOWER_SETTLE_SAMPLE_SECONDS` (crew_follow_commands.py:312), `_population_has_live_work` (:482) and the in-flight refusal in `dispatch_review_for_run` (:2154).",
+    "done_when": "a finding \u2014 the newly added drain-settle measure \"a subscriber settles when the station's reading for its project turns to no live work, and not before\" (\u00a710:310) has no negative control among the four \u00a710 lists, so no mutation shows the \"not before\" clause can fail.",
+    "evidence_paths": "pass \u2014 \u00a710 declares no gate path inside a scratchpad; its measure is a strace run by the dispatched node, whose log lands in the run's own durable directory.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach \u00a710's symbols or the code it names; references such as \"old \u00a781\" are plan-document prose, not source.",
+    "reasoning": "a finding \u2014 the new mechanism \"The station records each project's has-live-work reading ... and the subscriber settles on that reading\" (\u00a710:307) records a per-project flag, but the function it cites, `_population_has_live_work`, is keyed on (project, session) and `_check_settle` judges each of `settle_populations = (session, *observed_sessions)` separately, so a per-project reading cannot reproduce the per-session population the pane settles on.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable: run the review reflex and settle detection once, in the station, on the session's behalf.",
+    "wiring": "pass \u2014 \u00a710's plan-section-depends-on declares \u00a77 and \u00a78 (plan.html:23), both of which exist and are the upstream it needs: \u00a77 the station that runs the loop, \u00a78 the subscriber whose reads the measure traces."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "34f515431534252c2ba57eb261efa3dc258e21bbdcc03778ebe234f7c1c9e758",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T00:39:25.012251+00:00"
+}
