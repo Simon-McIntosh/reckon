@@ -23,11 +23,11 @@
   <meta name="plan-after" content="work-scheduling-surface">
   <meta name="plan-blocks" content="the-mcp-answers-the-question-asked">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;],&quot;s5&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-project-reads-as-one-picture#s4&quot;],&quot;s7&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-project-reads-as-one-picture#s3&quot;,&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-project-reads-as-one-picture#s5&quot;],&quot;s8&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-project-reads-as-one-picture#s3&quot;,&quot;a-project-reads-as-one-picture#s4&quot;,&quot;a-project-reads-as-one-picture#s5&quot;,&quot;a-project-reads-as-one-picture#s7&quot;],&quot;s12&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-project-reads-as-one-picture#s11&quot;],&quot;s14&quot;:[&quot;a-project-reads-as-one-picture#s2&quot;,&quot;a-project-reads-as-one-picture#s3&quot;,&quot;a-project-reads-as-one-picture#s5&quot;,&quot;a-project-reads-as-one-picture#s7&quot;,&quot;a-finished-plan-closes#s2&quot;,&quot;a-finished-plan-closes#s3&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
   <title>A Project Reads as One Picture | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="48">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -92,7 +92,7 @@
     <p>Two wiring findings make the edges coordinators carry in messages visible. <code>undeclared-wait</code> fires when a section's blocked run, gate measure or open followup names another section ref (<code>slug#sN</code> or <code>project:slug#sN</code>) that the section's dependencies do not include. It names both refs and the text that mentioned them, so the repair is one <code>section_depends_on.&lt;sid&gt;</code> write. <code>overlapping-scope</code> fires when two open sections in different plans declare intersecting write paths in their briefs or dispatch history. That is the shape of <code>shared-coil-supply-model#s6</code> and <code>iter-switched-terminal-transients#s6</code>, the same integrated run planned twice.</p><p>Both are emitted through the existing <code>_finding</code> helper in <code>reckon/roadmap.py</code> (near line 1213) into <code>wiring_findings</code>, severity <code>warn</code>, like every other wiring finding. They add two codes and no surface. Neither invents an edge: the analyser reports the suspected wait and leaves the decision to whoever owns the plan.</p><p><strong>Done when:</strong> a fixture whose blocked manifest names <code>B#s4</code> from a section with no edge to it emits <code>undeclared-wait</code> with both refs, and the same fixture with the edge declared emits nothing. Two fixture sections claiming one path emit <code>overlapping-scope</code>, and two claiming disjoint paths do not. On <code>power_convertor</code> the findings are listed in the gate log, and each is checked by hand as a true or false positive, with the count of each recorded.</p>
 
     <h2 id="s6">§6 — A section can wait on a followup</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>
       The ref grammar gains <code>slug@f-id</code>, satisfied when that followup resolves. One
       coordinator's section really waited on <code>f-tfcv-007</code> and could only declare the whole
@@ -272,6 +272,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261027T092250673290-a-section-can-wait-on-a-followup" data-who="reckon-build" data-when="2026-10-27T12:38:16Z">
     <div class="r-comment-body"><p>§6 extends the plan-ref grammar and answers the review: the store op</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-10-27T13:35:00Z">
+    <div class="r-comment-body"><p>Section 6 landed at merge <code>8b9531568</code>: The ref grammar takes slug@f-id and slug#sN@f-id, so a section can wait on one followup: the roadmap holds it while the followup is open and releases it when it resolves, a ref to a missing followup is a dangling-hard-dependency finding, and the edit_plan store op accepts both forms; PLAN-FORMAT.md, the reckon-edit skill and the published schema state the suffix. Coordinator importer measure over 80 test files: main 4450 passed, merged 4461 passed, the same five failures at both, so none added. read_plan's deps surface, which still resolves a followup ref to the whole plan's status, is carried as a new section. <a href="/reckon/evidence/archive/a-project-reads-as-one-picture-landed.html#s6">evidence</a></p></div>
 </div>
 </section>
 </main>
