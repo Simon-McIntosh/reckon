@@ -182,6 +182,13 @@ def isolated_home(tmp_path, monkeypatch) -> Path:
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
+    # The reload images live under the node-local runtime root, so the producer
+    # is given this test's own root. Inheriting the session's would publish the
+    # images into the node's real runtime directory, where a later run of the
+    # suite would read them.
+    runtime = home / "runtime"
+    runtime.mkdir()
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     return home
 
 
@@ -400,7 +407,7 @@ def test_committing_the_edit_reloads_the_committed_tree(
             "a new source commit must replace the running image"
         )
         assert after in _cmdline(process.pid)
-        images = list((isolated_home / "crew" / "reload-trees").glob(f"*/{after}"))
+        images = list((isolated_home / "runtime" / "reload-trees").glob(f"*/{after}"))
         assert len(images) == 1, images
         committed = subprocess.run(
             [_GIT, "-C", str(root), "show", "HEAD:reckon/crew/ticker.py"],

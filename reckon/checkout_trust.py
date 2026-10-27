@@ -32,7 +32,6 @@ import json
 import os
 import re
 import shutil
-import socket
 import subprocess
 import sys
 import tarfile
@@ -135,12 +134,6 @@ class IdentityReadError(Exception):
 # still reclaimed.
 COMMITTED_TREE_PUBLISH_GRACE_SECONDS = 300.0
 
-# The name of the record that used to sit beside a tree naming the nodes that
-# held it. An image is node-local now, so nothing reads the record and nothing
-# writes it; the name stays only until the pruning fixtures that still touch
-# the file are retired with it.
-COMMITTED_TREE_LEASE_MARKER = ".lease"
-
 # How often one process renews the in-use mark of a held image. Every follower
 # and producer on a node holds the same image, and renewing on each poll stamped
 # one shared inode several times a second per process, which queues every
@@ -158,15 +151,6 @@ _LEASE_RENEWED_AT: dict[int, float] = {}
 # ``docs/state`` tree beside it holds the ledger and run state, which are
 # neither code nor read by a reloaded process.
 CATALOGUE_RELATIVE_PATH = "docs/state/reckon/model-catalogue.yaml"
-
-
-def _lock_node_name() -> str:
-    """The name this node records for itself beside a lease.
-
-    No lease record is written now that the cache is node-local; the name is
-    kept only while the pruning fixtures that stub it name one.
-    """
-    return socket.gethostname()
 
 
 def _marker_age_seconds(path: Path) -> float | None:
