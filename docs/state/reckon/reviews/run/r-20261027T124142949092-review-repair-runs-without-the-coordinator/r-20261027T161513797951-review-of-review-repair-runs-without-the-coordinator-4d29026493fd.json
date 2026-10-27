@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T16:27:44.960Z",
+  "dispatched_at": "2026-10-27T16:17:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 479,
+      "severity": "non-blocking",
+      "text": "missing_rubric_self_checks has no production caller: a grep at 4d2902649 finds only its own definition and the three assertions in tests/test_review_repair_runs_without_the_coordinator.py, so the reader its docstring calls 'the reader a delivery's reviewer consults' is consulted by nobody and no promotion or review path can report a manifest that omits a self-check."
+    },
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": 73,
+      "severity": "non-blocking",
+      "text": "RUBRIC_SELF_CHECK_CONTRACT asks for `rubric.<dimension>: <state>` without naming the six dimension words the reader keys on (REVIEW_DIMENSIONS, reckon/crew/review.py:87); the constant sits in the invariant prefix so it reaches every project, and a worker that records six lines under its own dimension names is reported as having recorded none, a mismatch no test can catch while the reader has no caller."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commits extend the invariant worker prompt with a rubric self-check contract (reckon/crew/prompts.py:72, wired into _invariant_prompt_prefix at reckon/crew/prompts.py:461), which is exactly the done_when arm the prior review at 5c41e9e07 recorded as unimplemented. VERDICT done_when: the reviewed node's done_when names tests/test_review_repair_runs_without_the_coordinator.py and an arm requiring the worker prompt to ask for a rubric self-check recorded in the manifest; the gained commit adds tests/test_review_repair_runs_without_the_coordinator.py:256 and :266, and I re-ran only those two at the reviewed head (2 passed, 6 deselected). VERDICT write_paths: the reviewed prompt.txt FENCE \u2014 SCOPE declares reckon/crew/prompts.py, tests/test_review_repair_runs_without_the_coordinator.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/review-repair-runs-without-the-coordinator.html; all three paths the two gained commits touch lie inside that grant. VERDICT manifest: read the reviewed run's manifest; it records status complete, the six commits through 4d2902649, and an acted line for e89f16ce0 describing exactly the rubric self-check arm, with baseline 11 passed EXIT=0 at 5c41e9e07 and after 13 passed EXIT=0 at 4d2902649. VERDICT diff: read e89f16ce0 and 4d2902649 against 5c41e9e07; e89f16ce0 adds one constant and one reader to reckon/crew/prompts.py plus 28 lines of test, and 4d2902649 appends one paragraph to the evidence fragment with 1 insertion and 0 deletions, so the cumulative record was spliced rather than rewritten. CALL_SITES: reckon/crew/prompts.py:_invariant_prompt_prefix SCORE goal_fidelity: 16 JUSTIFICATION goal_fidelity: reckon/crew/prompts.py:461 places the contract in the invariant prefix every node composes, but reckon/crew/prompts.py:479 adds a reader with no consumer and reckon/crew/prompts.py:73 names no dimension. SCORE evidence: 16 JUSTIFICATION evidence: the reviewed run's baseline-suite.log (11 passed, EXIT=0 at 5c41e9e07330cf2d0f28a5ea0bb58905e82baf3f) and after-suite.log (13 passed, EXIT=0 at 4d2902649) are both recorded, and my own re-run of the two added tests passed. SCORE scope_discipline: 20 JUSTIFICATION scope_discipline: both gained commits touch only paths declared in the reviewed grant and nothing else, per the 1-insertion stat of 4d2902649 and the prompts.py-plus-test stat of e89f16ce0. SCORE durability: 17 JUSTIFICATION durability: deleting the `+ RUBRIC_SELF_CHECK_CONTRACT` line at reckon/crew/prompts.py:461 reddens the prefix assertion at tests/test_review_repair_runs_without_the_coordinator.py:261, and loosening _RUBRIC_SELF_CHECK_LINE to match an empty state reddens the third arm at line 281, so each assertion names the regression it catches. SCORE fit: 18 JUSTIFICATION fit: the constant-and-reader pair at reckon/crew/prompts.py:72 and :479 follows the sibling contract constants above it and carries no plan label or version name. SCORE reuse: 17 JUSTIFICATION reuse: no owner reads per-dimension manifest lines; the search over reckon/crew found promotion_evidence._raw_manifest_field (reckon/crew/promotion_evidence.py:413, one undotted key:value) and recovery_review_subject._landed_missing_measures (reckon/crew/recovery_review_subject.py:1272, a scores mapping from a parsed review), neither extending to repeated dotted lines in raw text, and the addition reuses REVIEW_DIMENSIONS rather than respelling it. FINDING reckon/crew/prompts.py:479 non-blocking: missing_rubric_self_checks has no production caller, so no promotion or review path reports a manifest whose self-check is missing. FINDING reckon/crew/prompts.py:73 non-blocking: the invariant contract asks for rubric lines without naming the six REVIEW_DIMENSIONS words the reader keys on, so a worker's own naming is reported as no self-check at all.",
+  "review_run_id": "r-20261027T161513797951-review-of-review-repair-runs-without-the-coordinator-4d29026493fd",
+  "reviewed_base_sha": "5c41e9e07330cf2d0f28a5ea0bb58905e82baf3f",
+  "reviewed_head_sha": "4d29026493fde7fe028f087443b16ffc4e7bb5d3",
+  "reviewed_run_id": "r-20261027T124142949092-review-repair-runs-without-the-coordinator",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T17:01:11.928096+00:00",
+  "total": 104
+}
