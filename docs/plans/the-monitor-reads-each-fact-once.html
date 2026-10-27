@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -305,8 +305,11 @@
     every <code>FOLLOWER_SETTLE_SAMPLE_SECONDS</code> through <code>_population_has_live_work</code>, which lists
     and opens the live pointer directory, judging each population separately: the subscriber's own session
     and every session it has observed (<code>settle_populations</code>), each filtered by pointer owner. The
-    station records a has-live-work reading per (project, session) on every tick, and the subscriber settles
-    when the reading for every one of its populations says no live work. Done when tests show that with
+    station records a has-live-work reading per (project, session) on every tick, plus one project-wide
+    reading for an unscoped subscriber, whose population (<code>session=None</code>) is every non-terminal run
+    in the project. A pointer with no recorded owner keeps every session's reading and the project-wide one
+    live, as it does today. The subscriber settles when the reading for every one of its populations says no
+    live work. Done when tests show that with
     three subscribers attached for one session, the sweep runs once per change in the station and in no
     subscriber; a subscriber settles when the station's readings for all of its populations turn to no live
     work, and not while any one of them still reads live work; a run resumed by advice is not reviewed until its settle
@@ -316,7 +319,9 @@
     §8 delivers) names no path under the crew home other than the two lease files §8 allows, because settle
     detection now reads the station.
     Negative controls: a subscriber that settles on its own session's reading alone, while an observed
-    session still reads live work, must fail the drain-settle test; a subscriber that still runs the sweep
+    session still reads live work, must fail the drain-settle test; a station that leaves an ownerless live
+    pointer out of a session's reading, or gives an unscoped subscriber no project-wide reading, must fail
+    the drain-settle test's ownerless and unscoped cases; a subscriber that still runs the sweep
     must fail the sweep-count test; a settle reader
     that takes <code>auto_resume</code> alone must fail the advice-settle test; a station that evaluates settle
     only on change must fail the quiet-run test; and the same 60 s trace of a subscriber running today's
