@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/follower_reload.py:148 (pin_materialized_tree)",
+    "reckon/crew/follower_reload.py:298 (materialize_committed_tree)",
+    "reckon/crew/follower_reload.py:325 (refresh_materialized_tree_pin)",
+    "reckon/crew/station.py:73 (refresh_materialized_tree_pin)",
+    "reckon/crew/station.py:325 (materialize_committed_tree via StationReloader.poll)"
+  ],
+  "completed_at": "2026-10-27T10:54:51.978Z",
+  "dispatched_at": "2026-10-27T10:39:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station.py",
+      "line": "85",
+      "severity": "non-blocking",
+      "text": "non-blocking: StationReloader.poll monkeypatches checkout_trust._committed_tree_cache to self.runtime_root / \"reload-trees\", a second answer to a question the landed change now answers itself in reckon/checkout_trust.py:448; if the station's root ever differs from runtime_root_source()'s, an image is published into a directory no other process on the node resolves, and the flock-visibility premise the lease-record removal rests on no longer holds. The file is outside this node's write scope, so the monkeypatch should be deleted by a follow-up node."
+    },
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": "460",
+      "severity": "non-blocking",
+      "text": "non-blocking: _committed_tree_cache takes whatever runtime_root_source() returns, including the third candidate TMPDIR, with no filesystem-type proof; on a host whose TMPDIR sits on shared storage the cache would land back on a filesystem where flock does not cross nodes, reinstating the hazard the deleted lease record existed to cover. reckon/crew/station_store.py:170 _refuse_nonlocal_root already owns that proof and is not consulted here."
+    },
+    {
+      "file": "logs/gate_head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate log's revision line reads \"43a85b8193fd3ed31af01db8d02a99a6b2795a31 + working tree\" rather than naming 758aa0ac3de3386e6efc1dd7b6bd669ff04ef1fa, so the recorded 34-passed run is tied to the reviewed head only by the worktree path it names, which now reads clean at that head."
+    },
+    {
+      "file": "reckon/checkout_trust.py",
+      "line": "467",
+      "severity": "non-blocking",
+      "text": "non-blocking: images already published under the old crew-home reload-trees are now unreachable and unswept \u2014 nothing resolves that path any more \u2014 so the bytes a previous revision cached there stay on shared storage forever, which is the growth the plan's \u00a71 exists to bound and no node currently owns removing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 43a85b8193fd3ed31af01db8d02a99a6b2795a31; the product change is confined to reckon/checkout_trust.py (cache resolver rewritten, _record_lease_node/_lease_nodes/_lock_node_name/COMMITTED_TREE_LEASE_MARKER/_prune_must_keep's host branch deleted, socket import removed), with the fixtures and the new cache test following it.",
+    "done_when": "the done_when requires the reload tests to pass under a temporary runtime root, the cache path never to sit under the crew home, the lease-record functions to be gone, and the new case to fail at base; the gate in logs/gate_head.log (34 passed, EXIT=0) plus the armed pair (5 failed at base, 10 passed at head) and logs/negative_control.log (5 failed, EXIT=1) assert exactly that.",
+    "goal": "the node's goal is to resolve the reload image cache under the node-local runtime root so the cross-node lease record has nothing left to guard; reckon/checkout_trust.py:448-467 replaces the crew-home cache with runtime_root_source()/reload-trees and deletes the record.",
+    "manifest": "read; it names commits 1dd126dcf and 758aa0ac3, records the gate command and four log paths, and its baseline_suite/after_suite blocks carry the base 5-failure list and an empty head failure list.",
+    "write_paths": "the node was fenced to reckon/checkout_trust.py, tests/test_reload_images_live_on_node_local_storage.py, tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py, the evidence fragment and the figures dir; the diff's eight changed paths include four test files granted by the recorded scope extension in resume-1-advice.txt, and nothing in the diff falls outside those two sets."
+  },
+  "justifications": {
+    "durability": "tests/test_reload_images_live_on_node_local_storage.py:59-105 asserts the cache equals the root its fixture supplied and is never under crew_home, all five cases redden under the declared mutation (logs/negative_control.log, 5 failed), and the held-lock retention rule the change rewrote stays guarded by tests/test_a_reload_runs_the_committed_head.py:217.",
+    "evidence": "logs/gate_head.log records 34 passed EXIT=0 against the six-file gate, logs/suite_base.log 5 failed EXIT=1 and logs/suite_head.log 10 passed EXIT=0 against the armed pair, and logs/negative_control.log 5 failed EXIT=1, though the head log's revision line reads \"working tree\" rather than the landed commit.",
+    "fit": "the changed module keeps its own idiom (a private resolver with a mechanism docstring and named constants) and introduces no name outside the repository's naming rules.",
+    "goal_fidelity": "reckon/checkout_trust.py:448-467 resolves the cache through station_store.runtime_root_source and raises when no root exists, and every lease-record definition named in the goal is gone from the file.",
+    "reuse": "the change reuses reckon/crew/station_store.py:141 runtime_root_source rather than adding a resolver, but reckon/crew/station.py:85 still carries a second cache-root resolver the change leaves in place and makes redundant.",
+    "scope_discipline": "the four test files beyond the original fence are covered by the scope extension recorded in the run's resume-1-advice.txt, and reckon/checkout_trust.py plus the new test are inside the declared paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to resolve the reload image cache under the node-local runtime root so the cross-node lease record has nothing left to guard; reckon/checkout_trust.py:448-467 replaces the crew-home cache with runtime_root_source()/reload-trees and deletes the record.\nVERDICT done_when: the done_when requires the reload tests to pass under a temporary runtime root, the cache path never to sit under the crew home, the lease-record functions to be gone, and the new case to fail at base; the gate in logs/gate_head.log (34 passed, EXIT=0) plus the armed pair (5 failed at base, 10 passed at head) and logs/negative_control.log (5 failed, EXIT=1) assert exactly that.\nVERDICT write_paths: the node was fenced to reckon/checkout_trust.py, tests/test_reload_images_live_on_node_local_storage.py, tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py, the evidence fragment and the figures dir; the diff's eight changed paths include four test files granted by the recorded scope extension in resume-1-advice.txt, and nothing in the diff falls outside those two sets.\nVERDICT manifest: read; it names commits 1dd126dcf and 758aa0ac3, records the gate command and four log paths, and its baseline_suite/after_suite blocks carry the base 5-failure list and an empty head failure list.\nVERDICT diff: read commit by commit against 43a85b8193fd3ed31af01db8d02a99a6b2795a31; the product change is confined to reckon/checkout_trust.py (cache resolver rewritten, _record_lease_node/_lease_nodes/_lock_node_name/COMMITTED_TREE_LEASE_MARKER/_prune_must_keep's host branch deleted, socket import removed), with the fixtures and the new cache test following it.\nCALL_SITES: reckon/crew/follower_reload.py:148 (pin_materialized_tree), reckon/crew/follower_reload.py:298 (materialize_committed_tree), reckon/crew/follower_reload.py:325 (refresh_materialized_tree_pin), reckon/crew/station.py:73 (refresh_materialized_tree_pin), reckon/crew/station.py:325 (materialize_committed_tree via StationReloader.poll)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/checkout_trust.py:448-467 resolves the cache through station_store.runtime_root_source and raises when no root exists, and every lease-record definition named in the goal is gone from the file.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate_head.log records 34 passed EXIT=0 against the six-file gate, logs/suite_base.log 5 failed EXIT=1 and logs/suite_head.log 10 passed EXIT=0 against the armed pair, and logs/negative_control.log 5 failed EXIT=1, though the head log's revision line reads \"working tree\" rather than the landed commit.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the four test files beyond the original fence are covered by the scope extension recorded in the run's resume-1-advice.txt, and reckon/checkout_trust.py plus the new test are inside the declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_reload_images_live_on_node_local_storage.py:59-105 asserts the cache equals the root its fixture supplied and is never under crew_home, all five cases redden under the declared mutation (logs/negative_control.log, 5 failed), and the held-lock retention rule the change rewrote stays guarded by tests/test_a_reload_runs_the_committed_head.py:217.\nSCORE fit: 18\nJUSTIFICATION fit: the changed module keeps its own idiom (a private resolver with a mechanism docstring and named constants) and introduces no name outside the repository's naming rules.\nSCORE reuse: 12\nJUSTIFICATION reuse: the change reuses reckon/crew/station_store.py:141 runtime_root_source rather than adding a resolver, but reckon/crew/station.py:85 still carries a second cache-root resolver the change leaves in place and makes redundant.\nFINDING reckon/crew/station.py:85 non-blocking: StationReloader.poll monkeypatches checkout_trust._committed_tree_cache to self.runtime_root / \"reload-trees\", a second answer to a question the landed change now answers itself in reckon/checkout_trust.py:448; if the station's root ever differs from runtime_root_source()'s, an image is published into a directory no other process on the node resolves, and the flock-visibility premise the lease-record removal rests on no longer holds. The file is outside this node's write scope, so the monkeypatch should be deleted by a follow-up node.\nFINDING reckon/checkout_trust.py:460 non-blocking: _committed_tree_cache takes whatever runtime_root_source() returns, including the third candidate TMPDIR, with no filesystem-type proof; on a host whose TMPDIR sits on shared storage the cache would land back on a filesystem where flock does not cross nodes, reinstating the hazard the deleted lease record existed to cover. reckon/crew/station_store.py:170 _refuse_nonlocal_root already owns that proof and is not consulted here.\nFINDING logs/gate_head.log:1 non-blocking: the head gate log's revision line reads \"43a85b8193fd3ed31af01db8d02a99a6b2795a31 + working tree\" rather than naming 758aa0ac3de3386e6efc1dd7b6bd669ff04ef1fa, so the recorded 34-passed run is tied to the reviewed head only by the worktree path it names, which now reads clean at that head.\nFINDING reckon/checkout_trust.py:467 non-blocking: images already published under the old crew-home reload-trees are now unreachable and unswept \u2014 nothing resolves that path any more \u2014 so the bytes a previous revision cached there stay on shared storage forever, which is the growth the plan's \u00a71 exists to bound and no node currently owns removing.",
+  "review_run_id": "r-20261027T103433469248-review-of-reload-images-live-on-node-local-storage-758aa0ac3de3",
+  "reviewed_base_sha": "43a85b8193fd3ed31af01db8d02a99a6b2795a31",
+  "reviewed_head_sha": "758aa0ac3de3386e6efc1dd7b6bd669ff04ef1fa",
+  "reviewed_run_id": "r-20261027T093350429603-reload-images-live-on-node-local-storage",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T11:01:59.731802+00:00",
+  "total": 102
+}
