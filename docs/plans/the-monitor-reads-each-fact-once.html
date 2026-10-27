@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="70">
+<meta name="plan-version" content="71">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -460,7 +460,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261027T042459263998-a-follower-is-a-station-subscriber at head 3e6c0bc43826 (base c30c057d4) scores goal_fidelity 18, evidence 15, scope_discipline 16, durability 16, fit 17, reuse 5, with 0 added failures and three non-blocking findings: events_for duplicates the existing events() reader, a session-less subscriber's cursors row is keyed on audience alone and collides across projects, and a figure was added that the done-when did not name.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261027T071335843031-review-of-a-follower-is-a-station-subscriber-8394adeb39c0" data-who="reckon-build" data-when="2026-10-27T07:21:03.378Z">
-    <div class="r-comment-body"><p>Independent review of r-20261027T042459263998-a-follower-is-a-station-subscriber at head 8394adeb3 (base 3e6c0bc43, the prior reviewed head) scores goal_fidelity 19, evidence 14, scope_discipline 19, durability 16, fit 18, reuse 19, with 0 added failures; the delta unifies the day-file reader into _read_events and keys a subscriber&#x27;s place by (project, audience) with a table-rebuild migration, resolving the prior review&#x27;s duplication and cross-project-cursor findings; two non-blocking findings remain (migrated rows under project &#x27;&#x27; are never resumed, and the negative control predates the delta).</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261027T042459263998-a-follower-is-a-station-subscriber at head 8394adeb3 (base 3e6c0bc43, the prior reviewed head) scores goal_fidelity 19, evidence 14, scope_discipline 19, durability 16, fit 18, reuse 19, with 0 added failures; the delta unifies the day-file reader into _read_events and keys a subscriber's place by (project, audience) with a table-rebuild migration, resolving the prior review's duplication and cross-project-cursor findings; two non-blocking findings remain (migrated rows under project '' are never resumed, and the negative control predates the delta).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261027T071554631688-review-of-a-follower-is-a-station-subscriber-8394adeb39c0-figure" data-who="reckon-build" data-when="2026-10-27T07:22:56.717Z">
+    <div class="r-comment-body"><p>The attached figure draws three colour families and its legend names two — the blue bars and blue numerals carry no entry in the legend, the alt text or the caption — so the review records one blocking finding for the unnamed series, two non-blocking findings (grey numerals at about 3.1:1 contrast, and zero counts drawn as no bar at all), and a parsed figure rubric with legibility and contrast failing and data_ink, decoration, table_form and label_collision passing.</p></div>
 </div>
 </section>
 </main>
