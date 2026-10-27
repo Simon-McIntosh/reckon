@@ -154,24 +154,90 @@ def _imports_module(text: str, module: str) -> bool:
     )
 
 
-#: What a token that names a test target looks like, as opposed to an option
-#: or an option's value: a path separator, a ``.py`` suffix or a node id.
-_TARGET_HINT = re.compile(r"/|\.py$|::")
+#: A leading ``NAME=value`` environment assignment rather than the program.
+_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
+#: Options whose following token is their value, not a test target. A token is
+#: only ever dropped as a target when it is positional: everything that
+#: follows one of these is kept, so a path-valued option survives narrowing.
+_VALUE_OPTIONS = frozenset(
+    {
+        "-k",
+        "-m",
+        "-p",
+        "-c",
+        "-o",
+        "-W",
+        "-n",
+        "-r",
+        "--basetemp",
+        "--rootdir",
+        "--confcutdir",
+        "--deselect",
+        "--ignore",
+        "--ignore-glob",
+        "--junitxml",
+        "--junit-xml",
+        "--maxfail",
+        "--tb",
+        "--timeout",
+        "--cov",
+        "--cov-report",
+        "--dist",
+        "--numprocesses",
+        "--maxprocesses",
+        "--splits",
+        "--group",
+        "--import-mode",
+        "--color",
+        "--capture",
+        "--durations",
+        "--durations-min",
+        "--log-level",
+        "--log-file",
+        "--log-format",
+        "--log-date-format",
+        "--override-ini",
+        "--randomly-seed",
+        "--html",
+        "--reruns",
+        "--reruns-delay",
+    }
+)
 
 
 def runner_argv(command: Sequence[str]) -> list[str]:
-    """The armed command with its test targets removed, keeping its options.
+    """The armed command with its positional test targets removed.
 
     The armed command is what the run's promotion runs, so a single id is
-    re-run through the same interpreter, plugins and options. Its own test
-    targets are dropped: leaving them in would run the whole file again and
-    any failure already present there would be counted against the id.
+    re-run through the same interpreter, environment, plugins and options.
+    Only positional arguments after the program are dropped: an environment
+    assignment, the program token and every option together with its value
+    stay, so a command of the shape
+    ``PYTHONPATH=. .venv/bin/python -m pytest --basetemp /tmp/bt tests/x.py``
+    keeps its interpreter and ``--basetemp /tmp/bt`` and loses only
+    ``tests/x.py``.
     """
     kept: list[str] = []
+    program_seen = False
+    expect_value = False
     for token in command:
-        if kept and not token.startswith("-") and _TARGET_HINT.search(token):
+        if expect_value:
+            kept.append(token)
+            expect_value = False
             continue
-        kept.append(token)
+        if not program_seen:
+            kept.append(token)
+            if not token.startswith("-") and not _ASSIGNMENT.match(token):
+                program_seen = True
+            continue
+        if token.startswith("-"):
+            kept.append(token)
+            if "=" not in token and token in _VALUE_OPTIONS:
+                expect_value = True
+            continue
+        # A positional after the program is a test target: the narrowed run
+        # names its own.
     return kept
 
 
@@ -281,30 +347,25 @@ def measure_run(
         if test_id not in added_base and test_id not in added:
             added.append(test_id)
     isolated: dict[str, dict[str, list[bool]]] = {}
+
+    def narrowed(test_id: str, arm_tree: Path, arm: str, n: int) -> tuple[bool, str]:
+        return _fails(
+            isolated_command(argv, test_id),
+            test_id,
+            arm_tree,
+            logs / "isolated" / f"{_slug(test_id)}-{arm}-{n}.log",
+            runner,
+        )
+
     for test_id in added:
-        meta = isolated_command(argv, test_id)
-        isolated[test_id] = {
-            "base": [
-                _fails(
-                    meta,
-                    test_id,
-                    base_tree,
-                    logs / "isolated" / f"{_slug(test_id)}-base-{n}.log",
-                    runner,
-                )
-                for n in range(1, repeats + 1)
-            ],
-            "head": [
-                _fails(
-                    meta,
-                    test_id,
-                    tree,
-                    logs / "isolated" / f"{_slug(test_id)}-head-{n}.log",
-                    runner,
-                )
-                for n in range(1, repeats + 1)
-            ],
-        }
+        results = {"base": [], "head": []}
+        for arm, arm_tree in (("base", base_tree), ("head", tree)):
+            for n in range(1, repeats + 1):
+                failed, problem = narrowed(test_id, arm_tree, arm, n)
+                if problem and not unreadable:
+                    unreadable = problem
+                results[arm].append(failed)
+        isolated[test_id] = results
     real = tuple(
         test_id
         for test_id, results in isolated.items()
@@ -322,19 +383,30 @@ def measure_run(
 
 def _fails(
     command: Sequence[str], test_id: str, tree: Path, log_path: Path, runner
-) -> bool:
+) -> tuple[bool, str]:
     """Whether one isolated run reported *this* id as failing.
 
     Only the narrowed id counts: a failure the run reports for anything else
     is the pre-existing population the base arm already carries, and counting
     it here would make a regression read as failing equally at both revisions.
-    A run that could not be read is counted as a failure, so an unmeasurable
-    arm refuses the landing rather than clearing it.
+
+    The second value is the reason the arm could not be read, or "". An arm
+    that did not run, or that exited non-zero without reporting any failure id
+    — a usage error, a broken option — is not a passing run. Counting it as
+    either passes or failures would silently answer the comparison, so the
+    caller refuses the landing instead.
     """
     arm = _arm(command, tree, log_path, runner)
     if not arm.readable:
-        return True
-    return test_id in arm.failure_ids
+        return True, f"the isolated arm for {test_id} did not run"
+    if test_id in arm.failure_ids:
+        return True, ""
+    if arm.exit_status and not arm.failure_ids:
+        return True, (
+            f"the isolated arm for {test_id} exited {arm.exit_status} "
+            "without reporting a failure id"
+        )
+    return False, ""
 
 
 def _slug(test_id: str) -> str:

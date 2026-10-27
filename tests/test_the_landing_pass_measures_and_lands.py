@@ -309,6 +309,63 @@ def test_a_flaky_added_id_that_fails_as_often_at_base_as_at_head_lands(
     assert len(narrowed) == 6, calls
 
 
+def test_narrowing_keeps_the_program_its_assignments_and_option_values() -> None:
+    """Only positional test targets are dropped when one id is re-run.
+
+    A path-valued option and an environment assignment are part of the run the
+    armed command describes; dropping either leaves a command that cannot run
+    its one id at all.
+    """
+    known = [
+        "PYTHONPATH=.",
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--basetemp",
+        "build/bt",
+        "--deselect",
+        "tests/other.py::test_old",
+        "tests/test_alpha.py",
+    ]
+
+    kept = landing_measure.isolated_command(known, REAL)
+    assert kept[:3] == ["PYTHONPATH=.", ".venv/bin/python", "-m"], kept
+    assert "pytest" in kept and "-q" in kept, kept
+    assert "tests/other.py::test_old" in kept, kept
+    assert "tests/test_alpha.py" not in kept, kept
+    assert kept[-1] == REAL
+
+
+def test_a_narrowed_arm_that_cannot_run_refuses_the_landing(
+    delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An arm that exits without reporting an id is unreadable, not a pass.
+
+    Both revisions failing to run would otherwise read as failing equally, and
+    a genuine regression would land on the comparison of two broken arms.
+    """
+    _accept(base=str(delivery["base"]), head=str(delivery["head"]))
+    landed = _land(monkeypatch)
+
+    def run(argv, *, cwd, capture_output=True, text=True, check=False):
+        if "::" in argv[-1]:
+            return _completed(argv, 3, "usage: pytest [options]\n")
+        if str(cwd).endswith("base-tree"):
+            return _completed(argv, 0, "1 passed\n")
+        return _completed(argv, 1, f"FAILED {REAL} - AssertionError\n")
+
+    monkeypatch.setattr(landing_measure, "_RUN", run)
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [], result
+    assert landed == []
+    guard = result["obligations"][0]["guard"]
+    assert "unreadable" in guard and REAL in guard, guard
+    assert runs.pointer_path(RUN).exists()
+
+
 def test_a_preexisting_failure_in_the_same_file_does_not_mask_a_regression(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
