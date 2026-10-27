@@ -106,3 +106,20 @@ review:
       - not browser
       - tests/
     budget: 20m
+
+# The promotion-consequence gate is armed with a scoped command rather than the
+# whole suite. An armed node runs its suite twice, at its base and at its head,
+# and the whole suite measured 720 to 762 s, which consumes most of a node's
+# budget; the wave close measures the whole suite once at the merged head
+# instead.
+#
+# `{node_test_files}` stands for the test files among the node's own fenced
+# write paths, resolved when promotion reads the run record. A node whose fenced
+# scope holds a test file is measured on exactly those files; a node whose scope
+# holds none measures nothing, exactly as an unarmed project does.
+#
+# PYTHONPATH names the tree the worker runs in, so the shared project
+# environment (reached through the worktree's .venv link) imports the source
+# under test rather than whichever tree last synced it.
+gates:
+  suite_command: "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q {node_test_files}"

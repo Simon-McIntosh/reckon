@@ -16,6 +16,7 @@ from reckon.crew.dispatch import (
 )
 from reckon.crew.node import (
     CrewError,
+    is_test_path,
 )
 from reckon.crew.reports import (
     parse_manifest,
@@ -30,6 +31,7 @@ from reckon.crew.routing import (
 from reckon.crew.runs import (
     _live_worktree_claims,
     _manifest_freshness,
+    _repository_relative_scope,
     _write_json,
     capture_run_session,
     drain,  # noqa: F401 - importable so a caller can substitute the fleet reading's drain
@@ -327,6 +329,68 @@ def _normalized_command(value: Any) -> str:
     return " ".join(str(value or "").split())
 
 
+SCOPED_SUITE_PLACEHOLDER = "{node_test_files}"
+
+
+def _node_test_files(record: Mapping[str, Any]) -> list[str]:
+    """The node's fenced write paths that are tests, sorted and repo-relative.
+
+    A scoped suite command names the tests a node's own change can reach rather
+    than the whole suite, so the files it runs come from the fenced write scope
+    the node was dispatched with. Which paths count as tests is the dispatcher's
+    own rule rather than a second one written here: a node scoped to
+    ``tests/body_test.py`` is a node writing a check under ``is_test_path``, so
+    the scoped command has to measure it, and a narrower rule would arm the gate
+    and then silently record no observation for it.
+
+    The paths are named relative to the run's tree because the same command runs
+    against two trees — the base and the head — and an absolute path into one of
+    them names the wrong tree in the other.
+    """
+    node = record.get("node")
+    write_paths = node.get("write_paths") if isinstance(node, Mapping) else None
+    if isinstance(write_paths, (str, bytes)) or not isinstance(write_paths, Sequence):
+        return []
+    repo_text = str(record.get("worktree") or record.get("repo") or "").strip()
+    repo = Path(repo_text).expanduser() if repo_text else None
+    files: set[str] = set()
+    for entry in write_paths:
+        text = str(entry or "").strip()
+        if not text or not is_test_path(text):
+            continue
+        relative = _repository_relative_scope(text, repo)
+        if relative is None:
+            # Outside the run's own tree: a default role path under the run
+            # directory names the run, not the repository's tests.
+            continue
+        files.add(relative)
+    return sorted(files)
+
+
+def _scoped_suite_command(record: Mapping[str, Any]) -> str:
+    """The armed suite command with its scoped placeholder resolved, or empty.
+
+    A flight config may arm the project with a command carrying
+    ``{node_test_files}``; the placeholder stands for the node's own fenced
+    test files, so one declaration scopes every node to the tests its change
+    can affect. A declaration with no placeholder is returned as written.
+
+    An empty result means the run has nothing to measure with: no declaration
+    at all, or a scoped one over a node whose fenced scope holds no test file.
+    Promotion then records no suite observation for the pair, which is the same
+    state an unarmed project is in.
+    """
+    declared = " ".join(str(record.get("suite_command") or "").split())
+    if not declared:
+        return ""
+    if SCOPED_SUITE_PLACEHOLDER not in declared:
+        return declared
+    files = _node_test_files(record)
+    if not files:
+        return ""
+    return " ".join(declared.replace(SCOPED_SUITE_PLACEHOLDER, " ".join(files)).split())
+
+
 def _evaluate_suite_delta(
     run_id: str,
     record: Mapping[str, Any],
@@ -343,8 +407,13 @@ def _evaluate_suite_delta(
     refused as before, and an arm whose recorded command differs from the
     command the run was armed with measures a different suite, so it is
     refused as missing evidence too.
+
+    The command compared against is the resolved one: an armed project whose
+    declaration is scoped to ``{node_test_files}`` measures the node's own
+    fenced test files, so a pair that ran other files measured a different
+    suite and is refused.
     """
-    suite_command = str(record.get("suite_command") or "").strip()
+    suite_command = _scoped_suite_command(record)
     if not suite_command:
         return None
 

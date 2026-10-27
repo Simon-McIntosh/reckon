@@ -651,8 +651,17 @@ def _reviewed_run_suite_command(record: Mapping[str, Any]) -> str:
     ``review.suite`` declaration is the project's own gate, not a measurement the
     reviewed run was ever taken with, so inheriting it would compare the repair's
     observation against one the reviewed run never made.
+
+    A scoped declaration is read through the same resolution promotion applies,
+    so the repair is handed the files the reviewed run was actually measured on
+    rather than an unsubstituted placeholder; one that resolves to nothing names
+    no command, and the repair is unarmed like the run it answers.
     """
-    return str(record.get("suite_command") or "").strip()
+    # Deferred: promotion_records reads the run record through this module's
+    # siblings, so the import is made where it is used rather than at load.
+    from reckon.crew.promotion_records import _scoped_suite_command
+
+    return _scoped_suite_command(record)
 
 
 def _config_carrying_suite(
