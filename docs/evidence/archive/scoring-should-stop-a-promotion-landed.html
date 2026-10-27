@@ -2047,6 +2047,11 @@ E  assert 5 == 90</pre>
     <p><code>crew dispose --rubric figure</code> writes a disposition onto a run's figure-review record and composes its receipt from that record, threaded through <code>record_finding_disposition</code> and <code>stored_record_for_disposition</code> in <code>reckon/crew/review_dispositions.py</code>. Without the option it answers the text review as before. The callback's <code>review_rubric</code> defaults to <code>None</code>, so the crew MCP tool and direct callers keep working; the MCP tool cannot yet pass a rubric, which would change its signature.</p><p><strong>Measure.</strong> <code>tests/test_crew_dispose_answers_a_figure_finding.py</code> with the dispose, MCP-parity and help-contract tests: 34 passed at <code>4afe48060</code>, replayed green by <code>verify-gate</code> at the merge <code>dd31ca682</code>. Dropping the rubric before <code>stored_record</code> leaves the finding blocking. A repair round fixed three tests the first head broke by leaving the new parameter without a default. Over 18 disposition and dispose test files, 0 added; ruff is clean on all three changed files. Review: 109/120. Follow-ons: the two new refusals have no test, and the MCP tool has no rubric argument.</p>
   </section>
 
+  <section id="s5">
+    <h2>§5 landing</h2>
+    <p>Run <code>r-20261027T000936457072-the-back-half-promoted-behind-reviews</code> landed at merge <code>923f6261b</code>. Every promoted node of this plan from section 5 on carries a stored, parsed review with no waiver: 22 of 22, median review wall time 911 s, and the findings coordinators acted on are named by run and index; a census widened to section 1 finds the two early unreviewed runs, so the zero is a measurement.</p>
+  </section>
+
 </main>
 </body>
 </html>
