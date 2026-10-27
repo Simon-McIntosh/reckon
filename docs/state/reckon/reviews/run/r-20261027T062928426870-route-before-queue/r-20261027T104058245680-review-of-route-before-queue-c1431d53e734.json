@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    "tests/test_route_before_queue.py:211-213 asserts the two launched backends and route_mode against literals METERED/'picker' while local slots are zero; reverting metered admission would fail it.",
+    "tests/test_route_before_queue.py:253-261 asserts the released metered request launches on METERED with its stored reason, and its negative arm at :246-252 restricts the admission order to local and requires zero launches; reverting the admit_once lane inclusion fails the positive arm.",
+    "tests/test_route_before_queue.py:320-337 moves the queued request to LOCAL after admission is blocked, then asserts the launched record's backend is LOCAL; reversely removing the 'not destination' guard launches beta and fails it (move-negative-control.log).",
+    "tests/test_route_before_queue.py:392-397 requires the spent-credit-lift dispatch to raise BudgetHold carrying the cap reason and to leave no live run; reverting the credit_lift guard (lift-negative-control.log) fails the credit-cap test.",
+    "tests/test_route_before_queue.py:358 compares run['admit_request']['route_fallback'] with run['route_fallback'], two fields written by the same recording path, so it is not independent; lines 355-357 carry the independent proof."
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2026",
+    "reckon/crew/dispatch.py:518",
+    "reckon/crew/queue_admission.py:249",
+    "reckon/crew/queue_admission.py:2595",
+    "reckon/crew/queue_admission.py:2608",
+    "reckon/crew/dispatch_sessions.py:1696"
+  ],
+  "completed_at": "2026-10-27T11:03:02.947Z",
+  "dispatched_at": "2026-10-27T10:43:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 473,
+      "severity": "non-blocking",
+      "text": "non-blocking: _local_fallback forks the queued-move capability owned by move_queued_run (:300): both rebind a queued request to another backend and relaunch it, but _local_fallback omits the snapshot/restore and stamps route_fallback where the owner stamps lane_move, so the two move paths can drift in provenance and refusal handling."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 480,
+      "severity": "non-blocking",
+      "text": "non-blocking: _local_fallback does not consult hold.verdict.get('credit_lift'), so at admission a picker request whose credit lift is spent falls back to local, while the direct-dispatch path raises a hold at reckon/crew/dispatch.py:1729; the fragment's 'a spent credit lift keeps its budget hold' therefore holds only on the direct path."
+    },
+    {
+      "file": "tests/test_route_before_queue.py",
+      "line": 358,
+      "severity": "non-blocking",
+      "text": "non-blocking: assert run['admit_request']['route_fallback'] == run['route_fallback'] compares two values written by the same fallback recording, so it is not independent evidence; the preceding lines 355-357 already assert destination, source and reason independently."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "the repair delta 7ebe3eb93..c1431d53e adds one line to replay_pick (queue_admission.py:241), the credit_lift/fallback guards in dispatch.py:1646-1729, two new tests and the fragment; read commit by commit, all inside scope.",
+    "done_when": "prompt.txt:105-106 names tests/test_route_before_queue.py; landing-final-focused.log records 65 passed at c1431d53e against 3 failed/60 passed in landing-base.log at 7ebe3eb93, and landing-ruff.log shows ruff check and format clean.",
+    "goal": "prompt.txt:30 requires picker routing through the queue, ready metered launch, and local fallback; reckon/crew/queue_admission.py:236-278 and reckon/crew/dispatch.py:1659-1830 implement all three, and the landed change satisfies the goal.",
+    "manifest": "manifest.md reports status complete, names nine commits, records a complete 65-pass focused head gate and 12-pass route gate, and cites move/lift/repair negative controls that fail as intended.",
+    "write_paths": "manifest.md:3 lists the five source/doc paths; git diff cd8cc17a4..c1431d53e changes only reckon/crew/dispatch.py, reckon/crew/queue_admission.py, reckon/crew_dispatch_* .py, the route test and the declared fragment, all inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_route_before_queue.py:311-337 fails on the reversed move fix (moved backend beta vs clive) and :374-397 fails on the reversed credit-lift fix, though line 358 is a non-independent assertion.",
+    "evidence": "landing-base.log records 3 failed/60 passed at 7ebe3eb93 and landing-final-focused.log records 65 passed at c1431d53e, with landing-final-route.log 12 passed; both negative controls (move-negative-control.log, lift-negative-control.log) fail on the reversed source.",
+    "fit": "reckon/crew/queue_admission.py:461-510 follows the module's private-helper idiom and uses mechanism names (route_fallback, replay_pick, _record_metered_hold) with no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:236-278 replays the stored picker selection on admission and reckon/crew/dispatch.py:1659-1830 implements per-lane queueing, fallback and named-route holds that \u00a715 requires.",
+    "reuse": "reckon/crew/queue_admission.py:473 _local_fallback re-derives the queued rebind-and-relaunch that move_queued_run at :300 already owns, diverging in provenance and snapshot handling.",
+    "scope_discipline": "every path in the base..head diff (reckon/crew/dispatch.py, reckon/crew/queue_admission.py, reckon/crew_dispatch_commands.py, tests/test_route_before_queue.py, the evidence fragment) is inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 requires picker routing through the queue, ready metered launch, and local fallback; reckon/crew/queue_admission.py:236-278 and reckon/crew/dispatch.py:1659-1830 implement all three, and the landed change satisfies the goal.\nVERDICT done_when: prompt.txt:105-106 names tests/test_route_before_queue.py; landing-final-focused.log records 65 passed at c1431d53e against 3 failed/60 passed in landing-base.log at 7ebe3eb93, and landing-ruff.log shows ruff check and format clean.\nVERDICT write_paths: manifest.md:3 lists the five source/doc paths; git diff cd8cc17a4..c1431d53e changes only reckon/crew/dispatch.py, reckon/crew/queue_admission.py, reckon/crew_dispatch_* .py, the route test and the declared fragment, all inside the grant.\nVERDICT manifest: manifest.md reports status complete, names nine commits, records a complete 65-pass focused head gate and 12-pass route gate, and cites move/lift/repair negative controls that fail as intended.\nVERDICT diff: the repair delta 7ebe3eb93..c1431d53e adds one line to replay_pick (queue_admission.py:241), the credit_lift/fallback guards in dispatch.py:1646-1729, two new tests and the fragment; read commit by commit, all inside scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:2026, reckon/crew/dispatch.py:518, reckon/crew/queue_admission.py:249, reckon/crew/queue_admission.py:2595, reckon/crew/queue_admission.py:2608, reckon/crew/dispatch_sessions.py:1696\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:236-278 replays the stored picker selection on admission and reckon/crew/dispatch.py:1659-1830 implements per-lane queueing, fallback and named-route holds that \u00a715 requires.\nSCORE evidence: 18\nJUSTIFICATION evidence: landing-base.log records 3 failed/60 passed at 7ebe3eb93 and landing-final-focused.log records 65 passed at c1431d53e, with landing-final-route.log 12 passed; both negative controls (move-negative-control.log, lift-negative-control.log) fail on the reversed source.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the base..head diff (reckon/crew/dispatch.py, reckon/crew/queue_admission.py, reckon/crew_dispatch_commands.py, tests/test_route_before_queue.py, the evidence fragment) is inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_route_before_queue.py:311-337 fails on the reversed move fix (moved backend beta vs clive) and :374-397 fails on the reversed credit-lift fix, though line 358 is a non-independent assertion.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/queue_admission.py:461-510 follows the module's private-helper idiom and uses mechanism names (route_fallback, replay_pick, _record_metered_hold) with no plan or ticket identifiers.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:473 _local_fallback re-derives the queued rebind-and-relaunch that move_queued_run at :300 already owns, diverging in provenance and snapshot handling.\nFINDING reckon/crew/queue_admission.py:473 non-blocking: _local_fallback forks the queued-move capability owned by move_queued_run (:300): both rebind a queued request to another backend and relaunch it, but _local_fallback omits the snapshot/restore and stamps route_fallback where the owner stamps lane_move, so the two move paths can drift in provenance and refusal handling.\nFINDING reckon/crew/queue_admission.py:480 non-blocking: _local_fallback does not consult hold.verdict.get('credit_lift'), so at admission a picker request whose credit lift is spent falls back to local, while the direct-dispatch path raises a hold at reckon/crew/dispatch.py:1729; the fragment's 'a spent credit lift keeps its budget hold' therefore holds only on the direct path.\nFINDING tests/test_route_before_queue.py:358 non-blocking: assert run['admit_request']['route_fallback'] == run['route_fallback'] compares two values written by the same fallback recording, so it is not independent evidence; the preceding lines 355-357 already assert destination, source and reason independently.\n",
+  "review_run_id": "r-20261027T104058245680-review-of-route-before-queue-c1431d53e734",
+  "reviewed_base_sha": "7ebe3eb93b4a8cca6aca6e8af5bc3673fa140666",
+  "reviewed_head_sha": "c1431d53e734892caeb027660eab362a51294ac9",
+  "reviewed_run_id": "r-20261027T062928426870-route-before-queue",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T11:06:47.128418+00:00",
+  "total": 105
+}
