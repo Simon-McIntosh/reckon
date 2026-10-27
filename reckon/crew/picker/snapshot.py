@@ -1224,7 +1224,11 @@ def _reserved_lane_exclusion(
     threshold = policy.get(flight.PICKER_RESERVED_LANE_ATTEMPTS_KEY)
     ceiling = float(policy.get(flight.PICKER_RESERVED_LANE_CEILING_KEY) or 0)
     attempts_met = isinstance(threshold, int) and attempts >= threshold
-    if not waive_tier and not _reserved_lane_floor_met(declared, floor) and not attempts_met:
+    if (
+        not waive_tier
+        and not _reserved_lane_floor_met(declared, floor)
+        and not attempts_met
+    ):
         return (
             f"reserved-lane: {lane} is offered at its hardest tier "
             f"{sorted(floor)} or after {threshold} attempts; this node declares "
@@ -1319,9 +1323,7 @@ def _group_name(group: Any, config: Mapping[str, Any] | None) -> str | None:
     return None
 
 
-OVERSIZE_CONTEXT_WAIVER_NOTE = (
-    "offered because no open lane fits the node's context"
-)
+OVERSIZE_CONTEXT_WAIVER_NOTE = "offered because no open lane fits the node's context"
 
 
 def _excluded_only_on_context(reasons: list[str]) -> bool:

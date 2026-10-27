@@ -21,7 +21,6 @@ from reckon import flight
 from reckon.crew import dispatch_picker
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import PickRequest, snapshot
-from tests.test_picker_in_dispatch import repo  # noqa: F401  (fixture)
 
 NOW = datetime(2026, 10, 18, 12, 0, 0, tzinfo=UTC)
 
@@ -33,7 +32,7 @@ CODEX_WINDOW = 400_000
 WAIVER_NOTE = "offered because no open lane fits the node's context"
 
 
-def CONFIG() -> dict:
+def _config() -> dict:
     return {
         "default_backend": "codex-astra",
         "local_backend": "local-served",
@@ -146,7 +145,7 @@ def live(monkeypatch, tmp_path):
 def _candidates(root, request, view=None):
     return snapshot.candidates(
         request,
-        CONFIG(),
+        _config(),
         root,
         records=[],
         verdict_inputs={},
@@ -155,7 +154,9 @@ def _candidates(root, request, view=None):
 
 
 def _offered(options) -> dict:
-    return {candidate.backend: candidate for candidate in options if not candidate.reasons}
+    return {
+        candidate.backend: candidate for candidate in options if not candidate.reasons
+    }
 
 
 def _reasons(options, backend) -> list[str]:
@@ -169,9 +170,14 @@ def test_an_oversize_node_with_no_tier_is_offered_the_reserved_lane(
 
     _windows(monkeypatch)
     options = _candidates(live, _request(300_000))
-    offered = {candidate.backend: candidate for candidate in options if not candidate.reasons}
+    offered = {
+        candidate.backend: candidate for candidate in options if not candidate.reasons
+    }
     assert "local-served" not in offered
-    assert any(reason.startswith("context-fit: ") for reason in _reasons(options, "local-served"))
+    assert any(
+        reason.startswith("context-fit: ")
+        for reason in _reasons(options, "local-served")
+    )
     assert "codex-astra" in offered
     assert offered["codex-astra"].note == WAIVER_NOTE
     # The pick admits a candidate by an empty reasons list; the exception is
@@ -186,12 +192,15 @@ def test_a_node_within_the_local_window_is_not_offered_the_reserved_lane(
 
     _windows(monkeypatch)
     options = _candidates(live, _request(8_000))
-    offered = {candidate.backend: candidate for candidate in options if not candidate.reasons}
+    offered = {
+        candidate.backend: candidate for candidate in options if not candidate.reasons
+    }
     assert "local-served" in offered
     assert offered["local-served"].note is None
     assert "codex-astra" not in offered
     assert any(
-        reason.startswith("reserved-lane: ") for reason in _reasons(options, "codex-astra")
+        reason.startswith("reserved-lane: ")
+        for reason in _reasons(options, "codex-astra")
     )
 
 
@@ -202,14 +211,16 @@ def test_an_oversize_node_is_refused_when_the_lane_window_is_at_its_ceiling(
 
     _windows(monkeypatch)
     options = _candidates(live, _request(300_000), view=_view(codex_pct=60.0))
-    offered = {candidate.backend: candidate for candidate in options if not candidate.reasons}
+    offered = {
+        candidate.backend: candidate for candidate in options if not candidate.reasons
+    }
     assert "codex-astra" not in offered
     candidate = next(c for c in options if c.backend == "codex-astra")
     assert candidate.note is None
     # The waiver is what the node is judged on, and the window term it never
     # reaches today is the one that holds: the tier term is gone and the
     # candidate is still withheld by its own account window.
-    policy = flight.reserved_lane_policies(CONFIG())["codex"]
+    policy = flight.reserved_lane_policies(_config())["codex"]
     withheld = snapshot._reserved_lane_exclusion(
         "codex",
         policy,
@@ -233,10 +244,13 @@ def test_an_oversize_node_is_not_offered_a_lane_whose_own_window_it_exceeds(
 
     monkeypatch.setattr(snapshot.routing, "_context_fit_verdict", verdict)
     options = _candidates(live, _request(300_000))
-    offered = {candidate.backend: candidate for candidate in options if not candidate.reasons}
+    offered = {
+        candidate.backend: candidate for candidate in options if not candidate.reasons
+    }
     assert "codex-astra" not in offered
     assert any(
-        reason.startswith("context-fit: ") for reason in _reasons(options, "codex-astra")
+        reason.startswith("context-fit: ")
+        for reason in _reasons(options, "codex-astra")
     )
 
 
@@ -257,17 +271,20 @@ def test_a_lane_excluded_for_another_reason_earns_no_waiver(live, monkeypatch) -
         ),
     )
     options = _candidates(live, _request(300_000))
-    offered = {candidate.backend: candidate for candidate in options if not candidate.reasons}
+    offered = {
+        candidate.backend: candidate for candidate in options if not candidate.reasons
+    }
     assert _reasons(options, "local-served") == ["availability: refused"]
     assert "codex-astra" not in offered
     assert any(
-        reason.startswith("reserved-lane: ") for reason in _reasons(options, "codex-astra")
+        reason.startswith("reserved-lane: ")
+        for reason in _reasons(options, "codex-astra")
     )
 
 
 def test_the_policy_is_keyed_by_the_lane_the_state_reads() -> None:
     """The waiver reads the same lane derivation the policy is keyed by."""
 
-    config = CONFIG()
+    config = _config()
     assert dispatch_picker.lane_family(config, "codex-astra") == "codex"
     assert dispatch_picker.lane_family(config, "local-served") == "local"
