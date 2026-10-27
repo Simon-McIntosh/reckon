@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T18:56:49.245Z",
+  "dispatched_at": "2026-10-27T18:46:18Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 23,
+      "severity": "non-blocking",
+      "text": "the head gate log named for 03783f681 (five-and-mine.log under the run's scratch directory) opens with CMD:/REV: lines and ends at 99 passed with no bare EXIT= line, so the run's own gate for the reviewed head cannot be read by the log contract promotion uses; baseline_suite (manifest.md:31) and after_suite (manifest.md:32) still name the earlier round 5c41e9e07 -> 4d2902649."
+    },
+    {
+      "file": "tests/test_a_finding_says_whether_it_blocks.py",
+      "line": 202,
+      "severity": "non-blocking",
+      "text": "the added separation varies only the line field, so an id function that regressed to hashing line alone would still separate the two and stay green, although reckon/crew/repair.py:99 mixes file, line and text and the docstring at repair.py:89-92 says so."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is 'Run landed-work review, repair and diff re-review for up to three rounds with no coordinator, and keep a hand-repaired run reviewable'; this re-review reads only the commits gained since the e40786308 record, 03783f681 and e52fe40d1, which change which tree the descent reader searches (reckon/crew/review_records.py:1436-1518).\nVERDICT done_when: the done_when's sixth arm, 'a run repaired by a hand resume is still reviewable', is now measured by tests/test_review_repair_runs_without_the_coordinator.py:175-202, whose fixture keeps the registered checkout and the run's worktree in separate repositories; the recorded negative control (negative-control-checkout.log under the run's scratch directory) fails both descent arms against the previous head and passes at 03783f681.\nVERDICT write_paths: the node's declared write paths are docs/evidence/fragments/a-queue-holds-the-whole-plan/review-repair-runs-without-the-coordinator.html, reckon/crew/review_records.py, tests/test_a_finding_says_whether_it_blocks.py and tests/test_review_repair_runs_without_the_coordinator.py; every path in 03783f681 and e52fe40d1 is one of them and nothing else changed.\nVERDICT manifest: read the reviewed run's manifest.md; it records status complete with commits through e52fe40d1 (manifest.md:6), the re-review gate logs at 99 passed at 03783f681 (manifest.md:23), the five answered arms (manifest.md:44-47) and an out-of-scope path under outside_scope (manifest.md:26), but its baseline_suite/after_suite pair (manifest.md:31-32) still covers the earlier round only.\nVERDICT diff: read 03783f681 and e52fe40d1 commit by commit against e40786308; review_records.py:1454 drops the root override so committed_review_root resolves from the registered checkout while repository is used for the ancestry test alone (review_records.py:1518), the fixture at tests/test_review_repair_runs_without_the_coordinator.py:106 builds a separate main checkout, and tests/test_a_finding_says_whether_it_blocks.py:202 adds a two-input id separation; e52fe40d1 changes one sentence of the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:727\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the previous review's blocking finding, the descent searching the run's worktree at reckon/crew/review_records.py:1506, is repaired: called from this run's own worktree against head e52fe40d it returns the landed record .../reviews/run/<run>/r-...-e40786308a76.json with stored_head e40786308a767b7a3de1faa2c1a74ff157d90a9a.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate at 03783f681 is recorded as 99 passed with a negative control that reddens 2 arms against the prior head (manifest.md:23), but that log carries no EXIT= line and the armed baseline_suite/after_suite pair at manifest.md:31-32 stops at the earlier round.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four paths across 03783f681 and e52fe40d1 are exactly the four the dispatch names, and the evidence fragment is edited in one sentence rather than rewritten (docs/evidence/fragments/a-queue-holds-the-whole-plan/review-repair-runs-without-the-coordinator.html:18).\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_review_repair_runs_without_the_coordinator.py:189 and :196 both fail against the module reverted to e40786308 (negative-control-checkout.log, 2 failed 1 passed), so the arm tracks the tree-selection regression rather than passing on any layout.\nSCORE fit: 19\nJUSTIFICATION fit: the reader now resolves its store through review.committed_review_root with no root argument (reckon/crew/review_records.py:1454), the same call the by-head selection makes at review_records.py:583, and its docstring states the tree and ancestry division without plan or ticket identifiers.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change removes a duplicated path override and reuses review.committed_review_root (reckon/crew/review_records.py:1454) and merge._is_ancestor (review_records.py:1518) rather than adding a reader, while the test-side _registered_checkout at tests/test_review_repair_runs_without_the_coordinator.py:106 follows this suite's per-file mount helper idiom (tests/test_crew_dispose_answers_a_figure_finding.py:154, tests/test_audit.py:138) for which no single owner exists.\nFINDING manifest.md:23 non-blocking: the head gate log named for 03783f681 (five-and-mine.log under the run's scratch directory) opens with CMD:/REV: lines and ends at '99 passed in 19.51s' with no bare EXIT= line, so the run's own gate for the reviewed head cannot be read by the log contract promotion uses, while baseline_suite and after_suite at manifest.md:31-32 still name 5c41e9e07 -> 4d2902649.\nFINDING tests/test_a_finding_says_whether_it_blocks.py:202 non-blocking: the added separation varies only the line field, so an id function that hashed line alone would still pass although reckon/crew/repair.py:99 mixes file, line and text and its docstring at repair.py:89-92 says so.\n",
+  "review_run_id": "r-20261027T184414709729-review-of-review-repair-runs-without-the-coordinator-e52fe40d1134",
+  "reviewed_base_sha": "e40786308a767b7a3de1faa2c1a74ff157d90a9a",
+  "reviewed_head_sha": "e52fe40d1134c28a51f33ef5243f2e2e80f26afc",
+  "reviewed_run_id": "r-20261027T124142949092-review-repair-runs-without-the-coordinator",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T18:58:06.689814+00:00",
+  "total": 110
+}
