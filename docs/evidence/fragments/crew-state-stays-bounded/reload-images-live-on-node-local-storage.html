@@ -1,0 +1,44 @@
+<!-- Evidence anchor: reload-images-live-on-node-local-storage -->
+
+<section id="reload-images-live-on-node-local-storage-evidence">
+  <h2>Reload images live under the node's runtime root</h2>
+
+  <p id="reload-images-live-on-node-local-storage-change">
+    <code>checkout_trust._committed_tree_cache</code> resolves the image cache through
+    <code>reckon.crew.station_store.runtime_root_source</code> — the station's own resolver, not a
+    second one — and returns <code>&lt;runtime root&gt;/reload-trees</code>. When no node-local root
+    is available it raises, naming the three candidates, rather than falling back to the crew home;
+    an image on shared storage is exactly what the cache moved off. With every image node-local, the
+    cross-node lease record is gone: <code>_record_lease_node</code> and <code>_lease_nodes</code> are
+    deleted, <code>pin_materialized_tree</code> and <code>refresh_materialized_tree_pin</code> no
+    longer write it, and <code>_prune_must_keep</code> loses its host branch. What remains is the
+    same-node rule: an image whose <code>.in-use</code> mark exists is left to the pruner's
+    <code>flock</code>, which is visible on this node and refuses while a reader holds one, and a
+    tree with no mark yet — the publish-to-lease gap — is spared for the publish grace.
+  </p>
+
+  <p id="reload-images-live-on-node-local-storage-measure">
+    The gate ran in the foreground on the fleet allocation: 31 passed at head across the five
+    reload tests named in the brief plus the revised pruning file and the new cache file. The new
+    file's five cases fail at the base revision (5 failed, 8 passed) and pass at head (10 passed in
+    the two-file suite: <code>EXIT=0</code>).
+  </p>
+
+  <p id="reload-images-live-on-node-local-storage-negative">
+    <strong>Negative control.</strong> The declared mutation makes the resolver return the crew-home
+    path. The path test then fails — 5 failed, <code>EXIT=1</code> — while the head arm fails none.
+  </p>
+
+  <p id="reload-images-live-on-node-local-storage-open">
+    <strong>Open item (outside this node's write scope).</strong>
+    <code>tests/test_a_reload_waits_for_a_clean_tree.py</code> asserts an image under
+    <code>isolated_home/crew/reload-trees</code>; its producer launcher inherits
+    <code>XDG_RUNTIME_DIR</code>, so the image now lands under the node's real runtime root and the
+    assertion fails. The fixture needs a temporary <code>XDG_RUNTIME_DIR</code> and the assertion
+    re-pointed at it. Three further files still name the retired record and must go with it:
+    <code>tests/test_a_stale_lease_record_does_not_expose_a_pin.py</code> (its whole subject),
+    <code>tests/test_reload_tree_housekeeping_stays_off_the_stream.py</code>, and
+    <code>tests/test_a_reload_never_aborts_on_a_tree_a_peer_pruned.py</code> (its fixture stubs
+    <code>_lock_node_name</code>).
+  </p>
+</section>
