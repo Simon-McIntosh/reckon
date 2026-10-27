@@ -26,13 +26,14 @@ idle poll is two cheap reads and no event query.
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Iterable, Iterator, Mapping
 from datetime import UTC, date, datetime
 from typing import Any
 
 from reckon._timestamps import parse_utc
-from reckon.crew import station_store, ticker
+from reckon.crew import node, station_store, ticker
 from reckon.crew.follow_checkpoint import cap_history
 
 # How old the station's heartbeat may be before a subscriber says so. The
@@ -62,6 +63,131 @@ STALE_HEARTBEAT_TEXT = (
 )
 
 _RESTART_COMMAND = "reckon crew station"
+
+# The station value one project's has-live-work readings live under, suffixed
+# with the project name. The station writes it on every tick and a pane reads
+# it instead of listing the live pointer directory, so a settle costs the pane
+# no file under the crew home.
+LIVE_WORK_KEY = "live-work"
+
+
+def live_work_populations(
+    pointers: Iterable[Mapping[str, Any]],
+) -> tuple[bool, bool, list[str]]:
+    """One fleet's reading: whether anything is live, unowned, and for whom.
+
+    This is the one statement of the has-live-work rule. The station writes its
+    answer into the reading a pane settles by, and a pane with no station asks
+    the same rule of the pointers directly, so the two cannot disagree about
+    which run makes a population live.
+
+    Only a run that has not reached a terminal phase is work still owed a pane:
+    a pointer already terminal waits on the coordinator's promotion rather than
+    on a follower. An ownerless pointer keeps every session's reading live,
+    because without an owner nothing shows the work is not the reader's own.
+    """
+    project_live = False
+    unowned = False
+    sessions: set[str] = set()
+    for pointer in pointers:
+        if str(pointer.get("phase") or "") in node._TERMINAL_RUN_PHASES:
+            continue
+        project_live = True
+        owner = str(pointer.get("session") or "")
+        if owner:
+            sessions.add(owner)
+        else:
+            unowned = True
+    return project_live, unowned, sorted(sessions)
+
+
+def population_has_live_work(
+    pointers: Iterable[Mapping[str, Any]], session: str | None
+) -> bool:
+    """Whether one population — a session's runs, or the project's — is live."""
+    project_live, unowned, sessions = live_work_populations(pointers)
+    if session is None:
+        return project_live
+    return unowned or str(session) in sessions
+
+
+def record_live_work(
+    store: station_store.StationStore,
+    project: str,
+    *,
+    at: datetime,
+    project_live: bool,
+    unowned: bool,
+    sessions: Iterable[str],
+) -> None:
+    """Record one project's reading, as the population each pane is judged by.
+
+    A reading names the sessions holding work that has not ended, the
+    project-wide answer an unscoped pane is judged by, and whether a live
+    pointer carries no owner at all. An ownerless pointer keeps every session's
+    reading live, because a pane cannot show that the work is not its own.
+    """
+    payload = {
+        "at": at.astimezone(UTC).isoformat(),
+        "project_live": bool(project_live),
+        "unowned": bool(unowned),
+        "sessions": sorted({str(name) for name in sessions if name}),
+    }
+    store.set_station_value(f"{LIVE_WORK_KEY}:{project}", json.dumps(payload))
+
+
+def live_work_verdict(
+    store: station_store.StationStore,
+    project: str,
+    *,
+    session: str | None,
+    now: datetime | None = None,
+    max_age_seconds: float = STALE_HEARTBEAT_SECONDS,
+) -> bool | None:
+    """Whether the station's latest reading shows work, or ``None`` for no answer.
+
+    ``session=None`` asks the project-wide reading an unscoped pane is judged
+    by; a named session asks its own. A reading older than ``max_age_seconds``,
+    or no readable reading at all, is not a reading of no work: it is no
+    answer, and a caller that would end a pane on "no work" has to reach its
+    own conclusion instead. A station that has stopped is separately named to
+    the pane by :func:`stale_heartbeat_line`; deciding a settle on a reading
+    nothing is refreshing would end a pane over a fleet nobody is looking at.
+    """
+    raw = store.station_value(f"{LIVE_WORK_KEY}:{project}")
+    try:
+        payload = json.loads(raw) if raw else None
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    age = _age_seconds(str(payload.get("at") or ""), now=now or datetime.now(tz=UTC))
+    if age is None or age > max_age_seconds:
+        return None
+    if session is None:
+        return bool(payload.get("project_live"))
+    if bool(payload.get("unowned")):
+        return True
+    return str(session) in {str(name) for name in payload.get("sessions") or () if name}
+
+
+def live_work_reading(
+    store: station_store.StationStore,
+    project: str,
+    *,
+    session: str | None,
+    now: datetime | None = None,
+    max_age_seconds: float = STALE_HEARTBEAT_SECONDS,
+) -> bool:
+    """The station's answer for this population, with no answer read as no work."""
+    verdict = live_work_verdict(
+        store,
+        project,
+        session=session,
+        now=now,
+        max_age_seconds=max_age_seconds,
+    )
+    return bool(verdict)
 
 
 def _utc_day(stamp: Any) -> date | None:
@@ -397,6 +523,18 @@ class StationSubscriber:
             self.store, now=now, stale_seconds=self.stale_seconds
         )
 
+    def live_work(self, session: str | None = None) -> bool | None:
+        """The station's answer for that population, or ``None`` for no answer.
+
+        The pane's own settle rule judges each population it carries
+        separately; this answers one of them from the reading the station
+        wrote on its tick, so the judgement costs no directory listing. A
+        reading the station has stopped refreshing answers ``None`` rather
+        than "no work", so a pane whose station has stalled settles nothing on
+        its silence.
+        """
+        return live_work_verdict(self.store, self.project, session=session)
+
     def wake(
         self,
         *,
@@ -404,8 +542,16 @@ class StationSubscriber:
         interval: float = 0.1,
         sleeper=time.sleep,
         stale_interval: float = 5.0,
+        each_pass=None,
     ) -> Iterator[Mapping[str, Any]]:
         """Yield this pane's rows until ``stop`` is set.
+
+        This is the one poll loop a pane runs: the follow command's subscriber
+        branch drives it rather than keeping a loop of its own, so the rows a
+        pane paints and the rows a test reads arrive by the same path.
+        ``each_pass`` is that caller's own per-pass work — the checks that end
+        an arming — and returning false from it ends the loop, exactly as
+        ``stop`` does.
 
         The station's heartbeat is checked on its own cadence rather than on
         every pass, and its line is printed once — a subscriber that repeated it
@@ -427,6 +573,8 @@ class StationSubscriber:
                     "run_id": None,
                     "line": line,
                 }
+            if each_pass is not None and not each_pass():
+                return
             sleeper(interval)
             if stale_reported and stale_interval and self.stale_line() is None:
                 stale_reported = False
