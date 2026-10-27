@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="183">
+<meta name="plan-version" content="184">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -524,6 +524,9 @@
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261027T161513797951-review-of-review-repair-runs-without-the-coordinator-4d29026493fd" data-who="reckon-build" data-when="2026-10-27T16:27:44.960Z">
     <div class="r-comment-body"><p>Independent review stored for run r-20261027T124142949092-review-repair-runs-without-the-coordinator over 5c41e9e07..4d2902649 (e89f16ce0 adds the rubric self-check contract and reader to reckon/crew/prompts.py plus its tests; 4d2902649 appends one paragraph to the evidence fragment). Status parsed. Scores goal_fidelity 16, evidence 16, scope_discipline 20, durability 17, fit 18, reuse 17. No blocking finding. Two non-blocking findings: reckon/crew/prompts.py:479 missing_rubric_self_checks has no production caller; reckon/crew/prompts.py:73 the invariant contract names no dimensions, so the six REVIEW_DIMENSIONS words the reader keys on are unstated for a vocabulary that reaches every project.</p></div>
+</div>
+<div class="r-comment" data-section="s28" data-id="c-s28-extend-queue-requests" data-who="" data-when="">
+    <div class="r-comment-body"><p>The batch store already exists in one form. <code>queue_requests</code> in <code>reckon/crew/dispatch.py</code>, wrapped in <code>reckon/crew/queue_admission.py</code>, stores a batch for one project and raises on the first refusal. §28 extends that path to take entries from several projects and to return a result per entry, rather than adding a second batch path beside it. Its write paths include <code>reckon/crew/dispatch.py</code> and <code>reckon/crew/queue_admission.py</code> for that reason.</p></div>
 </div>
 </section>
 </main>
