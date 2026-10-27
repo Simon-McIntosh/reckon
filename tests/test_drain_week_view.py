@@ -125,6 +125,40 @@ def test_week_view_counts_each_request_and_uses_the_last_admission_verdict(
     assert {row["run_id"]: row["last_verdict"] for row in week["project"]["stuck"]}[
         "r-012"
     ] == "held-for-allowance"
+    assert not any(
+        row["phase"] == "awaiting-upstream" for row in week["project"]["stuck"]
+    )
+
+
+def test_recent_launch_of_a_landed_request_uses_the_worker_stamp(
+    queue_home, monkeypatch
+) -> None:
+    now = datetime.now(UTC)
+    queued = (now - timedelta(days=2)).isoformat()
+    launched = (now - timedelta(hours=2)).isoformat()
+    completed = (now - timedelta(hours=1)).isoformat()
+    monkeypatch.setattr(
+        "reckon.ledger.load",
+        lambda *_args, **_kwargs: (
+            {
+                "runs": [
+                    {
+                        "run_id": "r-landed",
+                        "plan": "north",
+                        "dispatched_at": queued,
+                        "completed_at": completed,
+                        "worker_exit": {"launched_at": launched},
+                    }
+                ]
+            },
+            1,
+        ),
+    )
+
+    week = runs.drain("week-project")["week"]
+    assert week["project"]["launches_24h"] == 1
+    assert week["plans"]["north"]["launches_24h"] == 1
+    assert week["project"]["landings_24h"] == 1
 
 
 def test_zero_landing_rate_has_no_finish_estimate(queue_home, monkeypatch) -> None:
