@@ -21,7 +21,7 @@ from collections.abc import (
 )
 from contextlib import contextmanager as contextmanager, suppress as suppress
 from dataclasses import dataclass as dataclass, field as field
-from datetime import UTC as UTC, datetime as datetime
+from datetime import UTC as UTC, datetime as datetime, timedelta as timedelta
 from pathlib import Path as Path
 from typing import Any as Any
 from reckon import __version__ as __version__
@@ -2047,6 +2047,150 @@ def _unloaded_sections(
     return unloaded
 
 
+_DRAIN_WEEK_PHASES = (
+    "awaiting-upstream",
+    "queued",
+    "held",
+    "blocked-upstream",
+    "launched",
+    "landed",
+    "failed",
+)
+
+
+def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarise the queue and its recent throughput from one pointer read."""
+    from reckon import ledger
+
+    now = datetime.now(UTC)
+    day_ago = now - timedelta(days=1)
+    hour_ago = now - timedelta(hours=1)
+    landed, _version = ledger.load(project, use_index=False)
+    latest_verdict: dict[str, str] = {}
+    try:
+        with (crew_home() / "admission-verdicts.jsonl").open() as stream:
+            for line in stream:
+                try:
+                    record = json.loads(line)
+                except ValueError:
+                    continue
+                for verdict in record.get("pointers") or ():
+                    run_id = str(verdict.get("run_id") or "")
+                    if run_id:
+                        latest_verdict[run_id] = str(verdict.get("verdict") or "")
+    except FileNotFoundError:
+        pass
+
+    def empty() -> dict[str, Any]:
+        return {
+            "phases": dict.fromkeys(_DRAIN_WEEK_PHASES, 0),
+            "held_reasons": {},
+            "launches_24h": 0,
+            "landings_24h": 0,
+            "remaining": 0,
+            "finish_estimate_days": None,
+            "stuck": [],
+        }
+
+    project_view = empty()
+    plans: dict[str, dict[str, Any]] = {}
+    landed_ids = {str(record.get("run_id") or "") for record in landed["runs"]}
+    wait_cache: dict[str, Any] = {}
+    dead_sections: set[tuple[str, str]] | None = None
+    live_for_waits: list[dict[str, Any]] | None = None
+
+    def targets(plan: str) -> tuple[dict[str, Any], dict[str, Any]]:
+        return project_view, plans.setdefault(plan, empty())
+
+    for pointer in pointers:
+        if str(pointer.get("run_id") or "") in landed_ids:
+            continue
+        node = pointer.get("node")
+        if not isinstance(node, Mapping):
+            node = {}
+        plan = str(node.get("plan") or pointer.get("plan") or "")
+        phase = str(pointer.get("phase") or "")
+        if phase in {"awaiting-upstream", "queued", "held", "blocked-upstream"}:
+            bucket = phase
+        elif phase in {"failed", "launch-failed"}:
+            bucket = "failed"
+        else:
+            bucket = "launched"
+        started = parse_utc(pointer.get("launched_at"))
+        hold = pointer.get("queue_hold")
+        if not isinstance(hold, Mapping):
+            hold = {}
+        reason = str(hold.get("reason") or pointer.get("reason") or "unspecified")
+        if phase == "held":
+            phase_stamp = hold.get("started_at")
+        elif phase == "queued":
+            phase_stamp = pointer.get("queued_at")
+        elif phase == "launch-failed":
+            phase_stamp = pointer.get("failure_at")
+        elif phase == "awaiting-upstream":
+            phase_stamp = pointer.get("waits_at") or pointer.get("created_at")
+        else:
+            phase_stamp = pointer.get("created_at")
+        phase_start = parse_utc(phase_stamp)
+        overdue = phase_start is not None and phase_start < hour_ago
+        stuck = overdue and phase in {"queued", "launch-failed"}
+        if overdue and phase == "awaiting-upstream":
+            from reckon.crew import queue_admission
+
+            if live_for_waits is None:
+                live_for_waits = _list_live_records()
+                dead_sections = queue_admission._dead_sections(live_for_waits)
+            assert dead_sections is not None
+            docs_dir = Path(str(pointer.get("repo") or "") or ".") / "docs"
+            stuck = (
+                queue_admission.resolve_waits(
+                    pointer,
+                    live=live_for_waits,
+                    docs_dir=docs_dir,
+                    cache=wait_cache,
+                    dead_sections=dead_sections,
+                )
+                != phase
+            )
+        for view in targets(plan):
+            view["phases"][bucket] += 1
+            view["remaining"] += 1
+            if bucket == "held":
+                view["held_reasons"][reason] = view["held_reasons"].get(reason, 0) + 1
+            if started is not None and day_ago <= started <= now:
+                view["launches_24h"] += 1
+            if stuck:
+                view["stuck"].append(
+                    {
+                        "run_id": str(pointer.get("run_id") or ""),
+                        "phase": phase,
+                        "since": phase_start.isoformat(),
+                        "last_verdict": latest_verdict.get(
+                            str(pointer.get("run_id") or "")
+                        ),
+                    }
+                )
+
+    for record in landed["runs"]:
+        plan = str(record.get("plan") or "")
+        completed = parse_utc(record.get("completed_at"))
+        worker_exit = record.get("worker_exit")
+        if not isinstance(worker_exit, Mapping):
+            worker_exit = {}
+        launched = parse_utc(worker_exit.get("launched_at"))
+        for view in targets(plan):
+            view["phases"]["landed"] += 1
+            if completed is not None and day_ago <= completed <= now:
+                view["landings_24h"] += 1
+            if launched is not None and day_ago <= launched <= now:
+                view["launches_24h"] += 1
+
+    for view in (project_view, *plans.values()):
+        rate = view["landings_24h"]
+        view["finish_estimate_days"] = view["remaining"] / rate if rate else None
+    return {"project": project_view, "plans": plans}
+
+
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the closure drain derived from one project's live pointers.
 
@@ -2093,6 +2237,7 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
         "dispositions": list(RUN_DRAIN_DISPOSITIONS),
         "runs": counted,
         "unloaded": _unloaded_sections(project, pointers, plans),
+        "week": _drain_week_view(project, pointers),
     }
     if session is not None:
         result.update(
