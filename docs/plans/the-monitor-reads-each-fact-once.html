@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="56">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -288,7 +288,11 @@
     ended and writes the <code>auto_resume</code> stamp, and then the review pass, the review reflex
     (<code>recovery_review_acceptance.dispatch_awaiting_reviews</code>). The station runs the whole sweep, both
     passes, and settle detection for every session on the node, on the session's behalf, each on every change
-    <em>and</em> on the station's own beat. The beat is needed because all three expire on the clock: a hold
+    <em>and</em> on the station's own beat. The resume pass keeps the host rule
+    <code>runs.sweep_unfollowed_sessions</code> applies today: a resume restarts a process on the host it runs
+    on, so the station resumes only runs launched on its own host and leaves a run launched elsewhere to that
+    host's station. <code>resumption.sweep</code> carries no host filter of its own, so the station supplies
+    it. The beat is needed because all three expire on the clock: a hold
     or declared wait ends at its stated time, and a settle window expires <code>REVIEW_SETTLE_SECONDS</code> from the run's
     resume stamp (<code>recovery_review_dispatch.review_settle_seconds_remaining</code>), and a resumed worker
     that writes nothing produces no change at the moment the window passes.</p>
@@ -317,7 +321,8 @@
     work, and not while any one of them still reads live work; a run resumed by advice is not reviewed until its settle
     window has passed; a resumed run whose worker writes nothing after the resume is reviewed once the
     window has passed, with no further change to its files; and a run whose provider hold ends while no file
-    in the fleet changes is resumed on the station's beat. Measure: a 60 s
+    in the fleet changes is resumed on the station's beat; and a lapsed run launched on another host is not
+    resumed by this host's station. Measure: a 60 s
     <code>strace -f -e trace=openat,stat,newfstatat</code> of a running settle-aware subscriber (the process
     §8 delivers) names no path under the crew home other than the two lease files §8 allows, because settle
     detection now reads the station.
@@ -328,7 +333,8 @@
     must fail the sweep-count test; a settle reader
     that takes <code>auto_resume</code> alone must fail the advice-settle test; a station that evaluates settle
     only on change must fail the quiet-run test; a station that runs only the sweep's review pass, or runs
-    the sweep only on change, must fail the lapsed-hold test; and the same 60 s trace of a subscriber running today's
+    the sweep only on change, must fail the lapsed-hold test; a station without the host filter must fail
+    the foreign-run test; and the same 60 s trace of a subscriber running today's
     per-follower settle reader must name the run directories it lists, so a trace naming nothing is shown to
     be a trace that could have named something.</p>
 
