@@ -34,6 +34,16 @@
   1 error</code> in 19m36s. The one added failure is
   <code>test_closed_upstream_blocks_its_waiter[blocked]</code>, which asserts the
   behaviour this section changes — a blocked manifest closing its waiter — and
-  sits outside this node's write grant, so it is recorded for the coordinator
-  rather than edited here.</p>
+  was outside this node's write grant at the time of that run.</p>
+  <p>The arm was then granted and changed rather than dropped: its blocked case
+  now requires the waiter to stay <code>awaiting-upstream</code> while the
+  failed case still closes it as <code>blocked-upstream</code>. The two other
+  failures and the conftest error fail identically at the base revision. The
+  admission gate over that file, the focused arms and every test calling
+  <code>admit_once</code> gives <code>188 passed, 1 failed</code> at the repair
+  head and <code>180 passed, 9 failed</code> at the base revision, the added
+  failures being this node's own arms and the re-pointed blocked case. The
+  three modules this work touches carry mode <code>100644</code>, and the lint
+  runs are recorded beside the suite logs: the changed paths add no check
+  finding and no format hunk against the base revision.</p>
 </section>
