@@ -567,6 +567,11 @@ base revision rather than against the head with the change reverted.</p>
     <p>Run <code>r-20261027T115304605383-a-refused-pick-records-its-exclusions</code> (head <code>8744a0075</code>). <code>_record_pick_timings</code> in <code>reckon/crew/picker/__init__.py</code> now adds the excluded candidates to the timing row for a refused or fallen-back pick: backend, model and reason code, the reason's prefix before its first colon or the whole reason when it has none. It also adds the node's estimated context. A routed pick records nothing extra. Measure: three cases, and the dropped-field mutation fails the refused arm. The coordinator's importer arms over the picker's importers show zero added. The review scored 117, with one non-blocking note: a held pick with exclusions records neither field, while the comments describe only a routed pick as silent.</p>
   </section>
 
+  <section id="s55-an-oversize-node-reaches-a-reserved-lane">
+    <h2>§55 — a node too large for every open lane reaches a reserved lane</h2>
+    <p>Run <code>r-20261027T114913995369-an-oversize-node-reaches-a-reserved-lane</code> (head <code>158a85f2e</code>). <code>candidates()</code> in <code>reckon/crew/picker/snapshot.py</code> now judges the whole set. When every unreserved candidate is excluded only on <code>context-fit</code>, a reserved lane's tier and attempts terms are waived. Only its <code>reserved-lane</code> reason is removed: budget, availability, gate and its own context fit still exclude it, and that fit is now computed on the waiver path. The waiver is carried on a new <code>Candidate</code> note field, <code>offered because no open lane fits the node's context</code>, never in <code>reasons</code>.</p><p>Measure: seven cases at head, against a new file absent at base. The coordinator's importer arms over the picker's importers add zero failures. The first review scored 87: the waiver cleared every reason, so a lane excluded for budget would have been offered. After the reflex repair round the re-review scored 108, with two non-blocking notes: the reason-prefix split is duplicated inline, and only a paused gate is measured as the second exclusion.</p>
+  </section>
+
 </main>
 </body>
 </html>
