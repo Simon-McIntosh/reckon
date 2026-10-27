@@ -1,0 +1,45 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:_review_dispatch_argv",
+    "reckon/crew/recovery_review_subject.py:_review_dispatch_action",
+    "reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run",
+    "reckon/crew/obligations.py:530",
+    "reckon/crew_dispatch_commands.py:2728"
+  ],
+  "completed_at": "2026-10-27T07:06:49.830Z",
+  "dispatched_at": "2026-10-27T07:01:10Z",
+  "findings": [
+    {
+      "file": "tests/test_a_reflex_review_fits_its_fence.py",
+      "line": 127,
+      "severity": "non-blocking",
+      "text": "`assert fields[\"time_budget\"] == \"30m\"` compares the output against the same literal the test supplied as the node's budget, so it passes unchanged under the verbatim-copy regression it sits beside; it guards only over-clamping, which the clamp case does not cover."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": 2186,
+      "severity": "non-blocking",
+      "text": "the executed run-review path calls _review_dispatch_fields without config, so the clamp resolves the project's own flight config while _dispatch_composed_review validates against the caller's config; a caller supplying a divergent config could still compose a budget above the fence validation measures. The manifest already records this under outside_scope."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to clamp a reflex-composed review's time budget to the fence its own dispatch resolves; reckon/crew/recovery_review_subject.py:927 now clamps `budget` to `resolved_time_ceiling(_resolved_review_config(project, config))` before returning `time_budget`.\nVERDICT done_when: the done_when names tests/test_a_reflex_review_fits_its_fence.py with four cases plus matched base and head arms; the manifest records head-test.log (4 passed), base-suite.log (122 passed) and head-suite.log (126 passed) and claims ruff clean on the staged paths.\nVERDICT write_paths: the two declared paths are reckon/crew/recovery_review_subject.py and tests/test_a_reflex_review_fits_its_fence.py; the diff touches exactly those two.\nVERDICT manifest: read the delivered manifest; it states the clamp, the three budget cases, the matched arms and the ruff result, and names head-test.log, base-suite.log, head-suite.log and negative-control.log.\nVERDICT diff: read the single commit b9d80fda9 against base a62f63172 commit by commit; it adds the clamp and config kwarg to _review_dispatch_fields, threads config from _review_dispatch_argv and _review_dispatch_action, and adds the 148-line test file, nothing else.\nCALL_SITES: reckon/crew/recovery_review_subject.py:_review_dispatch_argv, reckon/crew/recovery_review_subject.py:_review_dispatch_action, reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run, reckon/crew/obligations.py:530, reckon/crew_dispatch_commands.py:2728\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:927 clamps the composed budget to the same fence node validation applies, so a 240m node budget composes 60m in the production recover path where config resolves to the project's own fence.\nSCORE evidence: 17\nJUSTIFICATION evidence: the manifest records head-test.log 4 passed, base-suite.log 122 passed and head-suite.log 126 passed with completed true and zero failures on both arms, matching the done_when; ruff is claimed but not logged.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of b9d80fda9 changes only reckon/crew/recovery_review_subject.py and the new tests/test_a_reflex_review_fits_its_fence.py, exactly the two declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: the negative-control.log shows test_a_long_node_budget_is_clamped_to_the_review_fence and test_the_composed_budget_passes_the_bounded_check redden at the pre-fix field builder with 'budget 240m exceeds the resolved fence 60m', so the guard fires.\nSCORE fit: 19\nJUSTIFICATION fit: the clamp reuses panic-free parse_duration and follows the file's existing broad-except idiom at reckon/crew/recovery_review_subject.py:1096, and carries no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner _review_dispatch_fields rather than adding a parallel helper, and reuses resolved_time_ceiling and _resolved_review_config; no budget-clamp owner exists (promotion_gate._replay_bound clamps a replay timeout, not a node budget).\nFINDING tests/test_a_reflex_review_fits_its_fence.py:127 non-blocking: `assert fields[\"time_budget\"] == \"30m\"` compares the output against the same literal the test supplied as the node's budget, so it passes unchanged under the verbatim-copy regression it sits beside; it guards only over-clamping, which the clamp case does not cover.\nFINDING reckon/crew/recovery_review_dispatch.py:2186 non-blocking: the executed run-review path calls _review_dispatch_fields without config, so the clamp resolves the project's own flight config while _dispatch_composed_review validates against the caller's config; a caller supplying a divergent config (recovery_review_acceptance.py:498 passes config=config) could still compose a budget above the fence validation measures. The manifest already records this under outside_scope.\n",
+  "review_run_id": "r-20261027T070017183630-review-of-a-reflex-review-fits-its-fence-b9d80fda9997",
+  "reviewed_base_sha": "a62f63172eff26dc03784fd5797cfd147cf4a8f4",
+  "reviewed_head_sha": "b9d80fda99974830afe8b3d06e799791018e6faa",
+  "reviewed_run_id": "r-20261027T064821183463-a-reflex-review-fits-its-fence",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T07:07:47.501699+00:00",
+  "total": 112
+}
