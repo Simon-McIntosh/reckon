@@ -1680,6 +1680,20 @@ def _normalized_section_ref(project: str, ref: str) -> str:
     return f"{prefix}{parsed.slug}#{parsed.stage or ''}"
 
 
+def _normalized_section_ref_for(project: str, ref: str) -> str | None:
+    """The section ref a dependency ref registers as a declared wait, or ``None``.
+
+    A ref naming only a followup (``slug@f-id``) names no section half, so it
+    registers no section wait; a combined ``slug#sN@f-id`` ref registers its
+    section half, which is the declared wait a run's prose is checked against.
+    """
+
+    parsed = parse_plan_ref(str(ref or ""))
+    if parsed is None or not parsed.stage:
+        return None
+    return _normalized_section_ref(project, str(ref))
+
+
 def _undeclared_wait_findings(
     project: str,
     plans: Mapping[str, Mapping[str, Any]],
@@ -3713,14 +3727,11 @@ def _build_roadmap(
             waiting_section = str(edge.get("source_section") or "")
             if not waiting_section:
                 continue
-            parsed_edge = parse_plan_ref(str(edge.get("ref") or ""))
-            if parsed_edge is not None and not parsed_edge.stage:
-                # A ref naming only a followup has no section half to register;
-                # a combined ``slug#sN@f-id`` ref does, and its section half is
-                # the declared wait a run's prose is checked against.
+            declared = _normalized_section_ref_for(project, str(edge.get("ref") or ""))
+            if declared is None:
                 continue
             declared_section_refs.setdefault((slug, waiting_section), set()).add(
-                _normalized_section_ref(project, str(edge.get("ref") or ""))
+                declared
             )
         open_sections_by_plan[slug] = set(open_sections(authored))
         # A decision that names the sections it governs holds those sections

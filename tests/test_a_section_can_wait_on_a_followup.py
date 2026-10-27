@@ -14,8 +14,22 @@ and the waiting section stays held while it is reported.
 
 from __future__ import annotations
 
+import reckon.roadmap as roadmap_module
+from reckon import _schema
 from reckon._schema import parse_plan_ref
 from reckon.roadmap import build_roadmap
+from tests import test_edit_plan_sets_followup_dependency_and_gate_fields as _store_ops
+from tests.test_edit_plan_sets_followup_dependency_and_gate_fields import (
+    PLAN,
+    _edit,
+    _make_plan,
+    _read,
+)
+from tests.test_edit_plan_sets_followup_dependency_and_gate_fields import (
+    PROJECT as STORE_PROJECT,
+)
+
+store_op_docs = _store_ops.setup
 
 PROJECT = "sample"
 SPRINT = {"id": "S1", "status": "active", "items": ["x", "y"]}
@@ -231,10 +245,68 @@ def test_a_combined_ref_registers_its_section_half(monkeypatch, tmp_path):
     assert _undeclared_wait(report) == []
 
 
-def test_a_followup_only_ref_declares_no_section_half(monkeypatch, tmp_path):
-    report = _undeclared_wait_report(monkeypatch, tmp_path, declared=["y@f-1"])
+def test_a_followup_only_ref_registers_no_section_ref():
+    """The registration a followup-only ref produces is empty, not a bare slug.
 
-    findings = _undeclared_wait(report)
-    assert findings, report["wiring_findings"]
-    assert findings[0]["extra"]["waiting"] == "x#s1"
-    assert findings[0]["extra"]["ref"] == "y#s2"
+    Read off ``_normalized_section_ref_for`` directly, because an over-registered
+    ``y@f-1`` would register ``y#`` — a value no prose mention can equal, so a
+    roadmap-level assertion could not see the defect this case names.
+    """
+
+    assert roadmap_module._normalized_section_ref_for(PROJECT, "y@f-1") is None
+
+
+def test_a_combined_ref_registers_only_its_section_half():
+    assert roadmap_module._normalized_section_ref_for(PROJECT, "y#s2@f-1") == "y#s2"
+    assert roadmap_module._normalized_section_ref_for(PROJECT, "y#s2") == "y#s2"
+
+
+# ── declaring the wait through the store op ──────────────────────────────────
+
+
+def test_the_store_op_accepts_a_followup_ref_and_the_roadmap_reads_it(store_op_docs):
+    """``set section_depends_on`` writes ``y@f-1`` and the plan reads it held."""
+    docs_dir = store_op_docs
+    _make_plan(docs_dir)
+    _text, state = _read(docs_dir)
+    version = state["version"]
+
+    result = _edit(
+        docs_dir,
+        [
+            {
+                "op": "set",
+                "path": "section_depends_on.s1",
+                "value": [f"{PLAN}@c-open"],
+            }
+        ],
+        version,
+    )
+    assert result["ok"] is True, result
+
+    # The meta round-trips through the schema's own reader.
+    written, _state = _read(docs_dir)
+    assert _schema.section_depends_on(written) == {"s1": [f"{PLAN}@c-open"]}
+
+    # And the roadmap holds s1 while that followup is open.
+    report = build_roadmap(
+        STORE_PROJECT,
+        [
+            _plan(
+                PLAN,
+                sections={"s1": "implementable", "s2": "implementable"},
+                followups=[
+                    {
+                        "id": "c-open",
+                        "status": "open",
+                        "prompt": f"/reckon-build {PLAN}",
+                    }
+                ],
+            )
+        ],
+        [{"id": "S1", "status": "active", "items": [PLAN]}],
+        docs_dir=docs_dir,
+    )
+    row = _row(report, PLAN)
+    readiness = {item["section"]: item for item in row["section_readiness"]}
+    assert readiness["s1"]["ready"] is False

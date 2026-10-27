@@ -231,7 +231,8 @@ def _enumerated_field_legal_values(field: str) -> str:
         )
     if field == "links":
         return (
-            "sections.<id>.links accepts plan refs of the form [project:]slug[#section]"
+            "sections.<id>.links accepts plan refs of the form "
+            "[project:]slug[#section][@followup]"
         )
     return f"sections.<id>.{field} was refused"
 
@@ -419,21 +420,27 @@ def apply_gate_field_set(
 
 
 def _validated_refs(section: str, value: Any) -> list[str]:
-    """Return a validated list of ``[project:]slug#section`` refs or refuse it."""
+    """Return a validated list of section-scoped refs or refuse it.
+
+    A ref must name a wait this deployment can resolve: a target section
+    (``slug#sN``), one followup of the target plan (``slug@f-id``), or both
+    (``slug#sN@f-id``). A ref with neither half names nothing to wait on.
+    """
     from reckon._schema import parse_plan_ref
 
     if not isinstance(value, list):
         raise _op_error(
             f"section_depends_on.{section} must be a list of refs; "
-            "expected [project:]slug#section"
+            "expected [project:]slug[#section][@followup]"
         )
     refs: list[str] = []
     for ref in value:
         parsed = parse_plan_ref(ref) if isinstance(ref, str) else None
-        if parsed is None or not parsed.stage:
+        if parsed is None or not (parsed.stage or parsed.followup):
             raise _op_error(
                 f"section_depends_on.{section}: malformed plan ref {ref!r} — "
-                "expected [project:]slug#section naming a target section"
+                "expected [project:]slug[#section][@followup] naming a target "
+                "section or followup"
             )
         refs.append(ref.strip())
     return refs
