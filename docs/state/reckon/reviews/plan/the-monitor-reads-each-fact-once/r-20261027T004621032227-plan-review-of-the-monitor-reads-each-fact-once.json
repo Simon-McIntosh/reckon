@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T00:52:06.864Z",
+  "dispatched_at": "2026-10-27T00:47:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:308",
+      "id": "done_when-1",
+      "reason": "the section must state that the station also records the project-wide reading an unscoped pane consults and that an ownerless pointer keeps every session's reading live, and add a control for it, or a pane settles while work it still prints is live.",
+      "text": "\"a has-live-work reading per (project, session)\" cannot express two members of the population set \u00a710 itself cites: an unscoped follower's population is `session=None`, which `_population_has_live_work` reads as every non-terminal run in the project (`reckon/crew_follow_commands.py:1394`, :498-505), and a pointer with no recorded owner is counted live for every session, so a per-session reading leaves it attributable to no row; the new control varies only own-session against observed-session, so a reading that drops either case still passes the drain-settle test",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "556b5b0f92285a9571178f92698c5df141788055c690bc13803355128b264ee8",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 48,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T004621032227-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "92506f1bb0483057f28c0a86bca0e3bb7ba29b52",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified against the tree: `resumption.sweep`, `recovery_review_acceptance.dispatch_awaiting_reviews`, `recovery_review_dispatch.review_settle_seconds_remaining` (:1258), `REVIEW_SETTLE_SECONDS` (:889), `_latest_resume_at` (:206), `resume_superseded_at` (:91), `dispatch_review_for_run` (:2454), `_check_settle` / `FOLLOWER_SETTLE_SAMPLE_SECONDS` (`crew_follow_commands.py`:1517, :312), `_population_has_live_work` (:482) and `settle_populations` (:1505) all resolve.",
+    "done_when": "a finding \u2014 the drain-settle measure now carries a control for own-session-only, but no control exercises the unscoped population or an ownerless pointer, which the reading it replaces counts as live work.",
+    "evidence_paths": "pass \u2014 \u00a710's measures are a 60 s strace and test counts, and it declares no evidence path in a scratch or node-local directory.",
+    "naming": "pass \u2014 \u00a710's new prose names mechanisms (`settle_populations`, `_latest_resume_at`) and carries no plan labels, ticket numbers or changelog prose.",
+    "reasoning": "the changed claim is accurate \u2014 the per-session reading the plan adds matches `settle_populations = (session, *sorted(observed_sessions - {None}))` and `_population_has_live_work`'s owner filter, and the advice-door settle statement now matches `_latest_resume_at` returning the newer of the two stamps \u2014 but the stated granularity does not cover all of a subscriber's populations (see the finding).",
+    "single_goal": "pass \u2014 \u00a710's parts all serve one deliverable, moving the review reflex and settle detection out of every subscriber into the station once per node.",
+    "wiring": "pass \u2014 s10 declares depends-on s7 and s8 (plan.html:23), the station and the subscriber its measure names, and s12 depends on s10."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "3a504b4970bf867e3cf7819c2d6fb5779c5346f5144d518773905fa192df5f20",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T00:52:40.481686+00:00"
+}
