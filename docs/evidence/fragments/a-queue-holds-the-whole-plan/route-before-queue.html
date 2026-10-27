@@ -10,6 +10,11 @@
   and its launched run. A backend named at dispatch or by a queue edit remains
   queued on that backend with the hold reason. The request's priority rank is
   unchanged by the fallback.</p>
+  <p>Queued admission also replays the stored picker choice when resolving a
+  metered lane's model. A regression case chooses a model other than the lane
+  default, waits for an upstream section, then checks the launched model key
+  and agent model. Edited routes and recorded local fallbacks retain their
+  named backend without a new picker decision.</p>
   <p>At commit <code>1f0303dbdd60b1c8e6475ebfef93e6a2690962bc</code>, the focused
   head gate passed 58 tests; the same existing importer files passed 49 at the
   merged base, for zero added failures. Nine new route tests cover ready
