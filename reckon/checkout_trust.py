@@ -449,21 +449,25 @@ def _committed_tree_cache() -> Path:
     """The reload image cache: under this node's runtime root, never the home.
 
     Every process on the node resolves its images from one directory, so a
-    ``flock`` taken on a tree by one of them is visible to every pruner here
-    and an image never travels between nodes. The root is the station's own,
-    read through :func:`reckon.crew.station_store.runtime_root_source` rather
-    than a second resolver, so the cache and the station cannot disagree about
-    where the node's runtime state lives.
+    ``flock`` taken on a tree by one of them is visible to every pruner here and an
+    image never travels between nodes. The root is the station's own, read through
+    :func:`reckon.crew.station_store.runtime_root_source` rather than a second
+    resolver, so the cache and the station cannot disagree about where the
+    node's runtime state lives, and its filesystem-type proof is the station's
+    too: a root on a shared filesystem is refused there, in the station's own
+    words, rather than falling through to a cache where ``flock`` does not
+    cross nodes.
     """
-    from reckon.crew.station_store import runtime_root_source
+    from reckon.crew import station_store
 
-    root, _source = runtime_root_source()
+    root, _source = station_store.runtime_root_source()
     if root is None:
         raise RuntimeError(
             "no node-local runtime root is available: the reload image cache "
             "lives under XDG_RUNTIME_DIR, /run/user/<uid> or TMPDIR, never the "
             "crew home"
         )
+    station_store._refuse_nonlocal_root(root, mounts=None)
     return root / "reload-trees"
 
 

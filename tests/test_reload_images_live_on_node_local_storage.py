@@ -71,6 +71,23 @@ def test_the_cache_follows_the_root_the_station_resolves(runtime_root, monkeypat
     _assert_the_cache_is_node_local(runtime_root)
 
 
+def test_a_shared_runtime_root_is_refused(runtime_root, monkeypatch):
+    """A root on shared storage is where ``flock`` stops being decisive.
+
+    The root is one the station itself would refuse, so the cache is refused
+    with the station's own refusal rather than publishing images where a
+    pruner on another node reads them.
+    """
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime_root))
+    monkeypatch.setattr(
+        station_store, "filesystem_type", lambda root, *, mounts: "gpfs"
+    )
+    with pytest.raises(
+        station_store.StationStoreError, match="refusing the station's node-local root"
+    ):
+        _cache_path()
+
+
 def test_the_cache_asks_the_station_resolver_and_nothing_else(monkeypatch):
     """A second resolver would answer where this one was never asked."""
 
