@@ -52,13 +52,58 @@ def _record_suite_evidence(run_id: str, measured: landing_measure.Measurement) -
     runs._mutate_pointer(run_id, mutation)
 
 
+def _measurement_path(run_id: str) -> Path:
+    return runs.run_dir(run_id) / "landing-measure" / "measurement.json"
+
+
+def _stored_measurement(
+    run_id: str, head: str, command: str
+) -> landing_measure.Measurement | None:
+    """The measurement already recorded for this head, or ``None``.
+
+    A pass never re-measures a head it has already measured: the record is kept
+    under the run's directory and is valid only for the head and the command it
+    names, so a moved head or a changed command measures again.
+    """
+    if not command:
+        return None
+    try:
+        record = json.loads(_measurement_path(run_id).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, Mapping):
+        return None
+    if str(record.get("head") or "") != head:
+        return None
+    if str(record.get("command") or "") != command:
+        return None
+    return landing_measure.Measurement.from_dict(record)
+
+
+def _measure_timeout(pointer: Mapping[str, Any]) -> float:
+    """The wall-clock bound per measurement subprocess, from flight config."""
+    from reckon import flight
+
+    try:
+        resolved = flight.resolve(
+            str(pointer.get("project") or "") or None,
+            checkout_path=str(pointer.get("repo") or "") or None,
+        )
+    except (OSError, ValueError, flight.FlightConfigError):
+        return landing_measure.DEFAULT_MEASURE_TIMEOUT_SECONDS
+    return landing_measure.measure_timeout(resolved.config)
+
+
 def _measure_delivery(
     pointer: Mapping[str, Any], run_id: str, head: str, tree: str
 ) -> Any:
     """Run the three suite readings for one delivered run.
 
     A run that armed no command has nothing to measure; the landing path keeps
-    its earlier behaviour for such a run rather than inventing a command.
+    its earlier behaviour for such a run rather than inventing a command. A
+    measurement that cannot be taken — no base revision, or a base checkout
+    that cannot be built — yields an unreadable measurement so the caller
+    refuses the landing instead of inferring a verdict from nothing.
     """
     command = str(pointer.get("suite_command") or "").strip()
     if not command:
@@ -72,16 +117,27 @@ def _measure_delivery(
             population={},
             unreadable="the run records no base revision to compare against",
         )
+    timeout = _measure_timeout(pointer)
     logs = runs.run_dir(run_id) / "landing-measure"
-    with landing_measure.base_checkout(repo, base_sha) as base_tree:
-        measured = landing_measure.measure_run(
+    try:
+        with landing_measure.base_checkout(repo, base_sha, timeout) as base_tree:
+            measured = landing_measure.measure_run(
+                command=command,
+                tree=Path(tree),
+                base_sha=base_sha,
+                head_sha=head,
+                base_tree=base_tree,
+                logs_dir=logs,
+                test_files=_node_test_files(pointer),
+                timeout=timeout,
+            )
+    except (OSError, ValueError) as exc:
+        measured = landing_measure.Measurement(
             command=command,
-            tree=Path(tree),
-            base_sha=base_sha,
-            head_sha=head,
-            base_tree=base_tree,
-            logs_dir=logs,
-            test_files=_node_test_files(pointer),
+            suite={},
+            population={},
+            unreadable=f"the base checkout could not be built: {exc}",
+            head=head,
         )
     _record_suite_evidence(run_id, measured)
     return measured
@@ -229,13 +285,34 @@ def _land(run_id: str) -> tuple[bool, str]:
     ).strip()
 
 
+def _delivery_order(pointer: Mapping[str, Any]) -> tuple[int, str]:
+    """Delivery order: the manifest write time, then the run id.
+
+    The landing pass runs inside the admission loop, so a delivered run it
+    cannot measure yet must not starve the ones delivered before it.
+    """
+    return (
+        runs._manifest_mtime_ns(str(pointer.get("manifest_path") or "")),
+        str(pointer.get("run_id") or ""),
+    )
+
+
 def land_once() -> dict[str, Any]:
-    """Land each accepted delivery once and return obligations for refusals."""
+    """Land each accepted delivery once and return obligations for refusals.
+
+    At most one delivered run is measured per pass. A measurement runs the
+    suite at two revisions plus up to six isolated re-runs, so measuring every
+    waiting run in one pass would hold admission for as long as the slowest
+    suites take. The rest wait for later passes in delivery order, and a head
+    already measured is reused rather than measured again.
+    """
     from reckon.crew.recovery_review_subject import select_review_for_head
 
     landed: list[str] = []
     obligations: list[dict[str, str]] = []
-    for pointer in runs.list_live():
+    deferred: list[str] = []
+    measured_this_pass = False
+    for pointer in sorted(runs.list_live(), key=_delivery_order):
         if (
             str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")
             != "implement"
@@ -288,7 +365,18 @@ def land_once() -> dict[str, Any]:
                 }
             )
             continue
-        measured = _measure_delivery(pointer, run_id, head, tree)
+        command = str(pointer.get("suite_command") or "").strip()
+        measured = _stored_measurement(run_id, head, command)
+        if measured is not None:
+            # The stored head is this head: reuse it, and re-apply it to the
+            # pointer so a promoted pass still records what it measured on.
+            _record_suite_evidence(run_id, measured)
+        elif command and measured_this_pass:
+            deferred.append(run_id)
+            continue
+        else:
+            measured = _measure_delivery(pointer, run_id, head, tree)
+            measured_this_pass = measured_this_pass or measured is not None
         measure_guard = _measure_guard(measured)
         if measure_guard:
             _record_attempt(run_id, head=head, guard=measure_guard, status="refused")
@@ -326,4 +414,4 @@ def land_once() -> dict[str, Any]:
                     "guard": guard,
                 }
             )
-    return {"landed": landed, "obligations": obligations}
+    return {"landed": landed, "obligations": obligations, "deferred": deferred}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -19,6 +20,9 @@ RUN = "r-delivered-implementation"
 SUITE = "python -m pytest -q tests/test_alpha.py"
 FLAKY = "tests/test_alpha.py::test_flaky"
 REAL = "tests/test_alpha.py::test_real"
+
+#: The real base checkout, captured before the delivery fixture stubs it.
+REAL_BASE_CHECKOUT = landing_measure.base_checkout
 
 
 def _git(repo: Path, *arguments: str) -> str:
@@ -152,7 +156,9 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     base_tree = tmp_path / "base-tree"
     base_tree.mkdir()
     monkeypatch.setattr(
-        landing_measure, "base_checkout", lambda repo, sha: _Yield(base_tree)
+        landing_measure,
+        "base_checkout",
+        lambda repo, sha, timeout=0.0: _Yield(base_tree),
     )
     return {
         "repo": repo,
@@ -176,7 +182,7 @@ class _Yield:
         return None
 
 
-def _accept(*, base: str, head: str, score: int = 20) -> None:
+def _accept(*, base: str, head: str, score: int = 20, run_id: str = RUN) -> None:
     parsed = review_module.parse_review(
         "\n".join(
             f"SCORE {dimension}: {score}"
@@ -186,13 +192,32 @@ def _accept(*, base: str, head: str, score: int = 20) -> None:
     parsed.update(
         {
             "project": PROJECT,
-            "reviewed_run_id": RUN,
-            "review_run_id": "review-of-delivery",
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
             "reviewed_base_sha": base,
             "reviewed_head_sha": head,
         }
     )
     review_module.store_review(parsed)
+
+
+def _deliver_another(run_id: str, *, order: int) -> None:
+    """Register another delivered run over the same tree.
+
+    ``order`` becomes the manifest's write time, so the landing pass sees a
+    delivery order it can sort: a run delivered earlier has the earlier time.
+    """
+    template = runs.read_pointer(RUN)
+    source = Path(str(template.get("manifest_path") or ""))
+    manifest = runs.run_dir(run_id) / runs.DEFAULT_MANIFEST_NAME
+    manifest.parent.mkdir(parents=True)
+    # The same delivered head and commit list, written a moment after RUN's.
+    manifest.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    when = source.stat().st_mtime_ns + order
+    os.utime(manifest, ns=(when, when))
+    pointer = dict(template)
+    pointer.update({"run_id": run_id, "manifest_path": str(manifest)})
+    runs._write_json(runs.pointer_path(run_id), pointer)
 
 
 def _completed(argv, code: int = 0, output: str = ""):
@@ -207,7 +232,7 @@ def _stub(calls: list[dict], *, suite_head: tuple[int, str], isolated):
 
     seen: dict[tuple[str, str], int] = {}
 
-    def run(argv, *, cwd, capture_output=True, text=True, check=False):
+    def run(argv, *, cwd, capture_output=True, text=True, check=False, **_ignored):
         base = str(cwd).endswith("base-tree")
         arm = "base" if base else "head"
         narrowed = argv[-1] if "::" in argv[-1] else ""
@@ -385,7 +410,7 @@ def test_a_narrowed_arm_that_cannot_run_refuses_the_landing(
     _accept(base=str(delivery["base"]), head=str(delivery["head"]))
     landed = _land(monkeypatch)
 
-    def run(argv, *, cwd, capture_output=True, text=True, check=False):
+    def run(argv, *, cwd, capture_output=True, text=True, check=False, **_ignored):
         if "::" in argv[-1]:
             return _completed(argv, 3, "usage: pytest [options]\n")
         if str(cwd).endswith("base-tree"):
@@ -416,7 +441,7 @@ def test_a_preexisting_failure_in_the_same_file_does_not_mask_a_regression(
     landed = _land(monkeypatch)
     calls: list[dict] = []
 
-    def run(argv, *, cwd, capture_output=True, text=True, check=False):
+    def run(argv, *, cwd, capture_output=True, text=True, check=False, **_ignored):
         arm = "base" if str(cwd).endswith("base-tree") else "head"
         calls.append({"argv": list(argv), "arm": arm})
         files = [token for token in argv if token.endswith(".py")]
@@ -546,3 +571,103 @@ def test_importer_population_names_only_files_importing_a_changed_module(
     )
 
     assert population == ("tests/test_yes.py",)
+
+
+def test_a_measurement_that_exceeds_its_bound_refuses_and_leaves_no_checkout(
+    delivery, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A timed-out arm is unmeasurable, and the base checkout is removed.
+
+    A hung suite would otherwise hold the admission loop for as long as it
+    runs, and a partial log does not say what the test after it would have
+    done, so the landing is refused rather than given a verdict.
+    """
+    _accept(base=str(delivery["base"]), head=str(delivery["head"]))
+    landed = _land(monkeypatch)
+
+    def slow(
+        argv, *, cwd=None, capture_output=True, text=True, check=False, timeout=None
+    ):
+        raise subprocess.TimeoutExpired(argv, timeout or 0)
+
+    monkeypatch.setattr(landing_measure, "_RUN", slow)
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [], result
+    assert landed == []
+    guard = result["obligations"][0]["guard"]
+    assert "unreadable" in guard and "bound" in guard, guard
+
+    # The base checkout itself is bounded, and a checkout that times out
+    # leaves nothing behind.
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    monkeypatch.setenv("TMPDIR", str(scratch))
+    with (
+        pytest.raises(ValueError, match="bound"),
+        REAL_BASE_CHECKOUT(delivery["repo"], delivery["base"], 5),
+    ):
+        pytest.fail("a timed-out checkout yielded a tree")
+    assert list(scratch.iterdir()) == [], "a timed-out checkout left a scratch tree"
+
+
+def test_a_pass_measures_at_most_one_delivered_run(delivery, monkeypatch) -> None:
+    """Three deliveries, one measurement: the others wait their turn.
+
+    The landing pass runs inside the admission loop, so measuring every waiting
+    run in one pass would hold admission for the sum of their suites.
+    """
+    base, head = str(delivery["base"]), str(delivery["head"])
+    _accept(base=base, head=head)
+    waiting = ["r-delivered-second", "r-delivered-third"]
+    for index, run_id in enumerate(waiting, start=1):
+        _deliver_another(run_id, order=index)
+        _accept(base=base, head=head, run_id=run_id)
+    _land(monkeypatch)
+    calls: list[dict] = []
+    monkeypatch.setattr(
+        landing_measure, "_RUN", _stub(calls, suite_head=(0, "5 passed\n"), isolated={})
+    )
+
+    result = queue_landing.land_once()
+
+    assert len(result["landed"]) == 1, result
+    assert sorted(result["deferred"]) == sorted(waiting), result
+    suites = [
+        call
+        for call in calls
+        if call["arm"] == "head" and call["argv"][-1] == "tests/test_alpha.py"
+    ]
+    assert len(suites) == 1, calls
+
+
+def test_a_second_pass_reuses_the_stored_measurement(delivery, monkeypatch) -> None:
+    """A head already measured is not measured again.
+
+    The stored record is keyed by the head it measured, so a later pass reads
+    it instead of spending the lane on the same suites.
+    """
+    base, head = str(delivery["base"]), str(delivery["head"])
+    _accept(base=base, head=head)
+    landed = _land(monkeypatch)
+    queue_landing._record_suite_evidence(
+        RUN,
+        landing_measure.Measurement(
+            command=SUITE,
+            suite={"command": SUITE, "base": {}, "head": {}},
+            population={"files": []},
+            head=head,
+        ),
+    )
+
+    def refuse(*_args, **_kwargs):
+        raise AssertionError("a stored head was measured again")
+
+    monkeypatch.setattr(landing_measure, "_RUN", refuse)
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [RUN], result
+    assert landed == [RUN]
+    assert runs.read_pointer(RUN)["suite_evidence"]["head"] == head

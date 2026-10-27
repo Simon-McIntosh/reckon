@@ -11,16 +11,22 @@ readings decide it:
   times at each revision, so a flake is told apart from a regression.
 
 An id is a regression when it fails at the head more often than at the base.
+
+Every subprocess the measurement starts — the suite arms, the isolated re-runs
+and the base checkout's git worktree calls — carries a wall-clock bound. A run
+that exceeds it is unmeasurable rather than failing, so the landing is refused
+and nothing is read from a partial log.
 """
 
 from __future__ import annotations
 
 import contextlib
+import os
 import re
 import shlex
 import subprocess
 import tempfile
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -32,6 +38,12 @@ REPEATS = 3
 
 #: Parallelism for the importer population.
 POPULATION_WORKERS = 8
+
+#: Wall-clock bound for one measurement subprocess, in seconds. A flight config
+#: may retune it under ``landing.measure_timeout_seconds``; this is the bound
+#: used when it declares none, and it is deliberately modest because the
+#: landing pass runs inside the admission loop.
+DEFAULT_MEASURE_TIMEOUT_SECONDS = 600.0
 
 #: A line a failing test runner reports its failing id on.
 _FAILED_ID = re.compile(r"^(?:FAILED|ERROR)[ \t]+(\S+)", re.MULTILINE)
@@ -47,6 +59,7 @@ class Arm:
     exit_status: int | None
     failure_ids: tuple[str, ...]
     log_path: str = ""
+    timed_out: bool = False
 
     @property
     def readable(self) -> bool:
@@ -58,6 +71,7 @@ class Arm:
             "exit_status": self.exit_status,
             "failure_ids": list(self.failure_ids),
             "log_path": self.log_path,
+            "timed_out": self.timed_out,
         }
 
 
@@ -71,16 +85,55 @@ class Measurement:
     isolated: dict[str, dict[str, list[bool]]] = field(default_factory=dict)
     real: tuple[str, ...] = ()
     unreadable: str = ""
+    head: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         return {
             "command": self.command,
+            "head": self.head,
             "suite": self.suite,
             "population": self.population,
             "isolated": self.isolated,
             "real": list(self.real),
             "unreadable": self.unreadable,
         }
+
+    @classmethod
+    def from_dict(cls, record: Mapping[str, Any]) -> Measurement:
+        """Rebuild a stored measurement, so a pass can reuse one it recorded.
+
+        A record that is missing a field is rebuilt with the empty value that
+        field has for an unfinished measurement, never guessed: a stored record
+        whose shape is unrecognisable yields an unreadable measurement rather
+        than a clean one.
+        """
+        isolated = record.get("isolated")
+        suite = record.get("suite")
+        population = record.get("population")
+        if not isinstance(isolated, Mapping) or not isinstance(suite, Mapping):
+            return cls(
+                command=str(record.get("command") or ""),
+                suite={},
+                population={},
+                head=str(record.get("head") or ""),
+                unreadable="the stored measurement is unreadable",
+            )
+        return cls(
+            command=str(record.get("command") or ""),
+            suite=dict(suite),
+            population=dict(population) if isinstance(population, Mapping) else {},
+            isolated={
+                str(test_id): {
+                    arm: [bool(value) for value in values]
+                    for arm, values in arms.items()
+                }
+                for test_id, arms in isolated.items()
+                if isinstance(arms, Mapping)
+            },
+            real=tuple(str(test_id) for test_id in record.get("real") or ()),
+            unreadable=str(record.get("unreadable") or ""),
+            head=str(record.get("head") or ""),
+        )
 
 
 def failing_ids(output: str) -> tuple[str, ...]:
@@ -184,14 +237,54 @@ def isolated_command(
     return [*runner_argv(command, test_files), test_id]
 
 
+def measure_timeout(config: Mapping[str, Any] | None) -> float:
+    """The wall-clock bound for one measurement subprocess, in seconds.
+
+    Read from ``landing.measure_timeout_seconds`` in resolved flight config, so
+    a host can bound a slow project's suite without a code change. A config
+    that declares no such key, or a value that is not a positive number, falls
+    back to the shipped default rather than removing the bound.
+    """
+    landing = (config or {}).get("landing")
+    value = (
+        landing.get("measure_timeout_seconds", DEFAULT_MEASURE_TIMEOUT_SECONDS)
+        if isinstance(landing, Mapping)
+        else DEFAULT_MEASURE_TIMEOUT_SECONDS
+    )
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+        return DEFAULT_MEASURE_TIMEOUT_SECONDS
+    return float(value)
+
+
+def scratch_root() -> Path:
+    """Where the base checkout is built: node-local temporary storage.
+
+    The base checkout is a throwaway tree for one measurement, so it belongs on
+    local disk rather than on the repository's shared filesystem, where a copy
+    of the tree costs every peer client.
+    """
+    for name in ("TMPDIR", "TEMP", "TMP"):
+        value = os.environ.get(name, "").strip()
+        if value and Path(value).is_dir():
+            return Path(value)
+    return Path("/tmp")  # noqa: S108 - the documented node-local fallback
+
+
 def _arm(
     command: Sequence[str],
     tree: Path,
     log_path: Path,
     run,
+    timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
 ) -> Arm:
-    """Run one command at one tree and record its failure reported ids."""
+    """Run one command at one tree and record its failure reported ids.
+
+    The command is bounded: a run that exceeds ``timeout`` is recorded as
+    unreadable and no failure id is taken from whatever it had printed, because
+    a partial log does not say whether the id after it would have failed.
+    """
     argv = list(command)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         finished = run(
             argv,
@@ -199,13 +292,16 @@ def _arm(
             capture_output=True,
             text=True,
             check=False,
+            timeout=timeout,
         )
+    except subprocess.TimeoutExpired as expired:
+        partial = f"{expired.stdout or ''}{expired.stderr or ''}"
+        log_path.write_text(f"timed out after {timeout}s\n{partial}", encoding="utf-8")
+        return Arm(tuple(argv), None, (), str(log_path), timed_out=True)
     except OSError as exc:
-        log_path.parent.mkdir(parents=True, exist_ok=True)
         log_path.write_text(f"{type(exc).__name__}: {exc}\n", encoding="utf-8")
         return Arm(tuple(argv), None, (), str(log_path))
     output = f"{finished.stdout or ''}{finished.stderr or ''}"
-    log_path.parent.mkdir(parents=True, exist_ok=True)
     log_path.write_text(output, encoding="utf-8")
     return Arm(
         tuple(argv),
@@ -226,12 +322,14 @@ def measure_run(
     test_files: Iterable[str] = (),
     run=None,
     repeats: int = REPEATS,
+    timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
 ) -> Measurement:
     """Run the three readings for one delivered run and return the verdict.
 
     ``test_files`` are the node's own test files, the ones the armed command
-    was resolved from; they are what a single id's re-run replaces. ``run`` is
-    the command runner, ``subprocess.run``-shaped, so a caller can drive the
+    was resolved from; they are what a caller's single-id re-run replaces.
+    ``timeout`` bounds every subprocess the measurement starts. ``run`` is the
+    command runner, ``subprocess.run``-shaped, so a caller can drive the
     measurement without executing a real suite.
     """
     runner = run or _RUN
@@ -242,18 +340,19 @@ def measure_run(
             suite={},
             population={},
             unreadable="the run armed no suite command",
+            head=head_sha,
         )
     logs = Path(logs_dir)
-    suite_base = _arm(argv, base_tree, logs / "suite-base.log", runner)
-    suite_head = _arm(argv, tree, logs / "suite-head.log", runner)
+    suite_base = _arm(argv, base_tree, logs / "suite-base.log", runner, timeout)
+    suite_head = _arm(argv, tree, logs / "suite-head.log", runner, timeout)
     files = importer_population(changed_paths(tree, base_sha, head_sha), tree)
     population_command = [*argv, *files, "-n", str(POPULATION_WORKERS)]
     if files:
         population_base = _arm(
-            population_command, base_tree, logs / "population-base.log", runner
+            population_command, base_tree, logs / "population-base.log", runner, timeout
         )
         population_head = _arm(
-            population_command, tree, logs / "population-head.log", runner
+            population_command, tree, logs / "population-head.log", runner, timeout
         )
     else:
         population_base = Arm(tuple(population_command), None, (), "")
@@ -279,7 +378,11 @@ def measure_run(
         ),
     ):
         if not arm.readable:
-            unreadable = f"the {name} arm did not run"
+            unreadable = (
+                f"the {name} arm exceeded its {timeout:g}s bound"
+                if arm.timed_out
+                else f"the {name} arm did not run"
+            )
             break
     added_base = {*suite_base.failure_ids, *population_base.failure_ids}
     added_head = [*suite_head.failure_ids, *population_head.failure_ids]
@@ -296,6 +399,7 @@ def measure_run(
             arm_tree,
             logs / "isolated" / f"{_slug(test_id)}-{arm}-{n}.log",
             runner,
+            timeout,
         )
 
     for test_id in added:
@@ -319,11 +423,17 @@ def measure_run(
         isolated=isolated,
         real=real,
         unreadable=unreadable,
+        head=head_sha,
     )
 
 
 def _fails(
-    command: Sequence[str], test_id: str, tree: Path, log_path: Path, runner
+    command: Sequence[str],
+    test_id: str,
+    tree: Path,
+    log_path: Path,
+    runner,
+    timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
 ) -> tuple[bool, str]:
     """Whether one isolated run reported *this* id as failing.
 
@@ -337,8 +447,12 @@ def _fails(
     either passes or failures would silently answer the comparison, so the
     caller refuses the landing instead.
     """
-    arm = _arm(command, tree, log_path, runner)
+    arm = _arm(command, tree, log_path, runner, timeout)
     if not arm.readable:
+        if arm.timed_out:
+            return True, (
+                f"the isolated arm for {test_id} exceeded its {timeout:g}s bound"
+            )
         return True, f"the isolated arm for {test_id} did not run"
     if test_id in arm.failure_ids:
         return True, ""
@@ -355,17 +469,49 @@ def _slug(test_id: str) -> str:
 
 
 @contextlib.contextmanager
-def base_checkout(repo: Path, base_sha: str) -> Iterator[Path]:
-    """A detached scratch tree at ``base_sha``, removed when the block ends."""
-    scratch = Path(tempfile.mkdtemp(prefix="landing-base-"))
+def base_checkout(
+    repo: Path, base_sha: str, timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS
+) -> Iterator[Path]:
+    """A detached scratch tree at ``base_sha``, removed when the block ends.
+
+    The tree is built under ``scratch_root()`` — node-local temporary storage,
+    never the repository's shared filesystem — and it is removed on every exit
+    path, including a checkout that times out or fails before it is yielded.
+    Both git calls are bounded by the same ``timeout`` as the measurements.
+    """
+    scratch = Path(tempfile.mkdtemp(prefix="landing-base-", dir=scratch_root()))
     target = scratch / "tree"
-    added = _RUN(
-        ["git", "-C", str(repo), "worktree", "add", "--detach", str(target), base_sha],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    try:
+        added = _RUN(
+            [
+                "git",
+                "-C",
+                str(repo),
+                "worktree",
+                "add",
+                "--detach",
+                str(target),
+                base_sha,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as expired:
+        shutil_rmtree(scratch)
+        raise ValueError(
+            f"could not check out {base_sha} for the base arm: "
+            f"git worktree add exceeded its {timeout:g}s bound"
+        ) from expired
+    except OSError as exc:
+        shutil_rmtree(scratch)
+        raise ValueError(
+            f"could not check out {base_sha} for the base arm: "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
     if added.returncode:
+        shutil_rmtree(scratch)
         raise ValueError(
             f"could not check out {base_sha} for the base arm: "
             f"{(added.stderr or added.stdout or '').strip()}"
@@ -373,12 +519,22 @@ def base_checkout(repo: Path, base_sha: str) -> Iterator[Path]:
     try:
         yield target
     finally:
-        _RUN(
-            ["git", "-C", str(repo), "worktree", "remove", "--force", str(target)],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+            _RUN(
+                [
+                    "git",
+                    "-C",
+                    str(repo),
+                    "worktree",
+                    "remove",
+                    "--force",
+                    str(target),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout,
+            )
         shutil_rmtree(scratch)
 
 
