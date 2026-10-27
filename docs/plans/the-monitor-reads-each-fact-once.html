@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="84">
+<meta name="plan-version" content="85">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -494,6 +494,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261027T211708930963-review-of-the-reflex-and-settle-run-in-the-station-ac82617e54e8" data-who="reckon-build" data-when="2026-10-27T21:29:10.026Z">
     <div class="r-comment-body"><p>Independent review of r-20261027T043138933185-the-reflex-and-settle-run-in-the-station over the commits gained since its prior review (base 4b29942255a141f113901d3beba117a3616b4f8a, head ac82617e54e83f234ba046dace86739754cdf1cf): scores goal_fidelity 18, evidence 16, scope_discipline 19, durability 16, fit 15, reuse 11; added_failure_count 0; three non-blocking findings, none blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261027T043138933185-the-reflex-and-settle-run-in-the-station" data-who="reckon-build" data-when="2026-10-27T21:16:30Z">
+    <div class="r-comment-body"><p>§10 landed end to end. Station side: Station.SweepBeat runs one session&#x27;s whole sweep (resume pass and review pass) once per session in the station, on a change or on SWEEP_BEAT_SECONDS, on its own thread, with the sweep&#x27;s host rule answered by _sessions_to_sweep, which now names one owner per session so a session split across hosts is swept once instead of never; the station writes each project&#x27;s has-live-work reading every tick from station_subscriber.live_work_populations, the one statement of that rule, and StationSubscriber.live_work exposes it through live_work_verdict, which answers nothing at all for a stale or unreadable reading; review_settle_seconds_remaining dates the window from _latest_resume_at; Station.tick beats before publishing; StationReloader.poll no longer patches checkout_trust._committed_tree_cache. Follower side: _follow_watch_lines&#x27; subscriber branch no longer calls _sweep_on_cadence, it drives StationSubscriber.wake as the one poll loop (wake gained an each_pass hook for the checks that end an arming), and its settle judges every population through subscriber.live_work, falling back to the pointer listing when the station has no answer; the producer path keeps its sweep and its listing. Measure: armed gate 26 passed EXIT=0 at final head ac82617e5, EXIT=4 (file absent) at base 9e363fe50; 60 importer files 490 passed and 1 flaked at base under -n 4 (the same file passes 5/5 on its own from that tree) and 503 passed at head over the same files plus this node&#x27;s 12 cases; 60 s traces on one fixture home at the code head - the delivered follower names 1776 occurrences over 2 distinct crew-home paths (the producer lease and its lock) over 592 passes where today&#x27;s per-follower settle reader names 1789 over 596 samples (live, live/ and live/r-one.json); negative control with eight mutations fails 10 and passes 2, failing every mechanism case including the three added for the review.</p></div>
 </div>
 </section>
 </main>
