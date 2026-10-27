@@ -88,6 +88,10 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
+    # The base checkout is built under the fleet's own node-local scratch root.
+    scratch_root = tmp_path / "scratch-root"
+    scratch_root.mkdir()
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(scratch_root))
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q", "-b", "main")
@@ -165,6 +169,7 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         "base": base,
         "head": head,
         "base_tree": base_tree,
+        "scratch_root": scratch_root,
         "plan": repo / "docs" / "plans" / f"{PLAN}.html",
     }
 
@@ -601,15 +606,72 @@ def test_a_measurement_that_exceeds_its_bound_refuses_and_leaves_no_checkout(
 
     # The base checkout itself is bounded, and a checkout that times out
     # leaves nothing behind.
-    scratch = tmp_path / "scratch"
-    scratch.mkdir()
-    monkeypatch.setenv("TMPDIR", str(scratch))
     with (
         pytest.raises(ValueError, match="bound"),
         REAL_BASE_CHECKOUT(delivery["repo"], delivery["base"], 5),
     ):
         pytest.fail("a timed-out checkout yielded a tree")
-    assert list(scratch.iterdir()) == [], "a timed-out checkout left a scratch tree"
+    assert list(delivery["scratch_root"].iterdir()) == [], (
+        "a timed-out checkout left a scratch tree"
+    )
+
+
+def test_a_failed_worktree_remove_leaves_no_registration(delivery, monkeypatch) -> None:
+    """A removal that times out is pruned, not just deleted from disk.
+
+    Deleting the directory alone leaves the repository's worktree registration
+    behind, and a later checkout of the same path then fails.
+    """
+    repo = delivery["repo"]
+    real = subprocess.run
+
+    def run(
+        argv,
+        *,
+        cwd=None,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=None,
+        **_ignored,
+    ):
+        if "worktree" in argv and "remove" in argv:
+            raise subprocess.TimeoutExpired(argv, timeout or 0)
+        return real(argv, capture_output=True, text=True, check=False, timeout=timeout)
+
+    monkeypatch.setattr(landing_measure, "_RUN", run)
+
+    with REAL_BASE_CHECKOUT(repo, delivery["base"], 60) as tree:
+        assert tree.is_dir()
+
+    listed = _git(repo, "worktree", "list", "--porcelain")
+    assert str(tree) not in listed, listed
+    assert list(delivery["scratch_root"].iterdir()) == []
+
+
+def test_a_measurement_error_is_not_reported_as_a_checkout_failure(
+    delivery, monkeypatch
+) -> None:
+    """A defect inside the measurement is named as one.
+
+    The checkout is the only thing a failed base tree can be blamed for;
+    reporting a measurement's own error as a checkout failure sends a reader
+    looking in the wrong place.
+    """
+    _accept(base=str(delivery["base"]), head=str(delivery["head"]))
+    _land(monkeypatch)
+
+    def defect(**_kwargs):
+        raise ValueError("a measurement defect")
+
+    monkeypatch.setattr(landing_measure, "measure_run", defect)
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [], result
+    guard = result["obligations"][0]["guard"]
+    assert "the measurement raised" in guard, guard
+    assert "base checkout" not in guard, guard
 
 
 def test_a_pass_measures_at_most_one_delivered_run(delivery, monkeypatch) -> None:

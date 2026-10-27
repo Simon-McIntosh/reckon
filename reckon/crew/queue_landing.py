@@ -120,18 +120,29 @@ def _measure_delivery(
     timeout = _measure_timeout(pointer)
     logs = runs.run_dir(run_id) / "landing-measure"
     try:
+        # Only the checkout is inside this except: an error raised by the
+        # measurement itself is a different failure and is reported as one.
         with landing_measure.base_checkout(repo, base_sha, timeout) as base_tree:
-            measured = landing_measure.measure_run(
-                command=command,
-                tree=Path(tree),
-                base_sha=base_sha,
-                head_sha=head,
-                base_tree=base_tree,
-                logs_dir=logs,
-                test_files=_node_test_files(pointer),
-                timeout=timeout,
-            )
-    except (OSError, ValueError) as exc:
+            try:
+                measured = landing_measure.measure_run(
+                    command=command,
+                    tree=Path(tree),
+                    base_sha=base_sha,
+                    head_sha=head,
+                    base_tree=base_tree,
+                    logs_dir=logs,
+                    test_files=_node_test_files(pointer),
+                    timeout=timeout,
+                )
+            except (OSError, ValueError) as exc:
+                measured = landing_measure.Measurement(
+                    command=command,
+                    suite={},
+                    population={},
+                    unreadable=(f"the measurement raised {type(exc).__name__}: {exc}"),
+                    head=head,
+                )
+    except landing_measure.BaseCheckoutError as exc:
         measured = landing_measure.Measurement(
             command=command,
             suite={},

@@ -21,7 +21,6 @@ and nothing is read from a partial log.
 from __future__ import annotations
 
 import contextlib
-import os
 import re
 import shlex
 import subprocess
@@ -32,6 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon.clones import changed_paths
+from reckon.crew.dispatch_launch import worker_scratch_root
 
 #: How many times an added id is re-run alone at each revision.
 REPEATS = 3
@@ -256,20 +256,6 @@ def measure_timeout(config: Mapping[str, Any] | None) -> float:
     return float(value)
 
 
-def scratch_root() -> Path:
-    """Where the base checkout is built: node-local temporary storage.
-
-    The base checkout is a throwaway tree for one measurement, so it belongs on
-    local disk rather than on the repository's shared filesystem, where a copy
-    of the tree costs every peer client.
-    """
-    for name in ("TMPDIR", "TEMP", "TMP"):
-        value = os.environ.get(name, "").strip()
-        if value and Path(value).is_dir():
-            return Path(value)
-    return Path("/tmp")  # noqa: S108 - the documented node-local fallback
-
-
 def _arm(
     command: Sequence[str],
     tree: Path,
@@ -468,74 +454,79 @@ def _slug(test_id: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]+", "-", test_id)
 
 
+class BaseCheckoutError(ValueError):
+    """The base checkout could not be built, so there is nothing to measure."""
+
+
+def _git(repo: Path, *arguments: str, timeout: float):
+    """Run one bounded git command against ``repo``."""
+    return _RUN(
+        ["git", "-C", str(repo), *arguments],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=timeout,
+    )
+
+
 @contextlib.contextmanager
 def base_checkout(
     repo: Path, base_sha: str, timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS
 ) -> Iterator[Path]:
     """A detached scratch tree at ``base_sha``, removed when the block ends.
 
-    The tree is built under ``scratch_root()`` — node-local temporary storage,
-    never the repository's shared filesystem — and it is removed on every exit
-    path, including a checkout that times out or fails before it is yielded.
-    Both git calls are bounded by the same ``timeout`` as the measurements.
+    The tree is built under ``worker_scratch_root()`` — the node-local root the
+    fleet already owns, so a shared-storage ``TMPDIR`` cannot move the checkout
+    onto GPFS — and it is removed on every exit path, including a checkout that
+    times out or fails before it is yielded. Every git call is bounded by the
+    same ``timeout`` as the measurements.
+
+    A removal that fails or times out leaves the repository's registration
+    behind, so the registration is pruned before the block returns; a stale
+    entry would otherwise make a later ``worktree add`` of the same path fail.
     """
-    scratch = Path(tempfile.mkdtemp(prefix="landing-base-", dir=scratch_root()))
+    root = worker_scratch_root()
+    root.mkdir(parents=True, exist_ok=True)
+    scratch = Path(tempfile.mkdtemp(prefix="landing-base-", dir=root))
     target = scratch / "tree"
     try:
-        added = _RUN(
-            [
-                "git",
-                "-C",
-                str(repo),
-                "worktree",
-                "add",
-                "--detach",
-                str(target),
-                base_sha,
-            ],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=timeout,
+        added = _git(
+            repo, "worktree", "add", "--detach", str(target), base_sha, timeout=timeout
         )
     except subprocess.TimeoutExpired as expired:
         shutil_rmtree(scratch)
-        raise ValueError(
+        raise BaseCheckoutError(
             f"could not check out {base_sha} for the base arm: "
             f"git worktree add exceeded its {timeout:g}s bound"
         ) from expired
     except OSError as exc:
         shutil_rmtree(scratch)
-        raise ValueError(
+        raise BaseCheckoutError(
             f"could not check out {base_sha} for the base arm: "
             f"{type(exc).__name__}: {exc}"
         ) from exc
     if added.returncode:
         shutil_rmtree(scratch)
-        raise ValueError(
+        raise BaseCheckoutError(
             f"could not check out {base_sha} for the base arm: "
             f"{(added.stderr or added.stdout or '').strip()}"
         )
     try:
         yield target
     finally:
+        removed = False
         with contextlib.suppress(OSError, subprocess.TimeoutExpired):
-            _RUN(
-                [
-                    "git",
-                    "-C",
-                    str(repo),
-                    "worktree",
-                    "remove",
-                    "--force",
-                    str(target),
-                ],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=timeout,
+            finished = _git(
+                repo, "worktree", "remove", "--force", str(target), timeout=timeout
             )
+            removed = finished.returncode == 0
         shutil_rmtree(scratch)
+        if not removed:
+            # The tree is gone from disk but the repository still registers it.
+            # Prune drops that stale entry, and ``--expire now`` is what makes
+            # it act immediately rather than after the default grace period.
+            with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+                _git(repo, "worktree", "prune", "--expire", "now", timeout=timeout)
 
 
 def shutil_rmtree(path: Path) -> None:
