@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T01:56:05.191Z",
+  "dispatched_at": "2026-10-27T01:48:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261027T014545311770-plan-review-of-the-monitor-reads-each-fact-once/plan.html:289",
+      "id": "reasoning-1",
+      "reason": "without a stated host-scope rule the replacement mechanism resumes foreign runs on the wrong node, and the \u00a710 done-when (three subscribers on one session) cannot detect it.",
+      "text": "\u00a710 assigns the station \"the whole sweep, both passes, and settle detection for every session on the node\", but today the only sweeper that covers a session with no follower is `runs.sweep_unfollowed_sessions` (called from the producer loop at reckon/crew/recovery_watch.py:2898), and it sweeps a session only when every one of its live runs was launched on this host, because \"a resume restarts a process on the host it runs on\" (reckon/crew/runs.py:3650-3673); `resumption.sweep` itself carries no host filter (no `launcher_host`/`_record_is_known_foreign` reference in resumption.py), and \u00a712 retires the producer that holds the guard, so the station as \u00a710 describes it would resume another node's lapsed runs from whichever node's station reads the shared crew home first.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "0a355fdc9657f913068630978090ac83a828328e25a0543b83a45229c1de05a3",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 53,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T014545311770-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "4c563aa36b03bd73c7887e55fd420a9bf04a6615",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `resumption.sweep` resolves (reckon/crew/resumption.py:1768, two passes confirmed in its docstring), `recovery_review_acceptance.dispatch_awaiting_reviews` resolves and is the pass the sweep calls (resumption.py:81,2034), `review_settle_seconds_remaining` reads only `auto_resume` today (recovery_review_dispatch.py:1258-1270), `_latest_resume_at` returns `max` of the automatic and superseded-head stamps (recovery_review_dispatch.py:206-220), `resume_superseded_head`/`resume_superseded_at` resolve (recovery_review_dispatch.py:66,78,91), `_check_settle`, `FOLLOWER_SETTLE_SAMPLE_SECONDS` and `settle_populations` resolve (crew_follow_commands.py:312,1505,1517), `_population_has_live_work` reads ownerless pointers as live and reads `session=None` as every non-terminal run (crew_follow_commands.py:482-506), `dispatch_review_for_run`'s in-flight refusal keys on (run, head) (recovery_review_dispatch.py:491-520), and `REVIEW_SETTLE_SECONDS` exists (recovery_review_dispatch.py:889).",
+    "done_when": "pass \u2014 every measure in \u00a710 is countable (sweep runs per change, settle/no-settle over populations, review withheld until the window passes, review with no further file change, resume on the beat) and each names a control that can redden it: three subscribers vs one sweep, a subscriber settling on its own session alone, a station evaluating settle only on change, a settle reader taking `auto_resume` alone, and a station running only the review pass; the trace control is paired with a positive control (`today's per-follower settle reader must name the run directories it lists`) that shows a silent trace could have spoken (plan.html:314-333).",
+    "evidence_paths": "pass \u2014 \u00a710's measures are a 60 s `strace` and test-count results, with no log written to a session scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a710's new prose names mechanisms by what they do (`has-live-work reading`, `project-wide reading`); the `old \u00a781` reference is plan-internal prose, not a symbol or a comment in code.",
+    "reasoning": "a finding \u2014 the statement that the station sweeps \"for every session on the node\" drops the host-scope rule the current gap-filling sweeper applies, so a station on one node would resume another node's lapsed runs; the other two checks hold (the root cause \u2014 each follower sweeping on its own cadence \u2014 matches `sweep` being called from the follower loop at crew_follow_commands.py:1789, and the move to `_latest_resume_at` does produce the advice-settle measure).",
+    "single_goal": "pass \u2014 \u00a710's deliverable is one thing, the review reflex and settle detection running once in the station; the settle-reader change to `_latest_resume_at` is the precondition of that one mover, not a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` now gives `s10` both `#s7` (the station process that would host the sweep) and `#s8` (the subscriber whose settle-aware trace it measures), and `s12` still lists `s10`, so no relationship \u00a710 needs is missing or misdirected (plan.html:23)."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "e431221ca2ac234caa9d50fe4b4cfadb7e46af7c440c7ea10db21c187203f8f0",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T02:00:06.250986+00:00"
+}
