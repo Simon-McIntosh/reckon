@@ -7,48 +7,47 @@ runs and sessions are working on it and which paths they hold, and its last
 five events.
 
 Every fact here has an owner and this module derives none of them again. The
-waits come from the roadmap's section-dependency edges
-(``roadmap._plan_authored_html`` read through ``_schema.section_depends_on``)
-and its readiness judgement (``roadmap.dependency_row_state`` and
-``roadmap._section_satisfied``). The runs come from
-``mcp_views.partition_live_runs``, through the classifier the roadmap, the
-sprint view and ``recover`` already share, and the paths they hold are the
-dispatch scope claims the pointer carries. The events are the plan's own
-timestamped records — a followup written or resolved, a decision locked, a run's
-start — sorted newest first.
+waits are the roadmap's own section-scoped edge rows, resolved by
+``roadmap._section_scoped_edges`` from the mapping ``roadmap._plan_section_deps``
+reads, so a wait cannot read satisfied here and unsatisfied on a roadmap row.
+The holds are the roadmap's named-hold assembly — ``plan_blocker_state`` and
+``_decision_rows`` for a gate or a decision, ``run_blocker_rows`` from the
+shared classifier for a run reported blocked — so the same gate, decision or
+blocked run holds a section on both surfaces. The runs come from
+``mcp_views.partition_live_runs`` and the paths they hold are the dispatch scope
+claims the pointer carries. The events are the plan's own timestamped records,
+sorted newest first.
 """
 
 from __future__ import annotations
 
 import difflib
-from collections.abc import Iterable, Mapping
+from collections import defaultdict
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
-from reckon._schema import (
-    declared_section_identities,
-    parse_plan_ref,
-    section_depends_on,
-)
+from reckon._plan_html import read_state
+from reckon._schema import declared_section_identities, parse_plan_ref
 from reckon.live_run_classification import (
+    DECISION_BLOCKER,
+    GATE_BLOCKER,
     HELD_PATH,
     RUN_BLOCKED,
     SECTION_DEPENDENCY_BLOCKER,
 )
 
-#: The most characters one ``why`` answer may return. This is the contract the
-#: view is built to, and the read enforces it before the answer leaves, so a
-#: wide wait graph is trimmed rather than refused. It is the same figure a
-#: ``read_plan`` default view is held to in ``reckon/mcp_budget.py``, and this
-#: view joins that table once its own row is registered there.
-WHY_VIEW_BUDGET = 24_000
 #: How many sections of a wait chain are walked before the answer says it
 #: stopped, so a cycle or a very deep graph cannot make one read unbounded.
 MAX_WAIT_DEPTH = 4
-#: How many events the answer carries; the goal fixes this at five.
+#: The newest five events are carried; the plan's own record holds the rest, so
+#: a busy plan's history stays a glance rather than the answer.
 MAX_EVENTS = 5
 #: One prose field is trimmed to this before it travels.
 SHOWN_TEXT = 160
+
+#: A reader of one plan's section-scoped waits, keyed by the waiting section.
+EdgeReader = Callable[[str], Mapping[str, list[dict[str, Any]]]]
 
 
 class WhyRefusalError(ValueError):
@@ -71,22 +70,16 @@ def why_answer(
     plan_data: Mapping[str, Any] | None = None,
     pointers: list[dict[str, Any]] | None = None,
     limit: int | None = None,
+    edges: EdgeReader | None = None,
 ) -> dict[str, Any]:
-    """Answer what one ref is, what it waits on, and who is working on it.
-
-    ``inventory`` is the project's composed plan rows — the same rows the
-    roadmap read is built from — so a slug resolves against the project's live
-    documents rather than against one caller's arguments. ``plan_data`` is the
-    queried plan's parsed state where the caller already holds it; absent, it is
-    read through the same file the roadmap reads.
-    """
+    """Answer what one ref is, what it waits on, and who is working on it."""
 
     plans = {
         str(row.get("slug") or ""): row
         for row in inventory
         if isinstance(row, Mapping) and row.get("slug")
     }
-    wanted_section = _section_identity(section)
+    wanted = _section_identity(section)
     if slug not in plans:
         raise WhyRefusalError(
             "ref_not_found",
@@ -94,74 +87,64 @@ def why_answer(
             _nearest_refs(slug, plans),
         )
     plan_row = plans[slug]
-    authored = _authored_state(plan_row, docs_dir, project, slug)
+    authored = _authored(plan_row, docs_dir, project, slug)
     identities = declared_section_identities(
         plan_row, authored.get("section_declarations")
     )
-    if wanted_section and wanted_section not in identities:
+    if wanted and wanted not in identities:
         raise WhyRefusalError(
             "section_not_found",
-            f"Plan {slug!r} declares no section {wanted_section!r}.",
+            f"Plan {slug!r} declares no section {wanted!r}.",
             _nearest_refs(
-                wanted_section,
-                [f"{slug}#{identity}" for identity in sorted(identities)],
+                wanted, [f"{slug}#{identity}" for identity in sorted(identities)]
             ),
         )
 
     data = dict(plan_data or {})
+    states = _PlanStates(project, plans, docs_dir, seed={slug: data} if data else None)
+    read_edges = edges or _memoised_edges(project, plans, docs_dir)
     run_rows = _manageable_runs(project, pointers)
-    target_ref = f"{slug}#{wanted_section}" if wanted_section else slug
 
-    waits, wait_walks = _transitive_waits(
-        project, slug, wanted_section, plans, docs_dir, run_rows
+    waits, truncated = _transitive_waits(
+        slug, wanted, plans, states, run_rows, read_edges
     )
     answer: dict[str, Any] = {
         "view": "why",
         "project": project,
-        "ref": target_ref,
-        "what": _what(plan_row, data, slug, wanted_section, authored),
+        "ref": f"{slug}#{wanted}" if wanted else slug,
+        "what": _what(plan_row, data, slug, wanted, authored),
+        "holds": _holds_for(slug, wanted, plans, states),
         "waits_on": waits,
-        "waited_on_by": _waited_on_by(project, slug, wanted_section, plans, docs_dir),
-        "runs": _runs_on(run_rows, slug, wanted_section),
-        "followups": _open_followups(data, wanted_section),
+        "waited_on_by": _waited_on_by(slug, wanted, plans, read_edges),
+        "runs": _runs_on(run_rows, slug, wanted),
+        "followups": _open_followups(data, wanted),
     }
     answer["events"] = _events(data, answer["runs"])
-    if wait_walks["truncated"]:
+    if truncated:
         answer["waits_truncated"] = True
     answer["counts"] = {
-        "waits_on": len(answer["waits_on"]),
-        "waited_on_by": len(answer["waited_on_by"]),
-        "runs": len(answer["runs"]),
-        "followups": len(answer["followups"]),
+        key: len(answer[key])
+        for key in ("holds", "waits_on", "waited_on_by", "runs", "followups")
     }
     if limit is not None and limit >= 0:
-        for key in ("waits_on", "waited_on_by", "runs", "followups"):
+        for key in ("holds", "waits_on", "waited_on_by", "runs", "followups"):
             answer[key] = answer[key][:limit]
     return answer
 
 
-# ── facts the answer carries ─────────────────────────────────────────────────
-
-
-def _what(
-    plan_row: Mapping[str, Any],
-    data: Mapping[str, Any],
-    slug: str,
-    section: str,
-    authored: Mapping[str, Any],
-) -> dict[str, Any]:
+def _what(plan_row, data, slug, section, authored) -> dict[str, Any]:
     """The thing's identity and its own state, never its container's."""
 
     from reckon.roadmap import dependency_row_state
 
-    declarations = authored.get("section_declarations")
-    plan_status = str(plan_row.get("status") or data.get("status") or "")
     what: dict[str, Any] = {
         "kind": "section" if section else "plan",
         "plan": slug,
         "title": str(data.get("title") or plan_row.get("title") or slug),
-        "plan_status": plan_status,
-        "state": dependency_row_state(plan_row, section, declarations),
+        "plan_status": str(plan_row.get("status") or data.get("status") or ""),
+        "state": dependency_row_state(
+            plan_row, section, authored.get("section_declarations")
+        ),
     }
     if section:
         what["section"] = section
@@ -174,157 +157,222 @@ def _what(
     return what
 
 
-def _transitive_waits(
+# ── waits, read through the roadmap's own edges ─────────────────────────────
+
+
+def _memoised_edges(
     project: str,
-    slug: str,
-    section: str,
     plans: Mapping[str, Mapping[str, Any]],
     docs_dir: Path | None,
-    run_rows: Mapping[tuple[str, str], list[dict[str, Any]]],
-) -> tuple[list[dict[str, Any]], dict[str, bool]]:
-    """Walk what the ref waits on, and what each of those waits on in turn.
+) -> EdgeReader:
+    """A reader of one plan's roadmap edge rows, resolved once per plan."""
 
-    Each entry carries the wait's kind — a section-dependency, a gate, a
-    decision, a run reported blocked, a path another run holds — so a reader
-    sees why the target is not done rather than only that it is not; the
-    roadmap owns each kind's judgement and this walk only follows the edges it
-    names.
-    """
+    cache: dict[str, Mapping[str, list[dict[str, Any]]]] = {}
+
+    def read(slug: str) -> Mapping[str, list[dict[str, Any]]]:
+        if slug not in cache:
+            cache[slug] = _section_edges(project, slug, plans, docs_dir)
+        return cache[slug]
+
+    return read
+
+
+def _section_edges(
+    project: str,
+    slug: str,
+    plans: Mapping[str, Mapping[str, Any]],
+    docs_dir: Path | None,
+) -> Mapping[str, list[dict[str, Any]]]:
+    """A plan's section waits, grouped by the section that declares them."""
+
+    from reckon.roadmap import _plan_section_deps, _section_scoped_edges
+
+    mapping = _plan_section_deps(plans[slug], docs_dir, project, slug)
+    if not mapping:
+        return {}
+    rows, _findings = _section_scoped_edges(
+        project, plans[slug], slug, mapping, plans, docs_dir
+    )
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[str(row.get("source_section") or "")].append(row)
+    return dict(grouped)
+
+
+def _waits_of(slug, section, plans, edges) -> list[dict[str, Any]]:
+    """The edges one section — or one plan — declares."""
+
+    if not section:
+        return [
+            {"ref": str(ref), "stage": ""}
+            for ref in (plans.get(slug) or {}).get("depends_on") or []
+            if parse_plan_ref(str(ref)) is not None
+        ]
+    return list(edges(slug).get(section, []))
+
+
+def _transitive_waits(slug, section, plans, states, run_rows, edges):
+    """Walk what the ref waits on, and what each of those waits on in turn."""
 
     rows: list[dict[str, Any]] = []
-    seen: set[tuple[str, str]] = {(slug, section)}
-    frontier: list[tuple[str, str, int]] = [(slug, section, 0)]
+    seen = {(slug, section)}
+    frontier = [(slug, section, 0)]
     truncated = False
     while frontier:
         current_slug, current_section, depth = frontier.pop(0)
         if depth >= MAX_WAIT_DEPTH:
             truncated = True
             continue
-        for ref in _declared_refs(
-            project, current_slug, current_section, plans, docs_dir
-        ):
-            parsed = parse_plan_ref(ref)
+        for edge in _waits_of(current_slug, current_section, plans, edges):
+            parsed = parse_plan_ref(str(edge.get("ref") or ""))
             if parsed is None:
                 continue
-            target_section = parsed.stage or ""
+            target_section = parsed.stage or str(edge.get("stage") or "")
+            rows.append(_wait_row(edge, parsed, plans, states, run_rows, depth + 1))
             key = (parsed.slug, target_section)
-            row = _wait_row(project, ref, parsed, plans, docs_dir, run_rows, depth + 1)
-            rows.append(row)
-            if row.get("resolvable") and key not in seen:
+            if parsed.slug in plans and key not in seen:
                 seen.add(key)
                 frontier.append((parsed.slug, target_section, depth + 1))
-    return rows, {"truncated": truncated}
+    return rows, truncated
 
 
-def _declared_refs(
-    project: str,
-    slug: str,
-    section: str,
-    plans: Mapping[str, Mapping[str, Any]],
-    docs_dir: Path | None,
-) -> list[str]:
-    """The refs one section (or one plan) declares it waits on."""
+def _wait_row(edge, parsed, plans, states, run_rows, depth) -> dict[str, Any]:
+    """One wait, resolved to the roadmap's edge row and the target's holds."""
 
-    from reckon.roadmap import _plan_authored_html
+    from reckon.roadmap import dependency_row_state
 
-    plan_row = plans.get(slug) or {}
-    if not section:
-        return [
-            str(ref)
-            for ref in plan_row.get("depends_on") or []
-            if parse_plan_ref(str(ref)) is not None
-        ]
-    mapping = (
-        section_depends_on(_plan_authored_html(plan_row, docs_dir, project, slug)) or {}
-    )
-    raw = mapping.get(section)
-    refs = [raw] if isinstance(raw, str) else raw
-    if not isinstance(refs, list):
-        return []
-    return [str(ref) for ref in refs if parse_plan_ref(str(ref)) is not None]
-
-
-def _wait_row(
-    project: str,
-    ref: str,
-    parsed: Any,
-    plans: Mapping[str, Mapping[str, Any]],
-    docs_dir: Path | None,
-    run_rows: Mapping[tuple[str, str], list[dict[str, Any]]],
-    depth: int,
-) -> dict[str, Any]:
-    """One wait, resolved to the target's own state and its holders."""
-
-    from reckon.roadmap import (
-        _section_satisfied,
-        dependency_row_state,
-    )
-
-    target_project = parsed.project or project
-    section = parsed.stage or ""
+    section = parsed.stage or str(edge.get("stage") or "")
     row: dict[str, Any] = {
-        "ref": ref,
+        "ref": str(edge.get("ref") or ""),
         "kind": SECTION_DEPENDENCY_BLOCKER,
         "depth": depth,
         "resolvable": False,
+        "satisfied": bool(edge.get("satisfied")),
     }
-    target = plans.get(parsed.slug)
-    if target_project != project or target is None:
-        row["satisfied"] = False
+    target = plans.get(str(parsed.slug or ""))
+    if target is None:
         return row
-    authored = _authored_state(target, docs_dir, project, parsed.slug)
-    declarations = authored.get("section_declarations")
+    authored = states.of(parsed.slug)
     row["resolvable"] = True
-    row["state"] = dependency_row_state(target, section, declarations)
-    row["satisfied"] = (
-        _section_satisfied(target, section, declarations) if section else False
+    row["state"] = dependency_row_state(
+        target, section, authored.get("section_declarations")
     )
+    if edge.get("status"):
+        row["state_kind"] = str(edge["status"])
     holders = run_rows.get((parsed.slug, section), [])
     if holders:
-        row["runs"] = [holder["run_id"] for holder in holders]
+        row["runs"] = [str(holder.get("run_id") or "") for holder in holders]
         row["held_paths"] = sorted(
-            {path for holder in holders for path in holder.get("held_paths") or []}
+            {path for holder in holders for path in holder.get("held_paths") or ()}
         )
-        # The wait itself is the declared section dependency; the target's own
-        # hold is the second fact, so a reader knows both why it waits and why
-        # the thing it waits for has not moved.
         row["hold"] = HELD_PATH if row["held_paths"] else RUN_BLOCKED
+    holds = _named_holds(parsed.slug, section, plans, states)
+    holds.extend(_run_holds(holders))
+    if holds:
+        row["holds"] = holds
     return row
 
 
-def _waited_on_by(
-    project: str,
-    slug: str,
-    section: str,
-    plans: Mapping[str, Mapping[str, Any]],
-    docs_dir: Path | None,
-) -> list[dict[str, Any]]:
-    """The sections of this project whose declared waits name this ref."""
+# ── holds: the roadmap's named-gate, decision and run blockers ──────────────
 
-    from reckon.roadmap import _plan_authored_html, dependency_row_state
+
+def _holds_for(slug, section, plans, states) -> list[dict[str, Any]]:
+    """What the roadmap reports holding this ref."""
+
+    return _named_holds(slug, section, plans, states)
+
+
+def _named_holds(slug, section, plans, states) -> list[dict[str, Any]]:
+    """The gate and decision holds the roadmap names for one section or plan."""
+
+    from reckon.roadmap import (
+        _decision_rows,
+        _plan_decision_sections,
+        plan_blocker_state,
+    )
+
+    plan_row = plans.get(slug)
+    if plan_row is None:
+        return []
+    state = states.of(slug)
+    sections_map = _plan_decision_sections(
+        plan_row, states.docs_dir, states.project, slug
+    )
+    blocker_state = plan_blocker_state(state, sections_map=sections_map)
+    if not section:
+        return [
+            *(
+                _decision_hold(decision)
+                for decision in blocker_state["plan_holding_decisions"]
+            ),
+            *(_gate_hold(gate) for gate in blocker_state["gate_blockers"]),
+        ]
+    holds = [
+        _decision_hold(decision)
+        for decision in _decision_rows(state, sections_map)
+        if decision["status"] == "open"
+        and section in {str(s) for s in decision.get("sections") or ()}
+    ]
+    holds.extend(
+        _gate_hold(gate)
+        for gate in blocker_state["section_gate_blockers"]
+        if section in {str(s) for s in gate.get("gated_sections") or ()}
+    )
+    return holds
+
+
+def _decision_hold(decision: Mapping[str, Any]) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "kind": DECISION_BLOCKER,
+        "id": str(decision.get("key") or decision.get("id") or ""),
+        "status": str(decision.get("status") or "open"),
+    }
+    text = decision.get("title") or decision.get("question") or decision.get("body")
+    if text:
+        row["what"] = _shown(str(text))
+    return row
+
+
+def _gate_hold(gate: Mapping[str, Any]) -> dict[str, Any]:
+    row: dict[str, Any] = {
+        "kind": GATE_BLOCKER,
+        "id": str(gate.get("id") or ""),
+        "status": str(gate.get("status") or ""),
+    }
+    for key in ("verdict", "measure"):
+        if gate.get(key):
+            row[key] = _shown(str(gate[key]))
+    return row
+
+
+def _run_holds(holders: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """The roadmap's run-blocked rows for the runs sitting on one section."""
+
+    from reckon.live_run_classification import run_blocker_rows
+
+    rows: list[dict[str, Any]] = []
+    for blocker in run_blocker_rows(holders):
+        row: dict[str, Any] = {"kind": str(blocker.get("kind") or RUN_BLOCKED)}
+        for key in ("run_id", "id", "classification", "reason", "blocked_by"):
+            if blocker.get(key):
+                row[key] = _shown(str(blocker[key]))
+        rows.append(row)
+    return rows
+
+
+def _waited_on_by(slug, section, plans, edges) -> list[dict[str, Any]]:
+    """The sections of this project whose roadmap edge names this ref."""
+
+    from reckon.roadmap import dependency_row_state
 
     rows: list[dict[str, Any]] = []
     for waiting_slug in sorted(plans):
-        mapping = (
-            section_depends_on(
-                _plan_authored_html(
-                    plans[waiting_slug], docs_dir, project, waiting_slug
-                )
-            )
-            or {}
-        )
-        authored = _authored_state(plans[waiting_slug], docs_dir, project, waiting_slug)
-        for waiting_section, raw_refs in mapping.items():
-            refs = [raw_refs] if isinstance(raw_refs, str) else raw_refs
-            if not isinstance(refs, list):
-                continue
-            for ref in refs:
-                parsed = parse_plan_ref(str(ref))
-                if parsed is None:
+        for waiting_section, declared in edges(waiting_slug).items():
+            for edge in declared:
+                parsed = parse_plan_ref(str(edge.get("ref") or ""))
+                if parsed is None or parsed.slug != slug:
                     continue
-                if (parsed.project or project) != project:
-                    continue
-                if parsed.slug != slug or (parsed.stage or "") != section:
+                if (parsed.stage or "") != section:
                     continue
                 rows.append(
                     {
@@ -333,24 +381,20 @@ def _waited_on_by(
                         "state": dependency_row_state(
                             plans[waiting_slug],
                             waiting_section,
-                            authored.get("section_declarations"),
+                            None,
                         ),
+                        "satisfied": bool(edge.get("satisfied")),
                     }
                 )
     rows.sort(key=lambda row: str(row["ref"]))
     return rows
 
 
-def _manageable_runs(
-    project: str, pointers: list[dict[str, Any]] | None
-) -> dict[tuple[str, str], list[dict[str, Any]]]:
-    """Group live runs by their target section, keeping each pointer's claims.
+# ── runs and the paths they hold ────────────────────────────────────────────
 
-    The classification is ``partition_live_runs``' answer, so a run reads the
-    same here as it does on the roadmap row and in ``crew live``. The paths each
-    run holds and the session it belongs to come from the pointer the partition
-    already read, never from a second probe.
-    """
+
+def _manageable_runs(project, pointers) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    """Group live runs by their target section, keeping each pointer's claims."""
 
     from reckon import crew
     from reckon.mcp_views import partition_live_runs
@@ -361,61 +405,68 @@ def _manageable_runs(
         except OSError:
             pointers = []
     in_flight, interrupted = partition_live_runs(project, pointers)
-    by_run: dict[str, Mapping[str, Any]] = {
+    by_run = {
         str(pointer.get("run_id") or ""): pointer
         for pointer in pointers
         if isinstance(pointer, Mapping)
     }
     grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
-    for plan_ref, rows in (
-        *((ref, rows) for ref, rows in in_flight.items()),
-        *((ref, rows) for ref, rows in interrupted.items()),
+    for plan_ref, row in (
+        (ref, row)
+        for group in (in_flight, interrupted)
+        for ref, rows in group.items()
+        for row in rows
     ):
-        for row in rows:
-            pointer = by_run.get(str(row.get("run_id") or "")) or {}
-            node = pointer.get("node")
-            node = node if isinstance(node, Mapping) else {}
-            enriched = {
-                **row,
-                "held_paths": [str(path) for path in node.get("write_paths") or ()],
-                "session": str(pointer.get("session_id")),
-                "phase": str(pointer.get("phase") or ""),
-            }
-            grouped.setdefault((plan_ref, str(row.get("section") or "")), []).append(
-                enriched
-            )
+        pointer = by_run.get(str(row.get("run_id") or "")) or {}
+        node = pointer.get("node")
+        node = node if isinstance(node, Mapping) else {}
+        enriched = {
+            **row,
+            "held_paths": [str(path) for path in node.get("write_paths") or ()],
+            "session": str(pointer.get("session_id")),
+            "phase": str(pointer.get("phase") or ""),
+        }
+        key = (plan_ref, str(row.get("section") or ""))
+        grouped.setdefault(key, []).append(enriched)
     return grouped
 
 
-def _runs_on(
-    run_rows: Mapping[tuple[str, str], list[dict[str, Any]]],
-    slug: str,
-    section: str,
-) -> list[dict[str, Any]]:
-    """The runs working on this ref now, with the paths they hold."""
+def _runs_on(run_rows, slug, section) -> list[dict[str, Any]]:
+    """The runs working on this ref, with the paths they hold.
 
-    return [_run_row(row) for row in run_rows.get((slug, section), [])]
+    A plan-level ref is worked by whatever is on any of its sections, so those
+    runs are named too rather than the plan reading unheld.
+    """
+
+    if section:
+        return [_run_row(row) for row in run_rows.get((slug, section), [])]
+    return [
+        _run_row(row)
+        for (plan_ref, _held), holders in sorted(run_rows.items())
+        if plan_ref == slug
+        for row in holders
+    ]
 
 
-def _run_row(row: Mapping[str, Any]) -> dict[str, Any]:
-    """One run as the answer renders it: identity, target, holder of paths."""
-
+def _run_row(row) -> dict[str, Any]:
     rendered: dict[str, Any] = {
         "run_id": str(row.get("run_id") or ""),
         "classification": str(row.get("classification") or ""),
         "member": str(row.get("member") or ""),
     }
     for key in ("section", "session", "phase", "started_at"):
-        value = row.get(key)
-        if value:
-            rendered[key] = str(value)
+        if row.get(key):
+            rendered[key] = str(row[key])
     held = [str(path) for path in row.get("held_paths") or ()]
     if held:
         rendered["held_paths"] = held
     return rendered
 
 
-def _open_followups(data: Mapping[str, Any], section: str) -> list[dict[str, Any]]:
+# ── the plan's own records ──────────────────────────────────────────────────
+
+
+def _open_followups(data, section) -> list[dict[str, Any]]:
     """The plan's open followups, filtered to those that name this section."""
 
     from reckon._plan_html import section_record_id
@@ -443,17 +494,8 @@ def _open_followups(data: Mapping[str, Any], section: str) -> list[dict[str, Any
     return rows
 
 
-def _events(
-    data: Mapping[str, Any],
-    runs: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    """The plan's own timestamped records, newest first, five at most.
-
-    These are records the plan already carries rather than a second store: a
-    followup written or resolved, a decision locked, and a run that started on
-    the ref. A record with no timestamp is not an event and is skipped, because
-    ordering it would put it somewhere a reader would trust.
-    """
+def _events(data, runs) -> list[dict[str, Any]]:
+    """The plan's own timestamped records, newest first, five at most."""
 
     events: list[tuple[str, dict[str, Any]]] = []
     for followup in data.get("followups") or []:
@@ -516,18 +558,34 @@ def _events(
 # ── small helpers ───────────────────────────────────────────────────────────
 
 
-def _authored_state(
-    plan_row: Mapping[str, Any],
-    docs_dir: Path | None,
-    project: str,
-    slug: str,
-) -> Mapping[str, Any]:
+class _PlanStates:
+    """One plan's parsed state, read once per answer."""
+
+    def __init__(self, project, plans, docs_dir, seed=None) -> None:
+        self.project = project
+        self.plans = plans
+        self.docs_dir = docs_dir
+        self._cache: dict[str, Mapping[str, Any]] = dict(seed or {})
+
+    def of(self, slug: str) -> Mapping[str, Any]:
+        cached = self._cache.get(slug)
+        if cached:
+            return cached
+        from reckon.roadmap import _plan_authored_html
+
+        row = self.plans.get(slug) or {}
+        state = read_state(_plan_authored_html(row, self.docs_dir, self.project, slug))
+        self._cache[slug] = state
+        return state
+
+
+def _authored(plan_row, docs_dir, project, slug) -> Mapping[str, Any]:
     from reckon.roadmap import _plan_authored_state
 
     return _plan_authored_state(plan_row, docs_dir, project, slug)
 
 
-def _section_identity(section: Any) -> str:
+def _section_identity(section) -> str:
     value = str(section or "").strip()
     if "#" in value:
         parsed = parse_plan_ref(value)
@@ -545,7 +603,7 @@ def _shown(text: str) -> str:
     )
 
 
-def _nearest_refs(wanted: str, candidates: Iterable[str]) -> str:
+def _nearest_refs(wanted: str, candidates: Iterable[str] | Mapping[str, Any]) -> str:
     """The refusal's hint: the closest refs that do resolve."""
 
     pool = sorted({str(candidate) for candidate in candidates if candidate})
@@ -560,7 +618,6 @@ def _nearest_refs(wanted: str, candidates: Iterable[str]) -> str:
 __all__ = [
     "MAX_EVENTS",
     "MAX_WAIT_DEPTH",
-    "WHY_VIEW_BUDGET",
     "WhyRefusalError",
     "why_answer",
 ]

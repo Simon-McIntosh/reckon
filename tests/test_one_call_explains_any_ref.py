@@ -24,10 +24,13 @@ import pytest
 
 import reckon.mcp as mcp_module
 from reckon.crew import runs
+from reckon.live_run_classification import (
+    DECISION_BLOCKER,
+    GATE_BLOCKER,
+    SECTION_DEPENDENCY_BLOCKER,
+)
 from reckon.live_run_classification import HELD_PATH as HELD_PATH_KIND
-from reckon.live_run_classification import SECTION_DEPENDENCY_BLOCKER
-from reckon.mcp_budget import serialised_characters
-from reckon.why_view import MAX_EVENTS, WHY_VIEW_BUDGET
+from reckon.mcp_budget import VIEW_BUDGETS, serialised_characters
 from tests.mcp_family_reload import reload_mcp_family
 
 PROJECT = "alpha"
@@ -57,6 +60,8 @@ def _write_plan(
     sections: dict[str, str],
     section_depends_on: dict[str, list[str]] | None = None,
     followups: list[dict[str, str]] | None = None,
+    decisions: dict[str, list[str]] | None = None,
+    gates: list[str] | None = None,
 ) -> Path:
     """One in-progress plan with the given declarations and authored waits."""
 
@@ -96,6 +101,29 @@ def _write_plan(
         )
         for name, declaration in sorted(sections.items())
     )
+    if decisions:
+        body.append('<section data-reckon="decisions" id="decisions">')
+        body.extend(
+            (
+                f'<div class="r-dec" data-key="{key}"'
+                f' data-sections="{",".join(sections)}">'
+                f'<p class="r-dec-q">Which way for {key}?</p></div>'
+            )
+            for key, sections in sorted(decisions.items())
+        )
+        body.append("</section>")
+    if gates:
+        body.append('<section data-reckon="gates" id="gates" class="r-gates">')
+        body.extend(
+            (
+                f'<div class="r-gate" data-id="{gate}"'
+                f' data-gated-sections="{WAITING_SECTION}"'
+                ' data-status="pending" data-verdict="">'
+                f'<h4 class="r-gate-measure">{gate} measure</h4></div>'
+            )
+            for gate in gates
+        )
+        body.append("</section>")
     if followups:
         body.append('<section data-reckon="followups" id="followups">')
         body.extend(
@@ -253,7 +281,9 @@ def test_the_read_names_what_waits_on_the_ref(why_fixture):
 def test_the_read_carries_at_most_five_events(why_fixture):
     answer = _why(WAITING_PLAN, WAITING_SECTION)
 
-    assert 0 < len(answer["events"]) <= MAX_EVENTS
+    # Five, read from the requirement rather than from the constant the answer
+    # trims to, so a constant moved with the shared table is still measured.
+    assert 0 < len(answer["events"]) <= 5
     assert answer["events"][0]["event"] == "followup-written"
 
 
@@ -263,7 +293,9 @@ def test_the_answer_fits_its_size_contract(why_fixture):
     # The measure that would fail if the composition grew unbounded: the answer
     # is served to a caller inside the row the view is built to, not refused for
     # being over a ceiling.
-    assert serialised_characters(answer) <= WHY_VIEW_BUDGET
+    # The row the shared budget table declares for this view, not a constant
+    # this module owns: the contract is the table's, so the measure must read it.
+    assert serialised_characters(answer) <= VIEW_BUDGETS[("read_plan", "why")]
     assert answer.get("error") != "response_over_budget"
 
 
@@ -279,3 +311,45 @@ def test_a_plan_that_does_not_resolve_is_refused_with_the_nearest(why_fixture):
 
     assert answer["error"] == "ref_not_found"
     assert WAITING_PLAN in answer["hint"]
+
+
+def test_a_plan_level_ref_names_the_runs_on_any_of_its_sections(why_fixture):
+    """A held section makes its plan held, so the plan ref names that run."""
+
+    answer = _why(HELD_PLAN, None)
+
+    assert answer["ref"] == HELD_PLAN
+    (row,) = answer["runs"]
+    assert row["run_id"] == RUN_ID
+    assert row["section"] == HELD_SECTION
+    assert row["held_paths"] == [HELD_PATH]
+
+
+def test_a_wait_carries_the_kinds_that_hold_it(why_fixture):
+    """The holds are the roadmap's: a decision and a gate, each with its kind."""
+
+    _write_plan(
+        why_fixture,
+        "delta",
+        sections={WAITING_SECTION: "implementable"},
+        decisions={"pick-a-route": [WAITING_SECTION]},
+    )
+    _write_plan(
+        why_fixture,
+        "epsilon",
+        # A gate names one section while other work stays reachable, which is
+        # when the roadmap reports it as a section hold.
+        sections={WAITING_SECTION: "implementable", "s2": "implementable"},
+        gates=["gate-one"],
+    )
+    reload_mcp_family()
+
+    decided = _why("delta", WAITING_SECTION)
+    (decision,) = decided["holds"]
+    assert decision["kind"] == DECISION_BLOCKER
+    assert decision["id"] == "pick-a-route"
+
+    gated = _why("epsilon", WAITING_SECTION)
+    (gate,) = gated["holds"]
+    assert gate["kind"] == GATE_BLOCKER
+    assert gate["id"] == "gate-one"

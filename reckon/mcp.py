@@ -1476,12 +1476,8 @@ def _served_why(
     ref. The composition itself lives in ``reckon.why_view``.
     """
 
-    from reckon.mcp_budget import serialised_characters
-    from reckon.why_view import (
-        WHY_VIEW_BUDGET,
-        WhyRefusalError,
-        why_answer,
-    )
+    from reckon.mcp_budget import serialised_characters, view_budget
+    from reckon.why_view import WhyRefusalError, why_answer
 
     if not project or project == "*":
         return error_response(
@@ -1518,7 +1514,8 @@ def _served_why(
             str(exc),
             hint="Inspect the ref and the project's mounts.",
         )
-    return _fit_why(answer, WHY_VIEW_BUDGET, serialised_characters)
+    budget = view_budget("read_plan", {"view": WHY_VIEW}) or 0
+    return _fit_why(answer, budget, serialised_characters)
 
 
 def _fit_why(
@@ -1534,7 +1531,7 @@ def _fit_why(
     trim, so a reader knows the answer is partial rather than complete.
     """
 
-    keys = ("waits_on", "waited_on_by", "followups", "events")
+    keys = ("holds", "waits_on", "waited_on_by", "followups", "events")
     trimmed: dict[str, int] = {}
     while serialised_characters(answer) > budget:
         sizes = {key: len(answer.get(key) or []) for key in keys if answer.get(key)}
