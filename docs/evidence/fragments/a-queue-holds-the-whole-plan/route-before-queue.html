@@ -1,0 +1,20 @@
+<section id="route-before-queue-landing">
+  <h2>Requests retain their chosen route through the queue</h2>
+  <p>Dispatch records the picker choice on each waiting request. Two ready
+  requests routed to the metered backend launch while the local lane has no
+  worker slot; a third request routed locally queues. A metered request held
+  for an upstream section keeps its route and launches from the local admit
+  service's pass once the upstream lands, without another dispatch.</p>
+  <p>A metered pace hold at launch moves a picker-routed request to local and
+  records the source backend, destination, and hold reason on both the request
+  and its launched run. A backend named at dispatch or by a queue edit remains
+  queued on that backend with the hold reason. The request's priority rank is
+  unchanged by the fallback.</p>
+  <p>At commit <code>1f0303dbdd60b1c8e6475ebfef93e6a2690962bc</code>, the focused
+  head gate passed 58 tests; the same existing importer files passed 49 at the
+  merged base, for zero added failures. Nine new route tests cover ready
+  metered launches, local-only routing, upstream release, both fallback times,
+  and named routes. The declared mutation that kept a pace-held metered route
+  queued failed the fallback test (one failure, nonzero exit). Ruff check and
+  format check passed on the changed paths.</p>
+</section>
