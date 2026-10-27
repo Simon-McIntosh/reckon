@@ -1198,6 +1198,41 @@ def _recorded_capability(
     return None
 
 
+def _resolved_suite_gate(
+    suite_command: str | None,
+    *,
+    node: TaskNode,
+    worktree: str,
+) -> tuple[str, str]:
+    """The armed suite command resolved for this node, and whether it is armed.
+
+    Promotion resolves a scoped declaration against the node's own fenced test
+    files, so a worker that is told a different command measures a different
+    suite and its pair is refused. The resolution is therefore taken from
+    promotion's own substitution rather than reimplemented here, over the same
+    two facts promotion reads: the declared template and the node's write
+    scope within the run's tree.
+
+    A scope holding no test file resolves to nothing, and the gate is then
+    reported ``unarmed`` rather than as an empty command, which reads as a
+    command no one could run. A project that declares no command at all
+    reports no gate state, because an undeclared project is a different fact
+    from a declaration this node's scope empties.
+    """
+    if not suite_command:
+        return "", ""
+    from reckon.crew.promotion_records import _scoped_suite_command
+
+    resolved = _scoped_suite_command(
+        {
+            "suite_command": suite_command,
+            "worktree": worktree,
+            "node": {"write_paths": list(node.write_paths)},
+        }
+    )
+    return (resolved, "armed") if resolved else ("", "unarmed")
+
+
 @contextlib.contextmanager
 def _request_claim_restored_on_refusal(run_id, request):
     """Return an admitted request to its waiting phase without an absent pointer."""
@@ -2348,6 +2383,14 @@ def dispatch(
                 )
             except _backends.BackendError as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
+        # The suite command is resolved here, before the prompt is composed and
+        # before the record is written, so the command the worker is told to
+        # measure is the one promotion will run against it. The worktree is the
+        # tree the scoped paths are named within, which is why this waits for
+        # it to exist.
+        suite_command_resolved, suite_gate = _resolved_suite_gate(
+            suite_command, node=node, worktree=worktree["path"]
+        )
         # One read of the clock is both the attempt's recorded launch instant
         # and the instant its fence states, so the prompt and the record cannot
         # disagree about when this attempt started.
@@ -2362,6 +2405,8 @@ def dispatch(
             run_directory=directory,
             worktree=worktree["path"],
             working_directory=working_directory,
+            suite_command=suite_command_resolved,
+            suite_gate=suite_gate,
             launch_instant=attempt_started_at,
             needs_help_after_failures=int(fences.get("needs_help_after_failures", 2)),
             # The multiple is read through its single owner, the same resolver
@@ -2525,7 +2570,14 @@ def dispatch(
             "plan_impl_at_dispatch": _plan_impl_at_dispatch(
                 project, node.plan, ledger_root
             ),
+            # The project's declaration as written, beside the command this
+            # node's promotion will actually run. A scoped declaration stays a
+            # template on the record so a later reader can tell a scope that
+            # resolved to nothing from one that was never scoped, and the
+            # resolved field is absent rather than empty when it did.
             "suite_command": suite_command,
+            "suite_command_resolved": suite_command_resolved or None,
+            "suite_gate": suite_gate or "unarmed",
             "prompt_path": str(prompt_path),
             "log_path": str(log_path),
             "stderr_path": str(stderr_path),

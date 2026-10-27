@@ -1087,6 +1087,8 @@ def _compose_dispatch_prompt(
     run_directory: Path,
     worktree: str,
     working_directory: str,
+    suite_command: str = "",
+    suite_gate: str = "",
     launch_instant: str = "",
     needs_help_after_failures: int,
     grace_multiple: float | None = None,
@@ -1112,6 +1114,8 @@ def _compose_dispatch_prompt(
         project=project,
         worktree=worktree,
         working_directory=working_directory,
+        suite_command=suite_command,
+        suite_gate=suite_gate,
         can_write_worktree=_can_write_worktree(
             backend,
             repository=repo_root,
