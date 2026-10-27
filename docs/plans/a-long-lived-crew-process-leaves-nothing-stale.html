@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-long-lived-crew-process-leaves-nothing-stale">
   <meta name="plan-title" content="A Long-Lived Crew Process Leaves Nothing Stale">
   <meta name="plan-summary" content="A queued run&#x27;s past refusal no longer asks for a re-dispatch, and a crew process that re-execs reaps the children its old image left">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="2.5">
   <meta name="plan-capability-version" content="1.0">
@@ -23,7 +23,7 @@
   <title>A Long-Lived Crew Process Leaves Nothing Stale | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-27">
 <meta name="plan-blocks" content="the-monitor-reads-each-fact-once#s7">
 </head>
@@ -55,10 +55,11 @@
     <pre class="r-fu-prompt">/reckon-build a-long-lived-crew-process-leaves-nothing-stale</pre>
     <p class="r-fu-outcome">§2 and §3 landed (merge 9e2bd14f7; head 0def2d8a7). §4 carries the fleet-record resolver the post-commit review found.</p>
     </article>
-<article class="r-fu" data-id="f-alcpln-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-26 08:00" data-recommends-skill="/reckon-build a-long-lived-crew-process-leaves-nothing-stale §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alcpln-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-26 08:00" data-recommends-skill="/reckon-build a-long-lived-crew-process-leaves-nothing-stale §4" data-resolved-at="2026-10-27T02:12:58+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Read the fleet record through its owner</h4>
     <div class="r-fu-body"><p>§4 deletes dispatch's second fleet-record resolver.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-long-lived-crew-process-leaves-nothing-stale §4</pre>
+    <p class="r-fu-outcome">done — no followup: §4 landed in merge 0a5966980 and the plan closes.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -87,7 +88,7 @@
     <div class="r-comment-body"><p>review: parsed record for r-20261027T000925847062-dispatch-reads-the-fleet-record-through-its-owner at base 6fc5168f1135c315fa1a752fb208cc0fdf43592e / head 5ba92665897432964ef81d2c20014d278770f695 scores goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 17, reuse 20 (total 109) with 0 added failures and three non-blocking findings (a docstring at reckon/crew/watch_unit.py:213 that the change falsified outside its fence, ambiguous provenance on the red arm's header, and an absence assertion that passes under the pre-change resolver).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261027T000925847062-dispatch-reads-the-fleet-record-through-its-owner" data-who="reckon-build" data-when="2026-10-27T01:08:16.198Z">
-    <div class="r-comment-body"><p>land: §4 deletes dispatch&#x27;s duplicate fleet-record resolver — `_read_fleet_record` now asks `fleet_supervisor.state_directory()` for the directory and joins `RECORD_NAME`, keeping only the `RECKON_FLEET_RECORD` override; new test 3/3 green at head and the negative control (restoring the XDG_STATE_HOME default) fails the FLEET_NAME case at EXIT=1; importer gate 131 files at head 1 failed/1271 passed and 130 at base 1 failed/1268 passed, the one failure identical in both arms</p></div>
+    <div class="r-comment-body"><p>land: §4 deletes dispatch's duplicate fleet-record resolver — `_read_fleet_record` now asks `fleet_supervisor.state_directory()` for the directory and joins `RECORD_NAME`, keeping only the `RECKON_FLEET_RECORD` override; new test 3/3 green at head and the negative control (restoring the XDG_STATE_HOME default) fails the FLEET_NAME case at EXIT=1; importer gate 131 files at head 1 failed/1271 passed and 130 at base 1 failed/1268 passed, the one failure identical in both arms</p></div>
 </div>
 </section>
 </main>
