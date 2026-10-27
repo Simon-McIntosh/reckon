@@ -1,0 +1,16 @@
+<section id="queue-hold-release-landing">
+  <h2>Queued requests pause without losing their place</h2>
+  <p><strong>Change.</strong> Crew queue hold and release accept one request, a plan,
+  or a session. A held pointer keeps its brief, waits, priority and prior phase;
+  admission skips it. Release restores that phase and moves its queue timestamp
+  by the held interval, so starvation age does not accrue while paused. The
+  commands and MCP actions return the same JSON. A hold older than 24 hours
+  appears once on the owning session's obligations with its reason.</p>
+  <p><strong>Measure.</strong> The serial focused base arm completed with 11 failed
+  and 42 passed; the committed head completed with 55 passed and zero failed.
+  Three base failures came from the scratch archive lacking Git worktree
+  metadata. The declared inverse mutation admitted held pointers: its targeted
+  test failed because the held higher-ranked request launched before the lower
+  ranked one. The committed implementation passes Ruff check and format check
+  on its changed paths.</p>
+</section>
