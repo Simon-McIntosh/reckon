@@ -1,0 +1,35 @@
+<section id="a-worker-widens-to-an-unclaimed-path-landing">
+  <h2>A worker widens its own run's scope to a path no live run claims</h2>
+  <p><strong>Change.</strong> <code>reckon crew widen</code> accepts
+  <code>--reason</code> and admits the run's own worker while its process is
+  alive: <code>widen_claim</code> in <code>reckon/crew/claims.py</code> now
+  refuses a live worker only when the caller is not that run. A self-widen
+  records the grant on the live pointer's node under <code>write_grants</code>
+  as its path, its stated reason, its timestamp and the source
+  <code>worker</code>, so the widening is visible to a reader who did not watch
+  the command run. A process whose <code>RECKON_RUN_ID</code> is set may name
+  only that run: naming another is refused, which is what stops the live-worker
+  exception becoming a way to widen a peer's boundary. A peer's claim still
+  refuses the added path and names the holder; for a self-widen a queued or
+  upstream-waiting request also binds, because the path will be written when
+  that request launches and no later admission would see the collision. The run
+  review brief now lists every declared path with the source of its grant and
+  states that a self-grant is inside the run's declared scope, which removes
+  the scope-discipline finding the brief's silence about a widened path
+  produced.</p>
+  <p><strong>Measure.</strong> <code>tests/test_a_worker_widens_to_an_unclaimed_path.py</code>
+  passes at 6 passed, 0 failed: the self-widen records its reason and source;
+  a missing reason is refused.</p>
+  <p><strong>Refusal shown.</strong> The declared negative control skips the
+  claim check in <code>widen_claim</code>; with it applied the two peer arms
+  fail — <code>EXIT=1</code> with
+  <code>test_a_self_widen_to_a_peer_held_path_is_refused_naming_the_peer</code>
+  failing for both the launched and the queued holder, neither of which fails
+  at the head arm.</p>
+  <p><strong>Regression check.</strong> The neighbour set
+  (<code>test_fence_widening.py</code>,
+  <code>test_waiting_claims_never_block_a_launch.py</code>,
+  <code>test_a_stopped_runs_claim_does_not_block_another_landing.py</code>,
+  <code>test_a_folded_finding_widens_its_repair.py</code>) passes at 29 passed,
+  0 failed. Ruff check and format check pass on the changed paths.</p>
+</section>

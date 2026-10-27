@@ -1,3 +1,4 @@
+import os
 import time
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
@@ -1139,9 +1140,9 @@ WIDEN_FOLDED_MANIFEST_STATUS = "complete"
 
 
 WIDEN_RULE = (
-    "only a run whose worker process has stopped is widened, "
-    "because a live worker is already writing against the boundary a widening "
-    "would move"
+    "a stopped run is widened by its coordinator, or a live run by its own "
+    "worker granting itself a path no live run claims, because any other "
+    "widening would move the boundary a live worker is writing against"
 )
 
 #: Where a reopen records what it granted, beside the run's other records.
@@ -1283,20 +1284,45 @@ def _widen_folded_disposition(record: Mapping[str, Any]) -> dict[str, Any] | Non
     required=True,
     help="Path to add to the run's declared write scope. Repeat for each path.",
 )
+@click.option(
+    "--reason",
+    "reason",
+    default="",
+    help=("Why the path is added. Recorded with a self-grant, and required for one."),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_widen(run_id, write_paths, pretty, project=None):
-    """Add a path to any run whose worker process has stopped.
+def crew_widen(run_id, write_paths, pretty, project=None, reason=""):
+    """Add a path to a stopped run, or to the run's own worker.
 
     Claim mutation checks the worker and peer claims under the pointer lock.
     The run's phase and manifest status describe its work, not whether its
     process can still write against the boundary being moved.
+
+    ``RECKON_RUN_ID`` names the run whose worker this process is, so a worker's
+    ``--run`` must name it: the live-worker exception is the worker moving its
+    own boundary, never another run's. A self-widen states its reason, which is
+    recorded with the grant.
     """
     _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
+    own_run = str(os.environ.get("RECKON_RUN_ID") or "").strip()
+    if own_run and own_run != run_id:
+        raise click.ClickException(
+            f"run {own_run!r} is this worker's own run; a worker widens only its "
+            f"own scope, never run {run_id!r}"
+        )
+    self_widen = bool(own_run) and own_run == run_id
+    if self_widen and not str(reason).strip():
+        raise click.ClickException(
+            "a self-widen requires --reason, which is recorded with the grant"
+        )
     from reckon.crew.claims import ClaimAmendmentRefusedError, widen_claim
+    from reckon.crew.dispatch_claims import declared_write_grants
 
     try:
-        updated, added = widen_claim(run_id, write_paths)
+        updated, added = widen_claim(
+            run_id, write_paths, reason=reason, self_widen=self_widen
+        )
     except ClaimAmendmentRefusedError as exc:
         raise click.ClickException(
             f"{exc}; use `crew resume` once its turn has ended"
@@ -1311,11 +1337,13 @@ def crew_widen(run_id, write_paths, pretty, project=None):
             "node": str((updated.get("node") or {}).get("id") or ""),
             "session_id": str(updated.get("session_id") or ""),
             "folded_disposition": _widen_folded_disposition(updated),
+            "self_widen": self_widen,
             "added": added,
             "write_paths": [
                 str(path)
                 for path in (updated.get("node") or {}).get("write_paths") or ()
             ],
+            "grants": declared_write_grants(updated),
         },
         pretty,
     )
