@@ -199,9 +199,15 @@ def test_the_station_root_is_the_session_hosts_root(tmp_path: Path) -> None:
         )
 
 
-def test_the_station_database_is_the_stores_own_file() -> None:
-    """One name for the store file, so the hook reads the file the station wrote."""
-    assert obligation_snapshot.STATION_DATABASE_NAME == station_store.DATABASE_NAME
+def test_the_station_database_is_the_stores_own_file(tmp_path: Path) -> None:
+    """The reader opens the file the station wrote, named by the store itself."""
+    store = station_store.StationStore(tmp_path / "runtime")
+    store.connect()
+    try:
+        written = sorted(part.name for part in (tmp_path / "runtime").iterdir())
+        assert obligation_snapshot.station_database_name() in written, written
+    finally:
+        store.close()
 
 
 def test_the_hooks_answer_from_the_station_equals_the_derivation(
@@ -283,6 +289,52 @@ def test_an_unchanged_fleet_writes_no_new_snapshot_over_sixty_seconds(
     after = path.stat()
     assert (after.st_mtime_ns, after.st_ino) == (before.st_mtime_ns, before.st_ino)
     assert path.read_bytes() == body
+
+
+def test_an_alive_station_refreshes_the_carried_heartbeat(
+    repository: Path,
+    tmp_path: Path,
+    runtime_root: Path,
+    config_home: Path,
+    follower: None,
+) -> None:
+    """An unchanged fleet writes nothing early and never carries a dead beat."""
+    _live_blocked_run(repository, tmp_path)
+    moment = datetime.now(tz=UTC)
+    path = _exported(runtime_root, config_home, now=moment)
+    first = json.loads(path.read_text(encoding="utf-8"))["station"]["heartbeat"]
+
+    store = station_store.StationStore(runtime_root)
+    store.connect()
+    for elapsed in (20.0, 60.0):
+        when = moment + timedelta(seconds=elapsed)
+        store.heartbeat(now=when)
+        written = station_obligations.export_snapshot(
+            store, project=PROJECT, home=config_home / "crew", now=when
+        )
+        assert written is None, f"an unchanged fleet wrote at {elapsed}s"
+    alive = moment + timedelta(seconds=120)
+    store.heartbeat(now=alive)
+    written = station_obligations.export_snapshot(
+        store, project=PROJECT, home=config_home / "crew", now=alive
+    )
+    assert written is not None, "a live station left its beat to age into stale"
+    store.close()
+    second = json.loads(path.read_text(encoding="utf-8"))["station"]["heartbeat"]
+    assert second != first, "the republished file still carries the old beat"
+
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    answer = obligation_snapshot.read_station_answer(
+        PROJECT,
+        SESSION,
+        now=moment + timedelta(seconds=150),
+        environ={"XDG_RUNTIME_DIR": str(elsewhere)},
+        home=config_home / "crew",
+    )
+    assert answer is not None
+    assert answer["stale"] is False, answer
+    assert answer["heartbeat_age_seconds"] == 30, answer
 
 
 def test_a_changed_fleet_rewrites_the_export(

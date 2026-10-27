@@ -286,34 +286,29 @@ def station_runtime_candidate(
 ) -> tuple[Path | None, str]:
     """The node's station root and which candidate produced it.
 
-    The order is the session host's -- this node's runtime directory, then the
-    per-user runtime directory, then ``TMPDIR`` -- repeated here because the
-    prompt hook loads this module by file path and must not import the crew
-    package to reach the host's own resolver. A test pins the two against each
-    other so the copies cannot drift.
+    The order is the store's own -- this node's runtime directory, then the
+    per-user runtime directory, then ``TMPDIR`` -- asked of the store rather
+    than restated, so a test pins the two against each other. The store is
+    imported at the call: the prompt hook loads this module by file path on a
+    turn's opening, and the crew package a module-scope import would drag in is
+    paid only by a read that has reached the point of opening the database.
     """
-    env = os.environ if environ is None else environ
-    runtime = str(env.get("XDG_RUNTIME_DIR") or "").strip()
-    if runtime:
-        return Path(runtime), "runtime-directory"
-    run_user = (
-        Path(run_user_root)
-        if run_user_root is not None
-        else Path(f"/run/user/{os.getuid()}")
+    from reckon.crew import station_store
+
+    return station_store.runtime_root_source(
+        environ=environ, run_user_root=run_user_root
     )
-    if run_user.is_dir():
-        return run_user, "per-user-runtime"
-    scratch = str(env.get("TMPDIR") or "").strip()
-    if scratch:
-        return Path(scratch), "scratch"
-    return None, "none"
 
 
-# The station's store file, named where an on-node reader can find it without
-# importing the store module (which pulls the crew package in). A test pins it
-# against :data:`reckon.crew.station_store.DATABASE_NAME`.
-STATION_DATABASE_NAME = "station.sqlite3"
 STATION_SNAPSHOT_NAME = "station-snapshot.json"
+
+
+def station_database_name() -> str:
+    """The store's own file name, asked of the store rather than restated."""
+    from reckon.crew import station_store
+
+    return station_store.DATABASE_NAME
+
 
 # A heartbeat older than this is reported stale rather than trusted: the
 # station writes it on every tick, so this is a station that stopped.
@@ -351,7 +346,7 @@ def _read_station_document(
     )
     if root is None:
         return None
-    database = root / STATION_DATABASE_NAME
+    database = root / station_database_name()
     if not database.is_file():
         return None
     try:
