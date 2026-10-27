@@ -1,0 +1,31 @@
+<section id="plan-edit-holds-own-units-landing">
+  <h2>A plan edit holds only the request that reads the edited unit</h2>
+  <p>An admission pass now judges the plan-review gate over the units a request
+  actually reads: its own section and the document unit. A stored review that
+  covers the request's section launches it, while a request whose own section
+  is unreviewed is held with reason <code>plan-review-owed</code> and the
+  review invocation recorded as its detail. The narrowed judgment is a
+  <code>units</code> argument to <code>require_plan_reviewed</code>; a direct
+  dispatch passes none and keeps the whole-plan check.</p>
+  <p>Held requests are re-judged on every admission pass, so storing the
+  covering review releases them with no coordinator call. A hand-held request
+  carries no automatic flag and survives the releasing pass untouched. The
+  obligations view emits one <code>plan-review-owed</code> row per plan rather
+  than one per request, naming the held count and the review invocation.</p>
+  <p>Each pass re-derives waits with <code>derive_wait_refs</code> and rewrites
+  the stored <code>waits</code>, keeping the request's own
+  <code>run:</code> refs, so a narrowed dependency releases its waiter and a
+  widened one sends it back to <code>awaiting-upstream</code>. A
+  <code>--after</code> ref on an unlanded run survives that pass. A manifest
+  upstream that reads <code>blocked</code> keeps its waiter waiting: only a
+  failed or abandoned manifest, or a discard, closes a wait as
+  <code>blocked-upstream</code>.</p>
+  <p>The focused arms passed at the repair head:
+  <code>9 passed</code> on
+  <code>tests/test_plan_edit_never_strands.py</code>. The pre-repair modules at
+  the base revision reproduced the defect, <code>7 failed, 2 passed</code>,
+  with the section-2 launch refused as
+  <code>uncovered units: s3</code>. The declared negative control restored the
+  whole-plan admission check and failed the section-2-launches arm with three
+  held sections where the edit touched two, <code>EXIT=1</code>.</p>
+</section>
