@@ -3228,7 +3228,6 @@ from .dispatch_launch import (  # noqa: E402
     _empty_stream_launch_failure as _empty_stream_launch_failure,
     _ensure_launched_worker_reaper as _ensure_launched_worker_reaper,
     _export_launched_workers_for_reexec as _export_launched_workers_for_reexec,
-    _fleet_record_path as _fleet_record_path,
     _fleet_runtime_dir as _fleet_runtime_dir,
     _fleet_spawn_enabled as _fleet_spawn_enabled,
     _intermediate_failure_detail as _intermediate_failure_detail,
