@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -288,7 +288,10 @@
     <div class="r-comment-body"><p>independent review of reload-images-live-on-node-local-storage at base 43a85b8193fd3ed31af01db8d02a99a6b2795a31 and head 758aa0ac3de3386e6efc1dd7b6bd669ff04ef1fa stores a parsed record scoring goal_fidelity 19, evidence 17, scope_discipline 18, durability 18, fit 18, reuse 12 (total 102), with 0 added failures and four non-blocking findings; crew check --review accepts both stored records with EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261027T113613822072-review-of-reload-images-live-on-node-local-storage-35df7afba61b" data-who="reckon-build" data-when="2026-10-27T11:58:54.670Z">
-    <div class="r-comment-body"><p>Independent review of r-20261027T093350429603 over the commits it gained since 758aa0ac3 — 6bef06a9c (the cache&#x27;s runtime root now passes station_store._refuse_nonlocal_root) and 35df7afba (the landing fragment states that proof and its arm figures) — scored 20/16/20/18/19/20 for goal_fidelity/evidence/scope_discipline/durability/fit/reuse, added_failure_count 0, and recorded two non-blocking findings: three cache tests now depend on the host mount table (measured red on a GPFS basetemp) and the head gate log&#x27;s revision line names the working tree rather than the landed commit.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261027T093350429603 over the commits it gained since 758aa0ac3 — 6bef06a9c (the cache's runtime root now passes station_store._refuse_nonlocal_root) and 35df7afba (the landing fragment states that proof and its arm figures) — scored 20/16/20/18/19/20 for goal_fidelity/evidence/scope_discipline/durability/fit/reuse, added_failure_count 0, and recorded two non-blocking findings: three cache tests now depend on the host mount table (measured red on a GPFS basetemp) and the head gate log's revision line names the working tree rather than the landed commit.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261027T093350429603-reload-images-live-on-node-local-storage" data-who="reckon-build" data-when="2026-10-27T11:19:53Z">
+    <div class="r-comment-body"><p>Reload images resolve from &lt;runtime root&gt;/reload-trees through station_store.runtime_root_source and pass that root through the station&#x27;s own _refuse_nonlocal_root proof, so a shared mount (including the TMPDIR fallback) is refused in the station&#x27;s words; the cross-node lease record (_record_lease_node, _lease_nodes, _lock_node_name, COMMITTED_TREE_LEASE_MARKER, the lease-window constant, the pin&#x27;s record writes and _prune_must_keep&#x27;s host branch) is deleted, leaving the local flock and the publish grace. Gate 35 passed EXIT=0; armed pair 6 failed/5 passed at base, 11 passed at head; negative control 6 failed EXIT=1.</p></div>
 </div>
 </section>
 </main>
