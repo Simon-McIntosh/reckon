@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="107">
+<meta name="plan-version" content="108">
 <meta name="plan-modified" content="2026-10-27">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;a-live-worker-is-never-drawn-halted#s13&quot;]}">
 </head>
@@ -367,10 +367,16 @@
     <pre class="r-fu-prompt">/reckon-build a-live-worker-is-never-drawn-halted §14</pre>
     <p class="r-fu-outcome">§14, §5 and §7 landed; §13 is blocked behind another session's unpromoted claim on dispatch_launch.py; §15–§17 were added from defects found while building. f-alwh-005 carries the order.</p>
     </article>
-<article class="r-fu" data-id="f-alwh-005" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-25" data-recommends-skill="/reckon-build a-live-worker-is-never-drawn-halted §15" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alwh-005" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-25" data-recommends-skill="/reckon-build a-live-worker-is-never-drawn-halted §15" data-resolved-at="2026-10-27T00:06:15+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §15, §16 and §17, then §13, then the census</h4>
     <div class="r-fu-body"><p>On <code>ticker.py</code>, §15 comes before §17. §16 is independent. §13 waits on the claim another session's stopped run holds on <code>dispatch_launch.py</code>. §11 runs last.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-live-worker-is-never-drawn-halted §15</pre>
+    <p class="r-fu-outcome">§15 and §17 landed, and §16 closed without a product change, its question moved into §11. §13 is queued behind two peer runs that claim queue_admission.py and runs.py. §11's census node (r-20261027T000032986533-census-instrument) was dispatched after eight content review rounds and is parked on its declared wait on §13.</p>
+    </article>
+<article class="r-fu" data-id="f-alwh-006" data-status="open" data-written-by="coordinator" data-written-at="2026-10-27T00:02:00Z" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land §13, then the census node, run the sampler, then the report node</h4>
+    <div class="r-fu-body"><p>§13 launches when queue-fair-share-by-weight and drain-lists-unloaded land, and the census node launches when §13 lands. After the census node lands, the coordinator starts the sampler on the fleet node as one <code>timeout 86400</code> job and records its pid on §11. The report node is dispatched once that job has ended.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-live-worker-is-never-drawn-halted §11</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
