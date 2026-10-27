@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3045",
+    "reckon/crew/queue_admission.py:3056"
+  ],
+  "completed_at": "2026-10-27T22:13:45.226Z",
+  "dispatched_at": "2026-10-27T22:04:53Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "259",
+      "severity": "non-blocking",
+      "text": "non-blocking: scratch_root() re-implements node-local scratch-root resolution that the repository already owns at reckon/crew/dispatch_launch.py:765 (worker_scratch_root), and duplicates stdlib tempfile.gettempdir() on top of that. It duplicates rather than extends the owner, and it honours a TMPDIR/TEMP/TMP value that the owner's own docstring rejects on the stated ground that a shared-storage TMPDIR moves scratch onto GPFS -- so the docstring and evidence claim 'node-local temporary storage' holds only when the host's TMPDIR happens to be node-local."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "522",
+      "severity": "non-blocking",
+      "text": "non-blocking: base_checkout's finally suppresses a TimeoutExpired or OSError from 'git worktree remove' and then rmtree's the scratch directory, so the tree directory is gone while the repository's worktree admin still holds the registration; nothing prunes it and each timeout leaves a dangling entry that accumulates in git worktree list."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "134",
+      "severity": "non-blocking",
+      "text": "non-blocking: the except (OSError, ValueError) wraps measure_run as well as the base_checkout context manager, so any OSError or ValueError raised inside measure_run is reported as 'the base checkout could not be built', mislabelling the provenance of an unreadable measurement; the verdict is safe (unreadable, landing refused) but the recorded guard names the wrong step."
+    },
+    {
+      "file": "tests/test_the_landing_pass_measures_and_lands.py",
+      "line": "673",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert runs.read_pointer(RUN)[\"suite_evidence\"][\"head\"] == head compares the stored head against the same head value the test itself passed to Measurement(head=head) at :658, so it holds whatever Measurement.from_dict does. The test's real guard is the refuse() stub at :665 that raises if the suite is re-measured; this assertion adds nothing to that."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit from 98b1f10192: 214227e0a6 adds the timeout bound, the one-per-pass bound, the stored measurement and the node-local base checkout across landing_measure.py and queue_landing.py plus three tests; 271ce535ca rewrites the evidence fragment only. Four files, all inside the declared scope.",
+    "done_when": "the source done_when names tests/test_the_landing_pass_measures_and_lands.py plus the importer population and ruff on the changed paths; the manifest records all three and the gain adds a test that the timeout bound refuses and leaves no scratch tree at tests/test_the_landing_pass_measures_and_lands.py:576.",
+    "goal": "the source node's goal is to land an accepted run from the landing pass by measuring its suite there with flakes told apart from regressions; the two gained commits (214227e0a6, 271ce535ca) bound and cache that measurement so it can run inside the admission loop, which serves the goal without altering the flake-versus-regression rule at reckon/crew/landing_measure.py:342-423.",
+    "manifest": "read; it records commits 214227e0a6 and 271ce535ca, after_suite 13 passed at 214227e0a6, baseline 10 passed at 98b1f10192, the importer pair, and ruff clean, with log paths that exist and end in EXIT=0.",
+    "write_paths": "the source declared docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html, reckon/crew/landing_measure.py, reckon/crew/queue_landing.py and tests/test_the_landing_pass_measures_and_lands.py; every path in the diff is one of those four."
+  },
+  "justifications": {
+    "durability": "tests/test_the_landing_pass_measures_and_lands.py:615-643 fails if the one-per-pass bound is removed (three runs would land and deferred would be empty), :645-673 fails via its refuse() stub if the stored-measurement reuse is removed, and :576-613 asserts both the refusal and an empty scratch tree after a timed-out checkout.",
+    "evidence": "after.log and baseline.log hold the two-gate arm results (13 passed at 214227e0a6 against 10 passed at 98b1f10192) and negative-control.log and reuse-negative.log show the reverts reddening; the gate ran at 214227e0a6, not at the docs-only head 271ce535ca, so the reviewed head's own tree is not directly gated.",
+    "fit": "reckon/crew/landing_measure.py:243-257 reads the bound from flight config with an explicit default, matching the surrounding module's style, though reckon/crew/queue_landing.py:134-141 reports any measure_run failure as a base-checkout failure.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:371-385 measures at most one delivered run per pass and refuses on an unreadable measurement, which is what keeps the landing pass from stalling the admission loop it now runs inside.",
+    "reuse": "reckon/crew/landing_measure.py:259 scratch_root() duplicates reckon/crew/dispatch_launch.py:765 worker_scratch_root without extending it, and ignores that owner's documented reason for not reading TMPDIR.",
+    "scope_discipline": "git diff --stat 98b1f10192..271ce535ca lists exactly the four declared paths and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to land an accepted run from the landing pass by measuring its suite there with flakes told apart from regressions; the gained commits 214227e0a6 and 271ce535ca bound and cache that measurement at reckon/crew/landing_measure.py:468-538 and reckon/crew/queue_landing.py:55-140 so it can run inside the admission loop, which serves the goal without altering the flake-versus-regression rule.\nVERDICT done_when: the source done_when names tests/test_the_landing_pass_measures_and_lands.py with stubbed repositories, the importer population and ruff on the changed paths; the manifest records all three, and the gain adds the timeout-refusal test at tests/test_the_landing_pass_measures_and_lands.py:576.\nVERDICT write_paths: read the source manifest's declared paths; every path in the diff is one of docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html, reckon/crew/landing_measure.py, reckon/crew/queue_landing.py and tests/test_the_landing_pass_measures_and_lands.py.\nVERDICT manifest: read; it records commits 214227e0a6 and 271ce535ca, after_suite 13 passed at 214227e0a6 against baseline 10 passed at 98b1f10192, the importer pair with one pre-existing id at both arms, and ruff clean on the changed paths, each with a log that exists and ends in EXIT=0.\nVERDICT diff: read commit by commit against 98b1f10192; 214227e0a6 adds the per-subprocess timeout, one measurement per pass, the stored per-head measurement and the TMPDIR base checkout across reckon/crew/landing_measure.py and reckon/crew/queue_landing.py plus three tests, and 271ce535ca rewrites the evidence fragment only, four files inside the declared scope.\nCALL_SITES: reckon/crew/queue_admission.py:3045, reckon/crew/queue_admission.py:3056\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:371-385 measures at most one delivered run per pass and refuses on an unreadable measurement, keeping the landing pass from stalling the admission loop it runs inside.\nSCORE evidence: 18\nJUSTIFICATION evidence: after.log and baseline.log hold the two-arm results (13 passed at 214227e0a6, 10 passed at 98b1f10192) and negative-control.log and reuse-negative.log show the reverts reddening, but the gate ran at 214227e0a6 rather than at the docs-only head 271ce535ca.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 98b1f10192..271ce535ca lists exactly the four declared paths and nothing else.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_landing_pass_measures_and_lands.py:615-643 reddens if the one-per-pass bound is removed, :645-673 reddens via its refuse() stub if the stored measurement is not reused, and :576-613 asserts an empty scratch tree after a timed-out checkout.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/landing_measure.py:243-257 reads the bound from flight config with an explicit default in the module's own idiom, but reckon/crew/queue_landing.py:134-141 labels any measure_run failure as a base-checkout failure.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:259 scratch_root() duplicates reckon/crew/dispatch_launch.py:765 worker_scratch_root without extending it and ignores that owner's documented reason for not reading TMPDIR.\nFINDING reckon/crew/landing_measure.py:259 non-blocking: scratch_root() re-implements the repository's node-local scratch-root owner (reckon/crew/dispatch_launch.py:765) and stdlib tempfile.gettempdir(), and honours a TMPDIR that the owner's docstring rejects because a shared-storage TMPDIR would move scratch onto GPFS, so the 'node-local' claim holds only when TMPDIR happens to be node-local.\nFINDING reckon/crew/landing_measure.py:522 non-blocking: a timed-out 'git worktree remove' is suppressed and the directory rmtree'd, leaving the registration in the repository's worktree admin with nothing to prune it.\nFINDING reckon/crew/queue_landing.py:134 non-blocking: the except wraps measure_run as well as base_checkout, so an OSError or ValueError from measure_run is recorded as 'the base checkout could not be built', naming the wrong step in the guard.\nFINDING tests/test_the_landing_pass_measures_and_lands.py:673 non-blocking: the stored-head assertion compares against the same head value the test passed to Measurement(head=head) at :658 and holds whatever from_dict does; the test's real guard is the refuse() stub at :665.",
+  "review_run_id": "r-20261027T220218306068-review-of-the-landing-pass-measures-and-lands-271ce535ca85",
+  "reviewed_base_sha": "98b1f10192ebd0d1ab85310b248cac31d73d2a86",
+  "reviewed_commit": "271ce535ca859cc8aa754d5a1c32537110f811a0",
+  "reviewed_head_sha": "271ce535ca859cc8aa754d5a1c32537110f811a0",
+  "reviewed_run_id": "r-20261027T124654403923-the-landing-pass-measures-and-lands",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T22:17:09.348042+00:00",
+  "total": 93
+}
