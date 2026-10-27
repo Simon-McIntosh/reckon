@@ -235,7 +235,10 @@ def _day_file_name(day: date) -> str:
 _READ_RACES = (
     "no such table",
     "database is locked",
-    "unable to open database file",
+    # Both spellings a day file's open can produce: SQLite says "unable to
+    # open database file" when it cannot reach one and "unable to open
+    # database: <path>" when the attach itself is refused.
+    "unable to open database",
 )
 
 
@@ -1017,7 +1020,14 @@ class StationStore:
         connection = self.connect()
         collected: list[dict[str, Any]] = []
         for path in self.day_files():
-            connection.execute("ATTACH DATABASE ? AS day", (str(path),))
+            try:
+                connection.execute("ATTACH DATABASE ? AS day", (str(path),))
+            except sqlite3.OperationalError as error:
+                # Retention can unlink a day file between the listing and its
+                # attach; a file that is already gone holds nothing to read.
+                if not _is_a_read_race(error):
+                    raise
+                continue
             try:
                 columns = {
                     str(row["name"])
@@ -1079,7 +1089,17 @@ class StationStore:
             day = _day_from_name(path.name)
             if day is None or (from_day is not None and day < from_day):
                 continue
-            connection.execute("ATTACH DATABASE ? AS day", (str(path),))
+            try:
+                connection.execute("ATTACH DATABASE ? AS day", (str(path),))
+            except sqlite3.OperationalError as error:
+                # The attach is a read race in its own right: retention can
+                # unlink a day file between the listing above and this
+                # statement, so the file is gone before there is anything to
+                # query. A row written afterwards carries a higher id than the
+                # cursor this read advances to, so the next poll reaches it.
+                if not _is_a_read_race(error):
+                    raise
+                continue
             try:
                 columns = {
                     str(row["name"])
