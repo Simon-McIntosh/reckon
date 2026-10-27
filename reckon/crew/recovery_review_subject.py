@@ -12,6 +12,7 @@ from reckon.crew import plan_review, runs
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     CrewError,
+    parse_duration,
 )
 from reckon.crew.prompts import render_review_check
 from reckon.crew.repair import round_node_id
@@ -686,6 +687,7 @@ def _review_dispatch_fields(
     write: bool = True,
     rubric: str | None = None,
     images: Sequence[str] = (),
+    config: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The facts a scoring run's review dispatch is built from.
 
@@ -724,6 +726,13 @@ def _review_dispatch_fields(
     repeated previews mint no run directory for the delivered-review store to
     find. The paths returned are the same ones a real dispatch writes, so the
     preview still names the command and the scope that dispatch would use.
+
+    ``config`` is the flight configuration the review dispatch is composed
+    against. The composed time budget is clamped to the fence that configuration
+    declares, which is the one validation measures the command against; a caller
+    holding a resolved config passes it, and a caller reading a command to print
+    resolves the project's own, so a printed budget and an executed one are
+    bounded by the same fence.
     """
     composing_for_dispatch = delta is not _DELTA_UNSET
     if not composing_for_dispatch:
@@ -903,6 +912,29 @@ def _review_dispatch_fields(
         ),
     )
     figure_review = rubric_name == review_module.FIGURE_REVIEW_RUBRIC
+    # The reviewed node's budget is its own dispatch's, and a coordinator may
+    # raise that dispatch above the fleet fence with an override the review
+    # dispatch does not inherit. Validation measures the review command against
+    # the fence the review dispatch resolves for itself, so a budget copied
+    # verbatim can be a command refused before it launches — the brief written,
+    # no run started, and the obligations view still promising the review. The
+    # composed budget is therefore clamped to that same fence: a node budget at
+    # or under it is carried through unchanged, and a node naming none keeps the
+    # default. A fence that cannot be resolved leaves the budget as it was,
+    # because a read that composes a printed command must not raise.
+    budget = str(node.get("time_budget") or "20m")
+    from reckon.crew.routing import resolved_time_ceiling
+
+    try:
+        fence = resolved_time_ceiling(_resolved_review_config(project, config))
+    except Exception:  # noqa: BLE001 - a printed command must not raise
+        fence = ""
+    if fence:
+        try:
+            if parse_duration(budget) > parse_duration(fence):
+                budget = fence
+        except CrewError:
+            pass
     return {
         "run_id": run_id,
         "project": project,
@@ -916,7 +948,7 @@ def _review_dispatch_fields(
         "source_node": source_node,
         "node_id": base_node_id,
         "session": str(record.get("session") or "<session>"),
-        "time_budget": str(node.get("time_budget") or "20m"),
+        "time_budget": budget,
         "goal": (
             f"attach an independent figure review to run {run_id}"
             if figure_review
@@ -987,7 +1019,7 @@ def _review_dispatch_argv(
     that print an action use :func:`_review_dispatch_action`, which prints the
     hold in place of a command.
     """
-    fields = _review_dispatch_fields(record)
+    fields = _review_dispatch_fields(record, config=config)
     lane = _composed_review_lane(fields["project"], record, config)
     if lane is None:
         raise ValueError(
@@ -1116,7 +1148,7 @@ def _review_dispatch_action(
     action and the executed path name one lane, and while a saturated local lane
     withholds the review the executed path names none.
     """
-    fields = _review_dispatch_fields(record)
+    fields = _review_dispatch_fields(record, config=config)
     lane = _composed_review_lane(fields["project"], record, config)
     if lane is None:
         return _review_lane_hold_action(record, config=config)
