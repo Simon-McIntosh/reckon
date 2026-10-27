@@ -647,8 +647,7 @@ def test_a_failed_worktree_remove_leaves_no_registration(delivery, monkeypatch) 
         # fixture's scratch root owns, so a checkout that went to the host's
         # temp directory or the repository's filesystem fails here.
         assert tree.parent.parent.resolve() == delivery["scratch_root"].resolve(), (
-            f"the base checkout was built at {tree}, outside "
-            f"{delivery['scratch_root']}"
+            f"the base checkout was built at {tree}, outside {delivery['scratch_root']}"
         )
 
     listed = _git(repo, "worktree", "list", "--porcelain")
