@@ -12,6 +12,7 @@ from click.testing import CliRunner
 
 from reckon import cli
 from reckon.crew import obligations, queue_admission, queue_edit, runs
+from reckon.crew.recovery_classification import classify_pointer
 from reckon.mcp_crew_actions import crew_action
 
 
@@ -180,6 +181,19 @@ def test_old_hold_appears_once_with_reason(
     held = [item for item in view["obligations"] if item["kind"] == "run-held"]
     assert len(held) == 1
     assert held[0]["reason"] == "design review"
+
+
+def test_held_request_is_classified_as_a_queue_pause(home: Path) -> None:
+    _request(home, "r-paused")
+    queue_edit.hold("r-paused", reason="review the brief")
+
+    row = classify_pointer(runs.read_pointer("r-paused"))
+
+    assert row["phase"] == "held"
+    assert row["classification"] == "held"
+    assert "review the brief" in row["detail"]
+    assert row["next_action"] == "reckon crew queue release --run r-paused"
+    assert "crew observe" not in row["next_action"]
 
 
 @pytest.mark.parametrize("verb", ["hold", "release"])

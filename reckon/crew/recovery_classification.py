@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 import shlex
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -910,7 +910,7 @@ def classify_pointer(
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
-            datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
+            datetime.fromtimestamp(terminal_seconds, tz=UTC)
             .isoformat(timespec="seconds")
             .replace("+00:00", "Z")
         )
@@ -929,6 +929,7 @@ def classify_pointer(
     # time would close that loop, so it is named where it is read.
     from reckon.crew.queue_admission import (
         BLOCKED_UPSTREAM_PHASE,
+        HELD_PHASE,
         QUEUED_PHASE,
         WAITING_UPSTREAM_PHASES,
     )
@@ -952,6 +953,14 @@ def classify_pointer(
                 f"waiting for {waiting_on} to land"
             )
             action = f"wait for {waiting_on} to land"
+    elif phase == HELD_PHASE:
+        classification = HELD_PHASE
+        hold = record.get("queue_hold")
+        reason = str(hold.get("reason") or "") if isinstance(hold, Mapping) else ""
+        detail = "request held before launch"
+        if reason:
+            detail += f": {reason}"
+        action = f"reckon crew queue release --run {run_id}"
     elif phase == QUEUED_PHASE:
         classification = "queued"
         session_refusal = _queued_failure_remedy(record)
