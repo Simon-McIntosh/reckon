@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/checkout_trust.py:594 (materialize_committed_tree -> _committed_tree_cache)",
+    "reckon/crew/follower_reload.py:298 (materialize_committed_tree)",
+    "reckon/crew/station.py:90 (materialize_committed_tree under the poll override at :86)"
+  ],
+  "completed_at": "2026-10-27T11:58:54.670Z",
+  "dispatched_at": "2026-10-27T11:42:04Z",
+  "findings": [
+    {
+      "file": "tests/test_reload_images_live_on_node_local_storage.py",
+      "line": "59",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new proof call at reckon/checkout_trust.py:470 reads the real mount table whenever a test does not patch station_store.filesystem_type, so test_the_cache_resolves_under_the_runtime_root (:59), test_the_cache_follows_the_root_the_station_resolves (:66) and test_a_published_image_lands_under_the_runtime_root (:110) now pass only where pytest's tmp_path sits on a non-shared filesystem. Measured on this node: with --basetemp under /home (gpfs) and no code change, test_the_cache_resolves_under_the_runtime_root fails with StationStoreError \"it sits on gpfs\", so a run whose TMPDIR lands on shared storage fails for reasons unrelated to the code and reads as a regression. The three cases should patch filesystem_type to a local type the way the new case at :74 does."
+    },
+    {
+      "file": "logs/gate_head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate log's revision line reads \"43a85b8193fd3ed31af01db8d02a99a6b2795a31 + 1dd126dcf + 758aa0ac3 + working tree (head arm)\" and so names neither 6bef06a9c nor 35df7afba; the 35-passed run was taken before the commit under review existed, and the manifest's after_suite revision claims both shas the log does not record. The run is tied to this head only by the worktree path it names, which now reads clean at 35df7afba."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from 758aa0ac3 to 35df7afba: 6bef06a9c adds one call to station_store._refuse_nonlocal_root at reckon/checkout_trust.py:470 plus test_a_shared_runtime_root_is_refused at tests/test_reload_images_live_on_node_local_storage.py:74, and 35df7afba states the proof in the landing fragment and corrects its arm figures to 6/5, 11 and 6.",
+    "done_when": "the done_when requires the reload tests to pass under a temporary runtime root, a cache path never under the crew home resolved through station_store.runtime_root_source, the lease symbols deleted, the new case failing at base, and the armed pair and negative control logged; the manifest records and logs/gate_head.log shows 35 passed EXIT=0, logs/suite_head.log 11 passed EXIT=0 against logs/suite_base.log's 6 failed EXIT=1, and logs/negative_control.log 6 failed EXIT=1.",
+    "goal": "the node's goal is to resolve the reload image cache under the node-local runtime root so the cross-node lease record has nothing to guard; the gained commits add reckon/checkout_trust.py:470, which passes that root through the station's own node-local proof, closing the one gap the prior review at 758aa0ac3 recorded.",
+    "manifest": "read; it reports 35 passed at the gate (EXIT=0), 6 failed/5 passed at base and 11 passed at head for the armed pair, 6 failed on the negative control, ruff clean, and names each log path under logs/ and the run's scratch measurement tree.",
+    "write_paths": "the node was fenced to reckon/checkout_trust.py, tests/test_reload_images_live_on_node_local_storage.py, tests/test_a_reload_tree_in_use_on_any_host_is_not_pruned.py, the evidence fragment and docs/figures/crew-state-stays-bounded/reload-images-live-on-node-local-storage; the two gained commits touch only checkout_trust.py, its test file and the fragment, all inside that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_reload_images_live_on_node_local_storage.py:74 reddens if reckon/checkout_trust.py:470 is deleted, because pytest.raises would then see no StationStoreError; the other cache tests in the same file are now environment-dependent as recorded in the finding at :59.",
+    "evidence": "logs/gate_head.log records 35 passed EXIT=0 and logs/suite_base.log 6 failed EXIT=1 against logs/suite_head.log 11 passed EXIT=0, but the head log's revision line reads \"43a85b8 ... + working tree\" rather than naming 6bef06a9c or 35df7afba.",
+    "fit": "reckon/checkout_trust.py:461-470 keeps the function-local import idiom and calls the station's existing private proof, and no added name carries a plan, ticket or version label.",
+    "goal_fidelity": "reckon/checkout_trust.py:463 resolves the cache through station_store.runtime_root_source and :470 refuses a root the station cannot prove node-local, so a shared mount including the TMPDIR fallback no longer receives images.",
+    "reuse": "the change extends reckon/crew/station_store.py:170 _refuse_nonlocal_root, the repository's existing owner of the node-local filesystem proof; the search over reckon/host.py _is_node_local, reckon/crew/dispatch_watch.py session_host_runtime_candidate and station_store found no second proof written beside it.",
+    "scope_discipline": "every path in 758aa0ac3..35df7afba is inside the declared fence: reckon/checkout_trust.py, tests/test_reload_images_live_on_node_local_storage.py and docs/evidence/fragments/crew-state-stays-bounded/reload-images-live-on-node-local-storage.html."
+  },
+  "project": "reckon",
+  "raw_text": "",
+  "review_run_id": "r-20261027T113613822072-review-of-reload-images-live-on-node-local-storage-35df7afba61b",
+  "reviewed_base_sha": "758aa0ac3de3386e6efc1dd7b6bd669ff04ef1fa",
+  "reviewed_head_sha": "35df7afba61be2c467eaebba377658133d55760f",
+  "reviewed_run_id": "r-20261027T093350429603-reload-images-live-on-node-local-storage",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T12:05:36.001282+00:00",
+  "total": 113
+}
