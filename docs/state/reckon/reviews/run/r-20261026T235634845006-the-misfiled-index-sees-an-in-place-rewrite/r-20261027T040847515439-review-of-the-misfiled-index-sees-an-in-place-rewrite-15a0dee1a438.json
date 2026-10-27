@@ -1,0 +1,86 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "base arm gate-importers-base.log: 4 failed, 65 passed, EXIT=1, the four ids exactly the four new cases; after arm gate-importers-head.log: 69 passed, EXIT=0; added failures = 0. The reviewed manifest's cited coordinator-final logs are truncated wide arms, so the counts were taken from the importer-arm logs that carry the same nine-file population.",
+  "base_log_revision": "e5b03805a29d84ea595e321c41624be8eb3ed041",
+  "call_site_count": 11,
+  "call_sites": [
+    "reckon/crew/review_dispositions.py:248",
+    "reckon/crew/review_dispositions.py:347",
+    "reckon/crew/review_dispositions.py:454",
+    "reckon/crew/promotion_checks.py:637",
+    "reckon/crew/recovery_review_dispatch.py:1213",
+    "reckon/crew/recovery_repair_dispatch.py:741",
+    "reckon/crew/reports.py:1813",
+    "reckon/crew/recovery_memo.py:374",
+    "reckon/crew_run_commands.py:492",
+    "reckon/crew_run_commands.py:658",
+    "reckon/crew_run_commands.py:921"
+  ],
+  "completed_at": "2026-10-27T04:18:47.221Z",
+  "dispatched_at": "2026-10-27T04:11:45Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T235634845006-the-misfiled-index-sees-an-in-place-rewrite/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite (manifest.md:20-21) point log_path at coordinator-final-base-arm.log and coordinator-final-head-arm.log, which are the wide multi-file arms truncated at about 32-36% with no pytest summary line and no EXIT= line; a promotion gate that opens these paths finds no receipt for the stated 4-failure/0-failure result, which is actually in gate-importers-base.log (4 failed, 65 passed, EXIT=1) and gate-importers-head.log (69 passed, EXIT=0). Repoint the two log_path fields at the importer-arm logs."
+    },
+    {
+      "file": "gate-importers-head.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The head arm's header line reads '# revision: e5b03805a29d... (head arm, importer population)', naming the base revision though its tree is the head archive; the done_when requires each log to name its revision, and this one names the wrong one."
+    },
+    {
+      "file": "tests/test_the_misfiled_index_sees_an_in_place_rewrite.py",
+      "line": "214",
+      "severity": "non-blocking",
+      "text": "The session case's passes['count'] <= 1 assertion counts _update_store_entries calls, but the session never produces a warm-index miss, so the count stays at the single build/load pass whether _refresh_store_entries is paid once per process or on every miss; it does not guard the once-per-process property the change rests on. The timing assertion at :198 is likewise comparing two paths that both hit the index on the first _filed_match."
+    }
+  ],
+  "head_log_revision": "54d8ea26fd480792f076072fce51797931c36b7a",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 11 production call sites that reach stored_record and the index; the disposition writer review_dispositions.py:248 is the in-place rewrite path the fix serves, and every caller keeps the unchanged (path, record) contract.",
+    "diff": "Read commit by commit against e5b03805a: 54d8ea26f reworks stored_record/_record_filed_elsewhere and adds _indexed_at_head, _filed_match, _revalidated_entries and _refresh_store_entries in reckon/crew/review_records.py, plus the new test file; 15a0dee1a adds only the evidence fragment.",
+    "done_when": "The done_when names tests/test_the_misfiled_index_sees_an_in_place_rewrite.py with the four new cases, each failing at ab7ee0252; gate-importers-base.log records 4 failed, 65 passed, EXIT=1 with exactly those four ids and gate-importers-head.log records 69 passed, EXIT=0.",
+    "goal": "The node's goal is to key the misfiled-review index on per-file stat identities and find a misfiled record at the asked head; reckon/crew/review_records.py:1289 _revalidated_entries re-stats each held entry and re-reads a moved file, and :638-650 falls through to an index-gated store search when the run's own file sits at another head.",
+    "manifest": "Read; it records the gate command on the tests line, the four base failures in baseline_suite and zero in after_suite, but its baseline_suite/after_suite log_path fields name coordinator-final-{base,head}-arm.log, which are the wide multi-file arms truncated at 32-36% with no summary or EXIT line.",
+    "write_paths": "The node's granted write paths are reckon/crew/review.py, reckon/crew/review_records.py, the new test file, the evidence fragment and the figures directory; git show --stat over 54d8ea26f and 15a0dee1a lists only review_records.py, the test file and the fragment."
+  },
+  "justifications": {
+    "durability": "The three functional cases fail at base and pass at head, but tests/test_the_misfiled_index_sees_an_in_place_rewrite.py:214 (passes['count'] <= 1) never induces a warm-index miss, so it does not show the whole-store refresh is paid once per process.",
+    "evidence": "The four new cases red at base (gate-importers-base.log: 4 failed, 65 passed, EXIT=1) and green at head (gate-importers-head.log: 69 passed, EXIT=0), but the manifest cites truncated logs for that result and the head arm's header mislabels its revision.",
+    "fit": "The added names (_revalidated_entries, _refresh_store_entries, _indexed_at_head, _filed_match) describe mechanism with no version, plan or ticket identifier, and match the store's existing stat-identity idiom at reckon/crew/review_records.py:976.",
+    "goal_fidelity": "reckon/crew/review_records.py:1289 re-reads a record whose file identity moved and :638-650 searches beside the run's own file, which are the two defects the goal names.",
+    "reuse": "_refresh_store_entries delegates to the existing _update_store_entries (reckon/crew/review_records.py:1333) and _filed_match extracts the loop already in _record_filed_elsewhere, extending the owner rather than forking a new mechanism.",
+    "scope_discipline": "git show --stat over both commits lists only reckon/crew/review_records.py, tests/test_the_misfiled_index_sees_an_in_place_rewrite.py and the evidence fragment, all inside the granted write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to key the misfiled-review index on per-file stat identities and find a misfiled record at the asked head; reckon/crew/review_records.py:1289 _revalidated_entries re-stats each held entry and re-reads a moved file, and :638-650 falls through to an index-gated store search when the run's own file sits at another head.\nVERDICT done_when: The done_when names tests/test_the_misfiled_index_sees_an_in_place_rewrite.py with the four new cases, each failing at ab7ee0252; gate-importers-base.log records 4 failed, 65 passed, EXIT=1 with exactly those four ids and gate-importers-head.log records 69 passed, EXIT=0.\nVERDICT write_paths: The node's granted write paths are reckon/crew/review.py, reckon/crew/review_records.py, the new test file, the evidence fragment and the figures directory; git show --stat over 54d8ea26f and 15a0dee1a lists only review_records.py, the test file and the fragment.\nVERDICT manifest: Read; it records the gate command on the tests line, the four base failures in baseline_suite and zero in after_suite, but its baseline_suite/after_suite log_path fields name coordinator-final-{base,head}-arm.log, which are the wide multi-file arms truncated at 32-36% with no summary or EXIT line.\nVERDICT diff: Read commit by commit against e5b03805a: 54d8ea26f reworks stored_record/_record_filed_elsewhere and adds _indexed_at_head, _filed_match, _revalidated_entries and _refresh_store_entries in reckon/crew/review_records.py, plus the new test file; 15a0dee1a adds only the evidence fragment.\nCALL_SITES: reckon/crew/review_dispositions.py:248, reckon/crew/review_dispositions.py:347, reckon/crew/review_dispositions.py:454, reckon/crew/promotion_checks.py:637, reckon/crew/recovery_review_dispatch.py:1213, reckon/crew/recovery_repair_dispatch.py:741, reckon/crew/reports.py:1813, reckon/crew/recovery_memo.py:374, reckon/crew_run_commands.py:492, reckon/crew_run_commands.py:658, reckon/crew_run_commands.py:921\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:1289 re-reads a record whose file identity moved and :638-650 searches beside the run's own file, which are the two defects the goal names.\nSCORE evidence: 15\nJUSTIFICATION evidence: The four new cases red at base (gate-importers-base.log: 4 failed, 65 passed, EXIT=1) and green at head (gate-importers-head.log: 69 passed, EXIT=0), but the manifest cites truncated logs for that result and the head arm's header mislabels its revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat over both commits lists only reckon/crew/review_records.py, tests/test_the_misfiled_index_sees_an_in_place_rewrite.py and the evidence fragment, all inside the granted write paths.\nSCORE durability: 17\nJUSTIFICATION durability: The three functional cases fail at base and pass at head, but tests/test_the_misfiled_index_sees_an_in_place_rewrite.py:214 (passes['count'] <= 1) never induces a warm-index miss, so it does not show the whole-store refresh is paid once per process.\nSCORE fit: 20\nJUSTIFICATION fit: The added names (_revalidated_entries, _refresh_store_entries, _indexed_at_head, _filed_match) describe mechanism with no version, plan or ticket identifier, and match the store's existing stat-identity idiom at reckon/crew/review_records.py:976.\nSCORE reuse: 18\nJUSTIFICATION reuse: _refresh_store_entries delegates to the existing _update_store_entries (reckon/crew/review_records.py:1333) and _filed_match extracts the loop already in _record_filed_elsewhere, extending the owner rather than forking a new mechanism.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T235634845006-the-misfiled-index-sees-an-in-place-rewrite/manifest.md:20 non-blocking: baseline_suite and after_suite (manifest.md:20-21) point log_path at coordinator-final-base-arm.log and coordinator-final-head-arm.log, which are the wide multi-file arms truncated at about 32-36% with no pytest summary line and no EXIT= line; a promotion gate that opens these paths finds no receipt for the stated 4-failure/0-failure result, which is actually in gate-importers-base.log (4 failed, 65 passed, EXIT=1) and gate-importers-head.log (69 passed, EXIT=0). Repoint the two log_path fields at the importer-arm logs.\nFINDING gate-importers-head.log:1 non-blocking: The head arm's header line reads '# revision: e5b03805a29d... (head arm, importer population)', naming the base revision though its tree is the head archive; the done_when requires each log to name its revision, and this one names the wrong one.\nFINDING tests/test_the_misfiled_index_sees_an_in_place_rewrite.py:214 non-blocking: The session case's passes['count'] <= 1 assertion counts _update_store_entries calls, but the session never produces a warm-index miss, so the count stays at the single build/load pass whether _refresh_store_entries is paid once per process or on every miss; it does not guard the once-per-process property the change rests on. The timing assertion at :198 is likewise comparing two paths that both hit the index on the first _filed_match.\n",
+  "review_run_id": "r-20261027T040847515439-review-of-the-misfiled-index-sees-an-in-place-rewrite-15a0dee1a438",
+  "reviewed_base_sha": "e5b03805a29d84ea595e321c41624be8eb3ed041",
+  "reviewed_head_sha": "15a0dee1a438fa732f1268240146fbbe79cc178d",
+  "reviewed_run_id": "r-20261026T235634845006-the-misfiled-index-sees-an-in-place-rewrite",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "rubric": "code",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T04:28:11.646140+00:00",
+  "total": 109
+}
