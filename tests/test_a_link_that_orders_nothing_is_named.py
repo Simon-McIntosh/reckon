@@ -54,8 +54,7 @@ def _findings(report: dict, code: str, slug: str | None = None) -> list[dict]:
     return [
         finding
         for finding in report["wiring_findings"]
-        if finding.get("code") == code
-        and (slug is None or finding.get("slug") == slug)
+        if finding.get("code") == code and (slug is None or finding.get("slug") == slug)
     ]
 
 

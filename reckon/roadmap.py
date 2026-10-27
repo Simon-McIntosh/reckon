@@ -2010,10 +2010,14 @@ def _settled_link_findings(
                     continue
                 open_waits.append((parsed.slug, parsed.stage))
 
-        def still_waited(target_slug: str, stage: str | None) -> bool:
+        def still_waited(
+            target_slug: str,
+            stage: str | None,
+            waiting: list[tuple[str, str | None]] = open_waits,
+        ) -> bool:
             return any(
                 waited_slug == target_slug and (stage is None or waited_stage == stage)
-                for waited_slug, waited_stage in open_waits
+                for waited_slug, waited_stage in waiting
             )
 
         for field in ("depends_on", "after"):
@@ -2028,9 +2032,9 @@ def _settled_link_findings(
                 if parsed.stage and not _section_satisfied(
                     target,
                     parsed.stage,
-                    _plan_authored_state(
-                        target, docs_dir, project, parsed.slug
-                    ).get("section_declarations"),
+                    _plan_authored_state(target, docs_dir, project, parsed.slug).get(
+                        "section_declarations"
+                    ),
                 ):
                     continue
                 if still_waited(parsed.slug, parsed.stage):
@@ -2076,9 +2080,9 @@ def _settled_link_findings(
                 if not _section_satisfied(
                     target,
                     parsed.stage,
-                    _plan_authored_state(
-                        target, docs_dir, project, parsed.slug
-                    ).get("section_declarations"),
+                    _plan_authored_state(target, docs_dir, project, parsed.slug).get(
+                        "section_declarations"
+                    ),
                 ):
                     continue
                 remaining = list(refs)
@@ -4426,9 +4430,7 @@ def _build_roadmap(
     findings.extend(
         _settled_link_findings(project, plans, all_plans, inventory_docs_dir)
     )
-    findings.extend(
-        _redundant_link_findings(project, plans, all_plans, local_graph)
-    )
+    findings.extend(_redundant_link_findings(project, plans, all_plans, local_graph))
     sprint_ids = {
         identity
         for sprint in sprints
