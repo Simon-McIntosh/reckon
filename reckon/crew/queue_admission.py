@@ -36,7 +36,7 @@ from reckon.crew.dispatch_admission import (
     _dispatch_lane_gate,
 )
 from reckon.crew.dispatch_plan import _dispatch_lane_allowance
-from reckon.crew.node import CrewError, TaskNode
+from reckon.crew.node import BudgetHold, CrewError, TaskNode
 from reckon.ledger import normalize_section
 
 ADMIT_LOCK_NAME = "admit.lock"
@@ -262,7 +262,10 @@ def _launch_queued(
         repairs=str(options.get("repairs") or ""),
         accept_directory_claim=bool(options.get("accept_directory_claim")),
         no_fence_reason=str(options.get("no_fence_reason") or ""),
-        route="deterministic" if destination else options.get("route"),
+        # The picker already chose this stored request's backend. Replaying a
+        # queued request must keep that route rather than asking it again.
+        route="deterministic",
+        picker_selection=pointer.get("picker_selection"),
         comment=str(options.get("comment") or ""),
         dispatch_options=options,
         admission_launch=True,
@@ -444,6 +447,58 @@ def _lane_gate_hold(
             gate.get("detail") or gate.get("reason") or gate.get("state") or "held"
         )
     return None
+
+
+def _record_metered_hold(run_id: str, hold: BudgetHold) -> None:
+    """Keep a serving-lane hold on the waiting request without a failed attempt."""
+    reason = str(hold.verdict.get("reason") or hold)
+
+    def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer["hold"] = dict(hold.verdict)
+        pointer["reason"] = reason
+        return pointer
+
+    runs._mutate_pointer(run_id, mutation)
+
+
+def _local_fallback(
+    pointer: Mapping[str, Any],
+    hold: BudgetHold,
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> dict[str, Any] | None:
+    """Rebind a picker route to local when its metered lane stops serving."""
+    selection = pointer.get("picker_selection")
+    if (
+        pointer.get("named_route")
+        or not isinstance(selection, Mapping)
+        or selection.get("action") != "route"
+    ):
+        return None
+    config = (
+        config_for(pointer)
+        if config_for is not None
+        else _resolve_lane_config(pointer, select_local=False)
+    )
+    local_backend = str(config.get("local_backend") or "")
+    original_backend = str(pointer.get("backend") or "")
+    if not local_backend or original_backend == local_backend:
+        return None
+    fallback = {
+        "from_backend": original_backend,
+        "to_backend": local_backend,
+        "reason": str(hold.verdict.get("reason") or hold),
+    }
+    rebound = copy.deepcopy(dict(pointer))
+    rebound["backend"] = local_backend
+    rebound["local"] = True
+    rebound["route_fallback"] = fallback
+    rebound["reason"] = fallback["reason"]
+    options = dict(rebound.get("dispatch_options") or {})
+    options["route_fallback"] = fallback
+    rebound["dispatch_options"] = options
+    runs._mutate_pointer(str(pointer["run_id"]), lambda _current: dict(rebound))
+    return rebound
 
 
 def _retry_delay(attempts: int) -> timedelta:
@@ -2344,10 +2399,9 @@ def admit_once(
         "requeued": [],
         "verdicts": [],
     }
-    if gate.get("state") in _LANE_GATE_WAITING_STATES:
-        result["action"] = "gated"
+    local_gated = gate.get("state") in _LANE_GATE_WAITING_STATES
+    if local_gated:
         _record_gated_verdicts(result, gate=gate, lane=lane, config_for=config_for)
-        return result
     with _admit_lock() if lock else nullcontext():
         result["requeued"] = _requeue_admitted_failures(
             runs.list_live(phase=LAUNCH_FAILED_PHASE)
@@ -2365,8 +2419,35 @@ def admit_once(
         runs.sweep_handovers(str(pointer.get("run_id") or "") for pointer in live)
         queued = [pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE]
         if lane:
+
+            def included(pointer: Mapping[str, Any]) -> bool:
+                backend = str(pointer.get("backend") or "")
+                if backend == lane:
+                    return True
+                config = (
+                    config_for(pointer)
+                    if config_for is not None
+                    else _resolve_lane_config(pointer, select_local=False)
+                )
+                # The installed local drainer also admits every metered route.
+                return (
+                    lane == str(config.get("local_backend") or "") and backend != lane
+                )
+
+            queued = [pointer for pointer in queued if included(pointer)]
+        if local_gated:
             queued = [
-                pointer for pointer in queued if str(pointer.get("backend")) == lane
+                pointer
+                for pointer in queued
+                if str(pointer.get("backend") or "")
+                != str(
+                    (
+                        config_for(pointer)
+                        if config_for is not None
+                        else _resolve_lane_config(pointer, select_local=False)
+                    ).get("local_backend")
+                    or ""
+                )
             ]
         # A queued pointer whose arrival time cannot be read has no place in the
         # ordering, and the ordering refuses such a pointer outright. That
@@ -2387,8 +2468,8 @@ def admit_once(
         order = fair_share_admission_order(
             placeable, live, now=moment, config_for=config_for
         )
-        remaining: dict[str, float | None] = {}
-        allowance_sources: dict[str, str] = {}
+        remaining: dict[tuple[str, str], float | None] = {}
+        allowance_sources: dict[tuple[str, str], str] = {}
         verdicts: list[dict[str, Any]] = result["verdicts"]
         for pointer in unplaceable:
             allowance, source = _session_allowance_read(pointer, config_for=config_for)
@@ -2408,12 +2489,13 @@ def admit_once(
         claims: dict[str, list[tuple[Path | None, Path]]] = {}
         for index, pointer in enumerate(order):
             session = str(pointer["session"])
-            if session not in remaining:
+            allowance_key = (str(pointer.get("backend") or ""), session)
+            if allowance_key not in remaining:
                 read, source = _session_allowance_read(pointer, config_for=config_for)
-                remaining[session] = read
-                allowance_sources[session] = source
-            allowance = remaining[session]
-            allowance_source = allowance_sources[session]
+                remaining[allowance_key] = read
+                allowance_sources[allowance_key] = source
+            allowance = remaining[allowance_key]
+            allowance_source = allowance_sources[allowance_key]
             if allowance is not None and allowance <= 0:
                 result["held"].append(str(pointer["run_id"]))
                 verdicts.append(
@@ -2494,6 +2576,7 @@ def admit_once(
             record = None
             failure = "dispatch did not return a launched record"
             caught: Exception | None = None
+            hold_only = False
             reported_id = str(pointer["run_id"])
             restore_error = None
             # A handover identifies the admitted attempt while its original
@@ -2504,11 +2587,35 @@ def admit_once(
                     pointer, launcher=launcher, config_for=config_for
                 )
                 record = _require_launched_record(candidate)
+            except BudgetHold as exc:
+                rebound = _local_fallback(pointer, exc, config_for=config_for)
+                if rebound is None:
+                    _record_metered_hold(reported_id, exc)
+                    caught = exc
+                    hold_only = True
+                else:
+                    snapshot = copy.deepcopy(rebound)
+                    try:
+                        candidate = _launch_queued(
+                            rebound,
+                            launcher=launcher,
+                            config_for=config_for,
+                            backend_override=str(rebound["backend"]),
+                        )
+                        record = _require_launched_record(candidate)
+                    except (BudgetHold, LaneHeld, LanePaused) as fallback_hold:
+                        caught = fallback_hold
+                        hold_only = True
+                        if isinstance(fallback_hold, BudgetHold):
+                            _record_metered_hold(reported_id, fallback_hold)
+                    except Exception as fallback_error:  # noqa: BLE001 - restore the waiting request
+                        caught = fallback_error
+                        failure = f"{type(fallback_error).__name__}: {fallback_error}"
             except Exception as exc:  # noqa: BLE001 - every dispatch failure keeps its request
                 caught = exc
                 failure = f"{type(exc).__name__}: {exc}"
             finally:
-                if record is None:
+                if record is None and not hold_only:
                     reported_id, restore_error = _record_queued_failure(
                         snapshot,
                         failure,
@@ -2519,11 +2626,17 @@ def admit_once(
                 # pointer names the node, or the request has been written back.
                 runs.clear_handover(pointer)
             if record is None:
-                if first_report:
+                if first_report and not hold_only:
                     _report_queued_failure(pointer)
-                key = "held" if isinstance(caught, (LaneHeld, LanePaused)) else "failed"
+                key = (
+                    "held"
+                    if isinstance(caught, (BudgetHold, LaneHeld, LanePaused))
+                    else "failed"
+                )
                 detail_key = "hold_detail" if key == "held" else "failure_detail"
-                if caught is not None and isinstance(caught, (LaneHeld, LanePaused)):
+                if caught is not None and isinstance(
+                    caught, (BudgetHold, LaneHeld, LanePaused)
+                ):
                     verdicts.append(
                         _verdict_row(
                             pointer,
@@ -2567,8 +2680,10 @@ def admit_once(
                 joined_reviews = result.setdefault("joined_plan_reviews", {})
                 joined_reviews[str(record["run_id"])] = joined
             if allowance is not None:
-                remaining[session] = allowance - 1
-        result["action"] = "admitted" if result["launched"] else "idle"
+                remaining[allowance_key] = allowance - 1
+        result["action"] = (
+            "admitted" if result["launched"] else "gated" if local_gated else "idle"
+        )
         return result
 
 

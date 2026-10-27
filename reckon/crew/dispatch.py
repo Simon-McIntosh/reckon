@@ -213,6 +213,7 @@ def _queued_request_record(
     dispatch_options: Mapping[str, Any] | None,
     queued_at: str,
     admitted_from: str = "",
+    local: bool = True,
 ) -> dict[str, Any]:
     """The request record a held local dispatch stores as one queued pointer.
 
@@ -234,7 +235,7 @@ def _queued_request_record(
         "urgency": (dispatch_options or {}).get("urgency"),
         "backend": backend_name,
         "launch": launch_kind,
-        "local": True,
+        "local": local,
         "launcher_host": None,
         "phase": "queued",
         "queued_at": queued_at,
@@ -243,6 +244,10 @@ def _queued_request_record(
         "reason": lane_allowance.get("reason"),
         "dispatch_options": dict(dispatch_options or {}),
     }
+    for key in ("picker_selection", "named_route", "route_fallback"):
+        value = (dispatch_options or {}).get(key)
+        if value is not None:
+            record[key] = value
     if admitted_from:
         record["admitted_from"] = admitted_from
     return record
@@ -414,6 +419,10 @@ def _answer_existing_node_run(
     """
     phase = str(existing.get("phase") or "")
     if phase == "queued":
+        for key in ("picker_selection", "named_route", "route_fallback"):
+            if key in existing:
+                record[key] = existing[key]
+                record.setdefault("dispatch_options", {})[key] = existing[key]
         queued, position = queue_dispatch(record, max_requests=max_requests)
         held = LaneHeld(dict(lane_allowance))
         held.queued = {
@@ -1365,6 +1374,7 @@ def dispatch(
     # asked for rather than carrying the held backend's defaults forward.
     caller_time_budget = node.time_budget
     caller_write_paths = list(node.write_paths)
+    caller_named_route = bool(local or backend_override or default_backend_override)
     # Each picker input is built independently behind a guard: an unreadable
     # ledger, a conflicting mount or a raising budget view is recorded against
     # the input that failed and the picker is left to fall back, so a picker
@@ -1503,6 +1513,19 @@ def dispatch(
             )
         )
 
+    dispatch_options = dict(dispatch_options or {})
+    dispatch_options.setdefault("route", route or resolution.route)
+    if not admission_launch:
+        if picker_selection is not None:
+            dispatch_options["picker_selection"] = dict(
+                held_selection or picker_selection
+            )
+        if caller_named_route:
+            dispatch_options["named_route"] = {
+                "backend": resolution.backend,
+                "set_by": "dispatch",
+            }
+
     _workspace_roots(repo_root)
     candidate_scope = (
         ()
@@ -1635,79 +1658,157 @@ def dispatch(
                 }
         budget_warnings.extend(verdict.get("warnings") or ())
         if verdict["held"]:
-            if route == "picker":
-                raise _actionable_budget_hold(verdict, config=budget_config)
-            substitute = resolve_budget_fallback(
-                config,
-                node.role,
-                node.spec_level,
-                resolution.backend,
-                resolution.backend_settings,
-            )
-            if substitute is None:
-                raise _actionable_budget_hold(verdict, config=config)
-            fallback_name, _fallback_settings = substitute
-            # Re-resolve fully rather than patch the existing DispatchPlan, so
-            # the fallback gets its own execution-fit, sandbox and write-path
-            # checks instead of inheriting the held backend's. The caller's
-            # own time_budget/write_paths are restored first because the held
-            # backend's plan_dispatch call already defaulted them in place.
-            node.time_budget = caller_time_budget
-            node.write_paths = caller_write_paths
-            resolution = plan_dispatch(
-                node=node,
-                config=config,
-                locked_decisions=locked_decisions,
-                peer_scopes=peer_scopes,
-                project=project,
-                repo=repo_root,
-                base=base,
-                execution_override=execution_override,
-                orchestrator_lane_reason=orchestrator_lane_reason,
-                authority=authority,
-                local=local,
-                run_id=resolution.run_id,
-                backend_override=fallback_name,
-                declared_backend=(
-                    str(resolution.lane_declaration.get("backend") or "")
-                    if resolution.lane_declaration is not None
-                    else ""
-                ),
-                allow_unreviewed_plan=unreviewed_plan_override,
-                session=session,
-                route=resolution.route_override,
-                picker_selection=picker_selection,
-            )
-            resolution.requested_backend = requested_backend
-            if not resolution.validation.ok:
-                raise CrewError(
-                    f"node is not dispatchable on budget fallback {fallback_name!r} — "
-                    + "; ".join(
-                        f"{finding['property']}: {finding['detail']}"
-                        for finding in resolution.validation.findings
-                    )
+            # A wait is stored on the picked lane. Availability matters when
+            # the request becomes ready, not while its upstream is unfinished.
+            from reckon.crew import queue_admission
+
+            waiting_on_upstream = False
+            if not admission_launch:
+                _refs, _projects, unmet = queue_admission.dispatch_waits(
+                    node,
+                    repo_root=repo_root,
+                    project=project,
+                    run_id=resolution.run_id,
                 )
-            fallback_verdict = _budget_verdict(
-                project=project,
-                root=ledger_root,
-                config=config,
-                backend_name=resolution.backend,
-                backend=resolution.backend_settings,
-                purpose="dispatch",
-                budget_state=budget_state,
-                session=session,
-            )
-            budget_warnings.extend(fallback_verdict.get("warnings") or ())
-            if fallback_verdict["held"]:
-                # No fallback-of-fallback chain: a declared fallback is a single
-                # named substitute, not a search, so a held fallback refuses on
-                # its own verdict rather than guessing a third lane.
-                raise _actionable_budget_hold(fallback_verdict, config=config)
-            budget_fallback = {
-                "requested_backend": requested_backend_name,
-                "used_backend": resolution.backend,
-                "hold": verdict,
-            }
+                waiting_on_upstream = bool(unmet)
+            if waiting_on_upstream:
+                verdict = {**verdict, "held": False}
+            else:
+                if caller_named_route and not admission_launch:
+                    queued, position = queue_dispatch(
+                        _queued_request_record(
+                            run_id=resolution.run_id,
+                            project=project,
+                            node=node,
+                            repo_root=repo_root,
+                            session=session,
+                            backend_name=resolution.backend,
+                            launch_kind=resolution.launch,
+                            lane_allowance=verdict,
+                            dispatch_options=dispatch_options,
+                            queued_at=_utc_now(),
+                            local=resolution.backend
+                            == str(config.get("local_backend") or ""),
+                        ),
+                        max_requests=flight.queue_max_requests(config),
+                    )
+                    held = LaneHeld(
+                        {
+                            "detail": str(verdict.get("reason") or "metered lane held"),
+                            "reason": str(verdict.get("reason") or "metered lane held"),
+                        }
+                    )
+                    held.queued = {
+                        "run_id": queued["run_id"],
+                        "position": position,
+                        "phase": "queued",
+                        "backend": resolution.backend,
+                        "reason": verdict.get("reason"),
+                    }
+                    _arrange_dispatch_follower(
+                        project,
+                        session,
+                        resolution.launch,
+                        watch_required=watch_required,
+                        watch_override=watch_override,
+                    )
+                    raise held
+                if route == "picker" and not admission_launch:
+                    fallback_name = str(config.get("local_backend") or "")
+                    substitute = (
+                        (
+                            fallback_name,
+                            (config.get("backends") or {}).get(fallback_name),
+                        )
+                        if fallback_name and fallback_name != resolution.backend
+                        else None
+                    )
+                elif route == "picker":
+                    raise _actionable_budget_hold(verdict, config=budget_config)
+                else:
+                    substitute = resolve_budget_fallback(
+                        config,
+                        node.role,
+                        node.spec_level,
+                        resolution.backend,
+                        resolution.backend_settings,
+                    )
+                if substitute is None:
+                    raise _actionable_budget_hold(verdict, config=config)
+                fallback_name, _fallback_settings = substitute
+                # Re-resolve fully rather than patch the existing DispatchPlan, so
+                # the fallback gets its own execution-fit, sandbox and write-path
+                # checks instead of inheriting the held backend's. The caller's
+                # own time_budget/write_paths are restored first because the held
+                # backend's plan_dispatch call already defaulted them in place.
+                node.time_budget = caller_time_budget
+                node.write_paths = caller_write_paths
+                resolution = plan_dispatch(
+                    node=node,
+                    config=config,
+                    locked_decisions=locked_decisions,
+                    peer_scopes=peer_scopes,
+                    project=project,
+                    repo=repo_root,
+                    base=base,
+                    execution_override=execution_override,
+                    orchestrator_lane_reason=orchestrator_lane_reason,
+                    authority=authority,
+                    local=local
+                    or (
+                        route == "picker"
+                        and fallback_name == str(config.get("local_backend") or "")
+                    ),
+                    run_id=resolution.run_id,
+                    backend_override=fallback_name,
+                    declared_backend=(
+                        str(resolution.lane_declaration.get("backend") or "")
+                        if resolution.lane_declaration is not None
+                        else ""
+                    ),
+                    allow_unreviewed_plan=unreviewed_plan_override,
+                    session=session,
+                    route="deterministic"
+                    if route == "picker"
+                    else resolution.route_override,
+                    picker_selection=None if route == "picker" else picker_selection,
+                )
+                resolution.requested_backend = requested_backend
+                if not resolution.validation.ok:
+                    raise CrewError(
+                        f"node is not dispatchable on budget fallback {fallback_name!r} — "
+                        + "; ".join(
+                            f"{finding['property']}: {finding['detail']}"
+                            for finding in resolution.validation.findings
+                        )
+                    )
+                fallback_verdict = _budget_verdict(
+                    project=project,
+                    root=ledger_root,
+                    config=config,
+                    backend_name=resolution.backend,
+                    backend=resolution.backend_settings,
+                    purpose="dispatch",
+                    budget_state=budget_state,
+                    session=session,
+                )
+                budget_warnings.extend(fallback_verdict.get("warnings") or ())
+                if fallback_verdict["held"]:
+                    # No fallback-of-fallback chain: a declared fallback is a single
+                    # named substitute, not a search, so a held fallback refuses on
+                    # its own verdict rather than guessing a third lane.
+                    raise _actionable_budget_hold(fallback_verdict, config=config)
+                budget_fallback = {
+                    "requested_backend": requested_backend_name,
+                    "used_backend": resolution.backend,
+                    "hold": verdict,
+                }
+                if route == "picker":
+                    dispatch_options["route_fallback"] = {
+                        "from_backend": requested_backend_name,
+                        "to_backend": resolution.backend,
+                        "reason": str(verdict.get("reason") or "metered lane held"),
+                    }
 
     backend_name = resolution.backend
     backend = resolution.backend_settings
@@ -1811,6 +1912,7 @@ def dispatch(
                 dispatch_options=dispatch_options,
                 queued_at=_utc_now(),
                 admitted_from=admitted_from,
+                local=is_local,
             ),
             refs=validated_refs,
             wait_projects=wait_projects,
@@ -1880,6 +1982,7 @@ def dispatch(
                 lane_allowance=lane_allowance,
                 dispatch_options=dispatch_options,
                 queued_at=_utc_now(),
+                local=queued_backend_name == local_backend,
             ),
             backend=backend,
             lane_allowance=lane_allowance,
@@ -2629,6 +2732,7 @@ def dispatch(
             "dialect": None,
             "budget": _backends.unknown_budget("no events yet"),
             "budget_fallback": budget_fallback,
+            "route_fallback": dispatch_options.get("route_fallback"),
             "picker_selection": held_selection or picker_selection,
             "route_mode": (
                 # A hold overridden onto the local lane it offered is its own
@@ -2636,6 +2740,13 @@ def dispatch(
                 # continued rather than tuning it in with the shadow picks.
                 _overridden_hold_route_mode()
                 if held_selection is not None
+                else "fallback"
+                if dispatch_options.get("route_fallback")
+                else "picker"
+                if admission_launch
+                and not dispatch_options.get("named_route")
+                and isinstance(picker_selection, Mapping)
+                and picker_selection.get("action") == "route"
                 else "explicit"
                 if backend_name
                 == str(

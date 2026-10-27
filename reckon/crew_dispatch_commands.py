@@ -390,8 +390,10 @@ def _emit_held_result(
         phase = str(queued.get("phase") or "queued")
         run_id = str(queued.get("run_id") or "")
         queued_now = phase == "queued"
+        backend = str(queued.get("backend") or "")
+        lane_label = f"backend {backend!r}" if backend else "the local lane"
         detail = (
-            f"the local lane queued run {run_id} at position {queued.get('position')}"
+            f"{lane_label} queued run {run_id} at position {queued.get('position')}"
             if queued_now
             else f"run {run_id} is already {phase} for this {noun}"
         )
