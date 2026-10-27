@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="120">
+<meta name="plan-version" content="121">
 <meta name="plan-modified" content="2026-10-27">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -211,6 +211,10 @@
     <p><strong>Change.</strong> The argument checks of the four reckon MCP tools run before any file is opened: <code>_crew</code>, <code>_read_plan_tool</code> and <code>_roadmap_tool</code> in <code>reckon/mcp.py</code>, and <code>_edit_plan_tool</code> in <code>reckon/mcp_edit_plan.py</code>. Field names, view names, op names and enumerated values are checked against their declared vocabularies first, so a malformed request is refused in milliseconds whatever storage is doing, and the refusal lists the accepted values as it does today.</p>
     <p>Done when: under a storage stub that blocks on any open, a <code>crew view live</code> call with an unknown field, a <code>crew</code> call with an unknown view and an <code>edit_plan</code> call with an unknown op are each refused without the stub being reached. Negative control: validation moved after the first read must reach the stub. Write paths: <code>reckon/mcp.py</code>, <code>reckon/mcp_edit_plan.py</code> and a new test file. Every log, the negative control's included, is under the run directory.</p>
 
+    <h2 id="s18">A session-scoped live read writes nothing either</h2>
+<section data-reckon="section" data-id="s18" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> §10 made the project-scoped live view read the seat lock read-only and create nothing, landed at merge 43c6870be. Its node recorded four write sites a fenced read still reaches, and its review found a fifth. A session-scoped live read (<code>session=</code> supplied) with follower registrations still opens each registration <code>a+b</code> in <code>_follower_liveness</code> (<code>reckon/crew/follower_registration.py</code>). <code>watch_state</code> and <code>_register_watch_unit</code> in <code>reckon/crew/watch_unit.py</code> still create the watch directory and open the seat <code>a+b</code>. <code>release_holder</code> in <code>reckon/crew/host_lease.py</code> unlinks a stale lease, so <code>_fresh_watch_holder</code> raises a read-only error on a home holding a dead local lease. And <code>_probe_seat_read_only</code> in <code>reckon/crew/runs.py</code> tolerates an absent seat but lets any other open error, such as a mode-000 seat, propagate.</p><p><strong>Change.</strong> Each read path above takes no lock it would need to create and writes nothing. A liveness probe opens read-only. A stale lease seen during a read is reported stale rather than unlinked. An unreadable seat reads as an unknown holder rather than raising. The write paths these functions also serve, registration and lease release on a writable home, keep their current behaviour.</p><p>Done when a test in <code>tests/test_a_session_live_read_writes_nothing.py</code> builds a fixture crew home holding follower registrations, a dead local lease and a mode-000 seat, makes the crew home read-only, and calls the live view with <code>session=</code>: it returns the fixture's runs with no error, and the home's tree is byte-identical afterwards. The same test fails at the base. Negative control: restoring the <code>a+b</code> open in <code>_follower_liveness</code> raises the read-only error. Write paths: <code>reckon/crew/follower_registration.py</code>, <code>reckon/crew/watch_unit.py</code>, <code>reckon/crew/host_lease.py</code>, <code>reckon/crew/runs.py</code> and the new test file.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="launch-form" data-choice="uv-no-sync" data-by="Simon McIntosh" data-when="2026-10-08T01:52:37+00:00">
@@ -271,6 +275,11 @@
     <div class="r-fu-body"><p>§11 is implementable and no open followup named it.</p></div>
     <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §11</pre>
     <p class="r-fu-outcome">Section 11 landed at merge 28ec17334. worker_mcp_servers is a reckon-owned flight key, so a project can name its worker MCP servers in its own flight configuration, and any value that is not a list of strings is refused naming the key, at layer resolution and in _declared_worker_mcp_servers. Coordinator importer measure, stacked with the census, worker-MCP and reload-image nodes on main ab0ababb1 over 144 test files: main 1695 passed, stack 1708 passed, the same one failure and one error at both, so none added.</p>
+    </article>
+<article class="r-fu" data-id="f-amfnic-018" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-10-27" data-recommends-skill="/reckon-build an-mcp-failure-names-its-cause §18" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build section 18: a session-scoped live read writes nothing</h4>
+    <div class="r-fu-body"><p>The write sites section 10's node and review named under the fence, carried as section 18.</p></div>
+    <pre class="r-fu-prompt">/reckon-build an-mcp-failure-names-its-cause §18</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
