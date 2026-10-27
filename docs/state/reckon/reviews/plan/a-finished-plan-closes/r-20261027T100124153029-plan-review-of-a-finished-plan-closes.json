@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T10:14:43.167Z",
+  "dispatched_at": "2026-10-27T10:04:50Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:104",
+      "id": "wiring-1",
+      "reason": "the plan's only route to its remaining work points at a finished node, so the next dispatch would rebuild landed code with nothing naming the real next step.",
+      "text": "the only open followup `f-afpc-003` recommends \u00a75, which is declared `done` (line 79) and whose landing is recorded at line 142, while nothing open names \u00a74 or \u00a76; a coordinator resuming from the followups would re-dispatch a finished section, and the plan's own \u00a72 makes an open followup a closure obstacle, so this plan could not read closable even after \u00a74 and \u00a76 land",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:76",
+      "id": "done_when-1",
+      "reason": "without a control the node's gate cannot show the \"2 deferred, not closable\" reading or the moved-section state is new rather than already present.",
+      "text": "the second done-when block added to \u00a74 has no base-commit assertion; the first block states \"on the base commit the refusal names neither remedy\", but the surface and move requirements have no equivalent, so a suite written against them passes whether or not the surfaces and the move are ever changed",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:76",
+      "id": "single_goal-1",
+      "reason": "three code areas \u2014 the `_store.py` guard, the surface derivation, and the section-move path \u2014 cannot be reviewed or landed on one pass/fail, and the third is the largest.",
+      "text": "\u00a74 carries three deliverables (the extended `_require_every_section_ticked` refusal with its two remedies; the deferred-only label across roadmap, crew flow and SPA plan card; the `moved_to` descope copying prose, effort, gates and re-anchoring comments) under one 2.0-hour allocation and one gate, so no single verdict closes the node and the gate proves none of the three",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-finished-plan-closes.html:76",
+      "id": "reasoning-1",
+      "reason": "the implementing node must find or invent the derivation itself, which is exactly where a label gets computed in JSX against the repository's own render-only rule.",
+      "text": "the surfaces requirement states \"the derivation is one Python fact the surfaces render\" without naming the function, the roadmap field, or the crew-flow/SPA input that fact becomes, so the mechanism to produce this done-when is not located on any real code path",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "f175eb78f47e253642009613c3bfef06c36782620f73ac36efd2ad1669046664",
+  "plan_slug": "a-finished-plan-closes",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T100124153029-plan-review-of-a-finished-plan-closes",
+  "reviewed_blob_sha": "a74dc97fa743583e223499ab83b10fa7c07ce12b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `a-project-reads-as-one-picture#s9` resolves (id `s9`, still `implementable`, so \u00a74's declared wait is genuine), `_require_every_section_ticked` exists at `reckon/_store.py:3831`, and the cited commits `cbd5db3af`, `2573ab94a`, `8bb5124eb`, `0d523f4a04e5`, `7195cfc05`, `25a6464fe`, `f9918395c` and `bde91922d` all resolve.",
+    "done_when": "a finding \u2014 \u00a74's second done-when block (the surfaces read *2 deferred, not closable*; the move carries gates and comments) declares no base-commit negative control, while \u00a74's first done-when and every other section name one.",
+    "evidence_paths": "pass \u2014 the landed record cited by \u00a71 and by the \u00a72/\u00a73/\u00a75/\u00a77 landing comments is `docs/evidence/archive/a-finished-plan-closes-landed.html`, a durable repository path, and it carries the `s2`, `s3`, `s5` and `s7` anchors those links target.",
+    "naming": "pass \u2014 the plan cites mechanisms (`split_unpassed_gates`, `plan_executable_remainder`, `closure_blockers`, `_require_every_section_ticked`) and carries no stage labels, ticket numbers or version tags into code.",
+    "reasoning": "a finding \u2014 \u00a74's surface requirement asserts \"the derivation is one Python fact the surfaces render\" but names no function, field or file for that fact, so the mechanism the node must build to satisfy that done-when has no located code path.",
+    "single_goal": "a finding \u2014 \u00a74 carries three deliverables, each with its own \"Done when\": the extended close refusal with its two descope remedies, the deferred-only plan reading \"not closable\" across roadmap/crew-flow/SPA, and a `moved_to` descope carrying the section's state \u2014 all in one 2.0-hour node.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` resolves (s4 \u2192 `a-project-reads-as-one-picture#s9`, still implementable; s6 \u2192 s2/s3/s4/s5; s5 \u2192 s2), but the followup chain points at a finished node: the only open followup `f-afpc-003` recommends \u00a75, whose declaration is `done`, while the two remaining implementable sections \u00a74 and \u00a76 have no followup at all."
+  },
+  "section_digests": {
+    "_document": "cbc207d705a39ccff559c10c2e796c0ad559697c90ffc50c487ffd0e3d3ed28d",
+    "s1": "1e9dfcb4502718170725c8fe6a094be7008a8414e2b0c4d7396de0b81ce04dab",
+    "s2": "6c44eda16e770936689d05513ebb501b1e2a0f657f06807e53fa716607264744",
+    "s3": "0a100b8e6b7b41a102d493cf268c6deb4e40695cb3fda35c840eb33d241b2aa7",
+    "s4": "c4a84129afbd09d80f26dd3d419f230e12eccfd4af9dcf40c1f3598a593c6d6e",
+    "s5": "4060f5077ce6aada3abd8600dd95d99101462cba15260f20910a58337fb685c8",
+    "s6": "94a8098fad6e6e0e94b30b6aa3b5479453e35e2f7ef9f3c088ea41be599f8353",
+    "s7": "6fb67be266b987f88287353d3f96796b49475e91c385781de1b22e81337c1b33"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T10:19:07.518513+00:00"
+}
