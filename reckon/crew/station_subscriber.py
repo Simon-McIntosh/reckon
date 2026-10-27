@@ -1,6 +1,6 @@
 """A follower reads its session's rows from the node's station, after a cursor.
 
-The station (§7) is the one process on a node that reads the fleet and writes
+The station is the one process on a node that reads the fleet and writes
 each transition once. A follower is a subscriber to those rows: it holds a place
 in the station's event sequence, asks for the rows addressed to its session and
 to every pane after that place, paints them with the ticker it always used, and
