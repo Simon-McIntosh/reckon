@@ -234,6 +234,13 @@ def _launch_queued(
         config_for(pointer) if config_for is not None else _resolve_lane_config(pointer)
     )
     destination = str(backend_override).strip()
+    selection = pointer.get("picker_selection")
+    replay_pick = (
+        isinstance(selection, Mapping)
+        and selection.get("action") == "route"
+        and not pointer.get("named_route")
+        and not pointer.get("route_fallback")
+    )
     # The launch continues the request it was admitted from, so it keeps that
     # request's run id: the id a dispatch printed is the one a coordinator
     # records and later acts on, and a fresh id here would leave the printed one
@@ -262,10 +269,11 @@ def _launch_queued(
         repairs=str(options.get("repairs") or ""),
         accept_directory_claim=bool(options.get("accept_directory_claim")),
         no_fence_reason=str(options.get("no_fence_reason") or ""),
-        # The picker already chose this stored request's backend. Replaying a
-        # queued request must keep that route rather than asking it again.
-        route="deterministic",
-        picker_selection=pointer.get("picker_selection"),
+        # A stored picker answer is supplied to dispatch, so the model is
+        # resolved from that choice without asking the picker again. An edited
+        # route or a recorded fallback stays on the backend it already names.
+        route="picker" if replay_pick else "deterministic",
+        picker_selection=selection,
         comment=str(options.get("comment") or ""),
         dispatch_options=options,
         admission_launch=True,
