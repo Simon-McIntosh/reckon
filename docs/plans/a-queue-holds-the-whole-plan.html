@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="201">
+<meta name="plan-version" content="202">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -562,7 +562,7 @@
     <div class="r-comment-body"><p>Reviewed run r-20261027T124654403923-the-landing-pass-measures-and-lands over commits 9362ba760..ccaf5a1c3 (reckon/crew/landing_measure.py, tests/test_the_landing_pass_measures_and_lands.py): scores goal_fidelity 18, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 5, with two non-blocking findings (a verbatim third copy of the shell-assignment pattern at landing_measure.py:158, and a hand-maintained _VALUE_OPTIONS that mangles unlisted value-taking options into a spurious unreadable refusal); no blocking finding, added_failure_count 0 from baseline 7 passed and after 9 passed.</p></div>
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261027T211912676242-review-of-the-landing-pass-measures-and-lands-98b1f10192eb" data-who="reckon-build" data-when="2026-10-27T21:33:15.381Z">
-    <div class="r-comment-body"><p>Independent review of r-20261027T124654403923-the-landing-pass-measures-and-lands at 98b1f10192, covering ccaf5a1c3..98b1f10192 (737d0aa283&#x27;s narrowing-by-the-run&#x27;s-own-test-files refactor plus 98b1f10192&#x27;s evidence update); scores goal_fidelity 18, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 20; three non-blocking findings; parsed record stored under the reviewed run&#x27;s review-records/.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261027T124654403923-the-landing-pass-measures-and-lands at 98b1f10192, covering ccaf5a1c3..98b1f10192 (737d0aa283's narrowing-by-the-run's-own-test-files refactor plus 98b1f10192's evidence update); scores goal_fidelity 18, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 20; three non-blocking findings; parsed record stored under the reviewed run's review-records/.</p></div>
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261027T200436344698-review-of-a-carried-finding-reaches-the-node-c99e54475b41" data-who="reckon-build" data-when="2026-10-27T20:16:57.721Z">
     <div class="r-comment-body"><p>An independent review of r-20261027T123902746570-a-carried-finding-reaches-the-node landed at c99e54475b41e4c0b39c8fc34e94a3ab426117e5 from base 9e363fe50e058ed2bd9cc3b2548eb6f8353aa3c4, scoring goal_fidelity 13, evidence 13, scope_discipline 19, durability 14, fit 12, reuse 5 (total 76), with six non-blocking findings and added_failure_count 0; both records under review-records/ pass `reckon crew check --review`.</p></div>
@@ -578,6 +578,12 @@
 </div>
 <div class="r-comment" data-section="s20" data-id="c-s20-reverted" data-who="" data-when="">
     <div class="r-comment-body"><p>The landing at merge <code>fdd3d278f5</code> was reverted at <code>acb6cf8112</code> about twenty minutes after it landed. Its third-review cap counted every stored review of a unit whose prose had not changed. It counted 46 against an unchanged section of this plan and 6 against nova's kernel-compile-barrier, so no plan reviewed more than twice could have a content review composed, in any project. nova-39 reported it. The cap also named findings from a record whose answers it did not read, so no answer command could clear them. A <code>--carried</code> answer replaced an earlier <code>--acted</code>. The done-when now carries arms for these defects, and the section is open again.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-s14-seeded-violation" data-who="" data-when="">
+    <div class="r-comment-body"><p>The content review of 27 October found that §14 has no negative control: a drain whose counters never increment would report zero DAG-order violations. When §14 is dispatched, its done-when gains one: before the week starts, the coordinator seeds a request that launches before its upstream lands, and the drain instrument must report exactly that one violation.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-s21-name-the-owner" data-who="" data-when="">
+    <div class="r-comment-body"><p>The content review of 27 October found that §21 names its producer by description rather than by module. No module under <code>reckon/crew/</code> composes a plan review in a watch sweep today. §21 waits on §20, whose repair decides where the review counter lives. Its write path is named when §20 re-lands, and before §21 launches.</p></div>
 </div>
 </section>
 </main>
