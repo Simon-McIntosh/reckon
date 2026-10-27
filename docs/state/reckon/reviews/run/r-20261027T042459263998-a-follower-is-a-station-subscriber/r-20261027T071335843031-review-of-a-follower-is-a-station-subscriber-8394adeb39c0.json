@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:173",
+    "reckon/crew_follow_commands.py:2101",
+    "reckon/crew_follow_commands.py:3173",
+    "reckon/crew/station.py:207"
+  ],
+  "completed_at": "2026-10-27T07:21:03.378Z",
+  "dispatched_at": "2026-10-27T07:15:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station_store.py",
+      "line": "392",
+      "severity": "non-blocking",
+      "text": "the rebuild writes migrated cursor rows under project '' while every live subscriber reads a real project name (station_subscriber.py:136), so a pane whose place predates the project key is never resumed from the row the migration kept and replays from cursor 0 (and re-draws from its reset checkpoint/history) once on upgrade."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html",
+      "line": "41",
+      "severity": "non-blocking",
+      "text": "the manifest's negative_control_log is the pre-delta revision 3e6c0bc43 and arms a mutation against the cursor/day columns only, so neither new guard in this delta (the rebuild migration and the per-project separation) is falsified by an armed mutation; both are verified by reading the assertion against the defect rather than by a red log."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 read commits e873289b2 and 8394adeb3 against base 3e6c0bc43: 5 files, 235 added / 85 removed \u2014 the store's reader unified into _read_events, cursors re-keyed by (project, audience) with a table-rebuild migration, subscriber call sites updated, two new tests, the freshness retarget updated, and the evidence fragment extended.",
+    "done_when": "partial \u2014 the source done_when's named gate ran at head 8394adeb3: logs/gate-pane-suites.log records 55 passed EXIT=0 including the retargeted freshness case and the node's own file, and logs/after-armed.log 21 passed EXIT=0; I re-ran ruff on the four Python delta paths and it is clean, but no ruff result is recorded, the armed baseline arm (logs/baseline-armed.log) exits 4 having collected nothing, and the 60 s trace measure was not re-run for this delta.",
+    "goal": "pass \u2014 the delta's purpose is to close the prior review's duplication and cross-project-cursor findings; reckon/crew/station_store.py:1099 _read_events is now the single reader that both events (station_store.py:1068) and events_for (station_store.py:1086) call, and read_cursor/write_cursor (station_store.py:764, 806) take project, so both fixes are in the landed diff.",
+    "manifest": "pass \u2014 read the delivered manifest.md; it records status complete, commits ending 8394adeb3, both armed arms with their logs (base exit 4 collecting nothing, head 21 passed EXIT=0), the importer-population arms (1 failed 488 passed at base, 1 failed 497 at head), and a negative_control_log at the pre-delta revision 3e6c0bc43.",
+    "write_paths": "pass \u2014 the source node declared reckon/crew/station_store.py, station_subscriber.py, crew_follow_commands.py, follow_checkpoint.py, both test files, the fragment and the figures dir; the delta touches five of those paths and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_follower_is_a_station_subscriber.py:280 fails if the rebuild drops a migrated row and :330 fails if two session-less panes share one cursor row, but neither guard is falsified by the manifest's pre-delta negative control so durability rests partly on reading.",
+    "evidence": "the named gate and both armed arms are on disk green (logs/gate-pane-suites.log 55 passed EXIT=0, logs/after-armed.log 21 passed EXIT=0), but the baseline arm at logs/baseline-armed.log exits 4 having collected nothing and the negative control predates the delta.",
+    "fit": "reckon/crew/station_store.py follows the surrounding method shape and module-level constant idiom, and _CURSOR_TABLE, _read_events and cursors_before_projects name the mechanism with no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/station_store.py:1099 _read_events is the one reader both callers use and station_subscriber.py:136 reads a project-keyed place, so the node's stated delta is implemented as described.",
+    "reuse": "station_store.py:1099 _read_events extends the existing events reader's owner rather than forking it, retiring the duplication the prior review scored at 5.",
+    "scope_discipline": "every hunk in git diff 3e6c0bc43 8394adeb3 falls under one of the source node's declared write paths and the delta introduces no path the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta's purpose is to close the prior review's duplication and cross-project-cursor findings; reckon/crew/station_store.py:1099 _read_events is now the single reader that both events (station_store.py:1068) and events_for (station_store.py:1086) call, and read_cursor/write_cursor (station_store.py:764, 806) take project, so both fixes are in the landed diff.\nVERDICT done_when: partial \u2014 the source done_when's named gate ran at head 8394adeb3: logs/gate-pane-suites.log records 55 passed EXIT=0 including the retargeted freshness case and the node's own file, and logs/after-armed.log 21 passed EXIT=0; I re-ran ruff on the four Python delta paths and it is clean, but no ruff result is recorded, the armed baseline arm (logs/baseline-armed.log) exits 4 having collected nothing, and the 60 s trace measure was not re-run for this delta.\nVERDICT write_paths: pass \u2014 the source node declared reckon/crew/station_store.py, station_subscriber.py, crew_follow_commands.py, follow_checkpoint.py, both test files, the fragment and the figures dir; the delta touches five of those paths and nothing outside them.\nVERDICT manifest: pass \u2014 read the delivered manifest.md; it records status complete, commits ending 8394adeb3, both armed arms with their logs (base exit 4 collecting nothing, head 20+1 passed EXIT=0), the importer-population arms (1 failed 488 passed at base, 1 failed 497 at head), and a negative_control_log at the pre-delta revision 3e6c0bc43.\nVERDICT diff: pass \u2014 read commits e873289b2 and 8394adeb3 against base 3e6c0bc43: 5 files, 235 added / 85 removed \u2014 the store's reader unified into _read_events, cursors re-keyed by (project, audience) with a table-rebuild migration, subscriber call sites updated, two new tests, the freshness retarget updated, and the evidence fragment extended.\nCALL_SITES: reckon/crew_follow_commands.py:173, reckon/crew_follow_commands.py:2101, reckon/crew_follow_commands.py:3173, reckon/crew/station.py:207\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station_store.py:1099 _read_events is the one reader both callers use and station_subscriber.py:136 reads a project-keyed place, so the node's stated delta is implemented as described.\nSCORE evidence: 14\nJUSTIFICATION evidence: the named gate and both armed arms are on disk green (logs/gate-pane-suites.log 55 passed EXIT=0, logs/after-armed.log 21 passed EXIT=0), but the baseline arm at logs/baseline-armed.log exits 4 having collected nothing and the negative control predates the delta.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every hunk in git diff 3e6c0bc43 8394adeb3 falls under one of the source node's declared write paths and the delta introduces no path the goal does not imply.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_follower_is_a_station_subscriber.py:280 fails if the rebuild drops a migrated row and :330 fails if two session-less panes share one cursor row, but neither guard is falsified by the manifest's pre-delta negative control so durability rests partly on reading.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/station_store.py follows the surrounding method shape and module-level constant idiom, and _CURSOR_TABLE, _read_events and cursors_before_projects name the mechanism with no plan, ticket or version label.\nSCORE reuse: 19\nJUSTIFICATION reuse: station_store.py:1099 _read_events extends the existing events reader's owner rather than forking it, retiring the duplication the prior review scored at 5.\nFINDING reckon/crew/station_store.py:392 non-blocking: the rebuild writes migrated cursor rows under project '' while every live subscriber reads a real project name (station_subscriber.py:136), so a pane whose place predates the project key is never resumed from the row the migration kept and replays from cursor 0 (and re-draws from its reset checkpoint/history) once on upgrade.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html:41 non-blocking: the manifest's negative_control_log is the pre-delta revision 3e6c0bc43 and arms a mutation against the cursor/day columns only, so neither new guard in this delta (the rebuild migration and the per-project separation) is falsified by an armed mutation; both are verified by reading the assertion against the defect rather than by a red log.\n",
+  "review_run_id": "r-20261027T071335843031-review-of-a-follower-is-a-station-subscriber-8394adeb39c0",
+  "reviewed_base_sha": "3e6c0bc43826b6d796afda00badb1f2e8efd3dca",
+  "reviewed_head_sha": "8394adeb39c01c4b53bf3879929c3a949c78fecd",
+  "reviewed_run_id": "r-20261027T042459263998-a-follower-is-a-station-subscriber",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T07:21:58.325316+00:00",
+  "total": 105
+}

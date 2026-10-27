@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "caption_path": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html:37-38",
+  "caption_verdict": "pass \u2014 the figcaption (fragment lines 37-38) does not repeat the title: it names both traced runs, the harness they share, the shortened producer lease interval, the sole variable between them, and what the measured run does not name. It does not restore the missing legend entry, which is why the blocking finding stands.",
+  "completed_at": "",
+  "dispatched_at": "2026-10-27T07:17:29Z",
+  "figure_path": "docs/figures/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber/crew-home-paths.svg",
+  "findings": [
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber/crew-home-paths.svg",
+      "line": null,
+      "severity": "blocking",
+      "summary": "The blue bar series is drawn in the picture but named nowhere. Three colour families appear in the rendered PNG (grey #929292, blue #2F6F9F, red #C0392B); the legend carries exactly two swatches, grey for 'delivered subscriber' at x 510-539 and red for 'checkpoint mutation armed' at x 793-823, against a canvas 1400 px wide, and the blue family appears only in the plot area (bars and numerals at x 240-1188, y 186-607) and never in the legend band. Seven rows carry a blue mark and blue numeral, and on six of them the blue bar is the only thing paired with the grey one, so a reader looking at 'producer watch lease' sees 1820 against 1826 with no way to learn what the 1826 belongs to. The caption describes two runs and the alt text says 'one pair per path family', so the same gap runs through every rendering of this figure: half of its marks are unreadable as data. Add a legend entry naming the blue series (or drop the blue marks and draw only the two runs the legend already names)."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber/crew-home-paths.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "The grey value numerals are drawn in the bar colour #929292, about 3.1:1 against white, below the 4.5:1 that 14 pt text needs; '15', '1' and '1820' read faintly beside the blue numerals they are meant to be compared with. A darker neutral for the text, or a heavier weight, would clear the bar without changing the mark colours."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber/crew-home-paths.svg",
+      "line": null,
+      "severity": "non-blocking",
+      "summary": "Counts of zero are drawn as no bar at all, which the log x-axis forces: pane history, delivered states, reload tree and recovery sweep render as an empty row whose only mark is a printed '0', and a reader must read four numerals where the figure otherwise lets them read bar lengths. The rows are also uneven \u2014 pane checkpoint prints a single grey '0' while the other four empty rows print a grey and a blue '0' \u2014 so the absent bar and the missing second value read as a third defect (a reader cannot tell what a missing numeral means). Either state the zero convention in the caption or draw a hairline mark for zero."
+    }
+  ],
+  "item_verdicts": {
+    "contrast": "fail \u2014 the grey value numerals (0, 15, 1, 1820) are drawn in the same #929292 as the grey bars, about 3.1:1 against white at roughly 14 pt, below the 4.5:1 that size needs; they are legible but visibly fainter than the blue numerals beside them. The blue numerals and the red bar label measure about 5.4:1 and are fine.",
+    "data_ink": "pass \u2014 the marks are solid bars on white with a single x-axis scale and category labels; no gradients, no fills, no gridlines, and every non-zero count is drawn as a bar whose length is the quantity.",
+    "decoration": "pass \u2014 white ground, top and right spines absent, no shading, banding or drop shadow; the only non-data ink is the axis line, ticks, the legend and the direct value labels.",
+    "label_collision": "pass \u2014 every bar-end numeral stands clear of its bar end, the two '0' labels on each empty row sit 12 px apart vertically with no overlap, and no ink is clipped: the rightmost text ends at x=1188 and the widest category label starts at x=19 in a 1400 px canvas.",
+    "legibility": "fail \u2014 the picture draws three colour families but the legend names two: grey bars labelled 'delivered subscriber' and one red bar labelled 'checkpoint mutation armed'. Every row that carries a count also carries a second, blue bar (delivery lease 15/15, live-pointer directory 1/1, producer watch lease 1820/1826) with its numeral in the same blue, and no legend entry, alt-text clause or caption sentence says what those blue bars are; a reader sees a paired comparison and can name only one half of it.",
+    "table_form": "pass \u2014 eight path families compared across two traced runs at three orders of magnitude is a comparison a reader takes in at a glance; the log axis is the honest form for 0 against 1820, and a table would be slower to read for the same facts."
+  },
+  "judged_from": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T071554631688-review-of-a-follower-is-a-station-subscriber-8394adeb39c0-figure/image-0.png",
+  "project": "reckon",
+  "raw_text": "RUBRIC legibility: fail \u2014 three colour families are drawn and the legend names two; the blue bars and blue numerals carry no entry, so six of eight rows show a paired comparison whose second half a reader cannot name.\nRUBRIC data_ink: pass \u2014 solid bars on white, one x scale, no fills or gradients, every non-zero count drawn to length.\nRUBRIC decoration: pass \u2014 despined, no shading, no gridlines, no gradient or gradient-like fill.\nRUBRIC contrast: fail \u2014 grey value numerals #929292 on white at about 3.1:1 against 4.5:1 required for the type size; blue and red measure about 5.4:1 and pass.\nRUBRIC table_form: pass \u2014 an eight-family comparison across two runs at three orders of magnitude reads faster as bars than as a table.\nRUBRIC label_collision: pass \u2014 bar-end numerals clear every bar, the zero pairs are 12 px apart, and nothing is clipped in the 1400x720 canvas.\n",
+  "review_run_id": "r-20261027T071554631688-review-of-a-follower-is-a-station-subscriber-8394adeb39c0-figure",
+  "reviewed_base_sha": "c30c057d4921f78af11a68ae3b4f0f94ff11a66a",
+  "reviewed_head_sha": "8394adeb39c01c4b53bf3879929c3a949c78fecd",
+  "reviewed_run_id": "r-20261027T042459263998-a-follower-is-a-station-subscriber",
+  "rubric": "figure",
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T07:22:58.945798+00:00",
+  "total": null
+}
