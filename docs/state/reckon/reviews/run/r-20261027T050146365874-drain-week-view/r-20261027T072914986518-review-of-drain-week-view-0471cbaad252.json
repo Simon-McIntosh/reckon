@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The manifest's baseline_suite (2a230d4a875546bc947eba6a69697603d1742e05) and after_suite (0471cbaad2527877aff2c55137e22332e217a506) each completed with only tests/test_crew_runs_view.py::test_drain_reports_an_unreadable_inventory_as_unknown failing; after minus baseline is empty.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/runs.py:2240",
+    "reckon/mcp_views.py:4240",
+    "reckon/crew_run_commands.py:1370",
+    "reckon/crew/obligations.py:1723"
+  ],
+  "completed_at": "2026-10-27T07:39:31Z",
+  "dispatched_at": "2026-10-27T07:31:23Z",
+  "findings": [],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "VERDICT diff: all eleven commits from 25f6ed74bf8142b0a219e9aeabdc00bcc88f8d9a through 0471cbaad2527877aff2c55137e22332e217a506 change only the summary, its tests, and evidence; reckon/crew/runs.py:2154 now reports both overdue upstream transitions.",
+    "done_when": "VERDICT done_when: prompt.txt:105-106 requires 120 hand-counted requests and cold and warm 500-pointer MCP reads under 30 s; tests/test_drain_week_view.py:51-270 asserts these and wait-resolution-benchmark.log records 2.378 s and 1.807 s.",
+    "goal": "VERDICT goal: prompt.txt:30 and the live plan \u00a712 ask for a project and plan week view; reckon/crew/runs.py:2061-2191 supplies counts, throughput, estimates, and stale verdicts in the existing drain result.",
+    "manifest": "VERDICT manifest: manifest.md lists eleven commits and final gate receipts; wait-resolution-final-head.log and blocked-upstream-final-head.log each show the same one failing inventory test and 35 passes, yielding zero added failure IDs.",
+    "write_paths": "VERDICT write_paths: prompt.txt:69-73 grants reckon/crew/runs.py, tests/test_drain_week_view.py, and the drain evidence fragment; the 25f6ed74-to-0471cbaa diff changes only those paths."
+  },
+  "justifications": {
+    "durability": "JUSTIFICATION durability: tests/test_drain_week_view.py:94-136 uses literal expected counts and :211-214 requires both stale upstream outcomes, and blocked-upstream-negative-control.log shows the latter assertion failing when the repair is reversed.",
+    "evidence": "JUSTIFICATION evidence: tests/test_drain_week_view.py:51-270 covers the quantitative gate, while wait-resolution-final-head.log and blocked-upstream-final-head.log document the identical base and head failure ID and the separate benchmark logs time the MCP read.",
+    "fit": "JUSTIFICATION fit: reckon/crew/runs.py:2061-2191 keeps the summary in the existing drain owner, follows its pointer and ledger reading style, and adds no forbidden source name.",
+    "goal_fidelity": "JUSTIFICATION goal_fidelity: reckon/crew/runs.py:2051-2191 derives every requested phase, 24-hour rate, estimate and stalled verdict, and :2240 adds that block to drain.",
+    "reuse": "JUSTIFICATION reuse: a capability search in reckon/crew found drain owned by reckon/crew/runs.py:2194 and readiness owned by reckon/crew/queue_admission.py:1895, which the new view calls at reckon/crew/runs.py:2146.",
+    "scope_discipline": "JUSTIFICATION scope_discipline: the diff changes reckon/crew/runs.py, tests/test_drain_week_view.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-week-view.html, each granted by prompt.txt:69-73."
+  },
+  "node": "review-of-drain-week-view-0471cbaad252",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 and the live plan \u00a712 ask for a project and plan week view; reckon/crew/runs.py:2061-2191 supplies counts, throughput, estimates, and stale verdicts in the existing drain result.\nVERDICT done_when: prompt.txt:105-106 requires 120 hand-counted requests and cold and warm 500-pointer MCP reads under 30 s; tests/test_drain_week_view.py:51-270 asserts these and wait-resolution-benchmark.log records 2.378 s and 1.807 s.\nVERDICT write_paths: prompt.txt:69-73 grants reckon/crew/runs.py, tests/test_drain_week_view.py, and the drain evidence fragment; the 25f6ed74-to-0471cbaa diff changes only those paths.\nVERDICT manifest: manifest.md lists eleven commits and final gate receipts; wait-resolution-final-head.log and blocked-upstream-final-head.log each show the same one failing inventory test and 35 passes, yielding zero added failure IDs.\nVERDICT diff: all eleven commits from 25f6ed74bf8142b0a219e9aeabdc00bcc88f8d9a through 0471cbaad2527877aff2c55137e22332e217a506 change only the summary, its tests, and evidence; reckon/crew/runs.py:2154 now reports both overdue upstream transitions.\nCALL_SITES: reckon/crew/runs.py:2240, reckon/mcp_views.py:4240, reckon/crew_run_commands.py:1370, reckon/crew/obligations.py:1723\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2051-2191 derives every requested phase, 24-hour rate, estimate and stalled verdict, and :2240 adds that block to drain.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_drain_week_view.py:51-270 covers the quantitative gate, while wait-resolution-final-head.log and blocked-upstream-final-head.log document the identical base and head failure ID and the separate benchmark logs time the MCP read.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff changes reckon/crew/runs.py, tests/test_drain_week_view.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-week-view.html, each granted by prompt.txt:69-73.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_drain_week_view.py:94-136 uses literal expected counts and :211-214 requires both stale upstream outcomes, and blocked-upstream-negative-control.log shows the latter assertion failing when the repair is reversed.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/runs.py:2061-2191 keeps the summary in the existing drain owner, follows its pointer and ledger reading style, and adds no forbidden source name.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search in reckon/crew found drain owned by reckon/crew/runs.py:2194 and readiness owned by reckon/crew/queue_admission.py:1895, which the new view calls at reckon/crew/runs.py:2146.",
+  "review_run_id": "r-20261027T072914986518-review-of-drain-week-view-0471cbaad252",
+  "reviewed_assertions": [
+    "tests/test_drain_week_view.py:68 checks that fixture construction yields 120 records; it fails if the fixture size changes and is not counted as a product guard.",
+    "tests/test_drain_week_view.py:94-130 compares returned phase counts, held reasons, launches, landings and estimates against literal expected values; removing a phase bucket, changing a reason count, or using the wrong denominator makes a corresponding assertion fail.",
+    "tests/test_drain_week_view.py:131-136 requires the later of two verdicts and excludes ordinary pending upstream waits; taking the first log entry or listing all old waits makes it fail.",
+    "tests/test_drain_week_view.py:180-197 first verifies ready, pending and failed dependency outcomes against independent literals from the admission resolver, establishing the fixture's known present controls.",
+    "tests/test_drain_week_view.py:211-214 requires ready and failed old waits, with separate literal verdicts; reverting the failed-transition repair omits r-blocked and fails, as blocked-upstream-negative-control.log shows.",
+    "tests/test_drain_week_view.py:243-245 fails if a landed run uses its old dispatch stamp for recent launches or omits a recent landing.",
+    "tests/test_drain_week_view.py:252 fails if zero landings produces an estimate or raises on division.",
+    "tests/test_drain_week_view.py:267-270 requires 250 queued and 250 upstream pointers in both MCP calls and fails if either call takes 30 seconds or more.",
+    "No added assertion compares a returned value with the same mutable value passed to the code under test; the expected phase counts, outcomes, stamps and verdicts are literals or separately specified fixture facts."
+  ],
+  "reviewed_base_sha": "25f6ed74bf8142b0a219e9aeabdc00bcc88f8d9a",
+  "reviewed_head_sha": "0471cbaad2527877aff2c55137e22332e217a506",
+  "reviewed_node": "drain-week-view",
+  "reviewed_run_id": "r-20261027T050146365874-drain-week-view",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T07:42:09.909214+00:00",
+  "total": 118
+}
