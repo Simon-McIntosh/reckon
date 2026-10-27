@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "difference of the reviewed run's own arms: after_suite records exit_status 0, completed true, failure_count 0, failure_ids [] at 91faa98c9 (logs/after-arm2.log ends '5 passed in 1.94s' / 'EXIT=0', and I re-ran the same file at head 059099e684 with 5 passed EXIT=0); baseline_suite records exit_status 4, completed false, failure_count 0, failure_ids [] at 9e363fe50 because tests/test_a_carried_finding_reaches_the_node.py does not exist at base (logs/baseline-arm.log: 'ERROR: file or directory not found' / 'no tests ran' / 'EXIT=4'). The head arm is clean, so no failure is added.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:742",
+    "reckon/crew_run_commands.py:156",
+    "reckon/crew_run_commands.py:76",
+    "reckon/crew_run_commands.py:167",
+    "reckon/crew_dispatch_commands.py:2648"
+  ],
+  "completed_at": "2026-10-27T20:59:50.041Z",
+  "dispatched_at": "2026-10-27T20:51:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "106",
+      "severity": "non-blocking",
+      "text": "non-blocking: _compose_burst_refusal re-derives the review subject classification the verb already owns at reckon/crew_dispatch_commands.py:2508-2525, testing plan_slug/answer/dry_run/around_plan/paths/portfolio/sprint_id/rubric itself, so a subject added to the verb later would leave the cap silently skipped or wrongly applied for it; the duplication exists because crew_dispatch_commands.py was fenced to another session, and folding moves the consult into _run_review and the option into _review_options."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read both commits against c99e54475: 91faa98c99 deletes answer_finding and the second line-to-unit walk, adds answering_as and compose_burst_refusal, rewires the wrapper onto _run_review and consults the cap, keys with_carried_findings on finding ids, and adds two tests; 059099e684 updates the evidence fragment to match, 16 changed lines.",
+    "done_when": "the done_when names tests/test_a_carried_finding_reaches_the_node.py with a base-revision arm, a carry to its own section only, a refused third review naming the open findings, a fresh-edit reset, an importer arm and ruff; I re-ran the gate file at head and read 5 passed EXIT=0, the manifest records the importer arm is head-only by the done_when's own delegation of the full arms to the coordinator, and the base arm exits 4 because the test file does not exist at base.",
+    "goal": "the node goal is that a sighting answered `reckon crew review --answer FINDING --carried` is recorded against the unit its anchor names and reaches that section's next dispatch, and that a unit is capped at two reviews per edit burst; the delta at c99e54475..059099e684 makes the cap fire from the composing command (reckon/crew_run_commands.py:156), routes the carried answer through the verb's own branch (reckon/crew_run_commands.py:76) and appends each finding by id (reckon/crew/plan_review.py:2031), so all three clauses now hold.",
+    "manifest": "read the reviewed run's manifest; it records status complete, commits 51db21544, 45d5fb23c, c99e54475, 91faa98c9 and 059099e68, the 5-passed gate, a negative control at 2 failed/3 passed, a 299-passed importer subset, a baseline arm that ran no tests because the file does not exist at base, and an outside_scope naming the wrapper that the fence made necessary.",
+    "write_paths": "the reviewed run's fence names five paths (prompt.txt:77-83); the commits 91faa98c99 and 059099e684 change exactly plan_review.py, crew_run_commands.py, tests/test_a_carried_finding_reaches_the_node.py and the evidence fragment, and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_carried_finding_reaches_the_node.py:306 fails if the composing command stops consulting the cap, :445 fails if a second carried finding is dropped, and logs/negative-control2.log shows both delivery arms red when reckon/crew/dispatch_plan.py:742 is guarded off.",
+    "evidence": "the gate tests/test_a_carried_finding_reaches_the_node.py was re-run at head 059099e684 and reports 5 passed EXIT=0, logs/negative-control2.log reddens 2 arms EXIT=1, and logs/importer-subset-head2.log records 299 passed at head only while the done_when assigns the full importer arms to the coordinator.",
+    "fit": "the cap and the --carried option are still installed by replacing crew_review.callback at import in reckon/crew_run_commands.py:150-167, so the verb's surface depends on importing that module rather than on its own declaration.",
+    "goal_fidelity": "the carried answer now runs the review verb's own branch with the action named (reckon/crew_run_commands.py:76), the burst cap is consulted at reckon/crew_run_commands.py:156 before a whole-plan composition, and reckon/crew/plan_review.py:2031 keys the carried clause on finding ids so a second finding joins the heading rather than being dropped.",
+    "reuse": "the duplicated answer resolver and the duplicated line-to-unit walk are gone (reckon/crew/plan_review.py:1358 folds both readers over one walk), but reckon/crew_run_commands.py:106-122 restates the subject classification _run_review already owns at reckon/crew_dispatch_commands.py:2508-2525.",
+    "scope_discipline": "every path in the diff c99e54475..059099e684 is inside the fence quoted at prompt.txt:77-83 \u2014 plan_review.py, crew_run_commands.py, the node's test file and its evidence fragment \u2014 and reckon/crew_dispatch_commands.py is read through _run_review without being edited."
+  },
+  "node": "review-of-a-carried-finding-reaches-the-node-059099e68466",
+  "node:reviewed": "a-carried-finding-reaches-the-node",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a finding answered `reckon crew review --answer FINDING --carried` is recorded against the unit its anchor names and reaches that section's next dispatch, and that a unit is capped at two reviews per edit burst; the delta at c99e54475..059099e684 makes the cap fire from the composing command (reckon/crew_run_commands.py:156), routes the carried answer through the verb's own branch (reckon/crew_run_commands.py:76) and appends each finding by id (reckon/crew/plan_review.py:2031), so all three clauses now hold.\nVERDICT done_when: the done_when names tests/test_a_carried_finding_reaches_the_node.py with a base-revision arm, a carry to its own section only, a refused third review naming the open findings, a fresh-edit reset, an importer arm and ruff; I re-ran the gate file at head and read 5 passed EXIT=0, the manifest records the importer arm is head-only by the done_when's own instruction that the coordinator runs the full arms, and the base arm exits 4 because the test file does not exist at base.\nVERDICT write_paths: the reviewed run's fence names five paths (prompt.txt:77-83); the commits 91faa98c99 and 059099e684 change exactly plan_review.py, crew_run_commands.py, tests/test_a_carried_finding_reaches_the_node.py and the evidence fragment, and nothing else.\nVERDICT manifest: read the reviewed run's manifest; it records status complete, the five commits, the 5-passed gate, a negative control at 2 failed/3 passed, a 299-passed importer subset, a baseline arm that ran no tests because the file does not exist at base, and an outside_scope naming the wrapper the fence made necessary.\nVERDICT diff: read both commits against c99e54475; 91faa98c99 deletes answer_finding and the second line-to-unit walk, adds answering_as and compose_burst_refusal, rewires the wrapper onto _run_review and consults the cap, keys with_carried_findings on finding ids, and adds two tests; 059099e684 updates the evidence fragment to match.\nCALL_SITES: reckon/crew/dispatch_plan.py:742, reckon/crew_run_commands.py:156, reckon/crew_run_commands.py:76, reckon/crew_run_commands.py:167, reckon/crew_dispatch_commands.py:2648\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the carried answer runs the verb's own branch with the action named (reckon/crew_run_commands.py:76), the cap is consulted before a whole-plan composition (reckon/crew_run_commands.py:156), and reckon/crew/plan_review.py:2031 keys the carried clause on finding ids.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_carried_finding_reaches_the_node.py was re-run at head 059099e684 with 5 passed EXIT=0, logs/negative-control2.log reddens 2 arms EXIT=1, and logs/importer-subset-head2.log is head-only against a done_when that delegates the full importer arms to the coordinator.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff c99e54475..059099e684 is inside the fence at prompt.txt:77-83, with reckon/crew_dispatch_commands.py read rather than edited.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_carried_finding_reaches_the_node.py:306 fails if the composing command stops consulting the cap and :445 fails if a second carried finding is dropped, and logs/negative-control2.log shows both delivery arms red with the append at reckon/crew/dispatch_plan.py:742 guarded off.\nSCORE fit: 14\nJUSTIFICATION fit: the cap and the --carried option are installed by replacing crew_review.callback at import in reckon/crew_run_commands.py:150-167.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/plan_review.py:1358 folds both readers over one line walk, but reckon/crew_run_commands.py:106-122 restates the subject classification _run_review owns at reckon/crew_dispatch_commands.py:2508-2525.\nFINDING reckon/crew_run_commands.py:106 non-blocking: _compose_burst_refusal re-derives the review subject classification the verb already owns at reckon/crew_dispatch_commands.py:2508-2525, so a subject added to the verb later would leave the cap silently skipped or wrongly applied for it; folding moves the consult into _run_review and the option into _review_options.",
+  "review_run_id": "r-20261027T204825268256-review-of-a-carried-finding-reaches-the-node-059099e68466",
+  "reviewed_base_sha": "c99e54475b41e4c0b39c8fc34e94a3ab426117e5",
+  "reviewed_head_sha": "059099e68466770c940112593a4cb46731a02a79",
+  "reviewed_run_id": "r-20261027T123902746570-a-carried-finding-reaches-the-node",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T21:04:37+00:00",
+  "total": 99
+}
