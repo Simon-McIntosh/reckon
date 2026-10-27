@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T01:03:36.544Z",
+  "dispatched_at": "2026-10-27T00:57:42Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:286",
+      "id": "reasoning-1",
+      "reason": "\u00a710's only measure of the sweep is \"the sweep runs once per change in the station and in no subscriber\", which passes with just the review pass moved, so the dropped resume pass would ship undetected.",
+      "text": "\u00a710 writes \"Today each follower runs `resumption.sweep` (the review reflex, `recovery_review_acceptance.dispatch_awaiting_reviews`)\", equating the whole sweep with its second pass: `sweep`'s own docstring is \"Resume runs whose provider hold or declared external wait has ended\" (`reckon/crew/resumption.py:1779`), its resume pass loops the fleet and writes the `auto_resume` stamp the settle reader reads (`resumption.py:1817`, `:1575`), and only afterwards does it call `dispatch_awaiting_reviews` (`resumption.py:2034`); \u00a78 forbids the follower reading the fleet, so a node taking the parenthetical literally moves only the review pass into the station and leaves the resume pass with no home \u2014 killing auto-resume and the very `auto_resume` stamps \u00a710's advice-settle measure depends on",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:288",
+      "id": "reasoning-2",
+      "reason": "the beat must be stated to run the sweep (resume and review passes), not settle detection alone, or the section's own quiet-run and auto-resume behaviour fail.",
+      "text": "\u00a710 allocates \"the reflex on each change\" and gives the station's own beat only to \"settle detection\", but the sweep's resume pass is triggered by a hold or declared external wait that \"has ended\" on the clock, and the plan's own rationale two lines later says a clock expiry \"produces no change\" \u2014 so a run whose hold lapses while the fleet is quiet is never resumed, and the quiet-run done-when (\"reviewed once the window has passed, with no further change to its files\") cannot fire from a reflex that only runs on change",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "a468d0f67db0e9a11c38b44ce8a853de86a99acefe5f73d4896d06c322df23db",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 50,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T005700055350-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "c96244daac41f83c42cc6d56e85437a51721422f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol cited in \u00a710 exists at the cited module, and no plan/section href in \u00a710 needs extension resolution.",
+    "done_when": "pass \u2014 each measure in \u00a710 now carries a declared negative control: the sweep-count, the drain-settle (ownerless and unscoped cases), the advice-settle, the quiet-run, and the 60 s trace's positive control (a today's-reader trace that must name directories).",
+    "evidence_paths": "pass \u2014 \u00a710 names no session-scratch path; its measures are tests plus a 60 s `strace` the node records on its own gate log and manifest.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or changelog prose reach the symbols or comments \u00a710 describes; \"old \u00a781\" is prose cross-reference in the plan body, not code.",
+    "reasoning": "a finding \u2014 \u00a710 identifies `resumption.sweep` with the review reflex alone and gives that sweep only \"each change\", but `sweep` is a resume pass followed by a review pass, and a lapsed provider hold or declared external wait expires on the clock with no file changing.",
+    "single_goal": "pass \u2014 \u00a710 delivers one thing, the review-reflex and settle machinery running in the station, with the `_latest_resume_at` change in service of that settle rule.",
+    "wiring": "pass \u2014 s10's `plan-section-depends-on` lists s7 and s8, and every module, function and constant it cites (`resumption.sweep`, `recovery_review_acceptance.dispatch_awaiting_reviews`, `recovery_review_dispatch.review_settle_seconds_remaining`, `_latest_resume_at`, `resume_superseded_head`, `FOLLOWER_SETTLE_SAMPLE_SECONDS`, `_population_has_live_work`, `_check_settle`, `settle_populations`) resolves in the tree."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "7b35990397c3ab97c0ff0588864afcbf603aaf7f2b29b25b3d87fe81b45c7781",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T01:04:28.792246+00:00"
+}
