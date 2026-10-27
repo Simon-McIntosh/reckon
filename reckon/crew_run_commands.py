@@ -2115,6 +2115,49 @@ def crew_queue_drop(run_id, reason, project, pretty):
     _emit_crew_result(result, pretty)
 
 
+def _queue_hold_change(verb, run_id, plan, session, reason, project, pretty):
+    from reckon.crew import queue_edit
+    from reckon.crew.node import CrewError
+
+    if run_id:
+        _accept_a_matching_project(run_id, project)
+    try:
+        result = getattr(queue_edit, verb)(
+            run_id, plan=plan, session=session, reason=reason, project=project
+        )
+    except CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit_crew_result(result, pretty)
+
+
+@crew_queue.command(name="hold")
+@click.option("--run", "run_id", default=None, help="One waiting request to hold.")
+@click.option("--plan", default=None, help="Hold every waiting request of this plan.")
+@click.option("--session", default=None, help="Hold this session's waiting requests.")
+@click.option("--reason", default="", help="Why these requests are paused.")
+@click.option(
+    "--project", default=None, help="Project owning the request; cross-checks it."
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_queue_hold(run_id, plan, session, reason, project, pretty):
+    """Pause one waiting request, a plan's requests or a session's requests."""
+    _queue_hold_change("hold", run_id, plan, session, reason, project, pretty)
+
+
+@crew_queue.command(name="release")
+@click.option("--run", "run_id", default=None, help="One held request to release.")
+@click.option("--plan", default=None, help="Release this plan's held requests.")
+@click.option("--session", default=None, help="Release this session's held requests.")
+@click.option("--reason", default="", help="Why these requests resume.")
+@click.option(
+    "--project", default=None, help="Project owning the request; cross-checks it."
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_queue_release(run_id, plan, session, reason, project, pretty):
+    """Restore one held request, a plan's requests or a session's requests."""
+    _queue_hold_change("release", run_id, plan, session, reason, project, pretty)
+
+
 def crew_repair_status(run_id, status, reason, pretty):
     """Replace a manifest's status word, keeping the file as delivered."""
     crew_module, _ = _crew_modules()

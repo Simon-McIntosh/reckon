@@ -1411,8 +1411,10 @@ def _read_legacy_project_resource(
         data["type"] = resource_type
         data["version"] = version
         data["compatibility_warnings"] = [
-            "Projected from the legacy aggregate index; named writes require "
-            "the legacy index path until distributed activation."
+            (
+                "Projected from the legacy aggregate index; named writes require "
+                "the legacy index path until distributed activation."
+            )
         ]
     return data, version
 
@@ -1430,6 +1432,11 @@ def _require_section_resource(
             "view='section' requires one selected plan resource.",
             "Pass project and slug, or a typed plan resource selector.",
         )
+
+
+def _raise_view_request_error(code: str, detail: str) -> None:
+    """Raise a typed read refusal outside the view's error-handling body."""
+    raise ViewRequestError(code, detail)
 
 
 def _read_plan_view(
@@ -1472,13 +1479,13 @@ def _read_plan_view(
         if resource is not None:
             selector = normalize_selector(resource, fallback_project=project)
             if project not in (None, selector.project):
-                raise ViewRequestError(
+                _raise_view_request_error(
                     "invalid_resource",
                     "project and resource.project must name the same project.",
                 )
         elif slug is None:
             if not project or project == "*":
-                raise ViewRequestError(
+                _raise_view_request_error(
                     "invalid_resource",
                     "A project is required for progressive discovery views.",
                 )
@@ -1532,7 +1539,7 @@ def _read_plan_view(
             )
         else:
             if not project or project == "*":
-                raise ViewRequestError(
+                _raise_view_request_error(
                     "invalid_resource",
                     "A project is required for progressive resource views.",
                 )
@@ -1553,7 +1560,7 @@ def _read_plan_view(
             "research",
             "evidence",
         }:
-            raise ViewRequestError(
+            _raise_view_request_error(
                 "invalid_resource",
                 f"{selector.type} resources do not have archived typed identities.",
             )
@@ -2414,6 +2421,8 @@ def _crew(
         "queue-edit",
         "queue-reprioritise",
         "queue-drop",
+        "queue-hold",
+        "queue-release",
     ]
     | None = None,
     run_id: str | None = None,
@@ -2493,6 +2502,8 @@ def _crew(
     ``brief_path``, ``done_when``, ``write_paths``, ``time_budget``,
     ``backend``, ``model``), ``queue-reprioritise`` (``run_id``,
     ``priority``, ``reason``) and ``queue-drop`` (``run_id``, ``reason``),
+    plus ``queue-hold`` and ``queue-release`` (one of ``run_id``, ``plan`` or
+    ``session``, with optional ``reason``),
     each refusing a request that has left the waiting phases. A
     refused ``complete`` or ``land`` carries every failing guard in ``guards``.
     ``directory`` reads every live coordinator across the workstation, or one
@@ -3132,10 +3143,10 @@ def _audit_read(
             checked += 1
             continue
         slug = state.slug or html_file.stem
-        for warning in state.compatibility_warnings:
-            compatibility_records.append(
-                (slug, str(html_file.relative_to(docs_dir)), warning)
-            )
+        compatibility_records.extend(
+            (slug, str(html_file.relative_to(docs_dir)), warning)
+            for warning in state.compatibility_warnings
+        )
         checked += 1
         try:
             state.validate_for_write()
@@ -3153,15 +3164,17 @@ def _audit_read(
     findings: list[dict[str, Any]] = []
     project_state_findings = audit_project_state(docs_dir, project)
     if project_state_findings:
-        for item in project_state_findings:
-            findings.append(
+        findings.extend(
+            [
                 _finding(
                     "project-state",
                     item["code"],
                     item["severity"],
                     item["message"],
                 )
-            )
+                for item in project_state_findings
+            ]
+        )
         return {
             "project": project,
             "checked": checked,
@@ -3303,15 +3316,15 @@ def _audit_read(
                     },
                 )
             )
-    except Exception:  # noqa: BLE001 — audit should degrade, not fail
-        pass
+    except Exception as exc:  # noqa: BLE001 — audit should degrade, not fail
+        _LOGGER.warning("plan hygiene audit unavailable: %s", exc)
     try:
         link_findings = audit_links(html_files, docs_dir, project=project)
         for linked_path, path_findings in link_findings.items():
             rel = str(linked_path.relative_to(docs_dir))
             slug = linked_path.stem
-            for item in path_findings:
-                findings.append(
+            findings.extend(
+                [
                     _finding(
                         "references",
                         item.code,
@@ -3320,9 +3333,11 @@ def _audit_read(
                         slug=slug,
                         path=rel,
                     )
-                )
-    except Exception:  # noqa: BLE001 — audit should degrade, not fail
-        pass
+                    for item in path_findings
+                ]
+            )
+    except Exception as exc:  # noqa: BLE001 — audit should degrade, not fail
+        _LOGGER.warning("link audit unavailable: %s", exc)
     # External (cross-project) refs: doccheck's per-file pass is corpus-local
     # by design, so qualified refs are resolved here, where mounts are known.
     for artifact in plans:

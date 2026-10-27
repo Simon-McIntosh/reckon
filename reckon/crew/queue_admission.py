@@ -45,6 +45,7 @@ DEFAULT_ADMIT_INTERVAL_SECONDS = 5.0
 #: pass admits from this phase, and every reader that reports where a request
 #: stands reads its place through :func:`queued_placements`.
 QUEUED_PHASE = "queued"
+HELD_PHASE = "held"
 LAUNCH_FAILED_PHASE = "launch-failed"
 #: The request-phase vocabulary, one place every reader of a request's phase
 #: takes its words from. ``awaiting-upstream`` is a request whose section
@@ -2230,7 +2231,11 @@ def fair_share_admission_order(
     returned unchanged, so an install that sets none keeps exactly the order it
     had.
     """
-    order = queue_order.admission_order(queued, live, now=now)
+    order = queue_order.admission_order(
+        queued,
+        [pointer for pointer in live if pointer.get("phase") != HELD_PHASE],
+        now=now,
+    )
     weights = _fair_use_weights(queued, config_for=config_for)
     if weights is None:
         return order
@@ -2285,7 +2290,11 @@ def queued_placements(
     placements: dict[str, dict[str, Any]] = {}
     session_rank: dict[str, int] = {}
     project_rank: dict[str, int] = {}
-    details = queue_order.admission_order_details(queued, pointers, now=moment)
+    details = queue_order.admission_order_details(
+        queued,
+        [pointer for pointer in pointers if pointer.get("phase") != HELD_PHASE],
+        now=moment,
+    )
     reasons = {str(pointer.get("run_id") or ""): reason for pointer, reason in details}
     weights = _fair_use_weights(queued, config_for=config_for)
     order = [pointer for pointer, _reason in details]

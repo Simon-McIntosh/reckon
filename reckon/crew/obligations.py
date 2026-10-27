@@ -1613,8 +1613,36 @@ def _obligations_view(
     # it, so every pointer is read once and no two duties can disagree about
     # which request goes first. A project with nothing queued orders nothing.
     placements = queue_admission.queued_placements(live_pointers, now=now)
+    for pointer in live_pointers:
+        if pointer.get("phase") != queue_admission.HELD_PHASE:
+            continue
+        if str(pointer.get("session") or "") != session:
+            continue
+        hold = pointer.get("queue_hold") or {}
+        started = parse_utc(hold.get("started_at"))
+        if started is None or (now - started).total_seconds() <= 24 * 3600:
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        items.append(
+            {
+                "kind": "run-held",
+                "run_id": run_id,
+                "node": str((pointer.get("node") or {}).get("id") or ""),
+                "plan": str(
+                    pointer.get("plan") or (pointer.get("node") or {}).get("plan") or ""
+                ),
+                "age_seconds": int((now - started).total_seconds()),
+                "reason": str(hold.get("reason") or ""),
+                "next_command": f"reckon crew queue release --run {run_id}",
+            }
+        )
     for row in _classified_rows(project):
         if str(row.get("session") or "") != session:
+            continue
+        if (
+            pointers.get(str(row.get("run_id") or ""), {}).get("phase")
+            == queue_admission.HELD_PHASE
+        ):
             continue
         classification = str(row.get("classification") or "")
         recovery_classification = str(row.get("recovery_classification") or "")
