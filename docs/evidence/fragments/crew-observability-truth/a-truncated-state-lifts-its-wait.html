@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="reckon-type" content="fragment">
+<meta name="plan" content="crew-observability-truth">
+<title>A truncated scheduler state lifts its wait</title>
+</head>
+<body>
+<section id="a-truncated-state-lifts-its-wait">
+<h2>A truncated scheduler state lifts its wait</h2>
+<p>The base readers compared a stripped probe token with each declared terminal
+state for equality. A probe printing <code>OUT_OF_ME+</code> therefore failed to
+match <code>OUT_OF_MEMORY</code> in both readers: the new test recorded two failing
+truncated cases and six passing controls at base
+<code>165f4ac8ac736d36c251a897ba5cb81e5e8701c0</code>.</p>
+<p>Commit <code>8a1a9be8ddc846fd4a1cf9e0efdfd52a10589fdd</code> matches a
+probe token ending in <code>+</code> to terminal states it prefixes. Full states
+still use equality. The eight-case check covers both wait readers, including a
+nonmatching truncated token and an untruncated partial token.</p>
+<p>The focused check passed 8 tests. The wait importer gate passed 60 tests.
+Restoring equality-only matching after stripping <code>+</code> made exactly the
+two truncated cases fail again, with six controls passing. The check, mutation
+and importer logs are in the worker run directory.</p>
+</section>
+</body>
+</html>
