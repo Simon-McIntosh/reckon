@@ -65,6 +65,11 @@
     <p>Landed at merge <code>54290305f</code> (head <code>ae30d3614</code>, run <code>r-20261026T221905269639-drain-lists-unloaded</code>). The drain view lists each implementable section with no request and no landed run as unloaded. A run counts as landed only when its promoted revision is an ancestor of HEAD. Neither the drain view nor the obligations read writes a file.</p><p>Measure: the coordinator ran the 535- and 536-file importer arms. At <code>c5a90476d</code> they found a real regression: the obligations read created a ledger sqlite cache, failing three times out of three alone at head and passing at base. It is gone at <code>ae30d3614</code>. Two producer-timing flakes and one load-sensitive §3 fixture test remain, each passing alone at base and head. The reviews went from a blocking finding (unlanded ledger rows suppressed the unloaded flag) to 115 after the repair.</p>
   </section>
 
+  <section id="s10-queue-hold-release">
+    <h2>§10 — hold and release keep a request&#x27;s place</h2>
+    <p>Landed at merge <code>3e92d1cfe</code> (head <code>53b613354</code>, run <code>r-20261027T021411449673-queue-hold-release</code>, codex). <code>crew queue hold</code> and <code>release</code> act on one request, a plan or a session. A held request is skipped while a lower-ranked one launches, accrues no starvation age, and on release returns to its prior phase and rank. A hold on a launched run is refused, naming <code>crew stop</code>. A hold older than 24 hours appears once on its session's obligations. <code>held</code> joins the request-phase vocabulary, and the recovery classification reads a held request as held, not running. Each verb has an MCP action returning the CLI's JSON.</p><p>Measure: the coordinator's importer arms over 302 and 303 files show 16 base failures, 5 at head, and zero added. The review scored 108, at the floor, with two non-blocking findings. The run was blocked twice on scope: once on the classification module, which was widened, and once by a re-dispatch deadlock that §17 now fixes.</p>
+  </section>
+
 </main>
 </body>
 </html>
