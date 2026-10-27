@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "The reviewed manifest records baseline_suite and after_suite as none. Zero is the observed failing-id count in the five-arm head gate only; the import-test suite delta is unmeasured and is a blocking finding.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1765",
+    "reckon/crew/dispatch.py:2098",
+    "reckon/crew/queue_admission.py:2508",
+    "reckon/crew/dispatch.py:512",
+    "reckon/crew/runs.py:1157",
+    "reckon/crew/dispatch_claims.py:459"
+  ],
+  "completed_at": "2026-10-27T05:18:30Z",
+  "dispatched_at": "2026-10-27T05:12:22Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T045403981624-one-wait-blocks-only-its-request/manifest.md",
+      "line": "21",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite and after_suite are both none, so the required import-test base/head failure delta is unmeasured and cannot support a zero-added-failures claim."
+    },
+    {
+      "file": "tests/test_dead_wait_blocks_only_its_request.py",
+      "line": "254",
+      "severity": "blocking",
+      "text": "blocking: existence alone would still pass if refusal left the pointer in starting phase; require queued phase after the refusal to guard waiting-request restoration."
+    },
+    {
+      "file": "tests/test_dead_wait_blocks_only_its_request.py",
+      "line": "118",
+      "severity": "non-blocking",
+      "text": "non-blocking: exempted because the run id equals the value supplied to dispatch and is not independent, while the negative control proves the foreign broken wait still makes this arm fail."
+    },
+    {
+      "file": "tests/test_dead_wait_blocks_only_its_request.py",
+      "line": "243",
+      "severity": "non-blocking",
+      "text": "non-blocking: exempted because this run id repeats the input passed to dispatch and line 245 separately checks that the upstream pointer exists."
+    },
+    {
+      "file": "tests/test_dead_wait_blocks_only_its_request.py",
+      "line": "244",
+      "severity": "non-blocking",
+      "text": "non-blocking: exempted because this wait ref repeats the after input and lines 214 and 245 independently establish upstream pointer visibility."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "commits 65ea8e4 and 9013c654 were read against aaa14bc5; the first changes three production files and one test, and the second adds only the evidence fragment.",
+    "done_when": "prompt.txt:108 requires five arms and an importing-test delta; head-five-arms.log records 5 passed, negative-control.log records the restored-raise failure, but manifest.md:21-22 records no suite arms.",
+    "goal": "prompt.txt:30 asks for isolation of broken or in-flight waits; queue_admission.py:1316 and dispatch.py:1508,2098 implement the three stated paths.",
+    "manifest": "manifest.md:5-23 reports complete with two commits, five passing focused arms, a red negative control and no baseline_suite or after_suite.",
+    "write_paths": "manifest.md:3 declares six scoped paths and git diff aaa14bc5..9013c654 changes five, all declared."
+  },
+  "justifications": {
+    "durability": "tests/test_dead_wait_blocks_only_its_request.py:118-179 guards the wait, cycle and claim regressions, while line 254 checks existence without requiring the refused request to return to queued phase.",
+    "evidence": "head-five-arms.log proves five passes and negative-control.log proves one restored-raise failure, but manifest.md:21-22 supplies no importing-test base/head gate receipts.",
+    "fit": "reckon/crew/dispatch.py:1211 follows existing context-manager cleanup in dispatch_claims.py:873, and the changed production names describe behavior rather than plan stages.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1316 isolates an existing broken wait while dispatch.py:1508,2098 preserves the admitted pointer and node.py:1529 releases blocked-upstream claims.",
+    "reuse": "the search for refusal cleanup found dispatch_claims.py:873 and queue_admission.py:854; dispatch.py:1212 specializes that existing claim cleanup for an admitted pointer instead of adding a separate queue owner.",
+    "scope_discipline": "the five paths in git diff aaa14bc5..9013c654 are all within manifest.md:3, and the evidence fragment records only this node's result."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks for isolation of broken or in-flight waits; queue_admission.py:1316 and dispatch.py:1508,2098 implement the three stated paths.\nVERDICT done_when: prompt.txt:108 requires five arms and an importing-test delta; head-five-arms.log records 5 passed, negative-control.log records the restored-raise failure, but manifest.md:21-22 records no suite arms.\nVERDICT write_paths: manifest.md:3 declares six scoped paths and git diff aaa14bc5..9013c654 changes five, all declared.\nVERDICT manifest: manifest.md:5-23 reports complete with two commits, five passing focused arms, a red negative control and no baseline_suite or after_suite.\nVERDICT diff: commits 65ea8e4 and 9013c654 were read against aaa14bc5; the first changes three production files and one test, and the second adds only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:1765, reckon/crew/dispatch.py:2098, reckon/crew/queue_admission.py:2508, reckon/crew/dispatch.py:512, reckon/crew/runs.py:1157, reckon/crew/dispatch_claims.py:459\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1316 isolates an existing broken wait while dispatch.py:1508,2098 preserves the admitted pointer and node.py:1529 releases blocked-upstream claims.\nSCORE evidence: 11\nJUSTIFICATION evidence: head-five-arms.log proves five passes and negative-control.log proves one restored-raise failure, but manifest.md:21-22 supplies no importing-test base/head gate receipts.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five paths in git diff aaa14bc5..9013c654 are all within manifest.md:3, and the evidence fragment records only this node's result.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_dead_wait_blocks_only_its_request.py:118-179 guards the wait, cycle and claim regressions, while line 254 checks existence without requiring the refused request to return to queued phase.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:1211 follows existing context-manager cleanup in dispatch_claims.py:873, and the changed production names describe behavior rather than plan stages.\nSCORE reuse: 18\nJUSTIFICATION reuse: the search for refusal cleanup found dispatch_claims.py:873 and queue_admission.py:854; dispatch.py:1212 specializes that existing claim cleanup for an admitted pointer instead of adding a separate queue owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T045403981624-one-wait-blocks-only-its-request/manifest.md:21 blocking: baseline_suite and after_suite are both none, so the required import-test base/head failure delta is unmeasured and cannot support a zero-added-failures claim.\nFINDING tests/test_dead_wait_blocks_only_its_request.py:254 blocking: existence alone would still pass if refusal left the pointer in starting phase; require queued phase after the refusal to guard waiting-request restoration.\nFINDING tests/test_dead_wait_blocks_only_its_request.py:118 non-blocking: exempted because the run id equals the value supplied to dispatch and is not independent, while the negative control proves the foreign broken wait still makes this arm fail.\nFINDING tests/test_dead_wait_blocks_only_its_request.py:243 non-blocking: exempted because this run id repeats the input passed to dispatch and line 245 separately checks that the upstream pointer exists.\nFINDING tests/test_dead_wait_blocks_only_its_request.py:244 non-blocking: exempted because this wait ref repeats the after input and lines 214 and 245 independently establish upstream pointer visibility.\n",
+  "review_run_id": "r-20261027T051113789985-review-of-one-wait-blocks-only-its-request-9013c654472f",
+  "reviewed_base_sha": "aaa14bc5a7c05e0cda1a963ee28b623600bce014",
+  "reviewed_head_sha": "9013c654472f1fbbfcb959debbd3cbc32b0ffd60",
+  "reviewed_run_id": "r-20261027T045403981624-one-wait-blocks-only-its-request",
+  "scores": {
+    "durability": 14,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T05:20:27.236628+00:00",
+  "total": 100
+}
