@@ -93,11 +93,11 @@ def _node(name: str, *, section: str = "dispatch") -> TaskNode:
     )
 
 
-def _selection(backend: str) -> dict:
+def _selection(backend: str, *, model: str = "") -> dict:
     return {
         "action": "route",
         "backend": backend,
-        "model": "requested-model" if backend == METERED else "local-model",
+        "model": model or ("requested-model" if backend == METERED else "local-model"),
         "reason": f"fixture chooses {backend}",
         "offered": [],
     }
@@ -111,6 +111,7 @@ def _dispatch(
     backend: str = METERED,
     section: str = "dispatch",
     named: bool = False,
+    picked_model: str = "",
 ):
     return dispatch_module.dispatch(
         node=_node(name, section=section),
@@ -120,7 +121,7 @@ def _dispatch(
         session=SESSION,
         route="deterministic" if named else "picker",
         backend_override=backend if named else None,
-        picker_selection=None if named else _selection(backend),
+        picker_selection=None if named else _selection(backend, model=picked_model),
         watch_required=False,
         watch_override=True,
     )
@@ -257,6 +258,54 @@ def test_metered_wait_keeps_its_pick_and_launches_after_upstream_lands(
     assert launched["backend"] == METERED
     assert launched["picker_selection"]["reason"] == "fixture chooses beta"
     assert launched["admit_request"]["backend"] == METERED
+
+
+def test_queued_pick_launches_the_selected_nondefault_model(
+    repository: Path,
+    routing: tuple[dict, dict],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config, _state = routing
+    config["backends"][METERED].update(
+        {"lane": METERED, "model_key": "sol", "model": "model-sol"}
+    )
+    config["lanes"] = {
+        METERED: {
+            "launch": "in-harness",
+            "sandbox": "worktree-full",
+            "time_budget": "25m",
+            "budget_check": True,
+            "default_model": "sol",
+            "models": {
+                "sol": {"model": "model-sol"},
+                "astra": {"model": "model-astra"},
+            },
+        }
+    }
+    catalogue = repository.parent / "model-catalogue.yaml"
+    catalogue.write_text(
+        json.dumps({"version": 1, "lanes": config["lanes"]}), encoding="utf-8"
+    )
+    monkeypatch.setenv("RECKON_MODEL_CATALOGUE", str(catalogue))
+    _declare_wait(repository)
+
+    with pytest.raises(LaneHeld) as held:
+        _dispatch(
+            repository,
+            config,
+            "picked-model-wait",
+            section="waiting",
+            picked_model="astra",
+        )
+    request_id = held.value.queued["run_id"]
+    assert runs.read_pointer(request_id)["picker_selection"]["model"] == "astra"
+
+    _land_upstream(repository)
+    assert _admit(config)["launched"] == [request_id]
+    launched = runs.read_pointer(request_id)
+    assert launched["backend"] == METERED
+    assert launched["model_key"] == "astra"
+    assert launched["agent"]["model"] == "model-astra"
 
 
 def test_pace_hold_falls_back_when_a_picked_request_becomes_ready(
