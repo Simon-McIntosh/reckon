@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/_backends.py:2364",
+    "reckon/flight.py:1437"
+  ],
+  "completed_at": "2026-10-27T09:50:29.236Z",
+  "dispatched_at": "2026-10-27T09:39:01Z",
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": 304,
+      "severity": "non-blocking",
+      "text": "the shape check refuses only str/bytes and non-iterables, so a mapping (worker_mcp_servers: {imas-cx: null}) or a tuple is admitted and its items are seeded as server names, although the goal and the docstring at reckon/_worker_fence.py:292 say a value that is not a list is refused; a mapping config silently selects servers of a shape nothing validated, the same class of silent coercion the node removed for bare strings."
+    },
+    {
+      "file": "tests/test_worker_mcp_servers.py",
+      "line": 245,
+      "severity": "non-blocking",
+      "text": "the assertion compares resolved.config[\"worker_mcp_servers\"] against the literal the test itself passed in, so the two sides move together; the regression the node guards against (the schema refusal) reddens inside _resolve at line 244 rather than here, and the independent evidence for the seeding half is the settings assertions at lines 251-252."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "two production call sites reach the change: reckon/_backends.py:2364 seeds the run home from the reader, and reckon/flight.py:1437 validates the layer.",
+    "diff": "read commit d24d71b5b against 9e14c1d1e: one commit, four files, 189 insertions and 25 deletions, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_worker_mcp_servers.py and the two refusal/resolve cases plus the reversed assertion, all present in the diff; the gate named in the manifest also runs tests/test_flight.py and both arms are logged with revisions and EXIT= lines.",
+    "goal": "the node's goal is that a project can declare worker_mcp_servers as a reckon-owned flight key and a non-list value is refused; reckon/flight.py:783 _validate_worker_mcp_servers and reckon/_worker_fence.py:290 deliver both halves, but the refusal covers only str/bytes/non-iterables while a mapping or tuple is still admitted.",
+    "manifest": "read; it records 9 passed at head against 7 at base on tests/test_worker_mcp_servers.py, the 93/91 pair with tests/test_flight.py, the mutation red log, and names every log path.",
+    "write_paths": "read the dispatch scope at the reviewed run's prompt.txt:69-74 and the manifest's declared paths; the four changed paths (reckon/flight.py, reckon/_worker_fence.py, tests/test_worker_mcp_servers.py, the evidence fragment) are all inside them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a project can declare worker_mcp_servers as a reckon-owned flight key and that a non-list value is refused; reckon/flight.py:783 _validate_worker_mcp_servers and reckon/_worker_fence.py:290 deliver both halves, but the refusal covers only str/bytes and non-iterables, so a mapping or tuple is still admitted.\nVERDICT done_when: the done_when names tests/test_worker_mcp_servers.py and the resolve, refusal and reversed-assertion cases are all present in the diff; the manifest's gate also runs tests/test_flight.py and both arms are logged with revisions and EXIT= lines.\nVERDICT write_paths: read the dispatch scope in the reviewed run's prompt.txt:69-74; every one of the four changed paths lies inside it, and the plan's stale _backends.py spelling is recorded in the manifest's outside_scope.\nVERDICT manifest: read; it records 9 passed at head against 7 at base on tests/test_worker_mcp_servers.py, the 93/91 pair with tests/test_flight.py, the mutation red log, and names every log path.\nVERDICT diff: read commit d24d71b5b against 9e14c1d1e, one commit, four files, 189 insertions and 25 deletions, all inside the declared scope.\nCALL_SITES: reckon/_backends.py:2364, reckon/flight.py:1437\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/flight.py:783 holds the key out of the generated model and validates it, and reckon/_backends.py:2364 seeds the run home, but reckon/_worker_fence.py:304 accepts any non-string iterable where the goal says a non-list is refused.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log and gate-pair-head.log each carry their revision, tree, literal command and an EXIT= line, and negative-control.log shows the FAILED id, but the done_when's arm over every test file importing a changed module stops at the two named files.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all four changed paths in d24d71b5b sit inside the five declared write paths, and the plan's stale reckon/_backends.py spelling is noted in the manifest rather than acted on.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_worker_mcp_servers.py:268 fails if the WorkerMcpServersError raise at reckon/_worker_fence.py:305 is reverted to a silent return, and negative-control.log proves the schema-view pop at reckon/flight.py:421 is load-bearing.\nSCORE fit: 19\nJUSTIFICATION fit: _validate_worker_mcp_servers at reckon/flight.py:783 mirrors _validate_sprint_recent_days at reckon/flight.py:765 and carries no plan label or ticket reference.\nSCORE reuse: 19\nJUSTIFICATION reuse: the search for an existing owner of reckon-owned-key admission found the per-key validator family at reckon/flight.py:765 and :804 and no generic registry; the new validator delegates the shape check to the one reader at reckon/_worker_fence.py:290 rather than re-implementing it.\nFINDING reckon/_worker_fence.py:304 non-blocking: the shape check refuses only str/bytes and non-iterables, so a mapping or a tuple is admitted and its items are seeded as server names, although the goal and the docstring at line 292 say a value that is not a list is refused.\nFINDING tests/test_worker_mcp_servers.py:245 non-blocking: the assertion compares the resolved value against the literal the test itself passed in, so it moves with its input, and the regression it guards reddens inside _resolve at line 244 instead.",
+  "review_run_id": "r-20261027T093107975505-review-of-a-project-can-name-its-worker-mcp-servers-d24d71b5bfb5",
+  "reviewed_base_sha": "9e14c1d16894b4de59ade66b54df7f4356ddcac2",
+  "reviewed_failure_derivation": "baseline_suite and after_suite in the reviewed manifest each record completed=true, exit_status=0, failure_count=0 and failure_ids=[] at 9e14c1d1e and d24d71b5b, so no failure id is added by the change.",
+  "reviewed_head_sha": "d24d71b5bfb57656d7706edccd015ca061c13729",
+  "reviewed_run_id": "r-20261027T090503642997-a-project-can-name-its-worker-mcp-servers",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T09:53:47.869152+00:00",
+  "total": 107
+}
