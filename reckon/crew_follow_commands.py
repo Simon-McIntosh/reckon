@@ -26,6 +26,7 @@ from reckon.crew.follower_reload import (  # noqa: F401 - re-exported for caller
     _StampPoll,
 )
 from reckon.crew.session_host import SETTLE_ENV, SETTLED_EXIT_CODE, owner_alive
+from reckon.crew.station_subscriber import STATION_GAP_EVENT, STATION_STALE_EVENT
 from reckon.crew_dispatch_commands import _crew_modules, _emit_crew_result, crew
 from reckon.env_duration import read_duration_override
 
@@ -2107,7 +2108,7 @@ def _follow_watch_lines(
                 if line is not None:
                     station_stale_reported = True
                     yield {
-                        "event": "station-stale",
+                        "event": STATION_STALE_EVENT,
                         "project": project,
                         "session": session or "",
                         "run_id": None,
@@ -3311,6 +3312,17 @@ def crew_follow(
                 if json_output:
                     _emit_crew_result(event, pretty, observation=True)
                 elif pane_line:
+                    _echo_follow_line(replay_dim(str(event.get("line") or "")))
+                continue
+            if event.get("event") in (STATION_GAP_EVENT, STATION_STALE_EVENT):
+                # A station line is about the pane's place rather than a run:
+                # it carries a sentence to print, not a transition to draw.
+                # Handed to the transition painter it would print an empty
+                # clock and an unknown run, so the sentence the station wrote
+                # is what text mode prints; JSON mode emits the object.
+                if json_output:
+                    _emit_crew_result(event, pretty, observation=True)
+                else:
                     _echo_follow_line(replay_dim(str(event.get("line") or "")))
                 continue
             if json_output:

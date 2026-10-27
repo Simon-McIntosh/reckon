@@ -44,6 +44,12 @@ STALE_HEARTBEAT_SECONDS = 90.0
 HISTORY_ROWS = 100
 HISTORY_SECONDS = 4 * 60 * 60
 
+# Two rows a subscriber emits that carry a sentence to print rather than a run
+# transition to draw: a place older than retention, resumed at the oldest event
+# still held, and a station whose heartbeat has gone quiet.
+STATION_GAP_EVENT = "station-gap"
+STATION_STALE_EVENT = "station-stale"
+
 SKIPPED_DAYS_TEXT = (
     "── {days} day(s) of events are older than the station keeps; "
     "resuming at its oldest retained event ──"
@@ -337,7 +343,7 @@ class StationSubscriber:
         if skipped_days:
             delivered.append(
                 {
-                    "event": "station-gap",
+                    "event": STATION_GAP_EVENT,
                     "project": self.project,
                     "session": self.session or "",
                     "run_id": None,
@@ -404,7 +410,7 @@ class StationSubscriber:
             if line is not None:
                 stale_reported = True
                 yield {
-                    "event": "station-stale",
+                    "event": STATION_STALE_EVENT,
                     "project": self.project,
                     "session": self.session or "",
                     "run_id": None,

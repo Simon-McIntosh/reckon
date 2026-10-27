@@ -20,6 +20,7 @@ from pathlib import Path
 from reckon.crew import station_store, ticker
 from reckon.crew.station_subscriber import (
     SKIPPED_DAYS_TEXT,
+    STALE_HEARTBEAT_TEXT,
     StationSubscriber,
     stale_heartbeat_line,
 )
@@ -366,6 +367,73 @@ def test_two_session_less_subscribers_over_two_projects_hold_separate_places(
     assert beta_row["cursor"] == beta_id
     assert alpha_row["checkpoint"]["reported"] == {"r-alpha": "completed_unpromoted"}
     assert beta_row["checkpoint"]["reported"] == {"r-beta": "completed_unpromoted"}
+
+
+def test_a_station_line_reaches_the_pane_as_the_sentence_it_carries(
+    tmp_path, monkeypatch
+) -> None:
+    """The skip line and the stale line are sentences, not run rows.
+
+    Neither event carries a transition; each carries a sentence in ``line``.
+    Drawn through the transition painter they print an empty clock and an
+    unknown run, so what a reader sees is asserted on the printed pane rather
+    than on the payload the subscriber emitted.
+    """
+    import json
+
+    from click.testing import CliRunner
+
+    from reckon import cli as cli_module
+    from reckon import crew_follow_commands as follow
+
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    skipped = SKIPPED_DAYS_TEXT.format(days=16)
+    stale = STALE_HEARTBEAT_TEXT.format(age="10m")
+    events = [
+        {
+            "event": "station-gap",
+            "project": PROJECT,
+            "session": SESSION,
+            "run_id": None,
+            "skipped_days": 16,
+            "line": skipped,
+            "observed_at": BASE.isoformat(),
+        },
+        {
+            "event": "station-stale",
+            "project": PROJECT,
+            "session": SESSION,
+            "run_id": None,
+            "line": stale,
+            "observed_at": BASE.isoformat(),
+        },
+    ]
+    monkeypatch.setattr(
+        follow, "_follow_watch_lines", lambda *_a, **_kw: (dict(e) for e in events)
+    )
+    monkeypatch.setattr(follow, "_hand_off_from_follower", lambda *_a: False)
+
+    def render(*extra: str) -> list[str]:
+        arguments = ["crew", "follow", "--project", PROJECT, "--session", SESSION]
+        arguments.extend(extra)
+        result = CliRunner().invoke(cli_module.main, arguments)
+        assert result.exit_code == 0, result.output
+        return result.output.splitlines()
+
+    pane = render()
+    assert skipped in "\n".join(pane), pane
+    assert stale in "\n".join(pane), pane
+    drawn = [line for line in pane if skipped in line or stale in line]
+    for line in drawn:
+        assert "->" not in line, "a station sentence was drawn as a run row"
+        assert "unknown" not in line
+
+    stream = [json.loads(line) for line in render("--json")]
+    assert [event["event"] for event in stream] == ["station-gap", "station-stale"]
+    assert [event["line"] for event in stream] == [skipped, stale]
 
 
 def test_a_day_file_that_cannot_be_opened_is_skipped(tmp_path, monkeypatch) -> None:
