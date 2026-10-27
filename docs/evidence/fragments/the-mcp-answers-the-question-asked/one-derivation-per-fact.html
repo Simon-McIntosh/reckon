@@ -1,0 +1,67 @@
+<section data-reckon="fragment" id="one-derivation-per-fact" data-node="one-derivation-per-fact">
+
+<h2 id="one-derivation-per-fact-h">One derivation per fact, held by a parity check</h2>
+
+<p id="one-derivation-per-fact-summary">
+  <code>section_blocking</code> in <code>reckon/mcp_views.py</code> published a
+  section-scoped wait's target readiness by testing the dependency row's
+  <code>status</code> against the completed set. That status is the target
+  plan's status, or the target section's own declaration — neither is the
+  readiness of the section the row names, and the roadmap resolves the same
+  edge through <code>_section_satisfied</code> in <code>reckon/roadmap.py</code>.
+  The two readings disagree on an undeclared section of a terminal plan: the
+  status reads <code>shipped</code> while the roadmap holds the edge, so
+  <code>read_plan</code> dropped a wait the roadmap kept. The projection now
+  reads the verdict the producer carried in <code>satisfied</code>, and hands a
+  row resolved without one to the same owner, so the rule has one home.
+</p>
+
+<p id="one-derivation-per-fact-run-verdict">
+  The run-classification fact was already single-sourced: the roadmap, the
+  <code>crew live</code> view and <code>read_plan</code> all reach
+  <code>classify_pointer</code> through
+  <code>reckon.mcp_views.partition_live_runs</code>. That guard asserts the
+  sharing rather than changing it — with the classifier replaced by a sentinel
+  that answers <code>interrupted</code>, every surface publishes that
+  classification for the one run and asks the classifier exactly once per read.
+</p>
+
+<table id="one-derivation-per-fact-measure">
+  <caption>The gate, both arms and the declared mutation.</caption>
+  <thead>
+    <tr><th>arm</th><th>revision</th><th>result</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>base</td>
+      <td><code>43a85b81</code> extraction</td>
+      <td>23 passed, <code>EXIT=0</code> (the two new guards do not exist there)</td>
+    </tr>
+    <tr>
+      <td>after</td>
+      <td>head working tree</td>
+      <td>25 passed, <code>EXIT=0</code></td>
+    </tr>
+    <tr>
+      <td>declared mutation: restore the plan-status read</td>
+      <td>head + mutation</td>
+      <td>
+        <code>1 failed, 24 passed</code>, <code>EXIT=1</code> —
+        <code>test_section_readiness_is_the_roadmap_verdict_not_the_row_status</code>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p id="one-derivation-per-fact-outside">
+  The read path's rows are built in <code>reckon/mcp.py</code>
+  (<code>_resolve_plan_ref</code>), which is outside this node's write scope and
+  does not yet carry the roadmap's <code>satisfied</code> verdict. Until it
+  does, <code>read_plan</code> reaches the fallback arm of
+  <code>_section_target_satisfied</code>, which reproduces the owner's answer
+  from the row's status and declaration. The parity guard holds the projection
+  against the roadmap's verdict for the row shape the roadmap itself emits, so
+  the row enrichment lands under the guard rather than beside it.
+</p>
+
+</section>
