@@ -13,9 +13,10 @@
   test failed because the held higher-ranked request launched before the lower
   ranked one. The committed implementation passes Ruff check and format check
   on its changed paths.</p>
-  <p><strong>Open reader defect.</strong> Recovery classification still reports
-  a held pointer as <code>running</code> and suggests <code>crew observe</code>.
-  That classifier is outside this worker's write grant, so a coordinator must
-  extend the scope or dispatch its repair before calling the request-phase
-  vocabulary complete.</p>
+  <p><strong>Reader closure.</strong> Recovery classification now reads a held
+  pointer as <code>held</code> and names <code>crew queue release</code> as its
+  next action. The regression test first failed on the recorded <code>running</code>
+  result. Across the four test files that directly import recovery
+  classification, the base arm finished with 1 failed and 61 passed; the
+  committed head finished with 62 passed and zero failed.</p>
 </section>
