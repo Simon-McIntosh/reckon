@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T04:16:28.036Z",
+  "dispatched_at": "2026-10-27T04:10:30Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261027T040249660441-plan-review-of-a-queue-holds-the-whole-plan/plan.html:134",
+      "id": "wiring-1",
+      "reason": "a coordinator working the open followup is sent to re-load four landed sections and is told nothing about \u00a717, so the one new section is dispatched only if the coordinator ignores the enumeration and falls back on its catch-all sentence.",
+      "text": "the open followup f-aqhwp-003, which is the driving record a coordinator executes, still says \"\u00a73 (waits on \u00a72) and the \u00a74 fair-share node launch now, and \u00a716 waits on \u00a73\" and lists \u00a79 among sections \"already queued awaiting-upstream\", while the declarations changed in this unit now read s3, s4, s9 and s16 as `done`; it also never names \u00a717, the only implementable section this change adds",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261027T040249660441-plan-review-of-a-queue-holds-the-whole-plan/plan.html:116",
+      "id": "done_when-1",
+      "reason": "all five arms are enumerated in full, so a worker still implements and a reviewer still measures the set; only the stated count is stale, which costs a reader a re-read and changes no measure.",
+      "text": "\u00a717's done-when states it \"shows four things\" and then lists five arms, the count left behind when the launch-attempt arm was added",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261027T040249660441-plan-review-of-a-queue-holds-the-whole-plan/plan.html:116",
+      "id": "single_goal-1",
+      "reason": "the heading and the \"two defects\" line are what a coordinator reads when it sizes or splits the section, so a coordinator who splits \u00a717 by goal, or a reviewer closing on the titled goal, scopes out the pointer-publication fix and its arm 5 is the only trace of it.",
+      "text": "\u00a717's own framing contradicts its body: it opens \"Two defects found on 27 October\" and its heading names one deliverable (\"A dead or dangling wait blocks only its own request\"), but the third bold paragraph adds a separate deliverable \u2014 keep a queued request's pointer published for the length of a launch attempt \u2014 whose fix is in `_launch_queued`'s pointer handling and whose only measure is the fifth done-when arm",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "aca6ec3372741517536e360ea2ab2de54a89401c23e3038dd887acf620fc3932",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 129,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T040249660441-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "c9c0b8eed274b95b7a34c85e29753402d0beb2a5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every file, function, constant and error string \u00a717 cites exists at the line it implies (`reckon/crew/queue_admission.py`, `reckon/crew/node.py`), and the references \u00a717 reuses from landed sections (`_validated_batch_waits`, `WAITING_REQUEST_PHASES`, `_launch_queued`) are the real names.",
+    "done_when": "a finding \u2014 \u00a717's done-when says it \"shows four things\" and then enumerates five arms.",
+    "evidence_paths": "pass \u2014 \u00a717's measure names a test file under the repository's `tests/` and its logs follow the harness run directory every other section uses; no session scratchpad or node-local path is named.",
+    "naming": "pass \u2014 `tests/test_dead_wait_blocks_only_its_request.py` and every symbol named in \u00a717 are named by the mechanism they implement; no plan label, stage name, ticket number or version tag reaches code, and no comment carries changelog prose.",
+    "reasoning": "pass \u2014 each of \u00a717's three stated defects reproduces in the cited code, each proposed mechanism is capable of producing the arm that measures it, and each runs on the real code path with its caller named (`target()` inside `_validated_batch_waits`, reached by `dispatch()` and `queue_dispatch`; `claim_disposition`'s reading of `WAITING_REQUEST_PHASES`; `_launch_queued`'s call into `dispatch()`, whose own-run-id exclusion at `dispatch.py:2126` is what makes the publication fix work).",
+    "single_goal": "a finding \u2014 \u00a717 opens \"Two defects found on 27 October\" and is titled around a wait's blast radius, but its body now carries three defects, the third (a queued pointer unpublished for the length of a launch attempt) being a different mechanism with a different fix in the same function.",
+    "wiring": "a finding \u2014 the open driving followup f-aqhwp-003 still directs the coordinator to dispatch \u00a73, \u00a74's fair-share node and \u00a716 and treats \u00a79 as unqueued, all four of which the declarations this change rewrote now read `done`, and it omits \u00a717 entirely."
+  },
+  "section_digests": {
+    "_document": "34bd59da73b11d98f689d5394f340dce375ae3b0cf22e92e35c1696faa278ad5",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "dde8872488345eab67e906f4ad3ac380b37442af56d5803fa2a2c10c8443a423",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "871f7b5325c1f6178f39ad7e9e3855015fb9e653174d0bb3930fc5c4073e276d",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T04:15:18.294201+00:00"
+}
