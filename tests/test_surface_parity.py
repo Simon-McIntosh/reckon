@@ -87,6 +87,90 @@ def test_schedule_lane_count_and_chain_far_end_equal_the_schedule_return(
     assert messages == [], "\n".join(messages)
 
 
+def test_section_readiness_is_the_roadmap_verdict_not_the_row_status():
+    """read_plan's section readiness is the roadmap's verdict for every edge.
+
+    The rows below are the shape the roadmap resolves a section-scoped edge
+    into: a status naming the target plan or the section's own declaration,
+    and the roadmap's own ``satisfied`` verdict beside it. The two disagree on
+    the first row — a shipped plan that declares no ``s9`` — so a reader that
+    tests the status clears a wait the roadmap keeps. Every other row agrees,
+    which is what makes the first one a disagreement rather than a fixture.
+    """
+
+    from reckon import mcp_views
+    from reckon.roadmap import section_readiness_verdict
+
+    rows = [
+        {
+            "ref": "plan-shipped#s9",
+            "source_section": "s5",
+            "stage": "s9",
+            "scope": "local",
+            "project": "sample",
+            "slug": "plan-shipped",
+            "found": True,
+            "status": "shipped",
+            "section_found": False,
+            "satisfied": False,
+        },
+        {
+            "ref": "plan-active#s2",
+            "source_section": "s6",
+            "stage": "s2",
+            "scope": "local",
+            "project": "sample",
+            "slug": "plan-active",
+            "found": True,
+            "status": "done",
+            "section_found": True,
+            "satisfied": True,
+        },
+        {
+            "ref": "plan-active#s3",
+            "source_section": "s7",
+            "stage": "s3",
+            "scope": "local",
+            "project": "sample",
+            "slug": "plan-active",
+            "found": True,
+            "status": "implementable",
+            "section_found": True,
+            "satisfied": False,
+        },
+    ]
+
+    published = {
+        row["section"]: row["ready"] for row in mcp_views._section_blocking(rows)
+    }
+    pairs: list[harness.Pair] = []
+    for waiting in sorted({str(row["source_section"]) for row in rows}):
+        unmet = [
+            dict(row)
+            for row in rows
+            if str(row["source_section"]) == waiting and not row["satisfied"]
+        ]
+        owner = section_readiness_verdict(
+            waiting,
+            plan_ready=True,
+            plan_blockers=(),
+            section_blockers=unmet,
+        )
+        pairs.append(
+            harness.Pair(
+                "section",
+                f"{waiting} readiness",
+                "read_plan(view='summary')['section_blocking'] readiness",
+                "section_readiness_verdict(..., section_blockers=unmet)['ready']",
+                published.get(waiting, True),
+                owner["ready"],
+            )
+        )
+
+    messages = [pair.message for pair in harness.mismatches(pairs)]
+    assert messages == [], "\n".join(messages)
+
+
 def test_every_surface_agrees_and_the_pair_count_is_stated(
     tmp_path, monkeypatch
 ) -> None:

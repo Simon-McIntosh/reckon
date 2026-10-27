@@ -33,7 +33,6 @@ from reckon.crew import staleness as staleness_module
 from reckon.doccheck import lifecycle_staleness, modified_age_days
 from reckon.evidence import EXECUTABLE_SECTION_ROLES
 from reckon.lifecycle import (
-    COMPLETED_STATUSES,
     TERMINAL_STATUSES,
     effective_status,
     is_section_scoped,
@@ -2639,6 +2638,34 @@ def _section_gate_blockers(data: dict[str, Any]) -> list[dict[str, Any]]:
     return section_holding
 
 
+def _section_target_satisfied(dep: dict[str, Any]) -> bool:
+    """Whether a section-scoped row's target is satisfied, from its owner.
+
+    Readiness is the roadmap's answer, never the status a section-scoped row
+    also carries: that status names the target plan or the section's own
+    declaration, and neither is the readiness of the section the row names. An
+    undeclared section of a completed plan is unsatisfied as an edge target
+    while its plan's status reads terminal, so the two readings disagree on a
+    real fixture and only the roadmap's is published here.
+
+    A row resolved by the roadmap carries that verdict in ``satisfied``. A row
+    resolved without it is handed to the same owner over what it holds, so the
+    rule stays in one place instead of being restated as a status set.
+    """
+
+    verdict = dep.get("satisfied")
+    if verdict is not None:
+        return bool(verdict)
+    if not dep.get("found"):
+        return False
+    from reckon.roadmap import _section_satisfied
+
+    stage = str(dep.get("stage") or "")
+    status = str(dep.get("status") or "")
+    declarations = {stage: status} if stage else None
+    return _section_satisfied({"status": status}, stage, declarations)
+
+
 def _section_blocking(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Report the sections that wait, each beside the targets it waits for.
 
@@ -2646,19 +2673,17 @@ def _section_blocking(deps: list[dict[str, Any]]) -> list[dict[str, Any]]:
     reported here instead of in the plan-level blocking list, and only while
     its target is unresolved — the same test the plan-level list applies.
 
-    The row states the target section's own condition, not its plan's, and a
-    verdict the row already reached is read here rather than re-derived from
-    the containing plan: a wait whose target section reads satisfied holds
-    nothing, whether the section was declared done or its gate passed.
+    The row states the target section's own condition, not its plan's, and the
+    verdict is the roadmap's rather than a second derivation from the row's
+    status: a wait whose target section reads satisfied holds nothing, whether
+    the section was declared done or its gate passed.
     """
 
     waits: dict[str, list[dict[str, Any]]] = {}
     for dep in deps:
         if not is_section_scoped(dep):
             continue
-        if dep.get("satisfied") is True:
-            continue
-        if dep.get("found") and dep.get("status") in COMPLETED_STATUSES:
+        if _section_target_satisfied(dep):
             continue
         target = {
             "ref": dep.get("ref", ""),
