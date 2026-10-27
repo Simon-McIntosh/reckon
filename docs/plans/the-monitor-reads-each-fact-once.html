@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="75">
+<meta name="plan-version" content="76">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -473,6 +473,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261027T102752210751-review-of-a-follower-is-a-station-subscriber-eb435418a58b" data-who="reckon-build" data-when="2026-10-27T10:44:06.356Z">
     <div class="r-comment-body"><p>Independent review of a-follower-is-a-station-subscriber at eb435418a against base c30c057d4: goal_fidelity 17, evidence 15, scope_discipline 19, durability 18, fit 16, reuse 15, added failures 0, three non-blocking findings (a refused pane's cursor never advances so it re-feeds lift rows on every generation change; StationSubscriber.wake has no production caller and duplicates the loop in _follow_watch_lines; the 60 s trace still names crew/live beside the two lease files).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261027T042459263998-a-follower-is-a-station-subscriber" data-who="reckon-build" data-when="2026-10-27T10:28:08Z">
+    <div class="r-comment-body"><p>The pane&#x27;s place is a row in the station&#x27;s store: `reckon/crew/station_subscriber.py` reads its session&#x27;s events after a stored (sequence, UTC day) cursor and paints them with the existing row path, `StationStore` gains that cursor API over one shared day-file reader, and `crew follow` takes the subscriber path where the node&#x27;s station has beaten — landed with fourteen cases — including a second pane of one session refused the claim while the first holds it and a follow command driven against a temp crew home with a beaten station — three negative controls that turn cases red, and a 60-second trace that names no pane record under the crew home.</p></div>
 </div>
 </section>
 </main>
