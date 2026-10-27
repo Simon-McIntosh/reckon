@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A run record carries the suite command it will be gated on">
+  <meta name="plan-summary" content="An armed project's scoped suite template was stored on the run record verbatim and never named in the worker prompt, so a worker learned which command its promotion re-runs only when a promotion refused it. Dispatch now resolves the template through promotion's own substitution over the node's fenced test files and records the resolved command beside the template, and the composed prompt states it. A scope holding no test file records the gate as unarmed rather than an empty command.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="passed">
+  <title>A run record carries its suite command | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A run record carries the suite command it will be gated on</h1>
+
+    <section id="a-run-record-carries-its-suite-command-defect">
+      <h2>The defect</h2>
+      <p>A project arms its promotion consequence gate with a suite command, and the
+        declaration may carry the scoped placeholder <code>{node_test_files}</code>, which
+        promotion substitutes with the node's own fenced test files. Dispatch stored the
+        declaration verbatim (<code>gates.suite_command</code>) and the composed prompt
+        carried no suite command at all, so an armed worker was told neither the command nor
+        the files it would measure, and met the requirement for the first time when a
+        promotion refused the pair it had recorded against a different suite.</p>
+    </section>
+
+    <section id="a-run-record-carries-its-suite-command-change">
+      <h2>The change</h2>
+      <p><code>_resolved_suite_gate</code> in <code>reckon/crew/dispatch.py</code> hands the
+        declaration and the node's write scope to
+        <code>promotion_records._scoped_suite_command</code> — promotion's own substitution,
+        not a second one written for dispatch — with the run's worktree as the tree the scope
+        paths are named within. The result is resolved once, after the worktree exists and
+        before the prompt is composed, so the command the worker is told and the command
+        promotion will re-run are the same string by construction.</p>
+      <p>The record carries the declaration beside it: <code>suite_command</code> stays the
+        template as written, <code>suite_command_resolved</code> is the command the run's
+        promotion will actually execute, and <code>suite_gate</code> is <code>armed</code> or
+        <code>unarmed</code>. A scoped declaration over a scope holding no test file resolves
+        to nothing and records <code>unarmed</code> with no resolved command, rather than an
+        empty string that reads as a command no one could run.</p>
+      <p>The composed prompt states the resolved command under its own fence, with the
+        instruction to run it unedited for both arms, so the pair a worker records matches the
+        one promotion compares. Where the declaration resolves to nothing the prompt names the
+        gate unarmed for that node instead, and a project declaring no command at all composes
+        exactly the prompt it did before.</p>
+      <p>Commit: <code>a4d530ed9</code>.</p>
+    </section>
+
+    <section id="a-run-record-carries-its-suite-command-gate">
+      <h2>The gate</h2>
+      <p>A throwaway project's flight file carries the scoped template, and its gate layer is
+        read back through <code>reckon.flight.resolve</code>, so the case exercises the
+        declaration a project actually writes rather than a dict assembled in the test. Both
+        cases dispatch through <code>crew.dispatch</code> into a temporary repository with a
+        substituted launcher. Base and head arms are <code>git archive</code> extractions on
+        node-local disk, each with the main checkout's <code>.env</code> linked.</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>revision</th><th>scope</th><th>result</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>node gate</td>
+            <td><code>a4d530ed9</code></td>
+            <td><code>tests/test_a_run_record_carries_its_suite_command.py</code></td>
+            <td><code>2 passed</code>, EXIT=0</td>
+          </tr>
+          <tr>
+            <td>base arm</td>
+            <td><code>a62f63172</code></td>
+            <td>the 120 test files importing a changed production module</td>
+            <td><code>1222 passed, 1 skipped</code>, EXIT=0</td>
+          </tr>
+          <tr>
+            <td>head arm</td>
+            <td><code>a4d530ed9</code></td>
+            <td>the same 120 files</td>
+            <td><code>1222 passed, 1 skipped</code>, EXIT=0</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Both arms are distributed per file (<code>-n 8 --dist loadfile</code>), because the
+        first pass without it reddened one different process-global test in each arm — the
+        re-exec registry case on the base and a follower session-name case on the head — and
+        both of those files pass serially on <em>both</em> arms (11 and 15 passed each). With
+        each file on one worker the two arms are identical: no failure in either, so the
+        change adds none.</p>
+      <p>The declared mutation stores the template verbatim as the resolved command; the
+        first case reddens on the resolved field and the prompt, and the second on the armed
+        record (<code>EXIT=1</code>).</p>
+    </section>
+  </main>
+</body>
+</html>

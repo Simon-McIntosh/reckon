@@ -568,6 +568,8 @@ def compose_prompt(
     run_id: str = "",
     peer_channels: Mapping[str, Mapping[str, str]] | None = None,
     peer_channel_path: str = "",
+    suite_command: str = "",
+    suite_gate: str = "",
     can_write_worktree: bool | None = None,
     writes_landing_fragment: bool | None = None,
     host_line: str = "",
@@ -592,6 +594,12 @@ def compose_prompt(
 
     ``launch_instant`` is the attempt's own recorded start; the FENCE — TIME
     line states it, the deadline it sets, and the clock that checks them.
+
+    ``suite_command`` is the command this run's promotion will actually run,
+    already resolved for the node's scope by the caller that recorded it.
+    ``suite_gate`` names what a resolved-nothing declaration means — ``unarmed``
+    when the project declares a command this node's scope empties — and an
+    unset value says nothing, which is the prompt an undeclared project gets.
     """
     peers = peer_scopes or {}
     peer_lines = (
@@ -717,6 +725,26 @@ RUNTIME FILESYSTEM
             + _artifact_allowance(node.done_when)
         )
     closure_authority_contract = CLOSURE_AUTHORITY_CONTRACT if can_land else ""
+    # The suite command is stated as the run's own resolved string, never the
+    # project's template: a worker handed `{node_test_files}` cannot run it,
+    # and the pair it records has to match the command promotion re-runs. A
+    # declaration this node's scope empties is named as unarmed so the worker
+    # owes no pair rather than inventing one; an undeclared project says
+    # nothing, which is the prompt every run had before the command was carried.
+    if suite_command:
+        suite_gate_block = (
+            "\nFENCE — SUITE (the command promotion runs before and after your change)\n"
+            f"  {suite_command}\n"
+            "  Run exactly this command, unedited, for both arms.\n"
+        )
+    elif suite_gate == "unarmed":
+        suite_gate_block = (
+            "\nFENCE — SUITE (unarmed for this node)\n"
+            "  No test file lies in this node's write scope, so its promotion "
+            "measures no suite pair.\n"
+        )
+    else:
+        suite_gate_block = ""
     # The check is composed with this run's own id so the worker can execute the
     # line as written. A composing caller that supplies no id still gets a
     # runnable instruction rather than a command that silently checks nothing.
@@ -804,7 +832,7 @@ FENCE — TIME
 
 FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
   {node.done_when}{evidence_role_note}
-
+{suite_gate_block}
 FENCE — DELIVERY
   Write your manifest to {manifest_path} BEFORE finishing, then reply with that path and a summary.
   If that exact path is not writable, STOP and report a blocker; a manifest written anywhere else means delivery cannot be found. Long output and logs go on disk.
