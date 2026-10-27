@@ -26,6 +26,7 @@ from reckon.crew.follower_reload import (  # noqa: F401 - re-exported for caller
     _StampPoll,
 )
 from reckon.crew.session_host import SETTLE_ENV, SETTLED_EXIT_CODE, owner_alive
+from reckon.crew.station_subscriber import STATION_GAP_EVENT, STATION_STALE_EVENT
 from reckon.crew_dispatch_commands import _crew_modules, _emit_crew_result, crew
 from reckon.env_duration import read_duration_override
 
@@ -115,6 +116,108 @@ def _follow_render_event(
         return {**event, "session": ""}
     return event
 
+
+
+class _StationRegistration:
+    """A subscriber's registration, in the shape the wait pass expects.
+
+    Two panes over one session must not both hold it: the store's row holds one
+    session's place, so a second pane writing it would move the first pane's
+    cursor and checkpoint. The claim is therefore the follower registration the
+    producer path already takes — the same advisory lock, beside the same
+    delivery lease — rather than a lock of its own, and a second pane reads the
+    same rows without keeping a place until the claim passes to it.
+    """
+
+    def __init__(
+        self,
+        subscriber,
+        *,
+        project: str | None = None,
+        session: str | None = None,
+        delivery: str = "unknown",
+        scope: Mapping[str, Any] | None = None,
+    ) -> None:
+        from reckon.crew import follower_registration
+
+        self.subscriber = subscriber
+        self.delivery = delivery
+        self.scope = dict(scope or {})
+        # A session-less pane registers nothing: the registration names a
+        # session, and one that names none has no claim to contend for.
+        self._claim = (
+            follower_registration._FollowerRegistration(
+                project, session, delivery=delivery, scope=self.scope
+            )
+            if project is not None and session is not None
+            else None
+        )
+        if self._claim is None:
+            subscriber.persist = True
+
+    @property
+    def held(self) -> bool:
+        return True if self._claim is None else self._claim.held
+
+    def acquire(self) -> bool:
+        """Take the session's claim, writing the pane's row only while held."""
+        if self._claim is None:
+            return True
+        held = self._claim.acquire()
+        self.subscriber.persist = held
+        if held:
+            self.subscriber.register(delivery=self.delivery, scope=self.scope)
+        return held
+
+    def release(self) -> None:
+        if self._claim is None:
+            return
+        if self._claim.held:
+            self.subscriber.detach()
+        self.subscriber.persist = False
+        self._claim.release()
+
+
+def _station_subscriber_for(
+    project: str,
+    *,
+    session: str | None,
+    observed: Iterable[str] = (),
+    run_ids: Iterable[str] = (),
+):
+    """The station subscriber this follower should read, or None.
+
+    A station is used only when its store exists, it has beaten at least once,
+    and it was built from this follower's own crew home. A store built from
+    another home holds another fleet's rows, and a store that has never beaten
+    holds none, so both fall back to the producer's stream. A stale heartbeat is
+    not a reason to fall back: the pane is owed the station's rows behind it and
+    one line saying the station has stopped.
+    """
+    from reckon.crew import station_store, station_subscriber
+    from reckon.crew.runs import crew_home
+
+    try:
+        store = station_store.StationStore.at_runtime_root()
+    except (station_store.StationStoreError, OSError):
+        return None
+    try:
+        if store.station_value(station_store.CREW_HOME_KEY) != str(crew_home()):
+            store.close()
+            return None
+        if not store.station_value(station_store.HEARTBEAT_KEY):
+            store.close()
+            return None
+    except Exception:  # noqa: BLE001 - an unreadable station is the producer's pane
+        store.close()
+        return None
+    return station_subscriber.StationSubscriber(
+        store,
+        project,
+        session=session,
+        observed=observed,
+        run_ids=run_ids,
+    )
 
 
 def _sweep_lapsed_holds(
@@ -1410,6 +1513,7 @@ def _follow_watch_lines(
     settle: bool = False,
     settle_interval: float | None = None,
     remind: float | None = None,
+    subscriber=None,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -2012,7 +2116,50 @@ def _follow_watch_lines(
         )
         _echo_follow_line(line)
 
+    # Set once the pane has been told its stored history is being restored, so
+    # the resume event is emitted on the first pass alone.
+    station_stale_reported = False
+
     while not _stopped() and not lifetime_elapsed and not consumer_gone and not settled:
+        if subscriber is not None:
+            # A subscriber is a query and a painter: it reads the station's
+            # rows after its stored cursor, paints them with the row path, and
+            # writes its place back. Nothing on this pass opens a file under
+            # the crew home except the two leases the producer and the
+            # delivery registration still need until they are retired.
+            if first_attach:
+                first_attach = False
+                resume_state = {}
+                if session is not None and subscriber.history:
+                    yield {
+                        "event": FOLLOWER_RESUME_EVENT,
+                        "project": project,
+                        "session": session or "",
+                        "reported": {},
+                    }
+            # Painted before the sweep is paid for: the rows are what the
+            # reader is waiting on and the sweep is the long call.
+            for event in subscriber.poll():
+                yield event
+            for event in subscriber.flush():
+                yield event
+            if not station_stale_reported:
+                line = subscriber.stale_line()
+                if line is not None:
+                    station_stale_reported = True
+                    yield {
+                        "event": STATION_STALE_EVENT,
+                        "project": project,
+                        "session": session or "",
+                        "run_id": None,
+                        "line": line,
+                    }
+            _tick()
+            if lifetime_elapsed or consumer_gone or settled:
+                break
+            _sweep_on_cadence()
+            sleeper(poll_interval)
+            continue
         if not runs.producer_live(project):
             identity = runs.watch_producer_identity(project)
             reason = _logged_producer_stop(project)
@@ -2965,13 +3112,39 @@ def crew_follow(
     # carries the same value to a replacement image.
     owner = runs_module.follower_owner()
 
+    # The station this follower reads, when this node runs one over this crew
+    # home. A node without one keeps the producer's stream, so a follower
+    # armed before the station exists still delivers.
+    subscriber = _station_subscriber_for(
+        project,
+        session=session,
+        observed=observe_sessions,
+        run_ids=run_ids,
+    )
+    if subscriber is not None:
+        # The station's own row is the pane's place, so its restored checkpoint
+        # replaces whatever the producer's file held.
+        resume = {
+            "reported": dict(subscriber.path.reported),
+            "lift_groups": sorted(subscriber.path.lift_groups),
+        }
+
     def stream_events(registration):
-        reloader = _FollowerReloader(
-            project,
-            registration,
-            deadline=deadline_epoch,
-            owner=owner,
-            color=getattr(grid, "color", False),
+        # A subscriber reads the station's rows rather than a producer's stream
+        # file, so it has nothing to reload onto: the station is the process
+        # that carries new code. Building a reloader here would materialise its
+        # tree under the crew home on the delivery path, which is exactly what
+        # the subscriber exists to avoid.
+        reloader = (
+            None
+            if subscriber is not None
+            else _FollowerReloader(
+                project,
+                registration,
+                deadline=deadline_epoch,
+                owner=owner,
+                color=getattr(grid, "color", False),
+            )
         )
 
         def poll(checkpoint) -> None:
@@ -2984,9 +3157,22 @@ def crew_follow(
             """
             if registration is not None and not registration.held:
                 registration.acquire()
-            reloader.poll(checkpoint)
+            if reloader is not None:
+                reloader.poll(checkpoint)
 
         from reckon.crew import follow_checkpoint as history_module
+
+        def read_history() -> list[dict]:
+            """The pane's memory, from the station when it is the delivery path."""
+            if subscriber is not None:
+                return list(subscriber.history)
+            return history_module.read_history(project, session)
+
+        def append_history(**kwargs) -> None:
+            if subscriber is not None:
+                subscriber.append_history(**kwargs)
+                return
+            history_module.append_history(project, session, **kwargs)
 
         # The pane's memory of what it drew, for a session that will re-arm.
         # A session-less follower exists to observe the whole fleet in one
@@ -3002,12 +3188,21 @@ def crew_follow(
         # a run drawing nothing here keeps the state its last row carried, and
         # a write that dropped it would replay the run from `dispatched` as soon
         # as one other run moved.
-        delivered_states: dict[str, str] = {
-            str(run_id): str(state)
-            for run_id, state in (
-                runs_module.read_delivered(project, session).get("states") or {}
-            ).items()
-        }
+        if subscriber is not None:
+            # The subscriber's checkpoint carries the same states and lives in
+            # the station's row, so the delivery path opens nothing under the
+            # crew home to seed the pane's memory.
+            delivered_states: dict[str, str] = {
+                str(run_id): str(state)
+                for run_id, state in subscriber.path.reported.items()
+            }
+        else:
+            delivered_states = {
+                str(run_id): str(state)
+                for run_id, state in (
+                    runs_module.read_delivered(project, session).get("states") or {}
+                ).items()
+            }
 
         def note_delivered(row) -> None:
             run_id = str(row.get("run_id") or "")
@@ -3015,6 +3210,9 @@ def crew_follow(
             if not run_id or not state or delivered_states.get(run_id) == state:
                 return
             delivered_states[run_id] = state
+            if subscriber is not None:
+                subscriber.note_delivered(row)
+                return
             runs_module.write_delivered(project, session, delivered_states)
 
         # Whether the last event was the settle row. The follower ends its
@@ -3034,6 +3232,7 @@ def crew_follow(
             reloaded_in_place=reloaded_in_place,
             settle=settle,
             remind=remind_seconds,
+            subscriber=subscriber,
         ):
             # An attach event carries the states the pane already showed, so the
             # grid is seeded from the same remembered map the follower filtered
@@ -3076,9 +3275,7 @@ def crew_follow(
                     _emit_crew_result(event, pretty, observation=True)
                 elif pane_line and session is not None:
                     _echo_follow_line(replay_dim(history_module.FORMAT_CHANGED_TEXT))
-                    history_module.append_history(
-                        project,
-                        session,
+                    append_history(
                         text=history_module.FORMAT_CHANGED_TEXT,
                         at=time.time(),
                         kind=history_module.FORMAT_CHANGED_KIND,
@@ -3112,7 +3309,7 @@ def crew_follow(
                     _emit_crew_result(event, pretty, observation=True)
                 elif session is not None and _follow_replay_visible():
                     restored = history_module.cap_history(
-                        history_module.read_history(project, session),
+                        read_history(),
                         now=time.time(),
                         max_rows=history_caps[0],
                         max_seconds=history_caps[1],
@@ -3157,6 +3354,17 @@ def crew_follow(
                 elif pane_line:
                     _echo_follow_line(replay_dim(str(event.get("line") or "")))
                 continue
+            if event.get("event") in (STATION_GAP_EVENT, STATION_STALE_EVENT):
+                # A station line is about the pane's place rather than a run:
+                # it carries a sentence to print, not a transition to draw.
+                # Handed to the transition painter it would print an empty
+                # clock and an unknown run, so the sentence the station wrote
+                # is what text mode prints; JSON mode emits the object.
+                if json_output:
+                    _emit_crew_result(event, pretty, observation=True)
+                else:
+                    _echo_follow_line(replay_dim(str(event.get("line") or "")))
+                continue
             if json_output:
                 _emit_crew_result(event, pretty, observation=True)
                 # The record is the pane's memory, and there is one per session
@@ -3185,9 +3393,7 @@ def crew_follow(
                     # The row's bytes as drawn, and the stamp it carried, so a
                     # later re-arm replays the pane rather than a re-derivation
                     # of it: the clock a reader saw is the clock that returns.
-                    history_module.append_history(
-                        project,
-                        session,
+                    append_history(
                         text=rendered,
                         at=_follow_row_stamp(event),
                         run_id=str(event.get("run_id") or ""),
@@ -3205,6 +3411,25 @@ def crew_follow(
             sys.exit(SETTLED_EXIT_CODE)
 
     try:
+        if subscriber is not None:
+            # The subscriber's place and registration are its row in the node's
+            # store, so nothing under the crew home is opened to hold them. The
+            # claim on the session is the same registration the producer path
+            # takes; a second pane over one session streams without it.
+            registration = _StationRegistration(
+                subscriber,
+                project=project,
+                session=session,
+                delivery=delivery,
+                scope={"runs": list(run_ids)},
+            )
+            try:
+                registration.acquire()
+                stream_events(registration)
+            finally:
+                registration.release()
+                subscriber.store.close()
+            return
         if session is None:
             stream_events(None)
             return

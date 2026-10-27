@@ -129,6 +129,10 @@ class Station:
         self.home = home or crew_home()
         self.projects = projects
         self.stall_seconds = stall_seconds
+        # The home this station's rows describe. A follower reads this store
+        # only when its own home is the same one, because a store built from
+        # another home holds another fleet's rows.
+        self.store.set_station_value(station_store.CREW_HOME_KEY, str(self.home))
 
     def tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
         """Publish every new transition, then move the heartbeat."""

@@ -69,8 +69,30 @@ CODE_IDENTITY_KEY = "code_identity"
 STARTED_AT_KEY = "started_at"
 EVENT_COUNTER_KEY = "events_counter"
 EVENT_GENERATION_KEY = "events_generation"
+# The crew home this station reads from. A follower whose own home is not this
+# one reads the producer's stream instead: a store built from another home holds
+# another fleet's rows, and delivering them would hand a pane a stranger's fleet.
+CREW_HOME_KEY = "crew_home"
 
-_SCHEMA = """
+# A subscriber's place is keyed by the project whose events it reads as well as
+# by its audience: a session-less follower uses one audience for every project
+# it watches, so the key without the project would give two such followers one
+# place, one checkpoint and one history between them.
+_CURSOR_TABLE = """CREATE TABLE IF NOT EXISTS cursors (
+    project      TEXT NOT NULL DEFAULT '',
+    audience     TEXT NOT NULL,
+    cursor       INTEGER NOT NULL DEFAULT 0,
+    day          TEXT,
+    checkpoint   TEXT,
+    history      TEXT,
+    registration TEXT,
+    updated_at   TEXT,
+    PRIMARY KEY (project, audience)
+);
+"""
+
+_SCHEMA = (
+    """
 CREATE TABLE IF NOT EXISTS pointers (
     path       TEXT PRIMARY KEY,
     signature  TEXT NOT NULL,
@@ -89,11 +111,9 @@ CREATE TABLE IF NOT EXISTS streams (
     fold_state  TEXT NOT NULL,
     observation TEXT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS cursors (
-    audience   TEXT PRIMARY KEY,
-    cursor     INTEGER NOT NULL DEFAULT 0,
-    updated_at TEXT
-);
+"""
+    + _CURSOR_TABLE
+    + """
 CREATE TABLE IF NOT EXISTS obligations (
     session    TEXT PRIMARY KEY,
     changed_at TEXT,
@@ -110,6 +130,7 @@ CREATE TABLE IF NOT EXISTS station (
     value TEXT
 );
 """
+)
 
 _DAY_SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
@@ -132,6 +153,9 @@ CREATE INDEX IF NOT EXISTS events_by_project ON events (project, id);
 
 class StationStoreError(RuntimeError):
     """The station's store cannot be opened or used as a node-local store."""
+
+
+_UNSET: Any = object()
 
 
 def _refuse(message: str) -> NoReturn:
@@ -218,6 +242,24 @@ def _day_file_name(day: date) -> str:
     return f"{DAY_FILE_PREFIX}{day.isoformat()}{DAY_FILE_SUFFIX}"
 
 
+# The operational errors a read of a day file can meet and recover from on its
+# own: the file's schema is being written, the file is being unlinked by
+# retention, or its writer holds the file this instant.
+_READ_RACES = (
+    "no such table",
+    "database is locked",
+    # Both spellings a day file's open can produce: SQLite says "unable to
+    # open database file" when it cannot reach one and "unable to open
+    # database: <path>" when the attach itself is refused.
+    "unable to open database",
+)
+
+
+def _is_a_read_race(error: sqlite3.OperationalError) -> bool:
+    text = str(error).lower()
+    return any(marker in text for marker in _READ_RACES)
+
+
 def _day_from_name(name: str) -> date | None:
     """The UTC day a day file's name encodes, or None for a foreign name.
 
@@ -284,12 +326,15 @@ class StationStore:
             return self._connection
         self.root.mkdir(parents=True, exist_ok=True)
         self.day_directory.mkdir(parents=True, exist_ok=True)
-        connection = sqlite3.connect(self.database)
+        connection = sqlite3.connect(
+            self.database, check_same_thread=False, timeout=30.0
+        )
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA journal_mode=WAL")
         connection.execute("PRAGMA synchronous=NORMAL")
         connection.executescript(_SCHEMA)
         self._ensure_stream_columns(connection)
+        self._ensure_cursor_columns(connection)
         connection.commit()
         self._connection = connection
         self._ensure_station_identity()
@@ -308,6 +353,54 @@ class StationStore:
             )
         if "anchor" not in columns:
             connection.execute("ALTER TABLE streams ADD COLUMN anchor BLOB")
+
+    @staticmethod
+    def _ensure_cursor_columns(connection: sqlite3.Connection) -> None:
+        """Give the cursors table the shape callers read, keeping its rows.
+
+        A store written before cursors were keyed by project cannot gain a
+        primary key by ``ALTER TABLE``, so its table is rebuilt: the rows move
+        into the current shape under an empty project, and the table they came
+        from is dropped. Columns a row grew later are added in place, which
+        keeps a store written before them readable without a rebuild.
+        """
+        columns = {
+            str(row["name"])
+            for row in connection.execute("PRAGMA table_info(cursors)").fetchall()
+        }
+        if "project" not in columns:
+            kept = [
+                name
+                for name in (
+                    "cursor",
+                    "day",
+                    "checkpoint",
+                    "history",
+                    "registration",
+                    "updated_at",
+                )
+                if name in columns
+            ]
+            connection.execute("ALTER TABLE cursors RENAME TO cursors_before_projects")
+            connection.execute(_CURSOR_TABLE)
+            if kept:
+                # The only interpolation is a list of column names taken from
+                # the table's own PRAGMA output, filtered against a fixed tuple.
+                names = ", ".join(kept)
+                connection.execute(
+                    f"INSERT INTO cursors (project, audience, {names}) "  # noqa: S608
+                    f"SELECT '', audience, {names} FROM cursors_before_projects"
+                )
+            connection.execute("DROP TABLE cursors_before_projects")
+            return
+        for name, kind in (
+            ("day", "TEXT"),
+            ("checkpoint", "TEXT"),
+            ("history", "TEXT"),
+            ("registration", "TEXT"),
+        ):
+            if name not in columns:
+                connection.execute(f"ALTER TABLE cursors ADD COLUMN {name} {kind}")
 
     def close(self) -> None:
         if self._connection is not None:
@@ -666,6 +759,117 @@ class StationStore:
         self._drop_absent_classifications(present)
         return verdicts
 
+    # ── subscribers' cursors ─────────────────────────────────────────────
+
+    def read_cursor(self, project: str, audience: str) -> dict[str, Any]:
+        """One subscriber's stored place in one project, or an empty record.
+
+        The row carries everything the pane's poll path needs — its event
+        sequence, the UTC day that sequence belongs to, the pane's checkpoint
+        and rendered history, and its delivery registration — so a subscriber
+        opening under the crew home opens nothing there at all.
+        """
+        row = (
+            self.connect()
+            .execute(
+                "SELECT project, audience, cursor, day, checkpoint, history, "
+                "registration, updated_at FROM cursors "
+                "WHERE project = ? AND audience = ?",
+                (str(project), audience),
+            )
+            .fetchone()
+        )
+        if row is None:
+            return {}
+        record: dict[str, Any] = {
+            "project": str(row["project"]),
+            "audience": str(row["audience"]),
+            "cursor": int(row["cursor"] or 0),
+            "day": row["day"],
+            "updated_at": row["updated_at"],
+        }
+        for key in ("checkpoint", "history", "registration"):
+            raw = row[key]
+            record[key] = json.loads(str(raw)) if raw else None
+        return record
+
+    def cursor_rows(self) -> list[dict[str, Any]]:
+        rows = (
+            self.connect()
+            .execute("SELECT project, audience FROM cursors ORDER BY project, audience")
+            .fetchall()
+        )
+        return [
+            self.read_cursor(str(row["project"]), str(row["audience"])) for row in rows
+        ]
+
+    def write_cursor(
+        self,
+        project: str,
+        audience: str,
+        *,
+        cursor: int | None = None,
+        day: str | None = None,
+        checkpoint: Any = _UNSET,
+        history: Any = _UNSET,
+        registration: Any = _UNSET,
+        at: datetime | None = None,
+    ) -> None:
+        """Merge one subscriber's place into its row.
+
+        A field left unset keeps what the row holds, so a poll that advances
+        only the cursor does not rewrite the pane's checkpoint and history, and
+        a field explicitly set to ``None`` clears it.
+        """
+        existing = self.read_cursor(project, audience)
+        values: dict[str, Any] = {
+            "cursor": int(existing.get("cursor", 0)) if cursor is None else int(cursor),
+            "day": existing.get("day") if day is None else day,
+            "checkpoint": (
+                existing.get("checkpoint") if checkpoint is _UNSET else checkpoint
+            ),
+            "history": existing.get("history") if history is _UNSET else history,
+            "registration": (
+                existing.get("registration") if registration is _UNSET else registration
+            ),
+            "updated_at": (at or datetime.now(tz=UTC)).astimezone(UTC).isoformat(),
+        }
+        connection = self.connect()
+        connection.execute(
+            "INSERT INTO cursors (project, audience, cursor, day, checkpoint, "
+            "history, registration, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+            "ON CONFLICT(project, audience) DO UPDATE SET "
+            "cursor = excluded.cursor, day = excluded.day, "
+            "checkpoint = excluded.checkpoint, history = excluded.history, "
+            "registration = excluded.registration, "
+            "updated_at = excluded.updated_at",
+            (
+                str(project),
+                audience,
+                values["cursor"],
+                values["day"],
+                None
+                if values["checkpoint"] is None
+                else json.dumps(values["checkpoint"], sort_keys=True),
+                None
+                if values["history"] is None
+                else json.dumps(values["history"], sort_keys=True),
+                None
+                if values["registration"] is None
+                else json.dumps(values["registration"], sort_keys=True),
+                values["updated_at"],
+            ),
+        )
+        connection.commit()
+
+    def data_version(self) -> int:
+        """``PRAGMA data_version`` for this connection, the main database's change mark."""
+        return int(self.connect().execute("PRAGMA data_version").fetchone()[0])
+
+    def event_generation(self) -> int:
+        """The sequence number of the newest committed event, or 0 before any."""
+        return int(self.station_value(EVENT_GENERATION_KEY) or "0")
+
     # ── readers ──────────────────────────────────────────────────────────
 
     def pointer_rows(self) -> list[dict[str, Any]]:
@@ -708,9 +912,19 @@ class StationStore:
         return self.day_directory / _day_file_name(day)
 
     def _open_day(self, day: date) -> sqlite3.Connection:
+        """One day file's connection, shared by its writer and its readers.
+
+        A day file is written by the station and read by every subscriber on
+        the node at once, so it is opened in WAL like the main database: a
+        reader attaches the file while the station is appending to it, and in
+        the default rollback journal that attach needs a lock the writer holds
+        and fails as "database is locked" rather than waiting.
+        """
         self.day_directory.mkdir(parents=True, exist_ok=True)
-        connection = sqlite3.connect(self._day_path(day))
+        connection = sqlite3.connect(self._day_path(day), timeout=30.0)
         connection.row_factory = sqlite3.Row
+        connection.execute("PRAGMA journal_mode=WAL")
+        connection.execute("PRAGMA synchronous=NORMAL")
         connection.executescript(_DAY_SCHEMA)
         columns = {
             str(row["name"]) for row in connection.execute("PRAGMA table_info(events)")
@@ -855,34 +1069,115 @@ class StationStore:
         self, *, audience: str | None = None, after_id: int = 0
     ) -> list[dict[str, Any]]:
         """Read the events after ``after_id``, attaching each existing day file."""
+        return self._read_events(
+            after_id=after_id,
+            audiences=None if audience is None else (audience,),
+        )
+
+    def oldest_day(self) -> date | None:
+        """The UTC day of the oldest day file still held, or None when none is."""
+        days = [
+            day
+            for day in (_day_from_name(path.name) for path in self.day_files())
+            if day is not None
+        ]
+        return min(days) if days else None
+
+    def events_for(
+        self,
+        *,
+        project: str,
+        audiences: Iterable[str],
+        after_id: int = 0,
+        from_day: date | None = None,
+    ) -> list[dict[str, Any]]:
+        """One project's rows for a subscriber, after its cursor.
+
+        Every day file from ``from_day`` onward is attached for the read, so a
+        subscriber's cursor and today's file are read together and a file
+        written at a UTC rollover joins the query as soon as it exists. A
+        caller whose cursor is older than retention passes the oldest held day
+        and is served from there.
+        """
+        return self._read_events(
+            after_id=after_id,
+            project=project,
+            audiences=audiences,
+            from_day=from_day,
+        )
+
+    def _read_events(
+        self,
+        *,
+        after_id: int = 0,
+        project: str | None = None,
+        audiences: Iterable[str] | None = None,
+        from_day: date | None = None,
+    ) -> list[dict[str, Any]]:
+        """Read the rows after ``after_id`` from every day file that can be opened.
+
+        One reader serves both callers: ``events`` asks for the whole station or
+        one audience, and ``events_for`` narrows to a project and a set of
+        audiences from a day onward. The attach, the schema probe that decides
+        how the payload is selected, the guard that treats a missing file or a
+        missing schema as a race, and the id sort exist once here, so the two
+        entry points cannot drift apart.
+        """
         connection = self.connect()
+        wanted = sorted({str(audience) for audience in audiences or ()})
         collected: list[dict[str, Any]] = []
         for path in self.day_files():
-            connection.execute("ATTACH DATABASE ? AS day", (str(path),))
+            day = _day_from_name(path.name)
+            if day is None or (from_day is not None and day < from_day):
+                continue
+            try:
+                connection.execute("ATTACH DATABASE ? AS day", (str(path),))
+            except sqlite3.OperationalError as error:
+                # The attach is a read race in its own right: retention can
+                # unlink a day file between the listing above and this
+                # statement, so the file is gone before there is anything to
+                # query. A row written afterwards carries a higher id than the
+                # cursor this read advances to, so the next poll reaches it.
+                if not _is_a_read_race(error):
+                    raise
+                continue
             try:
                 columns = {
                     str(row["name"])
                     for row in connection.execute("PRAGMA day.table_info(events)")
                 }
-                if "payload" in columns:
-                    query = (
-                        "SELECT id, time, project, audience, run, kind, from_state, "
-                        "to_state, detail, duty, payload FROM day.events WHERE id > ?"
-                    )
-                else:
-                    query = (
-                        "SELECT id, time, project, audience, run, kind, from_state, "
-                        "to_state, detail, duty, NULL AS payload FROM day.events "
-                        "WHERE id > ?"
-                    )
-                parameters: list[Any] = [after_id]
-                if audience is not None:
-                    query += " AND audience = ?"
-                    parameters.append(audience)
-                collected.extend(
-                    dict(row)
-                    for row in connection.execute(query, parameters).fetchall()
+                payload_column = (
+                    "payload" if "payload" in columns else "NULL AS payload"
                 )
+                parameters: list[Any] = [int(after_id)]
+                clauses = ""
+                if project is not None:
+                    clauses += " AND project = ?"
+                    parameters.append(str(project))
+                if wanted:
+                    placeholders = ", ".join("?" for _ in wanted)
+                    clauses += f" AND audience IN ({placeholders})"
+                    parameters.extend(wanted)
+                # Only fixed column names and placeholder runs are interpolated
+                # here; every value a caller supplies is bound below.
+                rows = connection.execute(
+                    "SELECT id, time, project, audience, run, kind, from_state, "  # noqa: S608
+                    f"to_state, detail, duty, {payload_column} FROM day.events "
+                    f"WHERE id > ?{clauses}",
+                    parameters,
+                ).fetchall()
+                collected.extend(dict(row) for row in rows)
+            except sqlite3.OperationalError as error:
+                # A day file exists from the moment its writer opens it and its
+                # schema is written a statement later, so a reader can attach
+                # it in that window; retention can also unlink one between the
+                # listing and the attach. Neither loses a row for good: a row
+                # written afterwards carries a higher id than the cursor this
+                # read advances to, so the next poll reaches it. Any other
+                # failure is the store's own and is raised.
+                if not _is_a_read_race(error):
+                    raise
+                continue
             finally:
                 connection.execute("DETACH DATABASE day")
         collected.sort(key=lambda event: int(event["id"]))

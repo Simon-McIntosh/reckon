@@ -426,9 +426,12 @@ def cap_history(
     count keeps the last ``max_rows`` of what remains. Applying the window first
     matters because a burst of rows written inside one second would otherwise
     let a long-idle session replay a window's worth it has already aged out.
+
+    A row with no stamp carries no place in the window, so it is dropped by the
+    window rather than raising.
     """
     cutoff = float(now) - float(max_seconds)
-    fresh = [row for row in rows if row["at"] >= cutoff]
+    fresh = [row for row in rows if float(row.get("at") or 0.0) >= cutoff]
     if max_rows == 0:
         # A cap of zero admits nothing. It cannot ride the slice below, where
         # ``fresh[-0:]`` is the whole list and a configuration asking for no

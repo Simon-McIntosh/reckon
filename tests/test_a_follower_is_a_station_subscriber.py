@@ -1,0 +1,655 @@
+"""A follower reads its session's rows from the station after a stored cursor.
+
+The pane's place is a station-wide sequence number and the UTC day it belongs
+to, held in the station store's own row. These cases drive the subscriber
+directly, with events written through a second connection as the station's own
+process writes them, so what is measured is the delivery path rather than the
+station's folding. A coordinator row is held for the ticker's settle window, so
+each case advances the subscriber's clock past that window and flushes before
+reading what the pane received.
+"""
+
+from __future__ import annotations
+
+import sqlite3
+import threading
+import time
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+from reckon.crew import station_store, ticker
+from reckon.crew.station_subscriber import (
+    SKIPPED_DAYS_TEXT,
+    STALE_HEARTBEAT_TEXT,
+    StationSubscriber,
+    stale_heartbeat_line,
+)
+
+PROJECT = "proj"
+SESSION = "session-a"
+RUN = "r-one"
+
+BASE = datetime(2026, 10, 26, 12, 0, tzinfo=UTC)
+
+
+class _Clock:
+    """A clock the case advances, so a settle window is measured not waited out."""
+
+    def __init__(self, now: float | None = None) -> None:
+        self.now = time.time() if now is None else float(now)
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def _store(tmp_path: Path) -> station_store.StationStore:
+    return station_store.StationStore(tmp_path / "runtime")
+
+
+def _event(run: str = RUN, **overrides):
+    event = {
+        "project": PROJECT,
+        "event": "transition",
+        "run_id": run,
+        "node": run,
+        "session": SESSION,
+        "from_state": "blocked",
+        "to_state": "completed_unpromoted",
+        "observed_at": BASE.isoformat(),
+    }
+    event.update(overrides)
+    return event
+
+
+def _write(store, at: datetime, event=None, *, audience=SESSION):
+    payload = event or _event(observed_at=at.isoformat())
+    return store.write_event(
+        audience=audience,
+        at=at,
+        project=PROJECT,
+        run=str(payload.get("run_id") or ""),
+        kind=str(payload.get("event") or "transition"),
+        from_state=payload.get("from_state"),
+        to_state=payload.get("to_state"),
+        payload=payload,
+    )
+
+
+def _subscriber(store, clock: _Clock) -> StationSubscriber:
+    return StationSubscriber(store, PROJECT, session=SESSION, clock=clock)
+
+
+def _deliver(subscriber: StationSubscriber, clock: _Clock) -> list[dict]:
+    """Every row the pane receives now: the poll, then the settle hold's release."""
+    rows = list(subscriber.poll())
+    clock.now += ticker.SETTLE_WINDOW + 1
+    rows += list(subscriber.flush())
+    return rows
+
+
+def test_a_row_is_delivered_exactly_once_across_a_subscriber_restart(tmp_path) -> None:
+    """The place is the store's, so a fresh process continues rather than replays.
+
+    The row is a lift grant, which the pane draws every time it is fed: a run
+    transition repeated after a restart would be suppressed by the pane's own
+    memory of the state it shows, so only a row the memory does not suppress
+    can show that the place itself survived.
+    """
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    writer.heartbeat()
+    _write(writer, BASE, _event(from_state="", to_state="lift-granted"))
+    clock = _Clock()
+
+    first = _subscriber(store, clock)
+    delivered = _deliver(first, clock)
+    assert [row["to_state"] for row in delivered] == ["lift-granted"]
+    assert first.cursor > 0
+
+    restarted = _subscriber(store, clock)
+    assert _deliver(restarted, clock) == [], "a restart must not redeliver the row"
+    assert restarted.cursor == first.cursor
+
+
+def test_a_re_armed_subscriber_draws_no_new_row_for_a_run_the_pane_already_drew(
+    tmp_path,
+) -> None:
+    """The pane's memory survives the re-arm, so an unchanged run is not news."""
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    writer.heartbeat()
+    _write(writer, BASE)
+    clock = _Clock()
+
+    first = _subscriber(store, clock)
+    assert len(_deliver(first, clock)) == 1
+
+    re_armed = _subscriber(store, clock)
+    assert re_armed.path.reported.get(RUN) == "completed_unpromoted"
+    # A later row that announces the same state the pane already shows asks
+    # nothing of the reader.
+    _write(
+        writer,
+        BASE + timedelta(minutes=1),
+        _event(
+            event="baseline",
+            from_state=None,
+            observed_at=(BASE + timedelta(minutes=1)).isoformat(),
+        ),
+    )
+    assert _deliver(re_armed, clock) == []
+
+
+def test_a_cursor_spanning_a_utc_rollover_delivers_every_event_exactly_once(
+    tmp_path,
+) -> None:
+    """Events in two day files are read together and never twice."""
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    writer.heartbeat()
+    before = datetime(2026, 10, 20, 23, 59, tzinfo=UTC)
+    after = datetime(2026, 10, 21, 0, 1, tzinfo=UTC)
+    _write(writer, before, _event(run="r-before", observed_at=before.isoformat()))
+    _write(writer, after, _event(run="r-after", observed_at=after.isoformat()))
+    assert len(writer.day_files()) == 2
+    clock = _Clock()
+
+    subscriber = _subscriber(store, clock)
+    delivered = _deliver(subscriber, clock)
+    assert [row["run_id"] for row in delivered] == ["r-before", "r-after"]
+    assert subscriber.cursor_day == "2026-10-21"
+    assert _deliver(subscriber, clock) == []
+
+
+def test_a_cursor_older_than_retention_resumes_with_one_skip_line(tmp_path) -> None:
+    """A place the store no longer holds resumes at its oldest event."""
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    writer.heartbeat()
+    gone = datetime(2026, 10, 10, 12, 0, tzinfo=UTC)
+    kept = datetime(2026, 10, 26, 12, 0, tzinfo=UTC)
+    _write(writer, gone, _event(run="r-gone", observed_at=gone.isoformat()))
+    _write(writer, kept, _event(run="r-kept", observed_at=kept.isoformat()))
+    writer.day_files()[0].unlink()
+    assert len(writer.day_files()) == 1
+
+    store.write_cursor(
+        PROJECT, SESSION, cursor=0, day=gone.date().isoformat(), at=datetime.now(tz=UTC)
+    )
+    clock = _Clock()
+    subscriber = _subscriber(store, clock)
+    delivered = _deliver(subscriber, clock)
+
+    assert delivered[0]["event"] == "station-gap"
+    assert delivered[0]["skipped_days"] == 16
+    assert delivered[0]["line"] == SKIPPED_DAYS_TEXT.format(days=16)
+    assert [row["run_id"] for row in delivered[1:]] == ["r-kept"]
+    assert _deliver(subscriber, clock) == [], "the skip line is not repeated"
+
+
+def test_a_stale_heartbeat_prints_one_line(tmp_path) -> None:
+    """One line, once, naming the command that restarts the station."""
+    store = _store(tmp_path)
+    store.heartbeat(now=datetime.now(tz=UTC) - timedelta(seconds=600))
+
+    line = stale_heartbeat_line(store)
+    assert line is not None
+    assert "reckon crew station" in line
+
+    subscriber = _subscriber(store, _Clock())
+    stop = threading.Event()
+    received: list[dict] = []
+
+    def reader() -> None:
+        received.extend(subscriber.wake(stop=stop, interval=0.001))
+
+    thread = threading.Thread(target=reader, daemon=True)
+    thread.start()
+    deadline = time.monotonic() + 2
+    while time.monotonic() < deadline and not received:
+        time.sleep(0.005)
+    stop.set()
+    thread.join(timeout=2)
+    assert not thread.is_alive()
+    assert [event["event"] for event in received] == ["station-stale"]
+
+
+def test_a_subscriber_wakes_on_a_day_file_event_and_on_nothing_else(tmp_path) -> None:
+    """With the heartbeat silent, only a committed event row wakes the pane.
+
+    The heartbeat is never written, so nothing but an event can move the
+    generation the subscriber waits on, and the pane's own cursor writes are
+    commits to the main database it must not read as news. The row is a lift
+    grant, which the pane draws on arrival: a run transition is held for the
+    settle window, and this case is about what wakes the loop rather than about
+    when a held row is released.
+    """
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    clock = _Clock()
+
+    subscriber = _subscriber(store, clock)
+    stop = threading.Event()
+    received: list[dict] = []
+
+    def reader() -> None:
+        received.extend(subscriber.wake(stop=stop, interval=0.005))
+
+    thread = threading.Thread(target=reader, daemon=True)
+    thread.start()
+    try:
+        time.sleep(0.2)
+        assert received == [], "an idle store wakes the pane with nothing"
+
+        _write(writer, BASE, _event(from_state="", to_state="lift-granted"))
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline and not received:
+            time.sleep(0.01)
+        assert [row["run_id"] for row in received] == [RUN]
+
+        # The subscriber's own place and checkpoint are committed to the main
+        # database after that row, and neither is an event to draw again.
+        time.sleep(0.3)
+        assert len(received) == 1, "a cursor write reads as a row of its own"
+    finally:
+        stop.set()
+        thread.join(timeout=5)
+    assert not thread.is_alive()
+
+
+def test_the_registration_is_the_subscribers_own_row(tmp_path) -> None:
+    """Attaching and detaching are writes to the pane's cursor row, not to GPFS."""
+    store = _store(tmp_path)
+    subscriber = _subscriber(store, _Clock())
+    subscriber.register(pid=4321, host="node-a", delivery="stream", scope={"runs": []})
+    row = store.read_cursor(PROJECT, SESSION)
+    assert row["registration"]["pid"] == 4321
+    assert row["registration"]["delivery"] == "stream"
+
+    subscriber.detach()
+    assert store.read_cursor(PROJECT, SESSION)["registration"] is None
+
+
+def test_a_store_written_before_cursors_were_keyed_by_project_still_opens(
+    tmp_path,
+) -> None:
+    """An older store keeps its rows and gains the current cursor shape.
+
+    A primary key cannot be added to a table in place, so the migration rebuilds
+    it; a node whose store predates the project key must still open, and the
+    places it already held must still be readable rather than dropped.
+    """
+    root = tmp_path / "runtime"
+    root.mkdir()
+    connection = sqlite3.connect(root / station_store.DATABASE_NAME)
+    connection.executescript(
+        """
+        CREATE TABLE cursors (
+            audience     TEXT PRIMARY KEY,
+            cursor       INTEGER NOT NULL DEFAULT 0,
+            day          TEXT,
+            checkpoint   TEXT,
+            history      TEXT,
+            registration TEXT,
+            updated_at   TEXT
+        );
+        INSERT INTO cursors (audience, cursor, day) VALUES ('session-old', 7, '2026-10-20');
+        """
+    )
+    connection.commit()
+    connection.close()
+
+    store = station_store.StationStore(root)
+    store.heartbeat()
+
+    kept = store.read_cursor("", "session-old")
+    assert kept["cursor"] == 7, "the rebuild dropped the place the store held"
+    assert kept["day"] == "2026-10-20"
+
+    store.write_cursor("proj", "session-old", cursor=9)
+    assert store.read_cursor("proj", "session-old")["cursor"] == 9
+    assert store.read_cursor("", "session-old")["cursor"] == 7
+
+
+def test_two_session_less_subscribers_over_two_projects_hold_separate_places(
+    tmp_path,
+) -> None:
+    """A session-less pane reads as the audience ``*`` in every project it watches.
+
+    The project is part of the key, so two such panes keep two places: keyed on
+    the audience alone they would share one row, and the second pane would open
+    the first's cursor and checkpoint and then skip its own earlier rows or
+    replay rows it had already drawn.
+    """
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    writer.heartbeat()
+
+    def write(project: str, run: str, at: datetime) -> int:
+        return writer.write_event(
+            audience="*",
+            at=at,
+            project=project,
+            run=run,
+            kind="transition",
+            from_state="blocked",
+            to_state="completed_unpromoted",
+            payload={
+                "project": project,
+                "event": "transition",
+                "run_id": run,
+                "node": run,
+                "session": None,
+                "from_state": "blocked",
+                "to_state": "completed_unpromoted",
+                "observed_at": at.isoformat(),
+            },
+        )
+
+    alpha_id = write("alpha", "r-alpha", BASE)
+    beta_id = write("beta", "r-beta", BASE + timedelta(seconds=1))
+
+    clock = _Clock()
+    alpha = StationSubscriber(store, "alpha", session=None, clock=clock)
+    beta = StationSubscriber(store, "beta", session=None, clock=clock)
+
+    drawn_alpha = _deliver(alpha, clock)
+    drawn_beta = _deliver(beta, clock)
+    assert [row["run_id"] for row in drawn_alpha] == ["r-alpha"]
+    assert [row["run_id"] for row in drawn_beta] == ["r-beta"]
+
+    alpha.note_delivered(drawn_alpha[0])
+    beta.note_delivered(drawn_beta[0])
+
+    alpha_row = store.read_cursor("alpha", "*")
+    beta_row = store.read_cursor("beta", "*")
+    assert alpha_row["cursor"] == alpha_id, "the two panes share one place"
+    assert beta_row["cursor"] == beta_id
+    assert alpha_row["checkpoint"]["reported"] == {"r-alpha": "completed_unpromoted"}
+    assert beta_row["checkpoint"]["reported"] == {"r-beta": "completed_unpromoted"}
+
+
+def test_a_station_line_reaches_the_pane_as_the_sentence_it_carries(
+    tmp_path, monkeypatch
+) -> None:
+    """The skip line and the stale line are sentences, not run rows.
+
+    Neither event carries a transition; each carries a sentence in ``line``.
+    Drawn through the transition painter they print an empty clock and an
+    unknown run, so what a reader sees is asserted on the printed pane rather
+    than on the payload the subscriber emitted.
+    """
+    import json
+
+    from click.testing import CliRunner
+
+    from reckon import cli as cli_module
+    from reckon import crew_follow_commands as follow
+
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    skipped = SKIPPED_DAYS_TEXT.format(days=16)
+    stale = STALE_HEARTBEAT_TEXT.format(age="10m")
+    events = [
+        {
+            "event": "station-gap",
+            "project": PROJECT,
+            "session": SESSION,
+            "run_id": None,
+            "skipped_days": 16,
+            "line": skipped,
+            "observed_at": BASE.isoformat(),
+        },
+        {
+            "event": "station-stale",
+            "project": PROJECT,
+            "session": SESSION,
+            "run_id": None,
+            "line": stale,
+            "observed_at": BASE.isoformat(),
+        },
+    ]
+    monkeypatch.setattr(
+        follow, "_follow_watch_lines", lambda *_a, **_kw: (dict(e) for e in events)
+    )
+    monkeypatch.setattr(follow, "_hand_off_from_follower", lambda *_a: False)
+
+    def render(*extra: str) -> list[str]:
+        arguments = ["crew", "follow", "--project", PROJECT, "--session", SESSION]
+        arguments.extend(extra)
+        result = CliRunner().invoke(cli_module.main, arguments)
+        assert result.exit_code == 0, result.output
+        return result.output.splitlines()
+
+    pane = render()
+    assert skipped in "\n".join(pane), pane
+    assert stale in "\n".join(pane), pane
+    drawn = [line for line in pane if skipped in line or stale in line]
+    for line in drawn:
+        assert "->" not in line, "a station sentence was drawn as a run row"
+        assert "unknown" not in line
+
+    stream = [json.loads(line) for line in render("--json")]
+    assert [event["event"] for event in stream] == ["station-gap", "station-stale"]
+    assert [event["line"] for event in stream] == [skipped, stale]
+
+
+def test_a_second_pane_of_one_session_waits_for_the_claim_and_takes_it_over(
+    tmp_path, monkeypatch
+) -> None:
+    """Only the pane holding the session's registration writes that row.
+
+    The row is one session's place."""
+    from reckon import crew_follow_commands as follow
+
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    writer.heartbeat()
+    clock = _Clock()
+    first = _subscriber(store, clock)
+    second = _subscriber(store, clock)
+
+    one = follow._StationRegistration(
+        first, project=PROJECT, session=SESSION, delivery="stream"
+    )
+    two = follow._StationRegistration(
+        second, project=PROJECT, session=SESSION, delivery="json"
+    )
+
+    assert one.acquire() is True
+    assert one.held is True
+    assert store.read_cursor(PROJECT, SESSION)["registration"]["delivery"] == "stream"
+
+    assert two.acquire() is False, "a second pane took the claim the first holds"
+    assert two.held is False
+    assert second.persist is False
+
+    _write(writer, BASE, _event(from_state="", to_state="lift-granted"))
+    clock.now += 1
+    drawn = list(second.poll())
+    clock.now += ticker.SETTLE_WINDOW + 1
+    drawn += list(second.flush())
+    assert [row["to_state"] for row in drawn] == ["lift-granted"]
+    assert second.cursor == 0, "the refused pane moved the holder's place"
+    held_row = store.read_cursor(PROJECT, SESSION)
+    assert held_row["cursor"] == 0 and held_row["checkpoint"] is None
+    assert held_row["registration"]["delivery"] == "stream"
+
+    one.release()
+    assert store.read_cursor(PROJECT, SESSION)["registration"] is None
+    assert two.acquire() is True, "the claim did not pass to the waiting pane"
+    assert two.held is True
+    assert second.persist is True
+    assert store.read_cursor(PROJECT, SESSION)["registration"]["delivery"] == "json"
+    two.release()
+    assert second.persist is False
+
+
+def test_follow_reads_the_station_where_the_node_runs_one(
+    tmp_path, monkeypatch
+) -> None:
+    """The wired command, not the subscriber alone: the pane prints the row.
+
+    A node with a beaten station and a matching crew home delivers from the
+    station's store; the row below exists nowhere else, so a follower that fell
+    back to a producer's stream could not print it.
+    """
+    from click.testing import CliRunner
+
+    from reckon import cli as cli_module
+    from reckon import crew_follow_commands as follow
+    from reckon.crew import station_store
+    from reckon.crew.runs import crew_home
+
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+    runtime = tmp_path / "runtime"
+    store = station_store.StationStore(runtime)
+    store.set_station_value(station_store.CREW_HOME_KEY, str(crew_home()))
+    store.heartbeat()
+    writer = station_store.StationStore(runtime)
+    writer.write_event(
+        audience=SESSION,
+        at=BASE,
+        project=PROJECT,
+        run="r-station",
+        kind="transition",
+        from_state="",
+        to_state="lift-granted",
+        payload=_event(run="r-station", from_state="load", to_state="lift-granted"),
+    )
+    writer.close()
+
+    monkeypatch.setattr(
+        station_store.StationStore,
+        "at_runtime_root",
+        classmethod(lambda cls, **_kw: station_store.StationStore(runtime)),
+    )
+    monkeypatch.setattr(follow, "_hand_off_from_follower", lambda *_a, **_kw: False)
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "follow",
+            "--project",
+            PROJECT,
+            "--session",
+            SESSION,
+            "--lifetime",
+            "3s",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert "r-station" in result.output, result.output
+    store.close()
+
+
+def test_a_day_file_that_cannot_be_opened_is_skipped(tmp_path, monkeypatch) -> None:
+    """A day file that cannot be opened holds nothing to deliver.
+
+    A file's attach is a read race in its own right: retention can unlink one
+    between the listing and the statement, and a day still being written can be
+    unreadable for the moment the writer holds it. Raising there would end a
+    subscriber over one day whose rows it can read on the next poll, so the day
+    is skipped for the pass and every other day still delivers.
+    """
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    writer.heartbeat()
+    _write(writer, BASE, _event(from_state="", to_state="lift-granted"))
+
+    present = list(store.day_files())
+    assert present, "the fixture wrote no day file"
+    refused = store.day_directory / "events-2099-01-01.sqlite3"
+    refused.write_bytes(present[0].read_bytes())
+    refused.chmod(0o000)
+    monkeypatch.setattr(store, "day_files", lambda: [*present, refused])
+
+    rows = store.events_for(project=PROJECT, audiences=[SESSION], after_id=0)
+    assert [row["to_state"] for row in rows] == ["lift-granted"]
+
+
+def test_a_subscriber_keeps_renewing_its_delivery_lease(tmp_path, monkeypatch) -> None:
+    """The producers are not retired, so the pane keeps saying it still delivers.
+
+    A reader on another host cannot take the registration's advisory lock, so
+    the lease beside it is the only fact by which such a reader judges that this
+    pane is still delivering. A subscriber that writes it once and never renews
+    it reads as a dead pane one lease interval after it attached, while its rows
+    keep arriving.
+    """
+    import json
+
+    from reckon import cli as cli_module
+    from reckon.crew import follower_registration, runs, station
+    from reckon.crew.runs import crew_home
+    from reckon.crew_follow_commands import _StationRegistration
+
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    # A short interval, so the renewal cadence is measured rather than waited
+    # out: the writer throttles itself to half of whatever interval it reads.
+    monkeypatch.setattr(runs, "producer_lease_seconds", lambda: 0.4)
+
+    store = _store(tmp_path)
+    writer = _store(tmp_path)
+    station.Station(writer, home=crew_home(), projects=dict)
+    writer.heartbeat()
+    subscriber = _subscriber(store, _Clock())
+
+    stop = threading.Event()
+
+    def reader() -> None:
+        list(
+            cli_module._follow_watch_lines(
+                PROJECT,
+                session=SESSION,
+                poll_interval=0.001,
+                stop=stop,
+                sweep=None,
+                subscriber=subscriber,
+                registration=_StationRegistration(subscriber),
+            )
+        )
+
+    thread = threading.Thread(target=reader, daemon=True)
+    thread.start()
+    lease = follower_registration.follower_lease_path(PROJECT, SESSION)
+
+    def renewed_at() -> float | None:
+        try:
+            return float(json.loads(lease.read_text())["renewed_at"])
+        except (OSError, ValueError, KeyError):
+            return None
+
+    try:
+        deadline = time.monotonic() + 8
+        first = None
+        while time.monotonic() < deadline and first is None:
+            time.sleep(0.02)
+            first = renewed_at()
+        assert first is not None, "the subscriber wrote no delivery lease"
+        later = first
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline and later <= first:
+            time.sleep(0.02)
+            later = renewed_at() or first
+    finally:
+        stop.set()
+        thread.join(timeout=5)
+
+    assert not thread.is_alive()
+    assert later > first, "the lease was written once and never renewed"
+    assert lease.is_relative_to(crew_home())
+    assert lease.exists(), "the subscriber wrote no delivery lease"
+    assert lease.is_relative_to(crew_home())
