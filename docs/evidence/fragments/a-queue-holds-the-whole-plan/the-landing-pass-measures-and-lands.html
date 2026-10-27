@@ -40,9 +40,15 @@ is <em>unmeasurable</em>: no failure id is taken from a partial log, the landing
 is refused and the run's obligation is raised. A pass measures at most one
 delivered run (the rest are deferred in delivery order), a measurement is stored
 per run and head and reused while the head is unchanged, and the base checkout
-is built under node-local temporary storage and removed on every exit path,
-including a checkout that times out.</p>
-<p>Measured on the node's gate: thirteen tests pass against a test suite with
+is built under the fleet's own node-local scratch root
+(<code>dispatch_launch.worker_scratch_root</code>, which rejects a shared-storage
+<code>TMPDIR</code>) and removed on every exit path, including a checkout that
+times out. A removal that fails or exceeds its bound leaves the repository's
+worktree registration behind, so it is pruned with
+<code>git worktree prune --expire now</code> under the same bound; a stale entry
+would otherwise make a later checkout of the same path fail. A measurement that
+raises is reported as itself, not as a base checkout that could not be built.</p>
+<p>Measured on the node's gate: fifteen tests pass against a test suite with
 stubbed repositories and commands, covering a clean population landing with its
 armed suite pair recorded, a flaky added id landing, a real added id refused
 with one obligation naming it, the landing beat ticking the section, a run
@@ -51,7 +57,9 @@ whose review is not accepted left untouched, narrowing across
 multi-file command, an unreadable arm refusing the landing, a measurement that
 exceeds its bound refusing the landing with no scratch tree left behind, a pass
 with three delivered runs measuring exactly one, and a second pass reusing the
-stored measurement of an unchanged head. The importer population — every test
+stored measurement of an unchanged head, a failed worktree removal leaving no
+entry in <code>git worktree list</code>, and a measurement error that keeps its
+own message. The importer population — every test
 file importing <code>landing_measure</code>, <code>queue_landing</code> or
 <code>queue_admission</code> — shows no added failure at the delivered head.</p>
 </section>
