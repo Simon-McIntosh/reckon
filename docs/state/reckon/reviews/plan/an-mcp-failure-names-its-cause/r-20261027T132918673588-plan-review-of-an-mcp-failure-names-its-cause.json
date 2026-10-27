@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T13:42:01.160Z",
+  "dispatched_at": "2026-10-27T13:32:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261027T132918673588-plan-review-of-an-mcp-failure-names-its-cause/plan.html:250",
+      "id": "wiring-1",
+      "reason": "the stale followup makes the plan's declared remaining work disagree with its own section state and will dispatch a node at work that is already merged.",
+      "text": "f-amfc-004 is `open` with prompt `/reckon-build an-mcp-failure-names-its-cause \u00a713`, but s13 is declared `done` (plan.html:24, :176) and its landing is recorded in docs/evidence/archive/an-mcp-failure-names-its-cause-landed.html#s13 (\"landed at merge 9c9290630\"); a coordinator reading the open-work list is sent to rebuild a landed section",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261027T132918673588-plan-review-of-an-mcp-failure-names-its-cause/plan.html:216",
+      "id": "done_when-1",
+      "reason": "as written the control can report green on the unmodified code, so the node's guard-fire evidence rests on a condition the fixture never applies; the fixture must make the registration files (or the mount) unwritable.",
+      "text": "\u00a718's control is \"restoring the `a+b` open in `_follower_liveness` raises the read-only error\", but its fixture only \"makes the crew home read-only\", and a read-only home does not stop `open(path, \"a+b\")` on an existing file the run's user owns (measured: a 0644 file under a 0555 directory opens `a+b` without error; only creating a new path raised PermissionError)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261027T132918673588-plan-review-of-an-mcp-failure-names-its-cause/plan.html:214",
+      "id": "naming-1",
+      "reason": "dispatch and the surface key on `id=\"s18\"` and `data-id=\"s18\"`, which are correct, so the omission costs only a reader's orientation and changes no node's work.",
+      "text": "the heading reads \"A session-scoped live read writes nothing either\" where all seventeen other sections read \"\u00a7N \u2014 \u2026\", so the document's own numbering convention skips \u00a718",
+      "type": "naming",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261027T132918673588-plan-review-of-an-mcp-failure-names-its-cause/plan.html:216",
+      "id": "reasoning-1",
+      "reason": "a builder following the Why would either change a legitimate writer that must keep creating the watch directory (breaking arming) or spend the node proving a site the read never reaches, and the real fourth site is `_fresh_watch_holder` and the follower opens, which the section already names separately.",
+      "text": "\u00a718 says \"`watch_state` and `_register_watch_unit` in `reckon/crew/watch_unit.py` still create the watch directory and open the seat `a+b`\" under a session-scoped live read, but the live view reaches only `project_watch_visibility` (reckon/mcp_views.py:4224 \u2192 reckon/crew/runs.py:3673), which calls `_probe_seat_read_only`, `_fresh_watch_holder`, `list_followers`/`follower_state` and `_reconcile_watch_record`; `watch_state` and `_register_watch_unit` are called only from the arming and service-launch paths (reckon/crew/watch_unit.py:862, :938)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_fingerprint": "b4adafe5d6f5c3e6de2d49d73d69153fc6c84287ddedbfa70b58b80f9f141e8d",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 121,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T132918673588-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "6ca8b2da4fb7f57bca33842aa8de8bdeb6827344",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_follower_liveness` (reckon/crew/follower_registration.py:533), `watch_state` (:465), `_register_watch_unit` (:614), `release_holder` (reckon/crew/host_lease.py:149) and `_probe_seat_read_only` (reckon/crew/runs.py:3648) each resolve at the cited module, and the plan-level depends-on `reckon-reads-answer-in-seconds` (\u00a71's href `/reckon/reckon-reads-answer-in-seconds`) resolves as docs/plans/reckon-reads-answer-in-seconds.html.",
+    "done_when": "a finding \u2014 \u00a718's negative control depends on a \"read-only crew home\" that a directory chmod does not actually make read-only for the `a+b` open it is meant to break.",
+    "evidence_paths": "pass \u2014 \u00a718's gate follows the plan's convention of writing every log under the run directory, as \u00a715, \u00a716 and \u00a717 name explicitly \u2014 \u00a718's own write paths are all in-repo and its logs land in the run directory by that convention.",
+    "naming": "a finding \u2014 \u00a718's heading is the only section whose text omits its number; no plan label reaches a symbol or path.",
+    "reasoning": "a finding \u2014 two of the four write sites \u00a718 attributes to the session-scoped live read are not on that read's call path at all.",
+    "single_goal": "pass \u2014 \u00a718 carries one deliverable, a session-scoped live read that writes nothing.",
+    "wiring": "a finding \u2014 the open work list still carries f-amfc-004 recommending \u00a713, which has landed, while the new f-amfnic-018 correctly names \u00a718 (plan.html:250, :278)."
+  },
+  "section_digests": {
+    "_document": "a3709cd54e75999376d4c5d921632d1c47a7ba1c767f52ebb63d9d3b54b27d56",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "ba5d0db257057d6dede25c9555898552abc78e291d39b953a7da192229ffbd2f",
+    "s12": "371c3889cd142db38637604c178d996b86294895ad0edc5534d1731f0271fefe",
+    "s13": "79a2b6dff46b0ddd765c409edeb1596fe9bbdf3e4c884875a0e137630010b0db",
+    "s14": "9c62796a08277a796de0c39af58a83a98ae5b16d930532f934636d24dad5d4c5",
+    "s15": "2cc785cc7428c93e41c236ddb2a247143254032421d61d555e7da335bcaf3734",
+    "s16": "144aaa17b20cffc95b3b9ca1166d7efa4069f736dbf892de8f81914afcd8bb31",
+    "s17": "81144ffa35b8763d57edc6f75fe9526743f0644d38d442d3c684e76396ebd7f2",
+    "s18": "32c2896c0fafb6dd27a3d6c5edcdbec1257128e1a82292a1519cbf516d0d50dd",
+    "s2": "3a0632a9c77266389bb16c116a82d809d3c62b98f0ca44f8c9f8eb4ccde7a18e",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "16d91b56539888d5683fc9808616b764742e6c7e93516541ff6dc793aec9fc84",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T13:48:14.644909+00:00"
+}
