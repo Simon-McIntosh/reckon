@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="133">
+<meta name="plan-version" content="134">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -156,6 +156,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-close-s9" data-who="" data-when="">
     <div class="r-comment-body"><p>Landed at merge <code>54290305f</code>: the drain view lists unloaded sections, and its reads write nothing. <a href="/reckon/evidence/archive/a-queue-holds-the-whole-plan-landed.html#s9-drain-lists-unloaded">Landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s17-dedup-exclusion" data-who="" data-when="">
+    <div class="r-comment-body"><p>From the read-back of version 133. Unlinking the pointer in <code>_launch_queued</code> also keeps <code>dispatch()</code>'s <code>existing_node_run</code> dedup (<code>reckon/crew/dispatch.py:1694</code> and <code>:1814</code>) from reading the launch as an already-queued node and re-queuing it. Keeping the pointer published therefore needs the request's own run id excluded from that dedup as well as from the scope check. The fifth arm proves both: the launch proceeds rather than returning the existing request, and the pointer stays present throughout.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-plan-group-20261023" data-who="reckon-42" data-when="2026-10-23T17:40:00Z">
     <div class="r-comment-body"><p><strong>The plans this one consolidates, grouped on 23 October 2026.</strong> This plan is the single live owner of queue-first dispatch; the others either built its substrate or are retired into it.</p><ul><li><strong>Queue substrate, done:</strong> <code>a-held-dispatch-waits-its-fair-turn</code> (the queue, the admit service, per-session share), <code>a-coordinator-can-clear-its-own-duties</code> (the review exemption §3 moves), <code>a-held-session-routes-to-a-serving-lane</code> and <code>advise-the-lane-never-force-it</code> (a hold queues for local).</li><li><strong>Slot fairness, superseded by §4:</strong> <code>the-local-lane-is-the-default</code> §11, §12 and §15 (dispatch counts against the router's per-session slots) and <code>imas-ambix:local-lane-admission-control</code> §22 (the router's per-session split), retired by that plan's §27, which waits on §4 here.</li><li><strong>Lane choice:</strong> <code>lane-and-model-routing</code> §47 to §54 (lifts and pace), which §7 here consumes.</li><li><strong>Landing without the coordinator:</strong> <code>the-crew-does-its-own-bookkeeping</code> §22 and <code>a-review-is-sized-to-its-risk</code>, which §6 consumes.</li><li><strong>Runtime the drain rests on:</strong> <code>the-fleet-node-stays-in-service</code>, <code>a-worker-is-charged-to-a-job</code> and <code>a-dispatch-returns-without-its-worker</code>. A week-long drain needs the admit service and fleet node to stay up, and §14 records any outage it meets.</li></ul><p>§8 to §14 were added the same day so that the queue respects the work's DAG across projects, a coordinator can hold, release and bump queued work, a plan edit cannot strand a queued request, and a final dogfood phase proves a week-long drain.</p></div>
