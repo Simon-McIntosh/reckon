@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>the-landing-pass-measures-and-lands — landing record</title>
+</head>
+<body>
+<main>
+<section id="the-landing-pass-measures-and-lands-record">
+<h2>The landing pass measures the suite before it lands a run</h2>
+<p>A delivered implementation run is no longer landed on the run's accepted review
+alone. <code>reckon/crew/landing_measure.py</code> runs three readings before the
+landing: the run's armed command at the base revision and at the delivered head,
+the importer population (the test files importing each module the change
+touched) at both revisions in parallel with <code>-n 8</code>, and every test id
+that fails at the head and not at the base, re-run alone three times at each
+revision. An id is a regression only when it fails at the head more often than at
+the base, so a flake that fails as often at base as at head does not hold the
+landing.</p>
+<p><code>reckon/crew/queue_landing.py</code> refuses to land a run whose
+measurement names a regression, raises one obligation naming each real id with
+its isolated base and head results, and otherwise lands the run and records the
+suite pair as the run's evidence. On a landing it also records the landing beat
+through the same <code>edit_plan</code> ops a coordinator uses: the node's
+evidence anchor in the cumulative landing record, the section's declaration set
+to <code>done</code>, and the <code>c-close-&lt;section&gt;</code> comment
+linking to the anchor.</p>
+<p>Measured on the node's gate: six tests pass against a fixture repository with
+stubbed test commands, covering a clean population landing with its armed suite
+pair recorded, a flaky added id landing, a real added id refused with one
+obligation naming it, the landing beat ticking the section, and a run whose
+review is not accepted left untouched. The importer population
+(<code>tests/test_queue_landing.py</code> at the base revision
+<code>9e363fe50</code> and at the head) adds no failures: 8 passed at both arms.</p>
+</section>
+</main>
+</body>
+</html>

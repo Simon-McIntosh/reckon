@@ -10,7 +10,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from reckon.crew import recovery, runs
+from reckon.crew import landing_measure, recovery, runs
 from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
 
 _run_srun = subprocess.run
@@ -28,6 +28,142 @@ def _record_attempt(run_id: str, *, head: str, guard: str, status: str) -> None:
         return pointer
 
     runs._mutate_pointer(run_id, mutation)
+
+
+def _record_suite_evidence(run_id: str, measured: landing_measure.Measurement) -> None:
+    """Keep the measurement where a later reader can open it.
+
+    The live pointer loses this at promotion, so the run's own directory holds
+    the pair as well.
+    """
+
+    record = measured.as_dict()
+    directory = runs.run_dir(run_id) / "landing-measure"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "measurement.json").write_text(
+        json.dumps(record, indent=2, sort_keys=True), encoding="utf-8"
+    )
+
+    def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer["suite_evidence"] = record
+        return pointer
+
+    runs._mutate_pointer(run_id, mutation)
+
+
+def _measure_delivery(
+    pointer: Mapping[str, Any], run_id: str, head: str, tree: str
+) -> Any:
+    """Run the three suite readings for one delivered run.
+
+    A run that armed no command has nothing to measure; the landing path keeps
+    its earlier behaviour for such a run rather than inventing a command.
+    """
+    command = str(pointer.get("suite_command") or "").strip()
+    if not command:
+        return None
+    base_sha = str(pointer.get("base_sha") or "").strip()
+    repo = Path(str(pointer.get("repo") or tree or ""))
+    if not base_sha or not repo.is_dir():
+        return landing_measure.Measurement(
+            command=command,
+            suite={},
+            population={},
+            unreadable="the run records no base revision to compare against",
+        )
+    logs = runs.run_dir(run_id) / "landing-measure"
+    with landing_measure.base_checkout(repo, base_sha) as base_tree:
+        measured = landing_measure.measure_run(
+            command=command,
+            tree=Path(tree),
+            base_sha=base_sha,
+            head_sha=head,
+            base_tree=base_tree,
+            logs_dir=logs,
+        )
+    _record_suite_evidence(run_id, measured)
+    return measured
+
+
+def _measure_guard(measured: Any) -> str:
+    """The refusal a measurement states, or "" when the run may land."""
+    if measured is None:
+        return ""
+    if measured.unreadable:
+        return f"landing measure unreadable: {measured.unreadable}"
+    if not measured.real:
+        return ""
+    details = []
+    for test_id in measured.real:
+        results = measured.isolated.get(test_id) or {"base": [], "head": []}
+        details.append(
+            f"{test_id} failed {sum(results['head'])}/{len(results['head'])} at head "
+            f"and {sum(results['base'])}/{len(results['base'])} at base"
+        )
+    return "added suite regression: " + "; ".join(details)
+
+
+def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
+    """Tick the landed node's section through the ops a coordinator uses.
+
+    Returns "" when the beat was recorded or the run names no plan section, and
+    the refusal otherwise. The evidence anchor is the node's own fragment path,
+    so a reader follows the closing comment to the record the worker wrote.
+    """
+    node = pointer.get("node") if isinstance(pointer.get("node"), Mapping) else {}
+    plan = str(node.get("plan") or "").strip()
+    section = str(node.get("section") or "").strip()
+    project = str(pointer.get("project") or "").strip()
+    repo = str(pointer.get("repo") or "").strip()
+    if not (plan and section and project and repo):
+        return ""
+    from datetime import UTC, datetime
+
+    from reckon import _store
+    from reckon.mcp_edit_plan import _edit_plan_tool
+
+    anchor = str(node.get("id") or run_id)
+    record_href = f"/{project}/evidence/archive/{plan}-landed.html#{anchor}"
+    body = (
+        f"<p>Landed {run_id} on the measured suite pair; "
+        f'<a href="{record_href}">evidence</a></p>'
+    )
+    ops = [
+        {
+            "op": "append_evidence",
+            "plan": plan,
+            "anchor": anchor,
+            "title": f"{section} landed",
+            "body": f"<p>Run <code>{run_id}</code> landed after the landing pass "
+            "measured its suite at base and head.</p>",
+        },
+        {"op": "set", "path": f"section_declarations.{section}", "value": "done"},
+        {
+            "op": "append",
+            "target": "comments",
+            "section": section,
+            "item": {
+                "id": f"c-close-{section}",
+                "who": "reckon-build",
+                "when": datetime.now(UTC).isoformat(),
+                "body": body,
+            },
+        },
+    ]
+    _data, version = _store.read_plan(project, plan, repo)
+    try:
+        result = _edit_plan_tool(
+            project,
+            plan,
+            expected_version=version,
+            ops=ops,
+            checkout_path=repo,
+        )
+    except (OSError, ValueError) as exc:
+        return f"landing beat refused: {type(exc).__name__}: {exc}"
+    if not result.get("ok"):
+        return f"landing beat refused: {result.get('error') or 'unknown refusal'}"
+    return ""
 
 
 def _land_command(run_id: str) -> list[str]:
@@ -150,6 +286,18 @@ def land_once() -> dict[str, Any]:
                 }
             )
             continue
+        measured = _measure_delivery(pointer, run_id, head, tree)
+        measure_guard = _measure_guard(measured)
+        if measure_guard:
+            _record_attempt(run_id, head=head, guard=measure_guard, status="refused")
+            obligations.append(
+                {
+                    "run_id": run_id,
+                    "session": str(pointer.get("session") or ""),
+                    "guard": measure_guard,
+                }
+            )
+            continue
         _record_attempt(run_id, head=head, guard="crew land", status="attempting")
         try:
             accepted, guard = _land(run_id)
@@ -157,6 +305,15 @@ def land_once() -> dict[str, Any]:
             accepted, guard = False, f"{type(exc).__name__}: {exc}"
         if accepted:
             landed.append(run_id)
+            beat_refusal = _landing_beat(pointer, run_id)
+            if beat_refusal:
+                obligations.append(
+                    {
+                        "run_id": run_id,
+                        "session": str(pointer.get("session") or ""),
+                        "guard": beat_refusal,
+                    }
+                )
         else:
             guard = guard or "crew land refused without a guard"
             _record_attempt(run_id, head=head, guard=guard, status="refused")
