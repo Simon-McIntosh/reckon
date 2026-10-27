@@ -1178,7 +1178,6 @@ def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]
             "id": identity,
             "capability": _capability_from_values(attrs, prefix="data-capability-"),
             "status": attrs.get("data-status"),
-            "descope_reason": (attrs.get("data-descope-reason") or "").strip() or None,
             "links": [
                 ref.strip()
                 for ref in attrs.get("data-links", "").split(",")
@@ -1194,6 +1193,9 @@ def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]
                 record[field] = convert(value)
             except (TypeError, ValueError):
                 record[field] = value
+        reason = (attrs.get("data-descope-reason") or "").strip()
+        if reason:
+            record["descope_reason"] = reason
         records.append(record)
     if not records:
         return []
