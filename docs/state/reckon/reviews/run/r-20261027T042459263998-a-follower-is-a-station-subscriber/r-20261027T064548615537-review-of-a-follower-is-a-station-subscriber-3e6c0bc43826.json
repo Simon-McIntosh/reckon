@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/session_host.py:235",
+    "reckon/crew/station.py:238",
+    "reckon/crew_follow_commands.py:3077"
+  ],
+  "completed_at": "2026-10-27T06:53:37.691Z",
+  "dispatched_at": "2026-10-27T06:47:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station_store.py",
+      "line": "1069",
+      "severity": "non-blocking",
+      "text": "events_for duplicates the day-file attach loop, the _is_a_read_race guard, the payload-column fallback and the id sort of the existing events() at station_store.py:1016, so the two readers now carry the same race handling and a fix to one leaves the other stale."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": "135",
+      "severity": "non-blocking",
+      "text": "the audience is `session or \"*\"` and the cursors table is keyed on audience alone, so two session-less followers over different projects share one cursor, checkpoint and history row, and the second reads the first project's place and remembered states."
+    },
+    {
+      "file": "docs/figures/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber/crew-home-paths.svg",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the node added a figure its done-when does not name, which the small-node contract forbids even though the figures directory is a declared write path; the figure is sound but it is scope the node did not owe."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "pass \u2014 read commit by commit from c30c057d4 to 3e6c0bc43: a new subscriber module, the store's cursor API and day-file reader, the follower wiring, two test files, an evidence fragment and a figure; the final commit only removes a section label from a docstring.",
+    "done_when": "pass \u2014 the three named pane suites, the retargeted freshness case and the node's own nine cases ran in logs/gate-pane-suites.log (53 passed EXIT=0), and the six new behaviours are present in tests/test_a_follower_is_a_station_subscriber.py, though the done-when's ruff clause has no recorded result and the 60 s trace names one `crew/live` stat the measure does not permit.",
+    "goal": "pass \u2014 reckon/crew/station_subscriber.py holds one pane's place in the station's event sequence and reckon/crew_follow_commands.py:3084 polls it on the follower's wait loop, so `crew follow` reads its session's rows from the node store after a stored (sequence, UTC day) cursor and falls back to the producer's stream only when no station has beaten for this crew home.",
+    "manifest": "pass \u2014 read in full; it records status complete, ten commits ending 3e6c0bc43, both armed arms with their logs (base EXIT=4 collection error, head 19 passed EXIT=0), the importer-population arms (1 failed 488 passed at base, 1 failed 497 passed at head, same id), the negative-control log and two outside_scope entries.",
+    "write_paths": "pass \u2014 all eight paths in the diff (reckon/crew/station.py, station_store.py, station_subscriber.py, reckon/crew_follow_commands.py, both test files, the evidence fragment and the figures directory) are inside the manifest's declared set; reckon/crew/follow_checkpoint.py was declared and is untouched."
+  },
+  "justifications": {
+    "durability": "16",
+    "evidence": "15",
+    "fit": "17",
+    "goal_fidelity": "18",
+    "reuse": "5",
+    "scope_discipline": "16"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 reckon/crew/station_subscriber.py holds one pane's place in the station's event sequence and reckon/crew_follow_commands.py:3084 polls it on the follower's wait loop, so `crew follow` reads its session's rows from the node store after a stored (sequence, UTC day) cursor and falls back to the producer's stream only when no station has beaten for this crew home.\nVERDICT done_when: pass \u2014 the three named pane suites, the retargeted freshness case and the node's own nine cases ran in logs/gate-pane-suites.log (53 passed EXIT=0), and the six new behaviours are present in tests/test_a_follower_is_a_station_subscriber.py, though the done-when's ruff clause has no recorded result and the 60 s trace names one `crew/live` stat the measure does not permit.\nVERDICT write_paths: pass \u2014 all eight paths in the diff (reckon/crew/station.py, station_store.py, station_subscriber.py, reckon/crew_follow_commands.py, both test files, the evidence fragment and the figures directory) are inside the manifest's declared set; reckon/crew/follow_checkpoint.py was declared and is untouched.\nVERDICT manifest: pass \u2014 read in full; it records status complete, ten commits ending 3e6c0bc43, both armed arms with their logs (base EXIT=4 collection error, head 19 passed EXIT=0), the importer-population arms (1 failed 488 passed at base, 1 failed 497 passed at head, same id), the negative-control log and two outside_scope entries.\nVERDICT diff: pass \u2014 read commit by commit from c30c057d4 to 3e6c0bc43: a new subscriber module, the store's cursor API and day-file reader, the follower wiring, two test files, an evidence fragment and a figure; the final commit only removes a section label from a docstring.\nCALL_SITES: reckon/crew/session_host.py:235, reckon/crew/station.py:238, reckon/crew_follow_commands.py:3077\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station_subscriber.py:298 advances the cursor in the same pass that feeds ticker.PaneRowPath, and reckon/crew_follow_commands.py:3084 makes that the follower's delivery path; the session-less audience row at station_subscriber.py:135 is shared across projects, which the goal does not ask of a per-pane place.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate log and the negative control (3 of 9 cases red, EXIT=1) are on disk and I re-counted the trace's 1836 crew-home records against 1 checkpoint record in the control, but the done-when's ruff clause has no log and logs/strace-measure.txt:1 names one `crew/live` stat beyond the two leases the measure allows.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every hunk in `git diff c30c057d4 3e6c0bc43` is under a declared write path, but docs/figures/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber/crew-home-paths.svg is a figure the node's done-when does not name and the small-node contract withholds.\nSCORE durability: 16\nJUSTIFICATION durability: the negative control makes tests/test_a_follower_is_a_station_subscriber.py:150 fail when the cursor columns are dropped, and the trace control proves the checkpoint path, but no test exercises _station_subscriber_for at reckon/crew_follow_commands.py:140, so a regression forcing every follower back to the producer leaves all 53 gate cases green.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/station_subscriber.py follows the row-path idiom of reckon/crew/ticker.py and the store's read/write method shape, carries no plan or ticket label, and module docstrings describe the mechanism rather than the section.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/station_store.py:1069 events_for re-implements the attach loop, read-race guard, column/payload handling and sort of the existing events() reader at station_store.py:1016 instead of extending it with its three new filters.\nFINDING reckon/crew/station_store.py:1069 non-blocking: events_for duplicates the day-file attach loop, the _is_a_read_race guard, the payload-column fallback and the id sort of the existing events() at station_store.py:1016, so the two readers now carry the same race handling and a fix to one leaves the other stale.\nFINDING reckon/crew/station_subscriber.py:135 non-blocking: the audience is `session or \"*\"` and the cursors table is keyed on audience alone, so two session-less followers over different projects share one cursor, checkpoint and history row, and the second reads the first project's place and remembered states.\nFINDING docs/figures/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber/crew-home-paths.svg:1 non-blocking: the node added a figure its done-when does not name, which the small-node contract forbids even though the figures directory is a declared write path; the figure is sound but it is scope the node did not owe.\n",
+  "review_run_id": "r-20261027T064548615537-review-of-a-follower-is-a-station-subscriber-3e6c0bc43826",
+  "reviewed_base_sha": "c30c057d4921f78af11a68ae3b4f0f94ff11a66a",
+  "reviewed_head_sha": "3e6c0bc43826b6d796afda00badb1f2e8efd3dca",
+  "reviewed_run_id": "r-20261027T042459263998-a-follower-is-a-station-subscriber",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T06:57:21.421012+00:00",
+  "total": 87
+}
