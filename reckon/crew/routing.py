@@ -2675,9 +2675,10 @@ def require_plan_reviewed(
             if finding not in unanswered
         ]
     # A finding's identity names no unit, so an unanswered one cannot be
-    # attributed to the caller's scope; the narrowed admission check answers
-    # only whether the units it reads are covered.
-    if unanswered and scope is None:
+    # attributed to the caller's scope: narrowing the coverage judgment to the
+    # units a request reads says nothing about whether the review that carried
+    # the finding was read, so the refusal stands whatever the scope.
+    if unanswered:
         return _plan_review_verdict(
             enforce,
             f"the review of plan {node.plan!r} leaves {len(unanswered)} "
