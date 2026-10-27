@@ -2150,7 +2150,7 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
                     cache=wait_cache,
                     dead_sections=dead_sections,
                 )
-                == queue_admission.QUEUED_PHASE
+                != phase
             )
         for view in targets(plan):
             view["phases"][bucket] += 1
