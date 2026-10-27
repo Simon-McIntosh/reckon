@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T11:23:34.013Z",
+  "dispatched_at": "2026-10-27T11:08:32Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head-arm sentence defers the revision to `.../logs/after-armed.log`, a path under the run's home directory rendered with a literal ellipsis that cannot be opened as written, and the fragment names no head sha at all, so the commit's stated purpose of naming the revision the head arm ran at is met only inside a log the committed document does not link."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "non-blocking: \"24 passed ... the same count in both runs\" asserts a head arm at 4d4a74a62 that no surviving log records, because after-armed.log was overwritten at 11:27:30 by the f93b308e8 arm and the only 4d4a74a62 log on disk is gate-pane-suites.log (58 passed over five files), so half of the claim cannot be verified from the delivered evidence."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "non-blocking: \"the manifest records the same two runs as its baseline_suite and after_suite\" does not hold of the delivered manifest.md, whose baseline_suite line 28 names revision c30c057d with exit_status 4 and a log whose body is a collection error, so a reader who follows the fragment to the manifest finds no 21-passed run there; the ab7098ee0 pair lives only in the sidecar manifest.md.asdelivered-repair-base-arm, which the live line's note names."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the range eb435418a..f93b308e8 against f93b308e8, one commit touching one file, one insertion and one deletion; the change adds the clause \"and again at the evidence-only head on top of it where .../logs/after-armed.log now records it\" and keeps \"24 passed, EXIT=0\".",
+    "done_when": "the node's measure is the three pane suites plus the retargeted freshness case plus the armed pair, recorded in the reviewed run's gate logs; this delta's own claim is checked against logs/after-armed.log, whose header names revision f93b308e8 and whose body reads \"24 passed in 25.01s / EXIT=0\" and logs/baseline-armed.log, whose header names ab7098ee0 and whose body reads \"21 passed in 10.07s / EXIT=0\"; both match the sentence, but the \"same count in both runs\" clause has no surviving log for the 4d4a74a62 arm.",
+    "goal": "the reviewed run's goal is that `crew follow` becomes a station subscriber reading its session's rows after a stored cursor; this round's delta is the single docs commit f93b308e8 closing out that evidence anchor, which restates one sentence in docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html:43 rather than changing the code the earlier reviews scored.",
+    "manifest": "the reviewed run's manifest.md reads status complete with nineteen commits and the two armed arms recorded as baseline_suite (c30c057d, exit_status 4, log text \"file or directory not found ... no tests ran\") and after_suite (f93b308e8, exit 0, failure_count 0); the ab7098ee0 21-passed arm the fragment names is kept only in the sidecar manifest.md.asdelivered-repair-base-arm line 28.",
+    "write_paths": "the reviewed run declares nine write paths in its manifest line 5 and line 14; the delta touches exactly one of them, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html, as one changed hunk of one line."
+  },
+  "justifications": {
+    "durability": "the delta is prose only and adds no assertion, so no test reddens if the fragment's figures drift from the logs, and the 4d4a74a62 arm's own log was already overwritten inside the same run at 11:27:30 overwriting evidence the sentence relies on.",
+    "evidence": "the added figures reconcile with logs/after-armed.log (\"24 passed in 25.01s\", EXIT=0, header revision f93b308e8) and logs/baseline-armed.log (\"21 passed\", EXIT=0, ab7098ee0), but the \"same count in both runs\" half of the sentence has no surviving log on disk.",
+    "fit": "the prose matches the surrounding paragraphs of the same fragment, but it writes the log as `.../logs/after-armed.log` where every other reference on the page is a full code path, and a truncated path with a literal ellipsis cannot be opened.",
+    "goal_fidelity": "the commit subject says it names the revision the head arm was re-run at, but docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html:43 names no head sha, only \"the evidence-only head on top of it\" and a truncated log path.",
+    "reuse": "the delta adds no definition, so there is no capability to check for duplication; the only mechanism touched is the evidence fragment already owned at docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html.",
+    "scope_discipline": "the single hunk in the delta changes the one declared path docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed run's goal is that `crew follow` becomes a station subscriber reading its session's rows after a stored cursor; this round's delta is the single docs commit f93b308e8 closing out that evidence anchor, which restates one sentence in docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html:43 rather than changing the code the earlier reviews scored.\nVERDICT done_when: the node's measure is the three pane suites plus the retargeted freshness case plus the armed pair, recorded in the reviewed run's gate logs; this delta's own claim is checked against logs/after-armed.log, whose header names revision f93b308e8 and whose body reads \"24 passed in 25.01s / EXIT=0\" and logs/baseline-armed.log, whose header names ab7098ee0 and whose body reads \"21 passed in 10.07s / EXIT=0\"; both match the sentence, but the \"same count in both runs\" clause has no surviving log for the 4d4a74a62 arm.\nVERDICT write_paths: the reviewed run declares nine write paths in its manifest line 5 and line 14; the delta touches exactly one of them, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html, as one changed hunk of one line.\nVERDICT manifest: the reviewed run's manifest.md reads status complete with nineteen commits and the two armed arms recorded as baseline_suite (c30c057d, exit_status 4, log text \"file or directory not found ... no tests ran\") and after_suite (f93b308e8, exit 0, failure_count 0); the ab7098ee0 21-passed arm the fragment names is kept only in the sidecar manifest.md.asdelivered-repair-base-arm line 28.\nVERDICT diff: read the range eb435418a..f93b308e8 against f93b308e8, one commit touching one file, one insertion and one deletion; the change adds the clause \"and again at the evidence-only head on top of it where .../logs/after-armed.log now records it\" and keeps \"24 passed, EXIT=0\".\nCALL_SITES: reckon/serve.py:_send_evidence_record serves the evidence record with its fragments composed in, so the changed paragraph is reachable at runtime through the docs server\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the commit subject says it names the revision the head arm was re-run at, but docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html:43 names no head sha, only \"the evidence-only head on top of it\" and a truncated log path.\nSCORE evidence: 16\nJUSTIFICATION evidence: the added figures reconcile with logs/after-armed.log (\"24 passed in 25.01s\", EXIT=0, header revision f93b308e8) and logs/baseline-armed.log (\"21 passed\", EXIT=0, ab7098ee0), but the \"same count in both runs\" half of the sentence has no surviving log on disk.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single hunk in the delta changes the one declared path docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html and nothing else.\nSCORE durability: 12\nJUSTIFICATION durability: the delta is prose only and adds no assertion, so no test reddens if the fragment's figures drift from the logs, and the 4d4a74a62 arm's own log was already overwritten inside the same run at 11:27:30 overwriting evidence the sentence relies on.\nSCORE fit: 16\nJUSTIFICATION fit: the prose matches the surrounding paragraphs of the same fragment, but it writes the log as `.../logs/after-armed.log` where every other reference on the page is a full code path, and a truncated path with a literal ellipsis cannot be opened.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition, so there is no capability to check for duplication; the only mechanism touched is the evidence fragment already owned at docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html:43 non-blocking: the head-arm sentence defers the revision to `.../logs/after-armed.log`, a path under the run's home directory rendered with a literal ellipsis that cannot be opened as written, and the fragment names no head sha at all, so the commit's stated purpose of naming the revision the head arm ran at is met only inside a log the committed document does not link.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html:43 non-blocking: \"24 passed ... the same count in both runs\" asserts a head arm at 4d4a74a62 that no surviving log records, because after-armed.log was overwritten at 11:27:30 by the f93b308e8 arm and the only 4d4a74a62 log on disk is gate-pane-suites.log (58 passed over five files), so half of the claim cannot be verified from the delivered evidence.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html:43 non-blocking: \"the manifest records the same two runs as its baseline_suite and after_suite\" does not hold of the delivered manifest.md, whose baseline_suite line 28 names revision c30c057d with exit_status 4 and a log whose body is a collection error, so a reader who follows the fragment to the manifest finds no 21-passed run there; the ab7098ee0 pair lives only in the sidecar manifest.md.asdelivered-repair-base-arm, which the live line's note names.\n",
+  "review_run_id": "r-20261027T110104022049-review-of-a-follower-is-a-station-subscriber-f93b308e8e96",
+  "reviewed_base_sha": "eb435418a58b56c48447b3540e764da585e8a2ef",
+  "reviewed_head_sha": "f93b308e8e968647bb9519c1ff8fc2fce2f873c2",
+  "reviewed_run_id": "r-20261027T042459263998-a-follower-is-a-station-subscriber",
+  "scores": {
+    "durability": 12,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T11:16:50Z",
+  "total": 99
+}
