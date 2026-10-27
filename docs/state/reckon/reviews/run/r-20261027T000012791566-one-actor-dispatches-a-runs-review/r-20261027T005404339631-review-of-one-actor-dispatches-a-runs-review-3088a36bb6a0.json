@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:obligations",
+    "reckon/crew/obligation_snapshot.py:publish (duty rows carry next_command)",
+    "reckon/crew/recovery_review_dispatch.py:2107 (the scoring-only gate the new branch mirrors)"
+  ],
+  "completed_at": "2026-10-27T01:03:32.706Z",
+  "dispatched_at": "2026-10-27T00:56:12Z",
+  "finding_dispositions": {
+    "1": {
+      "kind": "exempted",
+      "reason": "tests/test_obligations_snapshot_is_published.py was granted to this run with crew widen before landing; the change is a four-line fixture move the in-scope change requires",
+      "recorded_at": "2026-10-27T01:04:32.953737+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the coordinator's base, head and merge arms run from git archive extractions and replace the manifest's suite records before landing, so the landed evidence names each arm's own tree",
+      "recorded_at": "2026-10-27T01:04:43.001370+00:00"
+    }
+  },
+  "findings": [
+    {
+      "line": 153,
+      "path": "tests/test_one_actor_dispatches_a_runs_review.py",
+      "severity": "non-blocking",
+      "summary": "the window assertion compares the printed figure against the same helper that builds it, so a wrong window leaves it green"
+    },
+    {
+      "line": 239,
+      "path": "tests/test_obligations_snapshot_is_published.py",
+      "severity": "non-blocking",
+      "summary": "the fixture move is outside the node's declared write paths; promotion needs the scope extended for c9ce8c287"
+    },
+    {
+      "line": 6,
+      "path": "baseline-suite.log",
+      "severity": "non-blocking",
+      "summary": "both arm logs name the worktree module on the '# module imported:' line rather than each arm's own copy, so the provenance line is wrong even though each arm does import its own"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit from f7d3f476d5 to 3088a36bb6a0 \u2014 9a8713d9c adds the reflex-owner branch and its helpers to reckon/crew/obligations.py, c9ce8c287 moves one line in the snapshot parity fixture, 3088a36bb adds the evidence fragment; twelve lines of production code, one field, and the rest tests and evidence.",
+    "done_when": "the done_when is carried verbatim in the reviewed run's prompt as the FENCE-EVIDENCE block and names three cases \u2014 armed follower with no command, superseded head, no follower printing the command \u2014 plus a negative control restoring the unconditional command; tests/test_one_actor_dispatches_a_runs_review.py:136-197 asserts all three and the gate at gate-focused.log records 3 passed, EXIT=0.",
+    "goal": "the node goal is to make the review-missing obligation name the armed review reflex as owner instead of printing a dispatch command, and the landed change does exactly that at reckon/crew/obligations.py:1071-1080, gated on a live follower for the run's session and on the row being `scoring`, with the command still printed otherwise.",
+    "manifest": "read; status complete, commits 9a8713d9c c9ce8c287 3088a36bb, gate 3 passed EXIT=0, negative control 2 failed/1 passed EXIT=1, base arm 325 passed/10 errors against after arm 325 passed/10 errors, and it declares the out-of-scope fixture repair as its own blocker.",
+    "write_paths": "read the source prompt's FENCE-SCOPE block (reckon/crew/obligations.py, tests/test_one_actor_dispatches_a_runs_review.py, the evidence fragment, the figures directory); the diff touches those plus tests/test_obligations_snapshot_is_published.py, which is outside them and is declared in the manifest's outside_scope."
+  },
+  "justifications": {
+    "durability": "tests/test_one_actor_dispatches_a_runs_review.py:153-154 compares the printed window against obligations_module._reflex_review_window_seconds(), the same helper reckon/crew/obligations.py:463 calls, so the assertion holds whatever that helper returns; the ownership and no-command assertions around it are independent and are the ones the negative control reddens.",
+    "evidence": "gate-focused.log records `3 passed in 3.92s` then `EXIT=0` for the three named cases, negative-control.log records `2 failed, 1 passed` then `EXIT=1`, and the two importer arms carry ten identical error ids with a delta of zero, though both arm logs' `# module imported:` header line names the worktree module rather than the arm's own obligations.py.",
+    "fit": "reckon/crew/obligations.py:420 reads runs.follower_state in the same form recovery_watch.py:3187 and dispatch_watch.py:862 already use, and no plan or ticket label appears in the added module, symbols, comments or filenames.",
+    "goal_fidelity": "reckon/crew/obligations.py:1071 restricts the new branch to review-missing scoring rows so it cannot claim an ownership the reflex would not take, and :1080 sets review_owner=reflex.",
+    "reuse": "reckon/crew/obligations.py:435 extends the owner that already answers this question (follower_registration.follower_state, re-exported at runs.py:3851) and :449 reads resumption.DEFAULT_SWEEP_SECONDS rather than restating the cadence; no capability is forked.",
+    "scope_discipline": "the diff touches tests/test_obligations_snapshot_is_published.py:239-243, which is outside the four declared write paths; the edit is three lines and the manifest declares it under outside_scope and blockers."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make the review-missing obligation name the armed review reflex as owner instead of printing a dispatch command, and the landed change does exactly that at reckon/crew/obligations.py:1071-1080, gated on a live follower for the run's session and on the row being `scoring`, with the command still printed otherwise.\nVERDICT done_when: the done_when is carried verbatim in the reviewed run's prompt as the FENCE-EVIDENCE block and names three cases \u2014 armed follower with no command, superseded head, no follower printing the command \u2014 plus a negative control restoring the unconditional command; tests/test_one_actor_dispatches_a_runs_review.py:136-197 asserts all three and the gate at gate-focused.log records 3 passed, EXIT=0.\nVERDICT write_paths: read the source prompt's FENCE-SCOPE block (reckon/crew/obligations.py, tests/test_one_actor_dispatches_a_runs_review.py, the evidence fragment, the figures directory); the diff touches those plus tests/test_obligations_snapshot_is_published.py, which is outside them and is declared in the manifest's outside_scope.\nVERDICT manifest: read; status complete, commits 9a8713d9c c9ce8c287 3088a36bb, gate 3 passed EXIT=0, negative control 2 failed/1 passed EXIT=1, base arm 325 passed/10 errors against after arm 325 passed/10 errors, and it declares the out-of-scope fixture repair as its own blocker.\nVERDICT diff: read commit by commit from f7d3f476d5 to 3088a36bb6a0 \u2014 9a8713d9c adds the reflex-owner branch and its helpers to reckon/crew/obligations.py, c9ce8c287 moves one line in the snapshot parity fixture, 3088a36bb adds the evidence fragment; twelve lines of production code, one field, and the rest tests and evidence.\nCALL_SITES: reckon/crew/obligations.py:obligations, reckon/crew/obligation_snapshot.py:publish (duty rows carry next_command), reckon/crew/recovery_review_dispatch.py:2107 (the scoring-only gate the new branch mirrors)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:1071 restricts the new branch to review-missing scoring rows so it cannot claim an ownership the reflex would not take, and :1080 sets review_owner=reflex.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-focused.log records `3 passed in 3.92s` then `EXIT=0` for the three named cases, negative-control.log records `2 failed, 1 passed` then `EXIT=1`, and the two importer arms carry ten identical error ids with a delta of zero, though both arm logs' `# module imported:` header line names the worktree module rather than the arm's own obligations.py.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: the diff touches tests/test_obligations_snapshot_is_published.py:239-243, which is outside the four declared write paths; the edit is three lines and the manifest declares it under outside_scope and blockers.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_one_actor_dispatches_a_runs_review.py:153-154 compares the printed window against obligations_module._reflex_review_window_seconds(), the same helper reckon/crew/obligations.py:463 calls, so the assertion holds whatever that helper returns; the ownership and no-command assertions around it are independent and are the ones the negative control reddens.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:420 reads runs.follower_state in the same form recovery_watch.py:3187 and dispatch_watch.py:862 already use, and no plan or ticket label appears in the added module, symbols, comments or filenames.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/obligations.py:435 extends the owner that already answers this question (follower_registration.follower_state, re-exported at runs.py:3851) and :449 reads resumption.DEFAULT_SWEEP_SECONDS rather than restating the cadence; no capability is forked.\nFINDING tests/test_one_actor_dispatches_a_runs_review.py:153 non-blocking: the window assertion reads the same helper the production string is built from, so restoring a wrong window \u2014 the 120 s fallback emitted unconditionally at reckon/crew/obligations.py:449, or a cadence that moved to 30 s \u2014 leaves it green; an independent literal or a read of resumption.DEFAULT_SWEEP_SECONDS in the test is what would catch that regression.\nFINDING tests/test_obligations_snapshot_is_published.py:239 non-blocking: the file is outside the node's four declared write paths; the move is required because the follower registration is now an input to the derivation and the case compared two derivations across its release, but the write path was not granted, so promotion needs the scope extended for c9ce8c287 or the commit reshaped.\nFINDING baseline-suite.log:6 non-blocking: the base and after arm logs both record `# module imported:` pointing at the node worktree's reckon/crew/obligations.py rather than each arm's copy, so the log does not itself show which revision that arm measured; reproducing the arms' sys.path setup confirms each arm does import its own copy (base without _reflex_owns_review, after with it), so the delta stands and only the provenance line is wrong.",
+  "review_run_id": "r-20261027T005404339631-review-of-one-actor-dispatches-a-runs-review-3088a36bb6a0",
+  "reviewed_base_sha": "f7d3f476d5abbd88ef623777c76df2a6495ddc11",
+  "reviewed_head_sha": "3088a36bb6a0f1955bf883f3766bed48bd654c49",
+  "reviewed_run_id": "r-20261027T000012791566-one-actor-dispatches-a-runs-review",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T01:08:18.253587+00:00",
+  "total": 101
+}
