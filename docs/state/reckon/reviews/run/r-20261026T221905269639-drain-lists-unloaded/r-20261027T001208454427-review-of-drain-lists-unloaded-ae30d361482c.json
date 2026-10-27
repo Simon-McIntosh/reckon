@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    "tests/test_drain_lists_unloaded.py:175 fails if a ledger row without promoted_revision suppresses the pointer-free sixth section; source-reverted baseline demonstrates this failure.",
+    "tests/test_drain_lists_unloaded.py:186 fails if a valid unrelated commit suppresses that section.",
+    "tests/test_drain_lists_unloaded.py:192 fails if even a reachable HEAD promotion never suppresses the section, but does not distinguish HEAD equality from older-ancestor reachability."
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1370",
+    "reckon/mcp_views.py:4240",
+    "reckon/crew/obligations.py:1624"
+  ],
+  "completed_at": "2026-10-27T00:18:56Z",
+  "dispatched_at": "2026-10-27T00:14:11Z",
+  "findings": [
+    {
+      "file": "tests/test_drain_lists_unloaded.py",
+      "line": "188",
+      "severity": "non-blocking",
+      "text": "non-blocking: The positive landing arm supplies the checkout's exact HEAD at lines 188-192, so an equality-only implementation would pass while wrongly listing promotions at older ancestor revisions as unloaded; folded into a follow-up node to test a prior-commit promotion."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified the CLI, MCP, and obligations production drain callers at reckon/crew_run_commands.py:1370, reckon/mcp_views.py:4240, and reckon/crew/obligations.py:1624.",
+    "diff": "The four commits after a2202efef560 add absent and unrelated revision assertions in tests/test_drain_lists_unloaded.py:173-192, gate reachable promotions in reckon/crew/runs.py:2026-2039, and update the evidence fragment.",
+    "done_when": "prompt.txt:102-103 requires five dispatched nodes, dependency order, an unloaded sixth, deduplication, and a read without pointer writes; tests/test_drain_lists_unloaded.py:92-192 asserts these and landing-repair-head.log:6 records 61 passed.",
+    "goal": "prompt.txt:30 requires unloaded entries for implementable sections with neither a request nor a landed run; reckon/crew/runs.py:2026-2039 now counts only promotions reachable from the mounted checkout.",
+    "manifest": "manifest.md records complete with commits f31227e5, acc795a1, ce10282d, and ae30d361; landing-repair-base.log:103-105 and landing-repair-head.log:6-7 confirm its one-failure to zero-failure gate.",
+    "write_paths": "prompt.txt:69-73 grants the drain source, its test, the evidence fragment, and a figure directory; the a2202efef560..ae30d361482c diff changes only the first three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_drain_lists_unloaded.py:175 and :186 fail when absent or unrelated revisions wrongly suppress unloaded, and negative-source-reverted.log:103-105 confirms the old defect fails; line 192 does not distinguish an ancestor from exact HEAD.",
+    "evidence": "landing-repair-base.log:103-105 records one reproduced missing-revision failure and 60 passes, while landing-repair-head.log:6-7 records 61 passes and zero added failure IDs.",
+    "fit": "reckon/crew/runs.py:2026-2039 extends the existing drain helper and uses the repository's project mount and promotion ancestry helpers.",
+    "goal_fidelity": "reckon/crew/runs.py:2026-2039 keeps an uncovered section unloaded until its ledger row names a promotion reachable from the mounted checkout.",
+    "reuse": "reckon/crew/runs.py:2001-2002 reuses project_mount_repository in dispatch_sections.py:42 and _revision_is_ancestor in promotion_scope.py:2426 instead of adding a parallel capability.",
+    "scope_discipline": "The a2202efef560..ae30d361482c diff touches only the three declared paths listed in prompt.txt:70-72."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 requires unloaded entries for implementable sections with neither a request nor a landed run; reckon/crew/runs.py:2026-2039 now counts only promotions reachable from the mounted checkout.\nVERDICT done_when: prompt.txt:102-103 requires five dispatched nodes, dependency order, an unloaded sixth, deduplication, and a read without pointer writes; tests/test_drain_lists_unloaded.py:92-192 asserts these and landing-repair-head.log:6 records 61 passed.\nVERDICT write_paths: prompt.txt:69-73 grants the drain source, its test, the evidence fragment, and a figure directory; the a2202efef560..ae30d361482c diff changes only the first three paths.\nVERDICT manifest: manifest.md records complete with commits f31227e5, acc795a1, ce10282d, and ae30d361; landing-repair-base.log:103-105 and landing-repair-head.log:6-7 confirm its one-failure to zero-failure gate.\nVERDICT diff: The four commits after a2202efef560 add absent and unrelated revision assertions in tests/test_drain_lists_unloaded.py:173-192, gate reachable promotions in reckon/crew/runs.py:2026-2039, and update the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:1370, reckon/mcp_views.py:4240, reckon/crew/obligations.py:1624\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2026-2039 keeps an uncovered section unloaded until its ledger row names a promotion reachable from the mounted checkout.\nSCORE evidence: 19\nJUSTIFICATION evidence: landing-repair-base.log:103-105 records one reproduced missing-revision failure and 60 passes, while landing-repair-head.log:6-7 records 61 passes and zero added failure IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The a2202efef560..ae30d361482c diff touches only the three declared paths listed in prompt.txt:70-72.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_drain_lists_unloaded.py:175 and :186 fail when absent or unrelated revisions wrongly suppress unloaded, and negative-source-reverted.log:103-105 confirms the old defect fails; line 192 does not distinguish an ancestor from exact HEAD.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/runs.py:2026-2039 extends the existing drain helper and uses the repository's project mount and promotion ancestry helpers.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/runs.py:2001-2002 reuses project_mount_repository in dispatch_sections.py:42 and _revision_is_ancestor in promotion_scope.py:2426 instead of adding a parallel capability.\nFINDING tests/test_drain_lists_unloaded.py:188 non-blocking: The positive landing arm supplies the checkout's exact HEAD at lines 188-192, so an equality-only implementation would pass while wrongly listing promotions at older ancestor revisions as unloaded; folded into a follow-up node to test a prior-commit promotion.\n",
+  "review_run_id": "r-20261027T001208454427-review-of-drain-lists-unloaded-ae30d361482c",
+  "reviewed_base_sha": "a2202efef5605a769c625672ca6b2bc5efd5edab",
+  "reviewed_head_sha": "ae30d361482ce6938dc1f18aa922c597a8c3f837",
+  "reviewed_run_id": "r-20261026T221905269639-drain-lists-unloaded",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T00:21:55.370431+00:00",
+  "total": 115
+}
