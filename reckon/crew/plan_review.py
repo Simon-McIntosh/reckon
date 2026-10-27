@@ -180,11 +180,11 @@ def review_invocation(
 
 
 def answer_invocation(project: str, plan_slug: str, finding_id: str) -> str:
-    """The command that answers one finding, acted on or declined with a reason."""
+    """The command that answers one finding, acted on, declined, or carried."""
     return (
         f"reckon crew review --project {shlex.quote(project)} "
         f"--plan {shlex.quote(plan_slug)} --answer {shlex.quote(finding_id)} "
-        "--acted (or --declined '<reason>')"
+        f"--acted (or --declined '<reason>' or --carried)"
     )
 
 
@@ -226,6 +226,14 @@ INCOMPLETE_STATUS = "incomplete"
 # An author answers each finding by acting on it or by declining it. Either
 # answer closes the finding for the dispatch gate; a decline must carry a reason.
 RESPONSE_ACTIONS: tuple[str, ...] = ("acted", "declined")
+
+# A third answer beside acted and declined: the finding is carried into the
+# section it is about rather than acted on in the plan, and a later dispatch of
+# that section appends its text to the node's done-when. A carried finding is
+# answered for the gate like the other two, so answering it in the plan never
+# reopens the review gate and the section cannot loop.
+CARRIED_ACTION = "carried"
+ANSWER_ACTIONS: tuple[str, ...] = (*RESPONSE_ACTIONS, CARRIED_ACTION)
 
 # The append-only list of every answer a record has received. The ``responses``
 # map keeps only the latest answer per finding, so a finding answered twice
@@ -1658,10 +1666,13 @@ def record_response(
 ) -> Path:
     """Answer one finding on a stored review and persist the updated record.
 
-    ``action`` is ``acted`` or ``declined``. A decline must carry a one-line
-    ``reason``: the decision makes the reason the record, so a reasonless
-    decline is refused before anything is written — the stored file is left
-    untouched and the raise names what was missing. The response is keyed by
+    ``action`` is ``acted``, ``declined`` or ``carried``. A decline must carry a
+    one-line ``reason``: the decision makes the reason the record, so a
+    reasonless decline is refused before anything is written — the stored file
+    is left untouched and the raise names what was missing. A carried answer
+    records the unit the finding is about — the section named by its anchor, or
+    the document unit when the anchor names none — under ``section``, so a
+    later dispatch of that section reads it back. The response is keyed by
     ``finding_id``, which must name a finding the record carries, so an answer
     can never attach to a finding nobody can read back. The returned path is the
     record whose ``responses`` now carries the answer.
@@ -1672,8 +1683,8 @@ def record_response(
     written to the staging store as before.
     """
     action_value = str(action or "").strip().lower()
-    if action_value not in RESPONSE_ACTIONS:
-        raise ValueError(f"response action {action!r} is not one of {RESPONSE_ACTIONS}")
+    if action_value not in ANSWER_ACTIONS:
+        raise ValueError(f"response action {action!r} is not one of {ANSWER_ACTIONS}")
     known = finding_ids(record)
     if str(finding_id) not in known:
         raise ValueError(
@@ -1688,6 +1699,8 @@ def record_response(
         "by": str(by or ""),
         "when": when or datetime.now(UTC).isoformat(),
     }
+    if action_value == "carried":
+        response["section"] = finding_unit(record, str(finding_id))
     updated = dict(record)
     responses = dict(updated.get("responses") or {})
     responses[str(finding_id)] = response
@@ -1753,6 +1766,406 @@ def declined_recurrence(
             "surfaced": len(plans) >= threshold,
         }
     return recurrence
+
+
+# ── Carried findings and the two-review burst cap ───────────────────────────
+# A finding answered ``carried`` is not acted on in the plan: it is handed to
+# the node that builds the section it is about, appended to that node's
+# done-when, and checked there by the landed-work review like any other clause.
+# The alternative — answering in the plan — reopens the review gate, whose next
+# review raises the next finding, so a section can loop. The heading a carried
+# finding is delivered under, and the number of composed reviews one edit burst
+# of a unit may spend before its open findings must be answered instead.
+CARRIED_HEADING = "Carried review findings:"
+MAX_REVIEWS_PER_EDIT = 2
+
+
+def _line_unit_map(text: str) -> dict[int, str]:
+    """Map each 1-based line number of a plan document to the unit it belongs to.
+
+    A section's extent comes from the same structural spans the prose reader
+    attributes text with, so a line inside a section's heading-to-next-heading
+    span belongs to that section and a line outside every section belongs to
+    the document unit. The map is what turns a finding's ``<path>:<line>``
+    anchor into the unit the finding is about.
+    """
+    spans = [
+        (heading.span[0], heading.span[1], heading.identity)
+        for heading in _plan_html.plan_headings(text)
+        if heading.level == 2 and heading.identity and not heading.machinery
+    ]
+    mapping: dict[int, str] = {}
+    offset = 0
+    for number, raw in enumerate(text.splitlines(keepends=True), start=1):
+        unit = next(
+            (identity for low, high, identity in spans if low <= offset < high),
+            DOCUMENT_UNIT,
+        )
+        mapping[number] = unit
+        offset += len(raw)
+    return mapping
+
+
+def _reviewed_plan_text(
+    record: Mapping[str, Any], plan_path: str | Path | None = None
+) -> str | None:
+    """The plan file's text as the review read it, else its text now.
+
+    A finding's anchor line was written against the bytes the reviewer read, so
+    the reviewed commit is asked for first and the current file is the fallback
+    for a record with no resolvable commit — an uncommitted plan, or a project
+    with no checkout the plan resolves in. Both answer ``None`` rather than a
+    guessed unit when neither text is readable.
+    """
+    project = str(record.get("project") or "").strip()
+    plan_slug = str(record.get("plan_slug") or "").strip()
+    if not project or not plan_slug:
+        return None
+    commit = plan_commit_for(
+        project,
+        plan_slug,
+        str(record.get("reviewed_blob_sha") or ""),
+        plan_path=plan_path,
+    )
+    if commit:
+        text = _plan_text_at(project, plan_slug, commit, plan_path=plan_path)
+        if text is not None:
+            return text
+    location = _plan_location(project, plan_slug, plan_path)
+    if location is None:
+        return None
+    try:
+        return location[1].read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
+def _anchor_unit(record: Mapping[str, Any], anchor: str, text: str | None) -> str:
+    """The unit a finding anchor names, or the document unit when it names none.
+
+    An anchor shaped ``<path>#<section>`` names its unit outright. One shaped
+    ``<path>:<line>`` names a line, resolved through the reviewed text's own
+    section spans. An anchor with neither, or a line past the text, is the
+    document unit: the finding is about the plan's document state rather than a
+    section, and carrying it to a section would deliver it where it is not owed.
+    """
+    named = re.search(r"#([A-Za-z0-9][A-Za-z0-9_-]*)\s*$", anchor or "")
+    if named:
+        return named.group(1)
+    locator = re.search(r":(\d+)\s*$", anchor or "")
+    if locator and text is not None:
+        unit = _line_unit_map(text).get(int(locator.group(1)))
+        if unit:
+            return unit
+    return DOCUMENT_UNIT
+
+
+def finding_unit(
+    record: Mapping[str, Any],
+    finding_id: str,
+    *,
+    plan_path: str | Path | None = None,
+) -> str:
+    """The unit the named finding is about, as a carried answer records it."""
+    finding = _finding_by_id(record, finding_id)
+    if finding is None:
+        return DOCUMENT_UNIT
+    return _anchor_unit(
+        record,
+        str(finding.get("anchor") or ""),
+        _reviewed_plan_text(record, plan_path),
+    )
+
+
+def _finding_by_id(
+    record: Mapping[str, Any], finding_id: str
+) -> Mapping[str, Any] | None:
+    """The finding the id names, or ``None`` when the record carries none."""
+    findings = record.get("findings")
+    if not isinstance(findings, list):
+        return None
+    wanted = str(finding_id).strip()
+    for finding in findings:
+        if (
+            isinstance(finding, Mapping)
+            and str(finding.get("id") or "").strip() == wanted
+        ):
+            return finding
+    return None
+
+
+def _carried_records(
+    project: str,
+    plan_slug: str,
+    *,
+    base_dir: str | Path | None = None,
+    plan_path: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """The stored reviews of one plan whose answers a dispatch of it may read.
+
+    A carried answer is written on the review that raised the finding, which is
+    the newest content review or, for a design finding answered after a later
+    content review landed, the plan's one design review. Both are read, newest
+    first, so a finding carried on either reaches the section it is about and a
+    finding present on both is delivered once.
+    """
+    records: list[dict[str, Any]] = []
+    newest: Mapping[str, Any] | None = None
+    if plan_path is not None:
+        try:
+            newest = read_plan_review(
+                project, plan_slug, plan=Path(plan_path), base_dir=base_dir
+            )
+        except (OSError, ValueError, KeyError):
+            newest = None
+    if newest is None:
+        newest = read_plan_review(project, plan_slug, base_dir=base_dir)
+    design = newest_design_review(project, plan_slug, base_dir=base_dir)
+    records.extend(
+        dict(candidate)
+        for candidate in (newest, design)
+        if isinstance(candidate, Mapping)
+    )
+    return records
+
+
+def carried_findings_for_section(
+    project: str,
+    plan_slug: str,
+    section: str,
+    *,
+    base_dir: str | Path | None = None,
+    plan_path: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """The findings carried to one unit, in the order they were answered.
+
+    Each returned row carries the finding's ``id``, ``text`` and ``anchor`` plus
+    the stored ``response``. A finding carried to another unit is not returned:
+    the dispatch of one section carries only what its own readers answered
+    about it, so a finding is delivered where the reviewer raised it and never
+    into an unrelated section's brief.
+    """
+    wanted = str(section or "").strip()
+    if not wanted:
+        return []
+    carried: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for record in _carried_records(
+        project, plan_slug, base_dir=base_dir, plan_path=plan_path
+    ):
+        responses = record.get("responses")
+        if not isinstance(responses, Mapping):
+            continue
+        for finding_id, response in responses.items():
+            if not isinstance(response, Mapping):
+                continue
+            if str(response.get("action") or "").strip().lower() != "carried":
+                continue
+            if str(response.get("section") or DOCUMENT_UNIT) != wanted:
+                continue
+            if finding_id in seen:
+                continue
+            seen.add(finding_id)
+            finding = _finding_by_id(record, finding_id)
+            carried.append(
+                {
+                    "id": str(finding_id),
+                    "text": str((finding or {}).get("text") or "").strip(),
+                    "anchor": str((finding or {}).get("anchor") or "").strip(),
+                    "response": dict(response),
+                }
+            )
+    return carried
+
+
+def with_carried_findings(done_when: str, findings: Iterable[Mapping[str, Any]]) -> str:
+    """Append carried findings to a node's done-when under their own heading.
+
+    The heading is the marker a reviewer reads the carried clauses by, so the
+    text is appended once: a done-when already carrying it is returned
+    unchanged, which keeps a re-dispatch or a queue edit from accumulating a
+    second copy of the same finding.
+    """
+    rows = [row for row in findings if str(row.get("text") or "").strip()]
+    if not rows:
+        return done_when
+    text = str(done_when or "").rstrip()
+    if CARRIED_HEADING in text:
+        return done_when
+    lines = [CARRIED_HEADING]
+    lines.extend(
+        f"- {row.get('id')}: {str(row.get('text') or '').strip()}" for row in rows
+    )
+    block = "\n".join(lines)
+    return f"{text}\n\n{block}" if text else block
+
+
+def reviews_for_unit_burst(
+    project: str,
+    plan_slug: str,
+    unit: str,
+    *,
+    base_dir: str | Path | None = None,
+    plan_path: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """The stored reviews that read one unit at the digest it carries now.
+
+    A unit's digest is its authored prose, so two reviews of the same digest
+    are two reviews of one edit burst and a fresh edit — a new digest — starts
+    its count again. The whole-plan fingerprint counts as a review of every
+    unit when it matches, because a review that read the whole document read
+    that unit too.
+    """
+    location = _plan_location(project, plan_slug, plan_path)
+    if location is None:
+        return []
+    try:
+        text = location[1].read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return []
+    digests = _section_digests(text)
+    wanted = digests.get(unit)
+    if wanted is None:
+        return []
+    whole = _digest(digests)
+    hits: list[dict[str, Any]] = []
+    for record in list_plan_reviews(project, base_dir=base_dir):
+        if record.get("plan_slug") != plan_slug:
+            continue
+        if record.get("plan_fingerprint") == whole:
+            hits.append(record)
+            continue
+        per_unit = record.get("section_digests")
+        if isinstance(per_unit, Mapping) and per_unit.get(unit) == wanted:
+            hits.append(record)
+    hits.sort(key=lambda record: str(record.get("dispatched_at") or ""))
+    return hits
+
+
+def review_burst_refusal(
+    project: str,
+    plan_slug: str,
+    unit: str,
+    *,
+    base_dir: str | Path | None = None,
+    plan_path: str | Path | None = None,
+) -> str | None:
+    """The refusal a third review of one edit burst of a unit must carry, or None.
+
+    A unit reviewed :data:`MAX_REVIEWS_PER_EDIT` times for the same digest has
+    had the reviews its edit owed; a further composed review would raise the
+    next finding against prose that has already been reviewed twice, which is
+    the loop the cap exists to stop. The refusal names the open findings the
+    caller must carry or decline, because answering them — not reviewing again
+    — is what closes the unit for dispatch.
+    """
+    hits = reviews_for_unit_burst(
+        project, plan_slug, unit, base_dir=base_dir, plan_path=plan_path
+    )
+    if len(hits) < MAX_REVIEWS_PER_EDIT:
+        return None
+    open_ids: list[str] = []
+    for record in hits:
+        for finding_id in unanswered_findings(record):
+            if finding_id not in open_ids:
+                open_ids.append(finding_id)
+    named = ", ".join(open_ids) if open_ids else "none"
+    return (
+        f"unit {unit} of {project}:{plan_slug} has had {len(hits)} reviews for "
+        f"this edit, and a third is refused; carry or decline its open "
+        f"findings: {named}"
+    )
+
+
+def answer_finding(
+    project: str,
+    plan_slug: str,
+    finding_id: str,
+    *,
+    action: str,
+    reason: str | None = None,
+    by: str = "",
+    review_run: str = "",
+    plan_path: str | Path | None = None,
+    base_dir: str | Path | None = None,
+) -> dict[str, Any]:
+    """Resolve the covering review that raised a finding and record one answer.
+
+    A plan may carry more than one covering review — the newest content review
+    and its design review — and a finding only one of them raised is answered on
+    the review that raised it. A finding raised by both is an ambiguous answer
+    unless ``review_run`` names which review answers it. Returns the rewritten
+    record and the ids still unanswered; raises :class:`ValueError` with the
+    refusal when no covering review raises the finding or the selection is
+    ambiguous, and the store's own refusal for an unknown action or a
+    reasonless decline.
+    """
+    store_delivered_reviews(project, plan_slug)
+    record = read_plan_review(
+        project,
+        plan_slug,
+        plan=Path(plan_path) if plan_path is not None else None,
+        base_dir=base_dir,
+    )
+    design = newest_design_review(project, plan_slug, base_dir=base_dir)
+    if record is None and design is not None and finding_id in finding_ids(design):
+        record = design
+    if record is None:
+        raise ValueError(
+            f"no stored review for {project}:{plan_slug} raises {finding_id!r}"
+        )
+    if (
+        finding_id not in finding_ids(record)
+        and design is not None
+        and finding_id in finding_ids(design)
+    ):
+        record = design
+    covering: list[Mapping[str, Any]] = []
+    seen: set[str] = set()
+    for candidate in (record, design):
+        if candidate is None or finding_id not in finding_ids(candidate):
+            continue
+        identity = str(candidate.get("review_run_id") or "")
+        if identity in seen:
+            continue
+        seen.add(identity)
+        covering.append(candidate)
+    if review_run:
+        matched = [
+            candidate
+            for candidate in covering
+            if str(candidate.get("review_run_id") or "") == review_run
+        ]
+        if not matched:
+            raise ValueError(
+                f"--review-run {review_run!r} does not raise finding "
+                f"{finding_id!r} for {project}:{plan_slug}"
+            )
+        record = matched[0]
+    elif len(covering) == 1:
+        record = covering[0]
+    elif len(covering) > 1:
+        named = ", ".join(
+            repr(str(candidate.get("review_run_id") or "unattributed"))
+            for candidate in covering
+        )
+        raise ValueError(
+            f"finding {finding_id!r} is carried by {len(covering)} covering "
+            f"reviews; name --review-run to choose which one answers it: {named}"
+        )
+    path = record_response(
+        record,
+        finding_id,
+        action=action,
+        reason=reason,
+        by=by,
+        base_dir=base_dir,
+    )
+    updated = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "record": updated,
+        "unanswered": unanswered_findings(updated),
+    }
 
 
 # ── The per-day review summary ──────────────────────────────────────────────

@@ -18,6 +18,7 @@ from reckon.crew_dispatch_commands import (
     _resolved_flight,
     _resolved_gc_repo,
     crew,
+    crew_review,
 )
 
 # Preserve the CLI re-export while the retired name resolves through the
@@ -26,6 +27,96 @@ crew_unwatch = tombstone_command("unwatch")
 
 
 crew_resume_ready = tombstone_command("resume-ready")
+
+
+def _answer_carried_finding(pretty, **params):
+    """Answer a plan-review finding as carried, on the review verb's behalf.
+
+    A carried answer records the finding against the unit its anchor names and
+    opens no review: the finding is answered for the dispatch gate, and a later
+    dispatch of that section appends its text to the node's done-when. The
+    answer surface is the review verb's own flags, so the caller names
+    ``--answer FINDING --carried`` exactly as it names ``--acted`` or
+    ``--declined``; the subject and lane flags a review dispatch takes do not
+    apply to an answer and are refused rather than silently dropped.
+    """
+    from reckon.crew import plan_review
+
+    def refuse(detail: str) -> None:
+        _emit({"error": "crew_error", "detail": detail}, pretty)
+        raise click.exceptions.Exit(1)
+
+    if params.get("acted") or params.get("declined") is not None:
+        refuse(
+            "--carried answers a finding alone: name it without --acted or "
+            "--declined, which are the other two answers"
+        )
+    if params.get("dry_run") or params.get("local"):
+        refuse("--dry-run and --local apply only to review dispatch")
+    if (
+        params.get("around_plan")
+        or params.get("paths")
+        or params.get("portfolio")
+        or params.get("sprint_id")
+    ):
+        refuse("--answer applies to a plan review, not a code or portfolio subject")
+    plan_slug = str(params.get("plan_slug") or "").strip()
+    if not plan_slug:
+        refuse("--answer requires --plan PLAN")
+    answer = str(params.get("answer") or "").strip()
+    if not answer:
+        refuse("--carried requires --answer FINDING_ID")
+    project = str(params.get("project") or "").strip()
+    try:
+        result = plan_review.answer_finding(
+            project,
+            plan_slug,
+            answer,
+            action="carried",
+            by=str(params.get("session") or ""),
+            review_run=str(params.get("review_run") or ""),
+        )
+    except (ValueError, OSError) as exc:
+        refuse(str(exc))
+    _emit(result, pretty)
+
+
+def _install_carried_answer() -> None:
+    """Add the ``--carried`` answer flag to the review verb.
+
+    The three answers a plan-review finding accepts are one surface: acted on,
+    declined with a reason, or carried to the section that builds it. The verb
+    itself is defined beside the dispatch verbs; the carried branch is answered
+    here, so the option is attached to the existing command object rather than
+    a second ``review`` command being registered, and every other invocation
+    reaches the verb's own callback unchanged.
+    """
+    params = getattr(crew_review, "params", None)
+    if not isinstance(params, list):
+        return
+    if any("--carried" in getattr(param, "opts", ()) for param in params):
+        return
+    params.append(
+        click.Option(
+            ["--carried"],
+            is_flag=True,
+            help="Carry the finding to the section it is about, for its next node.",
+        )
+    )
+    original = crew_review.callback
+
+    def callback(carried=False, **kwargs):
+        if carried:
+            params = dict(kwargs)
+            pretty = kwargs.get("pretty", False)
+            params.pop("pretty", None)
+            return _answer_carried_finding(pretty, **params)
+        return original(**kwargs)
+
+    crew_review.callback = callback
+
+
+_install_carried_answer()
 
 
 def _merge_land_refusal(
