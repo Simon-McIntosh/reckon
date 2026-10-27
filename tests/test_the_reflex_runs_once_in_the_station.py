@@ -33,7 +33,9 @@ import pytest
 from reckon import checkout_trust
 from reckon import crew_follow_commands as follow_commands
 from reckon.crew import (
+    recovery_liveness,
     recovery_review_dispatch,
+    runs,
     station,
     station_obligations,
     station_store,
@@ -144,6 +146,112 @@ def test_a_session_launched_elsewhere_is_not_swept_here(
     node.tick(now=MOMENT)
 
     assert sweeps.calls == [(PROJECT, SESSION)]
+
+
+def test_a_session_split_across_hosts_is_swept_by_exactly_one_of_them(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A session's runs on two hosts are swept once, not never.
+
+    A sweep works a whole session rather than a run, so a rule tested per run
+    and applied per session drops the session on every host that holds only
+    part of it: the resume and the review then run nowhere, and a pane no
+    longer sweeps beside the station to cover the gap.
+    """
+    base = crew_home()
+    # Sorted by run id, `r-a` is the session's first live run and it is this
+    # host's; `r-b` belongs to the other machine.
+    _pointer(base, "r-a")
+    _pointer(base, "r-b", launcher_host=OTHER_HOST)
+    pointers = list(runs._list_live_records(project=PROJECT))
+
+    assert station._sessions_to_sweep(pointers) == [SESSION]
+
+    # On the other host the same pointers name the same owner, so the station
+    # there leaves the session to this one instead of sweeping it twice.
+    monkeypatch.setattr(recovery_liveness, "_reading_host", lambda: OTHER_HOST)
+    assert station._sessions_to_sweep(pointers) == []
+
+    # The rule is an owner rather than a filter on this host's runs: a run that
+    # sorts first and lives elsewhere makes the other host the owner, and this
+    # one leaves the session alone. Whichever way a fleet splits, one host
+    # sweeps the session and the other does not.
+    monkeypatch.setattr(recovery_liveness, "_reading_host", lambda: THIS_HOST)
+    _pointer(base, "r-0", launcher_host=OTHER_HOST)
+    leading_elsewhere = list(runs._list_live_records(project=PROJECT))
+    assert station._sessions_to_sweep(leading_elsewhere) == []
+    monkeypatch.setattr(recovery_liveness, "_reading_host", lambda: OTHER_HOST)
+    assert station._sessions_to_sweep(leading_elsewhere) == [SESSION]
+
+
+def test_a_stale_station_reading_settles_no_pane(home: Path, tmp_path: Path) -> None:
+    """A reading the station has stopped refreshing is no answer, not "no work".
+
+    A station stalled behind a long sweep, or reloading, writes nothing for
+    longer than the stale window. Reading its silence as an empty fleet would
+    end every attached pane over work that is still running.
+    """
+    base = crew_home()
+    _pointer(base, "r-one")
+    store = station_store.StationStore(tmp_path / "station")
+    station_subscriber.record_live_work(
+        store,
+        PROJECT,
+        at=datetime.now(tz=UTC)
+        - timedelta(seconds=station_subscriber.STALE_HEARTBEAT_SECONDS + 60),
+        project_live=False,
+        unowned=False,
+        sessions=[],
+    )
+    subscriber = station_subscriber.StationSubscriber(store, PROJECT, session=SESSION)
+
+    verdict = subscriber.live_work(SESSION)
+    assert verdict is None, verdict
+
+    events: list[dict] = []
+    stop = threading.Event()
+    thread = _spawn_follower(events, stop, subscriber=subscriber, sweeps=_Sweeps())
+    try:
+        time.sleep(1.0)
+        assert _settles(events) == [], (
+            "a pane settled on a station reading that nothing refreshes"
+        )
+        assert thread.is_alive()
+    finally:
+        stop.set()
+        thread.join(5.0)
+    assert not thread.is_alive()
+
+
+def test_one_rule_decides_live_work_for_the_station_and_the_producer(
+    home: Path, tmp_path: Path
+) -> None:
+    """The station's reading and the producer path's listing give one answer.
+
+    The rule used to be written twice — once where the station built its
+    reading and once where a pane without a station listed the pointers — so
+    the two could drift and a pane's settle would depend on which of them it
+    happened to read.
+    """
+    base = crew_home()
+    for run_id, session, phase in (
+        ("r-own", SESSION, "working"),
+        ("r-peer", "session-two", "working"),
+        ("r-done", SESSION, "complete"),
+    ):
+        _pointer(base, run_id, session=session, phase=phase)
+    pointers = list(runs._list_live_records(project=PROJECT))
+
+    node = _station(tmp_path, base, _Sweeps())
+    node.tick(now=MOMENT)
+    for population in (None, SESSION, "session-two", "session-three"):
+        listed = follow_commands._population_has_live_work(PROJECT, session=population)
+        assert listed is station_subscriber.population_has_live_work(
+            pointers, population
+        ), population
+        assert listed is station_subscriber.live_work_reading(
+            node.store, PROJECT, session=population, now=MOMENT
+        ), population
 
 
 def test_a_resumed_run_waits_its_settle_window_from_the_newest_resume() -> None:

@@ -18,7 +18,6 @@ from typing import Any
 from reckon import checkout_trust, flight
 from reckon.crew import (
     follower_reload,
-    node,
     recovery,
     recovery_liveness,
     recovery_watch,
@@ -119,51 +118,30 @@ class SweepBeat:
                 self._in_flight.discard(key)
 
 
-def _live_work_populations(
-    pointers: list[Mapping[str, Any]],
-) -> tuple[bool, bool, list[str]]:
-    """One project's reading: whether work is live, unowned, and in which sessions.
-
-    Only a run that has not reached a terminal phase is work still owed a
-    pane: a pointer already terminal waits on the coordinator's promotion
-    rather than on a follower. An ownerless pointer keeps every session's
-    reading live, because without an owner nothing shows the work is not the
-    reader's own.
-    """
-    project_live = False
-    unowned = False
-    sessions: set[str] = set()
-    for pointer in pointers:
-        if str(pointer.get("phase") or "") in node._TERMINAL_RUN_PHASES:
-            continue
-        project_live = True
-        owner = str(pointer.get("session") or "")
-        if owner:
-            sessions.add(owner)
-        else:
-            unowned = True
-    return project_live, unowned, sorted(sessions)
-
-
 def _sessions_to_sweep(pointers: list[Mapping[str, Any]]) -> list[str]:
-    """The sessions whose runs this host's station may resume.
+    """The sessions this host's station sweeps.
 
-    A resume restarts a worker on the host it runs on, so a session with any
-    run launched elsewhere is left to that host's station, exactly as the
-    watcher's own host rule leaves it.
+    A session's runs can be launched on more than one host, and a sweep works a
+    whole session rather than a run, so the host that sweeps has to be chosen
+    for the session rather than tested per run: leaving out a session with any
+    run elsewhere leaves it out on every host, and no station ever resumes or
+    reviews it. Exactly one host owns each session instead, decided from the
+    same pointers on every host — the host holding its first-sorted live run —
+    so a split session is swept once and not twice. Ownership can move while a
+    session's runs change; the sweep is idempotent per run, so a session whose
+    owner moves is swept twice rather than dropped.
     """
     grouped: dict[str, list[Mapping[str, Any]]] = {}
     for pointer in pointers:
         session = str(pointer.get("session") or "")
-        if session:
+        if session and str(pointer.get("run_id") or ""):
             grouped.setdefault(session, []).append(pointer)
-    return [
-        session
-        for session, records in sorted(grouped.items())
-        if not any(
-            recovery_liveness._record_is_known_foreign(record) for record in records
-        )
-    ]
+    owned: list[str] = []
+    for session, records in sorted(grouped.items()):
+        owner = min(records, key=lambda record: str(record.get("run_id") or ""))
+        if not recovery_liveness._record_is_known_foreign(owner):
+            owned.append(session)
+    return owned
 
 
 def station_lease(root: Path) -> HostLease:
@@ -337,8 +315,8 @@ class Station:
             # The reading a pane's settle is judged by, written on every tick
             # rather than on change: a pane settles on emptiness, and a quiet
             # fleet is exactly the case that publishes no transition.
-            project_live, unowned, live_sessions = _live_work_populations(
-                project_pointers
+            project_live, unowned, live_sessions = (
+                station_subscriber.live_work_populations(project_pointers)
             )
             station_subscriber.record_live_work(
                 self.store,

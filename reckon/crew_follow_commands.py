@@ -594,19 +594,12 @@ def _population_has_live_work(project: str, *, session: str | None) -> bool:
     rather than on a producer, and the dispatch guard names an absent producer
     with its remedy to the session that is trying to dispatch.
     """
-    from reckon.crew import node as node_module
     from reckon.crew import runs as runs_module
+    from reckon.crew import station_subscriber
 
-    for pointer in runs_module._list_live_records(project=project):
-        owner = str(pointer.get("session") or "")
-        # A pointer with no recorded owner stays in the counted set, matching
-        # the dispatch fence: absence cannot prove it belongs to a peer.
-        if session is not None and owner and owner != session:
-            continue
-        if str(pointer.get("phase") or "") in node_module._TERMINAL_RUN_PHASES:
-            continue
-        return True
-    return False
+    return station_subscriber.population_has_live_work(
+        runs_module._list_live_records(project=project), session
+    )
 
 
 
@@ -1629,8 +1622,13 @@ def _follow_watch_lines(
             # The station writes each project's has-live-work reading on its
             # tick, so a pane that reads the station judges its populations
             # from that reading rather than by listing the live pointer
-            # directory once per population per sample.
-            return subscriber.live_work(name)
+            # directory once per population per sample. A reading the station
+            # has stopped refreshing is no answer, not "no work": settling on
+            # it would end a pane over live work behind a stalled station, so
+            # that case falls back to the listing.
+            verdict = subscriber.live_work(name)
+            if verdict is not None:
+                return verdict
         return _population_has_live_work(project, session=name)
 
     # Resolved once per arming: an explicit interval from a caller that drives
