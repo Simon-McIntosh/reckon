@@ -138,6 +138,7 @@ from reckon.crew.runs import (
     _write_json,
     capture_run_session,
     crew_home,
+    dispatch_field,
     drain,
     list_live,
     pointer_path,
@@ -1443,7 +1444,10 @@ def _complete_locked(
         budget_fallback=record.get("budget_fallback"),
         lineage=record.get("lineage"),
         shadow_patch=shadow_patch,
-        unreconciled_override=record.get("unreconciled_override"),
+        # Read through the accessor: the pointer carries only a path to the
+        # dispatch-time detail file, and a pointer written before the move
+        # still carries the value inline.
+        unreconciled_override=dispatch_field(record, "unreconciled_override"),
         orchestrator_lane_override=record.get("orchestrator_lane_override"),
         gate_check=gate_check,
         require_gate_check=require_gate_check,
@@ -1456,6 +1460,14 @@ def _complete_locked(
         clone_matches=clone_matches,
         promoted_by=promoted_by,
     )
+    # The picker's answer rides the dispatch-time detail file once it has moved
+    # off the pointer, so the row reads it through the accessor. An answer the
+    # record carried inline is the same value through the same call.
+    selection = dispatch_field(record, "picker_selection")
+    if selection is not None:
+        run["picker_selection"] = (
+            dict(selection) if isinstance(selection, Mapping) else selection
+        )
     # A hold and the dispatch that went past it are both known only here: the
     # advisory pick lands after dispatch returns, so the run's route mode was
     # recorded before the answer existed. A row carrying a holding answer is
