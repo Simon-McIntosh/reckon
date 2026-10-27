@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T11:54:36.303Z",
+  "dispatched_at": "2026-10-27T11:35:26Z",
+  "findings": [
+    {
+      "file": "tests/test_a_section_can_wait_on_a_followup.py",
+      "line": 239,
+      "severity": "non-blocking",
+      "text": "test_a_followup_only_ref_declares_no_section_half cannot fail on the over-registration its name claims to guard: _normalized_section_ref('y@f-1') returns 'y#' and never equals the mentioned 'y#s2', so registering a followup-only ref as a section half would still leave the finding in place and the test green. It functions only as the positive control that _undeclared_wait can return findings for this fixture."
+    },
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/a-section-can-wait-on-a-followup.html",
+      "line": 23,
+      "severity": "non-blocking",
+      "text": "the new clause 'every malformed-ref refusal names the @followup suffix' is false: reckon/_store_section_ops.py:234 still states sections.<id>.links accepts [project:]slug[#section], and _validated_refs at reckon/_store_section_ops.py:435 requires parsed.stage so it refuses a followup-only ref outright \u2014 'set section_depends_on.<sid>' cannot declare y@f-1 through the MCP store op even though the grammar now admits it."
+    },
+    {
+      "file": "docs/evidence/fragments/a-project-reads-as-one-picture/a-section-can-wait-on-a-followup.html",
+      "line": 25,
+      "severity": "non-blocking",
+      "text": "the paragraph and the manifest's negative_control_note claim two further mutations were run and each reddens 'only its own case', but the run's logs directory holds only negative-control.log and negative-control2.log; no log records either mutation, so the 'alone' claim cannot be checked by a later reader."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": 1859,
+      "severity": "non-blocking",
+      "text": "still unresolved from the prior review: _resolve_plan_ref resolves a y@f-1 ref through dependency_row_state(data, parsed.stage) with stage None, so the read_plan deps surface reports the whole plan's status and drops the followup the grammar now admits; reckon/mcp.py is outside this repair round's declared write paths."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta's goal is to clear three findings from the prior review of r-20261027T092250673290-a-section-can-wait-on-a-followup \u2014 the malformed-ref wording, the combined ref's unregistered section half, and the vacuous whole-plan assertion; reckon/_schema.py:589 and :1015 name the @followup suffix, reckon/roadmap.py:3714-3724 registers a combined ref's section half, and tests/test_a_section_can_wait_on_a_followup.py:144-158 now asserts bucket membership and effective_status.\nVERDICT done_when: the plan section's done_when names a followup wait held while open, ready once resolved and a dangling-hard-dependency for a missing followup; the gate tests/test_a_section_can_wait_on_a_followup.py is the file the manifest names and I re-ran it at the reviewed head b552765df myself: '9 passed in 2.57s'.\nVERDICT write_paths: the node declares eight paths including reckon/_schema.py, reckon/roadmap.py and the test file; every path in the delta (git diff 173998e07..b552765df) is one of them, and nothing outside them was touched.\nVERDICT manifest: read; it records status complete, the gate '9 passed' EXIT=0 at 3980b9268 and '7 failed, 2 passed' EXIT=1 at 43a85b819 with the new suite, the negative control, and an outside_scope entry for two imas-ambix conformance rows.\nVERDICT diff: read commit by commit; 3980b9268 repairs the wording at reckon/_schema.py:589 and :1015 and replaces the followup-exclusion in reckon/roadmap.py with a parse_plan_ref check that continues only for a followup-only ref, and b552765df updates only the evidence fragment.\nCALL_SITES: reckon/roadmap.py:2870 _build_roadmap via build_roadmap, reckon/roadmap.py:1483 section_dependency_refusals, reckon/serve.py:1865, reckon/mcp.py:2316, reckon/mcp.py:3374, reckon/flight.py:2757, reckon/crew/plan_review.py:3104, reckon/crew/queue_order.py:36, reckon/graph_target.py:204\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:3714-3724 now registers a combined y#s1@f-1 ref's section half and skips only a followup-only ref, which is the prior finding at :3714.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-arm2.log reads '9 passed' EXIT=0 at 3980b9268 and logs/baseline-arm2.log reads '7 failed, 2 passed' EXIT=1 at 43a85b819 with the same test file, and the base arm fails test_a_combined_ref_registers_its_section_half.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 173998e07..b552765df touches only reckon/_schema.py, reckon/roadmap.py, tests/test_a_section_can_wait_on_a_followup.py and the evidence fragment, all inside the manifest's eight declared paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_section_can_wait_on_a_followup.py:231 reddens on the base form of reckon/roadmap.py and on the recorded mutation, but :239 cannot fail on the over-registration it names because _normalized_section_ref('y@f-1') is 'y#' and never equals 'y#s2'.\nSCORE fit: 17\nJUSTIFICATION fit: the replacement block at reckon/roadmap.py:3714-3724 keeps the surrounding mechanism-commenting idiom and introduces no forbidden name, though the fragment at docs/evidence/fragments/a-project-reads-as-one-picture/a-section-can-wait-on-a-followup.html:23 overclaims coverage.\nSCORE reuse: 19\nJUSTIFICATION reuse: the repair extends the existing owners rather than forking them \u2014 it calls parse_plan_ref imported at reckon/roadmap.py:37 and _normalized_section_ref at reckon/roadmap.py:1618 instead of adding a second ref parser.\nFINDING tests/test_a_section_can_wait_on_a_followup.py:239 non-blocking: test_a_followup_only_ref_declares_no_section_half cannot fail on the over-registration it names, since _normalized_section_ref('y@f-1') is 'y#' and never equals the mentioned 'y#s2', so registering a followup-only ref as a section half would leave the finding and the test green.\nFINDING docs/evidence/fragments/a-project-reads-as-one-picture/a-section-can-wait-on-a-followup.html:23 non-blocking: the new clause that every malformed-ref refusal names the @followup suffix is false; reckon/_store_section_ops.py:234 still states [project:]slug[#section] for sections.<id>.links, and _validated_refs at reckon/_store_section_ops.py:435 requires a stage so it refuses y@f-1 outright and set section_depends_on cannot declare it.\nFINDING docs/evidence/fragments/a-project-reads-as-one-picture/a-section-can-wait-on-a-followup.html:25 non-blocking: two further mutations are claimed to redden only their own case, but the run's logs directory holds only negative-control.log and negative-control2.log, so neither mutation's 'alone' result is recorded anywhere a reader can check.\nFINDING reckon/mcp.py:1859 non-blocking: a y@f-1 ref resolves with stage None so the read_plan deps surface reports the whole plan's status; the defect stands at the reviewed head and reckon/mcp.py was outside this repair round's declared write paths.\n",
+  "review_run_id": "r-20261027T112523049344-review-of-a-section-can-wait-on-a-followup-b552765dfba0",
+  "reviewed_base_sha": "173998e07a9c0081f68949a39f4cf820495660a6",
+  "reviewed_commits": [
+    "3980b9268",
+    "b552765df"
+  ],
+  "reviewed_head_sha": "b552765dfba0ceb722d6b4aae9b86c734c89b29f",
+  "reviewed_run_id": "r-20261027T092250673290-a-section-can-wait-on-a-followup",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T11:55:48.280850+00:00",
+  "total": 105
+}

@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "",
+  "dispatched_at": "2026-10-27T10:42:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-section-can-wait-on-a-followup",
+      "recorded_at": "2026-10-27T11:10:26.405027+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "read_plan's deps surface lives in reckon/mcp.py, held by one-call-explains-any-ref until it lands; it is carried as a new section of a-project-reads-as-one-picture",
+      "recorded_at": "2026-10-27T11:11:18.782616+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-section-can-wait-on-a-followup",
+      "recorded_at": "2026-10-27T11:10:47.463447+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "a-section-can-wait-on-a-followup",
+      "recorded_at": "2026-10-27T11:11:01.971216+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_section_can_wait_on_a_followup.py",
+      "line": 147,
+      "severity": "non-blocking",
+      "text": "assert _row(report, \"x\")[\"slug\"] == \"x\" cannot fail: _row only returns a row whose slug already matches, and line 148 repeats the assertion at line 130, so the case named 'a section wait never holds its whole plan' asserts nothing about plan-level holding and would not redden if the followup wait were classified as a plan blocker."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": 1859,
+      "severity": "non-blocking",
+      "text": "_resolve_plan_ref resolves a newly admitted 'y@f-1' ref through dependency_row_state(data, parsed.stage) with stage None, so the read_plan deps surface reports the whole plan's status and silently drops the followup the extended grammar now allows."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "line": 3714,
+      "severity": "non-blocking",
+      "text": "excluding followup edges from declared_section_refs leaves the section half of a combined 'y#s2@f-1' ref unregistered, so a blocked run whose text names y#s2 raises an undeclared-wait false positive for a wait the section did declare."
+    },
+    {
+      "file": "reckon/_schema.py",
+      "line": 589,
+      "severity": "non-blocking",
+      "text": "the malformed-ref refusal here, and the same wording at line 1014, still tells the author the grammar is [project:]slug[#section] in the commit that extends it with an @followup suffix."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to extend the ref grammar with slug@f-id so a section can wait on one followup; reckon/_schema.py:236 adds the optional @followup group and PlanRef.followup, and reckon/roadmap.py:1559 resolves it.\nVERDICT done_when: the done_when requires a section blocked while its followup is open, ready once it resolves, and a dangling-hard-dependency finding; tests/test_a_section_can_wait_on_a_followup.py:126-169 asserts all three and logs/baseline-arm.log records 6 failed there at 43a85b8.\nVERDICT write_paths: the manifest declares eight exclusive write paths and every file in the diff sits inside them.\nVERDICT manifest: read; it records 7 passed at the head and 6 failed, 1 passed at the base, names both arm logs, the negative control, and an outside_scope entry for two cross-project conformance rows.\nVERDICT diff: one commit 173998e07 changes reckon/_schema.py, reckon/roadmap.py, PLAN-FORMAT.md, skills/reckon-edit/SKILL.md, docs/_shared/plan.schema.json, the new test and the evidence fragment, all inside scope.\nCALL_SITES: reckon/roadmap.py:1483, reckon/roadmap.py:3546, reckon/mcp.py:1103, reckon/followup_pointers.py:147, reckon/serve.py:2043\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/roadmap.py:1559-1608 holds the waiting section while the section's followup reads open and releases it once resolved, which is the goal's deliverable.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-arm.log reads 7 passed EXIT=0 and logs/baseline-arm.log 6 failed EXIT=1 at 43a85b8, so the same gate measures the done_when at both revisions.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in commit 173998e07 is one of the eight declared write paths in the manifest.\nSCORE durability: 17\nJUSTIFICATION durability: the negative control at logs/negative-control.log reddens three cases, but tests/test_a_section_can_wait_on_a_followup.py:147 asserts a value its own helper guarantees.\nSCORE fit: 16\nJUSTIFICATION fit: the new code follows the mechanism-commenting idiom at reckon/roadmap.py:1506, but reckon/_schema.py:589 still states the pre-change ref grammar.\nSCORE reuse: 18\nJUSTIFICATION reuse: the followup lookup reuses _plan_followups at reckon/roadmap.py:1567 instead of re-reading plan HTML, but reckon/mcp.py:1859's resolver was left unextended.\nFINDING tests/test_a_section_can_wait_on_a_followup.py:147 non-blocking: assert _row(report, \"x\")[\"slug\"] == \"x\" cannot fail because _row returns only rows whose slug matches, so the case named for whole-plan holding tests only the section-level check already asserted at line 130.\nFINDING reckon/mcp.py:1859 non-blocking: a newly admitted y@f-1 ref resolves with stage None, so the read_plan deps surface reports the whole plan's status and drops the followup the grammar now allows.\nFINDING reckon/roadmap.py:3714 non-blocking: excluding followup edges from declared_section_refs leaves a combined y#s2@f-1 ref's section half undeclared, so a blocked run naming y#s2 raises an undeclared-wait false positive.\nFINDING reckon/_schema.py:589 non-blocking: the malformed-ref refusal still states the pre-change [project:]slug[#section] grammar in the commit that extends it, and the same wording stands at line 1014.",
+  "review_run_id": "r-20261027T102619362871-review-of-a-section-can-wait-on-a-followup-173998e07a9c",
+  "reviewed_base_sha": "43a85b8193fd3ed31af01db8d02a99a6b2795a31",
+  "reviewed_commits": [
+    "173998e07a9c0081f68949a39f4cf820495660a6"
+  ],
+  "reviewed_head_sha": "173998e07a9c0081f68949a39f4cf820495660a6",
+  "reviewed_run_id": "r-20261027T092250673290-a-section-can-wait-on-a-followup",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T11:01:48.973565+00:00",
+  "total": 106
+}
