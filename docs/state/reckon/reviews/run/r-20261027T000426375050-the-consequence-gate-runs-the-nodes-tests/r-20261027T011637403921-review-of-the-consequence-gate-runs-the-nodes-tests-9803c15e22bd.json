@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_promotion_records_the_pick.py::test_promotion_waits_for_the_in_flight_pick_and_records_it"
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:624 _evaluate_suite_delta sole caller on the promotion path",
+    "reckon/crew/dispatch.py:2275 records gates.suite_command onto the run record the resolver reads",
+    "reckon/crew/promotion_checks.py:2015 selects the node's test paths with is_test_path for the negative-control check",
+    "reckon/crew/recovery_repair_dispatch.py:642 returns the raw recorded command into a repair brief"
+  ],
+  "completed_at": "2026-10-27T01:40:08.087Z",
+  "dispatched_at": "2026-10-27T01:21:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": "362",
+      "severity": "non-blocking",
+      "text": "non-blocking: _node_test_files re-implements the repository's test-path classifier is_test_path (reckon/crew/node.py:985), already used at promotion_checks.py:2015 for exactly this selection, with a narrower test_*.py rule, so a node scoped to tests/body_test.py is a check by dispatch's own definition (a negative control is required) yet resolves to no scoped file and promotion silently records no suite observation; delegate to is_test_path and to runs.py:1019 _repository_relative_scope."
+    },
+    {
+      "file": "docs/evidence/fragments/scoring-should-stop-a-promotion/the-consequence-gate-runs-the-nodes-tests.html",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when's no-added-failure clause is not literally met, since head-arm.log ends 1 failed, 104 passed, EXIT=1; the host-contention attribution is supported (the id is a 5 s event wait and passed in 7.15 s on a single-test rerun) but the merged head is still owed a measurement by the separately dispatched test node."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T000426375050-the-consequence-gate-runs-the-nodes-tests/head-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T000426375050-the-consequence-gate-runs-the-nodes-tests/base-arm.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read both commits against dd2ef875a; the code commit adds the resolver and one call-site substitution in _evaluate_suite_delta (reckon/crew/promotion_records.py:426), the docs commit adds the landing fragment, and nothing outside the declared scope changed.",
+    "done_when": "The done_when names docs/state/reckon/flight.yaml and tests/test_the_consequence_gate_runs_the_nodes_tests.py; the manifest records 11 focused tests passing, a clean scoped pair, whole-suite and foreign-file refusals, and a declaration-removed control reddening two file-linked cases (negative-control.log ends 2 failed, 9 passed, EXIT=1).",
+    "goal": "The node goal is an armed promotion-consequence gate whose command resolves to the node's own fenced test files; reckon/crew/promotion_records.py:330-402 adds SCOPED_SUITE_PLACEHOLDER, _node_test_files and _scoped_suite_command, and docs/state/reckon/flight.yaml:124 declares the scoped command.",
+    "manifest": "Read; it names commits 8f6f24571 and 9803c15e2, the base arm (94 passed, EXIT=0) and the head arm (104 passed, 1 failed, EXIT=1) with their log paths, and attributes the single added id to host contention rather than to the change.",
+    "write_paths": "Read the manifest's five declared write paths; the diff touches four of them (flight.yaml, promotion_records.py, the test file, the landing fragment) and writes no figure, which the brief permits."
+  },
+  "justifications": {
+    "durability": "tests/test_the_consequence_gate_runs_the_nodes_tests.py:254-260 and :281-307 compare against independent literals rather than the value under test, and negative-control.log shows two of them reddening when the declaration is removed.",
+    "evidence": "tests/test_the_consequence_gate_runs_the_nodes_tests.py:281-307 records a clean scoped pair and :365-378 the unarmed case, but head-arm.log ends 1 failed, 104 passed against a done_when that asks for no added failure.",
+    "fit": "promotion_records.py:333 and :380 sit beside _normalized_command at :320 in the same private-helper idiom with mechanism-based names and no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:426 resolves the armed command before comparing either arm and docs/state/reckon/flight.yaml:124 arms reckon with the placeholder, so the gate the goal names is the gate that runs.",
+    "reuse": "reckon/crew/node.py:985 already owns test-file classification and promotion_checks.py:2015 already selects a node's test paths with it, while promotion_records.py:362 re-implements a narrower rule instead of calling it.",
+    "scope_discipline": "git diff dd2ef875a..9803c15e2 touches only the four declared paths and creates no figure directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is an armed promotion-consequence gate whose command resolves to the node's own fenced test files; reckon/crew/promotion_records.py:330-402 adds SCOPED_SUITE_PLACEHOLDER, _node_test_files and _scoped_suite_command, and docs/state/reckon/flight.yaml:124 declares the scoped command.\nVERDICT done_when: The done_when names docs/state/reckon/flight.yaml and tests/test_the_consequence_gate_runs_the_nodes_tests.py; the manifest records 11 focused tests passing, a clean scoped pair, whole-suite and foreign-file refusals, and a declaration-removed control reddening two file-linked cases (negative-control.log ends 2 failed, 9 passed, EXIT=1).\nVERDICT write_paths: Read the manifest's five declared write paths; the diff touches four of them (flight.yaml, promotion_records.py, the test file, the landing fragment) and writes no figure, which the brief permits.\nVERDICT manifest: Read; it names commits 8f6f24571 and 9803c15e2, the base arm (94 passed, EXIT=0) and the head arm (104 passed, 1 failed, EXIT=1) with their log paths, and attributes the single added id to host contention rather than to the change.\nVERDICT diff: Read both commits against dd2ef875a; the code commit adds the resolver and one call-site substitution in _evaluate_suite_delta (reckon/crew/promotion_records.py:426), the docs commit adds the landing fragment, and nothing outside the declared scope changed.\nCALL_SITES: reckon/crew/promotion.py:624 _evaluate_suite_delta sole caller on the promotion path, reckon/crew/dispatch.py:2275 records gates.suite_command onto the run record the resolver reads, reckon/crew/promotion_checks.py:2015 selects the node's test paths with is_test_path for the negative-control check, reckon/crew/recovery_repair_dispatch.py:642 returns the raw recorded command into a repair brief\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:426 resolves the armed command before comparing either arm and docs/state/reckon/flight.yaml:124 arms reckon with the placeholder, so the gate the goal names is the gate that runs.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_the_consequence_gate_runs_the_nodes_tests.py:281-307 records a clean scoped pair and :365-378 the unarmed case, but head-arm.log ends 1 failed, 104 passed against a done_when that asks for no added failure.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff dd2ef875a..9803c15e2 touches only the four declared paths and creates no figure directory.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_consequence_gate_runs_the_nodes_tests.py:254-260 and :281-307 compare against independent literals rather than the value under test, and negative-control.log shows two of them reddening when the declaration is removed.\nSCORE fit: 17\nJUSTIFICATION fit: promotion_records.py:333 and :380 sit beside _normalized_command at :320 in the same private-helper idiom with mechanism-based names and no plan or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/node.py:985 already owns test-file classification and promotion_checks.py:2015 already selects a node's test paths with it, while promotion_records.py:362 re-implements a narrower rule instead of calling it.\nFINDING reckon/crew/promotion_records.py:362 non-blocking: _node_test_files re-implements the repository's test-path classifier is_test_path (reckon/crew/node.py:985), already used at promotion_checks.py:2015 for exactly this selection, with a narrower test_*.py rule, so a node scoped to tests/body_test.py is a check by dispatch's own definition (a negative control is required) yet resolves to no scoped file and promotion silently records no suite observation; delegate to is_test_path and to runs.py:1019 _repository_relative_scope.\nFINDING docs/evidence/fragments/scoring-should-stop-a-promotion/the-consequence-gate-runs-the-nodes-tests.html:22 non-blocking: the done_when's no-added-failure clause is not literally met, since head-arm.log ends 1 failed, 104 passed, EXIT=1; the host-contention attribution is supported (the id is a 5 s event wait and passed in 7.15 s on a single-test rerun) but the merged head is still owed a measurement by the separately dispatched test node.",
+  "review_run_id": "r-20261027T011637403921-review-of-the-consequence-gate-runs-the-nodes-tests-9803c15e22bd",
+  "reviewed_base_sha": "dd2ef875aa4454d18e6d8d2a5aa59ec9234d7cf2",
+  "reviewed_head_sha": "9803c15e22bd76b63a8d45dc27a8ac2aaf294c45",
+  "reviewed_run_id": "r-20261027T000426375050-the-consequence-gate-runs-the-nodes-tests",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T01:54:43.788814+00:00",
+  "total": 91
+}
