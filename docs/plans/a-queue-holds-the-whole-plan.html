@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="188">
+<meta name="plan-version" content="189">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -536,6 +536,9 @@
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261027T184414709729-review-of-review-repair-runs-without-the-coordinator-e52fe40d1134" data-who="reckon-build" data-when="2026-10-27T18:56:49.245Z">
     <div class="r-comment-body"><p>Reviewed r-20261027T124142949092-review-repair-runs-without-the-coordinator at base e40786308 over the two commits it gained since its last review, 03783f681 and e52fe40d1, and stored a parsed record scoring all six dimensions (19/15/20/19/19/18) with two non-blocking findings; the previous review's blocking finding is repaired — the descent now resolves the landed store from the project's registered checkout and uses the run's worktree only for the ancestry test, reproduced against this run's own data from its worktree.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261027T124142949092-review-repair-runs-without-the-coordinator" data-who="reckon-build" data-when="2026-10-27T18:39:56Z">
+    <div class="r-comment-body"><p>The reflex opens up to three automatic repair rounds per run, keyed by the reviewed head, and records one escalation when the pointer shows the budget spent: status escalated, the rounds spent, the review&#x27;s score and the open findings with their ids, recorded once per round so a repeat sweep adds nothing. The dispose verb accepts a stored review whose head the run&#x27;s current head descends from, which is what a hand-resumed repair leaves; the descent reader searches the project&#x27;s committed tree only, and a divergent head still refuses. The repair brief carries the diff from the last reviewed head to the new head and the answers already recorded. Stored findings carry an id from store time.</p></div>
 </div>
 <div class="r-comment" data-section="s28" data-id="c-s28-extend-queue-requests" data-who="" data-when="">
     <div class="r-comment-body"><p>The batch store already exists in one form. <code>queue_requests</code> in <code>reckon/crew/dispatch.py</code>, wrapped in <code>reckon/crew/queue_admission.py</code>, stores a batch for one project and raises on the first refusal. §28 extends that path to take entries from several projects and to return a result per entry, rather than adding a second batch path beside it. Its write paths include <code>reckon/crew/dispatch.py</code> and <code>reckon/crew/queue_admission.py</code> for that reason.</p></div>
