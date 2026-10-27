@@ -1071,13 +1071,17 @@ def _echo_mcp_census(report: dict) -> None:
             if cause.get("first_line"):
                 click.echo(f"       {cause['first_line'][:120]}")
     storage = report.get("storage_slow") or {}
+    # The rule is printed beside the count so a reader knows what was counted:
+    # a tool result whose payload names the storage-slow error, not a
+    # transcript that merely mentions the phrase.
+    rule = "a tool result whose payload names the error"
     if storage:
         summary = ", ".join(
             f"{tool} {count}" for tool, count in sorted(storage.items())
         )
-        click.echo(f"  storage-slow results: {summary}")
+        click.echo(f"  storage-slow results ({rule}): {summary}")
     else:
-        click.echo("  storage-slow results: none")
+        click.echo(f"  storage-slow results ({rule}): none")
 
 
 @main.command()
