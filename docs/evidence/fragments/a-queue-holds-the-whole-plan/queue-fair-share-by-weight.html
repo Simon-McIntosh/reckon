@@ -59,15 +59,13 @@
     changing the weights to 1:1.</figcaption>
   </figure>
 
-  <p><strong>The delta.</strong> A completed serial base arm runs six named
-  queue, dispatch and flight test files from the merge parent: 139 passed.
-  The head arm runs those six files plus
-  <code>tests/test_queue_weighted_fair_share.py</code>, which does not exist at
-  base: 163 passed, with no added failures. Both logs name the source tree and
-  each imported module's <code>__file__</code>. The wider importer population
-  was also attempted serially — 143 files at base, 144 at head — but the base
-  arm reached its 20-minute bound without a summary, so it yields no delta
-  verdict. Its logs remain in the run directory.
+  <p><strong>The delta.</strong> The completed serial base arm runs 27 files:
+  the six focused queue, dispatch and flight files plus direct test importers
+  of <code>recovery_review_dispatch</code>. It passes 318 tests. The head arm
+  runs those files plus <code>tests/test_queue_weighted_fair_share.py</code>,
+  which does not exist at base: 343 tests pass, with no added failures. Both
+  logs name their source tree and each imported module's <code>__file__</code>.
+  A final-head first-come mutation fails the 3:1 test at its third launch.
 
   <p><strong>Configuration and view.</strong> The flight schema now declares
   <code>queue.project_weights</code> beside <code>queue.max_requests</code>,
