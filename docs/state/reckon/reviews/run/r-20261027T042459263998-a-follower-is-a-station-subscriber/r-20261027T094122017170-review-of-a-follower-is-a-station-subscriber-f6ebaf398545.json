@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3078 crew_follow builds the subscriber",
+    "reckon/crew_follow_commands.py:2081 _follow_watch_lines subscriber branch",
+    "reckon/crew/station.py:135 Station writes CREW_HOME_KEY"
+  ],
+  "completed_at": "2026-10-27T10:01:00.493Z",
+  "dispatched_at": "2026-10-27T09:44:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "141",
+      "severity": "non-blocking",
+      "text": "non-blocking: _station_subscriber_for and the whole subscriber wiring in crew_follow (the resume override at :3081, register/detach at :3371, and the read_history/append_history delegation) carry no test; replacing the helper's body with `return None` leaves every case in tests/test_a_follower_is_a_station_subscriber.py and tests/test_follower_freshness.py green, so nothing reddens if production silently falls back to the producer stream and the node's goal is never taken."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "134",
+      "severity": "non-blocking",
+      "text": "non-blocking: _StationRegistration.held returns True and acquire() returns True unconditionally, so the flock-backed registration takeover the wait pass performs on the producer path no longer runs; two followers of one session now share the single (project, audience) cursor row, each drawing its rows and overwriting the other's checkpoint, where the producer path let exactly one deliver."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "non-blocking: the committed evidence prose states the base arm \"collects nothing and exits 4\" and the head arm is \"21 passed\", while logs/baseline-armed.log records 21 passed EXIT=0 at ab7098ee0 and logs/after-armed.log records 22 passed EXIT=0 at f6ebaf398, so the fragment names figures its own cited logs contradict and a later reader cannot tell which arm it means."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T042459263998-a-follower-is-a-station-subscriber/logs/strace-measure.txt",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the 60 s traced window names crew/live once beside the producer watch lease and the delivery lease, so the plan's measure (\"no path under the crew home other than those two lease files\") is not literally met; the run discloses this and attributes it to the retained recovery sweep, which the plan says stays until it moves into the station."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all sixteen commits against c30c057d4; nine files changed \u2014 five source, two test, the landing fragment and a 59 KB figure \u2014 with station_subscriber.py new (463 lines), the store's cursor API and one shared day-file reader added, and crew_follow routing to it behind a crew-home-and-heartbeat gate.",
+    "done_when": "the done_when names the three pane suites, the retargeted freshness case, twelve new cases and a 60 s strace with no crew-home path but two lease files; tests/test_follower_freshness.py:178 is retargeted at a station replacement and logs/gate-pane-suites.log records 56 passed EXIT=0, but that log's header names e6e099d2d, one commit before head f6ebaf398, and logs/strace-measure.txt names a third crew-home path (crew/live).",
+    "goal": "the node's goal is that crew follow becomes a subscriber reading its session's rows from the node station after a stored cursor; reckon/crew_follow_commands.py:3078 builds that subscriber and the wait loop polls it at :2081, falling back to the producer's stream where no station has beaten.",
+    "manifest": "read; it records status complete, sixteen commits, both armed suite arms with literal commands and EXIT lines, the two negative controls with their log paths, and no ruff result.",
+    "write_paths": "read the manifest's four declared source paths, two test files, the fragment and the figure directory; every path the diff touches is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_follower_is_a_station_subscriber.py:90 and :143 redden when the cursor is not persisted (logs/negative-no-cursor.log, 3 failed EXIT=1), but no test exercises _station_subscriber_for or the crew_follow wiring at reckon/crew_follow_commands.py:141.",
+    "evidence": "logs/gate-pane-suites.log records 56 passed EXIT=0 and both armed arms record zero failures (21 passed at ab7098ee0, 22 at f6ebaf398), but that gate ran at e6e099d2d rather than head and logs/strace-measure.txt names crew/live where the measure allows only the two lease files.",
+    "fit": "reckon/crew/station_subscriber.py:1 follows the module-docstring style of reckon/crew/station.py and introduces no plan or ticket label, and ruff over the changed paths adds no finding against the base's own two SIM findings and pre-existing format drift in crew_follow_commands.py.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:3078 routes crew follow to StationSubscriber and the loop at :2081 polls it, but ticker.PaneRowPath still runs per subscriber at reckon/crew/station_subscriber.py:149 rather than once per audience in the station as section 8's design paragraph states.",
+    "reuse": "reckon/crew/station_store.py:1086's events_for and events share one _read_events owner, and PaneRowPath, cap_history and parse_stream_line are reused; the only new small pieces are _age_seconds and _human_age at reckon/crew/station_subscriber.py:82 and :92, which have no public owner although similar private helpers exist at reckon/crew/staleness.py:69 and reckon/_backends.py:909.",
+    "scope_discipline": "every changed path is inside the manifest's declared write paths, and the 59 KB figure sits in the declared figure directory the coordinator gave its own figure-review brief, though the dispatch contract's no-artifact clause named no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that crew follow becomes a subscriber reading its session's rows from the node station after a stored cursor; reckon/crew_follow_commands.py:3078 builds that subscriber and the wait loop polls it at :2081, falling back to the producer's stream where no station has beaten.\nVERDICT done_when: the done_when names the three pane suites, the retargeted freshness case, twelve new cases and a 60 s strace with no crew-home path but two lease files; tests/test_follower_freshness.py:178 is retargeted at a station replacement and logs/gate-pane-suites.log records 56 passed EXIT=0, but that log's header names e6e099d2d, one commit before head f6ebaf398, and logs/strace-measure.txt names a third crew-home path (crew/live).\nVERDICT write_paths: read the manifest's four declared source paths, two test files, the fragment and the figure directory; every path the diff touches is inside them.\nVERDICT manifest: read; it records status complete, sixteen commits, both armed suite arms with literal commands and EXIT lines, the two negative controls with their log paths, and no ruff result.\nVERDICT diff: read all sixteen commits against c30c057d4; nine files changed \u2014 five source, two test, the landing fragment and a 59 KB figure \u2014 with station_subscriber.py new (463 lines), the store's cursor API and one shared day-file reader added, and crew_follow routing to it behind a crew-home-and-heartbeat gate.\nCALL_SITES: reckon/crew_follow_commands.py:3078 crew_follow builds the subscriber, reckon/crew_follow_commands.py:2081 _follow_watch_lines subscriber branch, reckon/crew/station.py:135 Station writes CREW_HOME_KEY\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:3078 routes crew follow to StationSubscriber and the loop at :2081 polls it, but ticker.PaneRowPath still runs per subscriber at reckon/crew/station_subscriber.py:149 rather than once per audience in the station as section 8's design paragraph states.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-pane-suites.log records 56 passed EXIT=0 and both armed arms record zero failures (21 passed at ab7098ee0, 22 at f6ebaf398), but that gate ran at e6e099d2d rather than head and logs/strace-measure.txt names crew/live where the measure allows only the two lease files.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is inside the manifest's declared write paths, and the 59 KB figure sits in the declared figure directory the coordinator gave its own figure-review brief, though the dispatch contract's no-artifact clause named no figure.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_follower_is_a_station_subscriber.py:90 and :143 redden when the cursor is not persisted (logs/negative-no-cursor.log, 3 failed EXIT=1), but no test exercises _station_subscriber_for or the crew_follow wiring at reckon/crew_follow_commands.py:141.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/station_subscriber.py:1 follows the module-docstring style of reckon/crew/station.py and introduces no plan or ticket label, and ruff over the changed paths adds no finding against the base's own two SIM findings and pre-existing format drift in crew_follow_commands.py.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/station_store.py:1086's events_for and events share one _read_events owner, and PaneRowPath, cap_history and parse_stream_line are reused; the only new small pieces are _age_seconds and _human_age at reckon/crew/station_subscriber.py:82 and :92, which have no public owner although similar private helpers exist at reckon/crew/staleness.py:69 and reckon/_backends.py:909.\nFINDING reckon/crew_follow_commands.py:141 non-blocking: _station_subscriber_for and the whole subscriber wiring in crew_follow (the resume override at :3081, register/detach at :3371, and the read_history/append_history delegation) carry no test; replacing the helper's body with `return None` leaves every case in tests/test_a_follower_is_a_station_subscriber.py and tests/test_follower_freshness.py green, so nothing reddens if production silently falls back to the producer stream and the node's goal is never taken.\nFINDING reckon/crew_follow_commands.py:134 non-blocking: _StationRegistration.held returns True and acquire() returns True unconditionally, so the flock-backed registration takeover the wait pass performs on the producer path no longer runs; two followers of one session now share the single (project, audience) cursor row, each drawing its rows and overwriting the other's checkpoint, where the producer path let exactly one deliver.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-follower-is-a-station-subscriber.html:43 non-blocking: the committed evidence prose states the base arm \"collects nothing and exits 4\" and the head arm is \"21 passed\", while logs/baseline-armed.log records 21 passed EXIT=0 at ab7098ee0 and logs/after-armed.log records 22 passed EXIT=0 at f6ebaf398, so the fragment names figures its own cited logs contradict and a later reader cannot tell which arm it means.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T042459263998-a-follower-is-a-station-subscriber/logs/strace-measure.txt:1 non-blocking: the 60 s traced window names crew/live once beside the producer watch lease and the delivery lease, so the plan's measure (\"no path under the crew home other than those two lease files\") is not literally met; the run discloses this and attributes it to the retained recovery sweep, which the plan says stays until it moves into the station.\n",
+  "review_run_id": "r-20261027T094122017170-review-of-a-follower-is-a-station-subscriber-f6ebaf398545",
+  "reviewed_base_sha": "c30c057d4921f78af11a68ae3b4f0f94ff11a66a",
+  "reviewed_head_sha": "f6ebaf3985452e456e108fd68d23b4ed1161e3ef",
+  "reviewed_run_id": "r-20261027T042459263998-a-follower-is-a-station-subscriber",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T10:02:04.402155+00:00",
+  "total": 97
+}
