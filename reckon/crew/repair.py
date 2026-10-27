@@ -518,6 +518,8 @@ def compose_repair_brief(
     *,
     reviewed_run_id: str = "",
     unmarked: Sequence[Mapping[str, Any]] = (),
+    diff: str = "",
+    answers: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     """Return the brief listing every finding under its stable id.
 
@@ -558,6 +560,24 @@ def compose_repair_brief(
             "flagged here:",
             *(f"- {_finding_location(finding)}" for finding in unmarked),
         ]
+    if answers:
+        lines += [
+            "",
+            "Answers already recorded on this review:",
+            *(
+                f"- [{answer.get('id', '')}] {answer.get('action', '')}"
+                f"{': ' + str(answer['detail']) if answer.get('detail') else ''}"
+                for answer in answers
+            ),
+        ]
+    if diff.strip():
+        lines += [
+            "",
+            "Changes since the last reviewed head (this round's work since the",
+            "review above was stored):",
+            "",
+            diff.rstrip("\n"),
+        ]
     return "\n".join(lines)
 
 
@@ -574,6 +594,8 @@ def compose_repair_node(
     spec_level: str = "exact",
     time_budget: str = _DEFAULT_TIME_BUDGET,
     suite_command: str = "",
+    diff: str = "",
+    answers: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any] | None:
     """Compose the single repair node a finding-bearing review round produces.
 
@@ -605,7 +627,12 @@ def compose_repair_node(
     round_id = repair_round_id(review, reviewed_run_id=run_id)
     scope = repair_write_scope(review, run_record=run_record, fence=fence)
     brief = compose_repair_brief(
-        review, findings, reviewed_run_id=run_id, unmarked=unmarked
+        review,
+        findings,
+        reviewed_run_id=run_id,
+        unmarked=unmarked,
+        diff=diff,
+        answers=answers,
     )
     ids = ", ".join(finding["id"] for finding in findings)
     done_when = (

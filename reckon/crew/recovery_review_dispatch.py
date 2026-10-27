@@ -271,8 +271,9 @@ def _repair_round_token(round_id: str) -> str:
 # dispatch — so a refusal, an awaiting-lane hold, a decline-only round and an
 # exhausted retry each leave it unchanged and the round in hand free to be
 # attempted again. The record is run-wide and durable: a new head reviewed after
-# the first repair is a second round, and once one round has opened the run is
-# handed back to its coordinator rather than repaired again. Held beside the
+# the first repair is a second round, and a run is repaired again until its
+# round budget is spent, at which point it is escalated to its coordinator.
+# Held beside the
 # per-round field because the two answer different questions: the dispatch field
 # says what happened to the head in hand, this says whether any round ever
 # opened and how far it got.
@@ -282,6 +283,19 @@ REPAIR_ROUNDS_FIELD = "repair_rounds"
 # round record; every other outcome is a refusal or a hold on the round already
 # in hand.
 REPAIR_ROUND_OPENING_STATUSES = frozenset({"resumed", "dispatched"})
+
+# How many automatic repair rounds one run may open before the reflex stops and
+# escalates the run to its coordinator. A round is one review-and-repair turn:
+# the first review's repair is round one, a later head reviewed after that
+# repair is round two, and so on. A run still carrying a blocking finding after
+# the third round raises one escalation and opens no further round.
+AUTOMATIC_REPAIR_ROUND_LIMIT = 3
+
+# The pointer dispatch status the reflex records once the automatic repair
+# budget is spent. Its presence is what names the scale escalation as one row
+# rather than one per sweep: a sweep that reads it for the same round records
+# nothing further.
+REPAIR_ESCALATED_STATUS = "escalated"
 
 # The dispatch role whose findings a repair acts on, and the node-id prefix a
 # composed repair carries. A review of a review, an investigate run and a test

@@ -1433,6 +1433,81 @@ def _indexed_head_matches(entry: Mapping[str, Any], named: str | None) -> bool:
     return actual.startswith(named) or named.startswith(actual)
 
 
+def _records_for_run_both_stores(
+    project: str,
+    reviewed_run_id: str,
+    *,
+    base_dir: str | Path | None = None,
+) -> list[tuple[Path, dict[str, Any]]]:
+    """Every readable record for the run in either store, staging records first.
+
+    A review round is stored in staging while it is live and committed into the
+    project's tree when a promotion lands it, and a run can be at either point:
+    the descent reader must see the same records the by-head selection sees, so
+    it enumerates both stores rather than the staging one alone.
+    """
+    records = list(stored_records_for_run(project, reviewed_run_id, base_dir=base_dir))
+    committed = _review.committed_review_root(project)
+    if committed is not None:
+        run_directory = committed / _review.COMMITTED_RUN_DIRNAME / reviewed_run_id
+        if run_directory.is_dir():
+            for path in sorted(run_directory.glob("*.json")):
+                record = _committed_record_at(path)
+                if record is None:
+                    continue
+                if str(record.get("reviewed_run_id") or "").strip() != reviewed_run_id:
+                    continue
+                records.append((path, dict(record)))
+    return records
+
+
+def stored_review_descending_from(
+    project: str,
+    reviewed_run_id: str,
+    head: str,
+    *,
+    repository: str | Path | None,
+    base_dir: str | Path | None = None,
+    rubric: str | None = None,
+) -> tuple[Path | None, dict[str, Any] | None, str]:
+    """Return a stored review whose head the run's head descends from.
+
+    A repair moves the run's head past the revision its review read. The
+    by-head selection then finds no record describing the new head, and a
+    disposition recorded afterwards would answer nothing. A review of an
+    ancestor is still the run's own evidence about the work under review, so a
+    disposition against it stands: the finding it raises is work the repair was
+    asked to answer, and the answers are written onto that record.
+
+    The newest matching record wins, so a run reviewed at several rounds
+    answers against the latest one whose head is still in the run's history.
+    A head equal to the record's own is accepted without a git call. An empty
+    ``head`` or no repository to check ancestry against yields nothing, which
+    leaves the caller's refusal in place rather than accepting an unverifiable
+    record. The third element is the reviewed head the accepted record names,
+    so a caller can key its write and report the revision it answered.
+    """
+    current = str(head or "").strip()
+    if not current or repository is None:
+        return None, None, ""
+    from reckon.crew import merge as merge_module
+    from reckon.crew import recovery as recovery_module
+
+    for path, record in reversed(
+        _records_for_run_both_stores(project, reviewed_run_id, base_dir=base_dir)
+    ):
+        if not _review._review_rubric_matches(record, rubric):
+            continue
+        _, _, carries, stored_head = _review.carried_revision_pair(record)
+        if not (carries and stored_head):
+            continue
+        if recovery_module.same_revision(
+            stored_head, current
+        ) or merge_module._is_ancestor(Path(repository), stored_head, current):
+            return path, dict(record), stored_head
+    return None, None, ""
+
+
 # ── The review module, whose helpers this family reads ──
 # The import sits at the foot of the module so that review.py, which
 # re-exports the family above, can finish defining the names below before

@@ -1,13 +1,14 @@
-"""The reflex opens at most one automatic repair round for a reviewed run.
+"""The reflex opens a bounded number of automatic repair rounds for a run.
 
 A review round is the pair a stored record stands for — the run it read and the
 head it read — and one round is one repair. The identity keyed on the head is
 what the composer already uses, and it is exactly what lets a *later* head open
-a second round: a field run was resumed on three successive reviews scoring 82,
-83 and 83 because each new head drew a new review, each new review composed a new
-round, and each new round fired its own repair. The cap this file drives is
-run-wide rather than round-local: once one round has opened, a later round hands
-the run back to its coordinator instead of opening another.
+a further round: a field run was resumed on three successive reviews scoring 82,
+83 and 83 because each new head drew a new review, each new review composed a
+new round, and each new round fired its own repair. The cap this file drives is
+run-wide rather than round-local: the run is repaired for up to three rounds and
+then escalated to its coordinator exactly once, with its open findings named,
+instead of opening a fourth.
 
 The participant ports — the resume entry point and the dispatch — are both
 stubbed, so no worker is launched and no call reaches a scheduler.
@@ -23,6 +24,7 @@ from pathlib import Path
 
 from reckon import crew
 from reckon.crew import recovery, resumption, runs
+from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
 
 PROJECT = "sample"
@@ -105,10 +107,15 @@ def _fixture(tmp_path: Path, monkeypatch) -> tuple[Path, Path, str]:
 
 
 def _advance_head(repo: Path) -> str:
-    """Commit a new revision and return it, so the run is reviewed at a new head."""
-    (repo / "second.txt").write_text("second\n", encoding="utf-8")
+    """Commit a new revision and return it, so the run is reviewed at a new head.
+
+    The content is keyed to the current head, so repeated advances each produce
+    a distinct commit rather than colliding on an unchanged file.
+    """
+    current = _git(repo, "rev-parse", "HEAD")
+    (repo / "second.txt").write_text(f"second {current}\n", encoding="utf-8")
     _git(repo, "add", "second.txt")
-    _git(repo, "commit", "-q", "-m", "chore: advance")
+    _git(repo, "commit", "-q", "-m", f"chore: advance from {current}")
     return _git(repo, "rev-parse", "HEAD")
 
 
@@ -227,19 +234,19 @@ def test_the_first_round_resumes(tmp_path: Path, monkeypatch) -> None:
     assert opened["round_id"].endswith(head_sha)
 
 
-def test_a_second_round_on_a_new_head_hands_back(tmp_path: Path, monkeypatch) -> None:
-    """The cap: a later head reviewed after the repair opens no second round.
+def test_a_second_round_on_a_new_head_opens(tmp_path: Path, monkeypatch) -> None:
+    """A later head reviewed after the first repair opens a second round.
 
     Round one opens and resumes at the first head. The run then moves to a new
-    head, which draws a new review and composes a *different* round. That round
-    must open nothing: the reflex records the hand-back, names the earlier round
-    and its attempts beside the new review's score, and resumes nothing.
+    head, which draws a new review and composes a *different* round. The first
+    round having been spent, the reflex opens the second: it resumes again and
+    the opened-round record advances to two.
     """
     config_home, repo, first_head = _fixture(tmp_path, monkeypatch)
     record = _completed_pointer(config_home, repo)
     _store_review(first_head, [FINDING])
     resumed = _stub_resume(monkeypatch)
-    dispatched = _stub_dispatch(monkeypatch)
+    _stub_dispatch(monkeypatch)
 
     first = _dispatch(record)
     assert first["resumed"] is True and len(resumed) == 1
@@ -250,23 +257,86 @@ def test_a_second_round_on_a_new_head_hands_back(tmp_path: Path, monkeypatch) ->
 
     second = _dispatch(record)
 
-    assert second["dispatched"] is False
-    assert second.get("handed_to_coordinator") is True
-    assert len(resumed) == 1  # the second round resumed nothing
+    assert second["resumed"] is True
+    assert len(resumed) == 2  # the second round resumed the worker again
+    opened = _durable_pointer()["repair_rounds"]
+    assert opened["count"] == 2
+    assert opened["round_id"].endswith(second_head)
+
+
+def test_a_third_round_on_a_new_head_opens(tmp_path: Path, monkeypatch) -> None:
+    """The third round still opens; only the fourth is refused."""
+    config_home, repo, first_head = _fixture(tmp_path, monkeypatch)
+    record = _completed_pointer(config_home, repo)
+    _store_review(first_head, [FINDING])
+    resumed = _stub_resume(monkeypatch)
+    _stub_dispatch(monkeypatch)
+
+    heads = [first_head]
+    for _ in range(2):
+        _dispatch(record)
+        heads.append(_advance_head(repo))
+        _store_review(heads[-1], [FINDING])
+    third = _dispatch(record)
+
+    assert third["resumed"] is True
+    assert len(resumed) == 3
+    opened = _durable_pointer()["repair_rounds"]
+    assert opened["count"] == 3
+
+
+def test_a_fourth_round_escalates_once_with_open_findings(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The cap: with three rounds spent a fourth opens nothing and escalates once.
+
+    Three rounds resume at three heads. A fourth head draws a new review and
+    composes a fourth round, which must open nothing: the reflex records one
+    escalation, names the earlier rounds, the review's score and the finding
+    still open, and a further sweep records no second escalation.
+    """
+    config_home, repo, first_head = _fixture(tmp_path, monkeypatch)
+    record = _completed_pointer(config_home, repo)
+    _store_review(first_head, [FINDING])
+    resumed = _stub_resume(monkeypatch)
+    dispatched = _stub_dispatch(monkeypatch)
+
+    head = first_head
+    for _ in range(3):
+        opening = _dispatch(record)
+        assert opening["resumed"] is True
+        head = _advance_head(repo)
+        _store_review(head, [FINDING])
+    assert len(resumed) == 3
+
+    fourth = _dispatch(record)
+
+    assert fourth["dispatched"] is False
+    assert fourth.get("escalated") is True
+    assert len(resumed) == 3  # the fourth round resumed nothing
     assert dispatched == []  # and dispatched nothing
+    assert fourth["open_findings"] == [
+        {
+            "id": repair_module.finding_id(FINDING),
+            "location": "reckon/crew/thing.py:10",
+            "text": "off-by-one in the loop",
+        }
+    ]
 
     recorded = _durable_pointer()["repair_dispatch"]
-    assert recorded["status"] == "handed-to-coordinator"
-    reason = recorded["reason"]
-    assert first_head in reason  # names the earlier round
-    assert "1 attempt" in reason  # names the earlier round's attempts
-    assert "75" in reason  # names the new review's score
+    assert recorded["status"] == "escalated"
+    assert "3 round(s)" in recorded["reason"]  # names the budget it spent
+    assert "75" in recorded["reason"]  # names the new review's score
+    assert recorded["open_findings"][0]["id"] == repair_module.finding_id(FINDING)
 
-    # The opened-round record is untouched by the hand-back: the run still shows
-    # exactly one round opened, at the first head.
     opened = _durable_pointer()["repair_rounds"]
-    assert opened["count"] == 1
-    assert opened["round_id"].endswith(first_head)
+    assert opened["count"] == 3  # the escalation opened no round
+
+    # A further sweep of the same round records no second escalation.
+    again = _dispatch(record)
+    assert again.get("escalated") is True
+    assert len(resumed) == 3
+    assert _durable_pointer()["repair_dispatch"]["status"] == "escalated"
 
 
 def test_the_in_round_retry_still_works_in_round_one(
