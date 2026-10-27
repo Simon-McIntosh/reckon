@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="the misfiled-review index sees a record rewritten in place">
+  <meta name="plan-summary" content="The store index's validity follows each record file's own stat identity, so a record rewritten in place is answered at its new head or new reviewed run on the next lookup; a run whose own file sits at another head still finds its misfiled record at the head asked about, through an index-gated search that keeps the earlier no-scan guard; and a two-hundred-run session pays one whole-store revalidation rather than one per lookup.">
+  <meta name="plan-evidence-for" content="reckon:scoring-should-stop-a-promotion">
+  <meta name="plan-verifies" content="reckon:scoring-should-stop-a-promotion#s8">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="review,store,index,stat-identity,in-place-rewrite,misfiled">
+  <title>the misfiled-review index sees a record rewritten in place | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-misfiled-index-sees-an-in-place-rewrite" data-reckon="landed" data-when="2026-10-27">
+  <h2>The misfiled-review index sees a record rewritten in place</h2>
+  <p>Both defects the review of <code>misfiled-lookup-is-indexed</code> left are repaired in
+  <code>reckon/crew/review_records.py</code>, after a reproduction taken at the base revision and
+  with the mutation restored as the negative control.</p>
+
+  <h3 id="the-misfiled-index-sees-an-in-place-rewrite-reproduction">The defect, reproduced</h3>
+  <p>A record rewritten in place keeps its name, its inode and the store's directory entries, so
+  the directory's stat identity does not move while the record's content does. At
+  <code>e5b03805a</code> the index answered from the facts it read when it was built: a lookup
+  naming the rewritten head selected nothing (<code>rewritten_head_found: false</code>), and one
+  naming the new reviewed run found an empty group
+  (<code>rewritten_run_found: false</code>). A run holding its own file at one head returned
+  nothing at a head a second record of the same run carried
+  (<code>own_file.found: false</code>).</p>
+
+  <h3 id="the-misfiled-index-sees-an-in-place-rewrite-validity">Validity follows the files</h3>
+  <ul>
+    <li><strong>A miss revalidates the run's own entries.</strong>
+    <code>_revalidated_entries</code> stats the files the index holds entries for and re-reads the
+    ones whose identity moved, which costs a handful of stats and no staleness window.</li>
+    <li><strong>A miss no entry explains re-reads the store once per process.</strong>
+    <code>_refresh_store_entries</code> runs the existing update pass, guarded by a flag on the
+    cached index, so the shape a record rewritten onto another run leaves is found without paying
+    a whole-store pass per lookup.</li>
+    <li><strong>The store is not walked per lookup.</strong> One per-file stat pass over the
+    operator's real store, 5 896 records on GPFS, measured 1.5 to 3.1 s, against the three-second
+    budget the section sets for a two-hundred-run session. A per-lookup pass would have cost
+    300 to 600 s.</li>
+  </ul>
+
+  <h3 id="the-misfiled-index-sees-an-in-place-rewrite-own-file">The run's own file no longer hides a misfiled record</h3>
+  <p><code>stored_record</code> asks the index whether any entry for the run carries the head asked
+  about (<code>_indexed_at_head</code>, which revalidates only that run's entries) and calls the
+  store search only when one does. The previous section's guard is therefore intact:
+  <code>tests/test_misfiled_lookup_is_indexed.py::test_a_record_at_its_expected_path_never_reaches_the_scan</code>
+  passes unchanged, and a head mismatch the index knows nothing about is still answered from the
+  run's own files.</p>
+
+  <h3 id="the-misfiled-index-sees-an-in-place-rewrite-gate">The gate</h3>
+  <p>Four cases in <code>tests/test_the_misfiled_index_sees_an_in_place_rewrite.py</code>: an
+  in-place rewrite at a new head, one naming another run, a misfiled record beside the run's own
+  file, and the session budget. Both arms are <code>git archive</code> extractions on node-local
+  disk with the main checkout's <code>.env</code> linked; the population is the 40 test files that
+  import <code>reckon/crew/review_records.py</code> or <code>reckon/crew/review.py</code>, including
+  from-package comma-list imports.</p>
+  <ul>
+    <li>Base arm: the four new cases fail and nothing else adds a failure.</li>
+    <li>Head arm: the whole population passes.</li>
+    <li>Negative control: with validity keyed on the store directory's stat identity again at both
+    refresh points, the two in-place cases and the session case fail, and the own-file case still
+    passes, which is right — that repair is a different change.</li>
+    <li><code>ruff check</code> and <code>ruff format --check</code> are clean on both changed
+    paths.</li>
+  </ul>
+  <p>Every log is under the run directory, names its revision, tree and literal command, and ends
+  in <code>EXIT=</code>.</p>
+</article>
+</body>
+</html>
