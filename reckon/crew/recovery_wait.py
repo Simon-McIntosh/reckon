@@ -1,4 +1,4 @@
-# ruff: noqa: I001, UP035
+# ruff: noqa: UP035
 from __future__ import annotations
 
 import hashlib
@@ -527,11 +527,18 @@ def _run_wait_condition_probe(
             ),
         }
     candidates = {observed.casefold()}
-    candidates.update(
-        line.split(maxsplit=1)[0].rstrip("+").casefold() for line in lines
-    )
+    candidates.update(line.split(maxsplit=1)[0].casefold() for line in lines)
     terminal = {str(value).strip().casefold() for value in wait.get("terminal") or ()}
-    if candidates & terminal:
+    matched = any(
+        candidate in terminal
+        or (
+            len(candidate) > 1
+            and candidate.endswith("+")
+            and any(value.startswith(candidate[:-1]) for value in terminal)
+        )
+        for candidate in candidates
+    )
+    if matched:
         return {
             "state": "met",
             "observed": observed,
@@ -956,9 +963,7 @@ def stream_paths_newest_first(
     """
     directory = Path(run_dir)
     candidates: list[Path] = list(_run_stream_names(directory))
-    for extra in include:
-        if str(extra or ""):
-            candidates.append(Path(str(extra)))
+    candidates.extend(Path(str(extra)) for extra in include if str(extra or ""))
     written: dict[Path, float] = {}
     for path in candidates:
         try:

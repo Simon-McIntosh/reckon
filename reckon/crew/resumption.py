@@ -1532,12 +1532,19 @@ def _run_condition_probe(
     lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
     observed = lines[-1] if lines else f"exit:{completed.returncode}"
     candidates = {observed.casefold()}
-    candidates.update(
-        line.split(maxsplit=1)[0].rstrip("+").casefold() for line in lines
-    )
+    candidates.update(line.split(maxsplit=1)[0].casefold() for line in lines)
     terminal = {str(value).strip().casefold() for value in wait.get("terminal") or ()}
+    matched = any(
+        candidate in terminal
+        or (
+            len(candidate) > 1
+            and candidate.endswith("+")
+            and any(value.startswith(candidate[:-1]) for value in terminal)
+        )
+        for candidate in candidates
+    )
     return {
-        "terminal": bool(candidates & terminal),
+        "terminal": matched,
         "observed": observed,
         "detail": (
             f"condition probe reported {observed!r} with exit {completed.returncode}"
