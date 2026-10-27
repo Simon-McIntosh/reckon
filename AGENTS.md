@@ -28,9 +28,10 @@ prevents. Pointers below, one per rule; the references hold the full text.
   - size an operational cap from population and measured unit rate so the
     cohort completes — and name the scarce resource
   - an operational run outliving a turn runs in bounded slices
-  - after the plan review is answered, load all remaining implementable sections
-    in one beat, including those whose upstream has not landed; the queue holds
-    their declared waits until admission can release them
+  - queue the sections you have chosen in one beat, from any plans whose review
+    is answered, including those whose upstream has not landed; the queue holds
+    their declared waits until admission can release them. Choose each section;
+    never load a plan wholesale
 
 ## Project
 

@@ -755,13 +755,14 @@ forward by changing runtime, member, scope, node shape, advice, or experiment,
 repoint and continue. Stop only when progress needs new authority: an external
 prerequisite, user-owned decision, excess spend, or consent for an outward effect.
 
-### Load the whole plan after the review round
+### Queue the chosen work after the review round
 
-**Once the plan's review round is answered, size every remaining implementable
-section into nodes and dispatch all of them in one beat, naming no lane.** The
-picker routes each request. The dispatch set includes sections whose upstream
-has not landed; exclude only deferred sections, done sections, and sections with
-a live run. Consult the plan's declared `plan-section-depends-on` waits and give
+**Choose the sections that need doing now, from any plans whose review round is
+answered, size each into nodes and dispatch all of them in one beat, naming no
+lane.** The picker routes each request. The set may include sections whose
+upstream has not landed. A coordinator chooses each section rather than loading a
+plan wholesale, so it queues work it knows needs doing and steers the queue as
+earlier results come back. Consult the plan's declared `plan-section-depends-on` waits and give
 each node its own exclusive write scope. A node waiting on an unlanded section
 parks `awaiting-upstream`; admission releases it when that section lands, with
 no new coordinator dispatch. The queue orders only declared waits.

@@ -138,11 +138,12 @@ item, use isolated worktrees by default, and never dispatch two workers that
 write the same file. Each node carries a brief citing the reuse map: the module
 to extend, the interface not to widen, the question the worker may not settle.
 
-**Load the plan's full width after its review round is answered.** Size every
-remaining implementable section into nodes and dispatch all of them in one beat,
-naming no lane so the picker routes each request. The dispatch set includes
-sections whose upstream has not landed; leave out only deferred sections, done
-sections, and sections with a live run. A declared section wait parks its node
+**Queue the work you have chosen in one beat.** Decide which sections need doing
+now, often a few from each of several plans whose review rounds are answered.
+Size each into nodes and dispatch all of them in one beat, naming no lane so the
+picker routes each request. The set may include sections whose upstream has not
+landed. Never load a plan wholesale: choose each section, and steer the queue as
+earlier results come back. A declared section wait parks its node
 `awaiting-upstream` until the upstream lands, with no further coordinator
 dispatch. The queue orders only waits declared in `plan-section-depends-on`.
 Read progress through `crew view live` and steer waiting requests with the three
