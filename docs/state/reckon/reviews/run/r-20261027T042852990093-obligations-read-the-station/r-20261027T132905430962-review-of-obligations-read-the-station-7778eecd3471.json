@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/station.py:207 Station.tick calls station_obligations.publish",
+    "reckon/hooks/coordinator_obligations.py:1030 _prompt reads obligation_snapshot.read_station_answer",
+    "reckon/hooks/coordinator_obligations.py:1292 _stop reads obligation_snapshot.read_station_answer",
+    "reckon/mcp_views.py:4044 serve_crew_view(view='obligations') reads obligation_snapshot.read_station_answer"
+  ],
+  "completed_at": "2026-10-27T13:44:23.580Z",
+  "dispatched_at": "2026-10-27T13:32:06Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station.py",
+      "line": "207",
+      "severity": "non-blocking",
+      "text": "non-blocking: Station.tick calls station_obligations.publish before self.store.heartbeat(now=moment) at :214, so the first publish of a station's life reads no heartbeat row and writes \"heartbeat\": null, and on a restart it reads the pre-stop beat; export_snapshot's 90 s carried-beat gate (station_obligations.py:288) then refuses to rewrite, so the exported file reports stale=True for up to 90 s after start, which is the confusion the heartbeat exists to prevent. The tests miss it because their _station helper writes the heartbeat before exporting (tests/test_obligations_read_the_station.py:139), unlike the production order."
+    },
+    {
+      "file": "tests/test_obligations_read_the_station.py",
+      "line": "195",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_the_station_root_is_the_session_hosts_root asserts station_runtime_candidate(environ, run_user_root) == station_store.runtime_root_source(environ, run_user_root), but obligation_snapshot.py:291 now returns runtime_root_source's own result, so the two sides of the assertion call the same function with the same arguments and it can never fail; the docstring at :178-185 still calls the resolver a copy, which the delegation removed."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified four production call sites: reckon/crew/station.py:207, reckon/hooks/coordinator_obligations.py:1030 and :1292, and reckon/mcp_views.py:4044.",
+    "diff": "Read all six commits against 20e65d881: d9001681c adds reckon/crew/station_obligations.py, the reader in obligation_snapshot.py, four station_store methods, the hook's two read paths and the tests; 87c64846b adds the view read at reckon/mcp_views.py:4044; 7c62c7486 adds the carried-heartbeat refresh in export_snapshot; efa4d1237, 9d1c9bd94 and 7778eecd3 add the evidence fragment.",
+    "done_when": "Plan \u00a79's done-when names an equal answer on a fixture fleet, a stale heartbeat reported with its age, and no new snapshot over 60 s plus a negative control; tests/test_obligations_read_the_station.py:213, :229 and :261 assert those, logs/gate-head.log ends 10 passed with EXIT=0, logs/gate-base.log ends 1 error with EXIT=2 because the new module cannot be imported at base, and logs/negative-control.log records three mutations each ending 1 failed with EXIT=1.",
+    "goal": "The goal asks that the obligations hook and `crew view obligations` read the station's per-session obligations, with a throttled snapshot for readers off the node; the hook reads first at reckon/hooks/coordinator_obligations.py:1030 and :1292, the view reads first at reckon/mcp_views.py:4044, and reckon/crew/station.py:207 exports the snapshot through station_obligations.publish, so all three halves of the goal are present.",
+    "manifest": "Read in full; it names six commits (d9001681c, efa4d1237, 87c64846b, 9d1c9bd94, 7c62c7486, 7778eecd3), the literal gate command, seven log paths, the baseline and after suite arms, three negative-control mutations and their notes, and no outside-scope work.",
+    "write_paths": "The reviewed manifest lists eight declared paths; git diff 20e65d881..7778eecd3 touches seven files (the figures directory is unused) and every one is inside the declared list."
+  },
+  "justifications": {
+    "durability": "tests/test_obligations_read_the_station.py:294 reddens when a live station freezes its carried beat, :261 reddens when the export never writes, :340 when a changed fleet does not rewrite, :229 when a stale beat serves duties, and :417 when the view derives instead of reading; only :195 is vacuous because station_runtime_candidate delegates to the store it compares against.",
+    "evidence": "logs/gate-head.log ends 10 passed with EXIT=0 at head and logs/negative-control.log records three mutations red at EXIT=1, but every export case drives station_obligations.export_snapshot directly rather than through Station.tick, so the method the production path calls is never exercised.",
+    "fit": "reckon/crew/station_obligations.py names no plan, sprint or ticket identifier and follows the surrounding module idiom, but tests/test_obligations_read_the_station.py:178-185 still describes a copied candidate order that 7c62c7486 replaced with a delegation.",
+    "goal_fidelity": "Both consumers the goal names are wired: the hook at reckon/hooks/coordinator_obligations.py:1030 and the view at reckon/mcp_views.py:4044 both read obligation_snapshot.read_station_answer before falling back, and reckon/crew/station.py:207 exports the throttled snapshot.",
+    "reuse": "reckon/crew/obligation_snapshot.py:283 now delegates station_runtime_candidate to station_store.runtime_root_source and :303 asks station_store.DATABASE_NAME, while station_obligations.py reuses payload_for, document_for, fleet_state and write_atomically, so no capability is forked.",
+    "scope_discipline": "Every path in git diff 20e65d881..7778eecd3 is inside the eight declared write paths, and nothing outside them was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal asks that the obligations hook and crew view obligations read the station's per-session obligations, with a throttled snapshot for readers off the node; the hook reads first at reckon/hooks/coordinator_obligations.py:1030 and :1292, the view reads first at reckon/mcp_views.py:4044, and reckon/crew/station.py:207 exports the snapshot through station_obligations.publish, so all three halves of the goal are present.\nVERDICT done_when: Plan section 9's done-when names an equal answer on a fixture fleet, a stale heartbeat reported with its age, and no new snapshot over 60 s plus a negative control; tests/test_obligations_read_the_station.py:213, :229 and :261 assert those, logs/gate-head.log ends 10 passed with EXIT=0, logs/gate-base.log ends 1 error with EXIT=2, and logs/negative-control.log records three mutations each ending 1 failed with EXIT=1.\nVERDICT write_paths: The reviewed manifest lists eight declared paths; git diff 20e65d881..7778eecd3 touches seven files and every one is inside the declared list.\nVERDICT manifest: Read in full; it names six commits, the literal gate command, seven log paths, the baseline and after suite arms, three negative-control mutations and no outside-scope work.\nVERDICT diff: Read all six commits against 20e65d881: d9001681c adds the writer, reader, store methods, hook read paths and tests; 87c64846b adds the view read; 7c62c7486 adds the carried-heartbeat refresh; the three evidence commits add the fragment.\nCALL_SITES: reckon/crew/station.py:207 Station.tick calls station_obligations.publish, reckon/hooks/coordinator_obligations.py:1030 _prompt reads obligation_snapshot.read_station_answer, reckon/hooks/coordinator_obligations.py:1292 _stop reads obligation_snapshot.read_station_answer, reckon/mcp_views.py:4044 serve_crew_view reads obligation_snapshot.read_station_answer\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: Both consumers the goal names are wired, the hook at reckon/hooks/coordinator_obligations.py:1030 and the view at reckon/mcp_views.py:4044, and reckon/crew/station.py:207 exports the throttled snapshot.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log ends 10 passed with EXIT=0 and logs/negative-control.log records three mutations red at EXIT=1, but every export case drives station_obligations.export_snapshot directly rather than through Station.tick.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in git diff 20e65d881..7778eecd3 is inside the eight declared write paths, and nothing outside them was touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_obligations_read_the_station.py:294, :261, :340, :229 and :417 each redden on a distinct regression, while only :195 is vacuous because station_runtime_candidate delegates to the store it compares against.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/station_obligations.py names no plan, sprint or ticket identifier and follows the surrounding module idiom, but tests/test_obligations_read_the_station.py:178-185 describes a copied candidate order that 7c62c7486 replaced.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/obligation_snapshot.py:283 delegates station_runtime_candidate to station_store.runtime_root_source and :303 asks station_store.DATABASE_NAME, and station_obligations.py reuses payload_for, document_for, fleet_state and write_atomically.\nFINDING reckon/crew/station.py:207 non-blocking: Station.tick calls station_obligations.publish before the heartbeat is written at :214, so a freshly started station exports a null or pre-stop heartbeat and the 90 s carried-beat gate at station_obligations.py:288 leaves it unwritten, so an off-node reader calls a live station stale for up to 90 s; the tests miss it because their _station helper writes the heartbeat before exporting (tests/test_obligations_read_the_station.py:139), unlike the production order.\nFINDING tests/test_obligations_read_the_station.py:195 non-blocking: test_the_station_root_is_the_session_hosts_root compares station_runtime_candidate with station_store.runtime_root_source, but obligation_snapshot.py:291 now returns that function's own result, so both sides call the same function and the assertion can never fail; the docstring at :178-185 still calls the resolver a copy that the delegation removed.\n",
+  "review_run_id": "r-20261027T132905430962-review-of-obligations-read-the-station-7778eecd3471",
+  "reviewed_base_sha": "20e65d881421c03fc2df32a5a558ebdd63066a15",
+  "reviewed_head_sha": "7778eecd3471b27fd4997e404bd67511bc9351be",
+  "reviewed_run_id": "r-20261027T042852990093-obligations-read-the-station",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T13:44:56.783179+00:00",
+  "total": 108
+}
