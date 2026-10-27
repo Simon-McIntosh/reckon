@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T21:02:15.390Z",
+  "dispatched_at": "2026-10-27T20:55:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "id": "fd9c9882fda",
+      "line": 158,
+      "severity": "non-blocking",
+      "text": "reckon/crew/landing_measure.py:158 non-blocking: _ASSIGNMENT is a verbatim third copy of the repository's own shell-assignment pattern: reckon/crew/promotion_gate.py:243 defines _SHELL_ASSIGNMENT with the identical regex and promotion.py:2343 already imports it as the shared owner, and reckon/hooks/worker_git_guard.py:127 holds ASSIGNMENT_RE. The module does not extend the owner, and two copies of 'what a program token is' can drift so that narrowing and gate-command resolution disagree on the same armed command."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "id": "f83d7828562",
+      "line": 163,
+      "severity": "non-blocking",
+      "text": "reckon/crew/landing_measure.py:163 non-blocking: _VALUE_OPTIONS is a hand-maintained list and anything outside it loses its value to the positional drop. Verified by calling the reviewed module: 'pytest --cov-config coveragerc tests/test_alpha.py' narrows to ['pytest','--cov-config','tests/test_alpha.py::test_real'], so the appended id becomes the option's value and the arm collects nothing. A non-pytest program prefix goes the same way: 'env PYTHONPATH=. python -m pytest tests/x.py' narrows to ['env','-m','pytest','<id>'] and 'timeout 300 pytest tests/x.py' to ['timeout','<id>']. Each mangled arm exits non-zero with no failure id, so the new unreadable refusal catches it and no regression lands \u2014 the cost is a spurious refusal of a valid armed command, not a wrong landing."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "pass \u2014 one commit, two files, +166/-37, rewriting runner_argv and making _fails return an unreadable reason that sets Measurement.unreadable and so refuses the landing",
+    "done_when": "pass \u2014 the gate command at 9362ba76 reads 7 passed and at ccaf5a1c3 reads 9 passed, both EXIT=0, with the two new behaviours carried by added tests; ruff check and ruff format --check were verified clean on both changed files by this review, though the manifest records no ruff result",
+    "goal": "pass \u2014 commit ccaf5a1c3 makes the isolated re-run carry the armed command's interpreter, environment and options and refuses the landing when that arm cannot run, which is the measurement step the goal depends on",
+    "manifest": "pass \u2014 status complete, commits aebc724cf/9362ba76/ccaf5a1c3, test_logs listed, baseline_suite and after_suite both record failure_count 0 with empty ids, and negative_control_log names the reverted-fix run",
+    "write_paths": "pass \u2014 the diff of 9362ba76..ccaf5a1c3 touches only reckon/crew/landing_measure.py and tests/test_the_landing_pass_measures_and_lands.py, both inside the declared scope"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to land an accepted run by measuring its suite at base and head with flakes told apart from regressions; commit ccaf5a1c3 repairs runner_argv so the isolated arm re-runs the one added id through the same interpreter, environment, plugins and options.\nVERDICT done_when: the done_when requires the fixture test file's named behaviours, three isolated re-runs per id at each revision, no importer-population failures against base and ruff clean on the changed paths; the manifest's gate logs read 7 passed at 9362ba76 and 9 passed at ccaf5a1c3, both EXIT=0, and this review verified ruff check and ruff format --check clean on both changed files though the manifest records no ruff result.\nVERDICT write_paths: the declared paths are reckon/crew/queue_landing.py, reckon/crew/landing_measure.py and tests/test_the_landing_pass_measures_and_lands.py; the diff of 9362ba76..ccaf5a1c3 touches only landing_measure.py and the test file.\nVERDICT manifest: read; it records status complete, commits aebc724cf/9362ba76/ccaf5a1c3, the gate log paths, and baseline_suite and after_suite each with failure_count 0 and empty failure_ids.\nVERDICT diff: read commit by commit against base 9362ba76; the single commit ccaf5a1c3 changes two files (+166/-37), rewriting reckon/crew/landing_measure.py:209 runner_argv and reckon/crew/landing_measure.py:385 _fails, and adds two tests.\nCALL_SITES: reckon/crew/queue_landing.py:_measure_delivery, reckon/crew/queue_landing.py:_measure_guard, reckon/crew/queue_admission.py:land_once\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:209 keeps the interpreter, assignments and option values in the narrowed arm, so the id ranked as added is actually re-run rather than answered by a usage error.\nSCORE evidence: 17\nJUSTIFICATION evidence: baseline.log reads 7 passed and after.log 9 passed at their header revisions, and negative-control.log reads 2 failed with the answering commit reverted; the done_when's ruff clause is verified clean but unrecorded in the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff of 9362ba76..ccaf5a1c3 touches only reckon/crew/landing_measure.py and tests/test_the_landing_pass_measures_and_lands.py, both inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_landing_pass_measures_and_lands.py:312 and :338 assert against literal tokens and production guard text and both fail in negative-control.log when ccaf5a1c3 is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: the added names (_ASSIGNMENT, _VALUE_OPTIONS, the narrowed helper) describe the mechanism, follow the module's frozen-dataclass and docstring style at reckon/crew/landing_measure.py:43, and carry no plan, ticket or author reference.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:158 copies promotion_gate.py:243 _SHELL_ASSIGNMENT verbatim instead of importing the owner promotion.py:2343 already uses, though the target-stripping capability itself has no existing owner in reckon/.\nFINDING reckon/crew/landing_measure.py:158 non-blocking: _ASSIGNMENT duplicates promotion_gate.py:243 _SHELL_ASSIGNMENT and hooks/worker_git_guard.py:127 ASSIGNMENT_RE rather than importing the shared owner, so the notion of a program token now has three copies that can drift.\nFINDING reckon/crew/landing_measure.py:163 non-blocking: _VALUE_OPTIONS is hand-maintained, so an unlisted value-taking option (--cov-config) or a non-pytest program prefix (env, timeout) loses its value or argument to the positional drop; the arm then exits without a failure id and is refused as unreadable, making a valid armed command unlandable.",
+  "review_run_id": "r-20261027T205143498422-review-of-the-landing-pass-measures-and-lands-ccaf5a1c3cff",
+  "reviewed_base_sha": "9362ba7601f99ee94fc78e5c5cd9e44a0a43f4d7",
+  "reviewed_checklist": {
+    "done_when": "A new tests/test_the_landing_pass_measures_and_lands.py, against a fixture repository with stubbed test commands, shows the named behaviours; each added id is re-run alone three times at base and at head; the importer population adds no failures against base; ruff check and ruff format --check pass on the changed paths.",
+    "goal": "Land an accepted run from the landing pass by measuring its suite there, with flakes told apart from regressions.",
+    "write_paths": [
+      "reckon/crew/queue_landing.py",
+      "reckon/crew/landing_measure.py",
+      "tests/test_the_landing_pass_measures_and_lands.py",
+      "docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html",
+      "docs/figures/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands"
+    ]
+  },
+  "reviewed_commit": "ccaf5a1c3cffc257232ed2141633b593dd3617b0",
+  "reviewed_head_sha": "ccaf5a1c3cffc257232ed2141633b593dd3617b0",
+  "reviewed_run_id": "r-20261027T124654403923-the-landing-pass-measures-and-lands",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T21:06:21.954211+00:00",
+  "total": 97
+}
