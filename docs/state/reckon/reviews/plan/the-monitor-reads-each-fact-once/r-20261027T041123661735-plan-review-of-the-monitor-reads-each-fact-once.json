@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-27T04:17:41.305Z",
+  "dispatched_at": "2026-10-27T04:12:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-monitor-reads-each-fact-once/r-20261027T041123661735-plan-review-of-the-monitor-reads-each-fact-once/plan.html:323",
+      "id": "done_when-1",
+      "reason": "the extra tests still have to pass and cost a node nothing, and no implementer would follow them to the wrong mechanism; naming them is redundant rather than misleading.",
+      "text": "two of the four \"existing settle tests\" \u00a710 requires to pass, `tests/test_follow_settled_rows.py` and `tests/test_follower_settles_a_promoted_row.py`, carry the pane's row settle and the ledger-row fold, not the drain-settle rule `_check_settle` (neither mentions `_check_settle`, `_population_has_live_work`, the settle interval or the grace variable), so they measure \u00a78's row path rather than \u00a710's move",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_fingerprint": "a57de07ffae52af4a09a6865776975e8669b1129da5a91b46ac91abfc2517f4e",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 62,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261027T041123661735-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "d887a7409bebc222479f9a90a111677a0cd77a6e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol \u00a710 cites resolves: `resumption.sweep`'s resume pass (`reckon/crew/resumption.py:1768-1795`), `sweep_unfollowed_sessions`'s host rule (`reckon/crew/runs.py:3746-3772`), `review_settle_seconds_remaining` reading `auto_resume` alone (`reckon/crew/recovery_review_dispatch.py:1266`), `_latest_resume_at` returning the newer of the two stamps (`:206-222`), `resume_superseded_head` (`:78`), `_check_settle`/`saw_live`/`settle_populations` (`reckon/crew_follow_commands.py:1494-1560`), `_population_has_live_work` (`:482-506`), the grace and sample constants (`:285`, `:312`), and all four named test files; extensionless hrefs (`/reckon/research/monitor-storage-load-rca`, `/reckon/plans/the-monitor-shows-the-work-it-watches`, `/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed`) each resolve once `.html` is appended.",
+    "done_when": "a finding \u2014 the changed done-when is measurable and declares a control for each rule it keeps (populations, grace, `saw_live`, ownerless, unscoped), but two of the four \"existing settle tests\" it names do not exercise the drain-settle rule \u00a710 changes.",
+    "evidence_paths": "pass \u2014 \u00a710 places no evidence in a scratch or node-local temporary path; its gates are named test files plus a 60 s `strace` whose log the node records on its own run record, and the plan names no transient location for it.",
+    "naming": "pass \u2014 \u00a710 names only code symbols and section numbers; no ticket number, version tag or changelog prose reaches a symbol, and the added prose states the mechanism (which decision rule is kept, which reading moves) rather than what changed.",
+    "reasoning": "pass \u2014 on the changed unit all three checks hold: the kept-rule description matches `_check_settle` line for line (populations from `settle_populations`, the 120 s grace from `_settle_grace_default`, the `if not saw_live: return` refusal, the `any()` hold and the `settle_empty_since` grace measure); swapping the directory listing inside `_population_has_live_work` is the one place `_is_live` reads from, so the mechanism produces the asserted measure; and the callers are named and real \u2014 the follower's wait pass (`crew_follow_commands.py:1759`, reached from the settle-aware `follow` at `:3035`) and the reflex's gate (`recovery_review_acceptance.py:462`, which returns `settling` while `remaining > 0`), the station loop being \u00a77's.",
+    "single_goal": "pass \u2014 \u00a710 carries one goal, moving the reflex and settle detection to a single station-side execution, with the subscriber retaining its rule and changing only its reading source.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s10: [s7, s8]`, both of which \u00a710 needs (the station loop \u00a77 and the subscriber \u00a78 that \u00a710's 60 s trace measures), and `s12` depends on `s10`; no relationship points at a node that does not exist."
+  },
+  "section_digests": {
+    "_document": "1efa3b16a9023a68c77c1bd2c38fc067afc4037d50dedf6106cc67229ac7bd51",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T04:18:24.412021+00:00"
+}
