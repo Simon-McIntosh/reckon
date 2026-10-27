@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
@@ -2419,6 +2420,17 @@ def require_plan_section_visible(
 PLAN_BUILD_EXEMPT_ROLES: frozenset[str] = frozenset({"investigate", "review", "test"})
 
 
+#: The plan units a queued request reads, published by the admission pass for
+#: the length of the one launch it is making. The launch path reaches this gate
+#: through the ordinary dispatch call, which has no argument of its own for the
+#: narrowing, so the units travel beside it rather than being restated as a
+#: second gate. A dispatch that publishes nothing — every direct dispatch —
+#: keeps the whole-plan check.
+ADMISSION_REVIEW_UNITS: ContextVar[Iterable[str] | None] = ContextVar(
+    "admission-review-units", default=None
+)
+
+
 def _plan_review_exempt(node: TaskNode) -> bool:
     """Whether a node is exempt from the plan-review gate.
 
@@ -2494,6 +2506,7 @@ def require_plan_reviewed(
     authority: Mapping[str, Any],
     allow_unreviewed: bool = False,
     enforce: bool = False,
+    units: Iterable[str] | None = None,
 ) -> str | None:
     """Judge whether a building dispatch's plan carries an answered review.
 
@@ -2524,7 +2537,18 @@ def require_plan_reviewed(
     warning to record and the dispatch proceeds; when true the same condition
     raises :class:`PlanReviewMissingError`. ``None`` is returned when there is
     nothing to report.
+
+    ``units`` narrows the coverage judgment to the units the caller's request
+    actually reads — at admission, the request's own section and the document
+    unit that carries the plan's decisions, gates and dependencies. A plan edit
+    elsewhere then no longer strands that request. A caller naming no units
+    keeps the whole-plan check, which is what a direct dispatch asks: an
+    authored edit anywhere in the plan is that dispatch's business.
     """
+
+    if units is None:
+        units = ADMISSION_REVIEW_UNITS.get()
+    scope = None if units is None else {str(unit) for unit in units}
     if allow_unreviewed or _plan_review_exempt(node):
         return None
 
@@ -2583,7 +2607,11 @@ def require_plan_reviewed(
         project, node.plan, plan=resource.path
     )
     record = plan_review.read_plan_review(project, node.plan, plan=resource.path)
-    if uncovered or record is None:
+    if scope is not None:
+        # Only the units this caller reads decide its hold. A unit the plan
+        # carries and the review never read is another request's business.
+        uncovered = {unit for unit in uncovered if unit in scope}
+    if uncovered or (record is None and scope is None):
         return _plan_review_verdict(
             enforce,
             f"plan {node.plan!r} in project {project!r} carries no stored review "
@@ -2612,7 +2640,10 @@ def require_plan_reviewed(
             for finding in plan_review.unanswered_findings(design)
             if finding not in unanswered
         ]
-    if unanswered:
+    # A finding's identity names no unit, so an unanswered one cannot be
+    # attributed to the caller's scope; the narrowed admission check answers
+    # only whether the units it reads are covered.
+    if unanswered and scope is None:
         return _plan_review_verdict(
             enforce,
             f"the review of plan {node.plan!r} leaves {len(unanswered)} "

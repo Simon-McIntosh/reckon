@@ -46,6 +46,12 @@ DEFAULT_ADMIT_INTERVAL_SECONDS = 5.0
 #: stands reads its place through :func:`queued_placements`.
 QUEUED_PHASE = "queued"
 HELD_PHASE = "held"
+#: The reason an admission pass records on a request it holds because one of
+#: the plan units the request reads carries no stored review. A hold written by
+#: a coordinator keeps its own reason and its own life: only a hold carrying
+#: this reason and the ``automatic`` mark is released by the pass that finds
+#: the review stored.
+PLAN_REVIEW_HELD_REASON = "plan-review-owed"
 LAUNCH_FAILED_PHASE = "launch-failed"
 #: The request-phase vocabulary, one place every reader of a request's phase
 #: takes its words from. ``awaiting-upstream`` is a request whose section
@@ -246,40 +252,51 @@ def _launch_queued(
     # request's run id: the id a dispatch printed is the one a coordinator
     # records and later acts on, and a fresh id here would leave the printed one
     # naming nothing the moment the lane frees.
-    return dispatch(
-        node=node,
-        run_id=str(pointer["run_id"]),
-        project=str(pointer["project"]),
-        repo=pointer.get("repo"),
-        config=config,
-        session=str(pointer["session"]),
-        wave=str(options.get("wave") or ""),
-        base=str(options.get("base") or "HEAD"),
-        locked_decisions=tuple(options.get("locked_decisions") or ()),
-        peer_scopes=node.peer_scopes,
-        member=str(options.get("member") or ""),
-        launcher=launcher,
-        execution_override=bool(options.get("allow_execution_mismatch")),
-        orchestrator_lane_reason=options.get("orchestrator_lane_reason") or None,
-        unreconciled_override=bool(options.get("allow_unreconciled_runs")),
-        unreviewed_plan_override=bool(options.get("allow_unreviewed_plan")),
-        watch_required=True,
-        watch_override=bool(options.get("no_watch")),
-        local=bool(pointer.get("local")) and not destination,
-        backend_override=destination or str(pointer.get("backend") or ""),
-        repairs=str(options.get("repairs") or ""),
-        accept_directory_claim=bool(options.get("accept_directory_claim")),
-        no_fence_reason=str(options.get("no_fence_reason") or ""),
-        # A stored picker answer is supplied to dispatch, so the model is
-        # resolved from that choice without asking the picker again. An edited
-        # route or a recorded fallback stays on the backend it already names.
-        route="picker" if replay_pick else "deterministic",
-        picker_selection=selection,
-        comment=str(options.get("comment") or ""),
-        dispatch_options=options,
-        admission_launch=True,
-        admitted_from=str(pointer["run_id"]),
-    )
+    from reckon.crew import routing
+
+    # The pass has already judged the gate over the units this request reads;
+    # the launch publishes them so the same gate inside dispatch asks the same
+    # question instead of the whole plan's. A direct dispatch publishes nothing
+    # and keeps the whole-plan check.
+    units_token = routing.ADMISSION_REVIEW_UNITS.set(plan_review_units(node.section))
+    try:
+        return dispatch(
+            node=node,
+            run_id=str(pointer["run_id"]),
+            project=str(pointer["project"]),
+            repo=pointer.get("repo"),
+            config=config,
+            session=str(pointer["session"]),
+            wave=str(options.get("wave") or ""),
+            base=str(options.get("base") or "HEAD"),
+            locked_decisions=tuple(options.get("locked_decisions") or ()),
+            peer_scopes=node.peer_scopes,
+            member=str(options.get("member") or ""),
+            launcher=launcher,
+            execution_override=bool(options.get("allow_execution_mismatch")),
+            orchestrator_lane_reason=options.get("orchestrator_lane_reason") or None,
+            unreconciled_override=bool(options.get("allow_unreconciled_runs")),
+            unreviewed_plan_override=bool(options.get("allow_unreviewed_plan")),
+            watch_required=True,
+            watch_override=bool(options.get("no_watch")),
+            local=bool(pointer.get("local")) and not destination,
+            backend_override=destination or str(pointer.get("backend") or ""),
+            repairs=str(options.get("repairs") or ""),
+            accept_directory_claim=bool(options.get("accept_directory_claim")),
+            no_fence_reason=str(options.get("no_fence_reason") or ""),
+            # A stored picker answer is supplied to dispatch, so the model is
+            # resolved from that choice without asking the picker again. An
+            # edited route or a recorded fallback stays on the backend it
+            # already names.
+            route="picker" if replay_pick else "deterministic",
+            picker_selection=selection,
+            comment=str(options.get("comment") or ""),
+            dispatch_options=options,
+            admission_launch=True,
+            admitted_from=str(pointer["run_id"]),
+        )
+    finally:
+        routing.ADMISSION_REVIEW_UNITS.reset(units_token)
 
 
 # The dispatch options a rebind copies from the request it moves. The waivers a
@@ -1126,8 +1143,14 @@ REQUEST_REF_PREFIX = "run:"
 #: The statuses a run's own manifest records when it delivered, and when it
 #: ended without delivering. They are the run vocabulary and not the plan's: a
 #: plan reads ``shipped`` or ``done``, while a manifest reads ``complete``.
+#:
+#: ``blocked`` is deliberately not among the failed ones. A blocked manifest is
+#: a worker that stopped and asked for help, and the run behind it can still be
+#: resumed or repaired to deliver, so the request waiting on it keeps waiting
+#: rather than being closed as upstream-abandoned. Only ``failed`` — and a
+#: discarded request — means nothing will ever deliver.
 RUN_DELIVERED_STATUSES = ("complete",)
-RUN_FAILED_STATUSES = ("failed", "blocked", "abandoned")
+RUN_FAILED_STATUSES = ("failed", "abandoned")
 
 
 def section_wait_refs(plan_html: str, section: str) -> list[str]:
@@ -2007,6 +2030,56 @@ def resolve_waits(
     return AWAITING_UPSTREAM_PHASE
 
 
+def _rederive_waits(
+    pointer: dict[str, Any],
+    *,
+    cache: dict[tuple[str, str, str], list[str]] | None = None,
+) -> bool:
+    """Re-read a stored request's waits from the plan and rewrite them.
+
+    The plan is what a coordinator steers a queued request through, so an edit
+    that narrows a section's waits can release the request and an edit that
+    widens them can send it back to ``awaiting-upstream``. The derivation is
+    the one that composed the waits at dispatch, and it keeps the request's own
+    ``--after`` refs because no plan edit carries them. A pointer with no
+    repository, or one whose plan cannot be read, keeps the waits it has: an
+    unreadable authority is not evidence that the waits changed.
+    """
+    node = _node_from_pointer(pointer)
+    repo_root = str(pointer.get("repo") or "")
+    if not repo_root:
+        return False
+    if not node.plan.strip() and not node.after:
+        return False
+    key = (repo_root, node.plan, node.section)
+    derived = None if cache is None else cache.get(key)
+    if derived is None:
+        derived = derive_wait_refs(node, repo_root=repo_root)
+        if cache is not None:
+            cache[key] = list(derived)
+    stored = section_waits_for(pointer)
+    # The node's own ``--after`` refs are kept whatever the plan now says, so a
+    # re-derived list has to be compared as the union it is: the request's refs
+    # carrying the run: prefix are its own.
+    own = {ref for ref in stored if ref.startswith(REQUEST_REF_PREFIX)}
+    derived = list(dict.fromkeys([*derived, *own]))
+    if derived == stored:
+        return False
+    run_id = str(pointer.get("run_id") or "")
+
+    def rewrite(current: dict[str, Any]) -> dict[str, Any]:
+        current["waits"] = list(derived)
+        current["waits_at"] = _utc_now()
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, rewrite)
+    except Exception:  # noqa: BLE001 - an unwritable pointer keeps its waits
+        return False
+    pointer["waits"] = list(derived)
+    return True
+
+
 def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     """Move each waiting request to the phase its refs now justify.
 
@@ -2014,25 +2087,34 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     and moves it to ``queued`` or ``blocked-upstream``. Barrier blocking is
     transitive, so the resolution repeats to a fixpoint: a request blocked by a
     ref the same pass has just blocked becomes blocked too, whatever order the
-    pointers are held in.
+    pointers are listed in. A queued request is read by the same pass, because
+    a plan edit that widens its waits moves it back to ``awaiting-upstream``
+    and one that narrows them can release it.
     """
-    waiting = [
+    candidates = [
         pointer
         for pointer in live
-        if str(pointer.get("phase") or "") in WAITING_UPSTREAM_PHASES
+        if str(pointer.get("phase") or "") in (*WAITING_UPSTREAM_PHASES, QUEUED_PHASE)
     ]
-    if not waiting:
+    if not candidates:
         return {"promoted": [], "blocked": [], "obligations": []}
     cache: dict[str, Any] = {}
+    # One plan read per pass, shared by every request it derives for.
+    derived_cache: dict[tuple[str, str, str], list[str]] = {}
+    for pointer in candidates:
+        try:
+            _rederive_waits(pointer, cache=derived_cache)
+        except Exception:  # noqa: BLE001, S112 - one unreadable request cannot end the pass
+            continue
     promoted: list[str] = []
     blocked: list[str] = []
     obligations: dict[str, str] = {}
-    for _round in range(len(waiting) + 1):
+    for _round in range(len(candidates) + 1):
         dead = _dead_sections(live)
         changed = False
-        for pointer in waiting:
+        for pointer in candidates:
             phase = str(pointer.get("phase") or "")
-            if phase not in WAITING_UPSTREAM_PHASES:
+            if phase not in (*WAITING_UPSTREAM_PHASES, QUEUED_PHASE):
                 continue
             docs_dir = Path(str(pointer.get("repo") or "") or ".") / "docs"
             previous_issues = list(pointer.get("upstream_obligations") or ())
@@ -2170,6 +2252,24 @@ def _hold_pointer(
     return True
 
 
+def plan_review_units(section: str) -> set[str]:
+    """The plan units one request reads: its own section and the document unit.
+
+    The document unit carries the plan's decisions, gates and dependencies, so
+    a change to it is a change the request must have been reviewed against. A
+    section elsewhere in the plan is another request's business. Every spelling
+    of a section resolves to one identity through
+    :func:`reckon._plan_html.section_record_id`, which is the identity a stored
+    review records its coverage under.
+    """
+    from reckon._plan_html import DOCUMENT_UNIT, section_record_id
+
+    units = {DOCUMENT_UNIT}
+    if str(section).strip():
+        units.add(section_record_id(section))
+    return units
+
+
 def _move_pointer(run_id: str, phase: str) -> bool:
     """Write one request's new phase, reporting whether the write landed.
 
@@ -2188,6 +2288,145 @@ def _move_pointer(run_id: str, phase: str) -> bool:
     except Exception:  # noqa: BLE001 - an unwritable pointer stays where it is
         return False
     return True
+
+
+def _plan_review_owed(
+    pointer: Mapping[str, Any],
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> str | None:
+    """Why the request's own plan units owe a stored review, or ``None``.
+
+    The gate is the one a dispatch runs, asked about the units this request
+    reads rather than the whole plan, so an edit to another section of the same
+    plan does not hold it. Only the enforced mode holds: under the shipped
+    report-only default a missing review is a warning and the launch proceeds,
+    exactly as before. An authority that cannot be resolved is not the gate's
+    verdict — the launch path answers that as it always has — so it holds
+    nothing here.
+    """
+    from reckon import flight
+    from reckon.crew import routing
+    from reckon.crew.node import PlanReviewMissingError
+
+    node = _node_from_pointer(pointer)
+    project = str(pointer.get("project") or "")
+    repo = str(pointer.get("repo") or "")
+    if not node.plan.strip() or not project or not repo:
+        return None
+    config = (
+        config_for(pointer) if config_for is not None else _resolve_lane_config(pointer)
+    )
+    if not flight.plan_review_gate_enforces(config):
+        return None
+    options = dict(pointer.get("dispatch_options") or {})
+    try:
+        authority = routing.resolve_dispatch_authority(project, repo)
+        routing.require_plan_reviewed(
+            node=node,
+            project=project,
+            repo=repo,
+            authority=authority,
+            allow_unreviewed=bool(options.get("allow_unreviewed_plan")),
+            enforce=True,
+            units=plan_review_units(node.section),
+        )
+    except PlanReviewMissingError as exc:
+        return str(exc)
+    except Exception:  # noqa: BLE001 - an unreadable authority holds nothing
+        return None
+    return None
+
+
+def _hold_for_plan_review(pointer: Mapping[str, Any], detail: str) -> bool:
+    """Move a request the gate holds to ``held``, recording why and its remedy.
+
+    The hold is marked automatic so that the pass which finds the review stored
+    releases it, while a hold a coordinator wrote is left alone whatever the
+    plan's review and this appointment's review have in common.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    started = _utc_now()
+
+    def hold(current: dict[str, Any]) -> dict[str, Any]:
+        if str(current.get("phase") or "") not in (
+            QUEUED_PHASE,
+            *WAITING_UPSTREAM_PHASES,
+        ):
+            raise _PointerNotHoldableError(run_id)
+        current["queue_hold"] = {
+            "prior_phase": str(current.get("phase") or QUEUED_PHASE),
+            "started_at": started,
+            "reason": PLAN_REVIEW_HELD_REASON,
+            "detail": detail,
+            "automatic": True,
+        }
+        current["phase"] = HELD_PHASE
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, hold)
+    except _PointerNotHoldableError:
+        return False
+    except Exception:  # noqa: BLE001 - an unwritable pointer stays where it is
+        return False
+    if isinstance(pointer, dict):
+        pointer["phase"] = HELD_PHASE
+    return True
+
+
+def _release_plan_review_holds(
+    live: Sequence[Mapping[str, Any]],
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> list[str]:
+    """Release every request this path held whose units are now reviewed.
+
+    The pass asks the gate again rather than trusting a record of the hold, so
+    a review stored since the last pass releases its requests with no
+    coordinator call. A hold a coordinator wrote carries no ``automatic`` mark
+    and is never released here, and a request so held stays held.
+    """
+    released: list[str] = []
+    for pointer in live:
+        if str(pointer.get("phase") or "") != HELD_PHASE:
+            continue
+        hold = pointer.get("queue_hold")
+        if not isinstance(hold, Mapping) or not hold.get("automatic"):
+            continue
+        if str(hold.get("reason") or "") != PLAN_REVIEW_HELD_REASON:
+            continue
+        if _plan_review_owed(pointer, config_for=config_for) is not None:
+            continue
+        prior = str(hold.get("prior_phase") or "")
+        if prior not in (QUEUED_PHASE, *WAITING_UPSTREAM_PHASES):
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        ended = _now()
+
+        def release(
+            current: dict[str, Any],
+            prior_phase: str = prior,
+            released_at: datetime = ended,
+        ) -> dict[str, Any]:
+            started = parse_utc((current.get("queue_hold") or {}).get("started_at"))
+            queued_at = parse_utc(current.get("queued_at"))
+            if started is not None and queued_at is not None:
+                current["queued_at"] = (queued_at + (released_at - started)).isoformat()
+            current["phase"] = prior_phase
+            current.pop("queue_hold", None)
+            current["queue_released_at"] = released_at.isoformat()
+            return current
+
+        try:
+            runs._mutate_pointer(run_id, release)
+        except Exception:  # noqa: BLE001, S112 - an unwritable pointer stays held
+            continue
+        if isinstance(pointer, dict):
+            pointer["phase"] = prior
+            pointer.pop("queue_hold", None)
+        released.append(run_id)
+    return released
 
 
 def _fair_use_weights_configured(config: Mapping[str, Any]) -> bool:
@@ -2422,6 +2661,9 @@ def admit_once(
         # failed, with no coordinator turn in between. This is what lets a
         # batch queued in one call launch in dependency order.
         upstream = advance_waiting_requests(live)
+        result["released_plan_review"] = _release_plan_review_holds(
+            live, config_for=config_for
+        )
         result["promoted_upstream"] = upstream["promoted"]
         result["blocked_upstream"] = upstream["blocked"]
         result["upstream_obligations"] = upstream["obligations"]
@@ -2577,6 +2819,27 @@ def admit_once(
                         allowance_source=allowance_source,
                         verdict="held-behind-earlier-request",
                         detail=str(overlap.get("run_id") or ""),
+                    )
+                )
+                continue
+            review_owed = _plan_review_owed(pointer, config_for=config_for)
+            if review_owed is not None and _hold_for_plan_review(pointer, review_owed):
+                # The plan's own units moved under the request since it was
+                # queued. Held, not failed: the request keeps its place, its
+                # waits and its stored brief, and the pass that finds a stored
+                # review covering those units releases it without a
+                # coordinator turn.
+                result["held"].append(str(pointer["run_id"]))
+                result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
+                    review_owed
+                )
+                verdicts.append(
+                    _verdict_row(
+                        pointer,
+                        allowance=allowance,
+                        allowance_source=allowance_source,
+                        verdict="held-on-plan-review",
+                        detail=review_owed,
                     )
                 )
                 continue
