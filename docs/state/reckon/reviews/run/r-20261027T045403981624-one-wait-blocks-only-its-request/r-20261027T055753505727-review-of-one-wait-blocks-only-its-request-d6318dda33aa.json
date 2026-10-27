@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    "tests/test_a_queued_run_is_admitted.py:400 fails if a refusal leaves the original pointer outside queued phase.",
+    "tests/test_a_queued_run_is_admitted.py:401 fails if the real launch produces no held-gate reason.",
+    "tests/test_a_queued_run_is_admitted.py:402-403 fail if a requeue leaves the original hold reason instead of the new gate reason.",
+    "tests/test_a_queued_run_is_admitted.py:405-406 fail if the surviving original pointer lacks the refusal text or failure timestamp.",
+    "tests/test_a_queued_run_is_admitted.py:407-408 fail if a replacement id is published or the original ceases to be the sole live request.",
+    "tests/test_a_queued_run_is_admitted.py:409-410 fail if the admission result reports the replacement id or supersession."
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:509",
+    "reckon/crew/dispatch.py:1681",
+    "reckon/crew/queue_admission.py:2503"
+  ],
+  "completed_at": "2026-10-27T06:04:11Z",
+  "dimension_dispositions": {
+    "scope_discipline": {
+      "kind": "exempted",
+      "reason": "tests/test_a_queued_run_is_admitted.py was granted by crew widen before this repair round (the live pointer's write_paths list it) and is named in the round's own write-scope list; the reviewer read only the original grant",
+      "recorded_at": "2026-10-27T06:06:00.263772+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-27T05:59:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "tests/test_a_queued_run_is_admitted.py was granted by crew widen before this repair round (the live pointer's write_paths list it) and is named in the round's own write-scope list; the reviewer read only the original grant",
+      "recorded_at": "2026-10-27T06:05:54.012286+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_queued_run_is_admitted.py",
+      "line": "366",
+      "severity": "blocking",
+      "text": "blocking: both later commits modify this test outside the reviewed node's exclusive write paths; the change needs a scope grant or must be delivered by a node that owns the file."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "d1b24e60 changes dispatch.py, queue_admission.py and the requeue test; d6318dda strengthens that test's stale-id control and adds the evidence fragment, all read against 0f9d75c9.",
+    "done_when": "prompt.txt:107 requires five behavior arms and no added importer failures; manifest.md:21-22 cites completed identical four-file gates with three base failures and one head failure, and identity-negative-control.log records both repaired arms failing under the stale-id mutation.",
+    "goal": "prompt.txt:30 requires one broken or in-flight wait not to block another dispatch; dispatch.py:1681 and queue_admission.py:878,2512 preserve the admitted request identity when a launch requeues.",
+    "manifest": "manifest.md:5-24 reports complete, names both added commits and paths, and records baseline and after receipts for 43 passed/3 failed and 45 passed/1 failed.",
+    "write_paths": "prompt.txt:70-76 and manifest.md:3 declare six paths, but commit d1b24e60 edits tests/test_a_queued_run_is_admitted.py:366 outside that list."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_run_is_admitted.py:399-410 checks the original live id, new hold, failure, timestamp and result id; identity-negative-control.log shows the old stale-id behavior fails both arms.",
+    "evidence": "manifest.md:21-22 cites completed identity-base-suite.log and identity-final-head-suite.log with the same command and zero added failure ids, while identity-negative-control.log shows both repaired test arms fail under stale-id accounting.",
+    "fit": "reckon/crew/dispatch.py:1681 adds an identity check at backend resolution and queue_admission.py:893 retains the surrounding pointer-mutation pattern with behavior-based names.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:893,2512 annotates the original request while reckon/crew/dispatch.py:1681 refuses an admitted launch that resolves a different run id.",
+    "reuse": "the capability search found existing requeue and failure owners at reckon/crew/dispatch.py:490 and reckon/crew/queue_admission.py:878,2492; the diff extends those definitions and adds no production definition.",
+    "scope_discipline": "tests/test_a_queued_run_is_admitted.py:366-410 is changed by both commits although prompt.txt:70-76 omits that file from the exclusive write grant."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 requires one broken or in-flight wait not to block another dispatch; dispatch.py:1681 and queue_admission.py:878,2512 preserve the admitted request identity when a launch requeues.\nVERDICT done_when: prompt.txt:107 requires five behavior arms and no added importer failures; manifest.md:21-22 cites completed identical four-file gates with three base failures and one head failure, and identity-negative-control.log records both repaired arms failing under the stale-id mutation.\nVERDICT write_paths: prompt.txt:70-76 and manifest.md:3 declare six paths, but commit d1b24e60 edits tests/test_a_queued_run_is_admitted.py:366 outside that list.\nVERDICT manifest: manifest.md:5-24 reports complete, names both added commits and paths, and records baseline and after receipts for 43 passed/3 failed and 45 passed/1 failed.\nVERDICT diff: d1b24e60 changes dispatch.py, queue_admission.py and the requeue test; d6318dda strengthens that test's stale-id control and adds the evidence fragment, all read against 0f9d75c9.\nCALL_SITES: reckon/crew/dispatch.py:509, reckon/crew/dispatch.py:1681, reckon/crew/queue_admission.py:2503\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:893,2512 annotates the original request while reckon/crew/dispatch.py:1681 refuses an admitted launch that resolves a different run id.\nSCORE evidence: 19\nJUSTIFICATION evidence: manifest.md:21-22 cites completed identity-base-suite.log and identity-final-head-suite.log with the same command and zero added failure ids, while identity-negative-control.log shows both repaired test arms fail under stale-id accounting.\nSCORE scope_discipline: 5\nJUSTIFICATION scope_discipline: tests/test_a_queued_run_is_admitted.py:366-410 is changed by both commits although prompt.txt:70-76 omits that file from the exclusive write grant.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_run_is_admitted.py:399-410 checks the original live id, new hold, failure, timestamp and result id; identity-negative-control.log shows the old stale-id behavior fails both arms.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch.py:1681 adds an identity check at backend resolution and queue_admission.py:893 retains the surrounding pointer-mutation pattern with behavior-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found existing requeue and failure owners at reckon/crew/dispatch.py:490 and reckon/crew/queue_admission.py:878,2492; the diff extends those definitions and adds no production definition.\nFINDING tests/test_a_queued_run_is_admitted.py:366 blocking: both later commits modify this test outside the reviewed node's exclusive write paths; the change needs a scope grant or must be delivered by a node that owns the file.\n",
+  "review_run_id": "r-20261027T055753505727-review-of-one-wait-blocks-only-its-request-d6318dda33aa",
+  "reviewed_base_sha": "0f9d75c9b66c98801371ff73fb3b241713f32056",
+  "reviewed_head_sha": "d6318dda33aa54e2d0bdbaa5075c1a18a3af1efc",
+  "reviewed_run_id": "r-20261027T045403981624-one-wait-blocks-only-its-request",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 5
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T06:06:24.744668+00:00",
+  "total": 101
+}
