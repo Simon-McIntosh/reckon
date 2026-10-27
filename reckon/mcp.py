@@ -1138,7 +1138,7 @@ def _read_plan_tool(
 
     ``view`` names the response shape for a typed resource read: ``'summary'``
     (the default), ``'detail'``, ``'history'``, ``'version'``, ``'raw'``,
-    ``'schema'`` and ``'section'``. For a plan, ``view='section'`` returns one
+    ``'schema'``, ``'section'`` and ``'why'``. For a plan, ``view='section'`` returns one
     authored section selected by its ``section`` argument — the id carried on
     its h2 or on the ``<section>`` element wrapping it — and refuses with
     ``section_not_found`` when that id is absent, listing the available
@@ -1149,15 +1149,27 @@ def _read_plan_tool(
     refused with ``section_not_applicable``. Request ``view='raw'`` explicitly
     for the lossless storage response. The explicit legacy schema injector
     remains unchanged for callers using ``with_schema``.
+
+    ``view='why'`` explains one ref — a plan or one of its sections — in one
+    call: what it is and its own state, what it waits on and, transitively,
+    what each of those waits on, what waits on it, the runs and sessions
+    working on it now with the paths they hold, and its last five events. A ref
+    that does not resolve is refused with the nearest refs that do.
     """
 
     selected_view = view
     # The read's own normaliser decides this, so a view the read serves is not
     # refused from the argument ahead of it and the accepted set is one fact.
-    try:
-        normalize_view(view)
-    except ViewRequestError as error:
-        return _view_refusal(error, _argument_selector(project, slug, doc_type))
+    # The why view composes its answer in ``reckon.why_view``, so it is named
+    # beside the normaliser rather than refused by it ahead of the read that
+    # serves it.
+    if _is_why_view(view):
+        selected_view = WHY_VIEW
+    else:
+        try:
+            normalize_view(view)
+        except ViewRequestError as error:
+            return _view_refusal(error, _argument_selector(project, slug, doc_type))
     if view is None and not with_schema and project not in (None, "*"):
         selected_view = "summary"
     return _read_plan(
@@ -1439,6 +1451,105 @@ def _raise_view_request_error(code: str, detail: str) -> None:
     raise ViewRequestError(code, detail)
 
 
+#: The read_plan view that explains one ref: its state, its transitive waits,
+#: what waits on it, the runs and sessions working on it, and its recent events.
+WHY_VIEW = "why"
+
+
+def _is_why_view(view: Any) -> bool:
+    return str(view or "").strip().lower() == WHY_VIEW
+
+
+def _served_why(
+    project: str | None,
+    slug: str | None,
+    section: str | None,
+    *,
+    checkout_path: str | None,
+    limit: int | None,
+) -> dict[str, Any]:
+    """Answer the why view from the owners that already hold each fact.
+
+    The plan rows are the roadmap's own inventory rows, the waits are the
+    roadmap's section edges, and the runs are its live-run partition, so the
+    answer cannot disagree with the roadmap or the fleet surface about the same
+    ref. The composition itself lives in ``reckon.why_view``.
+    """
+
+    from reckon.mcp_budget import serialised_characters
+    from reckon.why_view import (
+        WHY_VIEW_BUDGET,
+        WhyRefusalError,
+        why_answer,
+    )
+
+    if not project or project == "*":
+        return error_response(
+            "invalid_resource",
+            "The why view explains a ref inside one project.",
+            hint="Name the project the ref belongs to.",
+        )
+    if not slug:
+        return error_response(
+            "invalid_resource",
+            "The why view needs a ref to explain.",
+            hint="read_plan(project, slug[, section], view='why')",
+        )
+    try:
+        discovered = _discover_project(project, checkout_path)
+        inventory = [_inventory_row(item) for item in discovered.get("inventory", [])]
+        plan_data, _version = read_plan(project, slug, checkout_path)
+        answer = why_answer(
+            project,
+            slug,
+            section,
+            inventory=inventory,
+            docs_dir=_docs_dir_for_project(project, checkout_path),
+            plan_data=plan_data,
+            limit=limit,
+        )
+    except WhyRefusalError as refusal:
+        return error_response(refusal.code, refusal.message, hint=refusal.hint)
+    except ViewRequestError as error:
+        return _view_refusal(error, _argument_selector(project, slug, None))
+    except Exception as exc:  # noqa: BLE001 — tool errors must remain structured
+        return error_response(
+            "read_error",
+            str(exc),
+            hint="Inspect the ref and the project's mounts.",
+        )
+    return _fit_why(answer, WHY_VIEW_BUDGET, serialised_characters)
+
+
+def _fit_why(
+    answer: dict[str, Any],
+    budget: int,
+    serialised_characters: Any,
+) -> dict[str, Any]:
+    """Trim the answer's lists until it fits the view's size contract.
+
+    The answer is built compactly, so this is the guard rather than the plan: a
+    project with an unusually wide wait graph still answers inside the contract
+    instead of being refused. Each pass shortens the longest list and names the
+    trim, so a reader knows the answer is partial rather than complete.
+    """
+
+    keys = ("waits_on", "waited_on_by", "followups", "events")
+    trimmed: dict[str, int] = {}
+    while serialised_characters(answer) > budget:
+        sizes = {key: len(answer.get(key) or []) for key in keys if answer.get(key)}
+        if not sizes:
+            break
+        key = max(sizes, key=lambda name: sizes[name])
+        rows = list(answer[key])
+        rows.pop()
+        answer[key] = rows
+        trimmed[key] = trimmed.get(key, 0) + 1
+    if trimmed:
+        answer["trimmed"] = trimmed
+    return answer
+
+
 def _read_plan_view(
     *,
     project: str | None,
@@ -1470,6 +1581,15 @@ def _read_plan_view(
             reading = resource.get("project")
         checkout_path = _run_scoped_read_root(
             reading if isinstance(reading, str) else None
+        )
+
+    if _is_why_view(view):
+        return _served_why(
+            project,
+            slug,
+            section,
+            checkout_path=checkout_path,
+            limit=limit,
         )
 
     selector: ResourceSelector | None = None
