@@ -370,7 +370,7 @@ def test_real_config_home_is_untouched(
     assert not real_run_dir.exists()
 
 
-def test_single_project_roadmap_defaults_to_summary_and_raw_is_explicit(
+def test_single_project_roadmap_answers_named_summary_and_raw_is_explicit(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     raw = {
@@ -400,7 +400,7 @@ def test_single_project_roadmap_defaults_to_summary_and_raw_is_explicit(
     monkeypatch.setattr(mcp_module, "list_followups_across", lambda *args, **kwargs: [])
     monkeypatch.setattr(mcp_module, "build_roadmap", lambda *args, **kwargs: raw)
 
-    summary = _invoke_tool("roadmap", project=PROJECT)
+    summary = _invoke_tool("roadmap", project=PROJECT, view="summary")
     lossless = _invoke_tool("roadmap", project=PROJECT, view="raw")
 
     assert summary["view"] == "summary"

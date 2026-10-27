@@ -2024,12 +2024,20 @@ _OP_VOCAB = {
 }
 
 
+#: The view name that answers with the composed brief rather than a report.
+BRIEF_VIEW = "brief"
+
+#: Every view a single roadmap read composes: the terse views ``mcp_views``
+#: serves plus the brief, which this module composes from the same report.
+_RoadmapViewName = Literal["summary", "detail", "raw", "brief"]
+
+
 def _roadmap_snapshot_target(
     project: str,
     checkout_path: str | None,
     sprint: str | None,
     max_paths: int,
-    view: Literal["summary", "detail", "raw"] | None,
+    view: _RoadmapViewName | None,
     cursor: str | None,
     limit: int | None,
 ) -> tuple[dict[str, Path], dict[str, Any]] | None:
@@ -2058,7 +2066,7 @@ def _roadmap_snapshot_target(
 def _roadmap_shape(
     sprint: str | None,
     max_paths: int,
-    view: Literal["summary", "detail", "raw"] | None,
+    view: _RoadmapViewName | None,
     cursor: str | None,
     limit: int | None,
 ) -> dict[str, Any]:
@@ -2073,12 +2081,60 @@ def _roadmap_shape(
 
 
 def _roadmap_selected_view(
-    project: str, view: Literal["summary", "detail", "raw"] | None
-) -> Literal["summary", "detail", "raw"] | None:
-    """Return the view this call composes, defaulted as the read defaults it."""
+    project: str, view: _RoadmapViewName | None
+) -> _RoadmapViewName | None:
+    """Return the view this call composes, defaulted as the read defaults it.
+
+    A single project's default is the brief: the composed lines a coordinator
+    needs before choosing work, with the payload rows behind them. A portfolio
+    or graph target has no single project to brief and keeps its own default,
+    so a caller naming no view is sent to the brief only where the brief can
+    answer.
+    """
     if view is None and project != "*" and not project.startswith("graph:"):
-        return "summary"
+        return BRIEF_VIEW
     return view
+
+
+def _check_roadmap_view(view: str | None) -> None:
+    """Refuse a view the roadmap read does not serve.
+
+    The accepted set is the terse views' own validator plus the brief, which
+    this module composes, so a name added to one is served by both without a
+    second list to keep in step.
+    """
+    if (view or "").strip().lower() == BRIEF_VIEW:
+        return
+    normalize_roadmap_view(view)
+
+
+def _brief_view(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Answer one project's read with the brief, text first and rows behind it.
+
+    The summary's own fields ride along, composed by the function the
+    ``summary`` view uses, so a reader of either gets one set of figures and
+    the brief cannot drift from the report it was read from. ``project_brief``
+    reads the report and adds no analysis of its own.
+    """
+
+    from reckon.project_brief import project_brief
+
+    brief = project_brief(str(report.get("project") or ""), payload=report)
+    composed = roadmap_view(report, view="summary", cursor=None, limit=None)
+    return {
+        "project": composed.get("project", ""),
+        "view": BRIEF_VIEW,
+        "text": brief.text,
+        "lines": [
+            {"key": line.key, "text": line.text, "values": dict(line.values)}
+            for line in brief.lines
+        ],
+        **{
+            key: value
+            for key, value in composed.items()
+            if key not in {"project", "view"}
+        },
+    }
 
 
 def _roadmap_snapshot_scope(
@@ -2086,7 +2142,7 @@ def _roadmap_snapshot_scope(
     checkout_path: str | None,
     sprint: str | None,
     max_paths: int,
-    view: Literal["summary", "detail", "raw"] | None,
+    view: _RoadmapViewName | None,
     cursor: str | None,
     limit: int | None,
 ) -> tuple[str, dict[str, Path], dict[str, Any]] | None:
@@ -2135,7 +2191,7 @@ def _roadmap_stale_record(kwargs: Mapping[str, Any]) -> dict[str, Any] | None:
     project = str(kwargs.get("project") or "")
     try:
         selected_view = _roadmap_selected_view(project, kwargs.get("view"))
-        normalize_roadmap_view(selected_view)
+        _check_roadmap_view(selected_view)
     except ViewRequestError:
         # A view the read itself refuses has composed nothing, so it has no
         # stored answer to fall back to.
@@ -2194,7 +2250,7 @@ def _roadmap(
     checkout_path: str | None = None,
     sprint: str | None = None,
     max_paths: int = 5,
-    view: Literal["summary", "detail", "raw"] | None = None,
+    view: _RoadmapViewName | None = None,
     cursor: str | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
@@ -2258,7 +2314,7 @@ def _roadmap_scoped(
     checkout_path: str | None = None,
     sprint: str | None = None,
     max_paths: int = 5,
-    view: Literal["summary", "detail", "raw"] | None = None,
+    view: _RoadmapViewName | None = None,
     cursor: str | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
@@ -2280,6 +2336,19 @@ def _roadmap_scoped(
             "ok": False,
             "error": "invalid_max_paths",
             "detail": "max_paths must be between 1 and 50",
+        }
+    if (view or "").strip().lower() == BRIEF_VIEW and (
+        project == "*" or project.startswith("graph:")
+    ):
+        return {
+            "ok": False,
+            "error": "invalid_view",
+            "project": project,
+            "detail": (
+                "the brief answers one project's plans and runs; a portfolio or "
+                "graph target carries no single project to brief, so name "
+                "summary, detail or raw"
+            ),
         }
     if project.startswith("graph:"):
         handle = project.removeprefix("graph:").strip()
@@ -2444,6 +2513,8 @@ def _roadmap_scoped(
         )
         if view is None:
             return raw
+        if str(view).strip().lower() == BRIEF_VIEW:
+            return _brief_view(raw)
         try:
             return roadmap_view(raw, view=view, cursor=cursor, limit=limit)
         except ViewRequestError as exc:
@@ -2478,7 +2549,7 @@ def _roadmap_tool(
     checkout_path: str | None = None,
     sprint: str | None = None,
     max_paths: int = 5,
-    view: Literal["summary", "detail", "raw"] | None = None,
+    view: _RoadmapViewName | None = None,
     cursor: str | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
@@ -2492,7 +2563,7 @@ def _roadmap_tool(
     # The roadmap read's own validator decides this, before the scan that builds
     # the report it would otherwise answer with.
     try:
-        normalize_roadmap_view(view)
+        _check_roadmap_view(view)
     except ViewRequestError as error:
         return _view_refusal(error)
     selected_view = _roadmap_selected_view(project, view)

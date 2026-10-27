@@ -1,0 +1,87 @@
+<!-- Evidence anchor: the-brief-is-the-default-answer -->
+
+<section data-reckon="evidence" id="the-brief-is-the-default-answer-evidence">
+  <h3>§6 — The brief is the default answer</h3>
+
+  <p id="the-brief-is-the-default-answer-default">
+    <strong>A single project's roadmap read now answers with the brief.</strong>
+    <code>_roadmap_selected_view</code> in <code>reckon/mcp.py</code> resolves a
+    call that names no view to <code>brief</code> when the target is one
+    project, and leaves a portfolio (<code>"*"</code>) or <code>graph:</code>
+    target on its own default, because neither carries a single project to
+    brief. <code>view="summary"</code>, <code>"detail"</code> and
+    <code>"raw"</code> are unchanged and remain the drill-downs. The brief view
+    is composed by <code>_brief_view</code>: the summary's own fields, produced
+    by the function the <code>summary</code> view calls, plus
+    <code>text</code> and the typed <code>lines</code> behind it, so the two
+    answers cannot disagree about a figure. An explicit
+    <code>view="brief"</code> against a portfolio or graph target is refused
+    with a <code>detail</code> that names the three views it can take.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-reason">
+    <strong>Every ranked row carries the ranking's own <code>reason</code>.</strong>
+    The brief's <code>ready_sections</code> line already emitted each ranked
+    row's <code>ref</code>, <code>plan</code>, <code>reason</code> and
+    <code>unlocks</code>; this node holds the default answer to it, so the test
+    compares each entry's reason against the payload row it was read from rather
+    than against a literal. The brief does not call §4's <code>why(ref)</code>,
+    which is why this section did not wait on it.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-skills">
+    <strong>Both skills lead with the brief.</strong>
+    <code>skills/reckon-roadmap/SKILL.md</code> now opens its fast path with the
+    brief and describes <code>summary</code>, <code>detail</code> and
+    <code>raw</code> as drill-downs; <code>skills/reckon-status/SKILL.md</code>
+    makes "where are we / what to do next" the brief's question and moves
+    <code>read_plan(project, view="summary")</code> below it. The test parses
+    each file's <code>## Fast path</code> block and requires the first mention
+    of the brief to precede the first named roadmap or plan view, so a later
+    edit that lists <code>summary</code> first fails rather than silently
+    reordering the reader's question.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-measure">
+    <strong>The measure, and the control.</strong>
+    <code>tests/test_the_brief_is_the_default_answer.py</code> asserts a
+    view-less single-project read returns <code>view="brief"</code> with a
+    non-empty <code>text</code> and typed <code>lines</code>, that each ranked
+    row's reason equals its payload row's, that a named
+    <code>view="summary"</code> read is unchanged and carries no
+    <code>text</code>/<code>lines</code>, that the brief's summary fields equal
+    the summary view's, and that both skill fast paths name the brief first. On
+    the base revision the same file answers <strong>5 failed, 1 passed</strong>
+    (the passing arm is the summary-unchanged assertion, which already held);
+    at the head it answers <strong>6 passed</strong>. The declared mutation —
+    resolving the default view to <code>summary</code> again — reds
+    <code>test_a_default_roadmap_read_answers_with_the_brief</code> at
+    <code>EXIT=1</code>.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-size">
+    <strong>The brief fits the row the default call is held to.</strong> On the
+    mounted <code>reckon</code> project the brief serialises to
+    <strong>17,772</strong> characters against the <strong>20,000</strong>-character
+    row <code>reckon/mcp_budget.py</code> resolves for a roadmap call that names
+    no view, with 1,963 characters of composed text; the same project's
+    <code>view="summary"</code> answers in 10,173. The budget registry still
+    names <code>summary</code> as the roadmap's default view, which is why the
+    default call is held to that row; a dedicated <code>("roadmap", "brief")</code>
+    row would need <code>mcp_budget.py</code> and the view sweep in
+    <code>tests/test_every_default_read_fits.py</code>, both outside this
+    node's write paths, and is recorded as outside scope.
+  </p>
+
+  <p id="the-brief-is-the-default-answer-revision">
+    <strong>A landed test that asserted the default view revised.</strong>
+    <code>tests/test_mcp_recovery.py</code> held
+    <code>test_single_project_roadmap_defaults_to_summary_and_raw_is_explicit</code>,
+    which called the tool with no view and required
+    <code>view == "summary"</code>. It now names <code>view="summary"</code>
+    explicitly and is renamed
+    <code>test_single_project_roadmap_answers_named_summary_and_raw_is_explicit</code>,
+    as the done-when requires. That file is outside this node's declared write
+    paths; the revision is made because the section's own measure names it.
+  </p>
+</section>
