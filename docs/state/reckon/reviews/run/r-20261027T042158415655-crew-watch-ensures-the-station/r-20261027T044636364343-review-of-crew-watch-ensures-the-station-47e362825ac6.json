@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "differenced from the reviewed run's own arms: baseline_suite failure_ids ['tests/test_follow_sweep_cadence.py::test_the_rate_guard_holds_across_many_calls_in_one_interval'] (437 passed, 1 failed, EXIT=1) against after_suite failure_ids [] (440 passed, EXIT=0); the single base failure passed at head, so the added set is empty.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3284",
+    "reckon/crew/dispatch_watch.py:441"
+  ],
+  "completed_at": "2026-10-27T04:53:51.806Z",
+  "dispatched_at": "2026-10-27T04:48:12Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_watch_ensures_the_station.py",
+      "line": "138",
+      "severity": "non-blocking",
+      "text": "test_crew_watch_leaves_a_held_station_alone calls dispatch_watch._ensure_node_station() directly instead of running crew_watch, so it exercises unchanged code covered already by tests/test_the_station_starts_where_workers_run.py:33-47 and cannot fail on a regression of the call this node added; its docstring frames it as crew-watch behaviour, which overstates what it guards."
+    },
+    {
+      "file": "tests/test_crew_watch_ensures_the_station.py",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "_fleet_allocation_without_a_station re-implements the six-monkeypatch fleet setup already written inline at tests/test_the_station_starts_where_workers_run.py:21-29 (the same _fleet_spawn_enabled, _read_fleet_record, _runs_inside_fleet_allocation, _fleet_runtime_dir and _write_fleet_request patches), forking a test fixture the repository already owns rather than sharing it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_follow_commands.py:3284 crew_watch (the CLI route the call was added to) and reckon/crew/dispatch_watch.py:441 _ensure_watch_producer (the sibling route that already calls the same helper).",
+    "diff": "read commit 396737a8d (the seven-line production call plus two tests) and 47e362825 (the evidence fragment) against base d6d6ce65dc0854b49f42b41d574e634ba767ec2a; nothing outside the declared scope and no stray edit.",
+    "done_when": "the done_when names the station-request test, the restart test 10/10 under -n 8, no added failure across the importer arms, and a clean ruff delta; all four are recorded in the manifest and the first three reconcile with the logs I opened (gate-restart-x10.log has 10 runs and EXIT=0).",
+    "goal": "the node goal is 'crew watch ensures the node station before it takes the producer seat'; reckon/crew_follow_commands.py:3345 adds the request ahead of both producer routes and the test at tests/test_crew_watch_ensures_the_station.py:79 proves the request precedes the producer.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T042158415655-crew-watch-ensures-the-station/manifest.md; status complete, commits 396737a8d and 47e362825, baseline_suite and after_suite both completed with the failure ids quoted below, negative_control_log named as a bare path.",
+    "write_paths": "read the declared paths in the manifest orientation block; git diff d6d6ce65..47e362825 touches only reckon/crew_follow_commands.py, tests/test_crew_watch_ensures_the_station.py, tests/test_one_station_per_node_runs_the_tick.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/crew-watch-ensures-the-station.html."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_watch_ensures_the_station.py:125 fails whenever the added call is removed or reordered (the negative control reddens it with `[] == [b'station\\\\n']`), but tests/test_crew_watch_ensures_the_station.py:138 exercises dispatch_watch._ensure_node_station() directly rather than through crew_watch, so that second case holds whatever the changed call does.",
+    "evidence": "the done_when's three measures are each recorded and readable: negative-control-station-skip.log shows `assert [] == [b'station\\\\n']` and EXIT=1, gate-restart-x10.log holds 10 run headers each '1 passed' with EXIT=0, and the importer arms read '1 failed, 437 passed' EXIT=1 at base against '440 passed' EXIT=0 at head; I independently re-ran tests/test_crew_watch_ensures_the_station.py against the reviewed head code and got '2 passed', but the manifest's ruff claim has no log under the run directory.",
+    "fit": "reckon/crew_follow_commands.py:3341-3345 states the mechanism in prose without a plan, issue or version label, and the added `from reckon.crew import dispatch_watch` sits beside the existing dispatch_watch import so the module-level attribute the test patches is the one the call resolves.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:3345 calls dispatch_watch._ensure_node_station() after the --stop and --ensure early returns and before the follow loop and the single-event route, so both producer routes of `crew watch` request the node station first, which is what the node goal and plan \u00a77 ('crew watch becomes an alias that ensures the station') state.",
+    "reuse": "the production change adds no definition: it calls the pre-existing owner reckon/crew/dispatch_watch.py:474, which dispatch_watch.py:441 already invokes for the dispatch route; on the test side tests/test_crew_watch_ensures_the_station.py:54 re-implements the fleet-allocation setup already written inline at tests/test_the_station_starts_where_workers_run.py:21-29 rather than sharing it.",
+    "scope_discipline": "git diff --stat d6d6ce65..47e362825 changes exactly four files (reckon/crew_follow_commands.py +7, tests/test_crew_watch_ensures_the_station.py +141, tests/test_one_station_per_node_runs_the_tick.py +15/-1, one evidence fragment +40), every one of them inside the declared write paths, and the restart-test repair is named in the done_when."
+  },
+  "node": "review-of-crew-watch-ensures-the-station-47e362825ac6",
+  "node:reviewed": "crew-watch-ensures-the-station",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'crew watch ensures the node station before it takes the producer seat'; reckon/crew_follow_commands.py:3345 calls dispatch_watch._ensure_node_station() before both producer routes, and the test at tests/test_crew_watch_ensures_the_station.py:79 proves the request precedes the producer.\nVERDICT done_when: the done_when names the station-request test, the restart test 10 of 10 under -n 8, no added failure across the importer arms and a clean ruff delta; gate-restart-x10.log holds 10 run headers each '1 passed' and EXIT=0, the arms read 437 passed/1 failed EXIT=1 at base against 440 passed EXIT=0 at head, and negative-control-station-skip.log reddens the station-request case; the ruff delta is claimed in the manifest with no log under the run directory.\nVERDICT write_paths: read the manifest's declared paths; git diff --stat d6d6ce65..47e362825 lists four files, all inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T042158415655-crew-watch-ensures-the-station/manifest.md; status complete, commits 396737a8d and 47e362825, both suite arms completed and readable, negative_control_log a bare path.\nVERDICT diff: read commit by commit against base d6d6ce65: 396737a8d adds seven lines to reckon/crew_follow_commands.py and two tests, 47e362825 adds the evidence fragment; nothing outside the declared scope.\nCALL_SITES: reckon/crew_follow_commands.py:3284, reckon/crew/dispatch_watch.py:441\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:3345 sits after the --stop and --ensure early returns and before the follow loop and the single-event route, so both producer routes request the station first.\nSCORE evidence: 18\nJUSTIFICATION evidence: the three gate measures reconcile with the named logs (10 runs EXIT=0; 437 passed/1 failed vs 440 passed; negative control `[] == [b'station\\n']` EXIT=1) and I re-ran the new test file at the reviewed head (2 passed), but the manifest's ruff delta has no log under the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d6d6ce65..47e362825 changes only the four files inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_crew_watch_ensures_the_station.py:125 reddens when the added call is removed, but tests/test_crew_watch_ensures_the_station.py:138 calls the helper directly and so guards nothing this node changed.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew_follow_commands.py:3341-3345 explains the mechanism without a plan or issue label, and the module import sits beside the existing dispatch_watch import so the patched attribute is the one the call resolves.\nSCORE reuse: 15\nJUSTIFICATION reuse: the production change calls the pre-existing owner reckon/crew/dispatch_watch.py:474 rather than forking it, but tests/test_crew_watch_ensures_the_station.py:54 re-implements the fleet setup already inline at tests/test_the_station_starts_where_workers_run.py:21-29.\nFINDING tests/test_crew_watch_ensures_the_station.py:138 non-blocking: test_crew_watch_leaves_a_held_station_alone calls dispatch_watch._ensure_node_station() directly instead of through crew_watch, so it exercises unchanged code already covered at tests/test_the_station_starts_where_workers_run.py:33-47 and cannot fail on a regression of the call this node added.\nFINDING tests/test_crew_watch_ensures_the_station.py:54 non-blocking: _fleet_allocation_without_a_station re-implements the six-monkeypatch fleet setup already written inline at tests/test_the_station_starts_where_workers_run.py:21-29, forking a test fixture the repository already owns.",
+  "review_run_id": "r-20261027T044636364343-review-of-crew-watch-ensures-the-station-47e362825ac6",
+  "reviewed_base_sha": "d6d6ce65dc0854b49f42b41d574e634ba767ec2a",
+  "reviewed_head_sha": "47e362825ac60230951dce0f224633b37430c253",
+  "reviewed_run_id": "r-20261027T042158415655-crew-watch-ensures-the-station",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T05:05:00+00:00",
+  "total": 108
+}
