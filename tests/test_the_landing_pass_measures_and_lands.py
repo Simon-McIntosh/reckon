@@ -643,10 +643,47 @@ def test_a_failed_worktree_remove_leaves_no_registration(delivery, monkeypatch) 
 
     with REAL_BASE_CHECKOUT(repo, delivery["base"], 60) as tree:
         assert tree.is_dir()
+        # Not merely "somewhere and then cleaned up": the tree is the one the
+        # fixture's scratch root owns, so a checkout that went to the host's
+        # temp directory or the repository's filesystem fails here.
+        assert tree.parent.parent.resolve() == delivery["scratch_root"].resolve(), (
+            f"the base checkout was built at {tree}, outside "
+            f"{delivery['scratch_root']}"
+        )
 
     listed = _git(repo, "worktree", "list", "--porcelain")
     assert str(tree) not in listed, listed
     assert list(delivery["scratch_root"].iterdir()) == []
+
+
+def test_an_unusable_scratch_root_refuses_that_run_and_returns(
+    delivery, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A scratch root that cannot be created must not escape the pass.
+
+    ``land_once`` runs unguarded in the admission loop, so an ``OSError`` from a
+    full or unwritable scratch root would stop admission for every session. It
+    is a checkout that cannot be built, so that run's landing is refused with
+    its obligation and the pass returns normally.
+    """
+    _accept(base=str(delivery["base"]), head=str(delivery["head"]))
+    landed = _land(monkeypatch)
+    # A regular file where the root's parent directory would be: creating the
+    # root raises OSError, as a full or unwritable filesystem does.
+    blocker = tmp_path / "blocked"
+    blocker.write_text("")
+    unusable = blocker / "scratch"
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(unusable))
+    monkeypatch.setattr(landing_measure, "base_checkout", REAL_BASE_CHECKOUT)
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [], result
+    assert landed == []
+    guard = result["obligations"][0]["guard"]
+    assert "the base checkout could not be built" in guard, guard
+    assert "scratch tree" in guard and "could not" in guard, guard
+    assert not unusable.exists(), "the unusable scratch root was created anyway"
 
 
 def test_a_measurement_error_is_not_reported_as_a_checkout_failure(

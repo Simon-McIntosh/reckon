@@ -484,10 +484,23 @@ def base_checkout(
     A removal that fails or times out leaves the repository's registration
     behind, so the registration is pruned before the block returns; a stale
     entry would otherwise make a later ``worktree add`` of the same path fail.
+
+    A scratch root that cannot be created — full, or unwritable — raises
+    ``BaseCheckoutError`` like any other checkout that cannot be built, so the
+    caller refuses one run's landing rather than letting the error escape the
+    admission pass.
     """
-    root = worker_scratch_root()
-    root.mkdir(parents=True, exist_ok=True)
-    scratch = Path(tempfile.mkdtemp(prefix="landing-base-", dir=root))
+    try:
+        root = worker_scratch_root()
+        root.mkdir(parents=True, exist_ok=True)
+        scratch = Path(tempfile.mkdtemp(prefix="landing-base-", dir=root))
+    except OSError as exc:
+        # A full or unwritable scratch root is a checkout that cannot be built,
+        # not a reason to stop the pass: the caller refuses this run's landing.
+        raise BaseCheckoutError(
+            f"could not create a scratch tree for {base_sha}: "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
     target = scratch / "tree"
     try:
         added = _git(
