@@ -336,8 +336,8 @@ class Station:
                 changed=bool(events),
                 now=moment,
             )
-            # The sweep's two passes run for every session this host may
-            # resume, on a change and on the beat, so a hold or a declared
+            # The sweep's two passes run for every session this host owns, on
+            # a change and on the beat, so a hold or a declared
             # wait that ends while the fleet is quiet is still resumed, and a
             # settled run is still reviewed.
             for session in _sessions_to_sweep(project_pointers):
