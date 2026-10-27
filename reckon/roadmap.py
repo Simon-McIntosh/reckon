@@ -3711,10 +3711,17 @@ def _build_roadmap(
         # landed section is a record of work, not work still in flight.
         for edge in mapped_edges:
             waiting_section = str(edge.get("source_section") or "")
-            if waiting_section and not edge.get("followup"):
-                declared_section_refs.setdefault((slug, waiting_section), set()).add(
-                    _normalized_section_ref(project, str(edge.get("ref") or ""))
-                )
+            if not waiting_section:
+                continue
+            parsed_edge = parse_plan_ref(str(edge.get("ref") or ""))
+            if parsed_edge is not None and not parsed_edge.stage:
+                # A ref naming only a followup has no section half to register;
+                # a combined ``slug#sN@f-id`` ref does, and its section half is
+                # the declared wait a run's prose is checked against.
+                continue
+            declared_section_refs.setdefault((slug, waiting_section), set()).add(
+                _normalized_section_ref(project, str(edge.get("ref") or ""))
+            )
         open_sections_by_plan[slug] = set(open_sections(authored))
         # A decision that names the sections it governs holds those sections
         # rather than the plan: the row keeps the decision in its reported

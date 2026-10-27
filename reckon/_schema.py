@@ -586,7 +586,7 @@ def section_dependency_refusals(
                     str(ref),
                     (
                         f"section_depends_on[{section!r}]: malformed plan ref "
-                        f"{ref!r} — expected [project:]slug[#section]"
+                        f"{ref!r} — expected [project:]slug[#section][@followup]"
                     ),
                 )
                 continue
@@ -1011,7 +1011,8 @@ class SectionRecord(BaseModel):
         for ref in value:
             if parse_plan_ref(ref) is None:
                 raise ValueError(
-                    f"links: malformed plan ref {ref!r}; expected [project:]slug[#section]"
+                    f"links: malformed plan ref {ref!r}; "
+                    "expected [project:]slug[#section][@followup]"
                 )
         return value
 
