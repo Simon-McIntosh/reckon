@@ -6,11 +6,9 @@ import io
 import json
 import os
 import queue
-import shutil
-import subprocess
-import sys
 import threading
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -169,106 +167,99 @@ def _measured_rows(
     return rows
 
 
+def _await_rows(rows: list[dict], count: int, *, timeout: float = 20.0) -> None:
+    """Wait until ``count`` rows have reached the pane's stream."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline and len(rows) < count:
+        time.sleep(0.01)
+    assert len(rows) >= count, f"only {len(rows)} of {count} rows arrived"
+
+
 def test_running_follower_reloads_without_stream_or_registration_gap(
     isolated_home, tmp_path
 ) -> None:
-    source_package = Path(cli_module.__file__).resolve().parent
-    copied_root = tmp_path / "source"
-    copied_package = copied_root / "reckon"
-    shutil.copytree(source_package, copied_package)
+    """A station replacement leaves the subscriber's stream whole.
 
-    executable = Path(sys.executable).with_name("reckon")
-    environment = {
-        **os.environ,
-        "PYTHONPATH": str(copied_root),
-        "RECKON_HOME": str(isolated_home),
-        "PYTHONDONTWRITEBYTECODE": "1",
-        "PYTHONUNBUFFERED": "1",
-    }
-    process = subprocess.Popen(
-        [
-            str(executable),
-            "crew",
-            "follow",
-            "--project",
-            "proj",
-            "--session",
-            "session-a",
-            "--no-color",
-            "--width",
-            "240",
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=environment,
-    )
-    assert process.stdout is not None
-    lines: queue.Queue[str] = queue.Queue()
-    reader = threading.Thread(
-        target=lambda: [lines.put(line.rstrip("\n")) for line in process.stdout],
-        daemon=True,
-    )
-    reader.start()
+    The follower no longer reloads onto new code: the station is the one
+    process on a node that does, and the follower is a subscriber to the rows it
+    commits. What a reader has to be shown, then, is that a station replaced
+    mid-flight leaves the subscriber with every row written before the
+    replacement and every row written after it, once each and in order, and its
+    registration still set on its own row.
+    """
+    from reckon.crew import station as station_module
+    from reckon.crew import station_store, station_subscriber
+    from reckon.crew_follow_commands import _StationRegistration
 
+    root = tmp_path / "runtime"
+    store = station_store.StationStore(root)
+    # Two connections, as the station process and the follower hold them.
+    writer = station_store.StationStore(root)
+    station_module.Station(writer, home=isolated_home, projects=dict)
+    writer.heartbeat()
+
+    subscriber = station_subscriber.StationSubscriber(
+        store, "proj", session="session-a"
+    )
+    subscriber.register(pid=os.getpid(), host="node-a", delivery="stream")
+    rows: list[dict] = []
+    stop = threading.Event()
+
+    def reader() -> None:
+        rows.extend(
+            cli_module._follow_watch_lines(
+                "proj",
+                session="session-a",
+                poll_interval=0.001,
+                stop=stop,
+                sweep=None,
+                subscriber=subscriber,
+                registration=_StationRegistration(subscriber),
+            )
+        )
+
+    def publish(station_store_connection, number: int) -> None:
+        event = _event(number)
+        station_store_connection.write_event(
+            audience="session-a",
+            at=datetime.now(tz=UTC),
+            project="proj",
+            run="",
+            kind="transition",
+            from_state=event.get("from_state"),
+            to_state=event.get("to_state"),
+            payload=event,
+        )
+
+    thread = threading.Thread(target=reader, daemon=True)
+    thread.start()
     try:
-        with runs._project_watch_claim("proj", "1h") as (acquired, registration):
-            assert acquired
-            first_registration = _wait_for_registration("proj", "session-a")
-            original_pid = first_registration["follower"]["pid"]
-            stream_path = Path(registration["stream_path"])
+        for number in range(1, 19):
+            publish(writer, number)
+        _await_rows(rows, 18)
 
-            attached_line = _await_attached(stream_path, lines)
-            assert not attached_line.startswith("fresh:"), (
-                "the unmodified package renders without the reload marker"
-            )
-
-            # The seam is a module-level override appended to the copied
-            # module: writing the file advances the stamp the follower reloads
-            # on, and the override is what its re-imported module serves. The
-            # rewrite names no source line, so it survives any change to how a
-            # transition is rendered.
-            renderer = copied_package / "crew" / "recovery_watch.py"
-            renderer.write_text(
-                renderer.read_text()
-                + "\n\n_render_watch_transition = format_watch_transition\n\n\n"
-                + "def format_watch_transition(event, **kwargs):\n"
-                + "    return 'fresh:' + _render_watch_transition(event, **kwargs)\n"
-            )
-
-            expected_nodes = {f"node-{number}" for number in range(1, 19)}
-            observed_registration = []
-            for number in range(1, 19):
-                runs._append_watch_lines(stream_path, [_event(number)])
-                observed_registration.append(
-                    runs.follower_state("proj", "session-a")["registered"]
-                )
-                time.sleep(0.12)
-
-            subsequent = _measured_rows(lines, len(expected_nodes), timeout=60.0)
-
-        assert any(line.startswith("fresh:") for line in subsequent), (
-            "the replacement stayed alive but did not perform the changed behaviour"
-        )
-        rendered_nodes = {
-            node
-            for node in expected_nodes
-            for line in subsequent
-            if node in line.split()
-        }
-        assert rendered_nodes == expected_nodes
-        assert (
-            sum(any(node in line for node in expected_nodes) for line in subsequent)
-            == 18
-        )
-        assert all(observed_registration)
-        final_registration = runs.follower_state("proj", "session-a")
-        assert final_registration["follower"]["pid"] == original_pid
-        assert process.pid == original_pid
-        assert process.poll() is None
+        # The station is replaced: a fresh process over the same node-local
+        # store. Its predecessor wrote its last row above and is closed, so
+        # nothing writes on the old connection while the new one runs.
+        writer.close()
+        reloaded = station_store.StationStore(root)
+        station_module.Station(reloaded, home=isolated_home, projects=dict)
+        reloaded.heartbeat()
+        for number in range(19, 24):
+            publish(reloaded, number)
+        _await_rows(rows, 23)
     finally:
-        process.terminate()
-        process.wait(timeout=5)
+        stop.set()
+        thread.join(timeout=5)
+
+    assert not thread.is_alive()
+    assert [row.get("node") for row in rows] == [
+        f"node-{number}" for number in range(1, 24)
+    ], "the replacement left no gap and repeated no row"
+    registration = store.read_cursor("session-a")["registration"]
+    assert registration is not None, "the pane's registration survived the replacement"
+    assert registration["pid"] == os.getpid()
+    assert subscriber.cursor_day is not None
 
 
 def test_two_probe_rows_queued_at_the_attach_leave_the_measure_unaffected(
