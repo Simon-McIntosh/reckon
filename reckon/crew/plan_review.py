@@ -1276,6 +1276,25 @@ def _git(repo: Path, *args: str) -> str | None:
     return result.stdout.decode("utf-8", "replace")
 
 
+def _plan_location(
+    project: str, plan_slug: str, plan_path: str | Path | None
+) -> tuple[Path, Path, str] | None:
+    """The repository, the plan path and the path relative to the repository."""
+    repo = _project_repo_root(project)
+    path = (
+        Path(plan_path)
+        if plan_path is not None
+        else _plan_document_path(project, plan_slug)
+    )
+    if path is None or repo is None:
+        return None
+    try:
+        relative = path.resolve().relative_to(repo.resolve())
+    except (OSError, ValueError):
+        return None
+    return repo, path, str(relative)
+
+
 def plan_commit_for(
     project: str,
     plan_slug: str,
@@ -1298,54 +1317,89 @@ def plan_commit_for(
     sha = str(reviewed_blob_sha or "").strip()
     if not sha:
         return None
-    repo = _project_repo_root(project)
-    path = (
-        Path(plan_path)
-        if plan_path is not None
-        else _plan_document_path(project, plan_slug)
-    )
-    if path is None or repo is None:
+    location = _plan_location(project, plan_slug, plan_path)
+    if location is None:
         return None
-    try:
-        relative = path.resolve().relative_to(repo.resolve())
-    except (OSError, ValueError):
-        return None
-    output = _git(
-        repo, "log", "--format=%H", f"--find-object={sha}", "--", str(relative)
-    )
+    repo, _path, relative = location
+    output = _git(repo, "log", "--format=%H", f"--find-object={sha}", "--", relative)
     if output is None:
         return None
     lines = [line.strip() for line in output.splitlines() if line.strip()]
     return lines[-1] if lines else None
 
 
-def _plan_diff_since(
+def _plan_text_at(
     project: str,
     plan_slug: str,
     commit: str,
     *,
     plan_path: str | Path | None = None,
 ) -> str | None:
-    """The plan file's diff from ``commit`` to the working tree, or ``None``.
+    """The plan file's text at ``commit``, or ``None`` when it cannot be read."""
+    if not commit:
+        return None
+    location = _plan_location(project, plan_slug, plan_path)
+    if location is None:
+        return None
+    repo, _path, relative = location
+    return _git(repo, "show", f"{commit}:{relative}")
 
-    The diff is taken against the working tree rather than against ``HEAD`` so
-    an edit still to be committed is part of the change the review reads; the
-    path is the one plan the review is about, so a peer's edit to another plan
-    never appears in it.
+
+def _unit_lines(text: str) -> dict[str, list[str]]:
+    """Each authored unit's own lines, in document order, out of file text.
+
+    A section's extent comes from the same structural spans the prose reader
+    attributes text with, so a line belongs to the unit whose section contains
+    it however the markup is laid out — heading, section element and prose
+    each on their own line, as the plan writer emits them, or all on one.
+    Lines outside every section belong to the document unit.
     """
-    repo = _project_repo_root(project)
-    path = (
-        Path(plan_path)
-        if plan_path is not None
-        else _plan_document_path(project, plan_slug)
-    )
-    if path is None or repo is None or not commit:
-        return None
-    try:
-        relative = path.resolve().relative_to(repo.resolve())
-    except (OSError, ValueError):
-        return None
-    return _git(repo, "diff", str(commit), "--", str(relative))
+    spans = [
+        (heading.span[0], heading.span[1], heading.identity)
+        for heading in _plan_html.plan_headings(text)
+        if heading.level == 2 and heading.identity and not heading.machinery
+    ]
+    buckets: dict[str, list[str]] = {DOCUMENT_UNIT: []}
+    offset = 0
+    for raw in text.splitlines(keepends=True):
+        identity = next(
+            (unit for low, high, unit in spans if low <= offset < high),
+            DOCUMENT_UNIT,
+        )
+        buckets.setdefault(identity, []).append(raw.rstrip("\r\n"))
+        offset += len(raw)
+    return buckets
+
+
+def _diff_for_units(old_text: str, new_text: str, uncovered: Iterable[str]) -> str:
+    """The changed lines of each unit asked about, taken from its own text.
+
+    A line of a plan file's diff is not the line a change is on: the plan
+    writer puts a section's heading, its section element and its prose on
+    separate lines, and only the element names the section, so filtering a
+    whole-file diff by the unit's identity keeps an empty element and drops
+    every word the unit actually says. Each unit's lines are read out of the
+    text as reviewed and out of the text now, and the two compared, so the
+    block carries the change to the units asked about and no other unit's
+    text.
+    """
+    old = _unit_lines(old_text)
+    new = _unit_lines(new_text)
+    blocks: list[str] = []
+    for unit in sorted(str(item) for item in uncovered):
+        change = list(
+            difflib.unified_diff(
+                old.get(unit, []),
+                new.get(unit, []),
+                fromfile=f"{unit} as reviewed",
+                tofile=f"{unit} now",
+                lineterm="",
+                n=2,
+            )
+        )
+        if change:
+            blocks.append("\n".join(change))
+    return "\n".join(blocks)
 
 
 def _clip(text: str, limit: int) -> str:
@@ -1354,40 +1408,6 @@ def _clip(text: str, limit: int) -> str:
     if len(squeezed) <= limit:
         return squeezed
     return squeezed[:limit].rstrip() + "\n… (truncated)"
-
-
-def _unit_markers(unit: str) -> tuple[str, ...]:
-    """The strings that identify one unit in a plan file's own text."""
-    if unit == DOCUMENT_UNIT:
-        return (
-            'data-reckon="decisions"',
-            'data-reckon="gates"',
-            'data-reckon="waits"',
-            'class="r-decisions"',
-        )
-    return (f'data-id="{unit}"', f'id="{unit}"')
-
-
-def _diff_for_units(diff: str, uncovered: Iterable[str]) -> str:
-    """The changed lines of a plan diff that belong to the units asked about.
-
-    A plan's sections sit on one line each, so a hunk's context lines quote
-    the neighbouring sections a review was not asked about. Only the added and
-    removed lines naming an uncovered unit are kept, with the hunk headers, so
-    the material a reviewer reads is the change to its own units and nothing
-    of another section's text.
-    """
-    markers = tuple(marker for unit in uncovered for marker in _unit_markers(str(unit)))
-    kept: list[str] = []
-    for line in diff.splitlines():
-        if line.startswith(("diff --git", "index ", "--- ", "+++ ", "@@")):
-            kept.append(line)
-            continue
-        if not line.startswith(("+", "-")):
-            continue
-        if any(marker in line for marker in markers):
-            kept.append(line)
-    return "\n".join(kept)
 
 
 def _changed_material(
@@ -1401,9 +1421,10 @@ def _changed_material(
     """The change a composed review reads, as a block of its brief.
 
     A review of an edited plan reads what changed rather than the whole plan:
-    the diff of the plan file since the commit the last review read, then the
-    full text of each unit the coverage predicate left uncovered and of no
-    other unit. The commit comes from the newest prior review that recorded
+    the changed lines of each unit the coverage predicate left uncovered,
+    taken between the commit the last review read and the file as it stands,
+    then the full text of those units and of no other unit. The commit comes
+    from the newest prior review that recorded
     one, and a review composed before any record carried a commit falls back
     to the commit that wrote the bytes that review read, so a plan reviewed
     under either record shape is read as a change.
@@ -1435,11 +1456,12 @@ def _changed_material(
         if commit:
             break
     lines: list[str] = []
-    diff = (
-        _plan_diff_since(project, plan_slug, commit, plan_path=path) if commit else None
+    reviewed = (
+        _plan_text_at(project, plan_slug, commit, plan_path=path) if commit else None
     )
-    if diff:
-        focused = _diff_for_units(diff, uncovered)
+    present = path.read_text(encoding="utf-8") if path.is_file() else None
+    if reviewed is not None and present is not None:
+        focused = _diff_for_units(reviewed, present, uncovered)
         if focused:
             lines.append(
                 f"The plan file's change since the review read it ({commit}), "

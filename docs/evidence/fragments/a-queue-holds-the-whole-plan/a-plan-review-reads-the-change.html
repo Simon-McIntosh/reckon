@@ -13,15 +13,21 @@
   sidecar, which
   <code>delivered_report_record</code> carries onto the stored record. The next
   composed review's scope (<code>review_scope</code>) then carries three blocks
-  and nothing else: that commit's diff of the plan file, restricted to the
-  changed lines of the units the review is asked about
-  (<code>_diff_for_units</code>, whose markers are each unit's own
-  <code>data-id</code> or decision block); the full text of each uncovered unit;
-  and the earlier findings with their answers, an unanswered one now shown as
-  <code>(unanswered)</code> rather than dropped. A plan's sections sit one per
-  line, so a hunk's context lines quote the neighbours a reviewer was not asked
-  about — which is why context lines are dropped rather than trusted to be
-  small.
+  and nothing else: the changed lines of each unit the review is asked about,
+  taken between that commit's text and the file as it stands; the full text of
+  each uncovered unit; and the earlier findings with their answers, an
+  unanswered one now shown as <code>(unanswered)</code> rather than dropped.
+
+  <p>A plan is authored with a section's heading, its
+  <code>&lt;section data-id&gt;</code> element and its prose each on their own
+  line, and only the element names the section, so filtering a whole-file diff
+  by the unit's identity keeps an empty element and drops every word the unit
+  says. <code>_unit_lines</code> instead reads each unit's own lines out of the
+  plan text by the structural spans <code>_plan_html.plan_headings</code>
+  already attributes prose with, and <code>_diff_for_units</code> compares a
+  unit's lines as reviewed with its lines now
+  (<code>difflib.unified_diff</code>), so the block carries the change and no
+  other unit's text.
 
   <p><strong>The gate holds only the section dispatched.</strong>
   <code>require_plan_reviewed</code> in <code>reckon/crew/routing.py</code>
@@ -55,5 +61,20 @@
   text, and the earlier finding with its answer; the stored record names the
   commit it read; a dispatch of the unedited section succeeds while the edited
   one is uncovered; a dispatch of the edited section is refused until a review
-  covers it, and released by the review that does.
+  covers it, and released by the review that does. The fixture is authored the
+  way the plan writer emits one — heading, section element and prose on
+  separate lines — so a filter keyed on the section element alone is measured
+  against the shape real plans have.
+
+  <p><strong>Repair: finding fdfadd51963.</strong> The first version filtered a
+  whole-file diff for lines naming a unit's <code>data-id</code>. Measured on
+  the plan this section belongs to, an edit to §19's prose produced a two-line
+  diff and the filter kept zero content lines, so the reviewer was handed a
+  block of headers. The reproduction: <code>git diff</code> of the file after a
+  one-word change to the section's first paragraph keeps
+  <code>two content lines</code>; the marker filter keeps
+  <code>0</code>. With <code>_unit_lines</code> and the per-unit comparison the
+  same edit keeps <code>2</code> content lines, carries
+  <code>eight read-backs</code> (the edit), and returns an empty block for the
+  neighbouring unit <code>s20</code>.
 </section>

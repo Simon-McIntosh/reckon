@@ -30,8 +30,19 @@ def section_plan(project):
     _home, repo, path = project
     text = path.read_text().replace(
         '<h2 id="delivery">Delivery</h2><p>Extend the existing mechanism.</p>',
-        '<p>Shared introduction.</p><h2 id="a">Alpha</h2><p>Build alpha.</p>'
-        '<h2 id="b">Beta</h2><p>Build beta.</p>',
+        "<p>Shared introduction.</p>\n"
+        '<h2 id="a">Alpha</h2>\n'
+        '<section data-reckon="section" data-id="a" data-effort-hours="1.0" '
+        'data-capability-version="1.0" data-capability-class="general" '
+        'data-capability-reasoning="standard" data-capability-verification="strict" '
+        'data-capability-risk="low" data-status="implementable" data-links=""></section>\n'
+        "<p>Build alpha.</p>\n"
+        '<h2 id="b">Beta</h2>\n'
+        '<section data-reckon="section" data-id="b" data-effort-hours="1.0" '
+        'data-capability-version="1.0" data-capability-class="general" '
+        'data-capability-reasoning="standard" data-capability-verification="strict" '
+        'data-capability-risk="low" data-status="implementable" data-links=""></section>\n'
+        "<p>Build beta.</p>\n",
     )
     state = _plan_html.read_state(text)
     state["section_declarations"] = {"a": "implementable", "b": "implementable"}
