@@ -70,10 +70,6 @@ def source(tmp_path: Path, monkeypatch):
         "RECKON_FOLLOWER_OWNER",
     ):
         monkeypatch.delenv(carried, raising=False)
-    # One node name throughout, so a record naming another node is other.
-    monkeypatch.setattr(
-        follow.checkout_trust, "_lock_node_name", lambda: "this-node", raising=False
-    )
     checkout = follow.checkout_trust
     monkeypatch.setattr(
         checkout,
@@ -111,19 +107,16 @@ def test_a_prune_reaches_the_seat_record_and_not_the_stream(
 ):
     """A reload that prunes two trees and keeps one says nothing on the ticker."""
     root, _, handle = source
-    checkout = follow.checkout_trust
     cache = _tree_cache(root)
     stamp = time.time() - 3600
     fillers = [
         _filler(cache, f"{index:040x}", stamp + index * 60) for index in range(5)
     ]
-    # The oldest is held by a lease taken on another node, which no lock here
-    # can see, so a prune beside it keeps that one and takes the two newer.
-    # Writing a file into the tree bumps the directory's own stamp, so the
-    # publication time is restored: the tree is old and its lease is fresh,
-    # which is the state a node still importing from it leaves behind.
-    (fillers[0] / checkout.COMMITTED_TREE_LEASE_MARKER).write_text("another-node\n")
-    os.utime(fillers[0], (stamp, stamp))
+    # The oldest was published moments ago, inside the grace before any pin has
+    # opened its mark, so the prune beside it keeps that one and takes the two
+    # older trees. Its directory stamp stays old, which is what makes it a
+    # candidate at all; only its completion marker says it is new.
+    os.utime(fillers[0] / ".complete", None)
 
     reloader = follow._FollowerReloader("test-project", None, seat=True)
     monkeypatch.setattr(reloader, "_replacement_imports", lambda: (True, ""))

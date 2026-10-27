@@ -1,0 +1,46 @@
+<!-- Evidence anchor: reload-images-live-on-node-local-storage -->
+
+<section id="reload-images-live-on-node-local-storage-evidence">
+  <h2>Reload images live under the node's runtime root</h2>
+
+  <p id="reload-images-live-on-node-local-storage-change">
+    <code>checkout_trust._committed_tree_cache</code> resolves the image cache through
+    <code>reckon.crew.station_store.runtime_root_source</code> — the station's own resolver, not a
+    second one — and returns <code>&lt;runtime root&gt;/reload-trees</code>. When no node-local root
+    is available it raises, naming the three candidates, rather than falling back to the crew home,
+    and the answer it does take goes through the station's own filesystem-type proof
+    (<code>_refuse_nonlocal_root</code>), so a root on a shared mount — including the TMPDIR
+    fallback when that sits on GPFS — is refused in the station's words rather than written to. No
+    second check is written beside the station's. With every image node-local, the
+    cross-node lease record is gone: <code>_record_lease_node</code> and <code>_lease_nodes</code> are
+    deleted, <code>pin_materialized_tree</code> and <code>refresh_materialized_tree_pin</code> no
+    longer write it, and <code>_prune_must_keep</code> loses its host branch. What remains is the
+    same-node rule: an image whose <code>.in-use</code> mark exists is left to the pruner's
+    <code>flock</code>, which is visible on this node and refuses while a reader holds one, and a
+    tree with no mark yet — the publish-to-lease gap — is spared for the publish grace.
+  </p>
+
+  <p id="reload-images-live-on-node-local-storage-measure">
+    The gate ran in the foreground on the fleet allocation: 35 passed at head across the six reload
+    tests named in the brief, the revised pruning file, the housekeeping file and the new cache
+    file. The armed pair reads 6 failed, 5 passed at the base revision (<code>EXIT=1</code>) and 11
+    passed at head (<code>EXIT=0</code>), and a further case steers the resolver at a root the
+    station's proof calls shared and asserts the cache is refused.
+  </p>
+
+  <p id="reload-images-live-on-node-local-storage-negative">
+    <strong>Negative control.</strong> The declared mutation makes the resolver return the crew-home
+    path. The path test then fails — 6 failed, <code>EXIT=1</code> — while the head arm fails none.
+  </p>
+
+  <p id="reload-images-live-on-node-local-storage-fixtures">
+    <strong>The fixtures follow the cache.</strong>
+    <code>tests/test_a_reload_waits_for_a_clean_tree.py</code> gives its producer a temporary
+    <code>XDG_RUNTIME_DIR</code> created by the <code>isolated_home</code> fixture and asserts the
+    image under that root, so no run of the suite writes into the node's real
+    <code>/run/user/&lt;uid&gt;/reload-trees</code>. The pruning fixture that held a tree as another
+    node did is deleted with the record it exercised, and the two fixtures that wrote a lease
+    record or stubbed the node name drop both, which leaves <code>_lock_node_name</code> and
+    <code>COMMITTED_TREE_LEASE_MARKER</code> referenced nowhere and deleted from the product.
+  </p>
+</section>

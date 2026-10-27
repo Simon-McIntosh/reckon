@@ -63,21 +63,19 @@ def _publish(root: Path, commit: str) -> Path:
 
 
 def _seed_image(
-    cache: Path, name: str, *, age: float | None = None, leased: bool = True
+    cache: Path, name: str, *, age: float | None = None, in_use: bool = True
 ) -> Path:
     """Place an image in the cache directly, skipping the prune a publish runs.
 
     A real publish prunes the cache, so building a state where one image must
     survive a later prune has to place the image without that side effect.
     """
-    checkout = follow.checkout_trust
     image = cache / name
     (image / "reckon").mkdir(parents=True)
     (image / "reckon" / "__init__.py").write_text("")
     (image / ".complete").touch()
-    if leased:
+    if in_use:
         (image / ".in-use").touch()
-        (image / checkout.COMMITTED_TREE_LEASE_MARKER).write_text("this-node\n")
     if age is not None:
         moment = time.time() - age
         os.utime(image, (moment, moment))
@@ -96,7 +94,6 @@ def source(tmp_path: Path, monkeypatch):
         "RECKON_FOLLOWER_OWNER",
     ):
         monkeypatch.delenv(carried, raising=False)
-    monkeypatch.setattr(follow.checkout_trust, "_lock_node_name", lambda: "this-node")
     monkeypatch.setattr(
         follow.checkout_trust,
         "_committed_tree_cache",
@@ -189,7 +186,7 @@ def test_a_tree_inside_the_churn_window_survives_a_churned_ranking(source):
     root, _ = source
     checkout = follow.checkout_trust
     cache = _cache_dir(root)
-    recent = _seed_image(cache, "recent", age=137.0, leased=False)
+    recent = _seed_image(cache, "recent", age=137.0, in_use=False)
 
     _three_fillers(root)
     _, _, kept, pin = checkout.materialize_committed_tree(root, _commit(root, "target"))
@@ -209,7 +206,7 @@ def test_a_tree_past_the_churn_window_is_pruned_as_before(source):
         cache,
         "long-ago",
         age=checkout.COMMITTED_TREE_PUBLISH_GRACE_SECONDS + 60.0,
-        leased=False,
+        in_use=False,
     )
 
     _three_fillers(root)
