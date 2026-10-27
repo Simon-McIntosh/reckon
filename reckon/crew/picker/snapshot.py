@@ -1838,6 +1838,18 @@ def candidates(
             )
             if candidate is None:
                 continue
+            # The waiver reaches the policy's own terms and nothing else. A lane
+            # a budget verdict, a paused gate, a review exclusion or an
+            # in-harness launch already removed is removed for that reason, and
+            # a reason list holding any of them is left exactly as it is rather
+            # than emptied along with the policy's.
+            policy_reasons = [
+                reason
+                for reason in candidate.reasons
+                if reason.startswith("reserved-lane: ")
+            ]
+            if not policy_reasons or len(policy_reasons) != len(candidate.reasons):
+                continue
             still_withheld = _reserved_lane_exclusion(
                 withheld_lane["family"],
                 reserved[withheld_lane["family"]],
@@ -1862,7 +1874,8 @@ def candidates(
             if fit_reasons:
                 candidate.reasons[:] = fit_reasons
                 continue
-            candidate.reasons.clear()
+            for reason in policy_reasons:
+                candidate.reasons.remove(reason)
             candidate.context = _context_block(
                 contexts.get(candidate.backend),
                 node_context_tokens,

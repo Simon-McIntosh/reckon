@@ -282,6 +282,29 @@ def test_a_lane_excluded_for_another_reason_earns_no_waiver(live, monkeypatch) -
     )
 
 
+def test_the_waiver_removes_only_the_policys_own_term(live, monkeypatch) -> None:
+    """A lane held by another rule stays held: only the tier term is waived."""
+
+    _windows(monkeypatch)
+    monkeypatch.setattr(
+        snapshot,
+        "_dispatch_lane_gate",
+        lambda backend: (
+            {"state": "paused"}
+            if backend.get("model") == "astra"
+            else {"state": "open"}
+        ),
+    )
+    options = _candidates(live, _request(300_000))
+    offered = {
+        candidate.backend: candidate for candidate in options if not candidate.reasons
+    }
+    assert "codex-astra" not in offered
+    reasons = _reasons(options, "codex-astra")
+    assert "lane-gate: paused" in reasons
+    assert any(reason.startswith("reserved-lane: ") for reason in reasons)
+
+
 def test_the_policy_is_keyed_by_the_lane_the_state_reads() -> None:
     """The waiver reads the same lane derivation the policy is keyed by."""
 
