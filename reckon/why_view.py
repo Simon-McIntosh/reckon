@@ -125,7 +125,7 @@ def why_answer(
         "runs": _runs_on(run_rows, slug, wanted_section),
         "followups": _open_followups(data, wanted_section),
     }
-    answer["events"] = _events(data, answer["waits_on"], answer["runs"])
+    answer["events"] = _events(data, answer["runs"])
     if wait_walks["truncated"]:
         answer["waits_truncated"] = True
     answer["counts"] = {
@@ -445,7 +445,6 @@ def _open_followups(data: Mapping[str, Any], section: str) -> list[dict[str, Any
 
 def _events(
     data: Mapping[str, Any],
-    waits: list[dict[str, Any]],
     runs: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """The plan's own timestamped records, newest first, five at most.
