@@ -37,7 +37,7 @@ STEERING_FILENAME = "steering.md"
 
 #: The phases in which a request is still waiting to launch, and so is still the
 #: coordinator's to change or remove.
-WAITING_PHASES: tuple[str, ...] = ("queued", "awaiting-upstream")
+WAITING_PHASES: tuple[str, ...] = ("queued", "awaiting-upstream", "held")
 
 #: The node fields an edit may replace beside the steering text.
 EDITABLE_NODE_FIELDS: tuple[str, ...] = ("done_when", "write_paths", "time_budget")
@@ -359,3 +359,119 @@ def drop(
     phase = _phase_of(record)
     result = crew_module.discard(run_id, allowed_phases=WAITING_PHASES)
     return {"run_id": run_id, "dropped_phase": phase, "reason": reason, **result}
+
+
+def _selected_requests(
+    run_id: str | None,
+    plan: str | None,
+    session: str | None,
+    project: str | None,
+    *,
+    release: bool,
+) -> list[str]:
+    from reckon.crew import runs
+
+    if sum(bool(value) for value in (run_id, plan, session)) != 1:
+        raise CrewError("name exactly one of --run, --plan or --session")
+    if run_id:
+        _read_request(run_id, project)
+        return [run_id]
+    selected = [
+        str(pointer["run_id"])
+        for pointer in runs.list_live(project=project)
+        if (
+            not plan
+            or str(
+                pointer.get("plan")
+                or (pointer.get("node") or {}).get("plan")
+                or (pointer.get("dispatch_options") or {}).get("plan_slug")
+                or ""
+            )
+            == plan
+        )
+        and (not session or str(pointer.get("session") or "") == session)
+        and _phase_of(pointer) in (("held",) if release else WAITING_PHASES)
+    ]
+    if not selected:
+        raise CrewError(f"no waiting requests found for {plan or session!r}")
+    return selected
+
+
+def _change_hold(run_id: str, *, release: bool, reason: str) -> dict[str, Any]:
+    from reckon._timestamps import parse_utc
+    from reckon.crew import runs
+
+    with runs._pointer_lock(run_id):
+        current = runs.read_pointer(run_id)
+        phase = _phase_of(current)
+        if release:
+            if phase != "held":
+                raise CrewError(
+                    f"cannot release request {run_id!r}: it is {phase}, not held"
+                )
+            hold_record = dict(current.get("queue_hold") or {})
+            prior = str(hold_record.get("prior_phase") or "")
+            if prior not in ("queued", "awaiting-upstream"):
+                raise CrewError(f"request {run_id!r} has no readable prior phase")
+            started = parse_utc(hold_record.get("started_at"))
+            queued_at = parse_utc(current.get("queued_at"))
+            ended = datetime.now(UTC)
+            if started is not None and queued_at is not None:
+                current["queued_at"] = (queued_at + (ended - started)).isoformat()
+            current["phase"] = prior
+            current.pop("queue_hold", None)
+            current["queue_released_at"] = ended.isoformat()
+        else:
+            if phase == "held":
+                return {"run_id": run_id, "phase": phase, "unchanged": True}
+            if phase not in ("queued", "awaiting-upstream"):
+                raise CrewError(
+                    f"cannot hold request {run_id!r}: it is {phase or 'unrecorded'}; "
+                    "use crew stop for a launched run"
+                )
+            current["queue_hold"] = {
+                "prior_phase": phase,
+                "started_at": _now(),
+                "reason": reason,
+            }
+            current["phase"] = "held"
+        runs._write_json(runs.pointer_path(run_id), current)
+    return {"run_id": run_id, "phase": current["phase"], "reason": reason}
+
+
+def hold(
+    run_id: str | None = None,
+    *,
+    plan: str | None = None,
+    session: str | None = None,
+    reason: str = "",
+    project: str | None = None,
+) -> dict[str, Any]:
+    """Pause waiting requests without losing their brief, waits or priority."""
+    from reckon.crew.queue_admission import _admit_lock
+
+    with _admit_lock():
+        ids = _selected_requests(run_id, plan, session, project, release=False)
+        changed = [
+            _change_hold(identifier, release=False, reason=reason) for identifier in ids
+        ]
+    return {"held": changed, "count": len(changed)}
+
+
+def release(
+    run_id: str | None = None,
+    *,
+    plan: str | None = None,
+    session: str | None = None,
+    reason: str = "",
+    project: str | None = None,
+) -> dict[str, Any]:
+    """Restore held requests to their previous phase and paused starvation age."""
+    from reckon.crew.queue_admission import _admit_lock
+
+    with _admit_lock():
+        ids = _selected_requests(run_id, plan, session, project, release=True)
+        changed = [
+            _change_hold(identifier, release=True, reason=reason) for identifier in ids
+        ]
+    return {"released": changed, "count": len(changed)}

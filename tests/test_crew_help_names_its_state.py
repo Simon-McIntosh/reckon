@@ -40,6 +40,8 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("placement",): "one reservation a project places its workers into",
     ("queue", "drop"): "queued or awaiting-upstream request",
     ("queue", "edit"): "waiting request's steering text",
+    ("queue", "hold"): "Pause one waiting request",
+    ("queue", "release"): "Restore one held request",
     ("queue", "reprioritise"): "priority override on a waiting request",
     ("recover",): "live pointers",
     ("repair-completion",): "historical completion measurements missing",
@@ -52,6 +54,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     # verbs owes it a row like any other. It acts on the aggregate run rows a
     # mounted project's ledger still holds, which is the state its phrase names.
     ("split-runs",): "aggregate run rows",
+    ("station",): "single node-local station",
     ("stop",): "running spawned worker",
     ("supersede-review",): "a misattributed row's review",
     ("suite", "run"): "the project's declared suite",

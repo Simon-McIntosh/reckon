@@ -39,6 +39,8 @@ CREW_WRITE_ACTIONS: tuple[str, ...] = (
     "queue-edit",
     "queue-reprioritise",
     "queue-drop",
+    "queue-hold",
+    "queue-release",
 )
 
 #: The parameters each action forwards to its verb's implementation, keyed by
@@ -157,6 +159,20 @@ _PARAM_MAP: dict[str, dict[str, str]] = {
         "reason": "reason",
         "project": "project",
     },
+    "queue-hold": {
+        "run_id": "run_id",
+        "plan": "plan",
+        "session": "session",
+        "reason": "reason",
+        "project": "project",
+    },
+    "queue-release": {
+        "run_id": "run_id",
+        "plan": "plan",
+        "session": "session",
+        "reason": "reason",
+        "project": "project",
+    },
 }
 
 #: The defaults each action's verb supplies for a parameter the tool omits.
@@ -226,6 +242,20 @@ _PARAM_DEFAULTS: dict[str, dict[str, Any]] = {
     },
     "queue-reprioritise": {"reason": "", "project": None},
     "queue-drop": {"reason": "", "project": None},
+    "queue-hold": {
+        "run_id": None,
+        "plan": None,
+        "session": None,
+        "reason": "",
+        "project": None,
+    },
+    "queue-release": {
+        "run_id": None,
+        "plan": None,
+        "session": None,
+        "reason": "",
+        "project": None,
+    },
 }
 
 #: ``land`` runs the promotion verb with the landing step on, so it takes the
@@ -276,6 +306,10 @@ def _verb_for(action: str) -> tuple[Callable[..., Any], dict[str, Any]]:
         return _verb_callback("reckon.crew_run_commands", "crew_queue_reprioritise"), {}
     if action == "queue-drop":
         return _verb_callback("reckon.crew_run_commands", "crew_queue_drop"), {}
+    if action == "queue-hold":
+        return _verb_callback("reckon.crew_run_commands", "crew_queue_hold"), {}
+    if action == "queue-release":
+        return _verb_callback("reckon.crew_run_commands", "crew_queue_release"), {}
     if action == "answer":
         return _verb_callback("reckon.crew_dispatch_commands", "crew_review"), {}
     raise KeyError(action)
