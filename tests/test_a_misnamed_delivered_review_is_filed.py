@@ -225,6 +225,10 @@ def test_a_sibling_reviews_record_is_not_filed_by_this_promotion(
 ) -> None:
     """A record another review delivered cannot displace the stored one."""
     _build_review_run(tmp_path, repository)
+    # The stored record carries a disposition written after the review landed;
+    # the copy the sibling delivered is the record as the sibling first wrote
+    # it. Filing that copy would overwrite the disposition, which is what the
+    # identity pair in the content arm prevents.
     stored = review_module.store_review(
         _record(
             review_run_id=SIBLING_REVIEW_RUN_ID,
@@ -233,12 +237,9 @@ def test_a_sibling_reviews_record_is_not_filed_by_this_promotion(
     )
     before = stored.read_bytes()
     sibling = _deliver(
-        _record(
-            review_run_id=SIBLING_REVIEW_RUN_ID,
-            dimension_dispositions={"rigor": "folded"},
-        ),
-        SIBLING_REVIEW_RUN_ID,
+        _record(review_run_id=SIBLING_REVIEW_RUN_ID), SIBLING_REVIEW_RUN_ID
     )
+    assert sibling.read_bytes() != before
 
     _promote(repository)
 

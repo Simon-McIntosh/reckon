@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A misnamed delivered review is filed">
+  <meta name="plan-summary" content="delivered_run_review_paths read only the record paths a review's dispatch declared. A reviewer writes its record by hand and can name the file by its own run id instead, so a well-formed record sat in the reviewed run's review-records/ directory that nothing filed: the reviewed run read as unreviewed and the coordinator stored the record by hand. Filing now also selects a record in that directory by the pair of identities it carries, its review_run_id naming this review run and its reviewed_run_id naming the run it reviews, so another review's record for the same run and head is left where it is and cannot displace the stored record or the dispositions written on it. The store's writer still decides whether a record is a review.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="passed">
+  <title>A misnamed delivered review is filed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A misnamed delivered review is filed</h1>
+
+    <section id="a-misnamed-delivered-review-is-filed-defect">
+      <h2>The defect</h2>
+      <p>A run review delivers its record into the reviewed run's
+        <code>review-records/</code> directory, and
+        <code>delivered_run_review_paths</code> in <code>reckon/crew/review.py</code>
+        resolved exactly the paths the reviewer's own write-path declaration named.
+        A reviewer writes its record by hand, so it can name the file by
+        <em>its own run id</em> rather than the declared path — measured 2026-10-24
+        on run <code>r-20261024T201437083115-a-stream-past-its-window-lets-a-resume-launch</code>,
+        whose review run wrote both records under its own id while its manifest said
+        the declared paths had been written. Filing read the declared names, found no
+        file there, and filed nothing, so the reviewed run read as unreviewed:
+        <code>crew check --review</code> and <code>crew dispose</code> both answered
+        <em>no stored review</em> although a well-formed record naming the run and its
+        head was in the run's own directory.</p>
+      <p>Reproduced at base <code>89065e610</code> in an extraction carrying this
+        node's test file: the record delivered under the review run's id is left
+        unfiled, and the dry-run receipt does not name it.</p>
+    </section>
+
+    <section id="a-misnamed-delivered-review-is-filed-change">
+      <h2>The change</h2>
+      <p><code>delivered_run_review_paths</code> keeps the declared names first and in
+        their declared order, then adds any record in the reviewed run's
+        <code>review-records/</code> directory that carries
+        <code>review_run_id</code> equal to this review run's id <em>and</em>
+        <code>reviewed_run_id</code> equal to the run being reviewed. Requiring the
+        pair is the whole of the guarantee: a sibling review of the same run and head
+        names <em>itself</em> in <code>review_run_id</code>, so it is never selected
+        and cannot overwrite the record already stored for that head or the
+        dispositions written on it. A malformed record that does match stays refused,
+        because the filing still hands it to <code>store_review</code>, which owns the
+        decision about what a review is.</p>
+      <p>The dry-run receipt in <code>reckon/crew/promotion.py</code>
+        (<code>_delivered_review_records</code>) asks the same resolution, so the names
+        it reports are the names a filing would open, and a promotion's filing — which
+        runs ahead of every guard — moves the misnamed record into the store on either
+        the supervisor path or <code>crew complete</code>.</p>
+      <p>Commit: <code>4ccb18a6e</code>.</p>
+    </section>
+
+    <section id="a-misnamed-delivered-review-is-filed-controls">
+      <h2>Controls that could have failed</h2>
+      <p>Two mutations were applied to scratch extractions of the head tree and each
+        reddens the case it must:</p>
+      <ul>
+        <li>Filing by the declared names only — the content arm removed —
+          fails <code>test_a_record_delivered_under_the_review_run_id_is_filed</code>
+          and <code>test_the_misnamed_record_is_named_in_the_dry_run_receipt</code>
+          (2 failed, 3 passed, <code>EXIT=1</code>).</li>
+        <li>A content arm that files any record naming the reviewed run — the
+          <code>review_run_id</code> comparison dropped — fails
+          <code>test_a_sibling_reviews_record_is_not_filed_by_this_promotion</code>
+          and <code>test_a_record_naming_another_run_is_left_unfiled[review_run_id]</code>
+          (2 failed, 3 passed, <code>EXIT=1</code>). The sibling case is written so the
+          two copies differ: the stored record carries a disposition written after the
+          review landed and the delivered copy does not, so an overwrite is visible in
+          the stored bytes rather than being a byte-identical no-op.</li>
+      </ul>
+    </section>
+
+    <section id="a-misnamed-delivered-review-is-filed-population">
+      <h2>The population it touches</h2>
+      <p>Every test file importing <code>reckon/crew/review.py</code> or
+        <code>reckon/crew/promotion.py</code> — 243 files at head, enumerated by an
+        import walk over dotted, plain and from-package comma-list forms — was run in
+        both arms from <code>git archive</code> extractions on node-local disk with the
+        main checkout's <code>.env</code> linked. Both arms and their failure ids are
+        in the run directory.</p>
+      <p>Head: <strong>1 failed, 2118 passed</strong>
+        (<code>EXIT=1</code>). Base: <strong>3 failed, 2116 passed</strong>
+        (<code>EXIT=1</code>). The one head failure,
+        <code>test_promotion_records_the_pick.py::test_promotion_waits_from_the_pick_start_not_the_run_start</code>,
+        fails in both arms, so the change adds <strong>no failures</strong>. The base
+        arm's two extra failures are this node's own cases — the record delivered under
+        the review run's id left unfiled, and the same record missing from the dry-run
+        receipt — which is the defect reproduced rather than a regression. The node's
+        own five cases pass at head (<strong>5 passed</strong>, <code>EXIT=0</code>).</p>
+    </section>
+  </main>
+</body>
+</html>
