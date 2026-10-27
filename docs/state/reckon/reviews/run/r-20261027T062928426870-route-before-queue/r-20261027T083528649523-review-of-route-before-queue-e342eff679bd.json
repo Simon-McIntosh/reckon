@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    "tests/test_route_before_queue.py:210-213 fails if either ready metered request takes the local backend, route_mode ceases to say picker, or the full local request does not queue on local; the backend expectation comes from _selection, but the local-default countercase makes an ignored pick red.",
+    "tests/test_route_before_queue.py:221-224 fails if any local-only request launches or the queue stores fewer than three requests.",
+    "tests/test_route_before_queue.py:236-259 fails if the upstream request loses its wait, backend or picker reason, launches under the deliberately local-only ordering, fails to launch after release, or changes backend; it does not fail if its selected model changes to beta's default because _selection and the fixture's beta backend both name requested-model.",
+    "tests/test_route_before_queue.py:274-279 fails if fallback does not launch locally, loses the metered source or pace reason, or omits fallback from admit_request; the last equality compares two outputs derived from one fallback map, but the separate constant and literal checks constrain its contents.",
+    "tests/test_route_before_queue.py:289-305 fails if a ready picked pace hold fails to fall back, loses fallback route_mode or reason, or queues on the metered backend.",
+    "tests/test_route_before_queue.py:317-323 fails if an explicitly named route falls back or loses its hold; lines 341-344 fail if the CLI reports success without a queued metered request and named-route marker.",
+    "tests/test_route_before_queue.py:359-364 fails if an edited route falls back, loses its edit marker, or omits the pace hold reason."
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2024",
+    "reckon/crew/queue_admission.py:241",
+    "reckon/crew/queue_admission.py:2586",
+    "reckon/crew/queue_admission.py:2659"
+  ],
+  "completed_at": "2026-10-27T08:44:06Z",
+  "dispatched_at": "2026-10-27T08:37:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "267",
+      "severity": "blocking",
+      "text": "blocking: Queued admission forces route='deterministic' while passing picker_selection, but plan_dispatch applies the picked model only for route='picker' (dispatch_plan.py:565-595). A queued backend with multiple model choices launches its default model instead of the selected one; tests/test_route_before_queue.py:98-100 chooses beta's existing default and lines 255-259 assert only the backend, so the gate stays green."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Commit 1f0303dbdd60b1c8e6475ebfef93e6a2690962bc changes dispatch.py, queue_admission.py, crew_dispatch_commands.py and nine tests; commit e342eff679bd6e0f3b42295ee35bb97c426d6b5d adds the landing fragment, with queued admission replay at queue_admission.py:267 losing the selected model.",
+    "done_when": "prompt.txt:115 requires two metered launches, upstream release, fallback, named holds, a local-only negative arm, and base/head delta; tests/test_route_before_queue.py:201-364 and the completed 49-pass/58-pass logs exercise those cases but do not distinguish a picked model from the backend default.",
+    "goal": "prompt.txt:30 asks picker routing before queue, immediate metered launches, and local fallback; reckon/crew/queue_admission.py:267 preserves the backend but drops the picked model on queued launch.",
+    "manifest": "manifest.md reports complete, names commits 1f0303dbdd60b1c8e6475ebfef93e6a2690962bc and e342eff679bd6e0f3b42295ee35bb97c426d6b5d, and records completed base/head gates with zero failures plus a red fallback control.",
+    "write_paths": "prompt.txt:70-75 grants dispatch_plan.py, dispatch_admission.py, queue_admission.py, the test and fragment; resume-1-advice.txt explicitly adds dispatch.py and crew_dispatch_commands.py, and the cd8cc17a4..e342eff67 diff changes only granted paths."
+  },
+  "justifications": {
+    "durability": "tests/test_route_before_queue.py:227-259 would fail if metered admission reverted to local-only, and lines 262-279 failed under the declared fallback mutation, but none asserts the model after a queued launch.",
+    "evidence": "head-suite-final.log records 58 passes against 49 base passes and negative-control.log records one expected fallback failure, but tests/test_route_before_queue.py:98-100 uses the backend default model.",
+    "fit": "reckon/crew/queue_admission.py:452-513 keeps hold and fallback mutations beside admission, and the new names describe their behavior.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:267 replays a queued pick with deterministic routing, so the model chosen by reckon/crew/dispatch_plan.py:586-595 is not restored.",
+    "reuse": "The capability search found budget fallback in reckon/crew/dispatch.py:1640, upstream hold mutation in reckon/crew/queue_admission.py:2070, and route edits in reckon/crew/queue_edit.py:99; the new helpers extend admission for a distinct queued metered case.",
+    "scope_discipline": "The five diff paths are within prompt.txt:70-75 and the two additional paths granted by resume-1-advice.txt, with the fragment isolated under its declared path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:30 asks picker routing before queue, immediate metered launches, and local fallback; reckon/crew/queue_admission.py:267 preserves the backend but drops the picked model on queued launch.\nVERDICT done_when: prompt.txt:115 requires two metered launches, upstream release, fallback, named holds, a local-only negative arm, and base/head delta; tests/test_route_before_queue.py:201-364 and the completed 49-pass/58-pass logs exercise those cases but do not distinguish a picked model from the backend default.\nVERDICT write_paths: prompt.txt:70-75 grants dispatch_plan.py, dispatch_admission.py, queue_admission.py, the test and fragment; resume-1-advice.txt explicitly adds dispatch.py and crew_dispatch_commands.py, and the cd8cc17a4..e342eff67 diff changes only granted paths.\nVERDICT manifest: manifest.md reports complete, names commits 1f0303dbdd60b1c8e6475ebfef93e6a2690962bc and e342eff679bd6e0f3b42295ee35bb97c426d6b5d, and records completed base/head gates with zero failures plus a red fallback control.\nVERDICT diff: Commit 1f0303dbdd60b1c8e6475ebfef93e6a2690962bc changes dispatch.py, queue_admission.py, crew_dispatch_commands.py and nine tests; commit e342eff679bd6e0f3b42295ee35bb97c426d6b5d adds the landing fragment, with queued admission replay at queue_admission.py:267 losing the selected model.\nCALL_SITES: reckon/crew_dispatch_commands.py:2024, reckon/crew/queue_admission.py:241, reckon/crew/queue_admission.py:2586, reckon/crew/queue_admission.py:2659\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:267 replays a queued pick with deterministic routing, so the model chosen by reckon/crew/dispatch_plan.py:586-595 is not restored.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-suite-final.log records 58 passes against 49 base passes and negative-control.log records one expected fallback failure, but tests/test_route_before_queue.py:98-100 uses the backend default model.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The five diff paths are within prompt.txt:70-75 and the two additional paths granted by resume-1-advice.txt, with the fragment isolated under its declared path.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_route_before_queue.py:227-259 would fail if metered admission reverted to local-only, and lines 262-279 failed under the declared fallback mutation, but none asserts the model after a queued launch.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:452-513 keeps hold and fallback mutations beside admission, and the new names describe their behavior.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found budget fallback in reckon/crew/dispatch.py:1640, upstream hold mutation in reckon/crew/queue_admission.py:2070, and route edits in reckon/crew/queue_edit.py:99; the new helpers extend admission for a distinct queued metered case.\nFINDING reckon/crew/queue_admission.py:267 blocking: Queued admission forces route='deterministic' while passing picker_selection, but plan_dispatch applies the picked model only for route='picker' (dispatch_plan.py:565-595). A queued backend with multiple model choices launches its default model instead of the selected one; tests/test_route_before_queue.py:98-100 chooses beta's existing default and lines 255-259 assert only the backend, so the gate stays green.\n",
+  "review_run_id": "r-20261027T083528649523-review-of-route-before-queue-e342eff679bd",
+  "reviewed_base_sha": "cd8cc17a4ac5a71194aef2b73f57ba448c9bfb18",
+  "reviewed_head_sha": "e342eff679bd6e0f3b42295ee35bb97c426d6b5d",
+  "reviewed_run_id": "r-20261027T062928426870-route-before-queue",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T08:46:49.729504+00:00",
+  "total": 102
+}

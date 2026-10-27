@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="147">
+<meta name="plan-version" content="148">
 <meta name="plan-modified" content="2026-10-27">
 </head>
 <body>
@@ -195,6 +195,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-s15-no-metered-admitter" data-who="reckon-42" data-when="2026-10-24T12:40:00Z">
     <div class="r-comment-body"><p><strong>Measured on this plan's own queue, 24 October 2026.</strong> Two §4 requests dispatched with <code>--backend codex</code> waited <code>awaiting-upstream</code> on §5; when §5 closed, the admit service moved both to <code>queued</code> within two minutes, as §2 intends. They then sat on the codex lane with nothing to launch them: the only admit service on the fleet runs <code>crew admit --lane clive</code>, and no pass ever read them. A request routed to a metered lane at dispatch launches at once only if it is ready at dispatch. One that becomes ready later needs an admission pass for its lane. §15's admission per lane must therefore include every metered lane a queued request is routed to, whether that is a pass per lane or one pass that walks every lane's ready requests. Its done-when should include a codex-routed request that becomes ready after dispatch and launches with no coordinator call. The two requests were discarded and re-dispatched by hand this time.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261027T083528649523-review-of-route-before-queue-e342eff679bd" data-who="reckon-build" data-when="2026-10-27T08:44:06Z">
+    <div class="r-comment-body"><p>Parsed independent review of cd8cc17a4ac5a71194aef2b73f57ba448c9bfb18..e342eff679bd6e0f3b42295ee35bb97c426d6b5d scores all six dimensions 102/120, records zero added failures from completed 49-pass and 58-pass gates, and names one blocking model-preservation finding.</p></div>
 </div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261026T222758737633-review-of-skills-load-full-width-90ba5ad62bdb" data-who="reckon-build" data-when="2026-10-26T22:43:11Z">
     <div class="r-comment-body"><p>Independent review parsed at base 46639488 and head 90ba5ad; six scores recorded, zero added failures, and two non-blocking findings.</p></div>
