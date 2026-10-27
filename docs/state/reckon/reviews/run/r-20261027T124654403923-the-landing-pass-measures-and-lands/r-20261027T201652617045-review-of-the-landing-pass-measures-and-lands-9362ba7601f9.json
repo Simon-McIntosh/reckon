@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T20:27:37.915Z",
+  "dispatched_at": "2026-10-27T20:19:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-the-landing-pass-measures-and-lands-9362ba7601f9",
+      "recorded_at": "2026-10-27T20:57:39.744077+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "id": "ff7b41af15f",
+      "line": 172,
+      "severity": "blocking",
+      "text": "reckon/crew/landing_measure.py:172 blocking: runner_argv drops every non-'-' token containing '/', '.py' or '::' after the first token, which is not the same set as test targets. A path-valued option loses its value (`--basetemp /tmp/bt`, `--deselect tests/x.py::y`, `--directory /repo`), so the narrowed arm exits with a usage error that reports no FAILED id; and a program token that follows a `VAR=value` prefix (`PYTHONPATH=. .venv/bin/python`, the shape every armed suite_command on this machine carries) is dropped entirely, leaving an argv whose first element is the assignment. Verified in the reviewed tree: 'python -m pytest -q --basetemp /tmp/bt tests/test_alpha.py' narrows to [<abs python>, '-m', 'pytest', '-q', '--basetemp', 'tests/test_alpha.py::test_real'], which exits 3 with failure_ids (); _fails then reads it as not failing at both revisions, so the isolated counts are 0/3 and 0/3, _is_real is false, and a genuine regression lands. The prior commit ran that command correctly."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "id": "f4549d716ae",
+      "line": 335,
+      "severity": "non-blocking",
+      "text": "reckon/crew/landing_measure.py:335 non-blocking: _fails treats any arm with an exit status as readable, so an arm that errored without printing a FAILED/ERROR id (usage error, collection error, crash) is scored as passing. The new docstring above it claims an unmeasurable arm 'refuses the landing', but only an arm with no exit status at all is counted as failing, and measure_run never sets Measurement.unreadable from an isolated arm, so nothing refuses: an errored isolated arm silently clears every added id. Distinguish 'ran and reported' from 'exited non-zero with no parsed failure' and route the latter to the refusal."
+    },
+    {
+      "file": "tests/test_the_landing_pass_measures_and_lands.py",
+      "id": "fed4829a446",
+      "line": 352,
+      "severity": "non-blocking",
+      "text": "tests/test_the_landing_pass_measures_and_lands.py:352 non-blocking: the new assertion and its stub only model SUITE = 'python -m pytest -q tests/test_alpha.py' (line 19), whose program token is a bare name and which carries no path-valued option, and the stub keys its file arm on any token ending '.py'. Neither can therefore exercise the two token classes runner_argv mishandles (a path interpreter behind an env assignment, an option value that is a path), which is why the gate is green while the production command shape is mangled; the durability of the repair does not reach the command it actually runs under."
+    },
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "id": "f2ba6613b27",
+      "line": 170,
+      "severity": "non-blocking",
+      "text": "reckon/crew/landing_measure.py:170 non-blocking: runner_argv re-derives 'which token is the program' by keeping the first token unconditionally, a capability the repository already owns at reckon/crew/promotion_gate.py:243 (_SHELL_ASSIGNMENT) and uses to skip leading shell assignments before resolving the program; reusing it would have kept the interpreter and avoided the drop above. The one genuine capability the module adds, stripping test targets, has no existing owner."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261027T201652617045-review-of-the-landing-pass-measures-and-lands-9362ba7601f9",
+  "reviewed_base_sha": "aebc724cf542e3bb5c52122ea29c9b6bb6208171",
+  "reviewed_checklist": {
+    "done_when": "A new tests/test_the_landing_pass_measures_and_lands.py, against a fixture repository with stubbed test commands, shows the five named behaviours; each added id is re-run alone three times at base and head; the importer population adds no failures against base; ruff check and ruff format --check pass on the changed paths.",
+    "goal": "Land an accepted run from the landing pass by measuring its suite there, with flakes told apart from regressions.",
+    "write_paths": [
+      "reckon/crew/queue_landing.py",
+      "reckon/crew/landing_measure.py",
+      "tests/test_the_landing_pass_measures_and_lands.py",
+      "docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html",
+      "docs/figures/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands"
+    ]
+  },
+  "reviewed_commit": "9362ba7601f99ee94fc78e5c5cd9e44a0a43f4d7",
+  "reviewed_head_sha": "9362ba7601f99ee94fc78e5c5cd9e44a0a43f4d7",
+  "reviewed_run_id": "r-20261027T124654403923-the-landing-pass-measures-and-lands",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 11,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T20:55:52.942343+00:00",
+  "total": 87
+}
