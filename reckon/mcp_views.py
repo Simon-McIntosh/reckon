@@ -3899,6 +3899,7 @@ def serve_crew_view(
         _state_root,
         read_plan,
     )
+    from reckon.crew import obligation_snapshot as snapshot_module
     from reckon.crew import obligations as obligations_module
     from reckon.crew.directory import DirectoryError
     from reckon.crew.directory import directory as crew_directory
@@ -4033,6 +4034,34 @@ def serve_crew_view(
                         "obligations are derived for one coordinator session; "
                         "pass the session id given to crew dispatch"
                     ),
+                }
+            # The station computes a session's duties once per change, and the
+            # prompt hook reads that answer rather than deriving the fleet on
+            # every opening. This read answers the same way: the station's
+            # answer when it holds a fresh one, and the derivation when the
+            # station holds none or its heartbeat has stopped, so a stopped
+            # station never passes its last answer off as current.
+            station = snapshot_module.read_station_answer(project, session)
+            if station is not None and not station.get("stale"):
+                held = station["payload"]
+                return {
+                    "ok": True,
+                    "view": view,
+                    "project": held.get("project", project),
+                    "session": held.get("session", session),
+                    "obligations": obligations_module.project_run_rows(
+                        held.get("obligations") or (),
+                        fields=fields,
+                        view="obligations",
+                        vocabulary=obligations_module.DUTY_ROW_FIELDS,
+                    ),
+                    "acknowledged": obligations_module.project_run_rows(
+                        held.get("acknowledged") or (),
+                        fields=fields,
+                        view="obligations",
+                        vocabulary=obligations_module.DUTY_ROW_FIELDS,
+                    ),
+                    "summary": dict(held.get("summary") or {}),
                 }
             return {
                 "ok": True,

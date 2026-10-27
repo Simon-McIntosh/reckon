@@ -28,6 +28,7 @@ import pytest
 from reckon.crew import obligation_snapshot, runs, station_obligations, station_store
 from reckon.crew.obligations import obligations as obligations_view
 from reckon.hooks.coordinator_obligations import format_checklist
+from reckon.mcp_views import serve_crew_view
 from tests.helpers.git import git as _git
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +37,7 @@ PROJECT = "station-obligations-fixture"
 SESSION = "station-obligations-session"
 BLOCKED_RUN_ID = "run-station-blocked"
 BLOCKED_NODE_ID = "station-blocked-node"
+STATION_ONLY_RUN_ID = "run-station-only"
 # An age the checklist renders from wall-clock distances, such as "2s" or "50m0s".
 AGE = re.compile(r"\d+d\d+h|\d+h\d+m|\d+m\d+s|\d+s")
 _ABSENT_HARNESS_PID = 2_147_483_647
@@ -358,3 +360,55 @@ def test_an_exported_snapshot_with_a_stale_heartbeat_names_its_age(
 
     assert "not current" in line and "5m" in line, line
     assert BLOCKED_RUN_ID not in line
+
+
+def test_the_obligations_view_answers_from_the_station(
+    repository: Path,
+    tmp_path: Path,
+    runtime_root: Path,
+    follower: None,
+) -> None:
+    """The crew view serves the station's duties, not a fresh derivation."""
+    _live_blocked_run(repository, tmp_path)
+    now = datetime.now(tz=UTC)
+    store = _station(runtime_root, now=now)
+    held = {
+        "project": PROJECT,
+        "session": SESSION,
+        "obligations": [
+            {
+                "kind": "run-held",
+                "run_id": STATION_ONLY_RUN_ID,
+                "age_seconds": 120,
+                "detail": "the station's own answer",
+                "action": {"verb": "reconcile", "command": "reckon crew reconcile"},
+            }
+        ],
+        "acknowledged": [],
+        "summary": {"count": 1, "oldest_age_seconds": 120, "unreconciled_runs": 1},
+    }
+    store.write_obligation(
+        SESSION,
+        {
+            "identity": "station-only",
+            "document": obligation_snapshot.document_for(
+                held, computed_at=now, stream_offset=0, producer={}
+            ),
+        },
+        changed_at=now,
+    )
+    store.close()
+
+    answer = serve_crew_view("obligations", project=PROJECT, session=SESSION)
+    derived = obligations_view(PROJECT, SESSION)
+
+    assert answer["ok"] is True
+    assert [row["run_id"] for row in answer["obligations"]] == [STATION_ONLY_RUN_ID]
+    assert STATION_ONLY_RUN_ID not in [
+        row.get("run_id") for row in derived["obligations"]
+    ], "the fixture's derivation must not hold the station's answer"
+    narrowed = serve_crew_view(
+        "obligations", project=PROJECT, session=SESSION, fields=["run_id"]
+    )
+    assert narrowed["obligations"][0]["run_id"] == STATION_ONLY_RUN_ID
+    assert "detail" not in narrowed["obligations"][0], "the fields filter is shared"
