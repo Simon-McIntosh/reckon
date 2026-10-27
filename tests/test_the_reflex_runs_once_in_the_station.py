@@ -237,6 +237,7 @@ def test_one_rule_decides_live_work_for_the_station_and_the_producer(
     for run_id, session, phase in (
         ("r-own", SESSION, "working"),
         ("r-peer", "session-two", "working"),
+        ("r-none", None, "working"),
         ("r-done", SESSION, "complete"),
     ):
         _pointer(base, run_id, session=session, phase=phase)
