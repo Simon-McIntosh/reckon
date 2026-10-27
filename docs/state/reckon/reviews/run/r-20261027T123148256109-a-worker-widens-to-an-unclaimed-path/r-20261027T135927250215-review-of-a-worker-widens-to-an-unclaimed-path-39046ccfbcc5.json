@@ -1,0 +1,29 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "after_suite completed with 0 failures (gate-head.log, 6 passed, EXIT=0); baseline_suite did not complete (gate-base.log, EXIT=4, 'no tests ran') because its command named the new test file, which does not exist at the base revision, so no added failure id can be derived from either arm.",
+  "completed_at": "2026-10-27T14:11:14.216Z",
+  "dispatched_at": "2026-10-27T14:02:24Z",
+  "findings": [
+    "non-blocking: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T123148256109-a-worker-widens-to-an-unclaimed-path/manifest.md:15 \u2014 the baseline_suite arm ran the new test file at the base revision, where it does not exist, so pytest collected nothing (gate-base.log: 'no tests ran in 0.00s', EXIT=4, completed false). The done-when's 'the test files importing the widen command and reckon.crew.dispatch_claims add no failures against the base revision' is therefore unmeasured: the 29-passed neighbour run is a head arm with no base delta.",
+    "non-blocking: reckon/crew/recovery_review_dispatch.py:2636 \u2014 _list_write_grants_in_brief swallows OSError on both the brief read and the brief write, so a brief it cannot amend dispatches the review without the grant list, silently reproducing the scope-discipline misread the grant block exists to prevent."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to let a worker widen its own run's grant to a path no live run claims; reckon/crew_run_commands.py:1296-1336 keys the exception on RECKON_RUN_ID naming the same run and requires --reason, and reckon/crew/claims.py:118-126 records the grant with source worker while refusing a peer's launched or waiting claim.\nVERDICT done_when: the done-when names tests/test_a_worker_widens_to_an_unclaimed_path.py plus a negative control that skips the claim check; the manifest records 6 passed at head and 2 failed under the mutation, but its base arm ran the new file at the base revision and collected nothing (gate-base.log EXIT=4).\nVERDICT write_paths: the declared scope is claims.py, crew_run_commands.py, dispatch_claims.py, recovery_review_dispatch.py, the new test and the landing fragment; every path in the diff is one of those and the fragment's element id is prefixed with the node id.\nVERDICT manifest: read; it states 6 passed at head, 29 passed in the neighbour set, ruff clean, and the skip-claim-check negative control at EXIT=1, and names each log path.\nVERDICT diff: read commit by commit against b5a9395; one commit, six files, 488 insertions \u2014 widen_claim gains self_widen/reason, dispatch_claims gains declared_write_grants and regard_waiting, recovery_review_dispatch appends the grant block, crew_run_commands adds --reason and the RECKON_RUN_ID check.\nCALL_SITES: reckon/crew_run_commands.py:1323, reckon/crew_run_commands.py:1871, reckon/crew_run_commands.py:2552, reckon/crew/recovery_review_dispatch.py:2656\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/claims.py:118 skips the live-worker refusal only when self_widen is set, and reckon/crew/dispatch_claims.py:2167 toggles the waiting-claim binding with regard_waiting so a queued peer still refuses.\nSCORE evidence: 12\nJUSTIFICATION evidence: the head arm is green (gate-head.log, 6 passed) and the negative control reddens both peer cases, but the base arm is unreadable (gate-base.log EXIT=4, 'no tests ran') so the done-when's base-revision comparison is not established.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff b5a9395..39046ccfb touches only the six declared paths, and the one new evidence file lives at the declared fragment path.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_worker_widens_to_an_unclaimed_path.py:141 asserts the peer-held path is refused with the pointer bytes unchanged, and the skip-claim-check negative control shows that assertion reddens under the regression it guards.\nSCORE fit: 17\nJUSTIFICATION fit: the additions follow the surrounding idiom of reckon/crew/claims.py:62 (deferred imports to avoid cycles, module-level constants) and the new names describe the mechanism rather than any plan label.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/dispatch_claims.py:265 extends the existing _pointer_declared_paths owner rather than duplicating it, and a search of reckon/crew for an existing grant-with-source reader found none.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T123148256109-a-worker-widens-to-an-unclaimed-path/manifest.md:15 non-blocking: the baseline_suite arm ran the new test file at the base revision, where it does not exist, so pytest collected nothing (EXIT=4, 'no tests ran'); the done-when's base-revision importer comparison is unmeasured and the 29-passed neighbour run carries no base delta.\nFINDING reckon/crew/recovery_review_dispatch.py:2636 non-blocking: _list_write_grants_in_brief swallows OSError on the brief read and write, so an unamendable brief dispatches the review without the grant list and silently reproduces the scope-discipline misread the block exists to prevent.",
+  "review_run_id": "r-20261027T135927250215-review-of-a-worker-widens-to-an-unclaimed-path-39046ccfbcc5",
+  "reviewed_base_sha": "b5a9395ebd6f659f0002b67617a36b1a3dd2a1e2",
+  "reviewed_head_sha": "39046ccfbcc5ac65bc201cc7f1f7e8e11c0790fb",
+  "reviewed_run_id": "r-20261027T123148256109-a-worker-widens-to-an-unclaimed-path",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T14:17:56.708047+00:00",
+  "total": 103
+}
