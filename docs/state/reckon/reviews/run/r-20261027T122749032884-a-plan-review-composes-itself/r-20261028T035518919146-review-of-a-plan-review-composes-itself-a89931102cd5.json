@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own gate logs: baseline_suite at aefb607f7f records exit_status 1, completed true, failure_count 8 with 8 ids (base-arm.log, last line EXIT=1), and after_suite at a89931102c records exit_status 0, completed true, failure_count 0 (head-arm.log, last line EXIT=0), so the added set is empty; the eight base ids are the node's own arms failing before the feature existed.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/resumption.py:2061",
+    "reckon/crew/runs.py:3985",
+    "reckon/mcp.py:2931",
+    "reckon/crew/station.py:107"
+  ],
+  "completed_at": "2026-10-28T04:04:11.585Z",
+  "dispatched_at": "2026-10-28T03:57:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f28d035532b",
+      "line": 2639,
+      "severity": "blocking",
+      "text": "passed[plan_slug] = edited is recorded for every compose attempt regardless of result.get('dispatched'), so a plan whose review dispatch was refused (a budget-hold or lane-paused report from recovery_review_dispatch.dispatch_review_for_run that left no queued run) is stamped as weighed at its current mtime and never retried until the author edits the plan; before this commit every pass re-weighed it, and the plan's review is silently never composed, which is the deliverable the node exists to produce. No test covers a non-dispatched compose being retried."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f1a94d75a78",
+      "line": 2582,
+      "severity": "non-blocking",
+      "text": "PLAN_REVIEW_PASS_LIMIT=1 is checked before weighing and the loop restarts from the first plan each pass, so a plan near the head whose skip reason does not settle (the burst refusal from compose_burst_refusal at :2499, whose text starts 'unit ...' and matches neither settle prefix at :2599) holds the single read slot every pass and no later edited plan in the project is ever weighed until that plan's author answers its findings."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f1096bb2003",
+      "line": 2357,
+      "severity": "non-blocking",
+      "text": "_plans_by_hand duplicates the resource catalogue's classification instead of using it: reckon/resources.py:313 _identify_resource owns the location-versus-declared-type rule and resource_scan_scope (:478) already yields the files a scan dropped, so iter_resources(..., ignore_invalid=True) plus that dropped record would answer the same question in one walk; the copy diverges by filtering only on an immediate parent directory and by applying no INFRA_DIRS or evidence-fragment rule (reckon/resources.py:379), so the fallback path can admit documents the catalogue deliberately excludes."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the single gained commit a89931102c against its reviewed predecessor aefb607f7f: it adds PLAN_REVIEW_PASS_LIMIT, the mtime watermark (_weighed_edits, _record_weighed_edits, _reflex_state_path), the catalogue-refusal fallback _plans_by_hand, a per-plan try/except, and two tests.",
+    "done_when": "the measure names four composition arms, an importer arm and ruff on the changed paths; the recorded head arm (head-arm.log, revision a89931102c) ends '10 passed' with EXIT=0 and the base arm (base-arm.log, revision ad8c445e) ends '8 failed' with EXIT=1, but the importer arm was not re-run after a89931102c and no ruff log is on disk.",
+    "goal": "the node goal is to compose a content review for a plan that owes one after ten quiet minutes and answer its would-not-change findings as notes; reckon/crew/plan_review.py:2504 compose_owed_plan_reviews still does both and is reached from the sweep at reckon/crew/resumption.py:2061, so the goal is delivered except where the gained commit's settle rule at :2639 discards a refused compose.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T122749032884-a-plan-review-composes-itself/manifest.md; status complete, gate '10 passed, EXIT=0 at a89931102c' against a red base arm, negative control red on the two-minute arm, and remaining_work states the importer arms were not re-run after a89931102c.",
+    "write_paths": "the manifest declares reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py and two docs/evidence paths; git diff --stat aefb607f7f..a89931102c changes exactly the first two, so this commit stays inside its grant."
+  },
+  "justifications": {
+    "durability": "the watermark assertion at tests/test_a_plan_review_composes_itself.py:240 is independent and would redden on removal of the mtime check (read would name bulk-00), but nothing guards the settle at plan_review.py:2639 or the head-of-line block at :2582, which are the two behaviours that lose the goal.",
+    "evidence": "the head arm log (head-arm.log) carries the revision header for a89931102c and ends '10 passed' with EXIT=0, the base arm (base-arm.log) ends '8 failed' with EXIT=1 at ad8c445e, and both were read on disk, but the importer arm was not re-run after this commit and no ruff log exists.",
+    "fit": "reckon/crew/plan_review.py:2357-2431 follows the module's idiom of documented private helpers with local imports and carries no plan or ticket label, though the skipped row appended at :2588 omits the 'plan' key every sibling row carries.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2504 compose_owed_plan_reviews still composes a quiet plan's review and notes its would-not-change findings, but the gained commit's settle at :2639 drops a refused compose permanently and the bound at :2582 can starve every later plan in the project.",
+    "reuse": "reckon/crew/plan_review.py:2357 _plans_by_hand re-walks the docs tree and re-implements the type/location classification that reckon/resources.py already owns (_identify_resource:313 and the dropped record of resource_scan_scope at :478), and _record_weighed_edits at :2437 writes JSON with path.write_text instead of the owned reckon/_store.py:619 write_json_atomically.",
+    "scope_discipline": "git diff aefb607f7f..a89931102c touches only reckon/crew/plan_review.py and tests/test_a_plan_review_composes_itself.py, both inside the manifest's declared grant, and adds nothing the commit message does not imply."
+  },
+  "node": "review-of-a-plan-review-composes-itself-a89931102cd5",
+  "node:reviewed": "a-plan-review-composes-itself",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to compose a content review for a plan that owes one after ten quiet minutes and answer its would-not-change findings as notes; reckon/crew/plan_review.py:2504 compose_owed_plan_reviews still does both and is reached from the sweep at reckon/crew/resumption.py:2061, so the goal is delivered except where the gained commit's settle rule at :2639 discards a refused compose.\nVERDICT done_when: the measure names four composition arms, an importer arm and ruff on the changed paths; the recorded head arm (head-arm.log, revision a89931102c) ends '10 passed' with EXIT=0 and the base arm (base-arm.log, revision ad8c445e) ends '8 failed' with EXIT=1, but the importer arm was not re-run after a89931102c and no ruff log is on disk.\nVERDICT write_paths: the manifest declares reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py and two docs/evidence paths; git diff --stat aefb607f7f..a89931102c changes exactly the first two, so this commit stays inside its grant.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T122749032884-a-plan-review-composes-itself/manifest.md; status complete, gate '10 passed, EXIT=0 at a89931102c' against a red base arm, negative control red on the two-minute arm, and remaining_work states the importer arms were not re-run after a89931102c.\nVERDICT diff: read the single gained commit a89931102c against its reviewed predecessor aefb607f7f: it adds PLAN_REVIEW_PASS_LIMIT, the mtime watermark (_weighed_edits, _record_weighed_edits, _reflex_state_path), the catalogue-refusal fallback _plans_by_hand, a per-plan try/except, and two tests.\nCALL_SITES: reckon/crew/resumption.py:2061, reckon/crew/runs.py:3985, reckon/mcp.py:2931, reckon/crew/station.py:107\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2504 compose_owed_plan_reviews still composes a quiet plan's review and notes its would-not-change findings, but the gained commit's settle at :2639 drops a refused compose permanently and the bound at :2582 can starve every later plan in the project.\nSCORE evidence: 15\nJUSTIFICATION evidence: the head arm log (head-arm.log) carries the revision header for a89931102c and ends '10 passed' with EXIT=0, the base arm (base-arm.log) ends '8 failed' with EXIT=1 at ad8c445e, and both were read on disk, but the importer arm was not re-run after this commit and no ruff log exists.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff aefb607f7f..a89931102c touches only reckon/crew/plan_review.py and tests/test_a_plan_review_composes_itself.py, both inside the manifest's declared grant, and adds nothing the commit message does not imply.\nSCORE durability: 12\nJUSTIFICATION durability: the watermark assertion at tests/test_a_plan_review_composes_itself.py:240 is independent and would redden on removal of the mtime check (read would name bulk-00), but nothing guards the settle at plan_review.py:2639 or the head-of-line block at :2582, which are the two behaviours that lose the goal.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/plan_review.py:2357-2431 follows the module's idiom of documented private helpers with local imports and carries no plan or ticket label, though the skipped row appended at :2588 omits the 'plan' key every sibling row carries.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/plan_review.py:2357 _plans_by_hand re-walks the docs tree and re-implements the type/location classification that reckon/resources.py already owns (_identify_resource:313 and the dropped record of resource_scan_scope at :478), and _record_weighed_edits at :2437 writes JSON with path.write_text instead of the owned reckon/_store.py:619 write_json_atomically.\nFINDING reckon/crew/plan_review.py:2639 blocking: passed[plan_slug] = edited is recorded for every compose attempt regardless of result.get('dispatched'), so a plan whose review dispatch was refused (a budget-hold or lane-paused report from recovery_review_dispatch.dispatch_review_for_run that left no queued run) is stamped as weighed at its current mtime and never retried until the author edits the plan; before this commit every pass re-weighed it, and the plan's review is silently never composed, which is the deliverable the node exists to produce. No test covers a non-dispatched compose being retried.\nFINDING reckon/crew/plan_review.py:2582 non-blocking: PLAN_REVIEW_PASS_LIMIT=1 is checked before weighing and the loop restarts from the first plan each pass, so a plan near the head whose skip reason does not settle (the burst refusal from compose_burst_refusal at :2499, whose text starts 'unit ...' and matches neither settle prefix at :2599) holds the single read slot every pass and no later edited plan in the project is ever weighed until that plan's author answers its findings.\nFINDING reckon/crew/plan_review.py:2357 non-blocking: _plans_by_hand duplicates the resource catalogue's classification instead of using it: reckon/resources.py:313 _identify_resource owns the location-versus-declared-type rule and resource_scan_scope (:478) already yields the files a scan dropped, so iter_resources(..., ignore_invalid=True) plus that dropped record would answer the same question in one walk; the copy diverges by filtering only on an immediate parent directory and by applying no INFRA_DIRS or evidence-fragment rule (reckon/resources.py:379), so the fallback path can admit documents the catalogue deliberately excludes.",
+  "review_run_id": "r-20261028T035518919146-review-of-a-plan-review-composes-itself-a89931102cd5",
+  "reviewed_base_sha": "aefb607f7fcca4930364262bf4d5aac671376beb",
+  "reviewed_head_sha": "a89931102cd52f300fab98e3340eebb8637876d8",
+  "reviewed_run_id": "r-20261027T122749032884-a-plan-review-composes-itself",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 14,
+    "reuse": 4,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T04:10:00+00:00",
+  "total": 79
+}
