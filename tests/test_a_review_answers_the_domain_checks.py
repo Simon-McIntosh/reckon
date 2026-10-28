@@ -21,7 +21,6 @@ from reckon.crew import domain_rules
 from reckon.crew import recovery_review_subject as subject_module
 from reckon.crew import review as review_module
 from reckon.crew import runs as runs_module
-from reckon.crew.recovery_review_acceptance import REVIEW_ACCEPTANCE_FLOOR
 from reckon.crew.review_lifecycle import OPEN, lifecycle
 
 REVIEWED_RUN = "r-fixture-reviewed"
@@ -381,5 +380,3 @@ def test_a_project_without_declarations_is_unchanged(fixture_project) -> None:
     assert record["status"] == "parsed"
     assert record["absent_items"] == []
     assert len(record["scores"]) == len(review_module.REVIEW_DIMENSIONS) == 6
-    # Six dimensions at REVIEW_MAX_SCORE each, nine tenths of the total.
-    assert REVIEW_ACCEPTANCE_FLOOR == 6 * review_module.REVIEW_MAX_SCORE * 9 // 10

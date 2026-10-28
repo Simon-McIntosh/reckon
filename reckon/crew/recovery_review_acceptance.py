@@ -16,16 +16,6 @@ from reckon.crew.runs import (
 )
 
 
-# The score a complete review must reach for its acceptance to promote
-# the reviewed run without a coordinator. The total a review can score is the
-# schema dimensions at ``REVIEW_MAX_SCORE`` each, and the floor is nine tenths of
-# that, so the accepting branch over a stored record whose total merely parses
-# is what this exists to prevent.
-REVIEW_ACCEPTANCE_FLOOR = (
-    len(review_module.REVIEW_DIMENSIONS) * review_module.REVIEW_MAX_SCORE * 9 // 10
-)
-
-
 #: The reason a non-blocking finding is recorded under when the landing pass
 #: lands the run it was raised against. The emissary is the landing pass itself,
 #: so the reason names where the judgement was made rather than what the
@@ -86,18 +76,15 @@ def _excusable_finding_indexes(review: Mapping[str, Any] | None) -> tuple[int, .
 def _review_accepts_promotion(review: Mapping[str, Any] | None) -> bool:
     """Whether a stored review is clean enough to promote the run it read.
 
-    Clean means complete — every dimension scored and a total parsed — with a
-    total at or above the floor and no blocking finding. A review that states a
+    Clean means complete — every dimension scored and a total parsed — with no
+    finding that withholds the landing. The score sets no bar: a reviewer who
+    scored the work low has said so in the scores, and a run whose review raised
+    nothing blocking is landed on that judgement rather than held from a
+    coordinator who would read the same record. A review that states a
     non-blocking finding still accepts: the reviewer judged it not to hold the
-    node, so it is recorded against the run as exempted at landing rather than
-    handed to a coordinator, who had no reading of it the reviewer did not.
+    node, so it is recorded against the run as exempted at landing.
     """
     if not _review_is_complete(review):
-        return False
-    total = review.get("total")
-    if isinstance(total, bool) or not isinstance(total, (int, float)):
-        return False
-    if int(total) < REVIEW_ACCEPTANCE_FLOOR:
         return False
     return not _blocking_finding_indexes(review)
 
@@ -215,9 +202,9 @@ def accept_clean_review(
 ) -> dict[str, Any] | None:
     """Promote the reviewed run when its stored review is clean.
 
-    When a review run completes with a stored record whose complete total
-    is at least the acceptance floor and which carries no blocking finding, the
-    reviewed run is promoted without a coordinator: the non-blocking findings it
+    When a review run completes with a stored record that is complete and
+    carries no blocking finding, the reviewed run is promoted without a
+    coordinator, whatever its scores: the non-blocking findings it
     does carry are recorded as exempted, the commits its manifest names must
     already be ancestors of the repository's head, the run's own recorded gate
     must already have passed, the gate is re-run against the repository's
@@ -230,8 +217,8 @@ def accept_clean_review(
     off the branch.
 
     None is returned when the run is not acceptance-eligible at all — no stored
-    review, or a review that is incomplete, below the floor, or carrying a
-    blocking finding — because those runs are the coordinator's and this handler has
+    review, or a review that is incomplete or carrying a blocking finding —
+    because those runs are the coordinator's and this handler has
     nothing to add. A dict is returned whenever the run was eligible and an
     outcome was reached, so the sweep records why a refusal did not promote.
     """
@@ -301,20 +288,6 @@ def accept_clean_review(
             "gate_report": report,
         }
     try:
-        exempted = record_landed_exemptions(
-            project, run_id, review, reviewed_head_sha=head or None
-        )
-    except (OSError, ValueError) as refusal:
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": (
-                "the review's non-blocking findings could not be recorded as "
-                f"exempted, so the landing would drop them: {refusal}"
-            ),
-            "gate_report": report,
-        }
-    try:
         result = promotion_module.complete(
             run_id,
             gate="passed",
@@ -327,9 +300,21 @@ def accept_clean_review(
             "run_id": run_id,
             "accepted": False,
             "reason": str(refusal),
-            "exempted_findings": list(exempted),
             "gate_report": report,
         }
+    # Read only once the promotion has happened: an exemption written before it
+    # would mark a finding exempted on a run the promotion then refused.
+    exempted: list[int] = []
+    exemption_refusal = ""
+    try:
+        exempted = record_landed_exemptions(
+            project, run_id, review, reviewed_head_sha=head or None
+        )
+    except (OSError, ValueError) as refusal:
+        exemption_refusal = (
+            "the run was promoted but its review's non-blocking findings could "
+            f"not be recorded as exempted: {refusal}"
+        )
     return {
         "run_id": run_id,
         "accepted": True,
@@ -339,6 +324,7 @@ def accept_clean_review(
             "blocking_findings": 0,
             "exempted_findings": len(exempted),
         },
+        **({"exemption_refusal": exemption_refusal} if exemption_refusal else {}),
         "gate_report": report,
         "ledger": {
             "path": str(result.get("ledger_path") or ""),

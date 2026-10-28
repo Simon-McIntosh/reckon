@@ -391,7 +391,7 @@ def land_once() -> dict[str, Any]:
         if stale or review is None:
             continue
         if not _review_accepts_promotion(review):
-            guard = "review acceptance floor or findings"
+            guard = "review acceptance: a blocking finding or an incomplete record"
             _record_attempt(run_id, head=head, guard=guard, status="refused")
             obligations.append(
                 {
@@ -441,27 +441,11 @@ def land_once() -> dict[str, Any]:
                 }
             )
             continue
-        # The review's non-blocking findings do not hold the landing, so the
-        # finding a reviewer raised is recorded as exempted before the pointer
-        # that carried it is promoted away. A landing that could not record
-        # them would drop a reviewer's finding silently, which is the defect
-        # this pass exists to remove, so it is refused instead.
-        try:
-            record_landed_exemptions(project, run_id, review, reviewed_head_sha=head)
-        except (OSError, ValueError) as exc:
-            guard = (
-                "the review's non-blocking findings could not be recorded as "
-                f"exempted: {type(exc).__name__}: {exc}"
-            )
-            _record_attempt(run_id, head=head, guard=guard, status="refused")
-            obligations.append(
-                {
-                    "run_id": run_id,
-                    "session": str(pointer.get("session") or ""),
-                    "guard": guard,
-                }
-            )
-            continue
+        # The review's non-blocking findings do not hold the landing, and the
+        # finding a reviewer raised must not vanish with the pointer that
+        # carried it. Exemptions are recorded only once the landing has
+        # succeeded: a refusal here leaves the run unlanded, and marking its
+        # findings exempted would say a landing happened that did not.
         _record_attempt(run_id, head=head, guard="crew land", status="attempting")
         try:
             accepted, guard = _land(run_id)
@@ -469,6 +453,24 @@ def land_once() -> dict[str, Any]:
             accepted, guard = False, f"{type(exc).__name__}: {exc}"
         if accepted:
             landed.append(run_id)
+            try:
+                record_landed_exemptions(
+                    project, run_id, review, reviewed_head_sha=head
+                )
+            except (OSError, ValueError) as exc:
+                # The landing stands; only the record of what the reviewer
+                # raised is missing, so the run is reported and not unlanded.
+                obligations.append(
+                    {
+                        "run_id": run_id,
+                        "session": str(pointer.get("session") or ""),
+                        "guard": (
+                            "the run landed but its review's non-blocking "
+                            "findings could not be recorded as exempted: "
+                            f"{type(exc).__name__}: {exc}"
+                        ),
+                    }
+                )
             beat_refusal = _landing_beat(pointer, run_id)
             if beat_refusal:
                 obligations.append(

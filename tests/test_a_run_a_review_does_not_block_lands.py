@@ -13,6 +13,7 @@ configuration home, so nothing here reads or writes the operator's own fleet.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -212,18 +213,23 @@ def _accept(
     head: str,
     findings: tuple[str, ...] = (),
     score: int = 20,
+    per_dimension: dict[str, int] | None = None,
 ) -> dict:
     """Store a review of the delivered head.
     ``findings`` are the finding lines' text, each written after its file and
     line, so a caller states the severity in the same place a reviewer does.
+    ``per_dimension`` states each score, for a caller that needs a total other
+    than six equal scores.
     """
+    scores = (
+        per_dimension
+        if per_dimension is not None
+        else dict.fromkeys(review_module.REVIEW_DIMENSIONS, score)
+    )
     text = "\n".join(
         (
             *(f"FINDING tests/test_alpha.py:3 {line}" for line in findings),
-            *(
-                f"SCORE {dimension}: {score}"
-                for dimension in review_module.REVIEW_DIMENSIONS
-            ),
+            *(f"SCORE {dimension}: {value}" for dimension, value in scores.items()),
         )
     )
     parsed = review_module.parse_review(text)
@@ -257,6 +263,41 @@ def _stored_record(head: str) -> dict:
     )
     assert record is not None, "the review record the pass wrote to is missing"
     return record
+
+
+def _stored_review_file(head: str) -> Path:
+    """The review record on disk for the delivered head."""
+    home = Path(os.environ["RECKON_HOME"])
+    for path in sorted(home.rglob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(record, dict):
+            continue
+        if record.get("reviewed_run_id") != RUN or "scores" not in record:
+            continue
+        if str(record.get("reviewed_head_sha") or "") != head:
+            continue
+        return path
+    raise AssertionError("no stored review record for the delivered head")
+
+
+def _rewrite_total(head: str, total: int | None) -> None:
+    """Rewrite the stored total behind the review store's derivation.
+
+    The store derives a record's total from its dimension scores on write, so
+    the only way to drive a record whose total disagrees with its scores, or
+    which carries none, is to write the file the reader opens.
+    """
+    path = _stored_review_file(head)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    if total is None:
+        record.pop("total", None)
+        record.pop("reviewer_total", None)
+    else:
+        record["total"] = total
+    path.write_text(json.dumps(record), encoding="utf-8")
 
 
 def _completed(argv, code: int = 0, output: str = ""):
@@ -318,6 +359,100 @@ def test_two_non_blocking_findings_land_in_one_pass_and_are_recorded_exempted(
         assert entry["reason"] == LANDED_REASON
 
 
+# ── the score sets no floor ─────────────────────────────────────────────────
+
+
+def test_a_review_scoring_92_with_two_non_blocking_findings_lands(
+    delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """92 is well under the nine tenths this rule used to demand, and lands.
+
+    The reviewer scored the work and raised nothing blocking, so there is no
+    reading of the record a coordinator would add.
+    """
+    dimensions = review_module.REVIEW_DIMENSIONS
+    per_dimension = {
+        dimension: 16 if index < 2 else 15 for index, dimension in enumerate(dimensions)
+    }
+    assert sum(per_dimension.values()) == 92
+    _accept(
+        base=str(delivery["base"]),
+        head=str(delivery["head"]),
+        findings=(
+            "non-blocking: the helper re-derives a value it could cache",
+            "non-blocking: the docstring names two dimensions of three",
+        ),
+        per_dimension=per_dimension,
+    )
+    landed = _land(monkeypatch)
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [RUN], result
+    assert result["obligations"] == []
+    assert landed == [RUN]
+    record = _stored_record(str(delivery["head"]))
+    assert set(record["finding_dispositions"]) == {"0", "1"}
+
+
+def test_a_total_that_disagrees_with_its_scores_is_judged_on_severity_alone(
+    delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _accept(base=str(delivery["base"]), head=str(delivery["head"]))
+    _rewrite_total(str(delivery["head"]), 5)
+    landed = _land(monkeypatch)
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [RUN], result
+    assert landed == [RUN]
+
+
+def test_a_record_carrying_no_total_is_judged_on_severity_alone(
+    delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _accept(base=str(delivery["base"]), head=str(delivery["head"]))
+    _rewrite_total(str(delivery["head"]), None)
+    landed = _land(monkeypatch)
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [RUN], result
+    assert landed == [RUN]
+
+
+# ── a refused landing records no exemption ─────────────────────────────────
+
+
+def test_a_refused_landing_leaves_the_stored_record_unchanged(
+    delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exemptions say a landing happened. A refused landing must not say it did."""
+    _accept(
+        base=str(delivery["base"]),
+        head=str(delivery["head"]),
+        findings=("non-blocking: the helper re-derives a value it could cache",),
+    )
+    before = _stored_record(str(delivery["head"]))
+    monkeypatch.setattr(
+        queue_landing, "_land", lambda run_id: (False, "the branch refused the merge")
+    )
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [], result
+    assert result["obligations"] == [
+        {
+            "run_id": RUN,
+            "session": SESSION,
+            "guard": "the branch refused the merge",
+        }
+    ]
+    after = _stored_record(str(delivery["head"]))
+    assert after == before
+    assert "finding_dispositions" not in after
+
+
 # ── arm 2: a blocking finding is not landed ─────────────────────────────────
 
 
@@ -340,7 +475,7 @@ def test_a_blocking_finding_is_not_landed(
         {
             "run_id": RUN,
             "session": SESSION,
-            "guard": "review acceptance floor or findings",
+            "guard": "review acceptance: a blocking finding or an incomplete record",
         }
     ]
     assert runs.pointer_path(RUN).exists()
