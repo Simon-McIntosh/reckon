@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:123 _compose_burst_refusal",
+    "reckon/crew/plan_review.py:2745 _owed_review_skip_reason",
+    "reckon/crew/plan_review.py:2368 compose_burst_refusal"
+  ],
+  "completed_at": "2026-10-28T10:04:47.623Z",
+  "dispatched_at": "2026-10-28T09:57:50Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T091547207771-the-review-cap-reads-only-what-it-reviews/manifest.md",
+      "id": "review-f1-missing-base-log",
+      "line": 17,
+      "severity": "blocking",
+      "text": "baseline_suite.log_path and test_logs both cite .../gate-base.log in the run directory, which does not exist; the only copy is /tmp/reckon-crew-scratch/.../gate-base.log on node-local scratch due to be swept, so the base arm's receipt cannot be opened at the recorded path."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "review-f2-rubric-docstring",
+      "line": 1218,
+      "severity": "non-blocking",
+      "text": "is_design_review's docstring says a record naming no rubric is not counted, while counts_for_rubric at 1237 counts it with the content rubric; the two adjacent docstrings answer the same question differently."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "id": "review-f3-rubric-not-threaded",
+      "line": 123,
+      "severity": "non-blocking",
+      "text": "_compose_burst_refusal calls compose_burst_refusal without a rubric, so a design composition is judged under content counts and the rubric half of this change is unreachable from the verb."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "crew_run_commands.py:123, plan_review.py:2745 and plan_review.py:2368 reach the changed functions.",
+    "diff": "read both commits; plan_review.py, the test file and the evidence fragment only.",
+    "done_when": "the arms live in tests/test_a_carried_finding_reaches_the_node.py and the manifest records head 11 passed and base 9 passed.",
+    "goal": "the cap reads only the units the composition reads; plan_review.py:2341 takes units from review_coverage uncovered.",
+    "manifest": "read; complete and specific, but names one gate log path that does not exist.",
+    "write_paths": "every diff path is one of the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the third-review cap reads only the units a composition actually reads; reckon/crew/plan_review.py:2321-2360 takes its unit set from review_coverage's uncovered set and returns None when nothing is uncovered.\nVERDICT done_when: the plan section's measure is the arms in tests/test_a_carried_finding_reaches_the_node.py, and the manifest records the gate run of that file at head (gate-head.log, 11 passed EXIT=0) and at base (9 passed EXIT=0).\nVERDICT write_paths: the manifest declares reckon/crew/plan_review.py, tests/test_a_carried_finding_reaches_the_node.py and the evidence fragment; every path in the diff is one of those three.\nVERDICT manifest: read; it records status complete, the two commits, the five resolvable gate logs and the baseline/after suite JSON, but it also cites a sixth log at a path that does not exist.\nVERDICT diff: read both commits against the base; plan_review.py adds counts_for_rubric at line 1226 and rewrites compose_burst_refusal at 2321, the test file adds two arms and a rubric/status parameter to its helper, and the evidence fragment is new.\nCALL_SITES: reckon/crew_run_commands.py:123 _compose_burst_refusal, reckon/crew/plan_review.py:2745 _owed_review_skip_reason, reckon/crew/plan_review.py:2368 compose_burst_refusal\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2341-2346 takes `units` from review_coverage's `uncovered` set, which is exactly the set the composed review reads.\nSCORE evidence: 14\nJUSTIFICATION evidence: the run's manifest.md:17 names gate-base.log in the run directory, and that file does not exist there \u2014 the only copy is in node-local /tmp scratch.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0a440663..ae854c2c touches only reckon/crew/plan_review.py, tests/test_a_carried_finding_reaches_the_node.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/the-review-cap-reads-only-what-it-reviews.html.\nSCORE durability: 18\nJUSTIFICATION durability: gate-negative-control.log shows test_a_covered_section_keeps_its_reviews_off_another_sections_cap and test_a_design_review_does_not_spend_the_content_budget both redden when the coverage set and the rubric filter are reinstated, and each test isolates one half.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/plan_review.py:1218 still says a record naming no rubric \"is not counted\", which the new counts_for_rubric at 1237 contradicts by counting it as content.\nSCORE reuse: 19\nJUSTIFICATION reuse: counts_for_rubric at plan_review.py:1226 extends the existing is_design_review and _DESIGN_RUBRIC_NAMES rather than adding a second rubric vocabulary, and compose_burst_refusal drops its own _section_digests unit list for review_coverage.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T091547207771-the-review-cap-reads-only-what-it-reviews/manifest.md:17 blocking: baseline_suite.log_path and test_logs both cite .../gate-base.log in the run directory, which does not exist; the only copy is /tmp/reckon-crew-scratch/r-20261028T091547207771-the-review-cap-reads-only-what-it-reviews/gate-base.log on node-local scratch due to be swept, so the base arm's receipt cannot be opened at the recorded path.\nFINDING reckon/crew/plan_review.py:1218 non-blocking: is_design_review's docstring says a record naming no rubric \"is not counted\", while counts_for_rubric at 1237 counts it with the content rubric; the two adjacent docstrings answer the same question differently, and counts_for_rubric lowercases the wanted rubric while is_design_review does not lowercase the record's.\nFINDING reckon/crew_run_commands.py:123 non-blocking: _compose_burst_refusal calls compose_burst_refusal without a rubric, so `crew review --rubric design` is judged under content counts and the rubric half of this change is unreachable from the verb; the run's manifest records this under outside_scope.\n",
+  "review_run_id": "r-20261028T095541915364-review-of-the-review-cap-reads-only-what-it-reviews-ae854c2c014e",
+  "reviewed_base_sha": "0a44066307d7a498928919870769c9b85c02a0a7",
+  "reviewed_head_sha": "ae854c2c014eb5fffda4d9157d1ba9bec6968a8e",
+  "reviewed_run_id": "r-20261028T091547207771-the-review-cap-reads-only-what-it-reviews",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T10:05:47.450114+00:00",
+  "total": 104
+}
