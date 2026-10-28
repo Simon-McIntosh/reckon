@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: logs/after-suite-final.log records failure_count 0 (9 passed, EXIT=0) at f044b5b959 and logs/baseline-arm.log records failure_count 8 (8 failed, 1 passed, EXIT=1) at 1f9672d4ce, so no failure id is present after the change that was absent before it, and the delta's own commit 6db9f41d86 gained no failing test.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3045",
+    "reckon/crew/queue_admission.py:3058"
+  ],
+  "completed_at": "2026-10-28T17:22:59.666Z",
+  "dispatched_at": "2026-10-28T17:15:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "461",
+      "severity": "non-blocking",
+      "text": "an entry the parser refuses, such as one leading with prose or carrying the revision with trailing punctuation, makes _delivered_revision return \"\" and the loop continues at :462-463 with no admission_landing record and no obligation, which is the silent drop of a delivered run that section 33 was opened to remove; the shape is untested against real manifests and the node chose to guess nothing rather than record that it could not decide."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both gained commits against 5a2da3d86f: 6db9f41d86 replaces the token regex with _REVISION and rewrites _delivered_revision, makes _review_stamp call reckon/crew/plan_review.py:398 _digest, and adds five test arms including the review-only arm and a parser unit arm; f044b5b959 restates the rule and the new gate figures in the evidence fragment; nothing else changed.",
+    "done_when": "the done_when names tests/test_a_refusal_is_judged_again_when_it_changes.py for four behaviours, no added failures in importing files, and ruff on the changed paths; logs/after-suite-final.log records 9 passed and EXIT=0 at f044b5b959 under the manifest's tests: command, logs/baseline-arm.log records 8 failed, 1 passed and EXIT=1 against the dispatch-base module, the declared negative control records 3 failed, 6 passed with the first arm among them, and the constant-stamp mutation records exactly the review-moves arm failing; I re-ran ruff check (All checks passed) and ruff format --check (2 files already formatted) on both changed source paths in the reviewed worktree.",
+    "goal": "the node goal is that a refused landing is judged again when the rule that refused it or the review record it read has moved; commits 6db9f41d86 and f044b5b959 repair the delivered-revision parser at reckon/crew/queue_landing.py:28-50 and make _review_stamp at :69-80 delegate to the existing digest owner, so both halves of the goal hold on the delta.",
+    "manifest": "read the reviewed run's manifest.md; it reports status complete, commits 9cf17bccaf through f044b5b959, after_suite 0 failures EXIT=0 at f044b5b959, baseline_suite 8 failures EXIT=1 at 1f9672d4ce, a declared negative control of 3 failed/6 passed, and a second constant-stamp mutation of 1 failed/8 passed, and every figure agrees with the tail and EXIT line of the log it names.",
+    "write_paths": "the manifest declares reckon/crew/queue_landing.py, tests/test_a_refusal_is_judged_again_when_it_changes.py, the evidence fragment and a docs/figures directory; git diff --stat 5a2da3d86f..f044b5b959 changes only the first three and the figures directory is untouched, so every landed path is inside the declared scope."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-constant-review-stamp-final.log shows tests/test_a_refusal_is_judged_again_when_it_changes.py:191-226 reddens alone when _review_stamp returns a constant, and tests/test_a_refusal_is_judged_again_when_it_changes.py:333 fails at the baseline module for the old last-hex-token parser.",
+    "evidence": "logs/after-suite-final.log and logs/baseline-arm.log run the manifest's exact tests: command at f044b5b959 and 1f9672d4ce and report 9 passed/EXIT=0 and 8 failed,1 passed/EXIT=1, and I re-established the ruff claim that carries no log among test_logs.",
+    "fit": "reckon/crew/queue_landing.py:79 takes the same lazy-import shape the module already uses at :56 and that reckon/crew/routing.py:2519 already uses for plan_review._digest, and the rewritten _REVISION comment at :22-23 now states only what fullmatch guarantees.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:44-50 reads the delivered head from a revision-leading entry and record.stamps, and :69-80 keys the review identity on the whole record, closing the two silent exits this delta targets.",
+    "reuse": "_review_stamp at reckon/crew/queue_landing.py:79-80 now extends the existing owner reckon/crew/plan_review.py:398 rather than re-implementing it, and a search over reckon/ for a manifest-entry revision parser found only reckon/crew/promotion_scope.py:1242, which returns raw entries and owns no parsing.",
+    "scope_discipline": "git diff --stat 5a2da3d86f..f044b5b959 names only the three declared paths and leaves the declared figures directory untouched."
+  },
+  "node": "review-of-a-refusal-is-judged-again-when-it-changes-f044b5b9593d",
+  "node:reviewed": "a-refusal-is-judged-again-when-it-changes",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a refused landing is judged again when the rule that refused it or the review record it read has moved; commits 6db9f41d86 and f044b5b959 repair the delivered-revision parser at reckon/crew/queue_landing.py:28-50 and make _review_stamp at :69-80 delegate to the existing digest owner, so both halves of the goal hold on the delta.\nVERDICT done_when: the done_when names tests/test_a_refusal_is_judged_again_when_it_changes.py for four behaviours, no added failures in importing files, and ruff on the changed paths; logs/after-suite-final.log records 9 passed and EXIT=0 at f044b5b959 under the manifest's tests: command, logs/baseline-arm.log records 8 failed, 1 passed and EXIT=1 against the dispatch-base module, logs/negative-control-final.log records 3 failed, 6 passed with the first arm among them, logs/negative-control-constant-review-stamp-final.log records exactly test_a_refusal_is_judged_again_when_only_the_review_record_moves failing, and logs/importers-head.log records 46 passed EXIT=0; I re-ran ruff check (All checks passed) and ruff format --check (2 files already formatted) on both changed source paths inside the reviewed worktree at f044b5b959.\nVERDICT write_paths: the manifest declares reckon/crew/queue_landing.py, tests/test_a_refusal_is_judged_again_when_it_changes.py, the evidence fragment and a docs/figures directory; git diff --stat 5a2da3d86f..f044b5b959 changes only the first three and the figures directory is untouched, so every landed path is inside the declared scope.\nVERDICT manifest: read the reviewed run's manifest.md; it reports status complete, commits 9cf17bccaf through f044b5b959, after_suite 0 failures EXIT=0 at f044b5b959, baseline_suite 8 failures EXIT=1 at 1f9672d4ce, a declared negative control of 3 failed/6 passed, and a second constant-stamp mutation of 1 failed/8 passed, and every figure agrees with the tail and EXIT line of the log it names.\nVERDICT diff: read both gained commits against 5a2da3d86f: 6db9f41d86 replaces the token regex with _REVISION and rewrites _delivered_revision to take the last token only when every token is a revision and otherwise the first token only if it is one, makes _review_stamp call reckon/crew/plan_review.py:398 _digest, and adds five test arms including the review-only arm and a unit arm for the parser; f044b5b959 restates the rule and the new gate figures in the evidence fragment; nothing else changed.\nCALL_SITES: reckon/crew/queue_admission.py:3045, reckon/crew/queue_admission.py:3058\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:44-50 reads the delivered head from a revision-leading entry and record.stamps, and :69-80 keys the review identity on the whole record, closing the two silent exits this delta targets.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/after-suite-final.log and logs/baseline-arm.log run the manifest's exact tests: command at f044b5b959 and 1f9672d4ce and report 9 passed/EXIT=0 and 8 failed,1 passed/EXIT=1, and I re-established the ruff claim that carries no log among test_logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 5a2da3d86f..f044b5b959 names only the three declared paths and leaves the declared figures directory untouched.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control-constant-review-stamp-final.log shows tests/test_a_refusal_is_judged_again_when_it_changes.py:191-226 reddens alone when _review_stamp returns a constant, and tests/test_a_refusal_is_judged_again_when_it_changes.py:333 fails at the baseline module for the old last-hex-token parser.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_landing.py:79 takes the same lazy-import shape the module already uses at :56 and that reckon/crew/routing.py:2519 already uses for plan_review._digest, and the rewritten _REVISION comment at :22-23 now states only what fullmatch guarantees.\nSCORE reuse: 19\nJUSTIFICATION reuse: _review_stamp at reckon/crew/queue_landing.py:79-80 now extends the existing owner reckon/crew/plan_review.py:398 rather than re-implementing it, and a search over reckon/ for a manifest-entry revision parser found only reckon/crew/promotion_scope.py:1242, which returns raw entries and owns no parsing.\nFINDING reckon/crew/queue_landing.py:461 non-blocking: an entry the parser refuses, such as one leading with prose or carrying the revision with trailing punctuation, makes _delivered_revision return \"\" and the loop continues at :462-463 with no admission_landing record and no obligation, which is the silent drop of a delivered run that section 33 was opened to remove; the shape is untested against real manifests and the node chose to guess nothing rather than record that it could not decide.",
+  "review_run_id": "r-20261028T162804240315-review-of-a-refusal-is-judged-again-when-it-changes-f044b5b9593d",
+  "reviewed_base_sha": "5a2da3d86f555e785386213aba6a1c24b72289ae",
+  "reviewed_head_sha": "f044b5b9593df6043aeb7238977dfa6fad618ce3",
+  "reviewed_run_id": "r-20261028T144422619701-a-refusal-is-judged-again-when-it-changes",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T17:21:54+00:00",
+  "total": 113
+}
