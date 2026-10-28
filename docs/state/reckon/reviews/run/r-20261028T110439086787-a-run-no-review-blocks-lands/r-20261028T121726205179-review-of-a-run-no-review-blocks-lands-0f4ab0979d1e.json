@@ -1,0 +1,85 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3045",
+    "reckon/crew/queue_landing.py:394",
+    "reckon/crew/recovery_review_acceptance.py:648",
+    "reckon/crew/recovery_review_dispatch.py:1144",
+    "reckon/crew/recovery.py:190"
+  ],
+  "completed_at": "2026-10-28T12:26:25.484Z",
+  "dispatched_at": "2026-10-28T12:18:33Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing: the queue plan's line naming the floor is corrected by the coordinator in the landing beat; the _judge_head_move docstring is noted for the next node that edits recovery_review_dispatch.py",
+      "recorded_at": "2026-10-28T12:27:31.122266+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing: the sweep path's exemption ordering mirrors land_once, whose ordering is guarded at tests/test_a_run_a_review_does_not_block_lands.py:440",
+      "recorded_at": "2026-10-28T12:27:35.898355+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing: the same arm's store-read assertion at line 465 carries the guard",
+      "recorded_at": "2026-10-28T12:27:39.370499+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "id": "f2cf97c04e8",
+      "line": 1135,
+      "severity": "non-blocking",
+      "text": "the _judge_head_move docstring still defines a clean review as 'complete, at or above the floor and raising no finding', and this delta deletes REVIEW_ACCEPTANCE_FLOOR outright, so a production reader is told a rule that no longer exists; docs/plans/a-queue-holds-the-whole-plan.html:69 also names REVIEW_ACCEPTANCE_FLOOR as the live acceptance rule, and neither citation was repointed when the symbol went"
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "id": "f466d4fcfa8",
+      "line": 341,
+      "severity": "non-blocking",
+      "text": "the exemption write in accept_clean_review was moved after the promotion so a refused landing records none, but no test drives accept_clean_review over a review carrying a non-blocking finding: reverting the move or deleting the block leaves the whole suite green, so the sweep half of this fix is unguarded while its twin in land_once is guarded at tests/test_a_run_a_review_does_not_block_lands.py:440"
+    },
+    {
+      "file": "tests/test_a_run_a_review_does_not_block_lands.py",
+      "id": "fd173c6e8c6",
+      "line": 461,
+      "severity": "non-blocking",
+      "text": "the obligations assertion compares the guard against the string this test itself returned from its monkeypatched _land, so both sides move together and the line holds whatever the pass does with it; the substantive guard in the same arm is line 465, where after == before is read from the store rather than supplied by the test"
+    }
+  ],
+  "justifications": {
+    "durability": "the two schema arms redden only under the completeness control (logs/completeness-control.log, 2 of 13) and the three finding-bearing arms redden under the any-finding control (logs/negative-control.log, 3 of 13), but the sweep's exemption move at reckon/crew/recovery_review_acceptance.py:341 has no test at all and one assertion is circular.",
+    "evidence": "logs/after-suite.log ends '13 passed in 7.24s' with EXIT=0 at 0f4ab0979d and logs/baseline-suite.log ends '8 failed, 0 passed' at 8cdcbdd7cc, but the done-when's ruff claim is recorded only as a sentence in the manifest with no log on disk, and both control logs ran at 2b49d6045e rather than the head.",
+    "fit": "the new helpers follow the module's one-docstring-per-function idiom and use review_module.REVIEW_MAX_SCORE rather than a literal, but the delta leaves reckon/crew/recovery_review_dispatch.py:1135 describing a floor it deleted.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:120 gates the landing on completeness and severity alone, which is what plan \u00a711 states and what the fragment at docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-run-no-review-blocks-lands.html describes.",
+    "reuse": "the delta calls repair.review_findings, review.declared_severity, record_landed_exemptions and the merge helper rather than restating them; the one added check, _scores_are_in_range at reckon/crew/recovery_review_acceptance.py:76, re-states the range comparison review.py:1082 makes inline at parse time, but that comparison has no callable owner and the addition reads the owner's shared constant.",
+    "scope_discipline": "every path in this delta is a reader of the retired constant and fails at head if left, yet six of them lie outside the node's declared write paths and were changed unilaterally rather than through a requested extension: reckon/crew/recovery.py:188 and four test files plus tests/test_review_acceptance_floor_tracks_the_dimension_count.py deleted."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261028T121726205179-review-of-a-run-no-review-blocks-lands-0f4ab0979d1e",
+  "reviewed_base_sha": "f0a73eadb80761f611f6fd8f3a4ece06a1a91891",
+  "reviewed_head_sha": "0f4ab0979d1e73135f85837a7e4b4f5fc53d514f",
+  "reviewed_run_id": "r-20261028T110439086787-a-run-no-review-blocks-lands",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T12:26:28.877876+00:00",
+  "total": 99,
+  "verdicts": {
+    "diff": "read commit by commit from f0a73eadb8 to 0f4ab0979d: 2dcd4bd4e4 removes the floor and moves the exemption write, 9108f0ecd1 merges the plan edit from main, 68263a9bcb re-drives two landing cases with a blocking finding, 2b49d6045e adds the schema range check, and 0f4ab0979d carries it into the evidence fragment.",
+    "done_when": "the six arms named by the done-when are tests in tests/test_a_run_a_review_does_not_block_lands.py, and the gate log logs/after-suite.log records 13 passed EXIT=0 at 0f4ab0979d against the same file at 8cdcbdd7cc reading 8 failed / 5 passed EXIT=1.",
+    "goal": "the goal is that a complete review with no blocking finding lands the run; reckon/crew/recovery_review_acceptance.py:108 now withholds on a blocking or unstated severity alone and never on a score, and reckon/crew/recovery_review_acceptance.py:397 in this delta's parent commit records the non-blocking findings after the landing succeeds.",
+    "manifest": "read; it reports status complete, the gate at 13 passed EXIT=0 at 0f4ab0979d, the base arm at 8 failed, two controls at 3 failed and 2 failed, the importer population at 161 head against 148 base, and the live-store arm at 53 accepted / 2 blocking / 1 unreadable over 56 runs.",
+    "write_paths": "the delta's commits touch reckon/crew/recovery_review_acceptance.py, reckon/crew/queue_landing.py, the gate test and the evidence fragment, all declared; they also retire the floor's other readers in reckon/crew/recovery.py and four test files plus one deletion, which are outside the fence and are declared afterwards under a scope_extension key rather than granted."
+  }
+}
