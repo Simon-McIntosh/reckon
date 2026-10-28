@@ -32,7 +32,6 @@ def _edit(path, seconds_ago: float) -> None:
     os.utime(path, (stamp, stamp))
 
 
-LANES: list[dict] = []
 SUBJECTS: list[dict] = []
 
 
@@ -40,20 +39,12 @@ def _launch(monkeypatch) -> list[str]:
     """Stand in for the launcher, so a pass dispatches without spawning."""
     dispatch = importlib.import_module("reckon.crew.dispatch")
     launched: list[str] = []
-    lanes = LANES
     subjects = SUBJECTS
 
     def dispatch_instead(**kwargs):
         launched.append(str(kwargs.get("session") or ""))
-        lanes.append(
-            {
-                "local": kwargs.get("local"),
-                "backend": kwargs.get("backend_override"),
-            }
-        )
         return {"run_id": "composed-review"}
 
-    lanes.clear()
     subjects.clear()
 
     composed_subject = recovery.plan_review_subject
