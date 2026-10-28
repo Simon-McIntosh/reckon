@@ -2057,17 +2057,17 @@ def sweep(
     # the findings a review marked as not changing the plan, so the
     # coordinator is woken only for the ones that would.
     plan_reviews: dict[str, Any] = {}
-    if not dry_run:
-        try:
-            plan_reviews = plan_review.compose_owed_plan_reviews(
-                project,
-                session=session or "",
-                config=config,
-                launcher=launch,
-                now_seconds=_now(now).timestamp(),
-            )
-        except (CrewError, OSError) as exc:
-            plan_reviews = {"error": str(exc)}
+    try:
+        plan_reviews = plan_review.compose_owed_plan_reviews(
+            project,
+            session=session or "",
+            config=config,
+            launcher=launch,
+            now_seconds=_now(now).timestamp(),
+            dry_run=dry_run,
+        )
+    except (CrewError, OSError) as exc:
+        plan_reviews = {"error": str(exc)}
 
     report = {
         "project": project,
@@ -2083,7 +2083,11 @@ def sweep(
     # holds what happened, and only sweeps that judged something write to it —
     # an operator reading it wants recoveries and the refusals to recover, not a
     # heartbeat from every tick of every follower.
-    if considered or _review_outcome_counts(reviews)["dispatched"]:
+    if (
+        considered
+        or _review_outcome_counts(reviews)["dispatched"]
+        or any(row.get("dispatched") for row in plan_reviews.get("composed") or ())
+    ):
         path = recovery_log_path(project)
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("a", encoding="utf-8") as handle:

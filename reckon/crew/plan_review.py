@@ -2302,11 +2302,29 @@ def note_would_not_change_findings(
     would drop the one before it. Returns the notes written, naming the record
     each was written to.
     """
+    return _note_records(
+        [
+            record
+            for record in list_plan_reviews(project, base_dir=base_dir)
+            if record.get("plan_slug") == plan_slug
+        ],
+        base_dir=base_dir,
+        by=by,
+        when=when,
+    )
+
+
+def _note_records(
+    records: Iterable[Mapping[str, Any]],
+    *,
+    base_dir: str | Path | None,
+    by: str,
+    when: str | None,
+) -> list[dict[str, str]]:
+    """Write the notes :func:`note_would_not_change_findings` resolves."""
     noted: list[dict[str, str]] = []
-    for stored in list_plan_reviews(project, base_dir=base_dir):
-        if stored.get("plan_slug") != plan_slug:
-            continue
-        record = stored
+    for stored in records:
+        record: Mapping[str, Any] = stored
         for finding in list(record.get("findings") or []):
             if not isinstance(finding, Mapping):
                 continue
@@ -2432,10 +2450,14 @@ def compose_owed_plan_reviews(
     if not plans:
         return report
     if not dry_run:
-        for plan_slug, _path in plans:
-            report["notes"].extend(
-                note_would_not_change_findings(project, plan_slug, base_dir=base_dir)
-            )
+        # One walk of the store for every plan, not one walk per plan: this
+        # pass runs on the sweep's cadence and a project carries dozens of them.
+        report["notes"] = _note_records(
+            list_plan_reviews(project, base_dir=base_dir),
+            base_dir=base_dir,
+            by=PLAN_REVIEW_REFLEX,
+            when=None,
+        )
     if not owner:
         # A plan review is dispatched under a session, because its lane and its
         # member belong to the coordinator that will read its findings. A pass
