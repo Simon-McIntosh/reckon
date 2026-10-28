@@ -2423,11 +2423,18 @@ def _plan_review_owed(
     dispatch of the same section and this request therefore reach the same
     verdict on the same plan.
 
-    A request whose contract was never recorded, and a project whose stored
-    reviews cannot be read, hold nothing: neither is a verdict that the text
-    moved under the request. Only the enforced mode holds, exactly as the
-    dispatch gate does; under the shipped report-only default the launch
-    proceeds.
+    Two states carry no comparison of their own, and both are answered by the
+    dispatch gate rather than by holding nothing. A pointer with no contract
+    current for the section it now names — every request written by the queue
+    writer that records none, and every request whose section ``crew queue
+    edit`` changed — has no second side of a digest comparison. A plan whose
+    stored reviews cover no unit the request reads — an unreviewed plan, or one
+    whose every review is incomplete — has no reviewed text to compare against
+    and is owed the review the gate asks for. Each is held exactly when the
+    gate holds it, so the two never disagree.
+
+    Only the enforced mode holds, exactly as the dispatch gate does; under the
+    shipped report-only default the launch proceeds.
     """
     from reckon import _plan_html as plan_html
     from reckon import flight
@@ -2462,10 +2469,17 @@ def _plan_review_owed(
         records, uncovered, changes = plan_review.review_coverage(
             project, node.plan, plan=path
         )
-        if not records:
-            # No stored review of the plan at all is the dispatch gate's
-            # question, and it answered it when the request was queued.
-            return None
+        units = plan_review_units(node.section)
+        if not any(unit not in uncovered for unit in units):
+            # No stored review covers a single unit this request reads — the
+            # plan is unreviewed, or every review is incomplete — so there is no
+            # reviewed text to compare against and the request is owed the
+            # review the dispatch gate asks for. Answering here with the gate's
+            # own verdict is what keeps a queued request and a fresh dispatch
+            # from disagreeing.
+            return _dispatch_gate_owed(
+                node, project=project, repo=repo, options=options
+            )
         digests = plan_review._section_digests(path)
         moved: list[str] = []
         unit = str(contract.get("section") or "")

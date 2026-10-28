@@ -84,7 +84,7 @@ def _subject(path, run_id: str):
     }
 
 
-def _store_review(path, *, rubric: str, run_id: str, items) -> dict:
+def _store_review(path, *, rubric: str, run_id: str, items, status=None) -> dict:
     """Compose and store one review of the plan as it stands now."""
     fields = recovery._review_dispatch_fields(_subject(path, run_id), rubric=rubric)
     sidecar = json.loads(Path(fields["sidecar"]).read_text())
@@ -95,13 +95,19 @@ def _store_review(path, *, rubric: str, run_id: str, items) -> dict:
         "responses": {},
         "review_run_id": run_id,
     }
+    if status is not None:
+        record["status"] = status
     plan_review.store_plan_review(record)
     return record
 
 
-def _store_content(path, run_id: str) -> dict:
+def _store_content(path, run_id: str, *, status=None) -> dict:
     return _store_review(
-        path, rubric="content", run_id=run_id, items=review.PLAN_REVIEW_ITEMS
+        path,
+        rubric="content",
+        run_id=run_id,
+        items=review.PLAN_REVIEW_ITEMS,
+        status=status,
     )
 
 
@@ -328,6 +334,29 @@ def test_an_unreadable_snapshot_holds_the_node(two_section_plan):
         )
         is True
     )
+
+
+def test_a_plan_with_no_stored_review_holds_as_the_gate_does(two_section_plan):
+    """With no reviewed text to compare against, the gate's own verdict stands."""
+    _, repo, _path = two_section_plan
+    pointer = _pointer(repo, "s2")
+    detail = _owed(pointer)
+    assert detail is not None
+    assert _fresh_dispatch(repo, "s2") is not None
+    _queued_and_fresh_agree(repo, pointer)
+
+
+def test_a_plan_whose_only_review_is_incomplete_holds_as_the_gate_does(
+    two_section_plan,
+):
+    """An incomplete review covers nothing, so the request is owed the gate's hold."""
+    _, repo, path = two_section_plan
+    _store_content(path, "review-content", status=plan_review.INCOMPLETE_STATUS)
+    pointer = _pointer(repo, "s2")
+    detail = _owed(pointer)
+    assert detail is not None
+    assert _fresh_dispatch(repo, "s2") is not None
+    _queued_and_fresh_agree(repo, pointer)
 
 
 def test_the_units_a_request_reads_are_defined_once():
