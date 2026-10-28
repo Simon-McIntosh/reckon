@@ -30,27 +30,35 @@
   operator touching the store.</p>
 
   <p><strong>The delivered head is parsed.</strong>
-  <code>_delivered_revision</code> reads the last entry as the last token that
-  spells a hex revision (<code>_REVISION_TOKEN</code>, seven to forty
-  characters, not part of a longer word), so
+  <code>_delivered_revision</code> treats an entry whose every whitespace token
+  is a hex revision (seven to forty characters) as a list and takes its last
+  token, and any other entry as a revision leading its subject and takes its
+  first token only while that token really is a revision. So
   <code>82f3a3bdc docs(evidence): record the section-wait repair</code> and
-  <code>fe3d85589 be1c86dd5 229f3fcde</code> each reach the worktree head
-  rather than being compared whole.</p>
+  <code>fe3d85589 be1c86dd5 229f3fcde</code> each reach the worktree head,
+  while a subject word that happens to spell hexadecimal
+  (<code>deadbeef</code>, <code>defaced1</code>) and an entry leading with
+  prose are never taken for the commit: the answer is empty and the run is
+  judged on nothing rather than guessed.</p>
 
   <p><strong>Measure.</strong> The gate command
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
   tests/test_a_refusal_is_judged_again_when_it_changes.py</code> reports
-  <code>5 passed</code>, <code>EXIT=0</code>. Against the base module the same
-  five tests report <code>4 failed, 1 passed</code>, <code>EXIT=1</code>, the
-  one pass being the unchanged-refusal arm, which is behaviour the old pass
-  already held. The declared negative control — restore the skip on any attempt
-  at the same head — reports <code>2 failed, 3 passed</code>,
-  <code>EXIT=1</code>, and the first arm
+  <code>9 passed</code>, <code>EXIT=0</code>. With the same nine tests run
+  against the module at the dispatch base the run reports
+  <code>8 failed, 1 passed</code>, <code>EXIT=1</code>, the one pass being the
+  unchanged-refusal arm, which is behaviour the old pass already held. The
+  declared negative control — restore the skip on any attempt at the same head
+  — reports <code>3 failed, 6 passed</code>, <code>EXIT=1</code>, and the first
+  arm
   (<code>test_a_refusal_under_an_old_rule_is_judged_again_when_the_code_moves</code>)
-  is among the failures. The three test files that already import
-  <code>reckon.crew.queue_landing</code> report <code>37 passed</code> at the
-  base module and <code>37 passed</code> plus the new file's five at head, so
-  the change adds no failure outside its own gate.</p>
+  is among the failures. A second mutation, <code>_review_stamp</code>
+  returning a constant, fails exactly one arm —
+  <code>test_a_refusal_is_judged_again_when_only_the_review_record_moves</code>
+  — which is the arm that exists to prove a changed review record alone
+  releases a refusal. The three test files that already import
+  <code>reckon.crew.queue_landing</code> pass at head, so the change adds no
+  failure outside its own gate.</p>
 
   <p><strong>Scope.</strong> One behaviour in one module: the skip, the stamps
   it compares, and the manifest entry it parses. A conflict refusal keeps its
