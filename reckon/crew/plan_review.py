@@ -18,7 +18,10 @@ the server-managed metadata scalars — the plan's version, modified stamp,
 implementation fraction, status, ROI, effort, owner, sprint, tags and archive
 flag — together with the ``commits`` the landing beat records — and digests the
 authored content: the sections' prose and the document
-unit's decisions, gates, dependencies and other authored state. Comments and
+unit's decisions, gates, summary and other authored state. A plan's dependency
+wiring and effort figures are ordered out beside them (:data:`PLAN_ORDERING_KEYS`)
+because they say when work may run and how long it should take rather than what
+a node builds, so re-ordering a plan never re-opens a review of it. Comments and
 followups are normalised out beside the metadata scalars, both the authored and
 the promotion's landing ones, because they record work done and next steps
 rather than the design a review reads; the section declarations are normalised
@@ -137,6 +140,52 @@ PLAN_DERIVED_SCALARS: tuple[str, ...] = (
     "effort_calibrated",
     "compatibility_warnings",
     "impl_source",
+)
+
+# ── The ordering and bookkeeping exclusions ─────────────────────────────────
+# A plan's dependency wiring says when its work may run and its effort figures
+# say how long that work is expected to take. Neither is the contract a node
+# builds against, so neither may earn a review: left in the document unit's
+# digest, a coordinator re-ordering a queue re-opens a review of text nobody
+# edited, and the plan holds its own build while a writer re-reads the
+# decisions and gates it already reviewed.
+#
+#   depends_on, blocks, after, informs - the plan-level dependency lists, each
+#                           a ``<meta name="plan-*">`` the roadmap resolves. A
+#                           queue edit rewrites them and nothing a node reads
+#                           changes.
+#   section_depends_on    - the ``plan-section-depends-on`` mapping, read from
+#                           the head meta by ``reckon._schema.section_depends_on``
+#                           rather than by the state parser, so it reaches this
+#                           digest only when a caller hands in an
+#                           already-parsed state that carries it (a roadmap row
+#                           does).
+#   effort                - the legacy plan-level effort letter,
+#                           ``effort_hours`` already being normalised out; the
+#                           letter is the same figure stated another way.
+#   wall_clock_hours      - the wall-clock estimate beside the worker-hour one.
+#
+# ``effort_calibrated`` and ``compatibility_warnings`` are excluded beside them
+# already, both derived from the effort figure that moved.
+PLAN_ORDERING_KEYS: tuple[str, ...] = (
+    "depends_on",
+    "blocks",
+    "after",
+    "informs",
+    "section_depends_on",
+    "effort",
+    "wall_clock_hours",
+)
+
+# A section record's own bookkeeping: the lifecycle declaration (handled with
+# the declarations map below), its effort estimate, and the dispatch attempt
+# count the read API derives from runs. All three move on a queue edit, a
+# landing or a dispatch rather than on an authored word, so a section is
+# digested by its identity, its capability and its links instead.
+_SECTION_BOOKKEEPING_FIELDS: tuple[str, ...] = (
+    "status",
+    "effort_hours",
+    "attempts",
 )
 
 # Content and design reviews share their rubric vocabulary with the report
@@ -310,8 +359,8 @@ def _without_comments_and_followups(state: Mapping[str, Any]) -> Mapping[str, An
     }
 
 
-def _without_section_declarations(state: Mapping[str, Any]) -> Mapping[str, Any]:
-    """Return parsed state with each section's lifecycle declaration removed.
+def _without_section_bookkeeping(state: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Return parsed state with each section's bookkeeping removed.
 
     A section carries a declaration (``deferred``, ``implementable``, ``done``)
     that a landing work-beat both reads and writes: it sets the declaration to
@@ -321,8 +370,13 @@ def _without_section_declarations(state: Mapping[str, Any]) -> Mapping[str, Any]
     already normalised out, and it is not part of the design a review reads. Left
     in, it moves the fingerprint on a landing collapse even after the card is
     excluded, so it is dropped — from the ``section_declarations`` map and from
-    each ``sections`` record's ``status`` — and the section is digested by its
-    identity and its structural record instead.
+    each ``sections`` record's own bookkeeping fields
+    (:data:`_SECTION_BOOKKEEPING_FIELDS`: its status, its effort estimate and
+    its dispatch attempt count) — and the section is digested by its identity
+    and its structural record instead. The per-section effort and attempt count
+    move on a queue edit and on a dispatch rather than on an authored word, so
+    left in they would earn a review for a figure the plan was merely being
+    re-ordered by.
 
     A state whose keys are the wrong shape is returned with only what can be
     recognised removed: the normalisation never hides content it cannot classify.
@@ -333,7 +387,7 @@ def _without_section_declarations(state: Mapping[str, Any]) -> Mapping[str, Any]
     sections = cleaned.get("sections")
     if isinstance(sections, list):
         cleaned["sections"] = [
-            {k: v for k, v in record.items() if k != "status"}
+            {k: v for k, v in record.items() if k not in _SECTION_BOOKKEEPING_FIELDS}
             if isinstance(record, Mapping)
             else record
             for record in sections
@@ -347,13 +401,17 @@ def _digest(payload: Any) -> str:
 
 
 def _digest_state(plan, *, keep_declarations=False):
-    excluded = frozenset(PLAN_METADATA_SCALARS) | frozenset(PLAN_DERIVED_SCALARS)
+    excluded = (
+        frozenset(PLAN_METADATA_SCALARS)
+        | frozenset(PLAN_DERIVED_SCALARS)
+        | frozenset(PLAN_ORDERING_KEYS)
+    )
     state = {
         str(key): value
         for key, value in _without_comments_and_followups(_as_state(plan)).items()
         if key not in excluded
     }
-    return state if keep_declarations else _without_section_declarations(state)
+    return state if keep_declarations else _without_section_bookkeeping(state)
 
 
 def _prose_texts(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
@@ -391,8 +449,10 @@ def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
     Section digests let a review continue covering outstanding authored work
     after another section lands. Metadata and lifecycle declarations are
     normalised out, and so are comments and followups — the authored ones and
-    the landing ones a promotion writes alike. Decisions, gates, dependencies
-    and the other remaining authored state belong to the document unit.
+    the landing ones a promotion writes alike. Decisions, gates, the summary
+    and the other remaining authored state belong to the document unit; a
+    plan's dependency wiring and effort figures do not, so a queue edit earns
+    no review.
     """
     return _digest(_section_digests(plan))
 
@@ -859,8 +919,8 @@ def review_coverage(
     threshold. A review without a snapshot has only its stored digests, so
     neither applies to it. A unit absent from the review is never covered, a
     section the review's snapshot did not declare implementable counts as new,
-    and the document unit, whose digest carries decisions, gates and
-    dependencies, is covered only by an exact match. A stored review marked
+    and the document unit, whose digest carries decisions, gates and the
+    summary, is covered only by an exact match. A stored review marked
     :data:`INCOMPLETE_STATUS` covers nothing at all, so every unit it would
     have covered is left uncovered and the coordinator composes the review the
     plan is actually owed rather than building on a partial one.
