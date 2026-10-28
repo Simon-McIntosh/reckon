@@ -400,18 +400,46 @@ def _digest(payload: Any) -> str:
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
-def _digest_state(plan, *, keep_declarations=False):
-    excluded = (
-        frozenset(PLAN_METADATA_SCALARS)
-        | frozenset(PLAN_DERIVED_SCALARS)
-        | frozenset(PLAN_ORDERING_KEYS)
-    )
+def _without_section_status(state: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Return parsed state with only each section's lifecycle status removed.
+
+    This is the normalisation the document unit was digested under before the
+    ordering keys left it, and it is kept for one purpose only: a stored review
+    that carries no snapshot was keyed to the digest that normalisation produced,
+    and comparing it against the present digest alone would orphan a review of
+    bytes nobody has edited. Coverage accepts the digest either normalisation
+    gives the present content, so a review stored under the previous definition
+    keeps covering the text it read, exactly as the legacy whole-document form
+    beside it already does.
+    """
+    cleaned = {
+        key: value for key, value in state.items() if key != "section_declarations"
+    }
+    sections = cleaned.get("sections")
+    if isinstance(sections, list):
+        cleaned["sections"] = [
+            {k: v for k, v in record.items() if k != "status"}
+            if isinstance(record, Mapping)
+            else record
+            for record in sections
+        ]
+    return cleaned
+
+
+def _digest_state(plan, *, keep_declarations=False, previous_definition=False):
+    excluded = frozenset(PLAN_METADATA_SCALARS) | frozenset(PLAN_DERIVED_SCALARS)
+    if not previous_definition:
+        excluded |= frozenset(PLAN_ORDERING_KEYS)
     state = {
         str(key): value
         for key, value in _without_comments_and_followups(_as_state(plan)).items()
         if key not in excluded
     }
-    return state if keep_declarations else _without_section_bookkeeping(state)
+    if keep_declarations:
+        return state
+    if previous_definition:
+        return _without_section_status(state)
+    return _without_section_bookkeeping(state)
 
 
 def _prose_texts(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
@@ -434,13 +462,30 @@ def _prose_texts(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
     }
 
 
-def _section_digests(plan: Mapping[str, Any] | str | Path) -> dict[str, str]:
-    """Digest authored sections and the remaining document independently."""
+def _section_digests(
+    plan: Mapping[str, Any] | str | Path, *, previous_definition: bool = False
+) -> dict[str, str]:
+    """Digest authored sections and the remaining document independently.
+
+    ``previous_definition`` digests the document unit the way it was digested
+    before the ordering keys left it, which coverage accepts beside the present
+    digest so a stored review without a snapshot is not orphaned by that change.
+    Section digests are prose alone and read the same either way.
+    """
     payloads = {
         identity: {"prose": prose} for identity, prose in _prose_texts(plan).items()
     }
-    payloads[DOCUMENT_UNIT]["state"] = _digest_state(plan)
+    payloads[DOCUMENT_UNIT]["state"] = _digest_state(
+        plan, previous_definition=previous_definition
+    )
     return {identity: _digest(payload) for identity, payload in payloads.items()}
+
+
+def _unit_digest_forms(
+    plan: Mapping[str, Any] | str | Path,
+) -> tuple[dict[str, str], dict[str, str]]:
+    """The per-unit digests under the present and the previous definition."""
+    return _section_digests(plan), _section_digests(plan, previous_definition=True)
 
 
 def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
@@ -775,7 +820,9 @@ def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str]:
     stored under it keeps covering the units it read after another section
     lands. The whole-document form digests the remaining document as one unit,
     so a review stored before unit digests existed still matches while the
-    document is unchanged.
+    document is unchanged. Each of the two is formed under the present
+    definition and under the previous one, so a review stored before the
+    ordering keys left the document unit still matches the content it read.
 
     Both drop what a landing beat writes on its own: the section's lifecycle
     declaration, and the interior of a landed card, whose body is the section's
@@ -786,21 +833,23 @@ def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str]:
     document = _as_document(plan)
     content = document if document is not None else plan
     forms = [plan_fingerprint(content)]
-    payload = {"state": _digest_state(content)}
+    payloads = [{"state": _digest_state(content)}]
     if document is not None:
         # Drop the interior of a landed card: its body is the section's own
         # landed form, so counting it would re-arm the fingerprint on the
         # landing beat that wrote it. A document with no landed card carries
         # no card interior and is digested whole.
         keep_cards = not bool(landed_section_ids(document))
-        payload["prose"] = " ".join(
-            prose
-            for _, prose in _plan_html.section_prose(
+        prose = " ".join(
+            part
+            for _, part in _plan_html.section_prose(
                 document, keep_landed_cards=keep_cards
             )
-            if prose
+            if part
         )
-    forms.append(_digest(payload))
+        for payload in payloads:
+            payload["prose"] = prose
+    forms.extend(_digest(payload) for payload in payloads)
     return tuple(forms)
 
 
@@ -972,7 +1021,7 @@ def review_coverage(
         }
         changes = dict.fromkeys(became_implementable)
         return [newest], became_implementable, changes
-    digests = _section_digests(content)
+    digests, previous_digests = _unit_digest_forms(content)
     present_prose = _prose_texts(content)
     covered: set[str] = set()
     contributing: list[dict[str, Any]] = []
@@ -1009,10 +1058,16 @@ def review_coverage(
             if identity not in digests:
                 continue
             if identity == DOCUMENT_UNIT:
-                # The document unit carries decisions, gates and dependencies
-                # in its digest, which are material whatever their size, so an
-                # exact digest match is its only cover.
-                if record_digests.get(identity) == digests[identity]:
+                # The document unit carries decisions, gates and the summary in
+                # its digest, which are material whatever their size, so an
+                # exact digest match is its only cover. A review stored under
+                # the previous definition matches on that definition's digest
+                # of the present content, so the definition moving orphans no
+                # review of text nobody has edited.
+                if record_digests.get(identity) in {
+                    digests[identity],
+                    previous_digests[identity],
+                }:
                     covered.add(identity)
                     matched = True
                 continue
@@ -2275,22 +2330,22 @@ def reviews_for_unit_burst(
         text = location[1].read_text(encoding="utf-8", errors="replace")
     except OSError:
         return []
-    digests = _section_digests(text)
-    wanted = digests.get(unit)
-    if wanted is None:
+    digests, previous_digests = _unit_digest_forms(text)
+    if unit not in digests:
         return []
-    whole = _digest(digests)
+    wanted = {digests[unit], previous_digests[unit]}
+    whole = {_digest(digests), _digest(previous_digests)}
     hits: list[dict[str, Any]] = []
     for record in _burst_records(project, base_dir=base_dir, records=records):
         if record.get("plan_slug") != plan_slug:
             continue
         if not counts_for_rubric(record, rubric):
             continue
-        if record.get("plan_fingerprint") == whole:
+        if record.get("plan_fingerprint") in whole:
             hits.append(record)
             continue
         per_unit = record.get("section_digests")
-        if isinstance(per_unit, Mapping) and per_unit.get(unit) == wanted:
+        if isinstance(per_unit, Mapping) and per_unit.get(unit) in wanted:
             hits.append(record)
     # Order by the stamp the store writes. ``store_plan_review`` stamps
     # ``timestamp`` on every record; ``dispatched_at`` is carried only by a
