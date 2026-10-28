@@ -1,0 +1,99 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T05:29:43.047Z",
+  "dispatched_at": "2026-10-28T05:25:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:46",
+      "id": "reasoning-1",
+      "reason": "as written the node builds a mechanism whose two halves cannot both hold, and it would satisfy a literal reading of \"never takes index.lock\" while tripping the post-commit index-versus-worktree check the same module already runs.",
+      "text": "\u00a72 says the landing writes go through a temporary `GIT_INDEX_FILE`, `git commit-tree` and `git update-ref`, and that \"the main checkout's `.git/index.lock` is never taken\", while the same paragraph requires the main checkout's working tree to be brought up to the published commit for the landed paths; a working tree cannot be advanced to a commit while its index still describes the old blobs, so the index must be rewritten (taking `index.lock`) or the checkout is left with the landed paths reading dirty against HEAD \u2014 which `reckon/crew/promotion_scope.py:1999` (`_landing_path_mismatches`) and `_staged_reversals` at `reckon/crew/promotion_scope.py:1960` report as a failed landing and which the next promotion's staging then picks up",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:46",
+      "id": "reasoning-2",
+      "reason": "without the caller named, a node can build a parallel implementation of machinery that exists, leaving the `git add` that takes the shared lock still in the promotion path, so the defect \u00a71 records would survive the node's gate.",
+      "text": "\u00a72 names no caller and no existing module, yet `reckon/crew/merge.py:614` (`land_merge`) already builds the landing commit with `merge-tree`/`commit-tree` and moves the branch with `merge --ff-only`, retrying a held `index.lock` through `_run_waiting_out_a_held_index_lock`, and the path promotion actually uses is `reckon/crew/promotion_scope.py:2234` (`_stage_landing_writes`, a `git add` in the checkout) followed by `_commit_landing_writes`; the plan therefore does not say whether \u00a72 rewrites that staging function, routes promotion through the existing `land_merge`, or builds a third landing path",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:53",
+      "id": "done_when-1",
+      "reason": "the node cannot tell which repository to lock, and the plausible reading produces a test that stalls the fleet, which a reviewer would then have to send back.",
+      "text": "\u00a72's done-when holds `.git/index.lock` open \"in the shared checkout\" while the scenario runs \"four promotions at once against a temporary repository\" and asserts the shared checkout's tracked files match HEAD afterwards; read as the real main checkout, the test writes lock state outside the repository under test and blocks every peer session for its duration, contrary to the repository rule that a test must not read or write state outside the repository under test; read as the temporary repository, the words are wrong; the plan does not settle which",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:67",
+      "id": "wiring-1",
+      "reason": "with no declared wait the queue can admit \u00a74 alongside or before its inputs, and a \u00a74 measurement taken against unlanded code reports the pre-fix timings as the after-fix result.",
+      "text": "\u00a74's done-when measures promotions that run the code \u00a72 and \u00a73 land, and the open followup states \"\u00a74 measures both\", but the plan declares no `plan-section-depends-on` (the house convention, used e.g. in `docs/plans/a-finished-plan-closes.html`), leaving `data-links=\"\"` on all three sections",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:70",
+      "id": "evidence_paths-1",
+      "reason": "the node either writes outside its landing scope or records nothing, and either way the measurement \u00a74 exists to produce lands where the next reader of this plan will not look.",
+      "text": "\u00a74's done-when requires the timings and the git log to be \"recorded in the RCA\", i.e. `docs/research/monitor-storage-load-rca.html`, a document this plan does not land against; the execution record for a section belongs under `docs/evidence/archive/<slug>-landed.html` per the repository's lifecycle convention, and a worker is instructed to return outcome evidence rather than write another document",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:35",
+      "id": "anchors_resolve-1",
+      "reason": "the mechanism, its controls and its measures are unaffected by the frequency; only \u00a71's sentence needs to cite the RCA's single rollback instead of an uncited handoff.",
+      "text": "\u00a71 says \"The handoff from the monitor session records three promotions failing their landing step the same way earlier that day\", but no handoff is cited and the linked RCA `\u00a73` (`docs/research/monitor-storage-load-rca.html`, \"Root causes\") records the opposite count: \"three peers promoting at once; one promotion rolled back on `.git/index.lock`\"",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "b0e1f74e9a16b9b239598a95bdb62fd16bee2c3f",
+  "plan_fingerprint": "ded303a21b68a912d3e00df0d117cb07bb7e136af3f560937e472192953f6c9a",
+  "plan_slug": "a-landing-never-waits-on-a-shared-index",
+  "plan_version": 0,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "finding": "anchors_resolve-1",
+      "reason": "the mechanism, its controls and its measures are unaffected by the frequency; only \u00a71's sentence needs to cite the RCA's single rollback instead of an uncited handoff.",
+      "when": "2026-10-28T05:32:56.750403+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "noted",
+      "by": "plan-review-reflex",
+      "reason": "the mechanism, its controls and its measures are unaffected by the frequency; only \u00a71's sentence needs to cite the RCA's single rollback instead of an uncited handoff.",
+      "when": "2026-10-28T05:32:56.750403+00:00"
+    }
+  },
+  "review_run_id": "r-20261028T052151340526-plan-review-of-a-landing-never-waits-on-a-shared-index",
+  "reviewed_blob_sha": "ef2179ff9f721fb45209055a865613dd5ea1607a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \"the handoff from the monitor session\" names no file and its claim of three rollbacks contradicts the cited RCA, which records one; the RCA `\u00a73` anchor and the four cited functions all resolve.",
+    "done_when": "a finding \u2014 \u00a72's negative control holds `.git/index.lock` in \"the shared checkout\" while the scenario runs \"against a temporary repository\", so the measure does not say which repository's lock the test holds.",
+    "evidence_paths": "a finding \u2014 \u00a74's done-when sends the timings into `monitor-storage-load-rca`, a research document this plan does not land against, rather than a durable evidence path it owns.",
+    "naming": "pass \u2014 the plan carries no plan labels, ticket numbers or version tags into code, and the mechanisms it names (`GIT_INDEX_FILE`, `commit-tree`, `update-ref`) are described by what they do.",
+    "reasoning": "a finding \u2014 \u00a72 proposes a landing mechanism that already exists in `reckon/crew/merge.py` without naming it, and states the shared index is never taken while also requiring the main checkout's working tree to be brought up to the published commit, which cannot be done without writing that index.",
+    "single_goal": "pass \u2014 \u00a72, \u00a73 and \u00a74 each state one deliverable, and \u00a73's three instances (ledger loader, boundary check, PNG-twin check) are measured by the one count its done-when asserts.",
+    "wiring": "a finding \u2014 \u00a74 measures the outcome of \u00a72 and \u00a73 and the followup names that ordering, but the plan declares no `plan-section-depends-on`, so the queue cannot order \u00a74 behind its inputs."
+  },
+  "section_digests": {
+    "_document": "1227e087453bec4c2bf5d6676837387d4dadb0d4dbd44c0414c34e3a669dbf13",
+    "s1": "704da057b1e86cedb79ae983e9f7504afd9303eac87bb25b9d4aa38717913746",
+    "s2": "a72539aa82cfb965c54c35d223b2606608ed39bc8269f82d2e7427267b4636af",
+    "s3": "58b92de94f7a15cbe2a66cb37ebc307ca1d8306003ca55ca38ac6fd12e6266c8",
+    "s4": "6402f597e209f71fb2190d790f4e5f56f20634a42909cbf480470984c488e41a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T05:32:38.440968+00:00"
+}
