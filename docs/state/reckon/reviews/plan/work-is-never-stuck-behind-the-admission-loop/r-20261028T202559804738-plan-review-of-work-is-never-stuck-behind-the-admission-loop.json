@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T20:38:36.768Z",
+  "dispatched_at": "2026-10-28T20:28:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:147",
+      "id": "done_when-1",
+      "reason": "an arm that passes on unfixed code measures nothing, and the node would close on a gate that never failed.",
+      "text": "\u00a79's first arm asserts that a first dispatch of a waiting node answers with phase `awaiting-upstream` and its waits, which the base revision already does (a) `test_a_queued_request_waits_on_its_dependencies.py::test_a_dispatch_holds_the_request_it_queues_for_upstream` asserts exactly that, and (b) the message the plan blames is produced only when a pointer already exists (`dispatch.py:404` `_answer_existing_node_run`, reached at `dispatch.py:1987` under `existing is not None`), so \"routes the first dispatch through `_answer_existing_node_run`\" is a control with nothing to disable",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:144",
+      "id": "reasoning-1",
+      "reason": "the repair would be aimed at a function the first dispatch never reaches \u2014 either the reported duplicate reading has a different cause (the coordinator's own second call, or the held `detail` wording) or the defect does not exist, and a node briefed on this mechanism would change `_answer_existing_node_run` and leave the observed wording untouched.",
+      "text": "the section says \"The answer comes from `_answer_existing_node_run`, which a first dispatch reaches after its own `_queue_validated_waits` write\", but the first-dispatch path (`reckon/crew/dispatch.py:1917` `_queue_validated_waits`, then `1921-1985` `if waiting: raise held` with `detail: \"waiting on \u2026\"`) never reaches `dispatch.py:1987`, whose branch requires `existing is not None and (existing_phase == QUEUED_PHASE or is_local)`; the message the plan quotes therefore comes from a re-dispatch of a node whose pointer already exists, not from a first dispatch",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:22",
+      "id": "wiring-1",
+      "reason": "s7 can be released as soon as s5 lands and would then implement a stall verdict that reads a duration field no landed section writes, which is exactly the \"awaiting-upstream\" wait the declaration exists to enforce.",
+      "text": "`plan-section-depends-on` gives s7 only `#s5` and `a-review-gate-judges-what-it-covers#s10`, but \u00a77 (`plan.html:122`) records \"the stage that held it and that stage's last duration\", and those per-stage durations and their verdict rows are introduced by \u00a72 (release seconds) and \u00a73 (`started_at`, `ended_at`, per-stage seconds, `plan.html:76`)",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "dd39342377c85e37cf1c32fcac4b9faa467f4ef9",
+  "plan_fingerprint": "3e5dba6c795bc3f02df99a321a551e51ed791d100c7b0f141e6c98b0a8f5646f",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T202559804738-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "7a676e6e6243976ab372797037035deab1189e0f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `queue_admission.py`, `queue_landing.py`, `queue_edit.py`, `promotion`-family modules, `routing.py`, `plan_review.py`, `recovery_wait.py`, `runs.py`, `dispatch.py`, `fleet_supervisor.py` and `reckon/crew_run_commands.py` all resolve; `admit_once`, `admit_until_stopped`, `land_once`, `_land`, `resolve_waits`, `require_plan_reviewed`, `review_coverage`, `move_queued_run`, `_answer_existing_node_run`, `_queue_validated_waits`, `CompetenceLimit`, `held-on-claim` and `held-until-changed` all exist; the extensionless cross-plan hrefs `/reckon/plans/a-queue-holds-the-whole-plan#s18|#s29|#s32` and `a-review-gate-judges-what-it-covers#s10` resolve as `<path>.html` with `id` anchors present.",
+    "done_when": "a finding \u2014 \u00a79's first arm (`plan.html:147`) and its negative control cannot disagree, because a first dispatch already answers with phase `awaiting-upstream` from the lane-held branch in `reckon/crew/dispatch.py:1921-1985`, which runs before the branch that control would re-route (`dispatch.py:1987`).",
+    "evidence_paths": "pass \u2014 every gate writes a new file under `tests/`; \u00a74's timing arm logs under the run's `logs/` inside the durable run directory, not a node-local temporary path, and the plan's own measurements cite `~/.config/reckon/crew/admission-verdicts.jsonl`, which exists.",
+    "naming": "pass \u2014 the one new symbol named (`queue_admission.release_waiters`) and every new test file name describe the mechanism, and no section, comment or symbol carries a plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a79's stated root cause (a first dispatch is answered by `_answer_existing_node_run`) is contradicted by the caller chain it cites (`dispatch.py:1917` \u2192 `_queue_validated_waits` \u2192 `dispatch.py:1921-1985` raises `LaneHeld` with `detail: \"waiting on \u2026\"` before `dispatch.py:1987`, whose guard requires `existing is not None`).",
+    "single_goal": "pass \u2014 each of \u00a72\u2013\u00a79 names one deliverable (a numbered list of arms measuring that one change); \u00a74's timing arm and \u00a72's live-interval recording measure the same change rather than a second one.",
+    "wiring": "a finding \u2014 \u00a77 (`plan.html:122`) names the stall verdict by \"the stage that held it and that stage's last duration\", and per-stage durations are written only by \u00a73's landing/admission loops, yet `plan-section-depends-on` (`plan.html:22`) gives s7 only `work-is-never-stuck-behind-the-admission-loop#s5` and `a-review-gate-judges-what-it-covers#s10`."
+  },
+  "section_digests": {
+    "_document": "d4ddba2b99fbbeb296062e562e8f8ef30503415202e5b5319130d5236f30d3c3",
+    "s1": "5004aa941693c23f441593a8740d26ef96a27355a94d38750cfeb8d7a8a01e78",
+    "s2": "e6e0bfe7436e1bfb486d4711bd401fdc9e1ab54fdedf233f940b0bff9db4037f",
+    "s3": "079cf946368a170be7dba66d0bfac0a83b87ad2cb37b362cfdc7e1d3efbb29c4",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "44e62fa70a4a1b501d54e34863283450c3b794fd74c5e375661968732c2e89be",
+    "s6": "dae45c727ff637beac24d6f3b50d9b33d8d36d76fa4284209ce111a4bd7aa4e4",
+    "s7": "5dd4014387664545c8bac0855c3bc105c63d959495b999dd5a05595af17aeea8",
+    "s8": "9cfb6f57e35e9f7717400fecec46e631ad421a08d10a24fe431e63ac3d83d4c6",
+    "s9": "4df9d1cfa42ddf86499ef935c334dc90ba82d93306accd13c73a056b2ed4828c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T20:40:55.804185+00:00"
+}
