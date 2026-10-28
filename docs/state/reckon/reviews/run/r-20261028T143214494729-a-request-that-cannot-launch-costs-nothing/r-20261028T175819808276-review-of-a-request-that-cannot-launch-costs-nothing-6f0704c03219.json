@@ -1,0 +1,99 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own armed pair: manifest.md:22 baseline_suite 0 failures at 509b754be2 (logs/repair-baseline-suite.log, 4 passed, EXIT=0) and manifest.md:23 after_suite 0 failures at cc7212d3a8 (logs/repair-head-suite.log, 5 passed, EXIT=0). The neighbour file was checked independently in scratch trees: 2 failed 9 passed at base 509b754be2 and 1 failed 10 passed at head 6f0704c032, the surviving failure being test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused, which fails identically at both revisions on a git revision-range warning inside its fixture and is recorded at manifest.md retry_failures as environmental. So the increment removes one failure and adds none.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The classifer classifies the capacity refusal as until-changed, which is exactly what reverting 7e68c4f719 restores; the arm is shown red at EXIT=1 in logs/negative-control-capacity-refusal.log.",
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": 253
+    },
+    {
+      "condition_to_fail": "retry_at is stamped from the pass start or from the hold rather than from the failure moment, so the 30-second difference stops holding; reverting the moment=_now() argument reddens it.",
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": 255
+    },
+    {
+      "condition_to_fail": "The second pass past the back-off does not reach the launch, which is the held-until-changed behaviour; probe.attempted would stay at one entry.",
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": 262
+    },
+    {
+      "condition_to_fail": "The later overlapping request is refused and put back with a failure and a retry instant instead of held on the claim, which is what restoring the pre-check does; I measured the base arm red on this test at 509b754be2 and green at head 6f0704c032.",
+      "file": "tests/test_overlapping_queued_requests_launch_in_turn.py",
+      "line": 341
+    },
+    {
+      "condition_to_fail": "The verdict row no longer records held-on-claim or stops naming the holding run, so the detail loses earlier_id.",
+      "file": "tests/test_overlapping_queued_requests_launch_in_turn.py",
+      "line": 347
+    },
+    {
+      "condition_to_fail": "The later request fails to launch on the pass two minutes after start, which happens if a back-off was recorded despite the hold.",
+      "file": "tests/test_overlapping_queued_requests_launch_in_turn.py",
+      "line": 356
+    }
+  ],
+  "base_log_revision": "509b754be2561eb15557ff4445f9d8625d97a1e9",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:4015",
+    "reckon/crew/queue_admission.py:3221",
+    "reckon/crew/queue_admission.py:2796"
+  ],
+  "completed_at": "2026-10-28T18:06:55.860Z",
+  "dispatched_at": "2026-10-28T17:59:36Z",
+  "findings": [
+    {
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": "139",
+      "severity": "non-blocking",
+      "text": "non-blocking: _capacity_refusal() hand-composes the capacity refusal's sentence inside the test rather than taking it from the production emitter (reckon/crew/dispatch_admission.py:271-282 composes it as format_refusal('D09', summary.bound_refusal_text(...))), so the classifier's dependence on that remedy surviving in the refusal text is guarded by a fixture and not by the code. If the D09 wrapping at dispatch_admission.py:274 were dropped, queue_admission.py:940 would classify a capacity refusal as until-changed again and this file would stay green; one assertion over the real emitter's text would close it."
+    }
+  ],
+  "head_log_revision": "cc7212d3a8b7569d3cbc26ac10b80485f0a19326",
+  "increment_scope": "only the commits gained since the previous review at 509b754be2, which answered its two blocking findings",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit: 7e68c4f719 changes the classifier at reckon/crew/queue_admission.py:917-940 and adds the capacity arm to the gate test; 86f3f3d4ed rewrites tests/test_overlapping_queued_requests_launch_in_turn.py:332-358 to assert the claim hold; cc7212d3a8 and 6f0704c032 add four paragraphs to the evidence fragment; nothing outside the four granted paths changes.",
+    "done_when": "The node's measure is the four-arm gate on dispatch attempts; tests/test_a_request_that_cannot_launch_costs_nothing.py:240-275 adds the arm the review demanded and logs/repair-head-suite.log records '5 passed' with EXIT=0, and I re-ran that file at the reviewed head 6f0704c032 in a scratch tree and got '5 passed in 6.55s' EXIT=0.",
+    "goal": "The reviewed node's goal is that a request which cannot launch costs an admission pass nothing; 7e68c4f719 narrows that rule so the capacity refusal a full lane gives keeps its bounded back-off instead of being held until a change, and reckon/crew/queue_admission.py:920-940 now excludes it by the occupying-run remedy the refusal carries.",
+    "manifest": "Read; manifest.md records status complete, the gate command and its log, baseline_suite 0 failures at 509b754be2 (logs/repair-baseline-suite.log, EXIT=0) and after_suite 0 failures at cc7212d3a8 (logs/repair-head-suite.log, EXIT=0), the two negative controls, the pre-existing environmental failure attribution, and the unreconciled write-scope record.",
+    "write_paths": "The reviewed manifest grants four paths; git diff 509b754be2..6f0704c032 touches exactly those four (reckon/crew/queue_admission.py, tests/test_a_request_that_cannot_launch_costs_nothing.py, tests/test_overlapping_queued_requests_launch_in_turn.py, docs/evidence/fragments/a-queue-holds-the-whole-plan/a-request-that-cannot-launch-costs-nothing.html), and manifest.md discloses that the third is granted by the repair dispatch rather than by the live pointer (scope_note)."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-capacity-refusal.log shows reverting 7e68c4f719 reddens exactly test_a_capacity_refusal_keeps_its_backoff_rather_than_being_held (1 failed, 4 passed, EXIT=1) and I confirmed the reversible pair independently: the neighbour file is 2 failed at base 509b754be2 and 1 failed at head, so both answering commits are guarded; the gap is that the classifier's input wording is supplied by a fixture rather than the emitter.",
+    "evidence": "logs/repair-baseline-suite.log and logs/repair-head-suite.log each open with an explicit revision/tree/command header and close with a bare EXIT= line (4 passed and 5 passed), and I independently reproduced '5 passed' at the reviewed head 6f0704c032 in a scratch tree, though the recorded head arm runs at cc7212d3a8 rather than the reviewed head.",
+    "fit": "reckon/crew/queue_admission.py:916-940 keeps the module's uppercase-constant and docstring idiom and names no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:920-940 excludes the capacity refusal from the until-changed hold by the occupying-run remedy it carries, so a full lane's refusal keeps the bounded back-off at queue_admission.py:870 instead of stranding, while the bare node-contract refusals at reckon/crew/dispatch.py:1509 and :1794 carry no such remedy and stay held.",
+    "reuse": "reckon/crew/queue_admission.py:920 reads the existing remedy registry reckon/crew/refusals.py:39 DISPATCH_REFUSAL_REMEDIES['D09'] rather than restating the occupying-run sentence, so the classifier extends the owner of that capability instead of forking it.",
+    "scope_discipline": "Every path in git diff 509b754be2..6f0704c032 is inside the reviewed manifest's grant, but tests/test_overlapping_queued_requests_launch_in_turn.py sits outside the live pointer's declared paths and is disclosed at manifest.md scope_note rather than reconciled."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that a request which cannot launch costs an admission pass nothing; 7e68c4f719 narrows the until-changed rule so a full lane's refusal keeps its back-off, at reckon/crew/queue_admission.py:920-940.\nVERDICT done_when: the measure is the four-arm gate on dispatch attempts; tests/test_a_request_that_cannot_launch_costs_nothing.py:240-275 adds the capacity arm, logs/repair-head-suite.log records 5 passed EXIT=0, and a scratch-tree run at the reviewed head 6f0704c032 reproduced 5 passed in 6.55s.\nVERDICT write_paths: the manifest grants four paths and git diff 509b754be2..6f0704c032 touches exactly those four; the neighbour test's grant comes from the repair dispatch rather than the live pointer, disclosed at manifest.md scope_note.\nVERDICT manifest: read; it records the gate command, baseline_suite 0 failures at 509b754be2 and after_suite 0 failures at cc7212d3a8 with logs and EXIT= lines, both negative controls, and the unreconciled scope record.\nVERDICT diff: read commit by commit; 7e68c4f719 changes reckon/crew/queue_admission.py:917-940 plus the new gate arm, 86f3f3d4ed rewrites tests/test_overlapping_queued_requests_launch_in_turn.py:332-358, and cc7212d3a8 with 6f0704c032 add four evidence paragraphs.\nCALL_SITES: reckon/crew_run_commands.py:4015, reckon/crew/queue_admission.py:3221, reckon/crew/queue_admission.py:2796\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:920-940 excludes the capacity refusal by the occupying-run remedy it carries, leaving the bare node-contract refusals at reckon/crew/dispatch.py:1509 and :1794 held.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/repair-baseline-suite.log and logs/repair-head-suite.log carry revision/tree/command headers and trailing EXIT= lines, and I reproduced 5 passed at the reviewed head 6f0704c032, though the recorded arm runs at cc7212d3a8.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in git diff 509b754be2..6f0704c032 is inside the manifest's grant, but tests/test_overlapping_queued_requests_launch_in_turn.py is outside the live pointer's declared paths and only disclosed.\nSCORE durability: 16\nJUSTIFICATION durability: logs/negative-control-capacity-refusal.log shows reverting 7e68c4f719 reddening exactly test_a_capacity_refusal_keeps_its_backoff_rather_than_being_held, and the neighbour file is 2 failed at base against 1 at head, but tests/test_a_request_that_cannot_launch_costs_nothing.py:139 builds the classifier's input itself.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:916-940 keeps the module's constant-and-docstring idiom and carries no plan, ticket or version identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:920 reads DISPATCH_REFUSAL_REMEDIES['D09'] from reckon/crew/refusals.py:39 rather than restating the remedy sentence, extending the owner of that capability.\nFINDING tests/test_a_request_that_cannot_launch_costs_nothing.py:139 non-blocking: _capacity_refusal() hand-composes the refusal sentence instead of taking it from the production emitter at reckon/crew/dispatch_admission.py:271-282, so dropping the D09 wrapping there would return capacity refusals to the until-changed hold with this suite still green.\n",
+  "review_run_id": "r-20261028T175819808276-review-of-a-request-that-cannot-launch-costs-nothing-6f0704c03219",
+  "reviewed_base_sha": "509b754be2561eb15557ff4445f9d8625d97a1e9",
+  "reviewed_commits": [
+    "7e68c4f719466138dca4302030e9dba41ee74b28",
+    "86f3f3d4ed60beb0f1a0a41f26342c5ee86036a3",
+    "cc7212d3a8b7569d3cbc26ac10b80485f0a19326",
+    "6f0704c032195dce55d909cd734f11b0ba6a9040"
+  ],
+  "reviewed_head_sha": "6f0704c032195dce55d909cd734f11b0ba6a9040",
+  "reviewed_run_id": "r-20261028T143214494729-a-request-that-cannot-launch-costs-nothing",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T18:05:20Z",
+  "total": 107
+}
