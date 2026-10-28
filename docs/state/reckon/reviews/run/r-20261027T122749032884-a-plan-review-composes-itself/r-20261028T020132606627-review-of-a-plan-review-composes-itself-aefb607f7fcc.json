@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: baseline_suite at ad8c445e87 records failure_count 8 with 8 ids and after_suite at aefb607f7f records failure_count 0, both completed true with EXIT=1 and EXIT=0 in their logs, so the difference is empty.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/runs.py:3945",
+    "reckon/mcp.py:2931",
+    "reckon/crew/station.py:107",
+    "reckon/crew/plan_review.py:2336"
+  ],
+  "completed_at": "2026-10-28T02:46:55.361Z",
+  "dispatched_at": "2026-10-28T02:19:22Z",
+  "findings": [
+    {
+      "file": "tests/test_a_plan_review_composes_itself.py",
+      "id": "f8aa6088264",
+      "line": 85,
+      "severity": "non-blocking",
+      "text": "the done-when requires the composed review to name no lane, but _launch (tests/test_a_plan_review_composes_itself.py:41) records only kwargs['session'] and the comment at line 85 claims the lane is checked while no assertion captures it; a regression that passed local=True to recovery.plan_review_subject or prefer_local=True to dispatch_review_for_run would leave all 8 tests green."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f940eded923",
+      "line": 2283,
+      "severity": "non-blocking",
+      "text": "note_would_not_change_findings is added as a public entry point but has no production caller: compose_owed_plan_reviews calls the private _note_records directly, so the wrapper is dead surface that reads as a supported path and is untested on its own filter."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "id": "fc26a1202a3",
+      "line": 2061,
+      "severity": "non-blocking",
+      "text": "the call site lands outside the dispatch's literal write-path grant; the plan section names the producer module and the fence instructed a crew widen for it, which failed EROFS under the worker's read-only config mount, so the grant must be widened or the path adjudicated rather than the change repaired."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/runs.py:3945 (watch sweep), reckon/mcp.py:2931 (MCP sweep action), reckon/crew/station.py:107 (watch station) and reckon/crew/plan_review.py:2336 (record_response from the reflex) all reach the landed change.",
+    "diff": "read both commits against base ad8c445e87: 60dbe7bde3 adds the composition and notes to reckon/crew/plan_review.py plus the tests and evidence fragment, and aefb607f7f folds the per-pass note writes into one store walk; the only out-of-grant path is resumption.py's call site and report key.",
+    "done_when": "the plan section's measure names four arms, an importer arm and a negative control; the head arm records 8 passed EXIT=0 against 8 failed EXIT=1 at the base, and the negative control reddens exactly the two-minute arm, but the importer arm is incomplete.",
+    "goal": "the node goal is to compose a content review for a plan that owes one after ten quiet minutes and answer its would-not-change findings as notes; reckon/crew/plan_review.py:2411 compose_owed_plan_reviews does both and is reached from the sweep at reckon/crew/resumption.py:2061.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T122749032884-a-plan-review-composes-itself/manifest.md; status complete, commits 60dbe7bde3 and aefb607f7f, changed_paths listing all four files, baseline_suite 8 failed at ad8c445e and after_suite 0 failed at aefb607f, and a blockers line reporting the refused widen.",
+    "write_paths": "read the manifest's declared paths (reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py, and two docs/evidence paths); the diff also changes reckon/crew/resumption.py:2061, the producer module the plan section names and the fence tells the worker to widen for."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_review_composes_itself.py:100 fails when the quiet-period check is removed (negative-control.log, EXIT=1, one failed / seven passed), so the central guard is proven by reinstating the defect; the unasserted clause is that the dispatch names no lane.",
+    "evidence": "the recorded head arm (head-arm.log) ends '8 passed' with EXIT=0 at aefb607f and the base arm (base-arm.log) ends '8 failed' with EXIT=1 at ad8c445e, and the negative control ends EXIT=1 with only test_a_plan_edited_two_minutes_ago_is_not_composed red; I re-ran ruff check and ruff format --check on the three changed paths at the head and both pass; the importer arms are incomplete and the fence delegates them to the coordinator.",
+    "fit": "reckon/crew/plan_review.py:2250 follows the module's idiom of a documented public predicate with local imports to avoid package cycles, and no added name carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2411 compose_owed_plan_reviews composes a content review for a plan whose last edit is older than PLAN_REVIEW_QUIET_SECONDS with no review in flight, and answers would-not-change findings as notes while leaving the rest open, which is the node goal verbatim.",
+    "reuse": "reckon/crew/plan_review.py:2391-2410 reuses plan_review_quiet_remaining, recovery_review_dispatch._standing_plan_review, read_plan_review, compose_burst_refusal, record_response and recovery.plan_review_subject rather than restating any of them, so no capability is forked.",
+    "scope_discipline": "three of the four changed files sit in the dispatch grant and the fourth, reckon/crew/resumption.py:2061, is the producer module the plan section names as a write path and the fence told the worker to widen for, but the widen was refused EROFS so it landed outside the literal grant."
+  },
+  "node": "review-of-a-plan-review-composes-itself-aefb607f7fcc",
+  "node:reviewed": "a-plan-review-composes-itself",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to compose a content review for a plan that owes one after ten quiet minutes and answer its would-not-change findings as notes; reckon/crew/plan_review.py:2411 compose_owed_plan_reviews does both and is reached from the sweep at reckon/crew/resumption.py:2061.\nVERDICT done_when: the plan section's measure names four arms, an importer arm and a negative control; the head arm records 8 passed EXIT=0 against 8 failed EXIT=1 at the base, and the negative control reddens exactly the two-minute arm, but the importer arm is incomplete.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py, and two docs/evidence paths); the diff also changes reckon/crew/resumption.py:2061, the producer module the plan section names and the fence tells the worker to widen for.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T122749032884-a-plan-review-composes-itself/manifest.md; status complete, commits 60dbe7bde3 and aefb607f7f, changed_paths listing all four files, baseline_suite 8 failed at ad8c445e and after_suite 0 failed at aefb607f, and a blockers line reporting the refused widen.\nVERDICT diff: read both commits against base ad8c445e87: 60dbe7bde3 adds the composition and notes to reckon/crew/plan_review.py plus the tests and evidence fragment, and aefb607f7f folds the per-pass note writes into one store walk; the only out-of-grant path is resumption.py's call site and report key.\nCALL_SITES: reckon/crew/runs.py:3945, reckon/mcp.py:2931, reckon/crew/station.py:107, reckon/crew/plan_review.py:2336\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2411 compose_owed_plan_reviews composes a content review for a plan whose last edit is older than PLAN_REVIEW_QUIET_SECONDS with no review in flight, and answers would-not-change findings as notes while leaving the rest open, which is the node goal verbatim.\nSCORE evidence: 15\nJUSTIFICATION evidence: the recorded head arm (head-arm.log) ends '8 passed' with EXIT=0 at aefb607f and the base arm (base-arm.log) ends '8 failed' with EXIT=1 at ad8c445e, and the negative control ends EXIT=1 with only test_a_plan_edited_two_minutes_ago_is_not_composed red; I re-ran ruff check and ruff format --check on the three changed paths at the head and both pass; the importer arms are incomplete and the fence delegates them to the coordinator.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: three of the four changed files sit in the dispatch grant and the fourth, reckon/crew/resumption.py:2061, is the producer module the plan section names as a write path and the fence told the worker to widen for, but the widen was refused EROFS so it landed outside the literal grant.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_plan_review_composes_itself.py:100 fails when the quiet-period check is removed (negative-control.log, EXIT=1, one failed / seven passed), so the central guard is proven by reinstating the defect; the unasserted clause is that the dispatch names no lane.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/plan_review.py:2250 follows the module's idiom of a documented public predicate with local imports to avoid package cycles, and no added name carries a plan, sprint or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/plan_review.py:2391-2410 reuses plan_review_quiet_remaining, recovery_review_dispatch._standing_plan_review, read_plan_review, compose_burst_refusal, record_response and recovery.plan_review_subject rather than restating any of them, so no capability is forked.\nFINDING tests/test_a_plan_review_composes_itself.py:85 non-blocking: the done-when requires the composed review to name no lane, but _launch (tests/test_a_plan_review_composes_itself.py:41) records only kwargs['session'] and the comment at line 85 claims the lane is checked while no assertion captures it; a regression that passed local=True to recovery.plan_review_subject or prefer_local=True to dispatch_review_for_run would leave all 8 tests green.\nFINDING reckon/crew/plan_review.py:2283 non-blocking: note_would_not_change_findings is added as a public entry point but has no production caller: compose_owed_plan_reviews calls the private _note_records directly, so the wrapper is dead surface that reads as a supported path and is untested on its own filter.\nFINDING reckon/crew/resumption.py:2061 non-blocking: the call site lands outside the dispatch's literal write-path grant; the plan section names the producer module and the fence instructed a crew widen for it, which failed EROFS under the worker's read-only config mount, so the grant must be widened or the path adjudicated rather than the change repaired.",
+  "review_run_id": "r-20261028T020132606627-review-of-a-plan-review-composes-itself-aefb607f7fcc",
+  "reviewed_base_sha": "ad8c445e87e7d723b3e9c79e29cdb3ca745df039",
+  "reviewed_head_sha": "aefb607f7fcca4930364262bf4d5aac671376beb",
+  "reviewed_run_id": "r-20261027T122749032884-a-plan-review-composes-itself",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T03:40:00+00:00",
+  "total": 103
+}
