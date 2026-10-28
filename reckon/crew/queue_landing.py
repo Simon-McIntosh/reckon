@@ -12,7 +12,10 @@ from typing import Any
 
 from reckon.crew import landing_measure, recovery, runs
 from reckon.crew.promotion_records import _node_test_files
-from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
+from reckon.crew.recovery_review_acceptance import (
+    _review_accepts_promotion,
+    record_landed_exemptions,
+)
 
 _run_srun = subprocess.run
 
@@ -78,6 +81,28 @@ def _stored_measurement(
     if str(record.get("command") or "") != command:
         return None
     return landing_measure.Measurement.from_dict(record)
+
+
+def _merge_conflicts(pointer: Mapping[str, Any], head: str) -> list[str]:
+    """The paths on which the run's head conflicts with the primary branch.
+
+    Read through ``git merge-tree``, which builds the merged tree without
+    touching the checkout or moving the branch, so a conflicting run is refused
+    before anything is written to the branch. An instrument that cannot answer —
+    an unresolvable head, a checkout that is not a work tree — returns no
+    conflict here and the landing step itself reports the failure, because
+    inventing a conflict would refuse a run git never judged.
+    """
+    repo = Path(str(pointer.get("repo") or "").strip())
+    if not head or not repo.is_dir():
+        return []
+    from reckon.crew import merge
+
+    try:
+        _merged_tree, conflicts = merge._merge_tree(repo, "HEAD", head)
+    except (merge.MergeError, OSError):
+        return []
+    return merge.refusing_conflicts(conflicts)
 
 
 def _measure_timeout(pointer: Mapping[str, Any]) -> float:
@@ -376,6 +401,23 @@ def land_once() -> dict[str, Any]:
                 }
             )
             continue
+        # A head that conflicts with the primary branch cannot be landed at all,
+        # so it is refused before the expensive measurement rather than after
+        # it, and the refusal names the paths the next writer must resolve.
+        conflicting = _merge_conflicts(pointer, head)
+        if conflicting:
+            guard = "the head conflicts with the primary branch: " + ", ".join(
+                conflicting
+            )
+            _record_attempt(run_id, head=head, guard=guard, status="refused")
+            obligations.append(
+                {
+                    "run_id": run_id,
+                    "session": str(pointer.get("session") or ""),
+                    "guard": guard,
+                }
+            )
+            continue
         command = str(pointer.get("suite_command") or "").strip()
         measured = _stored_measurement(run_id, head, command)
         if measured is not None:
@@ -396,6 +438,27 @@ def land_once() -> dict[str, Any]:
                     "run_id": run_id,
                     "session": str(pointer.get("session") or ""),
                     "guard": measure_guard,
+                }
+            )
+            continue
+        # The review's non-blocking findings do not hold the landing, so the
+        # finding a reviewer raised is recorded as exempted before the pointer
+        # that carried it is promoted away. A landing that could not record
+        # them would drop a reviewer's finding silently, which is the defect
+        # this pass exists to remove, so it is refused instead.
+        try:
+            record_landed_exemptions(project, run_id, review, reviewed_head_sha=head)
+        except (OSError, ValueError) as exc:
+            guard = (
+                "the review's non-blocking findings could not be recorded as "
+                f"exempted: {type(exc).__name__}: {exc}"
+            )
+            _record_attempt(run_id, head=head, guard=guard, status="refused")
+            obligations.append(
+                {
+                    "run_id": run_id,
+                    "session": str(pointer.get("session") or ""),
+                    "guard": guard,
                 }
             )
             continue
