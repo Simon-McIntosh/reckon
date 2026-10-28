@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-informs" content="a-queue-holds-the-whole-plan">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;],&quot;s3&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s2&quot;],&quot;s4&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s5&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;],&quot;s7&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s2&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s5&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s8&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;],&quot;s9&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;deferred&quot;}">
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-10-28">
 </head>
 <body>
@@ -142,7 +142,7 @@
     <p>The negative control restores the silent continue, and the first arm must fail. The test files importing <code>reckon.crew.queue_landing</code> and the promotion modules the change touches add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. After landing, the coordinator replays the landing filters over the live pointers and records that no complete implement run lacks a landing record. Write paths: <code>reckon/crew/queue_landing.py</code>, <code>reckon/crew/promotion_records.py</code> and the new test.</p>
 
     <h2 id="s9">§9 — A first dispatch reports what it wrote</h2>
-    <section data-reckon="section" data-id="s9" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s9" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="deferred" data-links=""></section>
     <p>On 28 October a dispatch whose node waits on an unlanded section answered <code>run … is already awaiting-upstream for this node</code>, naming a run no earlier call had created. nova saw it on two nodes. This plan's author saw it on <code>r-20261028T134856805692-a-queued-request-is-stamped-at-queue-time</code>: its run id is stamped 13:48:56Z, it was queued at 13:52:50Z, and it carries the negative control that only the one accepted call passed. Each of these calls took minutes to return. The mechanism is not yet located. As written, a first dispatch writes its request through <code>_queue_validated_waits</code> at <code>dispatch.py:1917</code> and raises its hold with a <code>waiting on …</code> detail, and it never reaches <code>_answer_existing_node_run</code>, whose branch needs an existing pointer. So the observed reply comes from a second entry into <code>dispatch()</code> within one CLI call, or from a layer around it, and the node finds which before it changes anything. Whatever the layer, a call that created the request answers with that request as new. Only a call that found a request it did not write answers <code>already</code>.</p>
     <p><strong>Done when</strong> a new <code>tests/test_a_first_dispatch_reports_what_it_wrote.py</code> shows three things:</p>
     <ul>
@@ -162,6 +162,11 @@
     <pre class="r-fu-prompt">/reckon-build work-is-never-stuck-behind-the-admission-loop §2</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-s9-deferred-unlocated" data-who="" data-when="">
+    <div class="r-comment-body"><p>Deferred after two content reviews. The CLI entry point calls <code>dispatch()</code> once, at <code>crew_dispatch_commands.py:2026</code>, and the first-dispatch path never reaches <code>_answer_existing_node_run</code>. So the caller that produced the observed reply is not located, and no measure written for it can fail. It resumes as an investigation of the stream and call path of <code>r-20261028T134856805692</code> and of nova's two runs, and becomes a fix once that caller is named.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
