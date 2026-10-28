@@ -1,0 +1,68 @@
+<section id="the-review-cap-counts-only-changed-units-landing">
+  <h2>The third-review cap counts only the reviews that read a unit's change</h2>
+
+  <p><strong>What changed.</strong> The carried-findings landing was reverted
+  because its third-review cap counted every stored review of a unit's current
+  digest. A unit whose prose had not moved across a long-lived plan's revisions
+  accumulated one counted review per revision, so composing a review of any
+  plan reviewed more than twice was refused, and answering the named findings
+  did not help. Three repairs restore the landing: the cap is bounded to one
+  plan revision, an answer is read from whichever stored record holds it, and a
+  carried answer no longer displaces an earlier one.
+
+  <p><strong>Reproduction before the repair.</strong> On the live store at the
+  reverted code, <code>compose_burst_refusal('reckon',
+  'a-queue-holds-the-whole-plan')</code> refused with <q>unit s1 … has had 47
+  reviews for this edit</q>, and <code>compose_burst_refusal('nova',
+  'kernel-compile-barrier')</code> with <q>unit s0 … has had 6 reviews</q>. The
+  forty-seven were real stored reviews: section <code>s1</code> carried the same
+  prose digest from plan version 5 through version 200, and each review of the
+  plan after that carried it unchanged.
+
+  <p><strong>The bound.</strong> <code>reviews_for_unit_burst</code> in
+  <code>reckon/crew/plan_review.py</code> still selects the reviews that carried
+  the unit's present digest, and now keeps only those at the newest plan
+  revision among them (<code>_plan_revision</code>, the whole-plan fingerprint
+  with the reviewed blob and version as fallbacks). Two reviews of one revision
+  still reach the cap and refuse a third, which is the loop the cap exists to
+  stop; a unit that a later revision did not touch stops counting at the review
+  that read it.
+
+  <p><strong>The answers.</strong> <code>review_burst_refusal</code> resolves a
+  finding's answer across every stored review of the plan, not only the counted
+  records. An answer is written to the record the answering command resolved,
+  which need not be the record the cap counted, so a finding answered there was
+  named open again and no answer command could clear it.
+
+  <p><strong>The carry.</strong> <code>record_response</code> leaves an earlier
+  <code>acted</code> or <code>declined</code> answer in place when a
+  <code>--carried</code> answer follows it. Carrying hands the finding to a node;
+  it is not a later judgement about the prose, and replacing the answer erased a
+  decision the gate had already read.
+
+  <p><strong>Which revision is "newest".</strong> The bound finds the newest
+  revision by ordering the counted reviews. It ordered them by
+  <code>dispatched_at</code>, a field <code>store_plan_review</code> never
+  writes — only <code>timestamp</code>, which it stamps on every record — so
+  every sort key was empty and the newest review was whichever one the listing
+  returned last. The order is now <code>timestamp</code> with
+  <code>plan_version</code> as a tiebreak, and an arm hands the listing back
+  newest-first, the reverse of the store's own order, and still counts at the
+  revision the plan carries now.
+
+  <p><strong>Evidence.</strong> <code>tests/test_a_carried_finding_reaches_the_node.py</code>
+  reports 9 passed, <code>EXIT=0</code> at the head revision
+  (<code>logs/after-suite.log</code>). The four added arms fail against the
+  base revision's code with the head test file in place — 4 failed, 5 passed
+  (<code>logs/baseline-suite.log</code>) — so each repair is falsifiable. The
+  declared negative control restores the reverted cap, counting every stored
+  review of a unit's current digest: the two arms that assert the bound fail
+  and the other seven pass — 2 failed, 7 passed
+  (<code>logs/negative-control-count-every-stored-review.log</code>). The
+  ordering arm is falsifiable on its own: restoring the <code>dispatched_at</code>
+  sort fails that arm and leaves the other eight passing. The live-store arm is
+  called read-only at the head revision and both <code>compose_burst_refusal</code>
+  calls return <code>None</code> (<code>logs/live-store-arm.log</code>).
+  <code>ruff check</code> and <code>ruff format --check</code> pass on the
+  changed Python paths.
+</section>
