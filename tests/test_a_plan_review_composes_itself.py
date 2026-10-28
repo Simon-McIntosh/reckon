@@ -60,9 +60,12 @@ def _launch(monkeypatch) -> list[str]:
 
 def _pass(project_name: str = "sample") -> dict:
     """Run one producer pass and return what it composed for plans."""
-    return resumption.sweep(project_name, session="coordinator", config=CONFIG)[
-        "plan_reviews"
-    ]
+    return (
+        resumption.sweep(project_name, session="coordinator", config=CONFIG).get(
+            "plan_reviews"
+        )
+        or {}
+    )
 
 
 def _run_directories():

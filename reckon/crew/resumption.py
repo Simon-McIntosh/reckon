@@ -2076,9 +2076,16 @@ def sweep(
         "resumed": resumed,
         "skipped": skipped,
         "reviews": reviews,
-        "plan_reviews": plan_reviews,
         "swept_at": _utc_now(),
     }
+    if any(
+        plan_reviews.get(key)
+        for key in ("composed", "skipped", "notes", "failed", "error")
+    ):
+        # A pass with nothing to say is reported as it was before the pass
+        # existed, so a caller reading the sweep's shape is not handed an empty
+        # block on every quiet tick.
+        report["plan_reviews"] = plan_reviews
     # Two records, because they answer different questions. The append-only log
     # holds what happened, and only sweeps that judged something write to it —
     # an operator reading it wants recoveries and the refusals to recover, not a
