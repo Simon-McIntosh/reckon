@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own manifest.md: baseline_suite at 816e631ad4 (gate-base.log, exit_status 4, completed false, failure_ids []) and after_suite at fe0d283c2b (gate-after.log, exit_status 0, completed true, failure_ids []). The base arm ran no tests because the new test file did not exist at the base revision, so no failing id exists to subtract from the head arm; the gate-siblings.log head run (63 passed, EXIT=0) likewise reports no failure ids. Set difference is empty.",
+  "assertion_analysis": [
+    {
+      "fails_if": "len(builds) is not 1; a fresh readiness cache per launch makes project_section_readiness run three times (observed as [1,1,1] in negative-control.log), so this reddens on the exact regression it was added for.",
+      "path": "tests/test_an_admission_pass_reads_the_roadmap_once.py:150"
+    },
+    {
+      "fails_if": "len(builds) is not 2; if the key ignored a plan's mtime the touched plan would still hit the cache and the count would stay 1, so this guards the fingerprint's mtime component.",
+      "path": "tests/test_an_admission_pass_reads_the_roadmap_once.py:180"
+    },
+    {
+      "fails_if": "the direct dispatch reused the pass cache (a module-global cache would drop the count to 1); the literal 3 also encodes an internal two-cache count and reddens if the direct path legitimately changes how many caches it builds.",
+      "path": "tests/test_an_admission_pass_reads_the_roadmap_once.py:205"
+    },
+    {
+      "fails_if": "the pass's cached launch results differ from an uncached dispatch_waits computation for the same nodes; a shared cache that returned stale or wrong rows would make the two sides diverge \u2014 but both sides call the same function, so it does not guard dispatch_waits correctness itself.",
+      "path": "tests/test_an_admission_pass_reads_the_roadmap_once.py:230"
+    }
+  ],
+  "completed_at": "2026-10-28T20:54:56.312Z",
+  "dispatched_at": "2026-10-28T20:46:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "id": "f70d40e0ef1",
+      "line": 1623,
+      "severity": "non-blocking",
+      "text": "_plan_tree_fingerprint reimplements the plan-state cache identity the repository already owns at reckon/roadmap_snapshot.py:236 roadmap_project_generation (HEAD + covered-directory shape via _covered_directory_shape, :171), which also covers every PLAN_HTML_PREFIXES directory; extend that owner rather than globbing only docs/plans/*.html, so an edit to a plan document outside docs/plans also invalidates a pass's cached rows."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "id": "f0a925a842e",
+      "line": 1671,
+      "severity": "non-blocking",
+      "text": "_readiness_rows recomputes the fingerprint before every cache lookup, so each launch spawns git rev-parse HEAD and stats every docs/plans/*.html (212 files in this checkout) about twice (once in _validated_batch_waits, once in dispatch_waits) even on a hit; compute it once per project per pass, or use the owner's per-directory covered_dir_identity, to keep the stat volume off GPFS."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/queue_admission.py:3437 (admit_once caller), reckon/crew/queue_admission.py:3311 and :3328 (_launch_queued from admit_once with the pass cache), reckon/crew/dispatch.py:1920 (dispatch_waits from dispatch with readiness_cache), reckon/crew/dispatch.py:1673 (direct dispatch path, correctly uncached), reckon/crew/dispatch.py:518 (yielded-launch path, guarded to non-admission)",
+    "diff": "read fe0d283c2b against base 816e631ad4: dispatch() gains a readiness_cache parameter and passes it to dispatch_waits; queue_admission.py gains _plan_tree_fingerprint, keys _readiness_rows on the fingerprint, and admit_once holds one cache handed to every _launch_queued (including the rebind path).",
+    "done_when": "prompt.txt and plan section 18 name a new tests/test_an_admission_pass_reads_the_roadmap_once.py showing four things; the file's four tests assert one build for three launches (line ~150), two builds when a plan is touched mid-pass (line ~180), a direct dispatch building its own (line ~205), and the launches' waits matching an uncached computation (line ~230); manifest.md records gate-after.log 4 passed EXIT=0 and the negative control EXIT=1.",
+    "goal": "prompt.txt:31 sets the goal 'build each project's readiness once per admission pass'; reckon/crew/queue_admission.py:3138 creates one readiness_cache in admit_once and threads it through _launch_queued (:218,:309) and dispatch (:1295) into dispatch_waits (:2029,:2054) and _validated_batch_waits (:1407,:1418), so one project's roadmap is derived once for the pass.",
+    "manifest": "manifest.md reports status complete at fe0d283c2b with gate-after.log (4 passed, EXIT=0), gate-base.log (no tests ran, EXIT=4, completed false), gate-siblings.log (63 passed, EXIT=0), negative-control.log (3 failed, 1 passed, EXIT=1), and outside_scope naming that only six admission-neighbour files were run rather than the full 349 importing set.",
+    "write_paths": "manifest.md:3 grants reckon/crew/queue_admission.py, reckon/crew/dispatch.py, the new test, the landing fragment and a figures directory; the diff at fe0d283c2b touches exactly queue_admission.py, dispatch.py, tests/test_an_admission_pass_reads_the_roadmap_once.py, and docs/evidence/fragments/a-queue-holds-the-whole-plan/an-admission-pass-reads-the-roadmap-once.html, all inside the grant, with no figure written."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admission_pass_reads_the_roadmap_once.py:150 (one build) and :180 (two builds on a touched plan) redden under the recorded fresh-cache mutation, while :205 asserts an internal double-build count brittle to unrelated direct-path changes.",
+    "evidence": "gate-after.log records 4 passed EXIT=0 and negative-control.log records 3 failed EXIT=1, but the done-when's base-revision delta runs the new test (EXIT=4, no tests) rather than the importing files, and only six of the neighbour files were run at head (manifest.md outside_scope).",
+    "fit": "reckon/crew/queue_admission.py:1623 _plan_tree_fingerprint and :1671 follow the module's private-helper and docstring idiom, and no plan, stage or ticket identifier appears in the new names.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:3138 creates the single pass cache and :3311 hands it to every _launch_queued, so a pass derives one project's roadmap once while a direct dispatch keeps its own.",
+    "reuse": "reckon/roadmap_snapshot.py:236 roadmap_project_generation already returns 'the facts one mounted project's plan state is keyed on' (HEAD, index identity, covered-directory shape), and _plan_tree_fingerprint re-derives that identity independently rather than extending the owner.",
+    "scope_discipline": "every path in the fe0d283c2b diff is inside the five declared write paths and the landing fragment is the always-permitted scope path."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261028T204321140774-review-of-an-admission-pass-reads-the-roadmap-once-fe0d283c2b58",
+  "review_text": "VERDICT goal: prompt.txt:31 asks to build each project's readiness once per admission pass; reckon/crew/queue_admission.py:3138 creates one readiness_cache in admit_once and threads it through _launch_queued and dispatch into dispatch_waits and _validated_batch_waits.\nVERDICT done_when: plan section 18 names a new test showing four things; tests/test_an_admission_pass_reads_the_roadmap_once.py asserts one build for three launches, two on a touched plan, a direct dispatch building its own, and matching waits, and manifest.md records gate-after.log EXIT=0 and negative-control.log EXIT=1.\nVERDICT write_paths: manifest.md:3 grants five paths; the fe0d283c2b diff touches queue_admission.py, dispatch.py, the new test and the landing fragment, all inside the grant, and writes no figure.\nVERDICT manifest: manifest.md reports complete at fe0d283c2b with gate-after.log 4 passed EXIT=0, gate-siblings.log 63 passed EXIT=0, negative-control.log 3 failed EXIT=1, and outside_scope naming the six-file neighbour limitation.\nVERDICT diff: read fe0d283c2b against 816e631ad4; it adds one pass-level cache, a fingerprint-keyed _readiness_rows, and the readiness_cache plumbing through dispatch, with the direct and yielded-launch paths correctly left uncached.\nCALL_SITES: reckon/crew/queue_admission.py:3437, reckon/crew/queue_admission.py:3311, reckon/crew/queue_admission.py:3328, reckon/crew/dispatch.py:1920, reckon/crew/dispatch.py:1673, reckon/crew/dispatch.py:518\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:3138 creates the single pass cache and :3311 hands it to every launch, so the roadmap is derived once per project per pass.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-after.log and negative-control.log are recorded and read, but the base-revision delta runs the absent new test (EXIT=4) rather than the importing files and only six neighbours ran at head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the fe0d283c2b diff is inside manifest.md:3's declared write paths, with nothing extra in the change.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_admission_pass_reads_the_roadmap_once.py:150 and :180 redden under the recorded fresh-cache mutation, while :205 pins a brittle internal double-build count.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/queue_admission.py:1623 and :1671 follow the module's private-helper and docstring idiom, and the new names state the mechanism without plan or stage identifiers.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:1623 re-derives the plan-state identity reckon/roadmap_snapshot.py:236 roadmap_project_generation already owns instead of extending it.\nFINDING reckon/crew/queue_admission.py:1623 non-blocking: _plan_tree_fingerprint reimplements the plan-state cache identity owned by reckon/roadmap_snapshot.py:236 roadmap_project_generation and covers only docs/plans/*.html, so an edit outside that directory would not invalidate a pass's cached rows.\nFINDING reckon/crew/queue_admission.py:1671 non-blocking: _readiness_rows recomputes the fingerprint (git rev-parse plus a stat of every docs/plans/*.html, 212 files here) on every lookup including cache hits, about twice per launch, adding GPFS stat volume the pass could avoid.",
+  "reviewed_base_sha": "816e631ad47830f675ab11a789231b9748dd18c0",
+  "reviewed_head_sha": "fe0d283c2b583f3c8034c92a10dc6ebbcba91a55",
+  "reviewed_run_id": "r-20261028T201047040153-an-admission-pass-reads-the-roadmap-once",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T21:41:16.003077+00:00",
+  "total": 93
+}
