@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-28T00:05:18.496Z",
+  "dispatched_at": "2026-10-27T23:59:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f045d742177",
+      "line": "2125",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new sort key carries `int(record.get(\"plan_version\") or 0)` as a second element to break ties between records written in the same second, but no added arm exercises it \u2014 tests/test_a_carried_finding_reaches_the_node.py:130 hardcodes `\"plan_version\": 1` in the _store_review helper and the ordering arm at line 424 gives each record a distinct timestamp, so deleting the tiebreak leaves all nine arms green. The tiebreak is therefore an unasserted branch that no regression would redden, which matters because it is the only protection against two same-second records ordering by whatever the listing returned."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f8df7035527",
+      "line": "2124",
+      "severity": "non-blocking",
+      "text": "non-blocking: the bound's documented intent is to anchor on the newest plan revision among a unit's stored reviews (docstring at line 2088, 'the same revision as the newest one carrying the unit's digest'), but the sort makes `timestamp` primary and `plan_version` only a tiebreak, so 'newest' means 'most recently written' rather than 'highest plan version'. A review dispatched at an older revision that is written after a newer-revision review \u2014 a long run outliving a shorter one, or a recovery re-store \u2014 would make the bound anchor on the older fingerprint and count a different burst. The new arm cannot tell the two orders apart because all three fixture records carry plan_version 1."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261027T235648009895-review-of-the-review-cap-counts-only-changed-units-d22db3114127",
+  "reviewed_base_sha": "ef4778a2dae5deb716ca13ac0a85b301b5938506",
+  "reviewed_commit": "d22db3114127be69500a371c94f7cba3d8a35050",
+  "reviewed_head_sha": "d22db3114127be69500a371c94f7cba3d8a35050",
+  "reviewed_run_id": "r-20261027T220150779595-the-review-cap-counts-only-changed-units",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T00:12:58.401916+00:00",
+  "total": 114
+}
