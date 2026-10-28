@@ -1055,7 +1055,11 @@ def review_coverage(
             }
         )
         matched = False
-        acted_units = _acted_finding_units(record)
+        # Resolved on the first unit of this review that lands under the
+        # threshold: reading a finding's unit resolves its anchor against the
+        # reviewed text, which is a git lookup, so a review with nothing near
+        # the threshold never pays for it.
+        acted_units: set[str] | None = None
         for identity in outstanding:
             if identity not in digests:
                 continue
@@ -1095,6 +1099,8 @@ def review_coverage(
             newest_evidence[identity] = share
             if share < threshold:
                 within_share[identity] = record
+                if acted_units is None:
+                    acted_units = _acted_finding_units(record)
                 if identity in acted_units:
                     answered[identity] = record
         if matched:
