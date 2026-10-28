@@ -18,6 +18,7 @@ import copy
 import fcntl
 import json
 import os
+import subprocess
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -214,6 +215,7 @@ def _launch_queued(
     launcher: Callable[..., int] | None,
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
     backend_override: str = "",
+    readiness_cache: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Launch one queued run through the shared dispatch path a coordinator uses.
 
@@ -221,6 +223,9 @@ def _launch_queued(
     the one it was queued for: a rebind of a request that never launched, so the
     request is re-composed from the recorded node and its recorded dispatch
     options (its waivers among them) rather than the backend it originally named.
+
+    ``readiness_cache`` is the pass's own, handed to dispatch so this launch
+    reads the readiness an earlier launch in the same pass already derived.
     """
     from reckon.crew.dispatch import dispatch
 
@@ -301,6 +306,7 @@ def _launch_queued(
             dispatch_options=options,
             admission_launch=True,
             admitted_from=str(pointer["run_id"]),
+            readiness_cache=readiness_cache,
         )
     finally:
         routing.ADMISSION_REVIEW_UNITS.reset(units_token)
@@ -1398,6 +1404,7 @@ def _validated_batch_waits(
     repo_root: str | Path,
     live: Sequence[Mapping[str, Any]],
     read_own_verdict: bool = True,
+    readiness_cache: dict[str, Any] | None = None,
 ) -> tuple[dict[str, list[str]], dict[str, dict[str, str]]]:
     """Resolve all waits and reject absent targets or a combined graph cycle."""
     from reckon import _plan_html as plan_html_reader
@@ -1405,7 +1412,10 @@ def _validated_batch_waits(
     from reckon._schema import parse_plan_ref
 
     current_docs = Path(repo_root) / "docs"
-    cache: dict[str, Any] = {}
+    # A pass hands every launch the same readiness cache, so the roadmap one
+    # project is derived from is built once for the whole pass rather than once
+    # per launch. A direct dispatch supplies none and builds its own.
+    cache = readiness_cache if readiness_cache is not None else {}
     request_nodes = {str(run_ids[node.id]): node for node in nodes}
     live_requests = {
         str(pointer.get("run_id") or ""): pointer
@@ -1610,11 +1620,56 @@ def _validated_batch_waits(
     return refs_by_run, projects_by_run
 
 
+def _plan_tree_fingerprint(docs_dir: str | Path | None) -> tuple[int, int, str]:
+    """What a readiness read saw of the plan tree it derives from.
+
+    The newest modification time and the count of the checkout's plan
+    documents, and the checkout's ``HEAD``: a section verdict is built from
+    every one of those plans and the metadata index beside them, so the answer
+    is only as current as the tree it was read from. A plan edited, or a
+    landing merged, during an admission pass moves one of these, and the
+    cached rows are then missed rather than read as current.
+    """
+    if not docs_dir:
+        return (0, 0, "")
+    newest = 0
+    count = 0
+    try:
+        plans = list((Path(str(docs_dir)) / "plans").glob("*.html"))
+    except OSError:
+        plans = []
+    for path in plans:
+        count += 1
+        with contextlib.suppress(OSError):
+            newest = max(newest, path.stat().st_mtime_ns)
+    head = ""
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(Path(str(docs_dir)).parent), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        completed = None
+    if completed is not None and completed.returncode == 0:
+        head = completed.stdout.strip()
+    return (newest, count, head)
+
+
 def _readiness_rows(
     project: str, docs_dir: str | Path | None, cache: dict[str, Any]
 ) -> tuple[Mapping[str, Mapping[str, Any]], Mapping[str, Mapping[str, Any]]]:
-    """Read one project's roadmap section verdicts and inventory per pass."""
-    key = project or str(docs_dir or "")
+    """Read one project's roadmap section verdicts and inventory per pass.
+
+    ``cache`` is the pass's own, so a pass that launches several requests in
+    one project derives that project's roadmap once. The entry is keyed by the
+    project, its docs directory and :func:`_plan_tree_fingerprint`, so a plan
+    edited or a landing merged while the pass runs misses it.
+    """
+    fingerprint = _plan_tree_fingerprint(docs_dir)
+    key = "|".join((project, str(docs_dir or ""), *(str(part) for part in fingerprint)))
     cached = cache.get(key)
     if cached is not None:
         return cached
@@ -1971,6 +2026,7 @@ def dispatch_waits(
     project: str = "",
     run_id: str = "",
     live: Sequence[Mapping[str, Any]] | None = None,
+    readiness_cache: dict[str, Any] | None = None,
 ) -> tuple[list[str], dict[str, str], list[str]]:
     """Validate a dispatch's graph and return all refs and its unmet refs.
 
@@ -1995,6 +2051,7 @@ def dispatch_waits(
         repo_root=repo_root,
         live=live,
         read_own_verdict=own_verdict,
+        readiness_cache=readiness_cache,
     )
     refs = refs_by_run[candidate]
     wait_projects = projects_by_run[candidate]
@@ -2011,7 +2068,7 @@ def dispatch_waits(
             != SATISFIED
         ]
         return refs, wait_projects, unmet
-    cache: dict[str, Any] = {}
+    cache = readiness_cache if readiness_cache is not None else {}
     rows, inventory = _readiness_rows(owner_project, docs_dir, cache)
     dead = _dead_sections(live)
     unmet = [
@@ -3073,6 +3130,12 @@ def admit_once(
         # path comparison rather than a git read of every live run.
         claim_dispositions: dict[str, Any] = {}
         shared_files: dict[tuple[str, str], frozenset[str]] = {}
+        # One readiness cache for the whole pass, handed to every launch's
+        # dispatch. A launch derives a project's roadmap to judge its waits, and
+        # the next launch in the same project reads what this one already
+        # derived instead of rebuilding it: admission throughput, not the lane,
+        # is what caps how full the lane gets otherwise.
+        readiness_cache: dict[str, Any] = {}
         for index, pointer in enumerate(order):
             session = str(pointer["session"])
             allowance_key = (str(pointer.get("backend") or ""), session)
@@ -3242,7 +3305,10 @@ def admit_once(
             runs.write_handover(pointer)
             try:
                 candidate = _launch_queued(
-                    pointer, launcher=launcher, config_for=config_for
+                    pointer,
+                    launcher=launcher,
+                    config_for=config_for,
+                    readiness_cache=readiness_cache,
                 )
                 record = _require_launched_record(candidate)
             except BudgetHold as exc:
@@ -3259,6 +3325,7 @@ def admit_once(
                             launcher=launcher,
                             config_for=config_for,
                             backend_override=str(rebound["backend"]),
+                            readiness_cache=readiness_cache,
                         )
                         record = _require_launched_record(candidate)
                     except (BudgetHold, LaneHeld, LanePaused) as fallback_hold:

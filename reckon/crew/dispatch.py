@@ -1292,6 +1292,7 @@ def dispatch(
     dispatch_options: Mapping[str, Any] | None = None,
     admission_launch: bool = False,
     admitted_from: str = "",
+    readiness_cache: dict[str, Any] | None = None,
     run_id: str | None = None,
     partner_masks: Iterable[str] | None = None,
     paired_shadow_run_id: str = "",
@@ -1343,6 +1344,10 @@ def dispatch(
     It is written on the first pointer this dispatch publishes, launched or
     re-queued, so the fleet fold reads the new run as that request continuing
     rather than as one run withdrawn and an unrelated one arriving.
+
+    ``readiness_cache`` is an admission pass's readiness cache, which the pass
+    hands to every launch it makes so one project's roadmap is derived once for
+    the pass. A direct dispatch supplies none and builds its own.
     """
     repo_root = resolve_project_repository(project, repo)
     worktree_identity = str(worktree_session or session)
@@ -1912,6 +1917,7 @@ def dispatch(
             repo_root=repo_root,
             project=project,
             run_id=str((existing or {}).get("run_id") or run_id),
+            readiness_cache=readiness_cache,
         )
     if waiting:
         queued, position, phase = _queue_validated_waits(
