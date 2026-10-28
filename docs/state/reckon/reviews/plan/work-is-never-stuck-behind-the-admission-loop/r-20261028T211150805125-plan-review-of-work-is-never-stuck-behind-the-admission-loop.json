@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T21:21:26.542Z",
+  "dispatched_at": "2026-10-28T21:14:49Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:56",
+      "id": "reuse_search-1",
+      "reason": "\u00a72's scope, tests and negative control should hoist the `dispatch.py:274-283` resolve-move idiom into the one owner and make all three callers use it, rather than add a parallel `release_waiters` path whose existence depends on a premise the code refutes.",
+      "text": "\u00a71 asserts \"the only call that moves a request from `awaiting-upstream` to `queued` is the release step inside `admit_once`\", but the primitive has three call sites: `reckon/crew/dispatch.py:274` (`_queue_validated_waits`, which already does resolve \u2192 `_move_pointer` \u2192 phase at queue time), `reckon/crew/runs.py:2146` (the drain view resolving an overdue `awaiting-upstream` to decide `stuck`), and `reckon/crew/queue_admission.py:2282` (inside `admit_once`), with `move_queued_run` at `reckon/crew/queue_admission.py:324`. \u00a72 therefore designs a fourth entry point to a primitive that already has two non-pass callers, and the plan's own cause for nova's 41-minute wait is unproven as stated",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:136",
+      "id": "reuse_search-2",
+      "reason": "\u00a78 should name the existing parser as the thing `crew complete --land` is routed through, and drop or re-scope the arms that assert behaviour `land_once` already provides, otherwise the node re-implements a working guard and its negative control cannot fail.",
+      "text": "\u00a78 is written as though both manifest-commit behaviours are absent, but `_delivered_revision` (`reckon/crew/queue_landing.py:28`) already parses an entry that leads with a revision and carries a subject, or a bare list of several revisions, and `_unreadable_entry_guard` (`reckon/crew/queue_landing.py:52`) already records a refusal, with the entry quoted, for a manifest whose last entry names no revision \u2014 landed and exercised by `tests/test_the_landing_pass_measures_and_lands.py`; the residual defect is confined to the `crew complete --land` subprocess re-reading the manifest on its own",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:66",
+      "id": "duplicate_owner-1",
+      "reason": "each instance is a forked owner that will drift from the original, and (b) and (c) additionally put a deliverable outside the write paths that were supposed to produce it; naming `resumption.py`, `process_liveness.py`, `needs_you.py` and `obligations.py` in the write paths is a one-line change per section now and a stranded node later.",
+      "text": "three sections each place a mechanism beside its existing owner, and the plan names none of them. (a) \u00a72 adds `release_waiters` without naming `reckon/crew/dispatch.py:274` or `reckon/crew/runs.py:2146`, the two callers that already release a waiter outside a pass. (b) \u00a76 names `reckon/crew/recovery_wait.py` as the write path for dead-park classification, but that module validates wait-probe *shape* and its own docstring at `reckon/crew/recovery_wait.py:474-489` says the reader that decides whether a park lifts is `reckon/crew/resumption.py:1776 sweep`, while process liveness is owned by `reckon/crew/process_liveness.py:13 process_alive` and `reckon/crew/recovery_liveness.py:419 _live_descendant` \u2014 so \"three sweeps unchanged and no live process\" written into `recovery_wait.py` duplicates two owners and lands in the wrong file. (c) \u00a77 names `reckon/crew/queue_admission.py` and `reckon/crew/runs.py` for \"the obligations view shows the stall \u2026 once, until it clears\", but the obligations view and its stall machinery are `reckon/crew/needs_you.py:134` (stall_seconds, `stall_stream_path`, `needs_you_rows`) with `reckon/crew/obligations.py` \u2014 both are outside the section's declared write paths, so the node cannot deliver the third arm at all",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:101",
+      "id": "thin_wrapper-1",
+      "reason": "an unspecified fit query will either duplicate `_fit` or silently disagree with it about a window, which is exactly the failure the plan's own \u00a71 case records (\"no other lane was tried\"); the section must say which picker entry point it calls.",
+      "text": "\u00a75 adds a context-fit query to the admission pass (\"asks the picker for a lane whose context window fits the node's estimate, among the lanes the request's session may use under the lifts in force\") without justifying why the picker's existing per-candidate verdict cannot be extended: `_fit` (`reckon/crew/picker/snapshot.py:663`) already runs the competence check for every candidate backend and returns its reasons, and `move_queued_run` (`reckon/crew/queue_admission.py:324`) already re-composes a launch on another backend, so the honest change is to ask the picker for its ranked candidates and take the first whose competence verdict passes, not to re-derive fitness in the admission pass",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:65",
+      "id": "interface_budget-1",
+      "reason": "each section must either name the public definition, CLI option or refusal it retires or merges, or state in its own text why nothing can be, which is a one-line addition per section and the only thing that keeps the fourth figure from growing in three families at once.",
+      "text": "at public_definitions 2271, cli_options 441, mcp_views 31 and refusal_families 23, four sections add surface with no retirement stated in their own text: \u00a72 (`:65`) adds `queue_admission.release_waiters` to the public definitions, \u00a73 (`:78`) adds the `crew land` verb with a `--watch` option to the CLI surface, \u00a75 (`:101`) adds two refusal messages at `crew queue edit` (context fit, live claim), and \u00a77 (`:124`) adds a stall verdict kind, a drain-view age field and an obligations row",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "69ffcd739753322aa46ff4d1e6f7eb7d332c041d",
+  "plan_fingerprint": "6eb884e938888a4ed39f8e60804234c0b1ac921a898e7f5d560e0ece35c86af5",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T211150805125-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "0952229c57e0f18cbd0978a550378f88ac8f96d5",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a72's `release_waiters`, \u00a73's `queue_landing` loop and \u00a74's digest-keyed memo each hide several steps (wait resolution, dead-section rule, readiness read, pointer move; per-tick action selection, own lock, bounded `srun`; blob+identity keyed coverage) behind one call each, which is the shape asked for.",
+    "duplicate_owner": "a finding \u2014 the plan adds three parallel owners over mechanisms that already have one: wait release beside `dispatch.py:274`/`runs.py:2146`, dead-park classification outside `reckon/crew/resumption.py:1776`, and stall-obligation display outside `reckon/crew/needs_you.py:134`.",
+    "interface_budget": "a finding \u2014 public_definitions 2271, cli_options 441, mcp_views 31, refusal_families 23; \u00a72, \u00a73, \u00a75 and \u00a77 each add to one of these families (`release_waiters`, `crew land --watch`, two edit-time refusals, a stall verdict plus a drain-view field plus an obligations row) and none names what it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan's causal premise that release happens only inside `admit_once` is wrong: `resolve_waits` is already called from three sites (`reckon/crew/dispatch.py:274`, `reckon/crew/runs.py:2146`, `reckon/crew/queue_admission.py:2282`), and two of \u00a78's three behaviours already exist in `reckon/crew/queue_landing.py:28` and `:52`.",
+    "thin_wrapper": "a finding \u2014 \u00a75 asks the picker for \"a lane whose context window fits\", a second fit query beside the picker's own per-candidate competence verdict in `reckon/crew/picker/snapshot.py:663`, without saying why that candidate ranking cannot be extended."
+  },
+  "section_digests": {
+    "_document": "d4ddba2b99fbbeb296062e562e8f8ef30503415202e5b5319130d5236f30d3c3",
+    "s1": "5004aa941693c23f441593a8740d26ef96a27355a94d38750cfeb8d7a8a01e78",
+    "s2": "e6e0bfe7436e1bfb486d4711bd401fdc9e1ab54fdedf233f940b0bff9db4037f",
+    "s3": "079cf946368a170be7dba66d0bfac0a83b87ad2cb37b362cfdc7e1d3efbb29c4",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "44e62fa70a4a1b501d54e34863283450c3b794fd74c5e375661968732c2e89be",
+    "s6": "dae45c727ff637beac24d6f3b50d9b33d8d36d76fa4284209ce111a4bd7aa4e4",
+    "s7": "5dd4014387664545c8bac0855c3bc105c63d959495b999dd5a05595af17aeea8",
+    "s8": "9cfb6f57e35e9f7717400fecec46e631ad421a08d10a24fe431e63ac3d83d4c6",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T21:31:46.255376+00:00"
+}
