@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T10:59:35.976Z",
+  "dispatched_at": "2026-10-28T10:49:23Z",
+  "findings": [
+    {
+      "anchor": "a-review-gate-judges-what-it-covers plan.html:244",
+      "id": "done_when-1",
+      "reason": "a node can land every declared arm, leave the two divergent copies in place, and pass the gate, which is the very divergence the comment says the section exists to remove; and a fence taken from the section's write-path line would refuse the `routing.py` edit the comment requires.",
+      "text": "\u00a710's comment requires the node to delete the duplicate `plan_review_units` in `queue_admission.py` and add \"a test asserts the two names are one object\", yet \u00a710's done-when (`plan.html:188`) has no arm for that assertion and its write-path line names `queue_admission.py`, `node.py` and the new test but not `reckon/crew/routing.py`",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "a-review-gate-judges-what-it-covers plan.html:196",
+      "id": "reasoning-1",
+      "reason": "two of \u00a712's three declared changes are already true, so the node dispatched on it would either land nothing and pass, or edit text to install a rule that is present, while the section's premise that a coordinator is currently told to compose the review is wrong and would mislead its answer.",
+      "text": "\u00a712's premise that the build skill instructs a coordinator to compose a content review before dispatch is false: `skills/reckon-build/SKILL.md:108-116` says the gate needs a stored review, that \"the author's content review usually supplies it\", and to answer findings before dispatching, and it carries no compose-a-content-review instruction; nor is the write-time rule absent from the authoring skills, since `skills/reckon-create/SKILL.md:652` (\"Step 4.5 \u2014 Review the plan before it is released\") and `skills/reckon-edit/SKILL.md:163` (hard rule 10) already state it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "81ff53eb50e55c00c700fb2e56f8b1e85649f941",
+  "plan_fingerprint": "90d044871835154caa406d5047419b8918231dfc48d7ef8f43f80b0a42fa576e",
+  "plan_slug": "a-review-gate-judges-what-it-covers",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T104804177705-plan-review-of-a-review-gate-judges-what-it-covers",
+  "reviewed_blob_sha": "cbd63bb1f868172021693eedc590c0ed25e4d134",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited module, line, skill and cross-plan section resolves: `plan_review_units` is defined at `reckon/crew/routing.py:2434` and again at `reckon/crew/queue_admission.py:2255` (bodies identical, as the comment claims), `_review_accepts_promotion` is at `reckon/crew/recovery_review_acceptance.py:29`, `a-queue-holds-the-whole-plan` \u00a719/\u00a721/\u00a722/\u00a727 all exist (\u00a721 `done`), the skills paths exist, and the two `.html` evidence links resolve.",
+    "done_when": "a finding \u2014 \u00a710's comment requires deleting the duplicate `plan_review_units` copy and adding an identity assertion, but \u00a710's write-path line omits `reckon/crew/routing.py` and no declared arm covers the assertion, so a landing that leaves the duplicate in place passes every arm.",
+    "evidence_paths": "pass \u2014 \u00a711's live-store arm names the run's `logs/` directory for its counts and run ids and \u00a79's names the gate log; no arm lands evidence in a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers, version tags or changelog prose reach the changed text; the `\u00a79`/`\u00a72`/`\u00a73` references are section pointers inside a plan, and the run id in the \u00a710 comment is provenance for a measurement.",
+    "reasoning": "a finding \u2014 \u00a712 states that `skills/reckon-build/SKILL.md` \"no longer tells a coordinator to compose a content review before dispatch\", but the file already defers the content review to the author and instructs only that findings be answered, so the change \u00a712 describes is a no-op and sends a node looking for text that is not there; the write-time rule \u00a712 says the create and edit skills must be taught is likewise already stated in both.",
+    "single_goal": "pass \u2014 each of \u00a710, \u00a711 and \u00a712 names one deliverable; \u00a710's duplicate-definition removal is the single-sourcing of the rule that section changes, not a second goal.",
+    "wiring": "pass \u2014 the new `plan-section-depends-on` meta (`plan.html:30`) declares `s10`\u2192[`s2`,`s9`] and `s12`\u2192[`s9`,`s10`], which matches \u00a710's reliance on \u00a72's contract rule and \u00a79's digest change and \u00a712's reliance on \u00a79 and \u00a710, and f-rgjc-002's build order states the same waits."
+  },
+  "section_digests": {
+    "_document": "8f53e7276d5ec09a06af1d0d14a0f1e43709610dc89ec6e81afd8347d8f58ba4",
+    "s1": "2f80e3c4526e5da0f46c438dc82b2880b0fa395a71a3807823c00850eb9622b9",
+    "s10": "0347256131d51d907a02af2f58beaa7a22b5537fdced1660d95567b2a3ff101d",
+    "s11": "cd291d6897eacab6c443910de1d0857eb8f3690ae6379ca06f590121f4b06007",
+    "s12": "b9d85c58fba665a6ec6d382c6c08e4af211a0068675727b775a65fd42dc39899",
+    "s2": "b003c30eb192f0dfa86d4e6518b4deede24bf6b15c0b15ba5784a6066d3da870",
+    "s3": "7df7d94c9d011998671062ddf1072ba44b1c08d7172f92e43f18961813f1d434",
+    "s4": "491337ffa1e3dbb35aed0b41de9bfb17126787d7b0a08c15bb12879faa1a9b43",
+    "s5": "f21e5477c01ae1e8fb4da7b3d607da52313f50d700b6b7dc3d5a2adb8d9f8956",
+    "s6": "534a6debaffa16edfc0cb75f6488191af897e1ff0b9ad32ecdaaa28148c119ff",
+    "s7": "ce6bf11980ac24dc184e5bd2aa6fd813667fe40e90c0ea97a60a56d649f3fd30",
+    "s8": "fd5dc1e3777871755eeeb65dc14935764ea25a67e2902dd8de2e8831cb64fa78",
+    "s9": "6237a98697d0fead79a4d109178e3da581fa42f7bd6e8028527f46a167cb259e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T11:00:15.011171+00:00"
+}
