@@ -2242,6 +2242,13 @@ def compose_burst_refusal(
 # the author was about to replace.
 PLAN_REVIEW_QUIET_SECONDS = 600
 
+# The most plans one pass weighs. The pass runs on the follower's sweep, so its
+# cost is a bound on the whole watch loop rather than on one review: weighing a
+# single plan against the live store costs about twenty seconds, because the
+# burst refusal and the standing-run reader each consult the store, so the
+# budget is one plan per pass.
+PLAN_REVIEW_PASS_LIMIT = 1
+
 # Who an automatic note is recorded as. The answers map carries a ``by``, and a
 # reader of a noted finding can then tell the reflex's answer from an author's.
 PLAN_REVIEW_REFLEX = "plan-review-reflex"
@@ -2347,23 +2354,109 @@ def _note_records(
     return noted
 
 
-def _project_plan_paths(project: str) -> list[tuple[str, Path]]:
-    """The live plans of a project, as slug and path, or empty when unmounted."""
+def _plans_by_hand(docs: Path, refused: Exception) -> tuple[list, list]:
+    """Read the plans file by file when the catalogue refuses the tree.
+
+    One document whose location disagrees with its declared type makes the
+    catalogue raise for the whole tree, which would stop the pass for every
+    plan in the project. Read each file on its own instead, so the document
+    that conflicts is named and the rest are weighed normally.
+    """
+    from reckon._plan_html import parse_meta
+    from reckon.resources import TYPE_ROOTS
+
+    by_root = {str(root): str(kind) for kind, root in TYPE_ROOTS.items()}
+    plans: list[tuple[str, Path]] = []
+    failed: list[dict[str, str]] = []
+    for path in sorted(docs.rglob("*.html")):
+        if "archive" in path.parts:
+            continue
+        try:
+            meta = parse_meta(path)
+        except Exception as exc:  # noqa: BLE001 — one unreadable document is that document's
+            failed.append({"plan": path.stem, "error": f"{type(exc).__name__}: {exc}"})
+            continue
+        declared = str(meta.get("type") or "").strip().lower()
+        located = by_root.get(path.parent.name)
+        if located and declared and located != declared:
+            failed.append(
+                {
+                    "plan": path.stem,
+                    "error": (
+                        f"{path.name}: location type {located} conflicts with "
+                        f"reckon-type {declared}"
+                    ),
+                }
+            )
+            continue
+        if declared != "plan":
+            continue
+        plans.append((str(meta.get("slug") or path.stem), path))
+    if not plans:
+        failed.append({"plan": "-", "error": f"{type(refused).__name__}: {refused}"})
+    return plans, failed
+
+
+def _project_plan_paths(project: str) -> tuple[list[tuple[str, Path]], list[dict]]:
+    """The live plans of a project, and the documents that could not be read."""
     from reckon._store import _docs_dir_for_project
     from reckon.resources import iter_resources
 
     docs = _docs_dir_for_project(project)
     if docs is None:
-        return []
+        return [], []
     try:
-        resources = iter_resources(Path(docs), project, include_archived=False)
+        resources = list(iter_resources(Path(docs), project, include_archived=False))
     except OSError:
-        return []
+        return [], []
+    except Exception as exc:  # noqa: BLE001 — the catalogue refuses trees it cannot classify
+        return _plans_by_hand(Path(docs), exc)
     return [
         (str(resource.slug), Path(resource.path))
         for resource in resources
         if str(resource.type) == "plan"
-    ]
+    ], []
+
+
+def _reflex_state_path(project: str) -> Path:
+    """Where the reflex records the edit it last weighed each plan at."""
+    from reckon.crew.run_paths import crew_home
+
+    readable = "".join(
+        character if character.isalnum() or character in "._-" else "-"
+        for character in str(project)
+    ).strip("-")
+    return crew_home() / PLAN_REVIEW_REFLEX / f"{readable or 'project'}.json"
+
+
+def _weighed_edits(project: str) -> dict[str, float]:
+    """The plan mtimes the last pass weighed, or empty when there is none."""
+    try:
+        stored = json.loads(_reflex_state_path(project).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(stored, Mapping):
+        return {}
+    return {
+        str(slug): float(stamp)
+        for slug, stamp in stored.items()
+        if isinstance(stamp, (int, float))
+    }
+
+
+def _record_weighed_edits(project: str, weighed: Mapping[str, float]) -> None:
+    """Write the mtimes the pass weighed, so the next pass reads only edits."""
+    path = _reflex_state_path(project)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(dict(sorted(weighed.items())), indent=2) + "\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        # The record is an optimisation: a pass that cannot write it reads
+        # every plan next time, which is slow but never wrong.
+        pass
 
 
 def _owed_review_skip_reason(
@@ -2444,9 +2537,12 @@ def compose_owed_plan_reviews(
         "dry_run": bool(dry_run),
         "composed": [],
         "skipped": [],
+        "failed": [],
+        "read": [],
         "notes": [],
     }
-    plans = _project_plan_paths(project)
+    plans, failed = _project_plan_paths(project)
+    report["failed"].extend(failed)
     if not plans:
         return report
     if not dry_run:
@@ -2471,22 +2567,67 @@ def compose_owed_plan_reviews(
             }
         )
         return report
+    weighed = _weighed_edits(project) if not dry_run else {}
+    passed = dict(weighed)
     for plan_slug, path in plans:
-        reason = _owed_review_skip_reason(
-            project, plan_slug, path, base_dir=base_dir, now_seconds=now_seconds
-        )
-        if reason is not None:
-            report["skipped"].append({"plan": plan_slug, "reason": reason})
+        try:
+            edited = path.stat().st_mtime
+        except OSError:
             continue
-        if dry_run:
-            report["composed"].append({"plan": plan_slug, "dispatched": False})
+        if weighed.get(plan_slug) == edited:
+            # The plan has not been written since the pass last weighed it, so
+            # it owes nothing new. This is what keeps the pass proportional to
+            # the edits since the last sweep rather than to the project.
             continue
-        subject = recovery.plan_review_subject(
-            project, plan_slug, owner, rubric=CONTENT_RUBRIC
-        )
-        result = recovery.dispatch_review_for_run(
-            subject, config=config, launcher=launcher
-        )
+        if len(report["read"]) >= PLAN_REVIEW_PASS_LIMIT:
+            # A cold start has no record of what it has weighed, so the first
+            # pass of a large project would weigh every plan. Take a slice and
+            # let the next pass continue: the sweep runs every couple of
+            # minutes, and a bound that is never exceeded is what keeps the
+            # pass from stalling the follower.
+            report["skipped"].append(
+                {"reason": f"the pass weighed its {PLAN_REVIEW_PASS_LIMIT} plans"}
+            )
+            break
+        report["read"].append(plan_slug)
+        try:
+            reason = _owed_review_skip_reason(
+                project, plan_slug, path, base_dir=base_dir, now_seconds=now_seconds
+            )
+            if reason is not None:
+                report["skipped"].append({"plan": plan_slug, "reason": reason})
+                if reason.startswith(
+                    ("a stored review already covers", "the plan is ")
+                ):
+                    # Settled without a review, and nothing short of an edit
+                    # can unsettle it. Every other reason may clear on its own
+                    # (a quiet period expires, a review in flight finishes), so
+                    # those plans are read again on the next pass.
+                    passed[plan_slug] = edited
+                continue
+            if report["composed"]:
+                # One review per pass: a burst that leaves a dozen plans owing
+                # a review should start one, not twelve at once on a lane.
+                report["skipped"].append(
+                    {"plan": plan_slug, "reason": "this pass already composed one"}
+                )
+                continue
+            if dry_run:
+                report["composed"].append({"plan": plan_slug, "dispatched": False})
+                continue
+            subject = recovery.plan_review_subject(
+                project, plan_slug, owner, rubric=CONTENT_RUBRIC
+            )
+            result = recovery.dispatch_review_for_run(
+                subject, config=config, launcher=launcher
+            )
+        except Exception as exc:  # noqa: BLE001 — one plan's failure is that plan's
+            # One plan's failure is that plan's: a document the catalogue
+            # refuses must not stop the pass for every other plan.
+            report["failed"].append(
+                {"plan": plan_slug, "error": f"{type(exc).__name__}: {exc}"}
+            )
+            continue
         entry = {
             "plan": plan_slug,
             "dispatched": bool(result.get("dispatched")),
@@ -2495,6 +2636,9 @@ def compose_owed_plan_reviews(
         if result.get("reason"):
             entry["reason"] = str(result["reason"])
         report["composed"].append(entry)
+        passed[plan_slug] = edited
+    if not dry_run:
+        _record_weighed_edits(project, passed)
     return report
 
 

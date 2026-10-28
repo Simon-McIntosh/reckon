@@ -210,6 +210,59 @@ def test_the_quiet_period_is_measured_from_the_plan_file(project):
     assert 0 < remaining <= plan_review.PLAN_REVIEW_QUIET_SECONDS - FRESH_EDIT_SECONDS
 
 
+def test_a_pass_reads_only_the_plans_edited_since_the_last_one(project, monkeypatch):
+    _home, _repo, path = project
+    _launch(monkeypatch)
+    template = (
+        "<!doctype html><html><head>"
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="{slug}">'
+        '<meta name="plan-status" content="active">'
+        "</head><body><p>Bulk.</p></body></html>"
+    )
+    for index in range(59):
+        slug = f"bulk-{index:02d}"
+        sibling = path.parent / f"{slug}.html"
+        sibling.write_text(template.format(slug=slug), encoding="utf-8")
+        _edit(sibling, QUIET_EDIT_SECONDS)
+    _edit(path, QUIET_EDIT_SECONDS)
+
+    # The pass has already weighed all sixty, as a pass before the count began
+    # would have left them.
+    plans, failed = plan_review._project_plan_paths("sample")
+    assert failed == []
+    assert len(plans) == 60
+    plan_review._record_weighed_edits(
+        "sample", {slug: target.stat().st_mtime for slug, target in plans}
+    )
+    # One of them is written.
+    _edit(path, QUIET_EDIT_SECONDS - 60)
+
+    report = _pass()
+
+    assert report["read"] == ["fixture"], report
+
+
+def test_a_plan_the_catalogue_refuses_is_reported_and_the_rest_compose(
+    project, monkeypatch
+):
+    _home, _repo, path = project
+    _launch(monkeypatch)
+    _edit(path, QUIET_EDIT_SECONDS)
+    # A document whose location says research and whose declared type says plan
+    # makes the catalogue refuse the whole tree.
+    conflicting = path.parent.parent / "research" / "contour-mesh-capacity.html"
+    conflicting.parent.mkdir(parents=True, exist_ok=True)
+    conflicting.write_text(path.read_text(), encoding="utf-8")
+
+    report = _pass()
+
+    assert [row["plan"] for row in report["composed"]] == ["fixture"], report
+    assert any(
+        "contour-mesh-capacity" in str(row.get("plan", "")) for row in report["failed"]
+    ), report
+
+
 @pytest.mark.parametrize("seconds_ago", [QUIET_EDIT_SECONDS, FRESH_EDIT_SECONDS])
 def test_a_pass_without_a_session_composes_nothing(project, monkeypatch, seconds_ago):
     _home, _repo, path = project
