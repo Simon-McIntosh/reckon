@@ -560,9 +560,10 @@ def test_a_plan_whose_reason_never_settles_does_not_starve_the_rest(
 ):
     _home, _repo, path = project
     _launch(monkeypatch)
-    # A plan that sorts before the quiet one and whose review is in flight: the
-    # reason is true on every pass, so a pass that always started at the first
-    # plan would spend its single slot on it and never reach the quiet plan.
+    # A plan whose review is in flight and whose edit is the freshest in the
+    # project, so the read slot is spent on it first: the reason is true on
+    # every pass, so a pass with no rotation would weigh it every time and
+    # never reach the quiet plan behind it.
     holder = path.parent / "anchor.html"
     holder.write_text(
         "<!doctype html><html><head>"
@@ -572,8 +573,8 @@ def test_a_plan_whose_reason_never_settles_does_not_starve_the_rest(
         "</head><body><p>Anchor.</p></body></html>",
         encoding="utf-8",
     )
-    _edit(holder, QUIET_EDIT_SECONDS)
     _edit(path, QUIET_EDIT_SECONDS)
+    _edit(holder, QUIET_EDIT_SECONDS)
     _run_naming("anchor")
     _run_naming("fixture")
     monkeypatch.setattr(
@@ -613,3 +614,65 @@ def test_a_dry_run_composes_nothing_and_answers_nothing(
     assert report["notes"] == []
     assert json.loads(stored.read_text(encoding="utf-8")).get("responses", {}) == {}
     assert _run_directories() == []
+
+
+def test_a_burst_plan_is_reached_past_sixty_quiet_plans(project, monkeypatch):
+    _home, _repo, path = project
+    launched = _launch(monkeypatch)
+    # Sixty plans, one inside the burst window. The fifty-nine quiet plans are
+    # named so they sort ahead of it: a pass that spends its one read on
+    # whatever the order reaches first weighs one of those on every pass and
+    # never reaches the plan its author is writing.
+    for index in range(59):
+        quiet = path.parent / f"aaa-{index:02d}.html"
+        quiet.write_text(path.read_text(encoding="utf-8"), encoding="utf-8")
+        _edit(quiet, STALE_EDIT_SECONDS)
+    _edit(path, QUIET_EDIT_SECONDS)
+    _run_naming("fixture")
+    # The rotation starts among the quiet plans, not at the plan that owes.
+    plan_review._record_weighed_edits("sample", {}, cursor="aaa-10")
+
+    report = _pass()
+
+    assert [row["plan"] for row in report["composed"]] == ["fixture"], report
+    assert report["read"] == ["fixture"], report
+    assert launched == [AUTHOR_SESSION]
+    assert len(_run_directories()) == 1
+
+
+def test_answers_written_before_a_failed_note_are_committed(project, monkeypatch):
+    _home, _repo, path = project
+    _launch(monkeypatch)
+    _edit(path, QUIET_EDIT_SECONDS)
+    _run_naming("fixture")
+    first = _committed_record("review-one", _two_findings())
+    second = _committed_record("review-two", _two_findings())
+    _composed_by_the_reflex("review-one", "review-two")
+    root = subprocess.run(
+        ["git", "-C", str(first.parent), "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    real = plan_review.record_response
+    seen: list[str] = []
+
+    def fails_after_the_first(*args, **kwargs):
+        if seen:
+            raise OSError("the review store went away")
+        seen.append("first")
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(plan_review, "record_response", fails_after_the_first)
+    before = len(_commits(root))
+
+    report = _pass()
+
+    # The failure is reported, and the answers that did reach the disk are
+    # written to the repository in the pass's one write rather than left
+    # unrecorded: a later pass reads a written answer as answered, so an
+    # unrecorded one would be lost while the finding it answers looks settled.
+    assert [row for row in report["failed"] if row.get("stage") == "notes"], report
+    assert len(_commits(root)) == before + 1
+    assert json.loads(first.read_text(encoding="utf-8"))["responses"]
+    assert json.loads(second.read_text(encoding="utf-8")).get("responses", {}) == {}

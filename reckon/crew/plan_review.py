@@ -2326,6 +2326,13 @@ PLAN_REVIEW_BURST_SECONDS = 24 * 60 * 60
 # budget is one plan per pass.
 PLAN_REVIEW_PASS_LIMIT = 1
 
+# How long a preview may spend weighing plans. A ``dry_run`` weighs every plan
+# inside the burst window rather than one, so its cost is proportional to the
+# plans being authored, not to the project; weighing one plan against the stored
+# review set costs several seconds, so the bound is on the clock rather than on
+# a plan count that would have to be guessed per project.
+PLAN_REVIEW_PREVIEW_SECONDS = 20
+
 # Who an automatic note is recorded as. The answers map carries a ``by``, and a
 # reader of a noted finding can then tell the reflex's answer from an author's.
 PLAN_REVIEW_REFLEX = "plan-review-reflex"
@@ -2336,18 +2343,24 @@ def plan_review_quiet_remaining(
 ) -> int:
     """The seconds left before a plan's last edit is quiet enough to review.
 
-    Zero means the quiet period has passed. The plan file is the store an edit
-    writes, so its modification time is the last edit; a file that cannot be
-    read answers zero, because a plan whose edit time cannot be measured is not
-    evidence that it is still being written.
+    Zero means the quiet period has passed. The age comes from
+    :func:`plan_review_edit_age`, which owns the measure, so the quiet period
+    and the burst window cannot disagree about when the edit was. A file that
+    cannot be read answers zero, because a plan whose edit time cannot be
+    measured is not evidence that it is still being written.
     """
-    try:
-        edited = Path(plan_path).stat().st_mtime
-    except OSError:
+    age = plan_review_edit_age(plan_path, now_seconds=now_seconds)
+    if age is None:
         return 0
-    moment = time.time() if now_seconds is None else now_seconds
-    remaining = PLAN_REVIEW_QUIET_SECONDS - (moment - edited)
-    return max(0, int(remaining))
+    return max(0, int(PLAN_REVIEW_QUIET_SECONDS - age))
+
+
+def _edit_moment(plan_path: str | Path) -> float | None:
+    """When the plan file was last written, in epoch seconds, or ``None``."""
+    try:
+        return Path(plan_path).stat().st_mtime
+    except OSError:
+        return None
 
 
 def plan_review_edit_age(
@@ -2360,9 +2373,8 @@ def plan_review_edit_age(
     it. The two readers of an edit's age — the quiet period and the burst
     window — measure it here, so they cannot disagree about when the edit was.
     """
-    try:
-        edited = Path(plan_path).stat().st_mtime
-    except OSError:
+    edited = _edit_moment(plan_path)
+    if edited is None:
         return None
     moment = time.time() if now_seconds is None else now_seconds
     return moment - edited
@@ -2765,15 +2777,21 @@ def compose_owed_plan_reviews(
         owned = {run_id for run_ids in held.values() for run_id in run_ids}
         try:
             with _deferring_record_commits() as pending:
-                report["notes"] = _note_records(
-                    records,
-                    base_dir=base_dir,
-                    by=PLAN_REVIEW_REFLEX,
-                    when=None,
-                    composed=owned,
-                )
-                answered = list(pending)
-        except (OSError, ValueError) as exc:
+                try:
+                    report["notes"] = _note_records(
+                        records,
+                        base_dir=base_dir,
+                        by=PLAN_REVIEW_REFLEX,
+                        when=None,
+                        composed=owned,
+                    )
+                finally:
+                    # A note written before the failure is already on disk, and
+                    # a later pass reads it as answered rather than writing it
+                    # again, so whatever reached the disk is committed even when
+                    # the walk stops partway.
+                    answered = list(pending)
+        except Exception as exc:  # noqa: BLE001 — the notes written are on disk
             report["failed"].append(
                 {"error": f"{type(exc).__name__}: {exc}", "stage": "notes"}
             )
@@ -2800,29 +2818,76 @@ def compose_owed_plan_reviews(
     # One reading of each store for the whole pass, so the authoring run each
     # plan is dispatched under costs one lookup rather than one ledger load.
     authors = plan_authoring_runs(project, now_seconds=now_seconds)
-    # Start after the plan the last pass weighed. The pass takes one plan, so a
-    # plan near the top whose reason never settles would otherwise hold the
-    # only slot on every pass and starve every plan behind it.
-    order = list(plans)
-    if not dry_run:
-        cursor = _weighed_cursor(project)
-        names = [slug for slug, _path in order]
-        if cursor in names:
-            begin = names.index(cursor) + 1
-            order = order[begin:] + order[:begin]
-    # A pass that weighs nothing keeps the cursor it was given, so a plan that
-    # was pending stays pending instead of the rotation restarting at the top.
-    stopped_at = "" if dry_run else _weighed_cursor(project)
-    for plan_slug, path in order:
-        try:
-            edited = path.stat().st_mtime
-        except OSError:
+    # A plan's edit age is one stat, so the burst window is applied to the whole
+    # project before anything is weighed. Only a plan inside the window can owe
+    # a review, and the read slot is spent on one of those rather than on
+    # whichever plan the rotation happened to reach: a project carrying hundreds
+    # of quiet plans would otherwise spend every pass on a document nobody has
+    # touched and never reach the one being authored.
+    moment = time.time() if now_seconds is None else now_seconds
+    candidates: list[tuple[str, Path, float]] = []
+    for plan_slug, path in plans:
+        edited = _edit_moment(path)
+        if edited is None:
+            report["skipped"].append(
+                {"plan": plan_slug, "reason": "the plan file cannot be read"}
+            )
+            continue
+        age = moment - edited
+        if age < PLAN_REVIEW_QUIET_SECONDS:
+            report["skipped"].append(
+                {
+                    "plan": plan_slug,
+                    "reason": f"the plan was edited {int(age // 60)} minutes ago,"
+                    " inside the quiet period",
+                }
+            )
+            continue
+        if age > PLAN_REVIEW_BURST_SECONDS:
+            report["skipped"].append(
+                {
+                    "plan": plan_slug,
+                    "reason": f"the plan was edited {age / 3600:.1f} hours ago,"
+                    " outside the authoring burst",
+                }
+            )
             continue
         if weighed.get(plan_slug) == edited:
             # The plan has not been written since the pass last weighed it, so
             # it owes nothing new. This is what keeps the pass proportional to
             # the edits since the last sweep rather than to the project.
             continue
+        candidates.append((plan_slug, path, edited))
+    # The freshest edit first: the burst that has just ended is the one most
+    # likely to belong to a session still holding its lane, and a preview that
+    # stops at its time bound should have weighed that one rather than an older
+    # authoring burst that happens to sort earlier. The rotation below still
+    # decides where a real pass starts, so freshness does not starve a plan.
+    candidates.sort(key=lambda row: row[2], reverse=True)
+    # Start after the plan the last pass weighed. The pass takes one plan, so a
+    # plan near the top whose reason never settles would otherwise hold the
+    # only slot on every pass and starve every plan behind it.
+    if not dry_run:
+        cursor = _weighed_cursor(project)
+        names = [slug for slug, _path, _edited in candidates]
+        if cursor in names:
+            begin = names.index(cursor) + 1
+            candidates = candidates[begin:] + candidates[:begin]
+    if not candidates:
+        report["skipped"].append(
+            {"reason": "no plan was edited inside the authoring burst"}
+        )
+    # A pass that weighs nothing keeps the cursor it was given, so a plan that
+    # was pending stays pending instead of the rotation restarting at the top.
+    stopped_at = "" if dry_run else _weighed_cursor(project)
+    # A preview weighs every plan inside the window, so it is bounded by the
+    # clock: the gate it feeds must finish inside thirty seconds whatever the
+    # project's authoring activity.
+    preview_stops_at = time.monotonic() + PLAN_REVIEW_PREVIEW_SECONDS
+    for plan_slug, path, edited in candidates:
+        if dry_run and time.monotonic() > preview_stops_at:
+            report["skipped"].append({"reason": "the preview reached its time bound"})
+            break
         if report["composed"]:
             # One review per pass: a burst that leaves a dozen plans owing a
             # review should start one, not twelve at once on a lane.
@@ -2830,7 +2895,7 @@ def compose_owed_plan_reviews(
                 {"plan": plan_slug, "reason": "this pass already composed one"}
             )
             continue
-        if len(report["read"]) >= PLAN_REVIEW_PASS_LIMIT:
+        if not dry_run and len(report["read"]) >= PLAN_REVIEW_PASS_LIMIT:
             # Weighing a plan against the live store costs about twenty seconds,
             # because each plan is checked against the whole stored review set
             # and a large project carries thousands of records. A preview that
