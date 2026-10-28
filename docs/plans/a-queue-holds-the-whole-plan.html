@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="244">
+<meta name="plan-version" content="245">
 <meta name="plan-modified" content="2026-10-28">
 </head>
 <body>
@@ -634,7 +634,10 @@
     <div class="r-comment-body"><p>The re-landed cap still refuses a composed review because of units the review would not read. <code>compose_burst_refusal</code> in <code>reckon/crew/plan_review.py</code> checks every unit of the plan. It counts every stored review of a unit at its newest revision, whatever the rubric. On 28 October it refused a content review of <code>a-review-gate-judges-what-it-covers</code>: section s1 had not changed since it was reviewed, and it carried a design review and a content review at one revision. A plan that took both reviews at one revision can never be reviewed a third time, which blocks the write-time review that plan now requires. The cap must check only the units the composed review covers, which are the uncovered units, and count only reviews of the rubric being composed. The section is open again for that repair.</p></div>
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261028T095541915364-review-of-the-review-cap-reads-only-what-it-reviews-ae854c2c014e" data-who="reckon-build" data-when="2026-10-28T10:04:47.623Z">
-    <div class="r-comment-body"><p>reviewed r-20261028T091547207771-the-review-cap-reads-only-what-it-reviews between 0a44066307d7a498928919870769c9b85c02a0a7 and ae854c2c014eb5fffda4d9157d1ba9bec6968a8e; the cap change is sound and its durability is shown by mutation, with one blocking record defect — the run&#x27;s manifest cites gate-base.log at a path that does not exist in the run directory and the only copy sits on node-local /tmp scratch.</p></div>
+    <div class="r-comment-body"><p>reviewed r-20261028T091547207771-the-review-cap-reads-only-what-it-reviews between 0a44066307d7a498928919870769c9b85c02a0a7 and ae854c2c014eb5fffda4d9157d1ba9bec6968a8e; the cap change is sound and its durability is shown by mutation, with one blocking record defect — the run's manifest cites gate-base.log at a path that does not exist in the run directory and the only copy sits on node-local /tmp scratch.</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261028T091547207771-the-review-cap-reads-only-what-it-reviews" data-who="reckon-build" data-when="2026-10-28T09:54:17.975Z">
+    <div class="r-comment-body"><p>the third-review cap now takes its unit set from review_coverage&#x27;s uncovered set and counts only stored reviews of the rubric being composed, so compose_burst_refusal returns None for reckon:a-review-gate-judges-what-it-covers (refused on s1 at the base revision) and the node&#x27;s suite runs 11 passed EXIT=0 at the head against 9 passed EXIT=0 at the base.</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-s14-seeded-violation" data-who="" data-when="">
     <div class="r-comment-body"><p>The content review of 27 October found that §14 has no negative control: a drain whose counters never increment would report zero DAG-order violations. When §14 is dispatched, its done-when gains one: before the week starts, the coordinator seeds a request that launches before its upstream lands, and the drain instrument must report exactly that one violation.</p></div>
