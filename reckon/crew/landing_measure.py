@@ -12,6 +12,14 @@ readings decide it:
 
 An id is a regression when it fails at the head more often than at the base.
 
+The armed command is written the way a shell reads it: leading ``NAME=value``
+tokens set the environment every arm runs under, and ``{node_test_files}``
+stands for the node's own fenced test files. Both are resolved before any arm
+starts. The base tree is given the ``.venv`` link a provisioned worktree
+carries, so a command naming the project's interpreter by a relative path can
+start there, and the node's test files the base revision lacks are copied in
+from the head so the base arm measures the test the node added.
+
 Every subprocess the measurement starts — the suite arms, the isolated re-runs
 and the base checkout's git worktree calls — carries a wall-clock bound. A run
 that exceeds it is unmeasurable rather than failing, so the landing is refused
@@ -21,8 +29,10 @@ and nothing is read from a partial log.
 from __future__ import annotations
 
 import contextlib
+import os
 import re
 import shlex
+import shutil
 import subprocess
 import tempfile
 from collections.abc import Iterable, Iterator, Mapping, Sequence
@@ -47,6 +57,13 @@ DEFAULT_MEASURE_TIMEOUT_SECONDS = 600.0
 
 #: A line a failing test runner reports its failing id on.
 _FAILED_ID = re.compile(r"^(?:FAILED|ERROR)[ \t]+(\S+)", re.MULTILINE)
+
+#: The token an armed command carries in place of the node's own test files.
+_SCOPED_PLACEHOLDER = "{node_test_files}"
+
+#: A leading ``NAME=value`` token, which is the arm's environment rather than
+#: the program it starts.
+_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
 _RUN = subprocess.run
 
@@ -215,6 +232,37 @@ def _target_name(token: str) -> str:
     return name.rstrip("/")
 
 
+def armed_argv(
+    command: str, test_files: Iterable[str] = ()
+) -> tuple[dict[str, str], list[str]]:
+    """Split an armed command into its environment and the program to run.
+
+    The armed command is written the way a shell reads it, and two of its
+    parts are not argv at all. Leading ``NAME=value`` tokens set the
+    environment of the program instead of being the program, so running them
+    as argv fails on the assignment itself. ``{node_test_files}`` stands for
+    the node's own fenced test files, which the measurement is handed rather
+    than left for the runner to interpret.
+
+    Both are resolved here, once, so the suite pair, the importer population
+    and the isolated re-runs all start the same program with the same
+    environment.
+    """
+    tokens = shlex.split(command or "")
+    environment: dict[str, str] = {}
+    while tokens and _ASSIGNMENT.match(tokens[0]):
+        name, _, value = tokens.pop(0).partition("=")
+        environment[name] = value
+    files = [str(path).strip() for path in test_files if str(path).strip()]
+    argv: list[str] = []
+    for token in tokens:
+        if token == _SCOPED_PLACEHOLDER:
+            argv.extend(files)
+        else:
+            argv.append(token)
+    return environment, argv
+
+
 def runner_argv(command: Sequence[str], test_files: Iterable[str] = ()) -> list[str]:
     """The armed command with the node's own test files removed.
 
@@ -222,9 +270,8 @@ def runner_argv(command: Sequence[str], test_files: Iterable[str] = ()) -> list[
     re-run through the same interpreter, environment, wrappers, plugins and
     options. Which tokens are its test targets is not guessed from their
     shape: they are exactly the node's test files the command was resolved
-    from, so every other token — an environment assignment, a ``timeout`` or
-    ``env`` prefix, an option and its value — is kept and only the files are
-    dropped.
+    from, so every other token — a ``timeout`` or ``env`` prefix, an option
+    and its value — is kept and only the files are dropped.
     """
     targets = {_target_name(path) for path in test_files if str(path).strip()}
     return [token for token in command if _target_name(token) not in targets]
@@ -235,6 +282,55 @@ def isolated_command(
 ) -> list[str]:
     """The armed command narrowed to exactly one test id."""
     return [*runner_argv(command, test_files), test_id]
+
+
+def _carry_missing_tests(
+    base_tree: Path, tree: Path, test_files: Iterable[str]
+) -> None:
+    """Copy the node's test files the base tree does not carry from the head.
+
+    A test the node added does not exist at the base revision, so the base arm
+    would stop on a missing file having measured nothing at all. The head's
+    copy is what the base arm reads, which is what makes that file's failures
+    countable as pre-existing rather than as an unreadable arm.
+
+    A path that is already present is left untouched: at the base revision it
+    is the revision's own file, and that is the file the base arm should read.
+    """
+    for relative in test_files:
+        source = Path(tree) / relative
+        target = Path(base_tree) / relative
+        if not source.is_file() or target.exists():
+            continue
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+        except OSError:
+            # An unreadable copy leaves the arm to report the missing file,
+            # which is a reading of the run rather than of the measurement.
+            continue
+
+
+def _link_environment(repo: Path, tree: Path) -> None:
+    """Give a base tree the ``.venv`` link a provisioned worktree carries.
+
+    An armed command that names the project's interpreter by a relative path —
+    ``.venv/bin/python`` — starts it in the base tree only when the link the
+    fleet provisions into every worker worktree is there too. The link points
+    at the repository's own environment, resolved through any link the
+    repository itself carries, so a worktree and its main checkout share one.
+
+    A repository with no environment is left alone: the arms then fail with
+    the command's own error, which the measurement records as unreadable.
+    """
+    environment = repo / ".venv"
+    if not environment.exists():
+        return
+    link = tree / ".venv"
+    if link.exists() or link.is_symlink():
+        return
+    with contextlib.suppress(OSError):
+        link.symlink_to(environment.resolve())
 
 
 def measure_timeout(config: Mapping[str, Any] | None) -> float:
@@ -262,8 +358,13 @@ def _arm(
     log_path: Path,
     run,
     timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
+    environment: Mapping[str, str] | None = None,
 ) -> Arm:
     """Run one command at one tree and record its failure reported ids.
+
+    ``environment`` is the armed command's own leading assignments, layered
+    over the measurement's environment; a caller that names none inherits the
+    parent's.
 
     The command is bounded: a run that exceeds ``timeout`` is recorded as
     unreadable and no failure id is taken from whatever it had printed, because
@@ -271,6 +372,9 @@ def _arm(
     """
     argv = list(command)
     log_path.parent.mkdir(parents=True, exist_ok=True)
+    # A command that declares no environment is run exactly as before: the
+    # caller's own environment is inherited, unread and unrewritten.
+    extra = {"env": {**os.environ, **environment}} if environment else {}
     try:
         finished = run(
             argv,
@@ -279,6 +383,7 @@ def _arm(
             text=True,
             check=False,
             timeout=timeout,
+            **extra,
         )
     except subprocess.TimeoutExpired as expired:
         partial = f"{expired.stdout or ''}{expired.stderr or ''}"
@@ -319,7 +424,8 @@ def measure_run(
     measurement without executing a real suite.
     """
     runner = run or _RUN
-    argv = shlex.split(command or "")
+    node_tests = [str(path).strip() for path in test_files if str(path).strip()]
+    environment, argv = armed_argv(command, node_tests)
     if not argv:
         return Measurement(
             command=command,
@@ -328,17 +434,41 @@ def measure_run(
             unreadable="the run armed no suite command",
             head=head_sha,
         )
+    if _SCOPED_PLACEHOLDER in (command or "") and not node_tests:
+        return Measurement(
+            command=command,
+            suite={},
+            population={},
+            unreadable=(
+                "the armed command measures the node's own test files, "
+                "and the node names none"
+            ),
+            head=head_sha,
+        )
+    _carry_missing_tests(base_tree, tree, node_tests)
     logs = Path(logs_dir)
-    suite_base = _arm(argv, base_tree, logs / "suite-base.log", runner, timeout)
-    suite_head = _arm(argv, tree, logs / "suite-head.log", runner, timeout)
+    suite_base = _arm(
+        argv, base_tree, logs / "suite-base.log", runner, timeout, environment
+    )
+    suite_head = _arm(argv, tree, logs / "suite-head.log", runner, timeout, environment)
     files = importer_population(changed_paths(tree, base_sha, head_sha), tree)
     population_command = [*argv, *files, "-n", str(POPULATION_WORKERS)]
     if files:
         population_base = _arm(
-            population_command, base_tree, logs / "population-base.log", runner, timeout
+            population_command,
+            base_tree,
+            logs / "population-base.log",
+            runner,
+            timeout,
+            environment,
         )
         population_head = _arm(
-            population_command, tree, logs / "population-head.log", runner, timeout
+            population_command,
+            tree,
+            logs / "population-head.log",
+            runner,
+            timeout,
+            environment,
         )
     else:
         population_base = Arm(tuple(population_command), None, (), "")
@@ -380,12 +510,13 @@ def measure_run(
 
     def narrowed(test_id: str, arm_tree: Path, arm: str, n: int) -> tuple[bool, str]:
         return _fails(
-            isolated_command(argv, test_id, test_files),
+            isolated_command(argv, test_id, node_tests),
             test_id,
             arm_tree,
             logs / "isolated" / f"{_slug(test_id)}-{arm}-{n}.log",
             runner,
             timeout,
+            environment,
         )
 
     for test_id in added:
@@ -420,6 +551,7 @@ def _fails(
     log_path: Path,
     runner,
     timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
+    environment: Mapping[str, str] | None = None,
 ) -> tuple[bool, str]:
     """Whether one isolated run reported *this* id as failing.
 
@@ -433,7 +565,7 @@ def _fails(
     either passes or failures would silently answer the comparison, so the
     caller refuses the landing instead.
     """
-    arm = _arm(command, tree, log_path, runner, timeout)
+    arm = _arm(command, tree, log_path, runner, timeout, environment)
     if not arm.readable:
         if arm.timed_out:
             return True, (
@@ -524,6 +656,7 @@ def base_checkout(
             f"could not check out {base_sha} for the base arm: "
             f"{(added.stderr or added.stdout or '').strip()}"
         )
+    _link_environment(repo, target)
     try:
         yield target
     finally:
@@ -544,6 +677,4 @@ def base_checkout(
 
 def shutil_rmtree(path: Path) -> None:
     """Remove a scratch tree, ignoring a removal that already happened."""
-    import shutil
-
     shutil.rmtree(path, ignore_errors=True)
