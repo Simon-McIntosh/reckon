@@ -16,13 +16,22 @@ non-blocking severity. A finding that declares no severity still withholds the
 landing, because the repair reflex already reads an unstated severity as blocking and
 two readers of one record must not disagree.</p>
 
-<h3 id="a-run-no-review-blocks-lands-exemptions">Exemptions are written, not dropped</h3>
-<p>When the pass decides to land, it records each non-blocking finding against the
-stored review's own head-keyed record, exempted with the reason
-<code>non-blocking, noted at landing</code>, before the pointer that carried it is
-promoted away. A landing that could not write those dispositions is refused, because
-a landing that silently drops a reviewer's finding is the defect this section removes
-rather than a cheaper version of it.</p>
+<h3 id="a-run-no-review-blocks-lands-score">The score sets no bar</h3>
+<p>The rule reads a record twice: it must be complete, and it must carry no finding
+that withholds a review. It never compares the total, or any dimension, against a
+threshold. A reviewer who scored the work low said so in the scores, which every
+later reader can open; a second bar in the landing pass would hold the run for a
+coordinator reading the same numbers. The acceptance floor and every reader of it
+are gone with the rule that consulted them.</p>
+
+<h3 id="a-run-no-review-blocks-lands-exemptions">Exemptions follow the landing</h3>
+<p>When the pass lands a run it records each non-blocking finding against the stored
+review's own head-keyed record, exempted with the reason
+<code>non-blocking, noted at landing</code>. That write now happens only after the
+landing succeeds, in the landing pass and in the acceptance sweep alike: written
+first, a refused promotion left a run's findings marked exempted with a reason that
+says a landing happened, on a run that never landed. A landing that succeeds and then
+cannot write them is reported and stands, because the run did land.</p>
 
 <h3 id="a-run-no-review-blocks-lands-conflict">A conflicting head is named before it is measured</h3>
 <p>The pass reads the merge of the run's head onto the primary branch with
@@ -33,12 +42,16 @@ same refusal, so nothing is written to the branch on either path.</p>
 
 <h2 id="a-run-no-review-blocks-lands-measure">Measure</h2>
 <p><code>tests/test_a_run_a_review_does_not_block_lands.py</code> drives the landing
-pass itself and shows the section's six arms plus the unstated-severity reading:</p>
+pass itself and shows the section's arms:</p>
 <table>
 <thead><tr><th>Arm</th><th>What the pass did</th></tr></thead>
 <tbody>
 <tr><td>Two non-blocking findings, arms add nothing</td><td>Landed in one pass; both findings recorded <code>exempted</code> with the landing reason</td></tr>
-<tr><td>A blocking finding</td><td>Not landed; obligation <code>review acceptance floor or findings</code></td></tr>
+<tr><td>A complete review scoring 92 with two non-blocking findings</td><td>Landed, both findings exempted; 92 is well under the retired nine-tenths bar</td></tr>
+<tr><td>A stored total that disagrees with the score sum</td><td>Landed: the rule judges severity alone and never consults the total</td></tr>
+<tr><td>A stored record carrying no total</td><td>Landed on the same reading; the store derives the total it was missing</td></tr>
+<tr><td>A refused landing with a non-blocking finding</td><td>Not landed; the stored record is byte-for-byte unchanged and carries no disposition</td></tr>
+<tr><td>A blocking finding</td><td>Not landed; obligation names the refusal the rule makes</td></tr>
 <tr><td>A finding stating no severity</td><td>Not landed, read the same as a blocking one</td></tr>
 <tr><td>A population failure that persists alone</td><td>Not landed; obligation named the test id and its 3/3 head re-runs</td></tr>
 <tr><td>An added failure passing alone 3/3 at both revisions</td><td>Landed; six isolated re-runs observed, three per revision</td></tr>
@@ -46,23 +59,25 @@ pass itself and shows the section's six arms plus the unstated-severity reading:
 <tr><td>Head conflicting with the primary branch</td><td>Not landed; obligation named the conflicting path, branch head unchanged</td></tr>
 </tbody>
 </table>
-<p>Gate: 7 passed at head. Negative control — restoring the any-finding rule — turned
-the first arm red and left the other six green, which is the mutation this node
+<p>Gate: 11 passed at head. Negative control — restoring the any-finding rule — turned
+the first arm red and left the other arms green, which is the mutation this node
 declares.</p>
-<p>Live store, over the runs the landing pass refused on 27 and 28 October: 55
-distinct runs. Of those, 26 have a complete record at or above the score floor and
-every one of them is now accepted — between them they carried 0 to 4 non-blocking
-findings. Two runs carry a blocking finding and are refused by the findings rule
+<p>Live store, over the 56 distinct runs the landing pass refused on 27 and 28
+October, judged by the rule as it now stands: <strong>53 accepted</strong>, and
+<strong>three refused — two for a blocking finding and one the store holds no
+readable review for</strong>
+(<code>r-20261027T075451851106-srtj-forwarder-retirement</code>). The two refusals
+carry the findings the review named
 (<code>r-20261027T045403981624-one-wait-blocks-only-its-request</code>,
 <code>r-20261027T123148256109-a-worker-widens-to-an-unclaimed-path</code>); both also
-sit below the floor, so the floor would have refused them as well. The remaining 27
-are refused on the floor or an incomplete record, not on a finding.</p>
+scored below the retired bar, which is why the bar could not tell them apart from the
+53 a coordinator had nothing to add to. Every accepted record between them carried 0
+to 4 non-blocking findings and totals from 5 to 120.</p>
 <p>The importer population — the test files importing
 <code>reckon.crew.queue_landing</code>, <code>reckon.crew.landing_measure</code> or
-<code>reckon.crew.recovery_review_acceptance</code> — gives 155 passed at head over
-21 files and 148 passed at the base revision over the 20 files that exist there,
-the difference being this node's own seven arms. No failure appears at head that is
-absent at base, so the added-failure delta is zero. <code>ruff check</code> and
+<code>reckon.crew.recovery_review_acceptance</code> — was run at both revisions, each
+log naming the revision it ran at. No failure appears at head that is absent at base,
+so the added-failure delta is zero. <code>ruff check</code> and
 <code>ruff format --check</code> are clean on the changed paths.</p>
 
 </main>

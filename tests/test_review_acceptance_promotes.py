@@ -2,9 +2,9 @@
 
 The promotion refusal that stops a run landing without a review exists so a
 source change is read by an independent reviewer. The review's own deliverable
-is a stored record scoring all six dimensions, and a record that is clean — a
-total at or above the acceptance floor and no finding at all — is the state a
-coordinator would otherwise promote by hand. This node adds the accepting
+is a stored record scoring all six dimensions, and a record that is clean — no
+blocking finding, whatever its scores — is the state a coordinator would
+otherwise promote by hand. This node adds the accepting
 branch: when a clean-review run is promotable, the sweep confirms the run's own
 recorded gate passed, re-runs that gate against the repository's merged head,
 and promotes with ``promoted_by: review-acceptance`` on the ledger row.
@@ -12,7 +12,7 @@ and promotes with ``promoted_by: review-acceptance`` on the ledger row.
 Both halves are asserted, because an accepting branch on its own is
 indistinguishable from one that promotes everything: a run promotable with a
 clean stored review is promoted with no coordinator command; a review carrying
-one finding is not; a run whose recorded gate was green but whose merged tree no
+a blocking finding is not; a run whose recorded gate was green but whose merged tree no
 longer satisfies the same command is not; and a run whose commit is not on the
 branch yet is not, because acceptance never merges.
 
