@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="242">
+<meta name="plan-version" content="243">
 <meta name="plan-modified" content="2026-10-28">
 </head>
 <body>
@@ -674,6 +674,9 @@
 </div>
 <div class="r-comment" data-section="s31" data-id="c-s31-sibling-after-inherited" data-who="" data-when="">
     <div class="r-comment-body"><p>A second specimen from power-convertor-d6 on 28 October, which the node for this section carries as an arm. <code>r-20261028T083055740044-scsm-vs1-route-worst-case</code> (shared-coil-supply-model §4) was dispatched with no <code>--after</code>: its dispatch options carry no after-requests and its node no after. At 08:50:02Z admission gave it the wait <code>run:r-20261028T064849235632-csrr-fdu-settled-peaks</code>, a run of a different plan with disjoint write paths, and moved it to awaiting-upstream. Its stored hold still read "router grants 37 extra workers". The only link is a sibling in the same section, <code>scsm-fdu-route-rows</code>, which is <code>--after</code> that run. So one node's <code>--after</code> becomes a wait on its section's other nodes, and unrelated work in the section is held behind one chain. The arm: a request with no <code>--after</code>, whose section sibling is <code>--after</code> run X, never waits on X. Its stored reason then names any wait it does carry (§29).</p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-s31-two-mechanisms" data-who="" data-when="">
+    <div class="r-comment-body"><p>Two mechanisms from the third review of this section, which its node must cover. First, gate holds do not arrive through <code>derive_wait_refs</code>: <code>_validated_batch_waits</code> appends a <code>readiness:&lt;project&gt;:&lt;slug&gt;#&lt;section&gt;</code> ref whenever the section's own verdict carries a gate. <code>--waits-only-after</code> must suppress that ref too, or the flag leaves gates in place. Second, the sibling leak is the re-derivation cache in <code>reckon/crew/queue_admission.py</code>. It is keyed on <code>(repo_root, node.plan, node.section)</code> without <code>node.after</code>, so the first request of a section re-derived in a pass hands its waits to every sibling re-derived after it. The sibling arm must re-derive two requests of one section in one pass, the first with <code>--after</code> X and the second without, and the second must not wait on X. A test of one request alone passes on the defective code.</p></div>
 </div>
 </section>
 </main>
