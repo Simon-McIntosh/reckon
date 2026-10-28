@@ -129,8 +129,12 @@ def test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path(
     )
 
     assert result["launched"] == []
-    assert runs.read_pointer("r-waiting")["phase"] == "queued"
-    failure = runs.read_pointer("r-waiting")["failure"]
-    assert "ScopeConflict:" in failure
-    assert "r-launched" in failure
-    assert queue_cases.SHARED in failure
+    pointer = runs.read_pointer("r-waiting")
+    assert pointer["phase"] == "queued"
+    # The path is held by a binding claim, so the pass holds the request before
+    # spending a dispatch on it rather than attempting and recording a refusal.
+    assert not pointer.get("failure")
+    verdict = {row["run_id"]: row for row in result["verdicts"]}["r-waiting"]
+    assert verdict["verdict"] == "held-on-claim"
+    assert "r-launched" in verdict["detail"]
+    assert queue_cases.SHARED in verdict["detail"]

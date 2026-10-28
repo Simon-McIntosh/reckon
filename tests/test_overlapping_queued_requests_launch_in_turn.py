@@ -332,20 +332,27 @@ def test_the_later_request_launches_once_the_earlier_is_promoted(
     earlier_id = first["launched"][0]
 
     # The earlier run now holds the path as a working claim, so the later
-    # request is refused on it and put back with the conflict recorded.
-    queue_admission.admit_once(
+    # request is held on it before any dispatch is spent: no failure recorded,
+    # no retry instant, and the hold names the run that fences the path.
+    second = queue_admission.admit_once(
         now=START + timedelta(minutes=1), config_for=resolve, launcher=_launcher([])
     )
     later = runs.read_pointer("r-later")
     assert later["phase"] == "queued"
-    assert later.get("failure")
-    assert later.get("retry_at")
+    assert not later.get("failure")
+    assert not later.get("retry_at")
+    assert second["launched"] == []
+    assert "r-later" in second["held"]
+    verdicts = {row["run_id"]: row for row in second["verdicts"]}
+    assert verdicts["r-later"]["verdict"] == "held-on-claim"
+    assert earlier_id in verdicts["r-later"]["detail"]
 
-    # The earlier run is promoted (its pointer leaves), and the later request
-    # launches on the first pass after its admission back-off expires.
+    # The earlier run is promoted (its pointer leaves), so nothing fences the
+    # path any more and the later request launches on the very next pass —
+    # without waiting out a back-off, since none was ever recorded.
     runs.pointer_path(earlier_id).unlink()
     released = queue_admission.admit_once(
-        now=START + timedelta(minutes=15), config_for=resolve, launcher=_launcher([])
+        now=START + timedelta(minutes=2), config_for=resolve, launcher=_launcher([])
     )
 
     assert len(released["launched"]) == 1

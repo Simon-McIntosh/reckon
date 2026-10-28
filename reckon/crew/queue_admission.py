@@ -37,6 +37,7 @@ from reckon.crew.dispatch_admission import (
 )
 from reckon.crew.dispatch_plan import _dispatch_lane_allowance
 from reckon.crew.node import BudgetHold, CrewError, PlanReviewMissingError, TaskNode
+from reckon.crew.refusals import DISPATCH_REFUSAL_REMEDIES
 from reckon.crew.routing import plan_review_units as plan_review_units  # noqa: PLC0414
 from reckon.ledger import normalize_section
 
@@ -812,6 +813,160 @@ def _report_queued_failure(pointer: Mapping[str, Any]) -> None:
         runs._append_watch_lines(runs.watch_stream_path(project), [row])
     except Exception:  # noqa: BLE001 - a report that cannot be written never stops admission
         return
+
+
+def _declared_scope_paths(pointer: Mapping[str, Any]) -> list[str]:
+    """The write paths one request declares, in the repository's own spelling.
+
+    An absolute path inside the request's repository is read relative to it, so
+    two requests queue from the same checkout compare equal however each
+    declared them. Nothing is resolved: a pair this spelling misses is refused
+    by the launch itself, exactly as it was before this comparison existed.
+    """
+    node = pointer.get("node")
+    declared = list(node.get("write_paths") or ()) if isinstance(node, Mapping) else []
+    repo = str(pointer.get("repo") or "")
+    base = Path(os.path.normpath(repo)) if repo else None
+    paths: list[str] = []
+    for value in (str(item) for item in declared):
+        raw = Path(value).expanduser()
+        if raw.is_absolute():
+            normalized = Path(os.path.normpath(str(raw)))
+            if base is not None:
+                try:
+                    paths.append(normalized.relative_to(base).as_posix())
+                    continue
+                except ValueError:
+                    pass
+            paths.append(normalized.as_posix())
+            continue
+        paths.append(Path(os.path.normpath(str(raw))).as_posix())
+    return paths
+
+
+def _claim_disposition_of(
+    pointer: Mapping[str, Any],
+    cache: dict[str, Any],
+) -> Any:
+    """One live pointer's claim disposition, read at most once per pass."""
+    from reckon.crew.node import claim_disposition
+
+    run_id = str(pointer.get("run_id") or "")
+    if run_id not in cache:
+        cache[run_id] = claim_disposition(pointer)
+    return cache[run_id]
+
+
+def _live_claim_hold(
+    pointer: Mapping[str, Any],
+    live: Sequence[Mapping[str, Any]],
+    *,
+    dispositions: dict[str, Any],
+    shared_files: frozenset[str],
+) -> str | None:
+    """Name a live run whose claim fences one of this request's write paths.
+
+    A launch refused against another run's claim is not cured by waiting: the
+    claim releases when its holder settles, so every pass that simply retried it
+    spent a whole ``dispatch()`` — project and plan discovery, then the roadmap
+    builds — to be told the same thing. Comparing the paths two requests
+    declare answers the question in the pass itself, and the slot moves on to
+    the next candidate.
+
+    Only a claim whose own disposition binds holds a peer, so a queued, held or
+    empty stopped run never holds one. A file the project declares shareable is
+    no collision at all, because the launch admits a second claimant there.
+    """
+    ours = _declared_scope_paths(pointer)
+    if not ours:
+        return None
+    here = str(pointer.get("run_id") or "")
+    repo = (
+        os.path.normpath(str(pointer.get("repo") or "")) if pointer.get("repo") else ""
+    )
+    for other in live:
+        if str(other.get("run_id") or "") == here:
+            continue
+        if repo:
+            other_repo = str(other.get("repo") or "")
+            if other_repo and os.path.normpath(other_repo) != repo:
+                continue
+        theirs = _declared_scope_paths(other)
+        collision = next(
+            (
+                path
+                for path in ours
+                if path not in shared_files
+                and any(runs._scopes_overlap(path, claim) for claim in theirs)
+            ),
+            None,
+        )
+        if collision is None:
+            continue
+        disposition = _claim_disposition_of(other, dispositions)
+        if not disposition.binding:
+            continue
+        return (
+            f"run {str(other.get('run_id') or 'unknown')!r} holds "
+            f"{collision!r}: {disposition.reason}"
+        )
+    return None
+
+
+#: The remedy carried by a refusal a full lane gives. That refusal is cured by
+#: an occupying run finishing, which moves nothing the dependency guard
+#: fingerprints, so holding it until a change would strand it for as long as
+#: the lane stayed full; it keeps the bounded back-off instead.
+_CAPACITY_REFUSAL_REMEDY = DISPATCH_REFUSAL_REMEDIES["D09"]
+
+_NODE_CONTRACT_REFUSAL = "node is not dispatchable"
+
+
+def _is_until_changed_failure(failure: Any) -> bool:
+    """Whether a recorded failure is cured by a change, not by waiting.
+
+    A node too large for its lane is cured by splitting it or by a wider lane; a
+    node outside its contract is cured by repairing the plan or the brief. Both
+    change something the guard fingerprints, so the retry is keyed to that change
+    and never to a timer. The capacity refusal names the same condition in its
+    opening words, but it is cured by an occupying run finishing, so it is
+    excluded and left on the back-off.
+    """
+    text = _failure_text(failure)
+    if "CompetenceLimit:" in text:
+        return True
+    if _NODE_CONTRACT_REFUSAL not in text:
+        return False
+    return _CAPACITY_REFUSAL_REMEDY not in text
+
+
+def _until_changed_hold(
+    pointer: Mapping[str, Any],
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> str | None:
+    """Why a request refused by its own size or contract is left alone.
+
+    The retry back-off this replaces was measured from the pass's start and
+    capped at ten minutes, so a refusal that waiting can never cure was retried
+    on that timer. One such request was attempted 54 times. Nothing it depends
+    on has moved, so no attempt can succeed; the first pass that sees the
+    request's plan, brief, configuration or code change releases it.
+    """
+    failure = pointer.get("failure")
+    if not failure or not _is_until_changed_failure(failure):
+        return None
+    guard = pointer.get("failure_guard")
+    if guard is None:
+        # Nothing was fingerprinted, so there is nothing to compare and no
+        # honest basis for holding: the attempt re-records a guard.
+        return None
+    if guard != _dependency_guard(pointer, config_for):
+        return None
+    return (
+        "last attempt was refused by the node's own size or contract; "
+        "not retried until its plan, brief, route or code changes"
+    )
 
 
 def _retry_backoff_hold(
@@ -2913,6 +3068,11 @@ def admit_once(
         # cache per pass means a request whose write paths or mounts change is
         # resolved afresh on the next pass.
         claims: dict[str, list[tuple[Path | None, Path]]] = {}
+        # One claim disposition per live pointer per pass, and one shareable
+        # file list per project, so the pre-dispatch claim check below costs a
+        # path comparison rather than a git read of every live run.
+        claim_dispositions: dict[str, Any] = {}
+        shared_files: dict[tuple[str, str], frozenset[str]] = {}
         for index, pointer in enumerate(order):
             session = str(pointer["session"])
             allowance_key = (str(pointer.get("backend") or ""), session)
@@ -2948,6 +3108,57 @@ def admit_once(
                         allowance_source=allowance_source,
                         verdict="held-by-gate",
                         detail=gate_hold,
+                    )
+                )
+                continue
+            shared_key = (
+                str(pointer.get("project") or ""),
+                str(pointer.get("repo") or ""),
+            )
+            if shared_key not in shared_files:
+                shared_files[shared_key] = (
+                    runs._shared_write_paths(shared_key[0], Path(shared_key[1]))
+                    if all(shared_key)
+                    else frozenset()
+                )
+            claim_hold = _live_claim_hold(
+                pointer,
+                live,
+                dispositions=claim_dispositions,
+                shared_files=shared_files[shared_key],
+            )
+            if claim_hold is not None:
+                # A live run's claim on a path this request writes is not cured
+                # by waiting out a back-off: the attempt could only be refused
+                # again, at the cost of a whole dispatch. The request keeps its
+                # place, and the pass admits the next candidate.
+                result["held"].append(str(pointer["run_id"]))
+                result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
+                    claim_hold
+                )
+                verdicts.append(
+                    _verdict_row(
+                        pointer,
+                        allowance=allowance,
+                        allowance_source=allowance_source,
+                        verdict="held-on-claim",
+                        detail=claim_hold,
+                    )
+                )
+                continue
+            until_changed = _until_changed_hold(pointer, config_for=config_for)
+            if until_changed is not None:
+                result["held"].append(str(pointer["run_id"]))
+                result.setdefault("hold_detail", {})[str(pointer["run_id"])] = (
+                    until_changed
+                )
+                verdicts.append(
+                    _verdict_row(
+                        pointer,
+                        allowance=allowance,
+                        allowance_source=allowance_source,
+                        verdict="held-until-changed",
+                        detail=until_changed,
                     )
                 )
                 continue
@@ -3063,10 +3274,15 @@ def admit_once(
                 failure = f"{type(exc).__name__}: {exc}"
             finally:
                 if record is None and not hold_only:
+                    # The back-off is measured from the moment the attempt
+                    # failed, which is now, not from the pass's start: a pass
+                    # that spent minutes on other requests would otherwise stamp
+                    # a retry instant already past, and the next pass would
+                    # attempt the same doomed launch again immediately.
                     reported_id, restore_error = _record_queued_failure(
                         snapshot,
                         failure,
-                        moment=moment,
+                        moment=_now(),
                         guard=_dependency_guard(pointer, config_for),
                     )
                 # The launch outcome is settled here: either the run's own
