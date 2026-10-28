@@ -1842,7 +1842,19 @@ def _request_state(
         return PENDING
     if status in RUN_FAILED_STATUSES:
         return ABANDONED
-    if status not in RUN_DELIVERED_STATUSES or not project:
+    if status not in RUN_DELIVERED_STATUSES:
+        return PENDING
+    if not project:
+        # The run delivered, but the request recorded no project for this ref,
+        # so the landing that would satisfy it can never be read. Left as a
+        # bare PENDING this wait never resolves and never reports why: the
+        # request reads awaiting-upstream indefinitely. The wait's own state is
+        # unchanged — a ref with no project is not evidence of a landing — but
+        # the reason is recorded on the request and raised as an obligation.
+        if issues is not None:
+            issues.append(
+                f"{run_id}: the wait names no project, so its landing cannot be read"
+            )
         return PENDING
     try:
         from reckon import ledger
@@ -3417,6 +3429,45 @@ def admit_once(
         return result
 
 
+#: The fields a request carries while it waits, and which describe its queued
+#: life rather than the run a launch produced. A launched pointer that kept
+#: them at the top level reads to every consumer of a live run as a launch that
+#: failed, so admission moves them under :data:`ADMISSION_HISTORY_KEY`.
+QUEUED_LIFE_KEYS = (
+    "failure",
+    "failure_at",
+    "failure_attempts",
+    "failure_reported_at",
+    "failure_guard",
+    "retry_at",
+)
+#: Where a launched pointer keeps the queued-life facts of the request it was
+#: admitted from. One entry per admitted attempt, oldest first, so a request
+#: that was refused, re-queued and launched again carries every refusal it
+#: survived rather than only the last one.
+ADMISSION_HISTORY_KEY = "admission_history"
+
+
+def _admission_history_entry(
+    request: Mapping[str, Any], *, admitted_at: str
+) -> dict[str, Any] | None:
+    """The queued-life facts of one admitted request, or ``None`` if it has none.
+
+    ``None`` for a request that launched on its first attempt: a history entry
+    recording nothing is a record a reader has to open to learn nothing.
+    """
+    entry = {
+        key: copy.deepcopy(request[key])
+        for key in QUEUED_LIFE_KEYS
+        if request.get(key) is not None
+    }
+    if not entry:
+        return None
+    entry["queued_at"] = request.get("queued_at")
+    entry["admitted_at"] = admitted_at
+    return entry
+
+
 def _stamp_admission(
     run_id: str, request: Mapping[str, Any], *, admitted_at: str
 ) -> None:
@@ -3424,11 +3475,24 @@ def _stamp_admission(
 
     The stamp is what lets the next pass recognise a run this drainer launched
     and re-queue it when the reaper marks it ``launch-failed``.
+
+    The request's queued-life fields are moved under
+    :data:`ADMISSION_HISTORY_KEY` in the same write, and removed from the top
+    level, so the pointer is the launched run's record and nothing else: a
+    reader of a live run never sees the refusal its queued life recorded, and
+    the suppression of that history is visible where it was moved to.
     """
 
     def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
         pointer["admitted_at"] = admitted_at
         pointer["admit_request"] = copy.deepcopy(dict(request))
+        entry = _admission_history_entry(request, admitted_at=admitted_at)
+        if entry is not None:
+            history = list(pointer.get(ADMISSION_HISTORY_KEY) or ())
+            history.append(entry)
+            pointer[ADMISSION_HISTORY_KEY] = history
+        for key in QUEUED_LIFE_KEYS:
+            pointer.pop(key, None)
         return pointer
 
     runs._mutate_pointer(run_id, mutation)
