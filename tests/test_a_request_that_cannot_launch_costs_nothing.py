@@ -32,9 +32,10 @@ from typing import Any
 import pytest
 
 from reckon._timestamps import parse_utc
-from reckon.crew import queue_admission, runs
+from reckon.crew import queue_admission, runs, summary
 from reckon.crew.node import CompetenceLimit, CrewError
 from reckon.crew.refusals import format_refusal
+from reckon.crew.summary import Bound
 from tests.helpers.git import git as _git
 from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
     PROJECT,
@@ -137,19 +138,27 @@ def _competence_limit() -> CompetenceLimit:
 
 
 def _capacity_refusal() -> CrewError:
-    """The refusal a full lane gives, wording and remedy as the dispatch raises it.
+    """The refusal a full lane gives, composed by the emitter that raises it.
 
-    Its opening words are the node-contract refusal's, so it is the case that
-    distinguishes "repair the node" from "wait for a slot".
+    Rendered from a real ``Bound`` through ``summary.bound_refusal_text`` and
+    ``format_refusal``, the two calls ``dispatch_admission`` refuses with, so
+    the arm reads the production wording rather than a copy that can drift from
+    it. Its opening words are the node-contract refusal's, which is the case
+    that distinguishes "repair the node" from "wait for a slot".
     """
+    bound = Bound(
+        name="partition-cores",
+        capacity=12.0,
+        utilisation=12.0,
+        admits_one_more=False,
+        value="12 of 12 cores",
+    )
     return CrewError(
         format_refusal(
             "D09",
-            "node is not dispatchable — backend 'clive' is at its partition "
-            "admitted cores bound (12); one more worker would ask the "
-            "reservation for more cores than it was admitted, and the runs "
-            "occupying it: r-occupant. Wait for one to finish, or raise the "
-            "cores the placement declares.",
+            summary.bound_refusal_text(
+                bound, backend_name="clive", occupying=["r-occupant"]
+            ),
         )
     )
 
