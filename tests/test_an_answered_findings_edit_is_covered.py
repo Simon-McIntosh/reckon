@@ -210,14 +210,14 @@ def test_an_edit_a_finding_asked_for_is_covered(sectioned, monkeypatch):
     )
 
     assert share < THRESHOLD, f"the edit is 1 % of the section's words, not {share}"
-    assert answered["responses"][FINDING_ID]["commit"] == commit, (
-        "the answer records the commit of the edit it answers for"
-    )
 
     records, uncovered, _ = _coverage(path)
     assert "s5" not in uncovered, "the edit a finding asked for is covered"
     covering = [record for record in records if record.get("review_run_id") == RUN_ID]
     assert covering, "the answering review is the one that covers the edit"
+    assert answered["responses"][FINDING_ID]["commit"] == commit, (
+        "the answer records the commit of the edit it answers for"
+    )
     assert covering[0]["responses"][FINDING_ID]["commit"] == commit, (
         "the covering record carries the edit's commit as its evidence"
     )
