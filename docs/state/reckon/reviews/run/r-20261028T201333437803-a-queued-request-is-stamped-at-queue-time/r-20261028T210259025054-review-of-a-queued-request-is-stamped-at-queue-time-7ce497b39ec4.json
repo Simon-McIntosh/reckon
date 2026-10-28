@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "after_suite (the node head arm) records failure_ids [] against baseline_suite failure_ids of four ids, so the node adds no failure against its base; the support population pair agrees, 4 failed at head against the same four ids at base.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_queue_validated_waits",
+    "reckon/crew/dispatch.py:dispatch",
+    "reckon/crew/recovery_review_dispatch.py:_queue_router_held_review",
+    "reckon/crew/queue_admission.py:_plan_review_owed"
+  ],
+  "completed_at": "2026-10-28T21:16:56.987Z",
+  "dispatched_at": "2026-10-28T21:05:03Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "line": "180",
+      "severity": "non-blocking",
+      "text": "non-blocking: crew queue edit re-records no review contract, so the node's done_when clause \"crew queue edit re-records them when it changes a request\" is unimplemented and an edited request drops to the wider dispatch gate through queue_admission._contract_is_current; the plan section permits that fallback and queue_edit.py was outside this node's fence, so it must be folded into a node that owns that file."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T201333437803-a-queued-request-is-stamped-at-queue-time/logs/importer-population-head.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the command line in the log header was rewritten after capture, so the support log no longer records the literal command that ran and a reader cannot reproduce it from the file; the manifest discloses the rewrite and the recorded output and EXIT line are untouched."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against 816e631ad4; cc08391cb3 adds the comment, lazy import and call to reckon/crew/runs.py plus the 342-line test, and 7ce497b39e adds the 31-line evidence fragment, so the production surface is one call.",
+    "done_when": "the done_when has two halves and the gate asserts only the first \u2014 queue-time digests, narrowed admission, fresh-dispatch parity and the declared mutation are all covered by tests/test_a_queued_request_is_stamped_at_queue_time.py, while \"crew queue edit re-records them when it changes a request\" is implemented nowhere and asserted nowhere.",
+    "goal": "the node goal is to record a queued request's review contract when runs.queue_dispatch writes it; reckon/crew/runs.py:791 calls queue_admission.record_review_contract(record) after the queued pointer is written, and the call sits outside the first-write/re-queue branch so both write paths stamp.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T201333437803-a-queued-request-is-stamped-at-queue-time/manifest.md; status complete, commits cc08391cb3 and 7ce497b39e, head arm 6 passed EXIT=0, negative control 4 failed 2 passed EXIT=1, importer population 4 failed 1728 passed at head against the same 4 ids at base.",
+    "write_paths": "the declared paths are reckon/crew/runs.py, tests/test_a_queued_request_is_stamped_at_queue_time.py and the landing fragment; git diff --stat 816e631ad4 7ce497b39e lists exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_request_is_stamped_at_queue_time.py:213 and :252 redden when the record call is removed, as logs/negative-control.log shows, but :333 compares the queue-time stamp with queue_admission.review_contract called directly rather than with a second production queue write, so the re-queue branch is unguarded.",
+    "evidence": "tests/test_a_queued_request_is_stamped_at_queue_time.py asserts four of the done_when's clauses and says nothing about the queue-edit re-stamp, so the recorded gate measures part of the stated measure.",
+    "fit": "reckon/crew/runs.py:789 imports lazily in the same style as the queue_order import a few lines below, and the added comment states the mechanism with no plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/runs.py:791 stamps every queued pointer through queue_admission.record_review_contract, which is the goal exactly, and leaves only the edited-request writer on its pre-existing fallback.",
+    "reuse": "the change adds no definition and calls the existing owner reckon/crew/queue_admission.py:2479, so no capability is forked.",
+    "scope_discipline": "git diff --stat 816e631ad4 7ce497b39e lists only reckon/crew/runs.py, tests/test_a_queued_request_is_stamped_at_queue_time.py and the fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to record a queued request's review contract when runs.queue_dispatch writes it; reckon/crew/runs.py:791 calls queue_admission.record_review_contract(record) after the queued pointer is written, and the call sits outside the first-write/re-queue branch so both write paths stamp.\nVERDICT done_when: the done_when has two halves and the gate asserts only the first \u2014 queue-time digests, narrowed admission, fresh-dispatch parity and the declared mutation are all covered by tests/test_a_queued_request_is_stamped_at_queue_time.py, while \"crew queue edit re-records them when it changes a request\" is implemented nowhere and asserted nowhere.\nVERDICT write_paths: the declared paths are reckon/crew/runs.py, tests/test_a_queued_request_is_stamped_at_queue_time.py and the landing fragment; git diff --stat 816e631ad4 7ce497b39e lists exactly those three and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T201333437803-a-queued-request-is-stamped-at-queue-time/manifest.md; status complete, commits cc08391cb3 and 7ce497b39e, head arm 6 passed EXIT=0, negative control 4 failed 2 passed EXIT=1, importer population 4 failed 1728 passed at head against the same 4 ids at base.\nVERDICT diff: read both commits against 816e631ad4; cc08391cb3 adds the comment, lazy import and call to reckon/crew/runs.py plus the 342-line test, and 7ce497b39e adds the 31-line evidence fragment, so the production surface is one call.\nCALL_SITES: reckon/crew/dispatch.py:_queue_validated_waits, reckon/crew/dispatch.py:dispatch, reckon/crew/recovery_review_dispatch.py:_queue_router_held_review, reckon/crew/queue_admission.py:_plan_review_owed\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:791 stamps every queued pointer through queue_admission.record_review_contract, which is the goal exactly, and leaves only the edited-request writer on its pre-existing fallback.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_a_queued_request_is_stamped_at_queue_time.py asserts four of the done_when's clauses and says nothing about the queue-edit re-stamp, so the recorded gate measures part of the stated measure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 816e631ad4 7ce497b39e lists only reckon/crew/runs.py, tests/test_a_queued_request_is_stamped_at_queue_time.py and the fragment, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_queued_request_is_stamped_at_queue_time.py:213 and :252 redden when the record call is removed, as logs/negative-control.log shows, but :333 compares the queue-time stamp with queue_admission.review_contract called directly rather than with a second production queue write, so the re-queue branch is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/runs.py:789 imports lazily in the same style as the queue_order import a few lines below, and the added comment states the mechanism with no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition and calls the existing owner reckon/crew/queue_admission.py:2479, so no capability is forked.\nFINDING reckon/crew/queue_edit.py:180 non-blocking: crew queue edit re-records no review contract, so the node's done_when clause \"crew queue edit re-records them when it changes a request\" is unimplemented and an edited request drops to the wider dispatch gate through queue_admission._contract_is_current; the plan section permits that fallback and queue_edit.py was outside this node's fence, so it must be folded into a node that owns that file.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T201333437803-a-queued-request-is-stamped-at-queue-time/logs/importer-population-head.log:2 non-blocking: the command line in the log header was rewritten after capture, so the support log no longer records the literal command that ran and a reader cannot reproduce it from the file; the manifest discloses the rewrite and the recorded output and EXIT line are untouched.\n",
+  "review_run_id": "r-20261028T210259025054-review-of-a-queued-request-is-stamped-at-queue-time-7ce497b39ec4",
+  "reviewed_base_sha": "816e631ad47830f675ab11a789231b9748dd18c0",
+  "reviewed_head_sha": "7ce497b39ec4132f1d411e1ed2a0f2743ce56881",
+  "reviewed_run_id": "r-20261028T201333437803-a-queued-request-is-stamped-at-queue-time",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T21:20:13.759655+00:00",
+  "total": 109
+}

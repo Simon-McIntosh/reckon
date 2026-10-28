@@ -25,7 +25,7 @@
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="37">
+<meta name="plan-version" content="38">
 <meta name="plan-modified" content="2026-10-28">
 <meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;a-review-gate-judges-what-it-covers#s2&quot;,&quot;a-review-gate-judges-what-it-covers#s9&quot;],&quot;s12&quot;:[&quot;a-review-gate-judges-what-it-covers#s9&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;]}">
 </head>
@@ -242,6 +242,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261028T110649055482-a-queued-request-is-checked-once" data-who="reckon-build" data-when="2026-10-28T14:03:39Z">
     <div class="r-comment-body"><p>a queued request is held only while its own contract has an unreviewed change — when it enters through the batch queue write, its section digest and the digest of the document text it reads (summary, decisions, gates) are recorded on the pointer at queue time and admission compares those against a stored review instead of re-running the whole dispatch gate; a request with no current record, and a plan whose stored reviews cover no unit it reads, are held exactly when the dispatch gate holds them; plan_review_units is defined once in routing; gate 14 passed at head against 10 failed at base, the 38 pre-existing importing test files add no failure, and the declared mutation fails the other-section arm</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261028T210259025054-review-of-a-queued-request-is-stamped-at-queue-time-7ce497b39ec4" data-who="reckon-build" data-when="2026-10-28T21:16:56.987Z">
+    <div class="r-comment-body"><p>Review of r-20261028T201333437803-a-queued-request-is-stamped-at-queue-time at head 7ce497b39e against base 816e631ad4 scores goal_fidelity 19, evidence 14, scope_discipline 20, durability 17, fit 19, reuse 20 (total 109) with 2 non-blocking findings (crew queue edit re-records no contract, so one done_when clause is unimplemented; an importer-population log header was rewritten after capture); added_failure_count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261028T110439086787-a-run-no-review-blocks-lands" data-who="reckon-build" data-when="2026-10-28T12:17:05Z">
     <div class="r-comment-body"><p>The acceptance rule reads a stored review twice: it must be complete, and it must carry no finding that withholds a landing. A declared non-blocking severity does not withhold it and an unstated severity reads as blocking, the same reading the repair reflex makes. The score sets no bar — the acceptance floor and every reader of it are removed, so a complete review with total 92, with a total that disagrees with its dimension scores, or with no total at all is judged on severity alone. Exemptions for a review's non-blocking findings are written after the landing succeeds in both the landing pass and the acceptance sweep, so a refused promotion leaves no finding marked exempted with a reason that says a landing happened. A head that conflicts with the primary branch is refused before measuring, naming the conflicting paths, and nothing is written to the branch. With the bar gone, completeness is the only schema check left on the review side, so the rule asks it in full: the measures the rubric demands and the range of every score the record holds, so a review missing a dimension and one carrying a score outside 0..20 are both refused as records it cannot read.</p></div>
