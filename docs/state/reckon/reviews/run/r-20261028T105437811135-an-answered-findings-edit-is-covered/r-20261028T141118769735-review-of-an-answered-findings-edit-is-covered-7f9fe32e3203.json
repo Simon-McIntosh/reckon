@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: gate-base.log at 768656861b records 1 failed 3 passed EXIT=1 with failure id tests/test_an_answered_findings_edit_is_covered.py::test_an_edit_a_finding_asked_for_is_covered, and gate-head.log at 08ad506435 records 4 passed EXIT=0 with no failure ids, so the after arm adds no failure the base arm did not already carry.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/routing.py:2700",
+    "reckon/mcp_edit_plan.py:2177",
+    "reckon/mcp_deadlines.py:712",
+    "reckon/crew_dispatch_commands.py:2648",
+    "reckon/crew_dispatch_commands.py:2566"
+  ],
+  "completed_at": "2026-10-28T14:22:07.015Z",
+  "dispatched_at": "2026-10-28T14:12:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "reuse-acted-findings",
+      "line": 2155,
+      "severity": "non-blocking",
+      "text": "_acted_finding_units re-implements the selection already owned by _acted_finding_types at line 3397 - the same iterate-findings, _stored_response, action == 'acted' loop - differing only in whether it projects the finding's type or its unit, so the repository now carries two copies of one rule that a single _acted_findings(record) helper would serve."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "reuse-head-commit",
+      "line": 1493,
+      "severity": "non-blocking",
+      "text": "_plan_head_commit repeats the newest-commit-touching-a-path capability that reckon/crew/promotion_scope.py:1913 _newest_commit_touching_path already owns, running the identical git log -1 --format=%H -- <path>; it wraps it separately rather than extending that owner, leaving two implementations of one git question in the tree."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "coverage-cost",
+      "line": 1102,
+      "severity": "non-blocking",
+      "text": "the newly added _acted_finding_units call sits inside review_coverage's per-record loop, and for a line-anchored finding it reaches _reviewed_plan_text and plan_commit_for, a git history walk per finding, so the predicate that reckon/crew/routing.py:2700, reckon/mcp_edit_plan.py:2177 and reckon/mcp_deadlines.py:712 run on the dispatch and edit paths now pays an unbounded per-record cost: the node's own live-store arm could not complete on reckon:a-queue-holds-the-whole-plan (55 stored reviews) in 240 s, 400 s, 900 s or 200 s with the judge stubbed, and no base-arm timing was recorded on the same plan, so whether the cost predates the change is not shown either way."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "stale-commit-attestation",
+      "line": 1508,
+      "severity": "non-blocking",
+      "text": "the fallback resolves the answer's commit as the newest commit touching the plan path, so an acted answer recorded before the answering edit is committed silently cites the previous plan commit as 'the edit's commit', and nothing in the record distinguishes that stale revision from the right one; the docstring at line 1496 assumes the commit-then-answer order but no caller is held to it, which weakens the evidence the plan says coverage carries."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Five production call sites reach the changed code: reckon/crew/routing.py:2700 and reckon/mcp_deadlines.py:712 and reckon/mcp_edit_plan.py:2177 call plan_review.review_coverage, whose per-record loop now resolves acted anchors, and reckon/crew_dispatch_commands.py:2648 calls record_response whose new commit attestation the diff adds; the node's own test file is excluded from the population.",
+    "diff": "Read all seven commits against 768656861b: b80d6dc414 adds the answered-answer rule together with the carried _without_section_status fold into _without_section_bookkeeping and the _fingerprint_forms docstring repair, d4afcb62c5 sharpens the test file, 333220feb2 guards the acted-unit resolution behind the threshold, 9c80994e1a and 7f9fe32e32 write the evidence fragment, 36d124914a restores the carried-answer sentence, and 08ad506435 adds the named-anchor fast path in finding_unit.",
+    "done_when": "The measure names three edit arms plus a negative control; tests/test_an_answered_findings_edit_is_covered.py:196 has the 1 % s5 edit covered, :216 the same-size s4 edit uncovered, :231 the 30 % s5 edit uncovered, and :248 an unanswered finding earning nothing, and the manifest records head 4 passed EXIT=0 at 08ad506435 against base 1 failed 3 passed EXIT=1 on the covered-case arm with the declared mutation reddening the same case.",
+    "goal": "The node goal is to make a stored review cover the edit an answered finding asked for; reckon/crew/plan_review.py:1102 records the unit in `answered` and :1129 stops the review-need verdict from overruling it, and the four cases in tests/test_an_answered_findings_edit_is_covered.py exercise exactly that rule.",
+    "manifest": "Read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T105437811135-an-answered-findings-edit-is-covered/manifest.md; status complete, seven commits listed, the unedited fence command on its tests line, gate-head/gate-base/negative-control/importer/live-store logs named in test_logs, and its outside_scope naming the one importer failure that fails identically at the base revision.",
+    "write_paths": "The node declared reckon/crew/plan_review.py, tests/test_an_answered_findings_edit_is_covered.py, docs/evidence/fragments/a-review-gate-judges-what-it-covers/an-answered-findings-edit-is-covered.html and a figures directory; git diff --stat 768656861b..7f9fe32e32 touches only the first three (+423/-46) and every changed path is inside that list."
+  },
+  "justifications": {
+    "durability": "The negative-control log shows the covered-case assertion at tests/test_an_answered_findings_edit_is_covered.py:207 reddening when the rule is removed (assert 's5' not in {'s5'}), so that assertion is verified against the defect it guards; the commit attestation at :204 compares the answer's stored commit against a value the test derives independently through git rev-parse rather than against its own input, but the named-anchor fast path added at 08ad506435 has no assertion that fails if it regresses because removing it changes only cost.",
+    "evidence": "The gate names the exact fence command and its two arms are recorded as logs with revisions and EXIT lines (gate-head.log 4 passed/0 at 08ad506435, gate-base.log 1 failed/3 passed at 768656861b) and the declared mutation reddens the same case (negative-control.log), but the done_when's live-store arm covers only reckon:a-review-gate-judges-what-it-covers while reckon:a-queue-holds-the-whole-plan is recorded unmeasured at EXIT=124, so half of the declared live arm is reported rather than shown.",
+    "fit": "The rule is a branch inside the existing review_coverage loop (reckon/crew/plan_review.py:1102) that reuses finding_unit and _stored_response rather than inventing an anchor parser, the new tuple constant at :418 follows the module's tuple-constant idiom, and no added name or comment carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew/plan_review.py:1126-1131 lets a unit in `answered` cover the edit even when the review-need verdict says a review is required, which is precisely the refusal the goal states, and the threshold guard at :1100 keeps an over-threshold edit uncovered.",
+    "reuse": "reckon/crew/plan_review.py:2155 _acted_finding_units re-implements the acted-finding selection already owned by :3397 _acted_finding_types, differing only in the attribute projected, and :1493 _plan_head_commit repeats the newest-commit-touching-a-path capability owned by reckon/crew/promotion_scope.py:1913, so two added definitions duplicate rather than extend a mechanism the repository already has.",
+    "scope_discipline": "git diff 768656861b..7f9fe32e32 touches only reckon/crew/plan_review.py, tests/test_an_answered_findings_edit_is_covered.py and the one landing fragment, no figure was written, the plan was not edited, and the two refactors inside b80d6dc414 are the carried items the done_when names."
+  },
+  "node": "review-of-an-answered-findings-edit-is-covered-7f9fe32e3203",
+  "node:reviewed": "an-answered-findings-edit-is-covered",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a stored review cover the edit an answered finding asked for; reckon/crew/plan_review.py:1102 records the unit in `answered` and :1129 stops the review-need verdict from overruling it, and the four cases in tests/test_an_answered_findings_edit_is_covered.py exercise that rule.\nVERDICT done_when: the measure names three edit arms plus a negative control; tests/test_an_answered_findings_edit_is_covered.py:196 has the 1 % s5 edit covered, :216 the same-size s4 edit uncovered, :231 the 30 % s5 edit uncovered and :248 an unanswered finding earning nothing, and the manifest records head 4 passed EXIT=0 at 08ad506435 against base 1 failed 3 passed EXIT=1 on the covered-case arm with the declared mutation reddening the same case.\nVERDICT write_paths: the node declared reckon/crew/plan_review.py, tests/test_an_answered_findings_edit_is_covered.py, one landing fragment and a figures directory; git diff --stat 768656861b..7f9fe32e32 touches only the first three (+423/-46) and every changed path is inside that list.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T105437811135-an-answered-findings-edit-is-covered/manifest.md; status complete, seven commits, the unedited fence command on its tests line, gate/negative-control/importer/live-store logs named in test_logs, and its outside_scope naming the one importer failure that fails identically at base.\nVERDICT diff: read all seven commits against 768656861b: b80d6dc414 adds the answered-answer rule with the carried _without_section_status fold and _fingerprint_forms docstring repair, d4afcb62c5 sharpens the test file, 333220feb2 guards the acted-unit resolution behind the threshold, 9c80994e1a and 7f9fe32e32 write the evidence fragment, 36d124914a restores the carried-answer sentence, and 08ad506435 adds the named-anchor fast path in finding_unit.\nCALL_SITES: reckon/crew/routing.py:2700, reckon/mcp_edit_plan.py:2177, reckon/mcp_deadlines.py:712, reckon/crew_dispatch_commands.py:2648, reckon/crew_dispatch_commands.py:2566\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:1126-1131 lets a unit in `answered` cover the edit even when the review-need verdict says a review is required, and the threshold guard at :1100 keeps an over-threshold edit uncovered.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate and both arms are recorded as logs with revisions and EXIT lines and the declared mutation reddens the same case, but the done_when's live-store arm covers only reckon:a-review-gate-judges-what-it-covers while reckon:a-queue-holds-the-whole-plan is recorded unmeasured at EXIT=124.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 768656861b..7f9fe32e32 touches only reckon/crew/plan_review.py, tests/test_an_answered_findings_edit_is_covered.py and the one landing fragment, no figure was written, and the plan was not edited.\nSCORE durability: 16\nJUSTIFICATION durability: the negative-control log shows tests/test_an_answered_findings_edit_is_covered.py:207 reddening when the rule is removed, so that assertion is verified against the defect it guards, while the named-anchor fast path at 08ad506435 changes only cost and no assertion observes it.\nSCORE fit: 19\nJUSTIFICATION fit: the rule is a branch inside the existing review_coverage loop at reckon/crew/plan_review.py:1102 that reuses finding_unit and _stored_response rather than inventing an anchor parser, and no added name carries a plan, sprint or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/plan_review.py:2155 _acted_finding_units duplicates the acted-finding selection owned by :3397 _acted_finding_types and :1493 _plan_head_commit repeats reckon/crew/promotion_scope.py:1913 _newest_commit_touching_path, so two added definitions copy a mechanism the repository already owns instead of extending it.\nFINDING reckon/crew/plan_review.py:2155 non-blocking: _acted_finding_units re-implements the selection owned by _acted_finding_types at line 3397 - the same iterate-findings, _stored_response, action == 'acted' loop - differing only in the projected attribute, so the repository now carries two copies of one rule.\nFINDING reckon/crew/plan_review.py:1493 non-blocking: _plan_head_commit repeats the newest-commit-touching-a-path capability owned by reckon/crew/promotion_scope.py:1913 _newest_commit_touching_path, running the identical git log -1 --format=%H -- <path> rather than extending that owner.\nFINDING reckon/crew/plan_review.py:1102 non-blocking: the new _acted_finding_units call runs inside review_coverage's per-record loop and reaches a git history walk per line-anchored finding, so the predicate on the dispatch and edit paths pays an unbounded per-record cost; the node's live-store arm could not complete on reckon:a-queue-holds-the-whole-plan in 240 s, 400 s, 900 s or 200 s, and no base-arm timing was recorded to show whether the cost predates the change.\nFINDING reckon/crew/plan_review.py:1508 non-blocking: the commit fallback cites the newest commit touching the plan path, so an acted answer recorded before the answering edit is committed silently records the previous plan commit as the edit's commit, and no field distinguishes that stale revision from the right one.\n",
+  "review_run_id": "r-20261028T141118769735-review-of-an-answered-findings-edit-is-covered-7f9fe32e3203",
+  "reviewed_base_sha": "768656861bffbc5b6b1b9bb20b10ba87dfa7ea1f",
+  "reviewed_head_sha": "7f9fe32e320346ec612ac224a3610c4665acbac1",
+  "reviewed_run_id": "r-20261028T105437811135-an-answered-findings-edit-is-covered",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T14:28:03.737023+00:00",
+  "total": 93
+}
