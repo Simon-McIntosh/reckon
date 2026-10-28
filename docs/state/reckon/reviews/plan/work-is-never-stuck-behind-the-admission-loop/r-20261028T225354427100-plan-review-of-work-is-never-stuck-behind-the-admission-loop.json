@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T23:02:15.645Z",
+  "dispatched_at": "2026-10-28T22:56:36Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:113",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a76 as written would write a two-valued history for the probe form the plan's own evidence names, so its second arm (\"a park whose probe value is still moving stays parked\") could not be satisfied and healthy file waits would be reclassified dead.",
+      "text": "\u00a76 derives the three-sweep constancy from `wait_probe_history` written by `resumption.sweep`, but that actor's reader is `resumption._run_condition_probe` (`resumption.py:1497-1538`), whose `observed` for a `files:` declaration is the derived vector's `exit:0`/`exit:1` (it prints nothing) and is `unavailable` when the probe cannot run \u2014 both constant for as long as the park is pending \u2014 so a healthy file wait looks dead on the third sweep whenever no live process is visible from the run's own tree, which is exactly \u00a71's fourth case minus its dead writers",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:113",
+      "id": "reasoning-2",
+      "reason": "the done-when's \"reclassified on the third sweep, with one obligation\" cannot be met inside the declared scope, so the node either blocks or reuses `waiting` and loses the reclassification it was dispatched to make.",
+      "text": "\u00a76 says \"Obligations derive from that classification (`obligations.py:610`), so no obligation is written separately\", but the derivation at `obligations.py:1689-1737` selects a duty kind from `RECOVERY_CLASSIFICATION_DUTY_KINDS` and `CLASSIFICATION_DUTY_KINDS`, both declared in `obligations.py:51-62`; a classification value that is not a key of either maps to `\"\"` and emits no duty at all, and `obligations.py` is not among \u00a76's declared write paths",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:117",
+      "id": "done_when-1",
+      "reason": "the arm must state that the alive-process case holds the probe value constant, otherwise the declared negative control does not falsify the clause it names.",
+      "text": "\u00a76's second arm is \"A park whose probe value is still moving, or whose waited-on process is alive, stays parked\", and the negative control removes the liveness clause; if the test exercises the alive-process case with a probe value that moves, the dead-park rule cannot fire on its own constancy clause and the arm stays green with the liveness clause removed, so the control proves nothing",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1b972611d89eb557b78f413e1ac0aa5fd96d77d3",
+  "plan_fingerprint": "40bed6b85a537db389b03b0683fbac154ec7ad7e1cdea7d0727b29e60e6fe431",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T225354427100-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "9f72f524d05b109ac1d9306944c3a1967b18acbb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery_classification.py:1240-1265` contains the \"terminal when the probe reports \u2026\" detail, `obligations.py:610` is `_classified_rows` calling `recovery.classify_pointer`, `resumption.sweep` is at `resumption.py:1776` and calls the condition probe each pass, and `process_liveness.process_alive` / `recovery_liveness._live_descendant` both exist.",
+    "done_when": "a finding \u2014 \u00a76's negative control is only red if the alive-process arm holds the probe value constant, which the arm's disjunction does not require.",
+    "evidence_paths": "pass \u2014 \u00a76 names a repository test path and lint checks; gate logs belong to the run's own manifest under the crew run directory, as the plan's other sections do.",
+    "naming": "pass \u2014 `wait_probe_history` and `test_a_park_that_cannot_change_is_dead.py` name the mechanism; no plan label, stage name, ticket or version tag reaches them.",
+    "reasoning": "a finding \u2014 the history \u00a76 has the sweep write records the sweep reader's `observed` string, which for a file-declaration wait is `exit:<code>` and for a probe that cannot run is `unavailable`, so \"the value has not changed\" is true of every pending file wait and the constancy test measures nothing there.",
+    "single_goal": "pass \u2014 \u00a76 has one goal (a park whose probe cannot change is classed dead) and carries one deliverable; the history write is the mechanism for that goal, not a second one.",
+    "wiring": "pass \u2014 \u00a76 declares no `plan-section-depends-on` entry, and it edits `recovery_classification.py` and `resumption.py`, which no other section claims, so no relationship is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "fa210fb9b50c35fe3d7f00eb88b8687e8fa687a9bc9a7444fbe53ec22256ee0f",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2660f0a8230174b58e453e15cd31c113f234218a69c1e8c217b6dd03334a224c",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T23:03:38.153487+00:00"
+}
