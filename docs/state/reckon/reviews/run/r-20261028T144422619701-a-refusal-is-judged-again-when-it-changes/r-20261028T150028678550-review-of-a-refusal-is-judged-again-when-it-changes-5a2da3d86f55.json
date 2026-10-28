@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed manifest's own arms: after_suite at 5a2da3d86f records failure_count 0 (log logs/after-suite.log, 5 passed, EXIT=0) and baseline_suite at 1f9672d4ce records failure_count 4, so no failure id is present after the change that was absent before it.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3045",
+    "reckon/crew/queue_admission.py:3058",
+    "reckon/crew/obligations.py:992"
+  ],
+  "completed_at": "2026-10-28T15:09:47.330Z",
+  "dispatched_at": "2026-10-28T15:01:49Z",
+  "findings": [
+    {
+      "file": "tests/test_a_refusal_is_judged_again_when_it_changes.py",
+      "line": "145",
+      "severity": "non-blocking",
+      "text": "non-blocking: no arm moves the review stamp while the code stamp holds, so a _review_stamp that returned a constant would keep all five tests green; the \"or review changes\" half of the node goal therefore has no assertion that fails if it regresses."
+    },
+    {
+      "file": "tests/test_a_refusal_is_judged_again_when_it_changes.py",
+      "line": "254",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares reviewed_head_sha of the selected review against the head the test itself wrote into the only review record it stored, so its only failing condition is that no acceptance judgement was reached; it cannot detect selection of a wrong record because no second record exists to select."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "72",
+      "severity": "non-blocking",
+      "text": "non-blocking: _review_stamp re-implements the sorted-key JSON sha256 digest owned by reckon/crew/plan_review.py:398-400 (_digest) with different separators, so a future change to the digest convention lands in one caller and not the other."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment says a subject line's own words do not read as a revision, but _REVISION_TOKEN matches any all-hex word of seven or more characters, so a subject containing such a word after the revision (a hash-like token, \"defaced\", \"deadbeef\") is returned by _delivered_revision as the head, and since the last match wins the real head is discarded and the run is silently skipped - the silent drop this commit exists to remove."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read all three commits against base 1f9672d4ce: 9cf17bccaf adds _delivered_revision, _landing_code_stamp, _review_stamp and _refusal_holds plus the two stamps threaded through every _record_attempt call in reckon/crew/queue_landing.py, bf3c7c5345 tightens the test's subject arm to an abbreviated revision so the parsing it names is exercised, and 5a2da3d86f adds docs/evidence/fragments/a-queue-holds-the-whole-plan/a-refusal-is-judged-again-when-it-changes.html.",
+    "done_when": "the done_when names tests/test_a_refusal_is_judged_again_when_it_changes.py for four behaviours plus no added failures in importing files and ruff on the changed paths; logs/after-suite.log records \"5 passed in 2.52s\" and \"EXIT=0\" at revision 5a2da3d86f under exactly the command the manifest's tests: line states, logs/baseline-arm.log records \"4 failed, 1 passed\" and \"EXIT=1\" at the base module, and I re-ran ruff check (all checks passed) and ruff format --check (2 files already formatted) on both changed source paths.",
+    "goal": "the node goal is \"judge a refused landing again when its landing code or review changes\"; reckon/crew/queue_landing.py:461-483 records code_stamp and review_stamp on every refusal and _refusal_holds (queue_landing.py:76-96) skips a refused head only while both are unchanged, so both halves of the goal land in the code.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T144422619701-a-refusal-is-judged-again-when-it-changes/manifest.md; status complete, commits 9cf17bccaf, bf3c7c5345 and 5a2da3d86f, after_suite 0 failures with exit_status 0 at 5a2da3d86f, baseline_suite 4 failures with exit_status 1 at 1f9672d4ce, negative control 2 failed/3 passed with EXIT=1; every figure matches the tail and EXIT line of the log it names.",
+    "write_paths": "the manifest declares reckon/crew/queue_landing.py, tests/test_a_refusal_is_judged_again_when_it_changes.py, the evidence fragment and a docs/figures directory; git diff --stat 1f9672d4ce..5a2da3d86f changes only the first three (no figure was written), all inside the declared scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_refusal_is_judged_again_when_it_changes.py:158-171 reddens on the reinstated skip and :196 reddens on a never-holding stamp, but no arm moves only the review stamp, so a _review_stamp that ignored the record's content (queue_landing.py:70-73) would pass all five tests and the \"review changes\" half of the goal is unguarded.",
+    "evidence": "the manifest's tests: line and the logs it names agree on command and figure (logs/after-suite.log \"5 passed\", EXIT=0; logs/baseline-arm.log \"4 failed, 1 passed\", EXIT=1), but the ruff claim in artifacts had no log among test_logs, so I re-established it by running ruff check and ruff format --check on both changed paths myself.",
+    "fit": "reckon/crew/queue_landing.py:30-96 follows the module's private-helper-with-a-docstring idiom and names no plan, ticket or version label, but the _REVISION_TOKEN comment at :24-27 overstates its own guarantee.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:461-483 records both stamps on every refusal path including the interrupted-attempt and pre-land refunds, and queue_landing.py:76-96 releases the skip when either moves.",
+    "reuse": "_landing_code_stamp extends the shared owner (follower_code_stamp) and is only a local mirror of reckon/crew/queue_admission.py:647, while _review_stamp at queue_landing.py:72-73 re-implements the sorted-key JSON sha256 digest already written at reckon/crew/plan_review.py:398-400 rather than calling it.",
+    "scope_discipline": "git diff --stat 1f9672d4ce..5a2da3d86f names exactly reckon/crew/queue_landing.py, tests/test_a_refusal_is_judged_again_when_it_changes.py and the evidence fragment, all declared, and the declared figures directory was not touched."
+  },
+  "node": "review-of-a-refusal-is-judged-again-when-it-changes-5a2da3d86f55",
+  "node:reviewed": "a-refusal-is-judged-again-when-it-changes",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"judge a refused landing again when its landing code or review changes\"; reckon/crew/queue_landing.py:461-483 records code_stamp and review_stamp on every refusal and _refusal_holds (queue_landing.py:76-96) skips a refused head only while both are unchanged, so both halves of the goal land in the code.\nVERDICT done_when: the done_when names tests/test_a_refusal_is_judged_again_when_it_changes.py for four behaviours plus no added failures in importing files and ruff on the changed paths; logs/after-suite.log records \"5 passed in 2.52s\" and \"EXIT=0\" at revision 5a2da3d86f under exactly the command the manifest's tests: line states, logs/baseline-arm.log records \"4 failed, 1 passed\" and \"EXIT=1\" at the base module, and I re-ran ruff check (all checks passed) and ruff format --check (2 files already formatted) on both changed source paths.\nVERDICT write_paths: the manifest declares reckon/crew/queue_landing.py, tests/test_a_refusal_is_judged_again_when_it_changes.py, the evidence fragment and a docs/figures directory; git diff --stat 1f9672d4ce..5a2da3d86f changes only the first three (no figure was written), all inside the declared scope.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T144422619701-a-refusal-is-judged-again-when-it-changes/manifest.md; status complete, commits 9cf17bccaf, bf3c7c5345 and 5a2da3d86f, after_suite 0 failures with exit_status 0 at 5a2da3d86f, baseline_suite 4 failures with exit_status 1 at 1f9672d4ce, negative control 2 failed/3 passed with EXIT=1; every figure matches the tail and EXIT line of the log it names.\nVERDICT diff: read all three commits against base 1f9672d4ce: 9cf17bccaf adds _delivered_revision, _landing_code_stamp, _review_stamp and _refusal_holds plus the two stamps threaded through every _record_attempt call in reckon/crew/queue_landing.py, bf3c7c5345 tightens the test's subject arm to an abbreviated revision so the parsing it names is exercised, and 5a2da3d86f adds docs/evidence/fragments/a-queue-holds-the-whole-plan/a-refusal-is-judged-again-when-it-changes.html.\nCALL_SITES: reckon/crew/queue_admission.py:3045, reckon/crew/queue_admission.py:3058, reckon/crew/obligations.py:992\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:461-483 records both stamps on every refusal path including the interrupted-attempt and pre-land refunds, and queue_landing.py:76-96 releases the skip when either moves.\nSCORE evidence: 18\nJUSTIFICATION evidence: the manifest's tests: line and the logs it names agree on command and figure (logs/after-suite.log \"5 passed\", EXIT=0; logs/baseline-arm.log \"4 failed, 1 passed\", EXIT=1), but the ruff claim in artifacts had no log among test_logs, so I re-established it by running ruff check and ruff format --check on both changed paths myself.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1f9672d4ce..5a2da3d86f names exactly reckon/crew/queue_landing.py, tests/test_a_refusal_is_judged_again_when_it_changes.py and the evidence fragment, all declared, and the declared figures directory was not touched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_refusal_is_judged_again_when_it_changes.py:158-171 reddens on the reinstated skip and :196 reddens on a never-holding stamp, but no arm moves only the review stamp, so a _review_stamp that ignored the record's content (queue_landing.py:70-73) would pass all five tests and the \"review changes\" half of the goal is unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/queue_landing.py:30-96 follows the module's private-helper-with-a-docstring idiom and names no plan, ticket or version label, but the _REVISION_TOKEN comment at :24-27 overstates its own guarantee.\nSCORE reuse: 15\nJUSTIFICATION reuse: _landing_code_stamp extends the shared owner (follower_code_stamp) and is only a local mirror of reckon/crew/queue_admission.py:647, while _review_stamp at queue_landing.py:72-73 re-implements the sorted-key JSON sha256 digest already written at reckon/crew/plan_review.py:398-400 rather than calling it.\nFINDING tests/test_a_refusal_is_judged_again_when_it_changes.py:145 non-blocking: no arm moves the review stamp while the code stamp holds, so a _review_stamp that returned a constant would keep all five tests green; the \"or review changes\" half of the node goal therefore has no assertion that fails if it regresses.\nFINDING tests/test_a_refusal_is_judged_again_when_it_changes.py:254 non-blocking: the assertion compares reviewed_head_sha of the selected review against the head the test itself wrote into the only review record it stored, so its only failing condition is that no acceptance judgement was reached; it cannot detect selection of a wrong record because no second record exists to select.\nFINDING reckon/crew/queue_landing.py:72 non-blocking: _review_stamp re-implements the sorted-key JSON sha256 digest owned by reckon/crew/plan_review.py:398-400 (_digest) with different separators, so a future change to the digest convention lands in one caller and not the other.\nFINDING reckon/crew/queue_landing.py:24 non-blocking: the comment says a subject line's own words do not read as a revision, but _REVISION_TOKEN matches any all-hex word of seven or more characters, so a subject containing such a word after the revision (a hash-like token, \"defaced\", \"deadbeef\") is returned by _delivered_revision as the head, and since the last match wins the real head is discarded and the run is silently skipped - the silent drop this commit exists to remove.\n",
+  "review_run_id": "r-20261028T150028678550-review-of-a-refusal-is-judged-again-when-it-changes-5a2da3d86f55",
+  "reviewed_base_sha": "1f9672d4ce25dad55d884119baf2e9f3abf3ebf8",
+  "reviewed_head_sha": "5a2da3d86f555e785386213aba6a1c24b72289ae",
+  "reviewed_run_id": "r-20261028T144422619701-a-refusal-is-judged-again-when-it-changes",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T15:08:11+00:00",
+  "total": 103
+}
