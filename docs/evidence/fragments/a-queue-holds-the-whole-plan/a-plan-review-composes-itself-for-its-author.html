@@ -7,60 +7,78 @@
   nobody was editing, dispatching the review under whichever session ran the
   sweep, and answering the not-changing findings of every stored review it
   found, one commit per answer. The pass now decides all three by facts the
-  store already records, and leaves every other plan to its coordinator.
+  store already records, and leaves every other plan to its coordinator.</p>
 
-  <p><strong>The burst window.</strong> A plan is the reflex's to review only
-  while its last edit is between <code>PLAN_REVIEW_QUIET_SECONDS</code> (ten
-  minutes) and <code>PLAN_REVIEW_BURST_SECONDS</code> (a day) old. Both bounds
-  are measured by <code>plan_review_edit_age</code> from the plan file's own
-  modification time, so the quiet period and the burst window cannot disagree
-  about when the edit was. A file whose time cannot be read refuses rather than
-  passing the burst test.
+  <p><strong>The burst window, and the slot spent inside it.</strong> A plan is
+  the reflex's to review only while its last edit is between
+  <code>PLAN_REVIEW_QUIET_SECONDS</code> (ten minutes) and
+  <code>PLAN_REVIEW_BURST_SECONDS</code> (a day) old. Both bounds are measured
+  by <code>plan_review_edit_age</code> from the plan file's own modification
+  time, and every plan's age is one <code>stat</code>, so the window is applied
+  to the whole project before anything is weighed and the read slot is spent
+  among the plans inside it. The freshest edit is weighed first. Without that
+  filter a project carrying hundreds of quiet plans spent every pass on a
+  document nobody had touched, and the plan its author had just finished was
+  never reached.</p>
 
   <p><strong>The author's session.</strong> The review is dispatched under the
   session of the run that last named the plan, never under the sweep's.
   <code>plan_authoring_runs</code> reads both stores a run is kept in — the live
   pointer's <code>node.plan</code> and the committed ledger row's top-level
   <code>plan</code> — keeps only runs under a day old, and takes the newest per
-  plan. It reads each store once per pass, because a ledger load per plan cost
-  more than the reviews the pass starts. A plan no run named in the last day is
-  refused with that reason: a review composed for it would reach no reader.
+  plan. It reads each store once per pass. A plan no run named in the last day
+  is refused with that reason, and its refusal is printed: a review composed
+  for it would reach no reader.</p>
+
+  <p><strong>Coverage, not the existence of a record.</strong> A stored review
+  that read one section of a plan still answers <code>read_plan_review</code>,
+  so asking whether any record covers the plan refused a plan whose other
+  sections had never been reviewed, and the plan a coordinator was authoring
+  never composed. The refusal now asks what it means: whether the stored
+  reviews leave any unit uncovered.</p>
 
   <p><strong>Notes only on its own reviews.</strong> The pass records the review
   run ids it dispatched, and answers the not-changing findings of those records
-  and no others — a coordinator's own review is its coordinator's to answer. All
-  of one pass's answers are written under one commit through
+  and no others. All of one pass's answers are written under one commit through
   <code>_deferring_record_commits</code> and
-  <code>_commit_record_writes_once</code>. An id is dropped from the record once
-  its review's record is in the store, which is the moment its notes have been
-  answered.
+  <code>_commit_record_writes_once</code>. A note written before the walk fails
+  is committed too: a later pass reads a written answer as answered, so an
+  uncommitted one would be lost while the pass reports the failure.</p>
 
   <p><strong>The gate.</strong>
-  <code>tests/test_a_plan_review_composes_itself.py</code> reports 18 passed. It
-  covers every arm the section lists: a quiet plan with an hour-old run composed
-  under that run's session, a two-minute edit refused, a two-day-old edit whose
-  run is an hour old refused, a plan no run has named refused, a review in
-  flight refused, notes on a composed review and not on another's, and one
-  commit for two notes — beside the arms the first landing kept: the bounded
-  read, the one-per-pass limit, the retried refusal and the dry run.
+  <code>tests/test_a_plan_review_composes_itself.py</code> reports 20 passed. It
+  covers a quiet plan with an hour-old run composed under that run's session, a
+  two-minute edit refused, a two-day-old edit whose run is an hour old refused,
+  a plan no run has named refused, a review in flight refused, notes on a
+  composed review and not on another's, one commit for two notes, sixty plans
+  of which one is inside the window and the rotation starts elsewhere, and the
+  answers written before a failed note walk.</p>
 
   <p><strong>The negative control.</strong> Removing the bound on the plan
   file's age — <code>if False and edited_age &gt; PLAN_REVIEW_BURST_SECONDS</code>
   — fails exactly
   <code>test_a_plan_edited_two_days_ago_is_not_composed_though_it_owes_a_review</code>
-  at 1 failed, 17 passed, EXIT=1.
+  at 1 failed, 17 passed, EXIT=1 (the file carrying eighteen arms at that
+  point).</p>
 
-  <p><strong>The live store.</strong> A timed <code>dry_run</code> of
-  <code>compose_owed_plan_reviews</code> returns in 11.6 s on
-  <code>reckon</code> and 3.2 s on <code>nova</code> without raising, inside the
-  30 s bound. Both previews are empty, and each plan they weighed is named with
-  the reason it was not composed, so the empty result is accounted for rather
-  than blind. The section's positive control could not be demonstrated: the
-  watched plan <code>reckon:a-queue-holds-the-whole-plan</code> was quiet
-  (21.1 minutes since its edit) but a stored review already covers its current
-  content, so it does not owe a review and no plan on either project did. Its
-  refusal, printed by the arm, is
-  <code>a stored review already covers the plan's current content</code>.
-  <p><strong>No added failures.</strong> The eighty-four test files that import <code>reckon.crew.plan_review</code> or <code>reckon.crew.resumption</code> report 1 failed and 821 passed at this change, against 5 failed and 817 passed at the base revision. The one failure at this head, <code>test_every_registered_crew_verb_is_documented_or_exempt</code>, fails at the base revision too, so the change adds none. The four failures seen only at base come from that arm running in an archive extraction with no git metadata, which is why the comparison is read as failures added at this head rather than absolutely.
+  <p><strong>The live store.</strong> The timed <code>dry_run</code> of
+  <code>compose_owed_plan_reviews</code> returns in 28.8 s on
+  <code>reckon</code> and 7.4 s on <code>nova</code> without raising, inside the
+  30 s bound, and it lists
+  <code>reckon:a-queue-holds-the-whole-plan</code> as owing a content review,
+  attributed to the run <code>r-20261028T062227367045</code> that named it on
+  this session. The preview weighs every plan inside the window, so it is
+  bounded by <code>PLAN_REVIEW_PREVIEW_SECONDS</code> rather than by a plan
+  count; the plans it does not reach are named with the reason they were not
+  composed.</p>
 
+  <p><strong>No added failures.</strong> The eighty-four test files that
+  import <code>reckon.crew.plan_review</code> or <code>reckon.crew.resumption</code>
+  report 1 failed and 821 passed at this change, against 5 failed and 817 passed
+  at the base revision. The one failure at this head,
+  <code>test_every_registered_crew_verb_is_documented_or_exempt</code>, fails at
+  the base revision too, so the change adds none. The four failures seen only at
+  base come from that arm running in an archive extraction with no git
+  metadata, which is why the comparison is read as failures added at this head
+  rather than absolutely.</p>
 </section>
