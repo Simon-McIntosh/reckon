@@ -41,22 +41,34 @@
   prose are never taken for the commit: the answer is empty and the run is
   judged on nothing rather than guessed.</p>
 
+  <p><strong>An entry no revision can be read from is reported, not dropped.</strong>
+  An empty answer is a defect in the run's own manifest, so
+  <code>land_once</code> records an <code>admission_landing</code> refusal
+  quoting the entry (<code>delivered revision: the manifest commits entry
+  … names no revision at its head</code>) and appends an obligation for the
+  run's session. A prose-led entry and a revision carrying a trailing comma or
+  full stop all land there, so a coordinator sees the run and corrects the
+  manifest instead of the run leaving the pass with nothing written down. The
+  refusal holds while the entry and the code stamp are unchanged, so the
+  obligation is not repeated on every pass.</p>
+
   <p><strong>Measure.</strong> The gate command
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
   tests/test_a_refusal_is_judged_again_when_it_changes.py</code> reports
-  <code>9 passed</code>, <code>EXIT=0</code>. With the same nine tests run
+  <code>11 passed</code>, <code>EXIT=0</code>. With the same eleven tests run
   against the module at the dispatch base the run reports
-  <code>8 failed, 1 passed</code>, <code>EXIT=1</code>, the one pass being the
+  <code>10 failed, 1 passed</code>, <code>EXIT=1</code>, the one pass being the
   unchanged-refusal arm, which is behaviour the old pass already held. The
-  declared negative control — restore the skip on any attempt at the same head
-  — reports <code>3 failed, 6 passed</code>, <code>EXIT=1</code>, and the first
-  arm
-  (<code>test_a_refusal_under_an_old_rule_is_judged_again_when_the_code_moves</code>)
-  is among the failures. A second mutation, <code>_review_stamp</code>
-  returning a constant, fails exactly one arm —
+  declared negative control — let an unreadable commit entry skip the run
+  silently again — reports <code>3 failed, 8 passed</code>, <code>EXIT=1</code>
+  on exactly the three unreadable-entry arms (prose first, trailing comma,
+  trailing full stop). A second mutation restoring the unconditional refusal
+  skip reports <code>3 failed, 8 passed</code> on the three refusal-movement
+  arms, and a third mutating <code>_review_stamp</code> to a constant fails
+  exactly
   <code>test_a_refusal_is_judged_again_when_only_the_review_record_moves</code>
-  — which is the arm that exists to prove a changed review record alone
-  releases a refusal. The three test files that already import
+  — the arm that exists to prove a changed review record alone releases a
+  refusal. The four test files that already import
   <code>reckon.crew.queue_landing</code> pass at head, so the change adds no
   failure outside its own gate.</p>
 
