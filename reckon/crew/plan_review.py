@@ -2188,15 +2188,20 @@ def finding_unit(
     *,
     plan_path: str | Path | None = None,
 ) -> str:
-    """The unit the named finding is about, as a carried answer records it."""
+    """The unit the named finding is about, as a carried answer records it.
+
+    An anchor that names its section outright resolves without reading the
+    reviewed text, so it costs no git lookup; only a line anchor is resolved
+    against the text the review read.
+    """
     finding = _finding_by_id(record, finding_id)
     if finding is None:
         return DOCUMENT_UNIT
-    return _anchor_unit(
-        record,
-        str(finding.get("anchor") or ""),
-        _reviewed_plan_text(record, plan_path),
-    )
+    anchor = str(finding.get("anchor") or "")
+    named = _anchor_unit(record, anchor, None)
+    if named != DOCUMENT_UNIT:
+        return named
+    return _anchor_unit(record, anchor, _reviewed_plan_text(record, plan_path))
 
 
 def _finding_by_id(
