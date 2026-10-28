@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_release_plan_review_holds",
+    "reckon/crew/queue_admission.py:admit_once"
+  ],
+  "completed_at": "2026-10-28T13:45:41.623Z",
+  "dispatched_at": "2026-10-28T13:33:13Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-queued-request-is-checked-once.html",
+      "line": "24",
+      "severity": "blocking",
+      "text": "blocking: the mechanism paragraph states review_contract is called \"by the admission pass for a pointer queued by any other writer\" and that a request edited with `crew queue edit` \"is re-stamped\"; neither exists \u2014 record_review_contract is called only from reckon/crew/queue_admission.py:2217, and _contract_is_current returning False routes the request to the wider dispatch-gate hold instead, so the landing record would tell a plan reader that edited requests are refreshed when their contract is never written at all."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "2465",
+      "severity": "non-blocking",
+      "text": "non-blocking: `if not records: return None` reads review_coverage's contributing reviews as though they were all stored reviews, so a request whose stored review covers none of the units it reads \u2014 a plan that moved far enough that nothing matches, or a plan whose only review is marked incomplete (reckon/crew/plan_review.py:276, filtered at reckon/crew/plan_review.py:980) \u2014 is admitted, where the dispatch gate holds it via reckon/crew/routing.py:2703 and 2726; this breaks the done-when's \"queued request and a fresh dispatch give the same verdict at every step\", and is unreachable today only because no production pointer carries a review_contract."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "2217",
+      "severity": "non-blocking",
+      "text": "non-blocking: the only stamping call sits in queue_admission.queue_requests, which no production code calls \u2014 every production queue write goes through reckon/crew/runs.py:654 queue_dispatch \u2014 so the narrowed hold is never taken and the goal's behavioural change is dark in production; the repair belongs in runs.queue_dispatch, outside this node's write paths, as the manifest's outside_scope records."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T110649055482-a-queued-request-is-checked-once/logs/head-arm.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded head arm states revision 768656861bffbc5b6b1b9bb20b10ba87dfa7ea1f with the parenthetical \"(head tree: this node's change applied)\", so the gate log cannot be tied to the landed commit by its own header and any manifest citing it as an after_suite arm is refused; the measurement itself stands \u2014 the reviewed worktree is clean at c0138556fe95 and `git diff --stat c0138556fe95` is empty, and re-running the same command there gives 12 passed EXIT=0 \u2014 so the defect is the label, not the result."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2556",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's carried clause required _document_change_is_contract to read its stored review snapshot through plan_review._snapshot_evidence, and it still resolves the run id, report directory and snapshot name itself here, so the snapshot resolution is duplicated across two owners and now runs on the admission path as well; the repair needs a state accessor in reckon/crew/plan_review.py, which a concurrent node owns."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "one commit c0138556fe across three files; reckon/crew/queue_admission.py adds review_contract, _contract_is_current, record_review_contract and _dispatch_gate_owed, narrows _plan_review_owed, and deletes the duplicate plan_review_units in favour of reckon/crew/routing.py's.",
+    "done_when": "the evidence fence names tests/test_a_queued_request_is_checked_once.py's five arms, the plan_review_units identity and a carried routing refactor; the gate asserts the five arms and the identity (12 passed, logs/head-arm.log) but no assertion covers the carried refactor, whose four fail-closed tests already pass at base (logs/base-arm.log), so that clause is unmeasured.",
+    "goal": "the goal is to hold a queued request only while its own contract has an unreviewed change; reckon/crew/queue_admission.py:2408 (_plan_review_owed) does compare two queue-time digests, but no production writer stamps them \u2014 only reckon/crew/queue_admission.py:2217 does, and that function has no production caller \u2014 so every real request still takes the wider dispatch-gate hold at reckon/crew/queue_admission.py:2451-2460.",
+    "manifest": "read; it records head 12 passed EXIT=0 (logs/head-arm.log), base 8 failed 4 passed EXIT=1 (logs/base-arm.log), importer population 1 failed 169 passed at both revisions with the same id, the declared negative control 1 failed 11 passed, and names the carried refactor as unmet in blockers.",
+    "write_paths": "the declared paths are reckon/crew/queue_admission.py, reckon/crew/routing.py, reckon/crew/node.py, tests/test_a_queued_request_is_checked_once.py, the landing fragment and its figures directory; the diff touches only queue_admission.py, the test file and the fragment, and routing.py and node.py are untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_request_is_checked_once.py:164 fails if the hold widens to another section \u2014 proven by logs/negative-control.log \u2014 but no arm covers the unstamped-pointer fallback or the no-contributing-review branch at reckon/crew/queue_admission.py:2465.",
+    "evidence": "logs/head-arm.log records 12 passed EXIT=0 against 8 failed 4 passed at base in logs/base-arm.log, with a genuine negative control, but the carried fail-closed tests at tests/test_a_queued_request_is_checked_once.py:272-330 pass at base too and measure nothing this node changed.",
+    "fit": "the new helpers follow the module's private-helper idiom and use no forbidden name, though the docstring at reckon/crew/queue_admission.py:2436 and the fragment claim a re-stamp the code does not perform.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:2451 falls back to the wider gate for every pointer without a review_contract, and only reckon/crew/queue_admission.py:2217 stamps one, so production behaviour is unchanged.",
+    "reuse": "reckon/crew/queue_admission.py:2273 composes the existing plan_review._section_digests and routing._contract_digest owners, and the duplicate plan_review_units is deleted in favour of reckon/crew/routing.py's.",
+    "scope_discipline": "every path in the diff \u2014 reckon/crew/queue_admission.py, tests/test_a_queued_request_is_checked_once.py and the landing fragment \u2014 is inside the declared write paths, and no plan was edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to hold a queued request only while its own contract has an unreviewed change; reckon/crew/queue_admission.py:2408 (_plan_review_owed) does compare two queue-time digests, but no production writer stamps them \u2014 only reckon/crew/queue_admission.py:2217 does, and that function has no production caller \u2014 so every real request still takes the wider dispatch-gate hold at reckon/crew/queue_admission.py:2451-2460.\nVERDICT done_when: the evidence fence names tests/test_a_queued_request_is_checked_once.py's five arms, the plan_review_units identity and a carried routing refactor; the gate asserts the five arms and the identity (12 passed, logs/head-arm.log) but no assertion covers the carried refactor, whose four fail-closed tests already pass at base (logs/base-arm.log), so that clause is unmeasured.\nVERDICT write_paths: the declared paths are reckon/crew/queue_admission.py, reckon/crew/routing.py, reckon/crew/node.py, tests/test_a_queued_request_is_checked_once.py, the landing fragment and its figures directory; the diff touches only queue_admission.py, the test file and the fragment, and routing.py and node.py are untouched.\nVERDICT manifest: read; it records head 12 passed EXIT=0 (logs/head-arm.log), base 8 failed 4 passed EXIT=1 (logs/base-arm.log), importer population 1 failed 169 passed at both revisions with the same id, the declared negative control 1 failed 11 passed, and names the carried refactor as unmet in blockers.\nVERDICT diff: one commit c0138556fe across three files; reckon/crew/queue_admission.py adds review_contract, _contract_is_current, record_review_contract and _dispatch_gate_owed, narrows _plan_review_owed, and deletes the duplicate plan_review_units in favour of reckon/crew/routing.py's.\nCALL_SITES: reckon/crew/queue_admission.py:_release_plan_review_holds, reckon/crew/queue_admission.py:admit_once\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:2451 falls back to the wider gate for every pointer without a review_contract, and only reckon/crew/queue_admission.py:2217 stamps one, so production behaviour is unchanged.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-arm.log records 12 passed EXIT=0 against 8 failed 4 passed at base in logs/base-arm.log, with a genuine negative control, but the carried fail-closed tests at tests/test_a_queued_request_is_checked_once.py:272-330 pass at base too and measure nothing this node changed.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff \u2014 reckon/crew/queue_admission.py, tests/test_a_queued_request_is_checked_once.py and the landing fragment \u2014 is inside the declared write paths, and no plan was edited.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_queued_request_is_checked_once.py:164 fails if the hold widens to another section \u2014 proven by logs/negative-control.log \u2014 but no arm covers the unstamped-pointer fallback or the no-contributing-review branch at reckon/crew/queue_admission.py:2465.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers follow the module's private-helper idiom and use no forbidden name, though the docstring at reckon/crew/queue_admission.py:2436 and the fragment claim a re-stamp the code does not perform.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:2273 composes the existing plan_review._section_digests and routing._contract_digest owners, and the duplicate plan_review_units is deleted in favour of reckon/crew/routing.py's.\nFINDING docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-queued-request-is-checked-once.html:24 blocking: the mechanism paragraph states review_contract is called \"by the admission pass for a pointer queued by any other writer\" and that a request edited with `crew queue edit` \"is re-stamped\"; neither exists \u2014 record_review_contract is called only from reckon/crew/queue_admission.py:2217, and _contract_is_current returning False routes the request to the wider dispatch-gate hold instead, so the landing record would tell a plan reader that edited requests are refreshed when their contract is never written at all.\nFINDING reckon/crew/queue_admission.py:2465 non-blocking: `if not records: return None` reads review_coverage's contributing reviews as though they were all stored reviews, so a request whose stored review covers none of the units it reads \u2014 a plan that moved far enough that nothing matches, or a plan whose only review is marked incomplete (reckon/crew/plan_review.py:276, filtered at reckon/crew/plan_review.py:980) \u2014 is admitted, where the dispatch gate holds it via reckon/crew/routing.py:2703 and 2726; this breaks the done-when's \"queued request and a fresh dispatch give the same verdict at every step\", and is unreachable today only because no production pointer carries a review_contract.\nFINDING reckon/crew/queue_admission.py:2217 non-blocking: the only stamping call sits in queue_admission.queue_requests, which no production code calls \u2014 every production queue write goes through reckon/crew/runs.py:654 queue_dispatch \u2014 so the narrowed hold is never taken and the goal's behavioural change is dark in production; the repair belongs in runs.queue_dispatch, outside this node's write paths, as the manifest's outside_scope records.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T110649055482-a-queued-request-is-checked-once/logs/head-arm.log:1 non-blocking: the recorded head arm states revision 768656861bffbc5b6b1b9bb20b10ba87dfa7ea1f with the parenthetical \"(head tree: this node's change applied)\", so the gate log cannot be tied to the landed commit by its own header and any manifest citing it as an after_suite arm is refused; the measurement itself stands \u2014 the reviewed worktree is clean at c0138556fe95 and `git diff --stat c0138556fe95` is empty, and re-running the same command there gives 12 passed EXIT=0 \u2014 so the defect is the label, not the result.\nFINDING reckon/crew/routing.py:2556 non-blocking: the done-when's carried clause required _document_change_is_contract to read its stored review snapshot through plan_review._snapshot_evidence, and it still resolves the run id, report directory and snapshot name itself here, so the snapshot resolution is duplicated across two owners and now runs on the admission path as well; the repair needs a state accessor in reckon/crew/plan_review.py, which a concurrent node owns.",
+  "review_run_id": "r-20261028T133115418559-review-of-a-queued-request-is-checked-once-c0138556fe95",
+  "reviewed_base_sha": "768656861bffbc5b6b1b9bb20b10ba87dfa7ea1f",
+  "reviewed_head_sha": "c0138556fe95f5135de0280fd3d93175adf03474",
+  "reviewed_run_id": "r-20261028T110649055482-a-queued-request-is-checked-once",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 11,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T13:49:55.972317+00:00",
+  "total": 91
+}
