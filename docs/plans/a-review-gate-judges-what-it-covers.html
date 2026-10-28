@@ -25,7 +25,7 @@
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-modified" content="2026-10-28">
 <meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;a-review-gate-judges-what-it-covers#s2&quot;,&quot;a-review-gate-judges-what-it-covers#s9&quot;],&quot;s12&quot;:[&quot;a-review-gate-judges-what-it-covers#s9&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;]}">
 </head>
@@ -221,6 +221,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261028T105213286071-a-node-is-gated-on-its-own-section" data-who="reckon-build" data-when="2026-10-28T11:27:19.538Z">
     <div class="r-comment-body"><p>a dispatch is now held only on the units its own node builds — the document unit gates it only when the changed document text is its contract (summary, decisions, gates), and the refusal names every uncovered unit; gate test 4 passed at head against 2 failed at base, negative control 2 failed EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261028T112908475836-review-of-a-node-is-gated-on-its-own-section-87fd1e286a79" data-who="reckon-build" data-when="2026-10-28T11:38:49.943Z">
+    <div class="r-comment-body"><p>reviewed r-20261028T105213286071-a-node-is-gated-on-its-own-section at 87fd1e286a against base 81ff53eb50 — goal_fidelity 18, evidence 16, scope_discipline 19, durability 14, fit 17, reuse 13, no added failure, three non-blocking findings (unguarded summary/gates members, untested fail-closed fallbacks, a duplicated snapshot lookup)</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20261023-s5-premise" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v5 on 2026-10-23, findings reasoning-1 and done_when-1, declined for that wave because §5 was not being built. <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> diffs each cited commit against its own first parent, so there is no comparison against a recorded base to find, and §5's negative control is the span diff that function's docstring already rejects. Rework §5's premise and control before dispatching it.</p></div>
