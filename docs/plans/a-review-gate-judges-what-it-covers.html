@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-plan-is-reviewed-before-it-is-built,the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-28">
 <meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;a-review-gate-judges-what-it-covers#s2&quot;,&quot;a-review-gate-judges-what-it-covers#s9&quot;],&quot;s12&quot;:[&quot;a-review-gate-judges-what-it-covers#s9&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;]}">
 </head>
@@ -77,7 +77,7 @@
     </ul>
 
     <h2 id="s2">§2 — A node is gated on the sections it builds</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> The dispatch-time plan-review gate judges coverage for the units the
       node builds: its own section, and the document unit only when the document-level text that changed
@@ -245,6 +245,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-s10-one-unit-rule" data-who="" data-when="">
     <div class="r-comment-body"><p>The code review of the gate modules on 28 October (<code>r-20261028T090444966085-review-code-6c1b39603c08</code>) proposed one treatment, which this section's node carries. <code>plan_review_units</code> is defined twice, at <code>reckon/crew/routing.py:2434</code> and again at <code>reckon/crew/queue_admission.py:2255</code>, and the two bodies are identical. The rule for which units a request is gated on, which this section changes, therefore lives in two places, and admission and the dispatch gate can disagree. The node deletes the copy in <code>queue_admission.py</code> and imports the one in <code>routing.py</code>, and a test asserts the two names are one object. <code>reckon/crew/routing.py</code> joins this section's write paths for that import.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-close-s2" data-who="" data-when="">
+    <div class="r-comment-body"><p>Landed at 0e1ab9b3f4. A dispatch is held only on the units its node builds, and the document unit gates it only on a contract change. Gate 4 passed against 2 failed at base, importer population added 0. Three non-blocking review findings went into §10's measure. <a href="/reckon/evidence/archive/a-review-gate-judges-what-it-covers-landed.html#a-node-is-gated-on-its-own-section">evidence</a></p></div>
 </div>
 </section>
 </main>
