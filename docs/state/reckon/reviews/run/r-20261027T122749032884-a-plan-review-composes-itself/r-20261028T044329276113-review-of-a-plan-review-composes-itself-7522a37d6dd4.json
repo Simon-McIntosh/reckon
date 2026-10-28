@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own gate logs: baseline_suite at ad8c445e87e7d723b3e9c79e29cdb3ca745df039 records exit_status 1, completed true, failure_count 8 (base-arm.log, last line EXIT=1), and after_suite at 7522a37d6dd4d6bd61f38ead6cee057421a3a202 records exit_status 0, completed true, failure_count 0 (head-arm.log, last line EXIT=0), so the added set (after minus baseline) is empty; the eight base ids are the node's own arms failing before the feature existed.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/resumption.py:2061",
+    "reckon/crew/resumption.py:2096",
+    "reckon/crew_follow_commands.py:1915",
+    "reckon/crew_follow_commands.py:240",
+    "reckon/crew_run_commands.py:2000",
+    "reckon/mcp.py:2931"
+  ],
+  "completed_at": "2026-10-28T04:53:34.593Z",
+  "dispatched_at": "2026-10-28T04:45:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f1ec4f42ee3",
+      "line": 2571,
+      "severity": "non-blocking",
+      "text": "stopped_at = plan_slug advances the rotation past a plan whose review was started into a hold and therefore never settled, so that plan is retried only when the rotation comes round again rather than on the next pass the comment at :2611 and the commit message both claim; with N changed plans a lane-held review waits up to N passes, and test_a_refused_dispatch_is_retried_on_the_next_pass at tests/test_a_plan_review_composes_itself.py:316 uses a single-plan project, where next-pass and next-rotation are the same tick, so nothing distinguishes the two."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f06f7d3566d",
+      "line": 2354,
+      "severity": "non-blocking",
+      "text": "the dropped-document reporting c816996eb3 adds -- iter_resources(..., ignore_invalid=True) inside resource_scan_scope plus the (str(Path(docs)), project) lookup into the scope's record -- has no test, so a regression in that key shape or in the tolerant flag would silently return an empty failed list and the pass would stop naming the document whose location conflicts with its type, which is the whole point of the replacement; the only exercise of it is the worker's live dry run (head-arm.log, nova failed=8)."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the four commits gained since the previous review (c816996eb3, 76c455463e, dfd52e8b91, 7522a37d6d) against a89931102c: they add the rotation cursor (plan_review.py:2533-2542), restrict the settle to a dispatched or queued review (:2611), replace _plans_by_hand with the catalogue's tolerant scan (:2330), delete the unused note wrapper (:2290) and the lane recorder in the test stub, gate the sweep's plan_reviews block (resumption.py:2079) and add two tests plus one docs paragraph.",
+    "done_when": "plan \u00a721's done-when is four composition arms, an importer arm that adds no failures, and a negative control removing the quiet-period check that must fail the two-minute arm; /tmp/reckon-crew-scratch/r-20261027T122749032884-a-plan-review-composes-itself/head-arm.log records 12 passed with EXIT=0 at 7522a37d6d and this reviewer re-ran that command for 12 passed in 3.49 s, base-arm.log records 8 failed with EXIT=1 at ad8c445e, and negative-control.log records 1 failed / 7 passed with EXIT=1 on test_a_plan_edited_two_minutes_ago_is_not_composed.",
+    "goal": "the node goal is to compose a content review for a plan that owes one after ten quiet minutes and answer its would-not-change findings as notes; reckon/crew/plan_review.py:2509 (notes) and :2590-2595 (compose, content rubric, no lane) still deliver both, and the gained commits repair the three findings the previous review raised without changing what the pass produces.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T122749032884-a-plan-review-composes-itself/manifest.md; status complete, the gate is recorded as 12 passed with EXIT=0 at 7522a37d6d against a red base arm, the negative control is recorded red on the two-minute arm, and the blockers field names exactly the resumption.py grant this review found.",
+    "write_paths": "the node was fenced to reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py, docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-composes-itself.html and docs/figures/a-queue-holds-the-whole-plan/a-plan-review-composes-itself; the diff lands on the first three plus reckon/crew/resumption.py:2076, which plan \u00a721's Write paths sentence names as the producer module but the dispatch grant did not."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_review_composes_itself.py:316 reddens when the unconditional settle at plan_review.py:2611 is reinstated and :350 reddens when the cursor at :2533 is removed, but no test reaches the dropped-document path at plan_review.py:2354 that c816996eb3 claims to fix.",
+    "evidence": "the head arm at 7522a37d6d records 12 passed and EXIT=0 in head-arm.log and this reviewer re-ran the same command for 12 passed in 3.49 s, but importers-shard-0.log and importers-shard-2.log carry revision dfd52e8b91 rather than the reviewed head, so two of the three green importer shards measure the predecessor.",
+    "fit": "the cursor is carried in the reflex state file the pass already owned (reckon/crew/plan_review.py:2376-2400) and named by mechanism rather than by the finding that asked for it, with only the module-global SUBJECTS list at tests/test_a_plan_review_composes_itself.py:35 departing from the file's idiom.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2509 answers the would-not-change findings as notes and :2593 dispatches the composed review with no lane, which is what plan \u00a721 asks the pass to do, and the four gained commits change no part of that outcome.",
+    "reuse": "reckon/crew/plan_review.py:2330 replaces the hand walk with the catalogue's own tolerant scan plus resource_scan_scope, and the deleted note wrapper at :2290 had no caller left in the repository, so no capability the repository owns is duplicated.",
+    "scope_discipline": "every hunk in the diff lands on a path plan \u00a721 names (docs/plans/a-queue-holds-the-whole-plan.html:132), including reckon/crew/resumption.py:2076, which the dispatch grant omitted and the worker disclosed in its manifest instead of widening."
+  },
+  "node": "review-of-a-plan-review-composes-itself-7522a37d6dd4",
+  "node:reviewed": "a-plan-review-composes-itself",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to compose a content review for a quiet plan and answer its would-not-change findings as notes; reckon/crew/plan_review.py:2509 answers the notes and :2593 composes the review with the content rubric and no lane, so the goal is delivered and the gained commits change nothing about that outcome.\nVERDICT done_when: plan \u00a721's done-when is four composition arms plus an importer arm adding no failures and a negative control that removes the quiet-period check and must fail the two-minute arm; head-arm.log records 12 passed EXIT=0 at 7522a37d6d and this reviewer re-ran that command to 12 passed in 3.49 s, base-arm.log records 8 failed EXIT=1 at ad8c445e, and negative-control.log records 1 failed / 7 passed EXIT=1 on test_a_plan_edited_two_minutes_ago_is_not_composed.\nVERDICT write_paths: the fence covers plan_review.py, the new test and two docs/evidence paths; the diff lands on those three plus reckon/crew/resumption.py:2076, which plan \u00a721's Write paths names as the producer module but the dispatch grant omitted, disclosed by the worker in its manifest's blockers field rather than widened.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, gate 12 passed EXIT=0 at 7522a37d6d over a red base arm, negative control red on the two-minute arm, remaining_work none, and blockers naming the resumption.py grant.\nVERDICT diff: read c816996eb3, 76c455463e, dfd52e8b91 and 7522a37d6d against a89931102c; the change adds the rotation cursor at plan_review.py:2533-2542, settles only a dispatched or queued review at :2611, reads plans through the catalogue's tolerant scan at :2330, drops the unused note wrapper and lane recorder, gates the sweep's plan_reviews key at resumption.py:2079, and adds two tests and one docs paragraph.\nCALL_SITES: reckon/crew/resumption.py:2061, reckon/crew/resumption.py:2096, reckon/crew_follow_commands.py:1915, reckon/crew_follow_commands.py:240, reckon/crew_run_commands.py:2000, reckon/mcp.py:2931\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2590-2595 still composes the review for a quiet plan with the content rubric and no lane, and :2509 still answers the would-not-change findings as notes.\nSCORE evidence: 16\nJUSTIFICATION evidence: plan_review.py is measured by head-arm.log at 7522a37d6d (12 passed, EXIT=0, re-run by this reviewer) but importers-shard-0.log and importers-shard-2.log carry revision dfd52e8b91, so two of the three green importer shards measure the predecessor revision.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every hunk lands on a path plan \u00a721 names at docs/plans/a-queue-holds-the-whole-plan.html:132, including reckon/crew/resumption.py:2076 that the dispatch grant omitted and the worker reported instead of widening.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_plan_review_composes_itself.py:316 fails if the unconditional settle at plan_review.py:2611 returns and :350 fails if the cursor at :2533 is removed, but no assertion reaches the dropped-document path at plan_review.py:2354.\nSCORE fit: 17\nJUSTIFICATION fit: the cursor extends the reflex state file at reckon/crew/plan_review.py:2379-2400 and is named by mechanism, with only the module-global SUBJECTS list at tests/test_a_plan_review_composes_itself.py:35 departing from the file's idiom.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/plan_review.py:2330 replaces the hand walk with iter_resources(ignore_invalid=True) plus resource_scan_scope, and the deleted wrapper at :2290 had no remaining caller.\nFINDING reckon/crew/plan_review.py:2571 non-blocking: stopped_at = plan_slug advances past a plan whose dispatch was held and never settled, so the retry waits for the rotation to come round rather than the next pass that the comment at :2611 and the commit message claim, and the single-plan retry test cannot tell the two apart.\nFINDING reckon/crew/plan_review.py:2354 non-blocking: the dropped-document reporting has no test, so a regression in ignore_invalid or in the (docs, project) lookup would silently empty the failed list and the pass would stop naming the conflicting document it exists to surface.",
+  "review_run_id": "r-20261028T044329276113-review-of-a-plan-review-composes-itself-7522a37d6dd4",
+  "reviewed_base_sha": "a89931102cd52f300fab98e3340eebb8637876d8",
+  "reviewed_head_sha": "7522a37d6dd4d6bd61f38ead6cee057421a3a202",
+  "reviewed_run_id": "r-20261027T122749032884-a-plan-review-composes-itself",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T04:58:00+00:00",
+  "total": 101
+}
