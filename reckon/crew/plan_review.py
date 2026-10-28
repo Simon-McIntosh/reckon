@@ -1856,7 +1856,9 @@ def record_response(
     must carry a one-line ``reason``: the decision makes the reason the record, so a
     reasonless decline is refused before anything is written — the stored file
     is left untouched and the raise names what was missing. A carried answer
-    records it back. The response is keyed by
+    records the unit the finding is about — the section named by its anchor, or
+    the document unit when the anchor names none — under ``section``, so a
+    later dispatch of that section reads it back. The response is keyed by
     ``finding_id``, which must name a finding the record carries, so an answer
     can never attach to a finding nobody can read back. An ``acted`` answer also
     records the commit of the edit it answers for — named by ``commit`` or, when
