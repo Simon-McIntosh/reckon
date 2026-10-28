@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T22:11:16.175Z",
+  "dispatched_at": "2026-10-28T22:04:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:66",
+      "id": "reasoning-1",
+      "reason": "the section retires the one signal that detects a mid-pass plan edit, which is the case `_plan_tree_fingerprint`'s own docstring says it exists for; an implementer following it would ship stale readiness inside a pass.",
+      "text": "s2 replaces the readiness-cache key `_plan_tree_fingerprint` (queue_admission.py:1623-1658: newest `docs/plans/*.html` mtime, file count, `git rev-parse HEAD`) with `roadmap_snapshot.roadmap_project_generation` (roadmap_snapshot.py:231-245: git index mtime, `HEAD`, the store generation, and `_covered_directory_shape`), and that key carries no file-content signal \u2014 `covered_dir_identity` (metadata_index.py:166) is a directory's own stat identity, which does not move when an existing plan file's bytes are rewritten \u2014 so an in-place plan edit made while a pass is running no longer invalidates the cache, even though the docs surface serves working-tree plan HTML as canonical and an uncommitted edit moves neither `HEAD` nor the git index.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:113",
+      "id": "reasoning-2",
+      "reason": "a node implementing this as written edits the module that lifts a park, not the module that classifies it and draws the row, so neither \"reclassified \u2026 with one obligation\" nor \"stops reporting\" could pass, and the write paths would have to name recovery_classification.py (and the obligation surface).",
+      "text": "s6 asserts the decision \"belongs to its owner: `resumption.sweep` (resumption.py:1776)\" and gives `reckon/crew/resumption.py` as the only write path, but `resumption.sweep` only decides whether a park lifts: it calls the condition probe, and on a non-terminal answer appends a `condition-pending` skip (resumption.py:1874-1885) \u2014 it produces no classification and raises no obligation (the module contains no obligation write). The `parked`/`waiting` classification and the repeated per-sweep row come from `recovery_classification.classify_pointer` (recovery_classification.py:411, waiting branch at 1199, the repeating \"terminal when the probe reports \u2026\" detail at 1240-1265), and needs-you/obligation rows are derived from that classification (obligations.py:610).",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:74",
+      "id": "done_when-1",
+      "reason": "the node would write a green-then-red test and assert a caller count the plan itself later undoes; the arm must either exclude the drain view or state which section owns that call site.",
+      "text": "s2's further arm requires that \"the queue-time check in dispatch, the pass and the drain view all reach the one function, counted through a patch\", and s7 (declared dependency: s2) states that the drain view's overdue computation at runs.py:2146 \"reads the recorded stall verdict in place of resolving waits a second time\" \u2014 so the drain-view call this arm counts is removed by a later section of the same plan.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:66",
+      "id": "single_goal-1",
+      "reason": "two deliverables in one node cannot be closed on one verdict, and the cache change needs its own negative control (an edit mid-pass must miss) that s2's \"removes the inline call\" control does not exercise.",
+      "text": "s2 declares one goal (release driven by promotion, within a minute) but carries a second, independent deliverable: retargeting the readiness cache onto `roadmap_project_generation` and computing it once per project per pass, with its own arm (\"a pass computes the cache key once per project\") and its own reason (pass cost, from the \u00a718 review) \u2014 nothing in the cache change serves release latency.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:113",
+      "id": "anchors_resolve-1",
+      "reason": "the behaviour the section describes is real and already located by the reasoning finding above, so only the quotation is wrong; correcting it changes no mechanism, though a node looking for the string would waste a step finding the row instead.",
+      "text": "s6 says the supervisor \"stops reporting \\\"matches no declared terminal state\\\"\" for a dead park, but that string appears nowhere in the tree; the nearest text is a docstring in recovery_classification.py:375 (\"prints a state matching no declared terminal\") that describes a different case (a probe that answered with an unrecognised value), and the row actually emitted for a constant non-terminal value is built at recovery_classification.py:1240-1265.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "d469aba22c74356ace9dafc5e2783997e031ef91",
+  "plan_fingerprint": "ce9cb85ee7339d355291a1f553549cef375a9531a70f9c4f1101424ac873362f",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T220250771346-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "bebc9cf29a3e10bd42be326ecbce3f7bab785b07",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 s6 quotes a supervisor message that appears nowhere in the codebase.",
+    "done_when": "a finding \u2014 s2's caller-count arm asserts the drain view reaches the shared function, which s7 retires.",
+    "evidence_paths": "pass \u2014 every measure in the changed units lands on the live crew store, a gate log under the run's `logs/`, or a test file in the tree; no session scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 the changed units name mechanisms (`awaiting-review`, `dead-park`, `test_a_landed_section_releases_its_waiters.py`), with no plan label, stage name, ticket number or version tag in a path or symbol, and no changelog prose.",
+    "reasoning": "two findings \u2014 s2's replacement cache key drops the plan-file invalidation the retired fingerprint exists for, and s6 names an owner (`resumption.sweep`) that neither classifies nor raises the obligation its done-when requires.",
+    "single_goal": "a finding \u2014 s2 carries the resolve-and-move ownership and, separately, the readiness-cache key change folded in from the \u00a718 review.",
+    "wiring": "pass \u2014 s2 depends on a-queue-holds-the-whole-plan#s18 for the readiness cache it edits, s3 on s2, s7 on s2/s3/s5 and a-review-gate-judges-what-it-covers#s10, s8 on s3; each target exists and carries what the dependent section reads (verdict-row stage durations from s3, the release tick from s2)."
+  },
+  "section_digests": {
+    "_document": "d4ddba2b99fbbeb296062e562e8f8ef30503415202e5b5319130d5236f30d3c3",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s2": "882e8c9153734ffe04835eb3343efa26a631f81c8786c10ebc7fd6b82695a3c8",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "9410b096e3188811f93d86c114a5456e49628fb7deae2f89d54c39b077637a66",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T22:12:09.625821+00:00"
+}
