@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -19,15 +20,140 @@ from reckon.crew.recovery_review_acceptance import (
 
 _run_srun = subprocess.run
 
+# A revision as a manifest entry may spell it: hexadecimal, at least the
+# seven characters git abbreviates to.
+_REVISION = re.compile(r"[0-9A-Fa-f]{7,40}")
 
-def _record_attempt(run_id: str, *, head: str, guard: str, status: str) -> None:
-    """Keep a refusal on the live run so another pass cannot retry silently."""
+
+def _delivered_revision(entries: Sequence[Any]) -> str:
+    """The revision the last ``manifest_commits`` entry names, or "".
+
+    A worker writes its commits however its manifest reads to it: a bare
+    revision, a revision with its subject after it, or several revisions on one
+    line. An entry whose every token is a revision is a bare list and its last
+    token is the delivered commit. Any other entry leads with the revision and
+    carries a subject after it, so its first token is the commit — and only
+    while that token really is a revision. A subject word that happens to be
+    hexadecimal (``deadbeef``), or an entry that leads with prose, therefore
+    never stands in for a commit: the answer is "" so no head is guessed, and
+    the caller reports the entry it could not read.
+    """
+    if not entries:
+        return ""
+    tokens = str(entries[-1] or "").split()
+    if not tokens:
+        return ""
+    if all(_REVISION.fullmatch(token) for token in tokens):
+        return tokens[-1]
+    first = tokens[0]
+    return first if _REVISION.fullmatch(first) else ""
+
+
+def _unreadable_entry_guard(entries: Sequence[Any]) -> str:
+    """A refusal naming the manifest commits entry no revision could be read
+    from, or "" when there is no entry to name.
+
+    An entry the parser cannot read is the run's own defect, not an absence of
+    work: it is reported on the live pointer with the entry quoted, so a
+    coordinator can correct the manifest instead of the run disappearing from
+    the pass with nothing written down.
+    """
+    if not entries:
+        return ""
+    entry = str(entries[-1] or "").strip()
+    if not entry:
+        return ""
+    return (
+        "delivered revision: the manifest commits entry "
+        f"{entry!r} names no revision at its head"
+    )
+
+
+def _unreadable_entry_holds(
+    previous: Mapping[str, Any] | None, head: str, guard: str, code_stamp: str
+) -> bool:
+    """Whether this head already carries this refusal under this code."""
+
+    if not isinstance(previous, Mapping):
+        return False
+    return (
+        previous.get("status") == "refused"
+        and recovery.same_revision(str(previous.get("head") or ""), head)
+        and str(previous.get("guard") or "") == guard
+        and bool(code_stamp)
+        and str(previous.get("code_stamp") or "") == code_stamp
+    )
+
+
+def _landing_code_stamp() -> str:
+    """The content identity of the code that judges a landing.
+
+    A refusal is a judgement made by a rule, so it holds only for the rule that
+    made it: the stamp covers the package the landing pass runs from and moves
+    when that code lands as a commit. An identity that cannot be read records
+    nothing, so the next pass judges the refusal again rather than trusting a
+    judgement it cannot place.
+    """
+    from reckon.crew.follower_registration import follower_code_stamp
+
+    try:
+        return follower_code_stamp()
+    except (OSError, ValueError):
+        return ""
+
+
+def _review_stamp(review: Mapping[str, Any] | None) -> str:
+    """The identity of the review record a judgement was made on, or "".
+
+    Keyed on the record's content, so a reviewer who answers a finding, records
+    a disposition or corrects a score rewrites the identity and the next pass
+    reads the record as it now stands. A run with no readable record has no
+    identity to keep, and an empty one never matches.
+    """
+    if not isinstance(review, Mapping):
+        return ""
+    from reckon.crew.plan_review import _digest
+
+    return _digest(review)
+
+
+def _refusal_holds(
+    previous: Mapping[str, Any], code_stamp: str = "", review_stamp: str = ""
+) -> bool:
+    """Whether a recorded refusal was made by this code about this record.
+
+    A refusal states the rule that made it and the record it read, and holds
+    only while both are unchanged. A refusal recorded before those were kept
+    carries neither, so it says nothing about the current rule and the run is
+    judged once more.
+    """
+    if not code_stamp or not review_stamp:
+        return False
+    return (
+        str(previous.get("code_stamp") or "") == code_stamp
+        and str(previous.get("review_stamp") or "") == review_stamp
+    )
+
+
+def _record_attempt(
+    run_id: str,
+    *,
+    head: str,
+    guard: str,
+    status: str,
+    code_stamp: str = "",
+    review_stamp: str = "",
+) -> None:
+    """Keep a refusal on the live run, with what made it, so a later pass can
+    tell a refusal that still stands from one the current rule would reverse."""
 
     def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
         pointer["admission_landing"] = {
             "head": head,
             "guard": guard,
             "status": status,
+            "code_stamp": code_stamp,
+            "review_stamp": review_stamp,
         }
         return pointer
 
@@ -341,6 +467,14 @@ def land_once() -> dict[str, Any]:
     waiting run in one pass would hold admission for as long as the slowest
     suites take. The rest wait for later passes in delivery order, and a head
     already measured is reused rather than measured again.
+
+    A head refused on an earlier pass is judged again as soon as the rule that
+    refused it or the review it read has changed, so a run held by a rule since
+    replaced does not stay held: the refusal is skipped only while the code
+    stamp and the review record it judged are both unchanged. A manifest whose
+    last commit entry names no revision is refused with that entry quoted and an
+    obligation for the run's session, so the run is visible to a coordinator
+    rather than dropped from the pass in silence.
     """
     from reckon.crew.recovery_review_subject import select_review_for_head
 
@@ -362,20 +496,52 @@ def land_once() -> dict[str, Any]:
         if classified.get("manifest_status") != "complete":
             continue
         head, tree = recovery._review_head_and_tree(pointer)
-        delivered = list(classified.get("manifest_commits") or ())
-        if (
-            not head
-            or not delivered
-            or not recovery.same_revision(head, str(delivered[-1]))
-        ):
+        if not head:
             continue
+        entries = classified.get("manifest_commits") or ()
+        delivered = _delivered_revision(entries)
+        code_stamp = _landing_code_stamp()
+        if not delivered:
+            guard = _unreadable_entry_guard(entries)
+            if guard:
+                previous = pointer.get("admission_landing")
+                if not _unreadable_entry_holds(previous, head, guard, code_stamp):
+                    _record_attempt(
+                        run_id,
+                        head=head,
+                        guard=guard,
+                        status="refused",
+                        code_stamp=code_stamp,
+                    )
+                    obligations.append(
+                        {
+                            "run_id": run_id,
+                            "session": str(pointer.get("session") or ""),
+                            "guard": guard,
+                        }
+                    )
+            continue
+        if not recovery.same_revision(head, delivered):
+            continue
+        try:
+            review, stale = select_review_for_head(project, run_id, head, tree=tree)
+        except (OSError, ValueError) as exc:
+            review, stale = None, str(exc)
+        review_stamp = _review_stamp(review)
         previous = pointer.get("admission_landing")
         if isinstance(previous, Mapping) and recovery.same_revision(
             str(previous.get("head") or ""), head
         ):
             if previous.get("status") == "attempting":
                 guard = "automatic landing interrupted before a receipt"
-                _record_attempt(run_id, head=head, guard=guard, status="refused")
+                _record_attempt(
+                    run_id,
+                    head=head,
+                    guard=guard,
+                    status="refused",
+                    code_stamp=code_stamp,
+                    review_stamp=review_stamp,
+                )
                 obligations.append(
                     {
                         "run_id": run_id,
@@ -383,16 +549,23 @@ def land_once() -> dict[str, Any]:
                         "guard": guard,
                     }
                 )
-            continue
-        try:
-            review, stale = select_review_for_head(project, run_id, head, tree=tree)
-        except (OSError, ValueError) as exc:
-            review, stale = None, str(exc)
+                continue
+            if previous.get("status") == "refused" and _refusal_holds(
+                previous, code_stamp, review_stamp
+            ):
+                continue
         if stale or review is None:
             continue
         if not _review_accepts_promotion(review):
             guard = "review acceptance: a blocking finding or an incomplete record"
-            _record_attempt(run_id, head=head, guard=guard, status="refused")
+            _record_attempt(
+                run_id,
+                head=head,
+                guard=guard,
+                status="refused",
+                code_stamp=code_stamp,
+                review_stamp=review_stamp,
+            )
             obligations.append(
                 {
                     "run_id": run_id,
@@ -409,7 +582,14 @@ def land_once() -> dict[str, Any]:
             guard = "the head conflicts with the primary branch: " + ", ".join(
                 conflicting
             )
-            _record_attempt(run_id, head=head, guard=guard, status="refused")
+            _record_attempt(
+                run_id,
+                head=head,
+                guard=guard,
+                status="refused",
+                code_stamp=code_stamp,
+                review_stamp=review_stamp,
+            )
             obligations.append(
                 {
                     "run_id": run_id,
@@ -432,7 +612,14 @@ def land_once() -> dict[str, Any]:
             measured_this_pass = measured_this_pass or measured is not None
         measure_guard = _measure_guard(measured)
         if measure_guard:
-            _record_attempt(run_id, head=head, guard=measure_guard, status="refused")
+            _record_attempt(
+                run_id,
+                head=head,
+                guard=measure_guard,
+                status="refused",
+                code_stamp=code_stamp,
+                review_stamp=review_stamp,
+            )
             obligations.append(
                 {
                     "run_id": run_id,
@@ -446,7 +633,14 @@ def land_once() -> dict[str, Any]:
         # carried it. Exemptions are recorded only once the landing has
         # succeeded: a refusal here leaves the run unlanded, and marking its
         # findings exempted would say a landing happened that did not.
-        _record_attempt(run_id, head=head, guard="crew land", status="attempting")
+        _record_attempt(
+            run_id,
+            head=head,
+            guard="crew land",
+            status="attempting",
+            code_stamp=code_stamp,
+            review_stamp=review_stamp,
+        )
         try:
             accepted, guard = _land(run_id)
         except (OSError, ValueError) as exc:
@@ -482,7 +676,14 @@ def land_once() -> dict[str, Any]:
                 )
         else:
             guard = guard or "crew land refused without a guard"
-            _record_attempt(run_id, head=head, guard=guard, status="refused")
+            _record_attempt(
+                run_id,
+                head=head,
+                guard=guard,
+                status="refused",
+                code_stamp=code_stamp,
+                review_stamp=review_stamp,
+            )
             obligations.append(
                 {
                     "run_id": run_id,
