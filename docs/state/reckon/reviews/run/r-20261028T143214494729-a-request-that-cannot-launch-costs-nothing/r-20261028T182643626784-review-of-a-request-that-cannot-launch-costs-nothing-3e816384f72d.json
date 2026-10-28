@@ -1,0 +1,113 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own armed pair: manifest.md:22 baseline_suite lists 4 failures at dispatch base 1211c30e8b (logs/baseline-suite.log, '4 failed, 1 passed', EXIT=1) and manifest.md:23 after_suite lists 0 at head 3e816384f7 (logs/after-suite.log, '5 passed in 2.52s', EXIT=0), so the increment adds none and removes four. The importer population agrees: importers-head.log 1 failed 251 passed against importers-base.log 5 failed 247 passed, the single surviving failure being test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused, recorded at manifest.md retry_failures as an environmental fixture failure present at base.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The pre-dispatch claim hold is removed so the second pass attempts the launch and records verdict refused, which is what the reverted production branch did.",
+      "file": "tests/test_a_manual_admission_pass_reports_its_verdicts.py",
+      "line": 237
+    },
+    {
+      "condition_to_fail": "_live_claim_hold stops embedding the holding run's run_id, so the detail no longer names r-holder.",
+      "file": "tests/test_a_manual_admission_pass_reports_its_verdicts.py",
+      "line": 242
+    },
+    {
+      "condition_to_fail": "The detail stops naming the contested path, so the collision is not reported to a coordinator.",
+      "file": "tests/test_a_manual_admission_pass_reports_its_verdicts.py",
+      "line": 243
+    },
+    {
+      "condition_to_fail": "A hold begins recording a failure field, i.e. an attempt is made before the hold; nothing is attempted under the hold, so the field must be absent.",
+      "file": "tests/test_a_manual_admission_pass_reports_its_verdicts.py",
+      "line": 244
+    },
+    {
+      "condition_to_fail": "The request is dispatched and refused rather than held, which stamps the pointer with a failure.",
+      "file": "tests/test_waiting_claims_never_block_a_launch.py",
+      "line": 136
+    },
+    {
+      "condition_to_fail": "The pass reports refused or held-on-retry-backoff instead of held-on-claim, which restoring the attempt-then-refuse path produces.",
+      "file": "tests/test_waiting_claims_never_block_a_launch.py",
+      "line": 138
+    },
+    {
+      "condition_to_fail": "The verdict detail loses the holder's run_id, so r-launched is no longer named.",
+      "file": "tests/test_waiting_claims_never_block_a_launch.py",
+      "line": 139
+    },
+    {
+      "condition_to_fail": "The verdict detail loses the contested path, so queue_cases.SHARED is no longer named.",
+      "file": "tests/test_waiting_claims_never_block_a_launch.py",
+      "line": 140
+    }
+  ],
+  "base_log_revision": "1211c30e8ba43ec26c5e38a185cd0c30fb9ab4e2",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:4015",
+    "reckon/crew/queue_admission.py:3437",
+    "reckon/crew/queue_admission.py:3124"
+  ],
+  "completed_at": "2026-10-28T18:33:06.647Z",
+  "dispatched_at": "2026-10-28T18:27:58Z",
+  "findings": [
+    {
+      "file": "logs/negative-control-capacity-refusal.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: both recorded negative controls (logs/negative-control-capacity-refusal.log:1 and logs/negative-control-overlapping-hold.log:1) run at revision cc7212d3a8, which predates c758c60d08, so the red arms demonstrating discrimination exercise the hand-written refusal fixture rather than the emitter-backed one the delivered arm now passes; the arm still discriminates by inspection (format_refusal('D09', ...) appends DISPATCH_REFUSAL_REMEDIES['D09'] from reckon/crew/refusals.py:44, which queue_admission.py:940 tests for), but the receipt does not cover the delivered revision."
+    },
+    {
+      "file": "tests/test_a_manual_admission_pass_reports_its_verdicts.py",
+      "line": "237",
+      "severity": "non-blocking",
+      "text": "non-blocking: the two repaired neighbour tests lie outside the live pointer's declared write paths (manifest.md scope_note), so crew check --manifest reports this run's own changed paths as out of scope; the grant is real (resume-2-advice.txt: 'Both files are now in your write scope') but the pointer record needs a coordinator-side widen outside the run's write fence."
+    }
+  ],
+  "head_log_revision": "3e816384f72d2e9e1c363bf6f3090cca1e16c2a3",
+  "increment_scope": "only the two commits gained since the review at 6f0704c032: the landing-pass repair of two neighbour tests and the evidence paragraph recording it",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit: c758c60d08 changes only test files - tests/test_a_manual_admission_pass_reports_its_verdicts.py:237-244, tests/test_waiting_claims_never_block_a_launch.py:132-140, and tests/test_a_request_that_cannot_launch_costs_nothing.py:140-165; 3e816384f7 appends one paragraph to the evidence fragment (1 insertion, 0 deletions). No production file changes in the increment.",
+    "done_when": "The done-when is the four-arm gate on dispatch attempts in tests/test_a_request_that_cannot_launch_costs_nothing.py; the increment's only change there is the capacity fixture at :140-165 now rendering summary.bound_refusal_text through refusals.format_refusal, and logs/after-suite.log records '5 passed in 2.52s' at revision 3e816384f7 with EXIT=0.",
+    "goal": "The reviewed node's goal is that a queued request which cannot launch costs an admission pass nothing; c758c60d08 makes the two neighbour tests assert the hold that implements it at tests/test_a_manual_admission_pass_reports_its_verdicts.py:237 and tests/test_waiting_claims_never_block_a_launch.py:138, replacing the ScopeConflict refusal this section removes.",
+    "manifest": "Read; manifest.md records status complete, baseline_suite 4 failures at dispatch base 1211c30e8b (logs/baseline-suite.log, EXIT=1) and after_suite 0 failures at 3e816384f7 (logs/after-suite.log, EXIT=0), importers head 1 failed against base 5 failed with zero added, the assertion_changes paragraph, and the unreconciled scope note.",
+    "write_paths": "The resume round's grant (resume-2-advice.txt) names both repaired test files; git diff 6f0704c032..3e816384f7 touches exactly four paths (that fragment, the gate test, and the two neighbour tests), and the two neighbour tests and the fragment sit outside the live pointer's declared paths, which manifest.md scope_note discloses."
+  },
+  "justifications": {
+    "durability": "tests/test_waiting_claims_never_block_a_launch.py:136 and :138 fail if the pre-dispatch claim hold is removed (the dispatch would be attempted and record a failure and a refused verdict), and tests/test_a_manual_admission_pass_reports_its_verdicts.py:242-244 fail if the hold stops naming the holder and path or starts recording a failure.",
+    "evidence": "logs/after-suite.log opens with revision 3e816384f7 and command and closes with a bare EXIT=0 line recording 5 passed, but both negative-control logs (logs/negative-control-capacity-refusal.log:1 and logs/negative-control-overlapping-hold.log:1) carry revision cc7212d3a8, which predates c758c60d08, so no red arm covers the text the delivered capacity fixture passes.",
+    "fit": "The added code sits in test modules that already drive queue_admission.admit_once, the lone added import at tests/test_a_request_that_cannot_launch_costs_nothing.py:38 takes the existing summary.Bound, and no plan, sprint or ticket identifier appears in the diff.",
+    "goal_fidelity": "tests/test_a_manual_admission_pass_reports_its_verdicts.py:237 and tests/test_waiting_claims_never_block_a_launch.py:138 now assert the held-on-claim hold the node exists to installs, and each test keeps the property it was written for (the one-line-per-pass record at :228 and the waiter reaching queued at :134).",
+    "reuse": "tests/test_a_request_that_cannot_launch_costs_nothing.py:155-162 replaces a hand-copied refusal sentence with summary.bound_refusal_text composed through refusals.format_refusal, the same two calls dispatch_admission.py:273-282 raises with, so the arm now extends the owner of that wording rather than duplicating it.",
+    "scope_discipline": "Every path in git diff 6f0704c032..3e816384f7 is inside the resume-2 grant, and the evidence fragment is only appended to (1 insertion, 0 deletions), but tests/test_a_manual_admission_pass_reports_its_verdicts.py and tests/test_waiting_claims_never_block_a_launch.py are outside the live pointer's declared paths, as manifest.md scope_note states."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a request which cannot launch costs a pass nothing; c758c60d08 makes tests/test_a_manual_admission_pass_reports_its_verdicts.py:237 and tests/test_waiting_claims_never_block_a_launch.py:138 assert the hold that implements it.\nVERDICT done_when: the measure is the four-arm gate in tests/test_a_request_that_cannot_launch_costs_nothing.py; the increment re-renders its capacity fixture at :140-165 from summary.bound_refusal_text and logs/after-suite.log records 5 passed at 3e816384f7 with EXIT=0.\nVERDICT write_paths: the resume-2 grant names both repaired test files; the four paths in git diff 6f0704c032..3e816384f7 are inside it, and the two neighbour tests sit outside the live pointer's declared paths as manifest.md scope_note discloses.\nVERDICT manifest: read; it records baseline_suite 4 failures at 1211c30e8b and after_suite 0 at 3e816384f7 with revision headers and EXIT= lines, importers zero-added, the assertion_changes paragraph, and the unreconciled scope note.\nVERDICT diff: read commit by commit; c758c60d08 changes three test files only and 3e816384f7 appends one paragraph to the evidence fragment with 0 deletions, and no production file changes.\nCALL_SITES: reckon/crew_run_commands.py:4015, reckon/crew/queue_admission.py:3437, reckon/crew/queue_admission.py:3124\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_manual_admission_pass_reports_its_verdicts.py:237 and tests/test_waiting_claims_never_block_a_launch.py:138 assert the held-on-claim hold while keeping each test's original property at :228 and :134.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after-suite.log records 5 passed at 3e816384f7 with EXIT=0, but both negative-control logs carry revision cc7212d3a8 and so predate c758c60d08.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in the diff is inside the resume-2 grant and the fragment is only appended to, but tests/test_a_manual_admission_pass_reports_its_verdicts.py and tests/test_waiting_claims_never_block_a_launch.py are outside the live pointer's declared paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_waiting_claims_never_block_a_launch.py:136 and :138 redden if the claim pre-check is removed, and tests/test_a_manual_admission_pass_reports_its_verdicts.py:242-244 redden if the detail stops naming the holder and path.\nSCORE fit: 18\nJUSTIFICATION fit: the change is confined to test modules that already drive admit_once, and tests/test_a_request_that_cannot_launch_costs_nothing.py:38 takes the existing summary.Bound with no plan or ticket identifier anywhere in the diff.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_a_request_that_cannot_launch_costs_nothing.py:155-162 composes the refusal through summary.bound_refusal_text and refusals.format_refusal, the calls dispatch_admission.py:273-282 make, replacing a copied sentence with the owner.\nFINDING logs/negative-control-capacity-refusal.log:1 non-blocking: both negative controls run at cc7212d3a8, before c758c60d08, so no red arm exercises the emitter-backed fixture the delivered gate now passes.\nFINDING tests/test_a_manual_admission_pass_reports_its_verdicts.py:237 non-blocking: the two repaired neighbour tests are outside the live pointer's declared write paths, so crew check --manifest reports this run's own changes as out of scope.\n",
+  "review_run_id": "r-20261028T182643626784-review-of-a-request-that-cannot-launch-costs-nothing-3e816384f72d",
+  "reviewed_base_sha": "6f0704c032195dce55d909cd734f11b0ba6a9040",
+  "reviewed_commits": [
+    "c758c60d08badf9b2a9373f5af8e04310c58e078",
+    "3e816384f72d2e9e1c363bf6f3090cca1e16c2a3"
+  ],
+  "reviewed_head_sha": "3e816384f72d2e9e1c363bf6f3090cca1e16c2a3",
+  "reviewed_run_id": "r-20261028T143214494729-a-request-that-cannot-launch-costs-nothing",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 16
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T19:40:00Z",
+  "total": 105
+}
