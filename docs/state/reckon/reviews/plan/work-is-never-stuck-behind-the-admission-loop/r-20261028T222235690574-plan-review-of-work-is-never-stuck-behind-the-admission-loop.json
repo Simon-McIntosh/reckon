@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T22:41:09.564Z",
+  "dispatched_at": "2026-10-28T22:33:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:66",
+      "id": "reasoning-1",
+      "reason": "a node implementing s2 would add a dead parameter or invent a caller the plan does not name; the interface sentence should drop the resolve-only flag or name who still uses it.",
+      "text": "s2's unified function keeps \"a flag that only resolves\", but the sole resolve-only caller was the drain view at `runs.py:2146`, which the change moves to s7, and s7 says the drain view \"reads the recorded stall verdict in place of resolving waits a second time\" \u2014 so the flag is left with no caller",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:113",
+      "id": "reasoning-2",
+      "reason": "the done-when's \"reclassified on the third sweep\" needs a history store the section neither names nor has a writer for within its write paths (`recovery_classification.py` + the test only), so the node cannot produce the measure as written.",
+      "text": "s6 makes the park dead when \"the probe's value has not changed across three supervisor sweeps\", but the owner it names, `recovery_classification.classify_pointer`, is pure and stateless (it takes one live observation via `recovery_wait._wait_condition_observation`, `recovery_wait.py:393`) and no cross-sweep probe-value history is stored in the pointer, while the only per-sweep actor, `resumption.sweep`, is declared unchanged",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:158",
+      "id": "reasoning-3",
+      "reason": "the first done-when arm (a population that \"last took 900 s\" gets a bound above 900 s) has no recorded input unless the node adds a duration record the section does not name; the plan should name the store it is recorded in.",
+      "text": "s10 sizes each arm's bound from \"that population's last recorded duration\", read \"from the run's own coordinator or earlier landing logs\", but the `Measurement`/`Arm` records carry no elapsed time (`landing_measure.py:95-160`) and an arm log holds only pytest output or, on timeout, `timed out after {bound}s` \u2014 the configured bound, not the actual duration \u2014 so the named sources record no duration",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "157d8a553e8158af32c67b8b20d28b4e6206acdb",
+  "plan_fingerprint": "2e6dbf117af8a5eb14eee4efff7aaaf3316847677bca96e9dcc3d9d7cc07e0eb",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 23,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T222235690574-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "a9e2d132f51b374005c200e39927773ce57ad24c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 cited anchors resolve, with extensionless hrefs as `<path>.html`: `dispatch.py:274-283` (`_queue_validated_waits` resolves then `_move_pointer`), `runs.py:2146` (drain view `resolve_waits`), `roadmap_snapshot.roadmap_project_generation` (`roadmap_snapshot.py:231`, whose key is dir-identity + index-mtime + HEAD + store gen \u2014 no per-file content signal, so s2's \"keeps its key\" argument holds), the s10 refusal string (`landing_measure.py:498` \"the population base arm exceeded its 600s bound\" fed through `queue_landing.py:313`), `a-queue-holds-the-whole-plan#s33` (\"A refusal is judged again when what refused it changes\"), `recovery_classification.classify_pointer` (`:411`), `recovery_classification.py:1240-1265` (the terminal-when detail at `:1258`), `obligations.py:610` (`_classified_rows` calling `classify_pointer`), `resumption.sweep` (`resumption.py:1776`), `process_liveness.process_alive` (`:13`) and `recovery_liveness._live_descendant` (`:419`).",
+    "done_when": "pass \u2014 each changed section names a negative control and the arm it must fail (s2 \"removes the inline call, first arm\"; s6 \"removes the liveness clause, second arm\"; s10 \"restores the fixed bound, first arm\"), and each arm is an assertion that can fail.",
+    "evidence_paths": "pass \u2014 gate logs sit under the run's own `logs/`; the coordinator-after-landing records (s2 \"on the live store\") sit beside the gate rather than in a scratchpad or node-local temp.",
+    "naming": "pass \u2014 section titles and test names state the mechanism (`test_a_landing_measure_is_bounded_by_what_it_measures.py`, `test_a_park_that_cannot_change_is_dead.py`); no plan labels, ticket numbers or version tags reach a symbol or filename.",
+    "reasoning": "three findings \u2014 s2 keeps a resolve-only flag whose only caller is retired by s7; s6 requires a cross-sweep probe history that nothing stores and its stated owner is stateless; s10 reads a \"last recorded duration\" from sources that record no duration.",
+    "single_goal": "pass \u2014 s2's former second deliverable (readiness-cache retarget) is gone and its one goal is release-on-landing; s6 is one goal (a dead park is classified); s10's bound-sizing and environmental-refusal retry are two mechanisms for the one subject \"a landing-measure timeout is not a permanent refusal\", proven by a single gate.",
+    "wiring": "pass \u2014 every `plan-section-depends-on` entry resolves to a node that exists; s10 (which writes `queue_landing.py`) is transitively ordered after s3 through s8 (`s10 \u2192 s8 \u2192 s3`), so their shared `queue_landing.py` write path is serialized; s2's write paths cover `promotion.py`, where `discard()` lives (`promotion.py:1892`), so the discard caller it adds is in scope."
+  },
+  "section_digests": {
+    "_document": "fa210fb9b50c35fe3d7f00eb88b8687e8fa687a9bc9a7444fbe53ec22256ee0f",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "515de25adf80b5fb512dc8f04f97a13dc7faebad1bb9a479ff64441243ca8266",
+    "s2": "23418a3195ae5a9af5618b55fc5d33f9fec733d49bbe6df44a0500008c0d9bb2",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "4bcd702d40101a1118182bfe018fc8e543aab9a93aa70cc67552f3dd69ab316b",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T22:46:50.863434+00:00"
+}
