@@ -187,7 +187,6 @@ def test_an_unchanged_refusal_is_not_judged_a_second_time(
 
     monkeypatch.setattr(queue_landing, "_review_accepts_promotion", counting)
     monkeypatch.setattr(queue_landing, "_land", lambda run_id: (False, "not reached"))
-    monkeypatch.setattr(queue_landing, "_landing_code_stamp", lambda: "same-rule")
 
     first = queue_landing.land_once()
     second = queue_landing.land_once()
@@ -233,7 +232,7 @@ def test_a_commit_entry_spelling_more_than_one_revision_reaches_its_head(
     head = str(delivery["head"])
     revisions = [str(revision) for revision in delivery["revisions"]]
     if entry_shape == "subject":
-        entry = f"{head} docs(evidence): record the section-wait repair"
+        entry = f"{head[:9]} docs(evidence): record the section-wait repair"
     else:
         entry = " ".join(revisions)
     _manifest([entry])
