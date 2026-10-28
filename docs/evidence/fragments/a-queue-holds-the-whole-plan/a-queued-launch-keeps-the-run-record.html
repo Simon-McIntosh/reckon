@@ -28,6 +28,8 @@
 
 <h2 id="a-queued-launch-keeps-the-run-record-importers">Importers</h2>
 <p>Four test files importing <code>reckon.crew.queue_admission</code> ran at head against the change: <strong>52 passed</strong>, 0 failures, <code>EXIT=0</code> (<code>importer-arm.log</code>). The full importer population at base and head is the coordinator's arm.</p>
+
+<p>The base arm of the gate itself cannot measure a base tree: the test file is new in this node, so the base revision collects nothing (<code>ERROR: file or directory not found</code>, <code>EXIT=4</code>, <code>base-gate.log</code>). That is recorded as the collection error it is rather than as a passing base.</p>
 </article>
 </body>
 </html>
