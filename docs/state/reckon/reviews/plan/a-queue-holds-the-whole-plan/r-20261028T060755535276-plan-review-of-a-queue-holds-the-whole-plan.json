@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T06:14:48.848Z",
+  "dispatched_at": "2026-10-28T06:09:17Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261028T060755535276-plan-review-of-a-queue-holds-the-whole-plan/plan.html:132",
+      "id": "reasoning-1",
+      "reason": "the section must name the field it reads (`the ledger row's plan field`, `the live pointer's node.plan`), or the node story is written against a shape no record has and the composition never fires on the live fleet.",
+      "text": "\"A crew run whose node names the plan\" names the wrong field: in the committed run ledger (`docs/state/<project>/runs/<run>.json`) the plan is a top-level `plan` field while `node` is a bare node-id string (`docs/state/reckon/runs/r-20261027T122749032884-a-plan-review-composes-itself.json` records `plan: a-queue-holds-the-whole-plan`, `section: \u00a721`, `node: a-plan-review-composes-itself`), and in a live pointer the plan sits at `node.plan` (`~/.config/reckon/crew/live/r-20261025T012116961947-vs1-fdu-count-citation.json`: top-level `plan: None` against `node.plan: coil-supply-report-rebuild`) \u2014 a worker that reads the section literally and matches the node string against the plan slug finds no run for any real plan, so the pass composes nothing while fixtures built from the same misreading pass",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261028T060755535276-plan-review-of-a-queue-holds-the-whole-plan/plan.html:132",
+      "id": "done_when-1",
+      "reason": "an ambiguous negative control can be satisfied by a mutation the arm passes under, which leaves the section claiming a discriminating measure it does not have; naming the exact bound and the fixture's run age makes the arm fail under the mutation or shows it does not.",
+      "text": "the declared negative control \"removes the one-day bound, and the two-days arm must fail\" is ambiguous between the two one-day bounds the mechanism carries (the plan-file modification upper bound and the under-a-day run age), and the two-days arm states no run age for its fixture, so on the reading where the run-age bound is the one removed \u2014 or where the two-days fixture's run is itself two days old \u2014 the arm still returns \"none\" and the control does not fire",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261028T060755535276-plan-review-of-a-queue-holds-the-whole-plan/plan.html:132",
+      "id": "done_when-2",
+      "reason": "the section's own history is a pass that composed for the wrong plans; an arm with no positive control leaves the mirror failure (composing for none) invisible, and the fix is one clause naming the plans the dry run weighed or a plan it does compose.",
+      "text": "the live-store arm asserts only that a timed dry run \"returns within 30 s without raising\" and that \"every plan it would compose has a run naming it within the last day\", both of which a composer whose candidate discovery finds no plan at all satisfies vacuously, so this arm cannot distinguish a working pass from the inverse of the defect the section was reverted for",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "574e3aaa3c245d94065c602045379808ee8593f8",
+  "plan_fingerprint": "beedbd54cf63855853183754a7244cdc0e3230eed3bc8727d1ab5bc9136b4692",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 224,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T060755535276-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "ca2d354748ca1fc1a4cc05cd006ae9ab203b70dc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 merge `b3b1f5bcbb` and revert `8f4d2afed3` both resolve in this worktree; `sweep()` exists at `reckon/crew/resumption.py:1775` and is bound at `reckon/crew/station.py:75`; `dispatch(..., session=...)` is exercised at `reckon/crew/plan_review.py:3534`; `compose_owed_plan_reviews` is the function this section creates; `nova` is a mounted project (`~/.config/reckon/state/nova`).",
+    "done_when": "two findings \u2014 the negative control names \"the one-day bound\" where the mechanism carries two separate one-day bounds, and the live-store arm has no positive control.",
+    "evidence_paths": "pass \u2014 the gate log and the live-store arm are recorded on the run's own durable paths; no session scratchpad or node-local temporary path is named, and the write paths are repository sources plus the new test under `tests/`.",
+    "naming": "pass \u2014 `compose_owed_plan_reviews` names the mechanism; no plan label, section id, ticket number or version tag reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 the authoring-session lookup is described as \"a crew run whose node names the plan\", but no run record carries the plan in its node name.",
+    "single_goal": "pass \u2014 s21 carries one deliverable, the self-composing plan review restored from the reverted merge b3b1f5bcbb, with its note-answering as part of that same restore.",
+    "wiring": "pass \u2014 s21 declares `depends-on` `a-queue-holds-the-whole-plan#s20`, which resolves, and s14 is the sole dependent of s21; both ends exist in the section table."
+  },
+  "section_digests": {
+    "_document": "af9d81954c54aaf0e1190a644c49ad6241e43b7988ec879c1cbea9334e73ac89",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "b2f3a4dc4441527ebac138fcd2583e79959e677a2bb235937905ef5260c68abe",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "e8d19190fe8ad7ac0ada9570da1e1403020d996fade35345888d232283a712f3",
+    "s18": "c41a5f40b44fad7c9170e75afe458887ecf383dfbdfbd87f44b1aba18db385ce",
+    "s19": "3bd989d1975e3410388984d6b187e73537eb6741a9325640197d88ec68579fac",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s20": "1650ed742b05d1b8454fbb0792d83df930c357b4929ce75b0b82b8574b007375",
+    "s21": "5153966820e80019e5b55e9f07b61eb4f323ff1b195da3c355b7299997e89ac7",
+    "s22": "47e2cfd2937f003b333a5627f777e7bc72cb16eaf677da44f2683b7c2cbe138b",
+    "s23": "8b0cff55659bab7a4f30061f3adc4d4e822c8679c7c659a592a131c825a356a8",
+    "s24": "e41f5feee9ab0bd1cb7371a93fa8f654ccd277325b302e34421d3b0ea907d869",
+    "s25": "d156187078ac0ab4d87d1398fe13f74eee443a0f2e48ed45f963ef238d8737d9",
+    "s26": "abf23ffa47584798ae7c0303cda18d5e3ded7f690e2e692a13f35b2c021f2813",
+    "s27": "272f482e0766b56080b610bdbf7ac48bc9ddfa2ed1cfb8c8a85cd9ecd5b32d93",
+    "s28": "cd767c148ee02023bec11cd941361b5cc37e14d542a4c6a132a48261b3b2497b",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T06:15:33.038535+00:00"
+}
