@@ -314,12 +314,21 @@ def test_a_commit_entry_spelling_more_than_one_revision_reaches_its_head(
     assert [review["reviewed_head_sha"] for review in judged] == [head]
 
 
-def test_a_commit_entry_leading_with_prose_is_not_guessed(
-    delivery: dict[str, object], monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize(
+    "entry",
+    [
+        "docs(evidence): deadbeef defaced1 record the section-wait repair",
+        "{revision},",
+        "{revision}.",
+    ],
+    ids=["prose-first", "trailing-comma", "trailing-full-stop"],
+)
+def test_a_commit_entry_no_revision_can_be_read_from_is_refused_visibly(
+    delivery: dict[str, object], monkeypatch: pytest.MonkeyPatch, entry: str
 ) -> None:
     head = str(delivery["head"])
     base = str(delivery["base"])
-    entry = "docs(evidence): deadbeef defaced1 record the section-wait repair"
+    entry = entry.format(revision=head[:9])
 
     assert queue_landing._delivered_revision([entry]) == ""
 
@@ -332,13 +341,28 @@ def test_a_commit_entry_leading_with_prose_is_not_guessed(
         queue_landing, "_review_accepts_promotion", _counting_acceptance(judged)
     )
     monkeypatch.setattr(queue_landing, "_land", _land_stub(calls))
+    monkeypatch.setattr(queue_landing, "_landing_code_stamp", lambda: "rule")
 
     result = queue_landing.land_once()
 
+    refused = runs.read_pointer(RUN)["admission_landing"]
     assert result["landed"] == []
     assert calls == []
     assert judged == []
-    assert "admission_landing" not in runs.read_pointer(RUN)
+    assert refused["status"] == "refused"
+    assert entry in refused["guard"]
+    assert refused["code_stamp"] == "rule"
+    assert result["obligations"] == [
+        {"run_id": RUN, "session": SESSION, "guard": refused["guard"]}
+    ]
+
+    # the same unreadable entry under the same code is not reported twice, so a
+    # coordinator is not flooded while the manifest stands as written
+    assert queue_landing.land_once() == {
+        "landed": [],
+        "obligations": [],
+        "deferred": [],
+    }
 
 
 def test_the_delivered_revision_reads_the_revision_not_a_subject_word(

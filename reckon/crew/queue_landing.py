@@ -35,8 +35,8 @@ def _delivered_revision(entries: Sequence[Any]) -> str:
     carries a subject after it, so its first token is the commit — and only
     while that token really is a revision. A subject word that happens to be
     hexadecimal (``deadbeef``), or an entry that leads with prose, therefore
-    never stands in for a commit: the answer is "" and the caller judges
-    nothing rather than guessing a head.
+    never stands in for a commit: the answer is "" so no head is guessed, and
+    the caller reports the entry it could not read.
     """
     if not entries:
         return ""
@@ -47,6 +47,42 @@ def _delivered_revision(entries: Sequence[Any]) -> str:
         return tokens[-1]
     first = tokens[0]
     return first if _REVISION.fullmatch(first) else ""
+
+
+def _unreadable_entry_guard(entries: Sequence[Any]) -> str:
+    """A refusal naming the manifest commits entry no revision could be read
+    from, or "" when there is no entry to name.
+
+    An entry the parser cannot read is the run's own defect, not an absence of
+    work: it is reported on the live pointer with the entry quoted, so a
+    coordinator can correct the manifest instead of the run disappearing from
+    the pass with nothing written down.
+    """
+    if not entries:
+        return ""
+    entry = str(entries[-1] or "").strip()
+    if not entry:
+        return ""
+    return (
+        "delivered revision: the manifest commits entry "
+        f"{entry!r} names no revision at its head"
+    )
+
+
+def _unreadable_entry_holds(
+    previous: Mapping[str, Any] | None, head: str, guard: str, code_stamp: str
+) -> bool:
+    """Whether this head already carries this refusal under this code."""
+
+    if not isinstance(previous, Mapping):
+        return False
+    return (
+        previous.get("status") == "refused"
+        and recovery.same_revision(str(previous.get("head") or ""), head)
+        and str(previous.get("guard") or "") == guard
+        and bool(code_stamp)
+        and str(previous.get("code_stamp") or "") == code_stamp
+    )
 
 
 def _landing_code_stamp() -> str:
@@ -435,7 +471,10 @@ def land_once() -> dict[str, Any]:
     A head refused on an earlier pass is judged again as soon as the rule that
     refused it or the review it read has changed, so a run held by a rule since
     replaced does not stay held: the refusal is skipped only while the code
-    stamp and the review record it judged are both unchanged.
+    stamp and the review record it judged are both unchanged. A manifest whose
+    last commit entry names no revision is refused with that entry quoted and an
+    obligation for the run's session, so the run is visible to a coordinator
+    rather than dropped from the pass in silence.
     """
     from reckon.crew.recovery_review_subject import select_review_for_head
 
@@ -457,14 +496,37 @@ def land_once() -> dict[str, Any]:
         if classified.get("manifest_status") != "complete":
             continue
         head, tree = recovery._review_head_and_tree(pointer)
-        delivered = _delivered_revision(classified.get("manifest_commits") or ())
-        if not head or not delivered or not recovery.same_revision(head, delivered):
+        if not head:
+            continue
+        entries = classified.get("manifest_commits") or ()
+        delivered = _delivered_revision(entries)
+        code_stamp = _landing_code_stamp()
+        if not delivered:
+            guard = _unreadable_entry_guard(entries)
+            if guard:
+                previous = pointer.get("admission_landing")
+                if not _unreadable_entry_holds(previous, head, guard, code_stamp):
+                    _record_attempt(
+                        run_id,
+                        head=head,
+                        guard=guard,
+                        status="refused",
+                        code_stamp=code_stamp,
+                    )
+                    obligations.append(
+                        {
+                            "run_id": run_id,
+                            "session": str(pointer.get("session") or ""),
+                            "guard": guard,
+                        }
+                    )
+            continue
+        if not recovery.same_revision(head, delivered):
             continue
         try:
             review, stale = select_review_for_head(project, run_id, head, tree=tree)
         except (OSError, ValueError) as exc:
             review, stale = None, str(exc)
-        code_stamp = _landing_code_stamp()
         review_stamp = _review_stamp(review)
         previous = pointer.get("admission_landing")
         if isinstance(previous, Mapping) and recovery.same_revision(
