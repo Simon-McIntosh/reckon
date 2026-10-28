@@ -2503,6 +2503,71 @@ def _uncovered_change_detail(
     return f"{'; '.join(parts)}; " if parts else ""
 
 
+#: The document-level text a building node reads as its contract. The document
+#: unit's digest folds the plan's remainder prose together with these, so a
+#: change confined to the remainder — a note or an evidence list between
+#: sections — is no node's contract, while a change to any of these is every
+#: node's, whatever its size.
+CONTRACT_DOCUMENT_FIELDS: tuple[str, ...] = ("summary", "decisions", "gates")
+
+
+def _contract_digest(state: Mapping[str, Any]) -> str:
+    """Digest the document-level contract text of one parsed plan state."""
+    from reckon.crew import plan_review
+
+    authored = plan_review._without_comments_and_followups(state)
+    return plan_review._digest(
+        {field: authored.get(field) for field in CONTRACT_DOCUMENT_FIELDS}
+    )
+
+
+def _document_change_is_contract(
+    project: str,
+    plan_slug: str,
+    *,
+    plan: str | Path,
+    records: Iterable[Mapping[str, Any]],
+) -> bool:
+    """Whether the document unit is uncovered by a change to its contract text.
+
+    The document unit is covered only by an exact digest match, and its digest
+    folds the plan's remainder prose together with the summary, decisions and
+    gates. Only the latter is text a building node reads as its contract, so a
+    change confined to the remainder leaves the unit out of that node's hold.
+    The comparison runs against the newest stored review that read the document
+    unit, through the snapshot that review recorded; a review whose snapshot is
+    absent cannot show what it read, so the contract is taken as changed and
+    the unit still decides.
+    """
+    from reckon.crew import plan_review
+
+    candidates = [
+        record
+        for record in records
+        if plan_review.DOCUMENT_UNIT in (record.get("section_digests") or {})
+    ]
+    if not candidates:
+        return True
+    newest = max(candidates, key=lambda item: int(item.get("plan_version") or 0))
+    run_id = str(newest.get("review_run_id") or "").strip()
+    if not run_id:
+        return True
+    snapshot = (
+        plan_review.review_report_directory(project, plan_slug, run_id)
+        / plan_review._REVIEW_SNAPSHOT_NAME
+    )
+    if not snapshot.is_file():
+        return True
+    try:
+        reviewed_state = _plan_html.read_state(
+            snapshot.read_text(encoding="utf-8", errors="replace")
+        )
+        present_state = _plan_html.read_state_file(Path(plan))
+    except Exception:  # noqa: BLE001 - an unreadable side cannot show the change
+        return True
+    return _contract_digest(present_state) != _contract_digest(reviewed_state)
+
+
 def _refused_store_detail(refusals: Iterable[Mapping[str, Any]]) -> str:
     """Name each delivery the store refused and the reason it recorded.
 
@@ -2641,16 +2706,26 @@ def require_plan_reviewed(
         # is owed is a review of all of it, and the refusal names every unit
         # uncovered rather than only the ones this request reads.
         scope = None
+    owed = set(uncovered)
     if scope is not None:
         # Only the units this caller reads decide its hold. A unit the plan
-        # carries and the review never read is another request's business.
-        uncovered = {unit for unit in uncovered if unit in scope}
-    if uncovered or (record is None and scope is None):
+        # carries and the review never read is another request's business, and
+        # it is still named below so the coordinator sees the whole debt.
+        gating = {unit for unit in owed if unit in scope}
+        if plan_review.DOCUMENT_UNIT in gating and not _document_change_is_contract(
+            project, node.plan, plan=resource.path, records=_records
+        ):
+            # A document-unit change confined to the plan's remainder prose is
+            # no node's contract, so it does not decide this node's hold.
+            gating.discard(plan_review.DOCUMENT_UNIT)
+    else:
+        gating = owed
+    if gating or (record is None and scope is None):
         return _plan_review_verdict(
             enforce,
             f"plan {node.plan!r} in project {project!r} carries no stored review "
-            f"of the content about to be built; uncovered units: {', '.join(sorted(uncovered))}; "
-            f"{_uncovered_change_detail(uncovered, changes)}"
+            f"of the content about to be built; uncovered units: {', '.join(sorted(owed))}; "
+            f"{_uncovered_change_detail(owed, changes)}"
             f"{_refused_store_detail(refusals)}"
             "a plan is reviewed before it is built; compose one with "
             f"`{plan_review.review_invocation(project, node.plan)}`",
