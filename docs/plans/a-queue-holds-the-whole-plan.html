@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="213">
+<meta name="plan-version" content="214">
 <meta name="plan-modified" content="2026-10-28">
 </head>
 <body>
@@ -610,7 +610,10 @@
     <div class="r-comment-body"><p>Reviewed r-20261027T220150779595 at base e9e4844235de5079f67e51622f885dfe17aa93c0 and head ef4778a2dae5deb716ca13ac0a85b301b5938506 across all six dimensions; scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 16, reuse 16; three non-blocking findings (the burst's newest-revision sort reads dispatched_at, which plan-review records never carry and reckon/crew/review_lifecycle.py:185 owns with a timestamp fallback; the restored a-carried-finding evidence fragment states 4 passed and 1 failed/3 passed against a suite that holds eight tests; the manifest records no ruff result for a measure clause that names ruff). added_failure_count 0, derived from baseline_suite 3 failed at 3887a64009 against after_suite 0 failed at ef4778a2da.</p></div>
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261027T235648009895-review-of-the-review-cap-counts-only-changed-units-d22db3114127" data-who="reckon-build" data-when="2026-10-28T00:05:18.496Z">
-    <div class="r-comment-body"><p>Reviewed the two commits the run gained since it was reviewed (e4207d128c fix, d22db31141 docs) covering reckon/crew/plan_review.py, tests/test_a_carried_finding_reaches_the_node.py and the review-cap evidence fragment; the ordering repair is correct and falsifiable, the gate reproduces at 9 passed EXIT=0, and two non-blocking durability findings were recorded against the unasserted plan_version tiebreak and the timestamp-first notion of &quot;newest revision&quot;.</p></div>
+    <div class="r-comment-body"><p>Reviewed the two commits the run gained since it was reviewed (e4207d128c fix, d22db31141 docs) covering reckon/crew/plan_review.py, tests/test_a_carried_finding_reaches_the_node.py and the review-cap evidence fragment; the ordering repair is correct and falsifiable, the gate reproduces at 9 passed EXIT=0, and two non-blocking durability findings were recorded against the unasserted plan_version tiebreak and the timestamp-first notion of "newest revision".</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261027T220150779595-the-review-cap-counts-only-changed-units" data-who="reckon-build" data-when="2026-10-27T23:55:21Z">
+    <div class="r-comment-body"><p>Restored the carried-finding landing by reverting acb6cf8112, then bounded the third-review cap to the newest plan revision carrying a unit&#x27;s digest, ordered that revision by the timestamp the store actually writes (with plan_version as a tiebreak) rather than by dispatched_at, resolved a finding&#x27;s answer across every stored review, and kept an earlier acted/declined answer when a --carried answer follows it; the cap&#x27;s live-store calls for reckon a-queue-holds-the-whole-plan and nova kernel-compile-barrier both return None, and tests/test_a_carried_finding_reaches_the_node.py reports 9 passed, EXIT=0 at e4207d128c.</p></div>
 </div>
 <div class="r-comment" data-section="s14" data-id="c-s14-seeded-violation" data-who="" data-when="">
     <div class="r-comment-body"><p>The content review of 27 October found that §14 has no negative control: a drain whose counters never increment would report zero DAG-order violations. When §14 is dispatched, its done-when gains one: before the week starts, the coordinator seeds a request that launches before its upstream lands, and the drain instrument must report exactly that one violation.</p></div>
