@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T20:59:57.306Z",
+  "dispatched_at": "2026-10-28T20:53:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:149",
+      "id": "done_when-1",
+      "reason": "as written the node either reproduces a condition its own mechanism says is impossible or exits blocked, so the arm must name the condition that actually re-enters the answering branch and require a base-revision red before the head arms count.",
+      "text": "the first arm requires a first dispatch \"under a slowed store\" to reproduce the `already` reply, but the section's own located mechanism needs a second entry into `dispatch()`, which a slowed store does not create; the other two arms (head answer, second-dispatch `already`) already hold at the base revision, and the \"report blocked\" escape lets the node close on them, so the section's gate cannot fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:146",
+      "id": "reasoning-1",
+      "reason": "without a named candidate caller the node must search the whole dispatch surface for a layer that may not exist, so naming the re-entering caller is what makes the section executable.",
+      "text": "the section says the reply comes from \"a second entry into `dispatch()` within one CLI call, or from a layer around it\", but the only entry point it names for the reproduction, `reckon crew dispatch`, calls `dispatch()` once (`reckon/crew_dispatch_commands.py:2026`) with no retry, so the hypothesis has no caller in the path the node is told to reproduce through",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "69ffcd739753322aa46ff4d1e6f7eb7d332c041d",
+  "plan_fingerprint": "6eb884e938888a4ed39f8e60804234c0b1ac921a898e7f5d560e0ece35c86af5",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T205152747577-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "0952229c57e0f18cbd0978a550378f88ac8f96d5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `dispatch.py:1917`, `_queue_validated_waits`, `_answer_existing_node_run` and the cited evidence run all resolve, and the evidence run's `queued_at` and `negative_control` match the claims made about them.",
+    "done_when": "a finding \u2014 the reproduction arm is conditioned on a \"slowed store\", which the section's own located mechanism cannot turn into the reply, and the remaining two arms already hold at the base revision.",
+    "evidence_paths": "pass \u2014 the gate is a repository test run under the node's own run directory, and nothing in s9 sends evidence to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 `tests/test_a_first_dispatch_reports_what_it_wrote.py` names the behaviour, and no plan label, ticket number or version tag reaches s9's prose or paths.",
+    "reasoning": "a finding \u2014 the section locates the mechanism as \"a second entry into `dispatch()` within one CLI call\", while `reckon crew dispatch` enters `dispatch()` exactly once (`reckon/crew_dispatch_commands.py:2026`, no retry loop), so the layer it defers to is not in the path it names.",
+    "single_goal": "pass \u2014 s9 carries one deliverable, that a call which created a request answers with that request as new.",
+    "wiring": "pass \u2014 s9's `plan-section-depends-on` entry (`a-queue-holds-the-whole-plan#s18`) resolves, and no other section of this plan writes `reckon/crew/dispatch.py`, so no dependency is missing and none points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "d4ddba2b99fbbeb296062e562e8f8ef30503415202e5b5319130d5236f30d3c3",
+    "s1": "5004aa941693c23f441593a8740d26ef96a27355a94d38750cfeb8d7a8a01e78",
+    "s2": "e6e0bfe7436e1bfb486d4711bd401fdc9e1ab54fdedf233f940b0bff9db4037f",
+    "s3": "079cf946368a170be7dba66d0bfac0a83b87ad2cb37b362cfdc7e1d3efbb29c4",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "44e62fa70a4a1b501d54e34863283450c3b794fd74c5e375661968732c2e89be",
+    "s6": "dae45c727ff637beac24d6f3b50d9b33d8d36d76fa4284209ce111a4bd7aa4e4",
+    "s7": "5dd4014387664545c8bac0855c3bc105c63d959495b999dd5a05595af17aeea8",
+    "s8": "9cfb6f57e35e9f7717400fecec46e631ad421a08d10a24fe431e63ac3d83d4c6",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T21:08:14.242786+00:00"
+}
