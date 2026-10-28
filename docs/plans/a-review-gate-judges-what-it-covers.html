@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-plan-is-reviewed-before-it-is-built,the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-28">
 </head>
 <body>
@@ -205,6 +205,12 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s2" data-id="c-20261023-s2-docunit" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
+    <div class="r-comment-body"><p>Content review of v5 on 2026-10-23, finding done_when-2, declined for that wave because §2 was not being built: §2's done-when has no arm for its document-unit rule (summary, decisions and gates), so that branch can ship wrong and pass. Add the arm before dispatching §2.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20261023-s5-premise" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
+    <div class="r-comment-body"><p>Content review of v5 on 2026-10-23, findings reasoning-1 and done_when-1, declined for that wave because §5 was not being built. <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> diffs each cited commit against its own first parent, so there is no comparison against a recorded base to find, and §5's negative control is the span diff that function's docstring already rejects. Rework §5's premise and control before dispatching it.</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261013T090732844758-rgjc-covered-refusal-census" data-who="reckon-build" data-when="2026-10-13T10:19:24.033Z">
     <div class="r-comment-body"><p>Measured the fleet-wide size of the covered-refusal problem §7 asked about: of 102 dispatch refusals of the plan-review gate in the fourteen days to 2026-10-13, 43 refused a node whose built section was covered and unchanged and 12 more refused a section changed only by an edit an answered finding asked for (55 of 68 classified refusals, 81 %), judged at the gate's own word-share boundary — review.plan_change_threshold = 0.3, read from `reckon flight --project reckon` and cited as its source; the 0.05 reading from an earlier pass is kept as a sensitivity row and exactly five refusals move between uncovered and changed-answered-finding under it (all uncovered -&gt; answered, each named in the report with its record). The report classifies each refusal with the record it was read from, gives per-project counts, the 13 uncovered refusals, a re-picked negative control (imas-efit west-imas-read-facade s4, which reads uncovered at either boundary), the 756 s median refusal-to-dispatch delay over 50 episodes, and the 430 deduplicated --allow-unreviewed-plan waivers. The four power_convertor refusals of §1 hold at both boundaries: jccm-circuits and jccm-signs covered-unchanged, jccm-lines changed-answered; the modes refusal is absent from every record this census can see and the report names those records.</p></div>
 </div>
@@ -214,12 +220,6 @@
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261013T213152822433-review-of-rgjc-covered-refusal-census-bc66c63b6b89" data-who="reckon-build" data-when="2026-10-13T21:47:16.563Z">
     <div class="r-comment-body"><p>Re-ran the two scripts the report cites (census.py then classify.py) from faithful copies against the same host records the run read, and checked its three highest-ranked claims. Claims 1 and 2 reproduce exactly: the headline classification (102 dispatch-shaped refusals -&gt; 43 covered-unchanged / 12 changed-answered-finding / 13 uncovered / 34 unclassified; 55 of 68 classified = 81 % covered) and the boundary sensitivity (43/7/18/34 at 0.05, exactly five movers, all uncovered -&gt; changed-answered-finding, none the other way, the same five named). Claim 3 differs: the median refusal-to-dispatch delay reads 51 episodes / 814.183 s here against the report's 50 / 755.5895 s, with min 22.848 s and max 25445.917 s unchanged, because the episode join scans run ledgers and live pointers at read time and one further dispatched run for a node refused inside the window is now visible. The report's summary line (430 waivers, 102 refusals) agrees with its tables (totals 430 and 102).</p></div>
 </div>
-<div class="r-comment" data-section="s5" data-id="c-20261023-s5-premise" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
-    <div class="r-comment-body"><p>Content review of v5 on 2026-10-23, findings reasoning-1 and done_when-1, declined for that wave because §5 was not being built. <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> diffs each cited commit against its own first parent, so there is no comparison against a recorded base to find, and §5's negative control is the span diff that function's docstring already rejects. Rework §5's premise and control before dispatching it.</p></div>
-</div>
-<div class="r-comment" data-section="s2" data-id="c-20261023-s2-docunit" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
-    <div class="r-comment-body"><p>Content review of v5 on 2026-10-23, finding done_when-2, declined for that wave because §2 was not being built: §2's done-when has no arm for its document-unit rule (summary, decisions and gates), so that branch can ship wrong and pass. Add the arm before dispatching §2.</p></div>
-</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261023T213903558337-review-of-a-write-names-what-it-uncovered-54535b302f7b" data-who="reckon-build" data-when="2026-10-23T21:55:46.044Z">
     <div class="r-comment-body"><p>Reviewed r-20261023T203414448007-a-write-names-what-it-uncovered at ce20b61bd..54535b302f7b: parsed record with all six dimensions (goal_fidelity 19, evidence 16, durability 16, scope_discipline 20, fit 19, reuse 20), three non-blocking findings on test independence at tests/test_a_write_names_what_it_uncovered.py:269 and :280 and on the gate log's revision header; added_failure_count 0 because the two gate failures reproduce without this change.</p></div>
 </div>
@@ -228,6 +228,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
     <div class="r-comment-body"><p>Section 8 landed at merge <code>effacd38d</code>: plan writes name <code>uncovered_by_write</code>, review 110, zero added failures. <a href="/reckon/evidence/archive/a-review-gate-judges-what-it-covers-landed.html#s8">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-s10-one-unit-rule" data-who="" data-when="">
+    <div class="r-comment-body"><p>The code review of the gate modules on 28 October (<code>r-20261028T090444966085-review-code-6c1b39603c08</code>) proposed one treatment, which this section's node carries. <code>plan_review_units</code> is defined twice, at <code>reckon/crew/routing.py:2434</code> and again at <code>reckon/crew/queue_admission.py:2255</code>, and the two bodies are identical. The rule for which units a request is gated on, which this section changes, therefore lives in two places, and admission and the dispatch gate can disagree. The node deletes the copy in <code>queue_admission.py</code> and imports the one in <code>routing.py</code>, and a test asserts the two names are one object. <code>reckon/crew/routing.py</code> joins this section's write paths for that import.</p></div>
 </div>
 </section>
 </main>
