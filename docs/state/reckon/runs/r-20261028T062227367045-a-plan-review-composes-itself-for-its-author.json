@@ -1,0 +1,3482 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "b9eab5cda3dd01e79c35114fe0bacb33763c5898",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 23780751,
+      "input_tokens_cumulative": 23780751,
+      "output_tokens": 92342,
+      "output_tokens_cumulative": 92342,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 1706,
+    "files": 5,
+    "removed": 9
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 2435,
+        "name": "review_path",
+        "path": "reckon/crew/review.py"
+      },
+      "run_function": {
+        "line": 422,
+        "name": "plan_review_path",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 429
+    },
+    {
+      "existing_function": {
+        "line": 4380,
+        "name": "store_code_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 606,
+        "name": "store_plan_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 633
+    },
+    {
+      "existing_function": {
+        "line": 166,
+        "name": "store_committed_review",
+        "path": "reckon/crew/review_records.py"
+      },
+      "run_function": {
+        "line": 1651,
+        "name": "_committed_copy_of",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 1669
+    },
+    {
+      "existing_function": {
+        "line": 297,
+        "name": "commit_record_write",
+        "path": "reckon/crew/review_records.py"
+      },
+      "run_function": {
+        "line": 1873,
+        "name": "_commit_record_writes_once",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 1895
+    },
+    {
+      "existing_function": {
+        "line": 2227,
+        "name": "review_burst_refusal",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 2164,
+        "name": "reviews_for_unit_burst",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 2165
+    },
+    {
+      "existing_function": {
+        "line": 2164,
+        "name": "reviews_for_unit_burst",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 2227,
+        "name": "review_burst_refusal",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 2228
+    },
+    {
+      "existing_function": {
+        "line": 2621,
+        "name": "admit_once",
+        "path": "reckon/crew/queue_admission.py"
+      },
+      "run_function": {
+        "line": 2767,
+        "name": "compose_owed_plan_reviews",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 2804
+    },
+    {
+      "existing_function": {
+        "line": 258,
+        "name": "_figure_index_state",
+        "path": "tests/test_serve_figure_rows.py"
+      },
+      "run_function": {
+        "line": 2767,
+        "name": "compose_owed_plan_reviews",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 2804
+    },
+    {
+      "existing_function": {
+        "line": 72,
+        "name": "_figure_state",
+        "path": "tests/test_spa_figure_reader.py"
+      },
+      "run_function": {
+        "line": 2767,
+        "name": "compose_owed_plan_reviews",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 2804
+    },
+    {
+      "existing_function": {
+        "line": 97,
+        "name": "_reader_state",
+        "path": "tests/test_spa_reader_geometry.py"
+      },
+      "run_function": {
+        "line": 2767,
+        "name": "compose_owed_plan_reviews",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 2804
+    },
+    {
+      "existing_function": {
+        "line": 4846,
+        "name": "portfolio_review_report_directory",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 4189,
+        "name": "code_review_report_directory",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 4190
+    },
+    {
+      "existing_function": {
+        "line": 4261,
+        "name": "_code_review_sidecar",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 4213,
+        "name": "code_review_fields",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 4233
+    },
+    {
+      "existing_function": {
+        "line": 4213,
+        "name": "code_review_fields",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 4261,
+        "name": "_code_review_sidecar",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 4271
+    },
+    {
+      "existing_function": {
+        "line": 4916,
+        "name": "dispatch_portfolio_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 4289,
+        "name": "dispatch_code_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 4290
+    },
+    {
+      "existing_function": {
+        "line": 606,
+        "name": "store_plan_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 4380,
+        "name": "store_code_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 4402
+    },
+    {
+      "existing_function": {
+        "line": 5006,
+        "name": "store_portfolio_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 4380,
+        "name": "store_code_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 4381
+    },
+    {
+      "existing_function": {
+        "line": 5041,
+        "name": "list_portfolio_reviews",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 4422,
+        "name": "list_code_reviews",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 4423
+    },
+    {
+      "existing_function": {
+        "line": 4189,
+        "name": "code_review_report_directory",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 4846,
+        "name": "portfolio_review_report_directory",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 4847
+    },
+    {
+      "existing_function": {
+        "line": 4289,
+        "name": "dispatch_code_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 4916,
+        "name": "dispatch_portfolio_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 4917
+    },
+    {
+      "existing_function": {
+        "line": 4380,
+        "name": "store_code_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 5006,
+        "name": "store_portfolio_review",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 5007
+    },
+    {
+      "existing_function": {
+        "line": 4422,
+        "name": "list_code_reviews",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "run_function": {
+        "line": 5041,
+        "name": "list_portfolio_reviews",
+        "path": "reckon/crew/plan_review.py"
+      },
+      "window_line": 5042
+    },
+    {
+      "existing_function": {
+        "line": 1663,
+        "name": "_sweep_status_lock",
+        "path": "reckon/crew/resumption.py"
+      },
+      "run_function": {
+        "line": 466,
+        "name": "_lane_probe_lock",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 469
+    },
+    {
+      "existing_function": {
+        "line": 247,
+        "name": "promote_review_run_itself",
+        "path": "reckon/crew/recovery_review_acceptance.py"
+      },
+      "run_function": {
+        "line": 833,
+        "name": "resolve_session",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 897
+    },
+    {
+      "existing_function": {
+        "line": 3844,
+        "name": "serve_crew_view",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 833,
+        "name": "resolve_session",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 897
+    },
+    {
+      "existing_function": {
+        "line": 459,
+        "name": "_holder_from_trace",
+        "path": "tests/test_dispatch_lifetime_probe.py"
+      },
+      "run_function": {
+        "line": 833,
+        "name": "resolve_session",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 897
+    },
+    {
+      "existing_function": {
+        "line": 370,
+        "name": "_dispatch_lane_observation",
+        "path": "reckon/crew/dispatch_admission.py"
+      },
+      "run_function": {
+        "line": 932,
+        "name": "_readonly_budget_verdict",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 950
+    },
+    {
+      "existing_function": {
+        "line": 439,
+        "name": "_budget_verdict",
+        "path": "reckon/crew/routing.py"
+      },
+      "run_function": {
+        "line": 932,
+        "name": "_readonly_budget_verdict",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 950
+    },
+    {
+      "existing_function": {
+        "line": 1492,
+        "name": "_spawn",
+        "path": "reckon/crew/dispatch_launch.py"
+      },
+      "run_function": {
+        "line": 1230,
+        "name": "_spawn",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 1242
+    },
+    {
+      "existing_function": {
+        "line": 474,
+        "name": "_run_wait_condition_probe",
+        "path": "reckon/crew/recovery_wait.py"
+      },
+      "run_function": {
+        "line": 1497,
+        "name": "_run_condition_probe",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 1517
+    },
+    {
+      "existing_function": {
+        "line": 1680,
+        "name": "_write_sweep_status",
+        "path": "reckon/crew/resumption.py"
+      },
+      "run_function": {
+        "line": 1645,
+        "name": "_sweep_writer_entry",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 1652
+    },
+    {
+      "existing_function": {
+        "line": 466,
+        "name": "_lane_probe_lock",
+        "path": "reckon/crew/resumption.py"
+      },
+      "run_function": {
+        "line": 1663,
+        "name": "_sweep_status_lock",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 1671
+    },
+    {
+      "existing_function": {
+        "line": 1645,
+        "name": "_sweep_writer_entry",
+        "path": "reckon/crew/resumption.py"
+      },
+      "run_function": {
+        "line": 1680,
+        "name": "_write_sweep_status",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 1731
+    },
+    {
+      "existing_function": {
+        "line": 182,
+        "name": "_committed_record",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "run_function": {
+        "line": 1680,
+        "name": "_write_sweep_status",
+        "path": "reckon/crew/resumption.py"
+      },
+      "window_line": 1739
+    },
+    {
+      "existing_function": {
+        "line": 28,
+        "name": "routable_surfaces",
+        "path": "tests/spa_containment_harness.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 129,
+        "name": "test_a_refused_pick_records_each_excluded_lane",
+        "path": "tests/test_a_refused_pick_records_its_exclusions.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 799,
+        "name": "test_build_carries_directions_into_the_project_surfaces",
+        "path": "tests/test_build.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 515,
+        "name": "test_the_chain_stays_intact_from_worker_to_sprint",
+        "path": "tests/test_continuation.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 1656,
+        "name": "test_scopes_view_expands_project_derivations_before_partitioning",
+        "path": "tests/test_crew.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 71,
+        "name": "_findings",
+        "path": "tests/test_dispose_a_finding.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 879,
+        "name": "test_resolve_followup",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 67,
+        "name": "_make_plan",
+        "path": "tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 678,
+        "name": "test_edit_project_sets_north_star_collection_and_reads_it_back",
+        "path": "tests/test_mcp_store.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 519,
+        "name": "test_list_followups_across_plans",
+        "path": "tests/test_mcp_tools.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 608,
+        "name": "test_list_questions_across_plans",
+        "path": "tests/test_mcp_tools.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 115,
+        "name": "_plan",
+        "path": "tests/test_mcp_views.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 6,
+        "name": "test_roadmap_inventory_preserves_plan_orientation",
+        "path": "tests/test_north_star_rollup.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 307,
+        "name": "test_lane_receipts_join_equivalent_names_but_keep_models_separate",
+        "path": "tests/test_old_names_resolve.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 156,
+        "name": "test_a_metered_usage_limit_refusal_with_a_reset_still_reads_blocked",
+        "path": "tests/test_paused_is_not_blocked.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 173
+    },
+    {
+      "existing_function": {
+        "line": 185,
+        "name": "test_a_metered_spend_limit_refusal_with_a_reset_still_reads_blocked",
+        "path": "tests/test_paused_is_not_blocked.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 173
+    },
+    {
+      "existing_function": {
+        "line": 272,
+        "name": "test_a_rate_limit_refusal_with_no_expiry_stays_blocked",
+        "path": "tests/test_paused_is_not_blocked.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 173
+    },
+    {
+      "existing_function": {
+        "line": 524,
+        "name": "test_project_north_stars_round_trip_and_compose",
+        "path": "tests/test_project_state.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 137,
+        "name": "_legacy_index",
+        "path": "tests/test_project_state_parity.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 242,
+        "name": "test_unstaged_dependency_remains_plan_wide",
+        "path": "tests/test_roadmap.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 172
+    },
+    {
+      "existing_function": {
+        "line": 45,
+        "name": "_fixture",
+        "path": "tests/test_schedule_derivation.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 228,
+        "name": "test_attach_schedule_uses_the_live_runs_and_the_given_reference",
+        "path": "tests/test_served_schedule_payload.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 95,
+        "name": "_fixture",
+        "path": "tests/test_spa_derived_flow.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 51,
+        "name": "_composed_state",
+        "path": "tests/test_spa_owed_captures.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 55,
+        "name": "_reader_state",
+        "path": "tests/test_spa_reader_provenance.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 293,
+        "name": "test_discovery_load_preserves_receipt_sprints_status_and_attachments",
+        "path": "tests/test_spa_state_boundary.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 163
+    },
+    {
+      "existing_function": {
+        "line": 221,
+        "name": "test_a_plan_and_a_research_document_sharing_a_slug_keep_distinct_keys",
+        "path": "tests/test_the_flow_draws_each_plan_where_its_progress_puts_it.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "_two_findings",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 171
+    },
+    {
+      "existing_function": {
+        "line": 1680,
+        "name": "_write_sweep_status",
+        "path": "reckon/crew/resumption.py"
+      },
+      "run_function": {
+        "line": 182,
+        "name": "_committed_record",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 200
+    },
+    {
+      "existing_function": {
+        "line": 668,
+        "name": "test_a_dead_registration_is_taken_over_rather_than_hand_deleted",
+        "path": "tests/test_crew_session_delivery.py"
+      },
+      "run_function": {
+        "line": 182,
+        "name": "_committed_record",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 189
+    },
+    {
+      "existing_function": {
+        "line": 137,
+        "name": "_legacy_index",
+        "path": "tests/test_project_state_parity.py"
+      },
+      "run_function": {
+        "line": 182,
+        "name": "_committed_record",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 189
+    },
+    {
+      "existing_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "run_function": {
+        "line": 343,
+        "name": "test_a_plan_with_a_review_in_flight_is_not_composed",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 348
+    },
+    {
+      "existing_function": {
+        "line": 222,
+        "name": "test_plan_review_in_flight_is_shared_across_sessions",
+        "path": "tests/test_review_plan_command.py"
+      },
+      "run_function": {
+        "line": 343,
+        "name": "test_a_plan_with_a_review_in_flight_is_not_composed",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 349
+    },
+    {
+      "existing_function": {
+        "line": 4151,
+        "name": "new_plan_html",
+        "path": "reckon/_store.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 1970,
+        "name": "_require_declared_negative_control",
+        "path": "reckon/crew/promotion_checks.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 759,
+        "name": "_require_gate_evidence",
+        "path": "reckon/crew/promotion_evidence.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 246,
+        "name": "_require_executable_gate_command",
+        "path": "reckon/crew/promotion_gate.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 591,
+        "name": "rerun_gate_at_integrated_revision",
+        "path": "reckon/crew/promotion_gate.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 191,
+        "name": "_require_commit_for_changed_manifest",
+        "path": "reckon/crew/promotion_scope.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 1642,
+        "name": "_refuse_unrelated_plan_edit",
+        "path": "reckon/crew/promotion_scope.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 601,
+        "name": "compose_prompt",
+        "path": "reckon/crew/prompts.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 375,
+        "name": "_claims_review_done_when",
+        "path": "reckon/crew/recovery_review_subject.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 586,
+        "name": "_shadow_review_block",
+        "path": "reckon/crew/recovery_review_subject.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 880,
+        "name": "_refuse_joined_list_separator",
+        "path": "reckon/crew/reports.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 2692,
+        "name": "resolve_dispatch_authority",
+        "path": "reckon/crew/routing.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 3810,
+        "name": "crew_view_refusal_detail",
+        "path": "reckon/mcp_views.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 69,
+        "name": "_make_plan",
+        "path": "tests/test_a_finishing_write_offers_its_close.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 71,
+        "name": "_make_plan",
+        "path": "tests/test_a_refused_write_names_the_next_step.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 135,
+        "name": "test_the_after_meta_round_trips_through_the_plan_html",
+        "path": "tests/test_after_edge_orders_without_blocking.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 61,
+        "name": "_make_plan",
+        "path": "tests/test_after_is_settable.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 201,
+        "name": "test_skill_metadata_and_activated_body_are_reported_without_content",
+        "path": "tests/test_agent_context.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 82,
+        "name": "_write_discovery_pages",
+        "path": "tests/test_build.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 79,
+        "name": "_manifest",
+        "path": "tests/test_check_manifest_resolves_named_commits.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 76,
+        "name": "_plan_document",
+        "path": "tests/test_concurrent_dispatch_of_one_node.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 515,
+        "name": "test_the_chain_stays_intact_from_worker_to_sprint",
+        "path": "tests/test_continuation.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 70,
+        "name": "_plan_document",
+        "path": "tests/test_directory_claim_asks_first.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 84,
+        "name": "_plan_document",
+        "path": "tests/test_dispatch_launch_is_not_its_own_conflict.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 106,
+        "name": "_plan_document",
+        "path": "tests/test_dispatch_result_matches_launch.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 82,
+        "name": "test_audit_html_accepts_distributed_sprint_metadata",
+        "path": "tests/test_doccheck.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 400,
+        "name": "test_dangling_slug_in_meta_depends_on",
+        "path": "tests/test_doccheck.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 422,
+        "name": "test_valid_slug_in_meta_depends_on",
+        "path": "tests/test_doccheck.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 33,
+        "name": "_host_flight",
+        "path": "tests/test_dry_run_shows_each_set_override.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 55,
+        "name": "_make_plan_html",
+        "path": "tests/test_edit_plan.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 55,
+        "name": "plan",
+        "path": "tests/test_edit_plan_append_evidence.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 69,
+        "name": "plan",
+        "path": "tests/test_edit_plan_section_writes.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 65,
+        "name": "_make_section_plan",
+        "path": "tests/test_edit_plan_sets_a_section_field.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 67,
+        "name": "_make_plan",
+        "path": "tests/test_edit_plan_sets_followup_dependency_and_gate_fields.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 163,
+        "name": "_populate",
+        "path": "tests/test_every_default_read_fits.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 37,
+        "name": "_host_flight",
+        "path": "tests/test_every_dry_run_refusal_carries_the_echo.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 28,
+        "name": "_write_plan",
+        "path": "tests/test_evidence_from_report.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 169,
+        "name": "test_progress_is_the_roll_up_over_the_projects_plans",
+        "path": "tests/test_fleet_index.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 45,
+        "name": "test_rehearsal_end_lists_without_callers_zellij_context",
+        "path": "tests/test_fleet_migrate.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 120,
+        "name": "test_emptying_host_catalogue_keys_leaves_every_value_unchanged",
+        "path": "tests/test_flight_catalogue_layer.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 1269,
+        "name": "test_registered_worktrees_reads_through_the_shim_rather_than_raising",
+        "path": "tests/test_git_shim_checks_the_resolved_repo.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 231,
+        "name": "test_an_impl_write_on_the_partial_plan_is_refused",
+        "path": "tests/test_impl_derives_from_declarations.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 186,
+        "name": "_documenting_prose_html",
+        "path": "tests/test_impl_is_computed.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 75,
+        "name": "_write_plan",
+        "path": "tests/test_impl_writes_are_refused_where_derived.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 657,
+        "name": "test_metered_backend_cost_is_unchanged",
+        "path": "tests/test_ledger.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 28,
+        "name": "test_a_wholly_indented_manifest_ends_its_block_at_the_next_field",
+        "path": "tests/test_manifest_block_indent.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 44,
+        "name": "test_the_unindented_form_is_unchanged",
+        "path": "tests/test_manifest_block_indent.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 58,
+        "name": "test_a_four_space_indent_ends_its_block_at_the_next_field",
+        "path": "tests/test_manifest_block_indent.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 72,
+        "name": "test_a_tab_indented_manifest_ends_its_block_at_the_next_field",
+        "path": "tests/test_manifest_block_indent.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 94,
+        "name": "test_a_block_body_left_of_the_field_column_ends_the_block",
+        "path": "tests/test_manifest_block_indent.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 36,
+        "name": "test_a_parent_with_an_empty_value_keeps_nested_keys_nested",
+        "path": "tests/test_manifest_nested_keys.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 484,
+        "name": "test_the_text_form_still_reads_around_prose",
+        "path": "tests/test_manifest_parse_format.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 91,
+        "name": "_write_plan",
+        "path": "tests/test_one_brief_an_agent_can_act_on.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 70,
+        "name": "_plan_document",
+        "path": "tests/test_one_of_two_racing_reviews_survives.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 64,
+        "name": "_plan_html",
+        "path": "tests/test_orchestrator_assessment_reaches_jev.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 82,
+        "name": "test_deployed_build_uses_the_canonical_ui_and_shared_assets",
+        "path": "tests/test_pages_publication_guard.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 235,
+        "name": "_project",
+        "path": "tests/test_paired_arms_are_reported.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 124,
+        "name": "test_a_needs_help_manifest_still_reads_blocked_and_names_its_question",
+        "path": "tests/test_paused_is_not_blocked.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 50,
+        "name": "_host_flight",
+        "path": "tests/test_picker_refusal_falls_back_to_deterministic.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 44,
+        "name": "_host_flight",
+        "path": "tests/test_picker_route_keeps_availability_refusal.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 88,
+        "name": "_in_harness_flight",
+        "path": "tests/test_picker_route_keeps_availability_refusal.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 156,
+        "name": "test_canonical_decision_spelling_returns_no_warning",
+        "path": "tests/test_plan_read_warns_unparsed.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 81,
+        "name": "test_subprocess_launch_is_an_entry_point",
+        "path": "tests/test_reach_graph.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 76,
+        "name": "_write_plan",
+        "path": "tests/test_ready_sections_are_ranked.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 86,
+        "name": "_plan_document",
+        "path": "tests/test_refused_dispatch_leaves_no_pointer.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 76,
+        "name": "_plan_document",
+        "path": "tests/test_review_record_is_one_runs_claim.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 146,
+        "name": "test_missing_dimension_is_named_absent_not_a_partial_total",
+        "path": "tests/test_review_scoring.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 58,
+        "name": "_plan_document",
+        "path": "tests/test_roadmap.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 559,
+        "name": "_decided_plan_document",
+        "path": "tests/test_roadmap.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 273,
+        "name": "test_a_clean_report_counts_zero_corrections",
+        "path": "tests/test_routing_evidence_fields.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 79,
+        "name": "_plan_document",
+        "path": "tests/test_scope_refusal_names_its_claimant.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 14,
+        "name": "plan",
+        "path": "tests/test_section_contract_is_refused.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 312,
+        "name": "_modules",
+        "path": "tests/test_served_code_drift.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 41,
+        "name": "_mocking_preload",
+        "path": "tests/test_shell_project_list_is_immediate.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 932,
+        "name": "test_engine_generated_dispatch_keeps_fixed_read_set_bounded",
+        "path": "tests/test_skill_contracts.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 1739,
+        "name": "test_dispatch_exit_pairing_binds_each_key_to_its_own_branch",
+        "path": "tests/test_skill_contracts.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 1971,
+        "name": "_synthesized_checkout",
+        "path": "tests/test_skill_contracts.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 52,
+        "name": "test_the_hook_loads_by_path_without_the_crew_facade",
+        "path": "tests/test_snapshot_loader_keeps_one_instance.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 218,
+        "name": "test_a_malformed_catalogue_leaves_a_lane_metered",
+        "path": "tests/test_subscription_lanes_record_no_spend.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 166,
+        "name": "test_a_host_backend_is_not_filled_from_the_repository_catalogue",
+        "path": "tests/test_suite_never_calls_live_jev.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 188,
+        "name": "_mounts_preload",
+        "path": "tests/test_the_crew_page_shows_open_decisions.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 73,
+        "name": "_write_plan",
+        "path": "tests/test_the_critical_path_runs_through_sections.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 54,
+        "name": "_plan_document",
+        "path": "tests/test_the_roadmap_lists_come_out_in_one_order.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 182,
+        "name": "test_a_kept_landed_card_starts_at_its_heading_not_its_generated_badge",
+        "path": "tests/test_the_section_prose_reader_has_one_home.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 47,
+        "name": "test_shell_assets_are_revisioned_and_revalidated",
+        "path": "tests/test_the_shells_scripts_are_fetched_once.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 170,
+        "name": "test_missing_link_keeps_its_bare_url_and_the_shell_answers",
+        "path": "tests/test_the_shells_scripts_are_fetched_once.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 222,
+        "name": "test_a_blocked_manifest_makes_its_section_run_blocked",
+        "path": "tests/test_work_in_flight_sits_on_its_section.py"
+      },
+      "run_function": {
+        "line": 473,
+        "name": "test_a_pass_reads_only_the_plans_edited_since_the_last_one",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 478
+    },
+    {
+      "existing_function": {
+        "line": 45,
+        "name": "dispatch_repo",
+        "path": "tests/test_a_brief_points_rather_than_quotes.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 76,
+        "name": "reflex_fixture",
+        "path": "tests/test_a_clean_text_review_still_repairs_a_figure_finding.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 16,
+        "name": "_project",
+        "path": "tests/test_a_crew_poll_reads_the_roster_without_run_files.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 79,
+        "name": "isolated_project",
+        "path": "tests/test_a_decline_only_round_names_what_it_declined.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 44,
+        "name": "round_fixture",
+        "path": "tests/test_a_disposed_finding_ends_its_repair_round.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 28,
+        "name": "_project",
+        "path": "tests/test_a_launched_run_reads_launched.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 20,
+        "name": "crew_server",
+        "path": "tests/test_a_launched_run_reads_launching_on_crew.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 19,
+        "name": "_waiting_pointer",
+        "path": "tests/test_a_met_wait_is_ready_not_abandoned.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 343,
+        "name": "test_a_plan_with_a_review_in_flight_is_not_composed",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 580
+    },
+    {
+      "existing_function": {
+        "line": 49,
+        "name": "project",
+        "path": "tests/test_a_queued_plan_review_keeps_its_brief.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 59,
+        "name": "isolated_project",
+        "path": "tests/test_a_queued_run_waits_on_its_lane.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 219,
+        "name": "repo",
+        "path": "tests/test_a_regenerated_path_is_charged_as_written.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 108,
+        "name": "isolated_project",
+        "path": "tests/test_a_repair_hold_names_its_cause.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 51,
+        "name": "project",
+        "path": "tests/test_a_review_attempt_that_launches_nothing_leaves_nothing.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 101,
+        "name": "isolated_project",
+        "path": "tests/test_a_review_never_runs_in_harness.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 251,
+        "name": "authority_plan",
+        "path": "tests/test_a_review_receives_its_rubric.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 194,
+        "name": "isolated_project",
+        "path": "tests/test_a_review_waits_for_a_saturated_lane.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 131,
+        "name": "test_a_commitless_promotion_reads_a_vanished_worktree_as_no_change",
+        "path": "tests/test_a_vanished_worktree_reads_as_no_referent.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 281,
+        "name": "host",
+        "path": "tests/test_a_watcher_carries_no_session_identity.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 184,
+        "name": "_aggregate_trap",
+        "path": "tests/test_a_worktree_held_row_is_rechecked_at_read.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 101,
+        "name": "isolated_project",
+        "path": "tests/test_an_automatic_review_held_by_a_full_lane_is_queued.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 164,
+        "name": "dispatch_project",
+        "path": "tests/test_an_unmarked_finding_is_reported_not_repaired.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 34,
+        "name": "repository",
+        "path": "tests/test_boundary_check_reads_two_trees.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 31,
+        "name": "repository",
+        "path": "tests/test_crew_coordinator_spend.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 37,
+        "name": "isolated_project",
+        "path": "tests/test_crew_dispatch_arming.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 31,
+        "name": "repo",
+        "path": "tests/test_crew_dryrun.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 53,
+        "name": "repositories",
+        "path": "tests/test_crew_mounted_paths.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 39,
+        "name": "repo",
+        "path": "tests/test_crew_peers.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 844,
+        "name": "_abandoned_run_with_a_derived_manifest",
+        "path": "tests/test_crew_recover.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 160,
+        "name": "repo",
+        "path": "tests/test_crew_refusal_visibility.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 12,
+        "name": "_project",
+        "path": "tests/test_crew_route_cost.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 38,
+        "name": "_add_project",
+        "path": "tests/test_crew_routes.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 101,
+        "name": "context_dispatch_repo",
+        "path": "tests/test_crew_routes.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 69,
+        "name": "_repository",
+        "path": "tests/test_crew_routing_visibility.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 920,
+        "name": "test_the_model_cell_is_sized_from_the_longest_declared_alias",
+        "path": "tests/test_crew_ticker_layout.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 985,
+        "name": "test_the_model_cell_reads_the_rows_own_project_layer",
+        "path": "tests/test_crew_ticker_layout.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 70,
+        "name": "repo",
+        "path": "tests/test_crew_watch_lifetime.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 490,
+        "name": "isolated_project",
+        "path": "tests/test_dispatch_holds_while_the_lane_is_paused.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 146,
+        "name": "_build_repo",
+        "path": "tests/test_dispatch_lifetime_probe.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 61,
+        "name": "dispatch_repo",
+        "path": "tests/test_dispatch_names_its_backend.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 244,
+        "name": "test_a_test_that_reaches_an_allocation_verb_it_did_not_provide_is_failed",
+        "path": "tests/test_dispatch_places_into_the_shared_reservation.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 195,
+        "name": "host",
+        "path": "tests/test_dispatch_records_the_pace_row.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 391,
+        "name": "_build_repository",
+        "path": "tests/test_dispatch_returns_without_worker.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 154,
+        "name": "host",
+        "path": "tests/test_dispatch_spawns_through_the_fleet.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 30,
+        "name": "repository",
+        "path": "tests/test_done_when_lints.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 62,
+        "name": "_park",
+        "path": "tests/test_every_removal_path_reads_the_wide_claim.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 65,
+        "name": "project",
+        "path": "tests/test_figure_review.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 159,
+        "name": "host",
+        "path": "tests/test_fleet_lane_carries_the_dispatch_environment.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 84,
+        "name": "_park",
+        "path": "tests/test_gc_spares_a_live_pointers_worktree.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 71,
+        "name": "repo",
+        "path": "tests/test_granted_path_is_a_claim.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 414,
+        "name": "test_audit_tool_validates_one_document_like_the_cli",
+        "path": "tests/test_mcp_recovery.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 134,
+        "name": "isolated_project",
+        "path": "tests/test_member_friction.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 37,
+        "name": "isolated_project",
+        "path": "tests/test_no_member_dispatch_runs_alone.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 69,
+        "name": "_fixture",
+        "path": "tests/test_one_automatic_repair_round_per_run.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 175,
+        "name": "test_the_head_fallback_fills_a_copy_not_the_shared_parse",
+        "path": "tests/test_one_reader_owns_each_row.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 109,
+        "name": "isolated_project",
+        "path": "tests/test_one_repair_round_per_review_round.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 589,
+        "name": "_flight_yaml",
+        "path": "tests/test_preflight_pace.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 1331,
+        "name": "test_legacy_discovery_ignores_partial_distributed_destinations",
+        "path": "tests/test_project_state.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 196,
+        "name": "test_edit_plan_emits_canonical_type_and_strips_plan_defaults",
+        "path": "tests/test_provenance.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 60,
+        "name": "delivery",
+        "path": "tests/test_queue_landing.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 97,
+        "name": "isolated_project",
+        "path": "tests/test_reflex_dispatches_one_repair.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 207,
+        "name": "dispatch_project",
+        "path": "tests/test_repair_answers_only_blocking_findings.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 85,
+        "name": "isolated_project",
+        "path": "tests/test_repair_skips_out_of_repo_findings.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 68,
+        "name": "isolated_project",
+        "path": "tests/test_rereview_keeps_its_lane.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 85,
+        "name": "isolated_project",
+        "path": "tests/test_review_lane_follows_its_run.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 55,
+        "name": "project",
+        "path": "tests/test_review_of_a_brief_run_names_its_brief.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 48,
+        "name": "project",
+        "path": "tests/test_review_plan_command.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 222,
+        "name": "test_plan_review_in_flight_is_shared_across_sessions",
+        "path": "tests/test_review_plan_command.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 581
+    },
+    {
+      "existing_function": {
+        "line": 66,
+        "name": "isolated_project",
+        "path": "tests/test_review_reflex_selects_a_backend.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 82,
+        "name": "isolated_project",
+        "path": "tests/test_review_reflex_sweep.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 60,
+        "name": "isolated_project",
+        "path": "tests/test_review_role_is_not_reviewed.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 248,
+        "name": "review_repository",
+        "path": "tests/test_role_write_scope.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 813,
+        "name": "test_promoting_a_run_that_wrote_both_landing_paths_is_accepted",
+        "path": "tests/test_role_write_scope.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 54,
+        "name": "repo",
+        "path": "tests/test_sandbox_delivery.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 66,
+        "name": "isolated_project",
+        "path": "tests/test_scoring_dispatches_its_review.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 49,
+        "name": "_mounted_projects",
+        "path": "tests/test_server_listens_before_it_watches.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 226,
+        "name": "_build_repository",
+        "path": "tests/test_stop_before_spawn_spawns_nothing.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 94,
+        "name": "test_backfill_command_dry_run_reports_census_without_writing",
+        "path": "tests/test_tag_backfill.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 68,
+        "name": "isolated_project",
+        "path": "tests/test_the_reflex_resumes_an_unpromoted_run.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    },
+    {
+      "existing_function": {
+        "line": 345,
+        "name": "test_no_configured_model_alias_is_truncated",
+        "path": "tests/test_ticker_row_is_one_transition.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 569
+    },
+    {
+      "existing_function": {
+        "line": 54,
+        "name": "fixture_project",
+        "path": "tests/test_watch_arming_isolation.py"
+      },
+      "run_function": {
+        "line": 558,
+        "name": "test_a_plan_whose_reason_never_settles_does_not_starve_the_rest",
+        "path": "tests/test_a_plan_review_composes_itself.py"
+      },
+      "window_line": 570
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "e36c8b907811417f94ee0d1f6b3cb963d4b6e0e8",
+    "14a4553fa810ad90a76af1cb47cf9ab16550fd60",
+    "283a870f481481cba8e4f0988e10205675ae8e39",
+    "6eb9f86dd4bd711cee34ab2cb8070b4e0db04907",
+    "5617864161dea5cb24b45957c50690d36ea803c1",
+    "eae15928ace7934156ee560e5dd6ce4c958c4748",
+    "2004ae9ca22b32f0b3612d9d9688010555ec073c"
+  ],
+  "completed_at": "2026-10-28T08:01:55Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-28T06:24:40Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_plan_review_composes_itself.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T062227367045-a-plan-review-composes-itself-for-its-author/logs/armed-suite/head.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.7577854671280276,
+    "plan": "a-queue-holds-the-whole-plan",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-28T07:22:31.778306+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-28T06:22:31Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 18,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 1,
+    "headroom": 11,
+    "mean_context": 160000,
+    "observed_at": "2026-10-28T06:22:25Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 18,
+      "aggregate_tokens_per_second": 95.922,
+      "detail": "",
+      "mean_tokens_per_second": 119.903,
+      "observed_at": "2026-10-28T06:22:25Z",
+      "runs": 0.8,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-28T08:01:55Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T062227367045-a-plan-review-composes-itself-for-its-author/manifest.md",
+  "member": "disposable-r-20261028T062227367045-a-plan-review-composes-itself-for-its-author",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_plan_review_composes_itself.py::test_a_plan_edited_two_days_ago_is_not_composed_though_it_owes_a_review"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_plan_review_composes_itself.py::test_a_plan_edited_two_days_ago_is_not_composed_though_it_owes_a_review"
+    ],
+    "declaration": "remove the bound on the plan file's age; the two-days arm, whose run is an hour old, must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T062227367045-a-plan-review-composes-itself-for-its-author/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T062227367045-a-plan-review-composes-itself-for-its-author/negative-control.log",
+    "test_paths": [
+      "tests/test_a_plan_review_composes_itself.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-plan-review-composes-itself-for-its-author",
+  "node_definition": {
+    "after": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "low",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 663,
+          "cached_input_tokens": 775271,
+          "input_tokens": 775936,
+          "output_tokens": 948,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 776884,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+      "session_id": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd"
+    },
+    "done_when": "Start from the reverted implementation: the first commit is git revert --no-edit 8f4d2afed3, which restores merge b3b1f5bcbb. Then implement the section's mechanism as the plan states it at b9eab5cda3. A review is composed only when the plan file is between ten minutes and a day old, no review is in flight, and a crew run on the plan (pointer node.plan or ledger plan field) is under a day old, under that run's session. Notes are answered only on reviews the pass composed, in one commit per pass. tests/test_a_plan_review_composes_itself.py shows every arm the section lists, with the two-days fixture carrying an hour-old run. Live-store arm in the gate log: a timed compose_owed_plan_reviews dry run on reckon and nova each returns within 30 s without raising, every plan it would compose has a run on it within the last day, and the reckon dry run lists a-queue-holds-the-whole-plan once that plan has been quiet ten minutes, as the positive control. The test files importing reckon.crew.plan_review or reckon.crew.resumption add no failures against the base revision. ruff check and ruff format --check pass on the changed paths.",
+    "estimated_hours": null,
+    "goal": "restore the self-composing plan review scoped to recent authoring under the run's session",
+    "id": "a-plan-review-composes-itself-for-its-author",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-28T06:22:31Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 18,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 1,
+      "headroom": 11,
+      "mean_context": 160000,
+      "observed_at": "2026-10-28T06:22:25Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 18,
+        "aggregate_tokens_per_second": 95.922,
+        "detail": "",
+        "mean_tokens_per_second": 119.903,
+        "observed_at": "2026-10-28T06:22:25Z",
+        "runs": 0.8,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T062227367045-a-plan-review-composes-itself-for-its-author/manifest.md",
+    "negative_control": "remove the bound on the plan file's age; the two-days arm, whose run is an hour old, must fail",
+    "plan": "a-queue-holds-the-whole-plan",
+    "regenerate_paths": [],
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§21",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/resumption.py",
+      "reckon/crew/plan_review.py",
+      "tests/test_a_plan_review_composes_itself.py",
+      "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-composes-itself.html",
+      "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-composes-itself-for-its-author.html",
+      "docs/figures/a-queue-holds-the-whole-plan/a-plan-review-composes-itself-for-its-author"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 2796493.0,
+  "outcome": "",
+  "outside_scope_paths": [],
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "a-plan-review-composes-itself-for-its-author",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-28T06:24:01.682406+00:00",
+    "score": 0.64375,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:snapshot",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5000.337,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 965.608,
+      "context-estimate": 22.37,
+      "records": 1244.521,
+      "verdict-inputs": 1428.347
+    }
+  },
+  "plan": "a-queue-holds-the-whole-plan",
+  "plan_impl_at_dispatch": 0.7577854671280276,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "2004ae9ca22b32f0b3612d9d9688010555ec073c",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "6eb9f86dd4bd711cee34ab2cb8070b4e0db04907",
+    "reviewed_head_sha": "2004ae9ca22b32f0b3612d9d9688010555ec073c",
+    "scores": {
+      "durability": 15,
+      "evidence": 13,
+      "fit": 16,
+      "goal_fidelity": 19,
+      "reuse": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 101
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "shadow",
+  "run_id": "r-20261028T062227367045-a-plan-review-composes-itself-for-its-author",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§21",
+  "session": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+  "session_harness": "claude",
+  "session_id": "387a5c8d-2a16-494e-9e19-38a3013ffe07",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_plan_review_composes_itself.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T062227367045-a-plan-review-composes-itself-for-its-author/logs/armed-suite/head.log",
+      "revision": "2004ae9ca22b32f0b3612d9d9688010555ec073c"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_plan_review_composes_itself.py",
+      "completed": true,
+      "exit_status": 4,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T062227367045-a-plan-review-composes-itself-for-its-author/logs/armed-suite/base.log",
+      "revision": "b9eab5cda3dd01e79c35114fe0bacb33763c5898"
+    },
+    "failure_attribution": {},
+    "status": "clean",
+    "suite_command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_plan_review_composes_itself.py",
+    "waiver_reason": null
+  },
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 23977940,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 2783.652,
+    "generated_tokens": 100083,
+    "generation_seconds": 1512.396,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 85.1,
+    "machine_seconds": 1271.256,
+    "peak_input_tokens": 195889,
+    "tokens_per_second": 66.18,
+    "wall_tokens_per_second": 35.95
+  },
+  "time_budget": "60m",
+  "tool_steps": 201.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 5835,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "ended_pids": [
+      3989489,
+      3989551,
+      3874432,
+      4001135,
+      4001140,
+      3874876,
+      3874907
+    ],
+    "exit_code": 0,
+    "exited_at": "2026-10-28T08:01:58Z",
+    "last_record_type": "user",
+    "launched_at": "2026-10-28T07:30:51Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [],
+    "run_id": "r-20261028T062227367045-a-plan-review-composes-itself-for-its-author",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 17071,
+    "worker_pid": 3873458
+  },
+  "worker_seconds": 4592,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
