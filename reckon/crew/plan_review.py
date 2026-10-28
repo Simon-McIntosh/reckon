@@ -2537,7 +2537,9 @@ def compose_owed_plan_reviews(
         if cursor in names:
             begin = names.index(cursor) + 1
             order = order[begin:] + order[:begin]
-    stopped_at = ""
+    # A pass that weighs nothing keeps the cursor it was given, so a plan that
+    # was pending stays pending instead of the rotation restarting at the top.
+    stopped_at = "" if dry_run else _weighed_cursor(project)
     for plan_slug, path in order:
         try:
             edited = path.stat().st_mtime
