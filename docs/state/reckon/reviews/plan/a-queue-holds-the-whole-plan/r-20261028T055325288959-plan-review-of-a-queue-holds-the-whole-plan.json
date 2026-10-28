@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T05:59:05.362Z",
+  "dispatched_at": "2026-10-28T05:54:45Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261028T055325288959-plan-review-of-a-queue-holds-the-whole-plan/plan.html:132",
+      "id": "done_when-1",
+      "reason": "the arm selects between two contradictory behaviours and the one it names is the one that was reverted, so the node would reintroduce the defect and call it green.",
+      "text": "the fourth arm, \"a stored review's would-not-change findings are answered as notes, while the rest stay open\", is the reverted behaviour verbatim: `test_would_not_change_findings_are_noted_and_the_rest_stay_open` (b3b1f5bcbb) deliberately made a fresh edit so \"the notes are answered by a pass that composes nothing\", which is exactly defect 3 (\"answered the backlog of would-not-change findings in every stored review\"); the body now restricts answering to \"only on reviews this pass composed\", so a node satisfying the arm as written re-lands the defect, and a node satisfying the body fails its own arm",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261028T055325288959-plan-review-of-a-queue-holds-the-whole-plan/plan.html:132",
+      "id": "done_when-2",
+      "reason": "without an arm each the plan's own stated fixes are untestable, and the negative control it does declare (\"removes the quiet-period check\") falsifies only the two-minute arm, leaving the day-old exclusion free to regress silently.",
+      "text": "the body says the re-landing \"adds arms for each defect\", but the done-when still carries only the pre-revert arms (eleven minutes, two minutes, in flight, notes) plus a quiet-period negative control: there is no arm for the one-day upper bound (defect 1), none for composing under the plan's own authoring session (defect 2), and none for batching a pass's answers into one commit (defect 3), so two of the three repairs and half of the third are unmeasured",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261028T055325288959-plan-review-of-a-queue-holds-the-whole-plan/plan.html:132",
+      "id": "reasoning-1",
+      "reason": "as written the node must either invent a durable plan-to-session record (a write path and a scope the section does not declare) or ship the reverted behaviour again, so the plan would send it down a path it has not costed.",
+      "text": "\"composed under the session that made the plan's last edit\" has no data source: a plan records `plan-modified` as a date (`reckon/_store.py:1497`) and no session key exists in `PLAN_METADATA_SCALARS` (`reckon/crew/plan_review.py:92-104`), and `reckon/mcp_deadlines.py:673-675` records that the write path attributes no review to a session precisely because no such attribution exists; the only session `sweep()` holds is the sweep's own (`reckon/crew/station.py:107`), which is the defect, and the named write paths contain no store in which an authoring session could be recorded",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261028T055325288959-plan-review-of-a-queue-holds-the-whole-plan/plan.html:132",
+      "id": "reasoning-2",
+      "reason": "the node's write paths are a prose description, so it must first discover which of five watch-related modules owns the pass, and a wrong guess puts the composition hook outside the loop that runs it.",
+      "text": "the mechanism names its producer twice by description (\"the crew watch loop\", \"the producer module that runs the watch sweep\") where a path is required; the caller it relies on is `sweep()` in `reckon/crew/resumption.py`, called per pointer session from `reckon/crew/station.py:75,107`, and the reverted landing's call site was in that same module; the earlier decline deferred the name until \u00a720 re-landed, and \u00a720 is now `done` with `CARRIED_ACTION` present in `reckon/crew/plan_review.py`, so the deferral's condition has been met",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ebfee522dc199dd6e0e7b0d4230b8c304e15466f",
+  "plan_fingerprint": "f0184a191bc644980951839c8b0324a96a3cf3c2d274517d2df4a93bfd4c09d0",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 222,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T055325288959-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "c1b783f39e60b784e9d0ad0d403b006cf3682026",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 both cited commits resolve to the commits s21 describes, `reckon/crew/plan_review.py` exists, and the landing-record href with its `#s21-\u2026` anchor resolves in `docs/evidence/archive/a-queue-holds-the-whole-plan-landed.html`.",
+    "done_when": "a finding \u2014 the done-when's fourth arm asserts the behaviour that was reverted, so it would pass on the defective code and fail a correct implementation.",
+    "evidence_paths": "pass \u2014 the gate is a test file in the repository (`tests/test_a_plan_review_composes_itself.py`) and the write paths name source modules, no scratchpad or node-local path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol; the session id `reckon-e0` appears only as evidence provenance in plan prose.",
+    "reasoning": "a finding \u2014 the mechanism requires a fact nothing records (the session that made a plan's last edit) and names its producer by description rather than by the module that calls it.",
+    "single_goal": "pass \u2014 composing the owed review and answering its would-not-change notes are one deliverable on one code path; the new scope predicates (age window, authoring session, batching) narrow that deliverable rather than adding a second.",
+    "wiring": "pass \u2014 s21 declares one wait (`s20`), which is `done`, and the plan's only consumer of s21 (`s14`) exists; nothing in s21's new text needs a wait it does not declare."
+  },
+  "section_digests": {
+    "_document": "af9d81954c54aaf0e1190a644c49ad6241e43b7988ec879c1cbea9334e73ac89",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "b2f3a4dc4441527ebac138fcd2583e79959e677a2bb235937905ef5260c68abe",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "e8d19190fe8ad7ac0ada9570da1e1403020d996fade35345888d232283a712f3",
+    "s18": "c41a5f40b44fad7c9170e75afe458887ecf383dfbdfbd87f44b1aba18db385ce",
+    "s19": "3bd989d1975e3410388984d6b187e73537eb6741a9325640197d88ec68579fac",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s20": "1650ed742b05d1b8454fbb0792d83df930c357b4929ce75b0b82b8574b007375",
+    "s21": "2ece37dbbd781aba92ae4d14c279a4fd4dc87ebc46d2ef61abbe795deef5389c",
+    "s22": "47e2cfd2937f003b333a5627f777e7bc72cb16eaf677da44f2683b7c2cbe138b",
+    "s23": "8b0cff55659bab7a4f30061f3adc4d4e822c8679c7c659a592a131c825a356a8",
+    "s24": "e41f5feee9ab0bd1cb7371a93fa8f654ccd277325b302e34421d3b0ea907d869",
+    "s25": "d156187078ac0ab4d87d1398fe13f74eee443a0f2e48ed45f963ef238d8737d9",
+    "s26": "abf23ffa47584798ae7c0303cda18d5e3ded7f690e2e692a13f35b2c021f2813",
+    "s27": "272f482e0766b56080b610bdbf7ac48bc9ddfa2ed1cfb8c8a85cd9ecd5b32d93",
+    "s28": "cd767c148ee02023bec11cd941361b5cc37e14d542a4c6a132a48261b3b2497b",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "888a359c62d83eaa231df69d5107745fb5a7f0b30320d77ca0a8586aff7965b6",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T05:59:46.232584+00:00"
+}
