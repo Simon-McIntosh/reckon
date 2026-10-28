@@ -33,6 +33,28 @@
   <code>compose_burst_refusal</code> allows, in which case its findings must be
   answered rather than reviewed again.
 
+  <p><strong>The pass is bounded.</strong> The sweep runs every couple of
+  minutes, so the pass costs a constant rather than a scan: it records each
+  plan's modification time under the crew home and weighs only the plans
+  written since it last weighed them, it weighs one plan per pass
+  (<code>PLAN_REVIEW_PASS_LIMIT</code>) because weighing one plan against the
+  live store takes about twenty seconds, and it carries a cursor so the next
+  pass starts after the plan this one stopped at. Without that cursor a plan
+  near the top whose skip reason never settles — one with a review in flight,
+  say — would hold the only slot on every pass. A plan is recorded as weighed
+  only when its review was dispatched or queued, or when its reason cannot
+  change without an edit, so a dispatch a lane held is composed again on the
+  next pass instead of waiting for its author to touch the file.
+
+  <p><strong>One document's refusal is its own.</strong> A document whose
+  location disagrees with its declared type made the catalogue refuse the whole
+  tree, and the sweep caught only <code>CrewError</code> and
+  <code>OSError</code>, so a single bad file would have broken the pass for
+  every plan in the project. The scan is taken in the catalogue's tolerant mode
+  and the files it dropped are read from the scope's own record: the offending
+  document is reported against itself and the other plans are weighed normally.
+  Each plan is weighed inside its own guard for the same reason.
+
   <p><strong>No lane named.</strong> The composition goes through
   <code>recovery.plan_review_subject</code> with the content rubric and no
   <code>--local</code>, which is what the invocation every surface prints also

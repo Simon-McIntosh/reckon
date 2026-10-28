@@ -2287,40 +2287,6 @@ def noted_answer_reason(finding: Mapping[str, Any]) -> str:
     return "the review recorded that this finding would not change the plan"
 
 
-def note_would_not_change_findings(
-    project: str,
-    plan_slug: str,
-    *,
-    base_dir: str | Path | None = None,
-    by: str = PLAN_REVIEW_REFLEX,
-    when: str | None = None,
-) -> list[dict[str, str]]:
-    """Answer each unanswered would-not-change finding of a plan as a note.
-
-    A finding the reviewer marked ``WOULD_CHANGE_THE_PLAN: no`` needs no
-    decision from the author, so leaving it open costs the coordinator a turn
-    it cannot spend when it is paused at a rate limit. Only an explicit ``no``
-    is answered: a finding whose verdict the report never stated carries
-    ``None``, which is not a no, so it waits for its author like any other.
-
-    Each answer is written to the record that raised it, and the record is read
-    back between answers so a plan carrying two such findings keeps both: the
-    store rewrites the whole record, so an answer written from a stale copy
-    would drop the one before it. Returns the notes written, naming the record
-    each was written to.
-    """
-    return _note_records(
-        [
-            record
-            for record in list_plan_reviews(project, base_dir=base_dir)
-            if record.get("plan_slug") == plan_slug
-        ],
-        base_dir=base_dir,
-        by=by,
-        when=when,
-    )
-
-
 def _note_records(
     records: Iterable[Mapping[str, Any]],
     *,
@@ -2328,7 +2294,14 @@ def _note_records(
     by: str,
     when: str | None,
 ) -> list[dict[str, str]]:
-    """Write the notes :func:`note_would_not_change_findings` resolves."""
+    """Answer each unanswered would-not-change finding of these records.
+
+    A finding the reviewer marked ``WOULD_CHANGE_THE_PLAN: no`` needs no
+    decision from the author, so leaving it open costs a coordinator a turn it
+    cannot spend while paused at a rate limit. Only an explicit ``no`` is
+    answered: a finding whose verdict the report never stated carries
+    ``None``, which is not a no, so it waits for its author like any other.
+    """
     noted: list[dict[str, str]] = []
     for stored in records:
         record: Mapping[str, Any] = stored
@@ -2354,68 +2327,37 @@ def _note_records(
     return noted
 
 
-def _plans_by_hand(docs: Path, refused: Exception) -> tuple[list, list]:
-    """Read the plans file by file when the catalogue refuses the tree.
-
-    One document whose location disagrees with its declared type makes the
-    catalogue raise for the whole tree, which would stop the pass for every
-    plan in the project. Read each file on its own instead, so the document
-    that conflicts is named and the rest are weighed normally.
-    """
-    from reckon._plan_html import parse_meta
-    from reckon.resources import TYPE_ROOTS
-
-    by_root = {str(root): str(kind) for kind, root in TYPE_ROOTS.items()}
-    plans: list[tuple[str, Path]] = []
-    failed: list[dict[str, str]] = []
-    for path in sorted(docs.rglob("*.html")):
-        if "archive" in path.parts:
-            continue
-        try:
-            meta = parse_meta(path)
-        except Exception as exc:  # noqa: BLE001 — one unreadable document is that document's
-            failed.append({"plan": path.stem, "error": f"{type(exc).__name__}: {exc}"})
-            continue
-        declared = str(meta.get("type") or "").strip().lower()
-        located = by_root.get(path.parent.name)
-        if located and declared and located != declared:
-            failed.append(
-                {
-                    "plan": path.stem,
-                    "error": (
-                        f"{path.name}: location type {located} conflicts with "
-                        f"reckon-type {declared}"
-                    ),
-                }
-            )
-            continue
-        if declared != "plan":
-            continue
-        plans.append((str(meta.get("slug") or path.stem), path))
-    if not plans:
-        failed.append({"plan": "-", "error": f"{type(refused).__name__}: {refused}"})
-    return plans, failed
-
-
 def _project_plan_paths(project: str) -> tuple[list[tuple[str, Path]], list[dict]]:
-    """The live plans of a project, and the documents that could not be read."""
+    """The live plans of a project, and the documents the catalogue dropped.
+
+    One document whose location disagrees with its declared type makes a strict
+    catalogue raise for the whole tree, which would stop the pass for every
+    plan in the project. The scan is taken in its tolerant mode instead, and
+    the files it dropped are read from the scope's own record, so the pass
+    names the offending document and weighs the rest.
+    """
     from reckon._store import _docs_dir_for_project
-    from reckon.resources import iter_resources
+    from reckon.resources import iter_resources, resource_scan_scope
 
     docs = _docs_dir_for_project(project)
     if docs is None:
         return [], []
     try:
-        resources = list(iter_resources(Path(docs), project, include_archived=False))
+        with resource_scan_scope() as dropped:
+            resources = iter_resources(
+                Path(docs), project, include_archived=False, ignore_invalid=True
+            )
     except OSError:
         return [], []
-    except Exception as exc:  # noqa: BLE001 — the catalogue refuses trees it cannot classify
-        return _plans_by_hand(Path(docs), exc)
+    failed = [
+        {"plan": Path(path).stem, "error": str(reason)}
+        for path, reason in (dropped.get((str(Path(docs)), project)) or [])
+    ]
     return [
         (str(resource.slug), Path(resource.path))
         for resource in resources
         if str(resource.type) == "plan"
-    ], []
+    ], failed
 
 
 def _reflex_state_path(project: str) -> Path:
@@ -2429,30 +2371,46 @@ def _reflex_state_path(project: str) -> Path:
     return crew_home() / PLAN_REVIEW_REFLEX / f"{readable or 'project'}.json"
 
 
-def _weighed_edits(project: str) -> dict[str, float]:
-    """The plan mtimes the last pass weighed, or empty when there is none."""
+# The key the state file holds the rotation cursor under. It is not a plan
+# slug: a slug is recorded with a float mtime, which is what tells them apart.
+_REFLEX_CURSOR_KEY = "__cursor__"
+
+
+def _reflex_state(project: str) -> dict:
+    """The stored state of the last pass: plan mtimes and the rotation cursor."""
     try:
         stored = json.loads(_reflex_state_path(project).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    if not isinstance(stored, Mapping):
-        return {}
+    return dict(stored) if isinstance(stored, Mapping) else {}
+
+
+def _weighed_edits(project: str) -> dict[str, float]:
+    """The plan mtimes the last pass weighed, or empty when there is none."""
     return {
         str(slug): float(stamp)
-        for slug, stamp in stored.items()
+        for slug, stamp in _reflex_state(project).items()
         if isinstance(stamp, (int, float))
     }
 
 
-def _record_weighed_edits(project: str, weighed: Mapping[str, float]) -> None:
-    """Write the mtimes the pass weighed, so the next pass reads only edits."""
+def _weighed_cursor(project: str) -> str:
+    """The plan the last pass stopped at, so the next pass starts after it."""
+    cursor = _reflex_state(project).get(_REFLEX_CURSOR_KEY)
+    return cursor if isinstance(cursor, str) else ""
+
+
+def _record_weighed_edits(
+    project: str, weighed: Mapping[str, float], *, cursor: str = ""
+) -> None:
+    """Write the mtimes the pass weighed and the plan it stopped at."""
     path = _reflex_state_path(project)
+    stored: dict[str, Any] = dict(sorted(weighed.items()))
+    if cursor:
+        stored[_REFLEX_CURSOR_KEY] = cursor
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
-            json.dumps(dict(sorted(weighed.items())), indent=2) + "\n",
-            encoding="utf-8",
-        )
+        path.write_text(json.dumps(stored, indent=2) + "\n", encoding="utf-8")
     except OSError:
         # The record is an optimisation: a pass that cannot write it reads
         # every plan next time, which is slow but never wrong.
@@ -2569,7 +2527,18 @@ def compose_owed_plan_reviews(
         return report
     weighed = _weighed_edits(project) if not dry_run else {}
     passed = dict(weighed)
-    for plan_slug, path in plans:
+    # Start after the plan the last pass weighed. The pass takes one plan, so a
+    # plan near the top whose reason never settles would otherwise hold the
+    # only slot on every pass and starve every plan behind it.
+    order = list(plans)
+    if not dry_run:
+        cursor = _weighed_cursor(project)
+        names = [slug for slug, _path in order]
+        if cursor in names:
+            begin = names.index(cursor) + 1
+            order = order[begin:] + order[:begin]
+    stopped_at = ""
+    for plan_slug, path in order:
         try:
             edited = path.stat().st_mtime
         except OSError:
@@ -2579,17 +2548,25 @@ def compose_owed_plan_reviews(
             # it owes nothing new. This is what keeps the pass proportional to
             # the edits since the last sweep rather than to the project.
             continue
+        if report["composed"]:
+            # One review per pass: a burst that leaves a dozen plans owing a
+            # review should start one, not twelve at once on a lane.
+            report["skipped"].append(
+                {"plan": plan_slug, "reason": "this pass already composed one"}
+            )
+            continue
         if len(report["read"]) >= PLAN_REVIEW_PASS_LIMIT:
-            # A cold start has no record of what it has weighed, so the first
-            # pass of a large project would weigh every plan. Take a slice and
-            # let the next pass continue: the sweep runs every couple of
-            # minutes, and a bound that is never exceeded is what keeps the
-            # pass from stalling the follower.
+            # Weighing a plan against the live store costs about twenty seconds,
+            # so a cold start that weighed every plan of a large project would
+            # not finish inside the sweep's own interval. Weigh one and stop;
+            # the cursor carried into the next pass means the rest are reached
+            # one per pass rather than never.
             report["skipped"].append(
                 {"reason": f"the pass weighed its {PLAN_REVIEW_PASS_LIMIT} plans"}
             )
             break
         report["read"].append(plan_slug)
+        stopped_at = plan_slug
         try:
             reason = _owed_review_skip_reason(
                 project, plan_slug, path, base_dir=base_dir, now_seconds=now_seconds
@@ -2604,13 +2581,6 @@ def compose_owed_plan_reviews(
                     # (a quiet period expires, a review in flight finishes), so
                     # those plans are read again on the next pass.
                     passed[plan_slug] = edited
-                continue
-            if report["composed"]:
-                # One review per pass: a burst that leaves a dozen plans owing
-                # a review should start one, not twelve at once on a lane.
-                report["skipped"].append(
-                    {"plan": plan_slug, "reason": "this pass already composed one"}
-                )
                 continue
             if dry_run:
                 report["composed"].append({"plan": plan_slug, "dispatched": False})
@@ -2636,9 +2606,13 @@ def compose_owed_plan_reviews(
         if result.get("reason"):
             entry["reason"] = str(result["reason"])
         report["composed"].append(entry)
-        passed[plan_slug] = edited
+        if result.get("dispatched") or result.get("queued"):
+            # Only a review that was really started settles the plan. A hold
+            # that dispatched nothing leaves the plan owing its review, so the
+            # next pass tries it again instead of waiting for a new edit.
+            passed[plan_slug] = edited
     if not dry_run:
-        _record_weighed_edits(project, passed)
+        _record_weighed_edits(project, passed, cursor=stopped_at)
     return report
 
 
