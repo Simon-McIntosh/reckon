@@ -640,8 +640,11 @@ def compose_prompt(
     ``launch_instant`` is the attempt's own recorded start; the FENCE — TIME
     line states it, the deadline it sets, and the clock that checks them.
 
-    ``suite_command`` is the command this run's promotion will actually run,
-    already resolved for the node's scope by the caller that recorded it.
+    ``suite_command`` is the body of the suite fence, already composed by the
+    caller that recorded it: a scoped declaration is stated as the template
+    with the rule resolving it over each arm's own tree, and an unscoped one as
+    the single command both arms run. It is never the source placeholder, which
+    no worker can run.
     ``suite_gate`` names what a resolved-nothing declaration means — ``unarmed``
     when the project declares a command this node's scope empties — and an
     unset value says nothing, which is the prompt an undeclared project gets.
@@ -770,17 +773,17 @@ RUNTIME FILESYSTEM
             + _artifact_allowance(node.done_when)
         )
     closure_authority_contract = CLOSURE_AUTHORITY_CONTRACT if can_land else ""
-    # The suite command is stated as the run's own resolved string, never the
-    # project's template: a worker handed `{node_test_files}` cannot run it,
-    # and the pair it records has to match the command promotion re-runs. A
+    # The fence names the project's template and the rule that resolves it over
+    # each arm's own tree, beside the string this node's whole scope produces: a
+    # worker given only a file list runs a list its own change invalidates, and
+    # one handed the bare `{node_test_files}` token cannot run it at all. A
     # declaration this node's scope empties is named as unarmed so the worker
     # owes no pair rather than inventing one; an undeclared project says
     # nothing, which is the prompt every run had before the command was carried.
     if suite_command:
         suite_gate_block = (
             "\nFENCE — SUITE (the command promotion runs before and after your change)\n"
-            f"  {suite_command}\n"
-            "  Run exactly this command, unedited, for both arms.\n"
+            f"{suite_command.rstrip()}\n"
         )
     elif suite_gate == "unarmed":
         suite_gate_block = (

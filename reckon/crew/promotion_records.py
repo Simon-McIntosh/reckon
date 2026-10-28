@@ -3,6 +3,7 @@ from __future__ import annotations
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
 import json
+import subprocess
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -332,6 +333,67 @@ def _normalized_command(value: Any) -> str:
 SCOPED_SUITE_PLACEHOLDER = "{node_test_files}"
 
 
+def _scope_tree(record: Mapping[str, Any]) -> Path | None:
+    """The tree whose object store answers what a revision holds, or None."""
+    for key in ("worktree", "repo"):
+        text = str(record.get(key) or "").strip()
+        if text:
+            return Path(text).expanduser()
+    return None
+
+
+def _paths_present_in_tree(
+    tree: Path | None, revision: str, paths: Sequence[str]
+) -> set[str] | None:
+    """Which of ``paths`` the tree at ``revision`` holds, or None when unknown.
+
+    A write path is not a file that exists: a node may delete the test it
+    replaced or create one that is not there yet, and the same write scope then
+    names a different file list in the base tree and in the head tree. Which
+    one a revision holds is a fact about the revision, so it is read from the
+    revision's own tree through the object store rather than from any working
+    directory, which is the head's content whichever arm is being resolved.
+
+    ``None`` means the probe could not answer — no tree, no revision, a
+    revision the store does not hold, or output that does not line up with the
+    request. Callers then resolve over the declared scope as written, which is
+    the reading every run had before the per-tree rule, and the arm-level
+    checks below still refuse a pair that measured nothing.
+    """
+    if tree is None or not revision or not paths or not tree.is_dir():
+        return None
+    # The revision itself is queried first: a name the store does not hold
+    # answers "missing" for every path asked of it, which reads exactly like a
+    # tree holding none of them.
+    queries = [revision, *(f"{revision}:{path}" for path in paths)]
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(tree), "cat-file", "--batch-check"],
+            input="\n".join(queries) + "\n",
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    answers = result.stdout.splitlines()
+    if len(answers) != len(queries):
+        return None
+    if answers[0].rstrip().endswith(" missing") or " commit " not in f"{answers[0]} ":
+        return None
+    answers = answers[1:]
+    # The answers are in request order, so a path is matched to its own answer
+    # by position rather than by parsing the echoed name, which git may quote.
+    return {
+        path
+        for path, answer in zip(paths, answers, strict=True)
+        if not answer.rstrip().endswith(" missing")
+    }
+
+
 def _node_test_files(record: Mapping[str, Any]) -> list[str]:
     """The node's fenced write paths that are tests, sorted and repo-relative.
 
@@ -367,7 +429,9 @@ def _node_test_files(record: Mapping[str, Any]) -> list[str]:
     return sorted(files)
 
 
-def _scoped_suite_command(record: Mapping[str, Any]) -> str:
+def _scoped_suite_command(
+    record: Mapping[str, Any], *, revision: str | None = None
+) -> str:
     """The armed suite command with its scoped placeholder resolved, or empty.
 
     A flight config may arm the project with a command carrying
@@ -375,8 +439,15 @@ def _scoped_suite_command(record: Mapping[str, Any]) -> str:
     test files, so one declaration scopes every node to the tests its change
     can affect. A declaration with no placeholder is returned as written.
 
+    ``revision`` names the tree the command will run against, and the files are
+    then only those that tree holds: a write path is not a file that exists, so
+    a test the node deletes leaves the head arm and one it creates leaves the
+    base arm. Without a revision the declaration is resolved over the whole
+    declared scope, which is what a caller can state before either tree exists
+    and what every run recorded before the per-tree rule carried.
+
     An empty result means the run has nothing to measure with: no declaration
-    at all, or a scoped one over a node whose fenced scope holds no test file.
+    at all, or a scoped one over a scope — or a tree — holding no test file.
     Promotion then records no suite observation for the pair, which is the same
     state an unarmed project is in.
     """
@@ -386,9 +457,119 @@ def _scoped_suite_command(record: Mapping[str, Any]) -> str:
     if SCOPED_SUITE_PLACEHOLDER not in declared:
         return declared
     files = _node_test_files(record)
+    if revision is not None:
+        present = _paths_present_in_tree(_scope_tree(record), revision, files)
+        if present is not None:
+            files = [name for name in files if name in present]
     if not files:
         return ""
     return " ".join(declared.replace(SCOPED_SUITE_PLACEHOLDER, " ".join(files)).split())
+
+
+#: Exits that mean pytest ran no test at all: a usage error over a path it
+#: cannot open, and a collection that found nothing to run. Either way the arm
+#: observed no test, so it is no evidence that the other arm added no failure.
+_NOTHING_COLLECTED_EXITS = (4, 5)
+
+
+def _arm_collected_nothing(observation: Mapping[str, Any], arm_name: str) -> list[str]:
+    """Name the arm when it exited having collected no test to run."""
+    exit_status = observation.get("exit_status")
+    failure_count = observation.get("failure_count")
+    if isinstance(exit_status, bool) or not isinstance(exit_status, int):
+        return []
+    if exit_status not in _NOTHING_COLLECTED_EXITS:
+        return []
+    if isinstance(failure_count, bool) or not isinstance(failure_count, int):
+        return []
+    if failure_count:
+        return []
+    return [f"{arm_name}.collected_no_test"]
+
+
+def _named_paths_absent_from_tree(
+    record: Mapping[str, Any], observation: Mapping[str, Any]
+) -> list[str]:
+    """The scoped test files an arm's command names that its own tree lacks.
+
+    A command naming a file the tree does not hold cannot have run it: pytest
+    refuses the whole invocation, so the arm's empty failure list describes no
+    test rather than a clean one. This is the shape a run dispatched before the
+    per-tree rule records when its scope creates a test file, and the shape the
+    old resolution produced at the head for a scope that deletes one.
+
+    An unanswered probe reports nothing here: the arm-level refusal below still
+    catches a pair that measured nothing through its collected-nothing check.
+    """
+    command = str(observation.get("command") or "")
+    named = [path for path in _node_test_files(record) if path in command]
+    if not named:
+        return []
+    revision = str(observation.get("revision") or "").strip()
+    present = _paths_present_in_tree(_scope_tree(record), revision, named)
+    if present is None:
+        return []
+    return [path for path in named if path not in present]
+
+
+def _arm_measured_nothing(
+    record: Mapping[str, Any], observation: Mapping[str, Any]
+) -> bool:
+    """Whether an arm's own tree left it no test file to run.
+
+    The base arm of a scope whose tests are all created by the change is the
+    ordinary case: there was nothing to measure against, so an empty baseline
+    is the honest description of it rather than a refusal. The after arm is
+    held to the opposite reading — a run measuring its own change with no test
+    file left is the pair the per-tree rule exists to refuse.
+    """
+    declared = " ".join(str(record.get("suite_command") or "").split())
+    if SCOPED_SUITE_PLACEHOLDER not in declared:
+        return False
+    revision = str(observation.get("revision") or "").strip()
+    if not _scoped_suite_command(record, revision=revision or None):
+        return True
+    return bool(_named_paths_absent_from_tree(record, observation))
+
+
+def _arm_missing_fields(
+    record: Mapping[str, Any], arm_name: str, observation: Mapping[str, Any]
+) -> list[str]:
+    """Name what an arm lacks to be evidence that it measured a suite.
+
+    An arm is compared with the template resolved over its own tree, which is
+    the command it was told to run once per-tree resolution landed. The same
+    template over the node's whole declared scope is accepted too, because a
+    run dispatched before that rule recorded that spelling and its pair is
+    still evidence about the files its tree holds.
+    """
+    declared = " ".join(str(record.get("suite_command") or "").split())
+    if SCOPED_SUITE_PLACEHOLDER not in declared:
+        # An unscoped declaration has no tree-dependent part: both arms run
+        # the one command as written.
+        missing: list[str] = []
+        arm_command = str(observation.get("command") or "").strip()
+        if arm_command and _normalized_command(arm_command) != _normalized_command(
+            declared
+        ):
+            missing.append(f"{arm_name}.command_matches_suite_command")
+        missing.extend(_arm_collected_nothing(observation, arm_name))
+        return missing
+    if _arm_measured_nothing(record, observation):
+        if arm_name == "after_suite":
+            return [f"{arm_name}.command_names_no_file"]
+        return []
+    revision = str(observation.get("revision") or "").strip()
+    accepted = {
+        _normalized_command(_scoped_suite_command(record, revision=revision or None))
+    }
+    accepted.add(_normalized_command(_scoped_suite_command(record)))
+    arm_command = str(observation.get("command") or "").strip()
+    missing: list[str] = []
+    if arm_command and _normalized_command(arm_command) not in accepted:
+        missing.append(f"{arm_name}.command_matches_suite_command")
+    missing.extend(_arm_collected_nothing(observation, arm_name))
+    return missing
 
 
 def _evaluate_suite_delta(
@@ -408,10 +589,14 @@ def _evaluate_suite_delta(
     command the run was armed with measures a different suite, so it is
     refused as missing evidence too.
 
-    The command compared against is the resolved one: an armed project whose
-    declaration is scoped to ``{node_test_files}`` measures the node's own
-    fenced test files, so a pair that ran other files measured a different
-    suite and is refused.
+    The command compared against is the resolved one, and for a scoped
+    declaration it is resolved over the tree each arm ran against: a write path
+    is not a file that exists, so a test the node deletes leaves the head arm
+    and one it creates leaves the base arm. A pair that ran other files
+    measured a different suite and is refused. An arm left with no test file to
+    run, or one that exited having collected none, is refused as unmeasured on
+    the after side; an empty baseline is recorded as an empty baseline, because
+    a scope whose tests the change creates has nothing to measure against.
     """
     suite_command = _scoped_suite_command(record)
     if not suite_command:
@@ -445,16 +630,15 @@ def _evaluate_suite_delta(
         ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
     )
     missing.extend(ledger.suite_observation_missing_fields(after, name="after_suite"))
-    armed_command = _normalized_command(suite_command)
     for arm_name, observation in (
         ("baseline_suite", baseline),
         ("after_suite", after),
     ):
         if not isinstance(observation, Mapping):
             continue
-        arm_command = str(observation.get("command") or "").strip()
-        if arm_command and _normalized_command(arm_command) != armed_command:
-            missing.append(f"{arm_name}.command_matches_suite_command")
+        for field in _arm_missing_fields(record, arm_name, observation):
+            if field not in missing:
+                missing.append(field)
     base_sha = str(record.get("base_sha") or "").strip()
     if (
         isinstance(baseline, Mapping)
@@ -551,6 +735,13 @@ def _evaluate_suite_delta(
         "added_failure_ids": added,
         "failure_attribution": attribution,
         "waiver_reason": waiver or None,
+        # Whether the base tree held none of this scope's test files. The
+        # delta is then measured against the empty set, which is the honest
+        # baseline for a change that creates the tests it is measured by, and
+        # the reader can tell it from a base that ran tests and found none
+        # failing.
+        "baseline_measured_nothing": isinstance(baseline, Mapping)
+        and _arm_measured_nothing(record, baseline),
     }
 
 
