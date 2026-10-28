@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-gate-judges-what-it-covers">
+  <meta name="plan-title" content="A node is gated on the sections it builds">
+  <meta name="plan-summary" content="The dispatch-time plan-review gate holds a node only on the units that node reads: its own section, and the document unit only when the changed document text is its contract.">
+  <meta name="plan-evidence-for" content="reckon:a-review-gate-judges-what-it-covers">
+  <meta name="plan-verifies" content="reckon:a-review-gate-judges-what-it-covers#s2">
+  <meta name="plan-recorded-at" content="2026-10-28">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,reckon-tooling,review">
+  <title>A node is gated on its own section — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="a-node-is-gated-on-its-own-section-note" class="r-note" data-node="a-node-is-gated-on-its-own-section" data-reckon="landed" data-when="2026-10-28">
+  <h2 id="a-node-is-gated-on-its-own-section-head">A node is gated on its own section</h2>
+  <p id="a-node-is-gated-on-its-own-section-rule">The dispatch gate already narrowed coverage to the units a request reads — its own section and the document unit — but the document unit's digest folds the plan's remainder prose together with its summary, decisions and gates. Editing a note between sections therefore uncovered the document unit and held every node whose own section a review covered. The gate now drops the document unit from a node's hold when the change is confined to text that is no node's contract, and the refusal names every uncovered unit again rather than only the ones the node reads.</p>
+  <p id="a-node-is-gated-on-its-own-section-mechanism"><code>plan_review_units</code> in <code>reckon/crew/routing.py</code> remains the one definition of the units a dispatch reads, and <code>plan_review.review_coverage</code> remains the one coverage predicate. In <code>require_plan_reviewed</code>, the uncovered set is kept whole for the refusal, and a gating set is filtered to the caller's scope. When the document unit falls inside that gating set, <code>_document_change_is_contract</code> compares <code>CONTRACT_DOCUMENT_FIELDS</code> — <code>summary</code>, <code>decisions</code>, <code>gates</code> — between the present plan and the snapshot recorded by the newest stored review that read the document unit; a change confined to the remainder leaves the unit out of the hold, a contract change keeps it in, and a review with no readable snapshot falls back to holding the node.</p>
+  <p id="a-node-is-gated-on-its-own-section-gate">Node gate on <code>tests/test_a_node_is_gated_on_its_own_section.py</code>: head 4 passed, <code>EXIT=0</code>; at the base revision the same file gives 2 failed, 2 passed, <code>EXIT=1</code>, the two base failures being the document-unit cases this change fixes. The two cases that pass at both revisions are the section arm and the changed-decision arm, so the base arm separates the revisions on the document-unit rule alone and not on the section narrowing already landed.</p>
+  <p id="a-node-is-gated-on-its-own-section-importers">The 97 test files that import the gate's module, run at both revisions with <code>-n 8</code>: head 3 failed, 858 passed, 1 error, <code>EXIT=1</code>; base 6 failed, 855 passed, 1 error, <code>EXIT=1</code>. Every head failure also fails at base — <code>test_no_removal_site_still_deletes_with_git_worktree_remove</code>, <code>test_every_module_fits_a_worker_window</code> and <code>test_no_removal_path_decides_liveness_from_the_phase_gated_claim</code> — so the change adds no failure. The base arm's extra failures are this node's two new cases, and <code>tests/conftest.py</code> collected as a test target errors identically at both revisions (<code>fixture 'prefix' not found</code>).</p>
+  <p id="a-node-is-gated-on-its-own-section-mutation">Negative control, the declared mutation — read every unit at the gate again by forcing the scope to <code>None</code>: 2 failed, 2 passed, <code>EXIT=1</code>, and the s2 dispatch is refused with <code>uncovered units: _document</code>. The same two cases pass at the head arm, so the log separates the revisions on the narrowed gate alone. Logs are in the run directory: <code>logs/gate-head.log</code>, <code>logs/gate-base.log</code>, <code>logs/negative-control.log</code>, <code>logs/importers-head.log</code> and <code>logs/importers-base.log</code>.</p>
+</article>
+</body>
+</html>
