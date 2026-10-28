@@ -2398,10 +2398,10 @@ def _run_moment(record: Mapping[str, Any]) -> float | None:
     return max(stamps) if stamps else None
 
 
-def plan_authoring_run(
-    project: str, plan_slug: str, *, now_seconds: float | None = None
-) -> dict[str, str] | None:
-    """The newest crew run on this plan under a day old, or ``None``.
+def plan_authoring_runs(
+    project: str, *, now_seconds: float | None = None
+) -> dict[str, dict[str, str]]:
+    """The newest crew run on each plan under a day old, keyed by plan slug.
 
     A review composed by the reflex is dispatched under the session that will
     read its findings, and the store already records which session that is: the
@@ -2410,14 +2410,18 @@ def plan_authoring_run(
     committed ledger, which holds the runs that finished — because an author
     who has just stopped editing may be either.
 
-    ``None`` is the answer a plan with no such run gets, and it is a refusal to
-    compose rather than a reason to invent a session: a plan no run has named
-    in the last day is one to leave to its coordinator.
+    Every plan is answered from one reading of each store, because a pass weighs
+    many plans and a ledger load per plan would cost more than the reviews it
+    starts.
+
+    A plan absent from the map is one no run has named in the last day, and that
+    absence is a refusal to compose rather than a reason to invent a session:
+    such a plan is one to leave to its coordinator.
     """
     from reckon import ledger
 
     moment = time.time() if now_seconds is None else now_seconds
-    newest: tuple[float, str, str] | None = None
+    newest: dict[str, tuple[float, str, str]] = {}
     candidates: list[dict[str, Any]] = [
         dict(pointer) for pointer in runs.list_live(project=project)
     ]
@@ -2427,7 +2431,8 @@ def plan_authoring_run(
         rows = []
     candidates.extend(rows)
     for record in candidates:
-        if _run_plan(record) != str(plan_slug):
+        plan = _run_plan(record)
+        if not plan:
             continue
         started = _run_moment(record)
         if started is None or moment - started > PLAN_REVIEW_BURST_SECONDS:
@@ -2436,11 +2441,20 @@ def plan_authoring_run(
         run_id = str(record.get("run_id") or "").strip()
         if not session or not run_id:
             continue
-        if newest is None or started > newest[0]:
-            newest = (started, run_id, session)
-    if newest is None:
-        return None
-    return {"run_id": newest[1], "session": newest[2]}
+        held = newest.get(plan)
+        if held is None or started > held[0]:
+            newest[plan] = (started, run_id, session)
+    return {
+        plan: {"run_id": run_id, "session": session}
+        for plan, (_started, run_id, session) in newest.items()
+    }
+
+
+def plan_authoring_run(
+    project: str, plan_slug: str, *, now_seconds: float | None = None
+) -> dict[str, str] | None:
+    """The newest crew run on this plan under a day old, or ``None``."""
+    return plan_authoring_runs(project, now_seconds=now_seconds).get(str(plan_slug))
 
 
 def noted_answer_reason(finding: Mapping[str, Any]) -> str:
@@ -2637,6 +2651,7 @@ def _owed_review_skip_reason(
     *,
     base_dir: str | Path | None,
     now_seconds: float | None,
+    authors: Mapping[str, Mapping[str, str]],
 ) -> str | None:
     """Why the reflex must not compose this plan's review now, or ``None``.
 
@@ -2671,7 +2686,7 @@ def _owed_review_skip_reason(
             f"{PLAN_REVIEW_BURST_SECONDS // 3600}h authoring burst this pass "
             "reviews within; its review is its coordinator's to compose"
         )
-    if plan_authoring_run(project, plan_slug, now_seconds=now_seconds) is None:
+    if str(plan_slug) not in authors:
         return (
             "no crew run has named the plan in the last "
             f"{PLAN_REVIEW_BURST_SECONDS // 3600}h, so no session would read "
@@ -2782,6 +2797,9 @@ def compose_owed_plan_reviews(
         held = {slug: run_ids for slug, run_ids in held.items() if run_ids}
     weighed = _weighed_edits(project) if not dry_run else {}
     passed = dict(weighed)
+    # One reading of each store for the whole pass, so the authoring run each
+    # plan is dispatched under costs one lookup rather than one ledger load.
+    authors = plan_authoring_runs(project, now_seconds=now_seconds)
     # Start after the plan the last pass weighed. The pass takes one plan, so a
     # plan near the top whose reason never settles would otherwise hold the
     # only slot on every pass and starve every plan behind it.
@@ -2814,10 +2832,12 @@ def compose_owed_plan_reviews(
             continue
         if len(report["read"]) >= PLAN_REVIEW_PASS_LIMIT:
             # Weighing a plan against the live store costs about twenty seconds,
-            # so a cold start that weighed every plan of a large project would
-            # not finish inside the sweep's own interval. Weigh one and stop;
-            # the cursor carried into the next pass means the rest are reached
-            # one per pass rather than never.
+            # because each plan is checked against the whole stored review set
+            # and a large project carries thousands of records. A preview that
+            # weighed every plan of such a project would not finish inside the
+            # 30 s its gate allows. Weigh one and stop; the cursor carried into
+            # the next pass means the rest are reached one per pass rather than
+            # never.
             report["skipped"].append(
                 {"reason": f"the pass weighed its {PLAN_REVIEW_PASS_LIMIT} plans"}
             )
@@ -2826,7 +2846,12 @@ def compose_owed_plan_reviews(
         stopped_at = plan_slug
         try:
             reason = _owed_review_skip_reason(
-                project, plan_slug, path, base_dir=base_dir, now_seconds=now_seconds
+                project,
+                plan_slug,
+                path,
+                base_dir=base_dir,
+                now_seconds=now_seconds,
+                authors=authors,
             )
             if reason is not None:
                 report["skipped"].append({"plan": plan_slug, "reason": reason})
@@ -2842,7 +2867,7 @@ def compose_owed_plan_reviews(
             if dry_run:
                 report["composed"].append({"plan": plan_slug, "dispatched": False})
                 continue
-            author = plan_authoring_run(project, plan_slug, now_seconds=now_seconds)
+            author = authors.get(str(plan_slug))
             if author is None:
                 # The skip reason above already refused this plan; reaching here
                 # without an author means the run aged out between the two
