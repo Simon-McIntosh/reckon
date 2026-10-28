@@ -4,26 +4,28 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project"   content="reckon">
-  <meta name="reckon-type"    content="plan">
-  <meta name="plan-slug"      content="work-is-never-stuck-behind-the-admission-loop">
-  <meta name="plan-title"     content="Work Is Never Stuck Behind the Admission Loop">
-  <meta name="plan-summary"   content="Release, launch and land run as bounded stages; every refusal has a lifter; stalls are measured where the queue is read">
-  <meta name="plan-status"    content="active">
-  <meta name="plan-roi"       content="high">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-title" content="Work Is Never Stuck Behind the Admission Loop">
+  <meta name="plan-summary" content="Release, launch and land run as bounded stages; every refusal has a lifter; stalls are measured where the queue is read">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.75">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
   <meta name="plan-capability-verification" content="strict">
-  <meta name="plan-sprint"    content="S27">
-  <meta name="plan-owner"     content="Simon McIntosh">
-  <meta name="plan-tags"      content="reckon-tooling,crew">
-  <meta name="plan-informs"   content="a-queue-holds-the-whole-plan">
-  <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;],&quot;s3&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s2&quot;],&quot;s4&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s5&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;],&quot;s7&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s5&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s8&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;],&quot;s9&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;]}">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="a-queue-holds-the-whole-plan">
+  <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;],&quot;s3&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s2&quot;],&quot;s4&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s5&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;],&quot;s7&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s2&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s5&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s8&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;],&quot;s9&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-10-28">
 </head>
 <body>
   <main class="plan-doc">
@@ -141,27 +143,25 @@
 
     <h2 id="s9">§9 — A first dispatch reports what it wrote</h2>
     <section data-reckon="section" data-id="s9" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p>A dispatch whose node waits on an unlanded section stores a new request. It then answers <code>run … is already awaiting-upstream for this node</code>, naming the run it has just created. nova read that as a duplicate on 28 October, and so did this plan's author, twice. The answer comes from <code>_answer_existing_node_run</code>, which a first dispatch reaches after its own <code>_queue_validated_waits</code> write. A first dispatch answers <code>queued awaiting-upstream</code> with its waits. Only a dispatch that finds a request it did not write answers <code>already</code>.</p>
+    <p>On 28 October a dispatch whose node waits on an unlanded section answered <code>run … is already awaiting-upstream for this node</code>, naming a run no earlier call had created. nova saw it on two nodes. This plan's author saw it on <code>r-20261028T134856805692-a-queued-request-is-stamped-at-queue-time</code>: its run id is stamped 13:48:56Z, it was queued at 13:52:50Z, and it carries the negative control that only the one accepted call passed. Each of these calls took minutes to return. The mechanism is not yet located. As written, a first dispatch writes its request through <code>_queue_validated_waits</code> at <code>dispatch.py:1917</code> and raises its hold with a <code>waiting on …</code> detail, and it never reaches <code>_answer_existing_node_run</code>, whose branch needs an existing pointer. So the observed reply comes from a second entry into <code>dispatch()</code> within one CLI call, or from a layer around it, and the node finds which before it changes anything. Whatever the layer, a call that created the request answers with that request as new. Only a call that found a request it did not write answers <code>already</code>.</p>
     <p><strong>Done when</strong> a new <code>tests/test_a_first_dispatch_reports_what_it_wrote.py</code> shows three things:</p>
     <ul>
-      <li>A first dispatch of a waiting node answers with its new run id, phase <code>awaiting-upstream</code> and its waits, and no <code>already</code>.</li>
-      <li>A second dispatch of the same node answers <code>already</code>, naming the first run.</li>
-      <li>Exactly one pointer exists after both.</li>
+      <li>A reproduction through the real entry point, <code>reckon crew dispatch</code> run as a subprocess on a synthesised repository, of a waiting node under a slowed store. At the base revision it answers <code>already</code> about the run the call created, and the arm fails there. If no slowed-store or retry condition reproduces it, the node stops and reports blocked with what it tried. It does not change code for an unreproduced defect.</li>
+      <li>At head, the same call answers with its new run id, phase <code>awaiting-upstream</code> and its waits, and no <code>already</code>.</li>
+      <li>A second dispatch of the same node answers <code>already</code>, naming the first run, and exactly one pointer exists after both.</li>
     </ul>
-    <p>The negative control routes the first dispatch through <code>_answer_existing_node_run</code>, and the first arm must fail. The test files importing <code>reckon.crew.dispatch</code> add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. Write paths: <code>reckon/crew/dispatch.py</code> and the new test.</p>
+    <p>The reproduction arm is the negative control: it must fail at the base revision. The test files importing <code>reckon.crew.dispatch</code> add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. Write paths: <code>reckon/crew/dispatch.py</code> and the new test.</p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-wns-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-28">
-        <h4 class="r-fu-title">Queue the sections once the content review is answered</h4>
-        <div class="r-fu-body"><p>Section 2, then 3, then 5 and 8, release and landing first. Sections 4, 7 and 9 wait on the in-flight readiness cache and the queue-time contract wiring; section 6 has no wait.</p></div>
-        <pre class="r-fu-prompt">/reckon-build work-is-never-stuck-behind-the-admission-loop §2</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-wns-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-28" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Queue the sections once the content review is answered</h4>
+    <div class="r-fu-body"><p>Section 2, then 3, then 5 and 8, release and landing first. Sections 4, 7 and 9 wait on the in-flight readiness cache and the queue-time contract wiring; section 6 has no wait.</p></div>
+    <pre class="r-fu-prompt">/reckon-build work-is-never-stuck-behind-the-admission-loop §2</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
