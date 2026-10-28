@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type"    content="plan">
+  <meta name="plan-slug"      content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-title"     content="Work Is Never Stuck Behind the Admission Loop">
+  <meta name="plan-summary"   content="Release, launch and land run as bounded stages; every refusal has a lifter; stalls are measured where the queue is read">
+  <meta name="plan-status"    content="active">
+  <meta name="plan-roi"       content="high">
+  <meta name="plan-effort-hours" content="10.75">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint"    content="S27">
+  <meta name="plan-owner"     content="Simon McIntosh">
+  <meta name="plan-tags"      content="reckon-tooling,crew">
+  <meta name="plan-informs"   content="a-queue-holds-the-whole-plan">
+  <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;],&quot;s3&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s2&quot;],&quot;s4&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s5&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;],&quot;s7&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s5&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s8&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;],&quot;s9&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What stalled work on 28 October</h2>
+    <p>The queue exists so that chosen work never waits on a coordinator. On 28 October it did the opposite four times, in three projects. Each case was measured from run records and the admission verdict log at <code>~/.config/reckon/crew/admission-verdicts.jsonl</code>.</p>
+    <table>
+      <thead><tr><th>Case</th><th>What waited</th><th>For how long</th><th>Cause</th></tr></thead>
+      <tbody>
+        <tr><td>nova, sub-millisecond-forward-path</td><td><code>assembled-step</code> and <code>tracked-read</code>, after <code>operator-bank</code> was promoted at 18:52:44Z</td><td>41 minutes, launched 19:34Z and 19:35Z</td><td>No admission pass started between 18:49:42Z and 19:35:41Z. That pass ran six <code>crew complete --land</code> subprocesses in series, each replaying a run's gate, before it reached the release step.</td></tr>
+        <tr><td>power_convertor, coil-supply-report-rebuild §12</td><td><code>csrr-fdu-idm-stray-per-circuit</code> and the node chained after it</td><td>About 8 hours</td><td>A <code>crew queue edit</code> grew the request past the lane's context window. Admission refused it with <code>CompetenceLimit</code> on every pass and parked it for a session that was idle. No other lane was tried.</td></tr>
+        <tr><td>reckon, this plan's author</td><td>A request admissible at about 12:35Z</td><td>Launched at 13:59Z</td><td>Every pass from 12:05Z to 18:49Z dispatched the same four requests that could not launch, each a full <code>dispatch()</code>. Fixed by <a href="/reckon/plans/a-queue-holds-the-whole-plan#s32">a-queue-holds-the-whole-plan §32</a>, landed at 19:35Z.</td></tr>
+        <tr><td>nova, operator-bank</td><td>A parked run</td><td>About 1 hour</td><td>Its wait probe counted files whose writers had stopped. The value never changed, the supervisor reported "matches no declared terminal state" each sweep, and nothing escalated it.</td></tr>
+      </tbody>
+    </table>
+    <p>Start-to-start intervals of admission passes on 28 October, from the verdict log (the pass interval setting is 5 s, so the interval is the pass's own duration):</p>
+    <table>
+      <thead><tr><th>Pass start (Z)</th><th>Since previous</th><th>What the pass carried</th></tr></thead>
+      <tbody>
+        <tr><td>16:16:37</td><td>11.3 min</td><td>one landing refusal</td></tr>
+        <tr><td>17:52:41</td><td>96.1 min</td><td>a storage stall on the fleet node: GPFS-bound processes in uninterruptible wait, a <code>ps</code> took an hour</td></tr>
+        <tr><td>18:09:17 to 18:49:42</td><td>16.6 to 22.6 min</td><td>four requests dispatched and refused each pass</td></tr>
+        <tr><td>19:35:41</td><td>46.0 min</td><td>six re-judged landings run through <code>crew complete --land</code>, one of them through <code>srun</code></td></tr>
+        <tr><td>19:42:12 to 20:10:15</td><td>6.5 to 7.6 min</td><td>no refusal, no landing; two launches in the first</td></tr>
+      </tbody>
+    </table>
+    <p>Five causes, each confirmed in the code:</p>
+    <ul>
+      <li><strong>Release waits for a whole pass.</strong> The only call that moves a request from <code>awaiting-upstream</code> to <code>queued</code> is the release step inside <code>admit_once</code> (<code>queue_admission.py</code>, the loop over <code>resolve_waits</code>). Nothing runs it when a section lands. So release latency equals the duration of whatever pass is in progress.</li>
+      <li><strong>One serial loop does three jobs.</strong> <code>admit_until_stopped</code> runs <code>land_once()</code> and then <code>admit_once()</code>, one after the other. <code>land_once</code> bounds its measurements to one per pass, but not its landings. <code>_land</code> runs <code>crew complete --land</code> through <code>srun</code> with no timeout, once for every accepted delivery. Any slow landing delays every release and launch on the workstation.</li>
+      <li><strong>A launch recomputes what queue time already proved.</strong> With no refusals left, a pass still takes 6.5 minutes. A <code>py-spy</code> sample at 20:20Z shows each launch inside <code>plan_dispatch</code>, then <code>require_plan_reviewed</code>, then <code>review_coverage</code>, re-parsing every stored review snapshot of the plan with BeautifulSoup. A plan with 55 stored reviews pays that on every launch. <a href="/reckon/plans/a-queue-holds-the-whole-plan#s18">§18</a> caches readiness, not review coverage.</li>
+      <li><strong>Some refusals have no lifter.</strong> <code>held-on-claim</code> lifts when the claim releases, and capacity refusals keep a back-off. A <code>CompetenceLimit</code> is now held until the request changes, but nothing tries a lane whose window fits. A park whose probe cannot change is never classed dead. And a delivered run with no review at its head leaves <code>land_once</code> without a record.</li>
+      <li><strong>Nothing measures a stall where the queue is read.</strong> The verdict row records no pass duration, and no view reports how long an admissible request has waited. On 28 October the lead read an idle lane as a halted system, twice, before any record showed why.</li>
+    </ul>
+    <p>The design that follows rests on five rules. Release is driven by the event that makes it possible, not by a pass. Release, launch and landing are separate stages, each with its own time budget, and none waits on another. Every refusal class names what lifts it, and a refusal nothing can lift is reported to its owner. A check that can run at dispatch or at a queue edit runs there, while the coordinator is present. And the queue's own liveness is recorded in the verdict row and the drain view, never as monitor lines.</p>
+
+    <h2 id="s2">§2 — A landed section releases its waiters within a minute</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>A new <code>queue_admission.release_waiters(project, refs)</code> resolves the waits of every <code>awaiting-upstream</code> request that names one of <code>refs</code>, and moves each satisfied one to <code>queued</code>. It uses the same <code>resolve_waits</code> and dead-section rule as the pass, with one readiness read for the call. Promotion calls it inline once its merge has landed, passing the plan and section the promoted run delivered; a discard calls it for the discarded run. The admission service also runs the release step on its own tick, at most every 30 seconds, separately from launches and landings, so a release never waits behind either.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_landed_section_releases_its_waiters.py</code> shows four things:</p>
+    <ul>
+      <li>Promoting a run that delivers <code>plan#s1</code> moves a request waiting on <code>plan#s1</code> to <code>queued</code> with no admission pass run.</li>
+      <li>A request waiting on another section stays <code>awaiting-upstream</code>.</li>
+      <li>The release tick moves a request whose upstream landed by another route, a hand merge for one, within one tick.</li>
+      <li>A release that raises leaves the promotion landed and records the failure on the request.</li>
+    </ul>
+    <p>The negative control removes the inline call, and the first arm must fail. The test files importing <code>reckon.crew.queue_admission</code> and <code>reckon.crew.promotion</code> add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. After landing, the coordinator records the interval from one promotion to its waiter's <code>queued</code> stamp on the live store, beside nova's 41 minutes. Write paths: <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/promotion.py</code> and the new test.</p>
+
+    <h2 id="s3">§3 — Landing runs beside admission, bounded</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>The landing pass leaves the admission loop. It runs as its own supervised loop, <code>crew land --watch</code>, under its own lock, so a slow landing delays only the next landing. Each tick takes at most one action: one measurement, or one <code>crew complete --land</code>. <code>_land</code> bounds its <code>srun</code> step by the landing measure's timeout and records a timeout as a refusal naming it. Both loops write their stage durations into their verdict rows: release, launch and land seconds, and the start and end of the pass.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_landing_runs_beside_admission.py</code> shows four things:</p>
+    <ul>
+      <li>An admission pass completes and releases a waiter while a landing it does not call is blocked on a patched <code>_land</code>.</li>
+      <li>A landing tick that finds three accepted deliveries runs one <code>crew complete --land</code> and leaves two for later ticks.</li>
+      <li>A <code>_land</code> step that exceeds its bound is stopped and recorded as refused with a guard naming the bound.</li>
+      <li>Each verdict row carries <code>started_at</code>, <code>ended_at</code> and per-stage seconds.</li>
+    </ul>
+    <p>The negative control calls <code>land_once</code> from <code>admit_until_stopped</code> again, and the first arm must fail. The fleet supervisor starts and restarts the new loop as it does the admit service. <code>tests/test_cli_help_contract.py</code> and the other help-contract tests cover the new verb. The test files importing <code>reckon.crew.queue_landing</code> and <code>reckon.crew.queue_admission</code> add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. Write paths: <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/queue_landing.py</code>, <code>reckon/crew_run_commands.py</code>, <code>reckon/crew/fleet_supervisor.py</code> and the new test.</p>
+
+    <h2 id="s4">§4 — A launch reuses what queue time proved</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>A queued request already passed the dispatch gate when it was queued, and <a href="/reckon/plans/a-review-gate-judges-what-it-covers#s10">a-review-gate-judges-what-it-covers §10</a> records its section and contract digests. At launch, <code>require_plan_reviewed</code> compares those digests with the plan's present ones and returns at once when neither moved. When one did, it computes <code>review_coverage</code> through a memo keyed by the plan file's blob and the stored review records' identities, shared by every launch in one pass. A direct dispatch keeps its own full check.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_launch_reuses_what_queue_time_proved.py</code> shows three things:</p>
+    <ul>
+      <li>A pass launching three queued requests on one unchanged plan calls <code>review_coverage</code> zero times, counted through a patch.</li>
+      <li>After a plan edit, the same pass calls it once and reuses the result for the other two.</li>
+      <li>Each launch's verdict equals the verdict of a fresh direct dispatch at the same moment.</li>
+    </ul>
+    <p>A timing arm, logged under the run's <code>logs/</code>, records the launch-gate seconds on <code>reckon:a-queue-holds-the-whole-plan</code> before and after, and the after figure is below a tenth of the before. The negative control drops the digest comparison, and the first arm must fail. The test files importing <code>reckon.crew.routing</code> and <code>reckon.crew.plan_review</code> add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. Write paths: <code>reckon/crew/routing.py</code>, <code>reckon/crew/plan_review.py</code> and the new test.</p>
+
+    <h2 id="s5">§5 — A refusal at admission is routed or reported, never parked</h2>
+    <section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>When admission refuses a queued request with <code>CompetenceLimit</code>, the pass asks the picker for a lane whose context window fits the node's estimate, among the lanes the request's session may use under the lifts in force. If one exists, the pass moves the request there with <code>move_queued_run</code>, which already re-composes a launch on another backend. A lane the admission service may launch on is launched there in the same pass; any other lane leaves it queued on that lane with an obligation naming it. Only when no lane fits is the request held <code>held-until-changed</code>, with an obligation to the owning session. Its stored reason is the failure, as <a href="/reckon/plans/a-queue-holds-the-whole-plan#s29">a-queue-holds-the-whole-plan §29</a> requires, and not the lane's last allowance. <code>crew queue edit</code> runs the context-fit check and the live-claim check on the edited request and refuses the edit there, while the coordinator is present.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_refusal_at_admission_is_routed.py</code> shows four things:</p>
+    <ul>
+      <li>A request whose estimate exceeds the local window but fits another lane under an active lift is moved to that lane in one pass, with no obligation.</li>
+      <li>A request that fits no lane is held <code>held-until-changed</code>, with one obligation naming the shortfall in tokens.</li>
+      <li>A <code>crew queue edit</code> that grows a request past every lane's window is refused, naming the shortfall, and leaves the request unchanged.</li>
+      <li>A queue edit onto a path a live claim holds is refused, naming the holder.</li>
+    </ul>
+    <p>The negative control skips the picker query, and the first arm must fail. The test files importing <code>reckon.crew.queue_admission</code> and the module carrying <code>crew queue edit</code> add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. Write paths: <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/queue_edit.py</code> and the new test. The coordinator confirms the module that implements <code>crew queue edit</code> before dispatch and names it in the node's write paths.</p>
+
+    <h2 id="s6">§6 — A park whose probe cannot change is dead</h2>
+    <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>A parked run is held by a wait probe until the probe reads a declared terminal value. When the probe's value has not changed across three supervisor sweeps, and no process of the run or of the work it waits on is alive, the park is dead. The supervisor reclassifies the run from parked to a dead-park state. It raises one obligation to the owning session naming the probe, its last value and the terminal value it expected, and stops reporting "matches no declared terminal state" for it.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_park_that_cannot_change_is_dead.py</code> shows three things:</p>
+    <ul>
+      <li>A park whose probe reads a constant value with no live process is reclassified on the third sweep, with one obligation.</li>
+      <li>A park whose probe value is still moving, or whose waited-on process is alive, stays parked.</li>
+      <li>A probe that later reaches its terminal value releases the run as before.</li>
+    </ul>
+    <p>The negative control removes the liveness clause, and the second arm must fail. The test files importing <code>reckon.crew.recovery_wait</code> add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. Write paths: <code>reckon/crew/recovery_wait.py</code> and the new test.</p>
+
+    <h2 id="s7">§7 — The queue reports its own stalls where it is read</h2>
+    <section data-reckon="section" data-id="s7" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>The drain view and each admission verdict row carry the age of the oldest request that is admissible but unlaunched while its lane has room. Nothing new is written to the monitor stream. When that age passes ten minutes, the pass records a stall verdict naming the request, the stage that held it and that stage's last duration. The obligations view shows the stall to the request's own session once, until it clears. A stall therefore names its cause in the record a coordinator already reads.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_the_queue_reports_its_own_stalls.py</code> shows three things:</p>
+    <ul>
+      <li>A request queued and admissible for eleven minutes on a lane with room yields one stall verdict naming the release, launch or land stage that held it.</li>
+      <li>The drain view reports its age.</li>
+      <li>A request held on a claim, or a lane with no room, yields no stall.</li>
+    </ul>
+    <p>The negative control removes the room clause, and the third arm must fail. A check confirms no monitor-stream row is added. The test files importing <code>reckon.crew.queue_admission</code> and <code>reckon.crew.runs</code> add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. Write paths: <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/runs.py</code> and the new test.</p>
+
+    <h2 id="s8">§8 — A delivered run always reaches a landing verdict</h2>
+    <section data-reckon="section" data-id="s8" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>Two exits from the landing path still drop a delivered run without a record. <code>land_once</code> continues past a run with no review at its head, or a stale one. And <code>crew complete --land</code> re-reads the manifest's raw <code>commits</code> entry, so it refuses an entry that carries a subject or several revisions, which <code>land_once</code> already parses. A run with no review at its head is recorded <code>awaiting-review</code>, with the review reflex's own state beside it: dispatched, or refused with its reason. The landing step reads the delivered revision through the parser <code>land_once</code> uses.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_delivered_run_reaches_a_landing_verdict.py</code> shows three things:</p>
+    <ul>
+      <li>A complete run with no review at its head carries an <code>awaiting-review</code> landing record naming the reflex state.</li>
+      <li>A run whose last commit entry carries its subject lands through <code>crew complete --land</code>.</li>
+      <li>A complete manifest with no commits entry at all is refused with a recorded guard.</li>
+    </ul>
+    <p>The negative control restores the silent continue, and the first arm must fail. The test files importing <code>reckon.crew.queue_landing</code> and the promotion modules the change touches add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. After landing, the coordinator replays the landing filters over the live pointers and records that no complete implement run lacks a landing record. Write paths: <code>reckon/crew/queue_landing.py</code>, <code>reckon/crew/promotion_records.py</code> and the new test.</p>
+
+    <h2 id="s9">§9 — A first dispatch reports what it wrote</h2>
+    <section data-reckon="section" data-id="s9" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p>A dispatch whose node waits on an unlanded section stores a new request. It then answers <code>run … is already awaiting-upstream for this node</code>, naming the run it has just created. nova read that as a duplicate on 28 October, and so did this plan's author, twice. The answer comes from <code>_answer_existing_node_run</code>, which a first dispatch reaches after its own <code>_queue_validated_waits</code> write. A first dispatch answers <code>queued awaiting-upstream</code> with its waits. Only a dispatch that finds a request it did not write answers <code>already</code>.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_first_dispatch_reports_what_it_wrote.py</code> shows three things:</p>
+    <ul>
+      <li>A first dispatch of a waiting node answers with its new run id, phase <code>awaiting-upstream</code> and its waits, and no <code>already</code>.</li>
+      <li>A second dispatch of the same node answers <code>already</code>, naming the first run.</li>
+      <li>Exactly one pointer exists after both.</li>
+    </ul>
+    <p>The negative control routes the first dispatch through <code>_answer_existing_node_run</code>, and the first arm must fail. The test files importing <code>reckon.crew.dispatch</code> add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. Write paths: <code>reckon/crew/dispatch.py</code> and the new test.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-wns-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-10-28">
+        <h4 class="r-fu-title">Queue the sections once the content review is answered</h4>
+        <div class="r-fu-body"><p>Section 2, then 3, then 5 and 8, release and landing first. Sections 4, 7 and 9 wait on the in-flight readiness cache and the queue-time contract wiring; section 6 has no wait.</p></div>
+        <pre class="r-fu-prompt">/reckon-build work-is-never-stuck-behind-the-admission-loop §2</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
