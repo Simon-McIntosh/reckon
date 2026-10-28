@@ -20,12 +20,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-informs" content="a-queue-holds-the-whole-plan">
   <meta name="plan-section-depends-on" content="{&quot;s2&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;],&quot;s3&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s2&quot;],&quot;s4&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s5&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;],&quot;s7&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s2&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s5&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s8&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s3&quot;],&quot;s9&quot;:[&quot;a-queue-holds-the-whole-plan#s18&quot;],&quot;s10&quot;:[&quot;work-is-never-stuck-behind-the-admission-loop#s8&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
-<meta name="plan-modified" content="2026-10-28">
+<meta name="plan-version" content="28">
+<meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
   <main class="plan-doc">
@@ -109,7 +109,7 @@
     <p>The negative control skips the picker query, and the first arm must fail. The test files importing <code>reckon.crew.queue_admission</code> and the module carrying <code>crew queue edit</code> add no failures against the base revision, and ruff check and ruff format --check pass on the changed paths. Write paths: <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/queue_edit.py</code> and the new test. The coordinator confirms the module that implements <code>crew queue edit</code> before dispatch and names it in the node's write paths.</p>
 
     <h2 id="s6">§6 — A park whose probe cannot change is dead</h2>
-    <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="deferred" data-links=""></section>
     <p>A parked run is held by a wait probe until the probe reads a declared terminal value. When the probe's value has not changed across three supervisor sweeps, and no process of the run or of the work it waits on is alive, the park is dead. The supervisor reclassifies the run from parked to a dead-park state. The owning session receives one obligation naming the probe, its last value and the terminal value it expected. The repeating "terminal when the probe reports …" detail stops for it. The classification belongs to its owner, <code>recovery_classification.classify_pointer</code>: its waiting branch and the detail built around <code>recovery_classification.py:1240-1265</code> are where a park is classed and its row is drawn. Obligations derive from that classification (<code>obligations.py:610</code>), so no obligation is written separately. The history the decision needs is written by the one per-sweep actor. <code>resumption.sweep</code> already calls the probe each sweep, and it records the observed value and its time on the run's pointer as <code>wait_probe_history</code>, keeping the last three entries. <code>classify_pointer</code> stays pure and reads that history from the pointer it is given. <code>recovery_wait.py</code> only validates a probe's shape and does not change. Liveness is read through <code>process_liveness.process_alive</code> and <code>recovery_liveness._live_descendant</code>, never a second process check. Interface: no public definition is added, and the repeated per-sweep detail for a dead park is retired.</p>
     <p><strong>Done when</strong> a new <code>tests/test_a_park_that_cannot_change_is_dead.py</code> shows three things:</p>
     <ul>
@@ -168,6 +168,12 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-s9-deferred-unlocated" data-who="" data-when="">
     <div class="r-comment-body"><p>Deferred after two content reviews. The CLI entry point calls <code>dispatch()</code> once, at <code>crew_dispatch_commands.py:2026</code>, and the first-dispatch path never reaches <code>_answer_existing_node_run</code>. So the caller that produced the observed reply is not located, and no measure written for it can fail. It resumes as an investigation of the stream and call path of <code>r-20261028T134856805692</code> and of nova's two runs, and becomes a fix once that caller is named.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s6-deferred-signal" data-who="" data-when="">
+    <div class="r-comment-body"><p>Deferred after its fourth review. The constancy signal is unsound: for a <code>files:</code> wait, <code>resumption._run_condition_probe</code> reports <code>exit:0</code> or <code>exit:1</code>, constant while the park is pending, so three unchanged sweeps would class a healthy file wait as dead. A dead-park classification also needs a duty kind in <code>obligations.py</code>, outside this section's scope. It resumes once dead is defined per probe form, for example from the waited-on writers' liveness rather than the probe value.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s9-reproduced" data-who="" data-when="">
+    <div class="r-comment-body"><p>Reproduced on 28 October. Five first dispatches of waiting nodes in this plan, each a single <code>reckon crew dispatch</code> call with no retry, answered <code>already awaiting-upstream</code> naming the run that call had just created: <code>r-20261028T222632387609</code>, <code>r-20261028T222907809727</code>, <code>r-20261028T223157371721</code>, <code>r-20261028T223438209702</code> and <code>r-20261028T223716141209</code>. The defect is reachable on a first dispatch, and the investigation can start from the CLI call with <code>--allow-unreconciled-runs</code> and a declared section wait.</p></div>
 </div>
 </section>
 </main>
