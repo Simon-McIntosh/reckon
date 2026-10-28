@@ -52,6 +52,7 @@ PLAN_HTML = """<!doctype html>
 <meta name="plan-impl" content="0.0">
 <meta name="plan-modified" content="2026-09-25">
 <meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content='{"alpha": "implementable", "beta": "implementable"}'>
 </head><body>
 <h2 id="alpha">Alpha</h2>
 <section data-reckon="section" data-id="alpha" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="standard" data-capability-risk="low" data-status="implementable" data-links=""></section>
@@ -121,6 +122,8 @@ def _store_review(
     section_digests: dict | None = None,
     plan_fingerprint: str | None = None,
     timestamp: str | None = None,
+    rubric: str = "plan_content_review",
+    status: str = "ready",
 ) -> None:
     plan_review.store_plan_review(
         {
@@ -128,7 +131,7 @@ def _store_review(
             "project": "sample",
             "plan_slug": "fixture",
             "plan_version": 1,
-            "rubric": "plan_content_review",
+            "rubric": rubric,
             "reviewed_blob_sha": "a" * 40,
             "plan_fingerprint": plan_fingerprint
             or plan_review.plan_fingerprint(plan_path),
@@ -137,7 +140,7 @@ def _store_review(
             else plan_review._section_digests(plan_path.read_text(encoding="utf-8")),
             "findings": findings,
             "responses": responses or {},
-            "status": "ready",
+            "status": status,
             "review_run_id": review_run_id,
         },
         base_dir=config_home / "crew" / "reviews",
@@ -280,6 +283,10 @@ def test_a_third_review_of_one_edit_burst_is_refused(
         "anchor": f"{plan_path}:1",
         "text": "alpha's mechanism must name the store it repairs",
     }
+    # Two reviews that each left out an item of their own rubric. An incomplete
+    # review covers nothing, so the plan still owes these units a review and a
+    # third composition is the review that would re-raise the same findings
+    # against prose that has already been read twice.
     for review_run_id in ("r-review-1", "r-review-2"):
         _store_review(
             plan_path,
@@ -287,6 +294,7 @@ def test_a_third_review_of_one_edit_burst_is_refused(
             review_run_id=review_run_id,
             findings=[dict(open_finding, id=f"{review_run_id}-finding")],
             section_digests=digests,
+            status=plan_review.INCOMPLETE_STATUS,
         )
 
     # Composing the review is what the cap governs, so the refusal is shown at
@@ -330,6 +338,7 @@ def test_a_fresh_edit_resets_the_review_count(
                 }
             ],
             section_digests=digests,
+            status=plan_review.INCOMPLETE_STATUS,
         )
     assert (
         plan_review.review_burst_refusal(
@@ -340,9 +349,8 @@ def test_a_fresh_edit_resets_the_review_count(
 
     # A fresh edit is a new digest for the unit, so the two reviews of the
     # previous prose no longer count against this one and the unit may be
-    # reviewed again. Both units carry a review here, so both are edited: a
-    # whole-plan composition is refused while any unit it would read is at its
-    # limit, and an unedited unit is still at its own.
+    # reviewed again. Both units are edited, so the composition reads both of
+    # them and neither is at its limit.
     plan_path.write_text(
         PLAN_HTML.replace(
             "Alpha ships one measured change.", "Alpha ships two measured changes."
@@ -359,9 +367,9 @@ def test_a_fresh_edit_resets_the_review_count(
         )
         is None
     )
-    # The composition is still refused, but for the document unit, whose
-    # decisions state no edit touched — the edited section is no longer the
-    # unit at its limit.
+    # The composition is still refused, but for the document unit: an
+    # incomplete review covers no unit at all, so the document unit is left
+    # uncovered while the edited sections are not at their limit.
     result = CliRunner().invoke(
         cli_main,
         [
@@ -378,6 +386,163 @@ def test_a_fresh_edit_resets_the_review_count(
     assert result.exit_code != 0, result.output
     assert "unit alpha " not in result.output
     assert f"unit {plan_review.DOCUMENT_UNIT} " in result.output
+
+
+def test_a_covered_section_keeps_its_reviews_off_another_sections_cap(
+    project: tuple[Path, Path, Path],
+) -> None:
+    """A composition is judged on the units it reads, and on one rubric.
+
+    Alpha is unchanged and covered by two stored reviews — one content, one
+    design — and beta has been edited since. The composition the plan owes
+    reads beta and the document unit only, so alpha's two stored reviews are
+    neither a third review of anything nor spendable against the one content
+    review beta still owes.
+    """
+    config_home, _repo, plan_path = project
+    digests = plan_review._section_digests(plan_path.read_text(encoding="utf-8"))
+    _store_review(
+        plan_path,
+        config_home,
+        review_run_id="r-content",
+        findings=[
+            {
+                "id": "reasoning-1",
+                "type": "reasoning",
+                "anchor": f"{plan_path}:1",
+                "text": "a finding about alpha's mechanism",
+            }
+        ],
+        section_digests=digests,
+    )
+    _store_review(
+        plan_path,
+        config_home,
+        review_run_id="r-design",
+        findings=[
+            {
+                "id": "prior-art-1",
+                "type": "prior_art",
+                "anchor": f"{plan_path}:1",
+                "text": "a finding about alpha's prior art",
+            }
+        ],
+        section_digests=digests,
+        rubric="plan_design_review",
+    )
+
+    # Alpha carries two reviews at its present digest, one per rubric, so a cap
+    # that counted either way would refuse here.
+    assert (
+        len(
+            plan_review.reviews_for_unit_burst(
+                "sample", "fixture", "alpha", base_dir=config_home / "crew" / "reviews"
+            )
+        )
+        == 1
+    )
+    assert (
+        len(
+            plan_review.reviews_for_unit_burst(
+                "sample",
+                "fixture",
+                "alpha",
+                rubric=plan_review.DESIGN_RUBRIC,
+                base_dir=config_home / "crew" / "reviews",
+            )
+        )
+        == 1
+    )
+
+    plan_path.write_text(
+        PLAN_HTML.replace(
+            "Beta ships another measured change.",
+            "Beta replaces the per-session depth clamp with one project bound, "
+            "deduplicates a request on its plan, section and node, and never "
+            "refuses the review of a delivered run. <strong>Done when</strong> "
+            "a duplicate dispatch returns the existing request and a review "
+            "launches past the bound.",
+        ),
+        encoding="utf-8",
+    )
+    _contributing, uncovered, _change = plan_review.review_coverage(
+        "sample", "fixture", plan=plan_path
+    )
+    assert uncovered == {"beta"}
+
+    assert (
+        plan_review.compose_burst_refusal(
+            "sample", "fixture", base_dir=config_home / "crew" / "reviews"
+        )
+        is None
+    )
+    result = CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "review",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--session",
+            "s-test",
+        ],
+    )
+    assert "carry or decline" not in result.output
+
+
+def test_a_design_review_does_not_spend_the_content_budget(
+    project: tuple[Path, Path, Path],
+) -> None:
+    config_home, _repo, plan_path = project
+    digests = plan_review._section_digests(plan_path.read_text(encoding="utf-8"))
+    finding = {
+        "id": "reasoning-1",
+        "type": "reasoning",
+        "anchor": f"{plan_path}:1",
+        "text": "a finding about the reviewed prose",
+    }
+    _store_review(
+        plan_path,
+        config_home,
+        review_run_id="r-content",
+        findings=[finding],
+        section_digests=digests,
+    )
+    _store_review(
+        plan_path,
+        config_home,
+        review_run_id="r-design",
+        findings=[dict(finding, id="prior-art-1", type="prior_art")],
+        section_digests=digests,
+        rubric="plan_design_review",
+    )
+
+    # The design review is a different read of the same prose, so the unit has
+    # had one content review and is still owed its second.
+    assert (
+        plan_review.review_burst_refusal(
+            "sample", "fixture", "alpha", base_dir=config_home / "crew" / "reviews"
+        )
+        is None
+    )
+
+    _store_review(
+        plan_path,
+        config_home,
+        review_run_id="r-content-2",
+        findings=[dict(finding, id="coverage-1", type="coverage")],
+        section_digests=digests,
+    )
+    refusal = plan_review.review_burst_refusal(
+        "sample", "fixture", "alpha", base_dir=config_home / "crew" / "reviews"
+    )
+    assert refusal is not None
+    # Only the two content reviews are counted in what the refusal reports.
+    assert "has had 2 reviews" in refusal
+    assert "coverage-1" in refusal
+    assert "prior-art-1" not in refusal
 
 
 def test_an_unchanged_unit_does_not_hold_the_review_cap(
