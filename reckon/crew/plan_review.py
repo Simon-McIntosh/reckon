@@ -2143,6 +2143,24 @@ def _plan_revision(record: Mapping[str, Any]) -> str:
     )
 
 
+def _burst_records(
+    project: str,
+    *,
+    base_dir: str | Path | None,
+    records: Iterable[Mapping[str, Any]] | None,
+) -> Iterable[Mapping[str, Any]]:
+    """The stored reviews a burst check reads, listed once when none are given.
+
+    A whole-plan burst check asks the same question of every unit, so a caller
+    holding one listing passes it rather than making the store re-list itself
+    per unit: a plan of twenty-eight sections otherwise reads a project's
+    thousand stored reviews twenty-eight times to answer once.
+    """
+    if records is not None:
+        return records
+    return list_plan_reviews(project, base_dir=base_dir)
+
+
 def reviews_for_unit_burst(
     project: str,
     plan_slug: str,
@@ -2150,6 +2168,7 @@ def reviews_for_unit_burst(
     *,
     base_dir: str | Path | None = None,
     plan_path: str | Path | None = None,
+    records: Iterable[Mapping[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """The stored reviews that read one unit at the digest it carries now.
 
@@ -2180,7 +2199,7 @@ def reviews_for_unit_burst(
         return []
     whole = _digest(digests)
     hits: list[dict[str, Any]] = []
-    for record in list_plan_reviews(project, base_dir=base_dir):
+    for record in _burst_records(project, base_dir=base_dir, records=records):
         if record.get("plan_slug") != plan_slug:
             continue
         if record.get("plan_fingerprint") == whole:
@@ -2212,6 +2231,7 @@ def review_burst_refusal(
     *,
     base_dir: str | Path | None = None,
     plan_path: str | Path | None = None,
+    records: Iterable[Mapping[str, Any]] | None = None,
 ) -> str | None:
     """The refusal a third review of one edit burst of a unit must carry, or None.
 
@@ -2230,12 +2250,17 @@ def review_burst_refusal(
     answer command can clear.
     """
     hits = reviews_for_unit_burst(
-        project, plan_slug, unit, base_dir=base_dir, plan_path=plan_path
+        project,
+        plan_slug,
+        unit,
+        base_dir=base_dir,
+        plan_path=plan_path,
+        records=records,
     )
     if len(hits) < MAX_REVIEWS_PER_EDIT:
         return None
     answered: set[str] = set()
-    for record in list_plan_reviews(project, base_dir=base_dir):
+    for record in _burst_records(project, base_dir=base_dir, records=records):
         if record.get("plan_slug") != plan_slug:
             continue
         responses = record.get("responses")
@@ -2266,6 +2291,7 @@ def compose_burst_refusal(
     *,
     base_dir: str | Path | None = None,
     plan_path: str | Path | None = None,
+    records: Iterable[Mapping[str, Any]] | None = None,
 ) -> str | None:
     """The refusal a composed whole-plan review must carry, or None.
 
@@ -2284,9 +2310,21 @@ def compose_burst_refusal(
         return None
     units = sorted(unit for unit in _section_digests(text) if unit != DOCUMENT_UNIT)
     units.append(DOCUMENT_UNIT)
+    # One listing for every unit: the question is the same for each and the
+    # store is the expensive part.
+    listed = (
+        records
+        if records is not None
+        else list_plan_reviews(project, base_dir=base_dir)
+    )
     for unit in units:
         refusal = review_burst_refusal(
-            project, plan_slug, unit, base_dir=base_dir, plan_path=plan_path
+            project,
+            plan_slug,
+            unit,
+            base_dir=base_dir,
+            plan_path=plan_path,
+            records=listed,
         )
         if refusal:
             return refusal
@@ -2664,6 +2702,7 @@ def _owed_review_skip_reason(
     base_dir: str | Path | None,
     now_seconds: float | None,
     authors: Mapping[str, Mapping[str, str]],
+    records: Iterable[Mapping[str, Any]] | None = None,
 ) -> str | None:
     """Why the reflex must not compose this plan's review now, or ``None``.
 
@@ -2707,10 +2746,18 @@ def _owed_review_skip_reason(
     standing = recovery_review_dispatch._standing_plan_review(project, plan_slug)
     if standing:
         return f"a plan review is already in flight as the live run {standing}"
-    if read_plan_review(project, plan_slug, plan=path, base_dir=base_dir) is not None:
+    # Coverage, not the existence of a covering record: a stored review that
+    # read one section of the plan still answers ``read_plan_review``, so asking
+    # whether any record covers anything refuses a plan whose other sections
+    # were never reviewed. What settles the plan is whether the stored reviews
+    # leave no unit uncovered.
+    contributing, uncovered, _change = review_coverage(
+        project, plan_slug, plan=path, base_dir=base_dir
+    )
+    if contributing and not uncovered:
         return "a stored review already covers the plan's current content"
     refusal = compose_burst_refusal(
-        project, plan_slug, base_dir=base_dir, plan_path=path
+        project, plan_slug, base_dir=base_dir, plan_path=path, records=records
     )
     if refusal:
         return refusal
@@ -2770,10 +2817,11 @@ def compose_owed_plan_reviews(
     # store, which is the moment its notes have been answered.
     held = _composed_reviews(project) if not dry_run else {}
     answered: list[Path] = []
+    # One walk of the store for the whole pass, not one per plan and not one
+    # per section: this pass runs on the sweep's cadence and a project carries
+    # dozens of plans and a thousand stored reviews.
+    records = list_plan_reviews(project, base_dir=base_dir)
     if not dry_run:
-        # One walk of the store for every plan, not one walk per plan: this
-        # pass runs on the sweep's cadence and a project carries dozens of them.
-        records = list_plan_reviews(project, base_dir=base_dir)
         owned = {run_id for run_ids in held.values() for run_id in run_ids}
         try:
             with _deferring_record_commits() as pending:
@@ -2917,6 +2965,7 @@ def compose_owed_plan_reviews(
                 base_dir=base_dir,
                 now_seconds=now_seconds,
                 authors=authors,
+                records=records,
             )
             if reason is not None:
                 report["skipped"].append({"plan": plan_slug, "reason": reason})
