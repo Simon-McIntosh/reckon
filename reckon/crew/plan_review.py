@@ -59,6 +59,7 @@ import json
 import re
 import shlex
 import subprocess
+import time
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -235,7 +236,16 @@ RESPONSE_ACTIONS: tuple[str, ...] = ("acted", "declined")
 # answered for the gate like the other two, so answering it in the plan never
 # reopens the review gate and the section cannot loop.
 CARRIED_ACTION = "carried"
-ANSWER_ACTIONS: tuple[str, ...] = (*RESPONSE_ACTIONS, CARRIED_ACTION)
+
+# The answer a finding gets when the review that raised it said the finding
+# would not change the plan. It closes the finding for the dispatch gate like
+# the author's own answers, so the review a plan owes stops waiting on a
+# decision nobody has to make, and the coordinator is woken only for the
+# findings that would. It is deliberately not one of :data:`RESPONSE_ACTIONS`:
+# those are the author's judgement, and a decline recorded here would be
+# counted by :func:`declined_recurrence` as an author ruling on the rubric.
+NOTED_ACTION = "noted"
+ANSWER_ACTIONS: tuple[str, ...] = (*RESPONSE_ACTIONS, CARRIED_ACTION, NOTED_ACTION)
 
 # The append-only list of every answer a record has received. The ``responses``
 # map keeps only the latest answer per finding, so a finding answered twice
@@ -1678,8 +1688,8 @@ def record_response(
 ) -> Path:
     """Answer one finding on a stored review and persist the updated record.
 
-    ``action`` is ``acted``, ``declined`` or ``carried``. A decline must carry a
-    one-line ``reason``: the decision makes the reason the record, so a
+    ``action`` is ``acted``, ``declined``, ``carried`` or ``noted``. A decline
+    must carry a one-line ``reason``: the decision makes the reason the record, so a
     reasonless decline is refused before anything is written — the stored file
     is left untouched and the raise names what was missing. A carried answer
     records the unit the finding is about — the section named by its anchor, or
@@ -1749,7 +1759,7 @@ def record_response(
         write_json_atomically(
             committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
         )
-        _review_store.commit_record_write(str(updated.get("project") or ""), committed)
+        _commit_record_write(str(updated.get("project") or ""), committed)
         return committed
     return store_plan_review(updated, base_dir=base_dir)
 
@@ -1829,6 +1839,70 @@ def answering_as(action: str) -> Iterator[None]:
         yield
     finally:
         _ANSWER_OVERRIDE.reset(token)
+
+
+# Answers written inside this region are committed together rather than one
+# commit each. A pass that answers the notes of a composed review writes them
+# all in one turn, and one commit per answer puts a dozen commits in a
+# project's history for one reflex action.
+_DEFERRED_RECORD_COMMITS: ContextVar[list[Path] | None] = ContextVar(
+    "plan_review_deferred_record_commits", default=None
+)
+
+
+@contextmanager
+def _deferring_record_commits() -> Iterator[list[Path]]:
+    """Hold the record paths a block would commit, so the caller commits once."""
+    pending: list[Path] = []
+    token = _DEFERRED_RECORD_COMMITS.set(pending)
+    try:
+        yield pending
+    finally:
+        _DEFERRED_RECORD_COMMITS.reset(token)
+
+
+def _commit_record_write(project: str, path: Path) -> None:
+    """Commit one answered record, or hold it when the block defers commits."""
+    pending = _DEFERRED_RECORD_COMMITS.get()
+    if pending is not None:
+        pending.append(Path(path))
+        return
+    _review_store.commit_record_write(project, path)
+
+
+def _commit_record_writes_once(project: str, paths: Iterable[Path]) -> int:
+    """Commit every answered record under one commit, and return how many.
+
+    Only the records that live in the project's committed tree are committed
+    here, which is the same filter a single answer applies: a staging record is
+    not a tracked file and is left where the host store keeps it. A commit that
+    fails leaves nothing staged, and the caller records it as the pass's
+    failure rather than losing the answers already on disk.
+    """
+    committed = _review_store.committed_review_root(project)
+    if committed is None:
+        return 0
+    root = Path(committed).resolve()
+    inside: list[Path] = []
+    for path in paths:
+        try:
+            Path(path).resolve().relative_to(root)
+        except (OSError, ValueError):
+            continue
+        inside.append(Path(path))
+    if not inside:
+        return 0
+    from reckon import ledger
+
+    ledger._commit_state_write(
+        project,
+        "fix(review): note the findings a composed review would not act on",
+        "Answer the would-not-change findings of a plan review the reflex "
+        "composed, in one commit for the whole pass.",
+        inside,
+        "review",
+    )
+    return len(inside)
 
 
 def _line_unit_map(text: str) -> dict[int, str]:
@@ -2069,6 +2143,24 @@ def _plan_revision(record: Mapping[str, Any]) -> str:
     )
 
 
+def _burst_records(
+    project: str,
+    *,
+    base_dir: str | Path | None,
+    records: Iterable[Mapping[str, Any]] | None,
+) -> Iterable[Mapping[str, Any]]:
+    """The stored reviews a burst check reads, listed once when none are given.
+
+    A whole-plan burst check asks the same question of every unit, so a caller
+    holding one listing passes it rather than making the store re-list itself
+    per unit: a plan of twenty-eight sections otherwise reads a project's
+    thousand stored reviews twenty-eight times to answer once.
+    """
+    if records is not None:
+        return records
+    return list_plan_reviews(project, base_dir=base_dir)
+
+
 def reviews_for_unit_burst(
     project: str,
     plan_slug: str,
@@ -2076,6 +2168,7 @@ def reviews_for_unit_burst(
     *,
     base_dir: str | Path | None = None,
     plan_path: str | Path | None = None,
+    records: Iterable[Mapping[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """The stored reviews that read one unit at the digest it carries now.
 
@@ -2106,7 +2199,7 @@ def reviews_for_unit_burst(
         return []
     whole = _digest(digests)
     hits: list[dict[str, Any]] = []
-    for record in list_plan_reviews(project, base_dir=base_dir):
+    for record in _burst_records(project, base_dir=base_dir, records=records):
         if record.get("plan_slug") != plan_slug:
             continue
         if record.get("plan_fingerprint") == whole:
@@ -2138,6 +2231,7 @@ def review_burst_refusal(
     *,
     base_dir: str | Path | None = None,
     plan_path: str | Path | None = None,
+    records: Iterable[Mapping[str, Any]] | None = None,
 ) -> str | None:
     """The refusal a third review of one edit burst of a unit must carry, or None.
 
@@ -2156,12 +2250,17 @@ def review_burst_refusal(
     answer command can clear.
     """
     hits = reviews_for_unit_burst(
-        project, plan_slug, unit, base_dir=base_dir, plan_path=plan_path
+        project,
+        plan_slug,
+        unit,
+        base_dir=base_dir,
+        plan_path=plan_path,
+        records=records,
     )
     if len(hits) < MAX_REVIEWS_PER_EDIT:
         return None
     answered: set[str] = set()
-    for record in list_plan_reviews(project, base_dir=base_dir):
+    for record in _burst_records(project, base_dir=base_dir, records=records):
         if record.get("plan_slug") != plan_slug:
             continue
         responses = record.get("responses")
@@ -2192,6 +2291,7 @@ def compose_burst_refusal(
     *,
     base_dir: str | Path | None = None,
     plan_path: str | Path | None = None,
+    records: Iterable[Mapping[str, Any]] | None = None,
 ) -> str | None:
     """The refusal a composed whole-plan review must carry, or None.
 
@@ -2210,13 +2310,723 @@ def compose_burst_refusal(
         return None
     units = sorted(unit for unit in _section_digests(text) if unit != DOCUMENT_UNIT)
     units.append(DOCUMENT_UNIT)
+    # One listing for every unit: the question is the same for each and the
+    # store is the expensive part.
+    listed = (
+        records
+        if records is not None
+        else list_plan_reviews(project, base_dir=base_dir)
+    )
     for unit in units:
         refusal = review_burst_refusal(
-            project, plan_slug, unit, base_dir=base_dir, plan_path=plan_path
+            project,
+            plan_slug,
+            unit,
+            base_dir=base_dir,
+            plan_path=plan_path,
+            records=listed,
         )
         if refusal:
             return refusal
     return None
+
+
+# ── The composition a quiet plan owes, and its would-not-change answers ─────
+# A coordinator must remember to compose a content review after authoring a
+# plan, and one paused at a rate limit cannot. The producer pass composes the
+# review such a plan owes on its own, and answers the findings its reviewer
+# marked as not changing the plan, so the coordinator is woken only for the
+# findings that would change it.
+#
+# The composition is scoped to an authoring burst on purpose. A pass that
+# composed for every plan owing a review reviewed plans nobody was editing —
+# one last changed eleven days earlier — under whichever session happened to
+# run the sweep, so the findings landed in a coordinator's lap for a document
+# it had not touched. A plan is the reflex's to review only while its author is
+# still working on it and a run on it is recent enough to name that author.
+
+# The plan must have been left alone this long before its review is composed.
+# A coordinator authors a plan over several minutes, and a review composed
+# between two edits reads half a document and raises findings against prose
+# the author was about to replace.
+PLAN_REVIEW_QUIET_SECONDS = 600
+
+# The age past which a plan's edit is no longer an authoring burst. A plan left
+# alone for a day is one its coordinator has finished with or moved away from,
+# and a review of it would be read by nobody: it is the coordinator's to
+# compose, with ``/reckon-build``, when it returns to the plan.
+PLAN_REVIEW_BURST_SECONDS = 24 * 60 * 60
+
+# The most plans one pass weighs. The pass runs on the follower's sweep, so its
+# cost is a bound on the whole watch loop rather than on one review: weighing a
+# single plan against the live store costs about twenty seconds, because the
+# burst refusal and the standing-run reader each consult the store, so the
+# budget is one plan per pass.
+PLAN_REVIEW_PASS_LIMIT = 1
+
+# How long a preview may spend weighing plans. A ``dry_run`` weighs every plan
+# inside the burst window rather than one, so its cost is proportional to the
+# plans being authored, not to the project; weighing one plan against the stored
+# review set costs several seconds, so the bound is on the clock rather than on
+# a plan count that would have to be guessed per project.
+PLAN_REVIEW_PREVIEW_SECONDS = 20
+
+# Who an automatic note is recorded as. The answers map carries a ``by``, and a
+# reader of a noted finding can then tell the reflex's answer from an author's.
+PLAN_REVIEW_REFLEX = "plan-review-reflex"
+
+
+def plan_review_quiet_remaining(
+    plan_path: str | Path, *, now_seconds: float | None = None
+) -> int:
+    """The seconds left before a plan's last edit is quiet enough to review.
+
+    Zero means the quiet period has passed. The age comes from
+    :func:`plan_review_edit_age`, which owns the measure, so the quiet period
+    and the burst window cannot disagree about when the edit was. A file that
+    cannot be read answers zero, because a plan whose edit time cannot be
+    measured is not evidence that it is still being written.
+    """
+    age = plan_review_edit_age(plan_path, now_seconds=now_seconds)
+    if age is None:
+        return 0
+    return max(0, int(PLAN_REVIEW_QUIET_SECONDS - age))
+
+
+def _edit_moment(plan_path: str | Path) -> float | None:
+    """When the plan file was last written, in epoch seconds, or ``None``."""
+    try:
+        return Path(plan_path).stat().st_mtime
+    except OSError:
+        return None
+
+
+def plan_review_edit_age(
+    plan_path: str | Path, *, now_seconds: float | None = None
+) -> float | None:
+    """How long ago the plan file was last written, or ``None`` when unreadable.
+
+    ``None`` is not zero: a plan whose edit time cannot be measured is not a
+    plan someone is editing now, so it fails the burst test rather than passing
+    it. The two readers of an edit's age — the quiet period and the burst
+    window — measure it here, so they cannot disagree about when the edit was.
+    """
+    edited = _edit_moment(plan_path)
+    if edited is None:
+        return None
+    moment = time.time() if now_seconds is None else now_seconds
+    return moment - edited
+
+
+def _run_plan(record: Mapping[str, Any]) -> str:
+    """The plan a live pointer or a ledger row is a run on, or empty.
+
+    The two stores carry it in different places — a live pointer under its
+    ``node``, a committed ledger row at the top level — and a run makes itself
+    known by either, so a reader that wants "a run on this plan" reads both
+    rather than one and calling it the record.
+    """
+    node = record.get("node")
+    if isinstance(node, Mapping) and node.get("plan"):
+        return str(node.get("plan") or "").strip()
+    return str(record.get("plan") or "").strip()
+
+
+def _run_moment(record: Mapping[str, Any]) -> float | None:
+    """When a live pointer or a ledger row began, in epoch seconds, or ``None``.
+
+    A live pointer is stamped when its dispatch was recorded and, again, when it
+    launched; a committed row carries its dispatch and completion stamps. The
+    newest stamp it has is the closest answer to "when did this run happen",
+    and a row carrying none has no age a reader can weigh.
+    """
+    stamps = [
+        moment.timestamp()
+        for key in ("launched_at", "created_at", "dispatched_at", "completed_at")
+        if (moment := _instant(record.get(key))) is not None
+    ]
+    return max(stamps) if stamps else None
+
+
+def plan_authoring_runs(
+    project: str, *, now_seconds: float | None = None
+) -> dict[str, dict[str, str]]:
+    """The newest crew run on each plan under a day old, keyed by plan slug.
+
+    A review composed by the reflex is dispatched under the session that will
+    read its findings, and the store already records which session that is: the
+    plan's own authoring run. The run is looked for in both places a run is kept
+    — the live pointers, which hold a dispatch still in flight, and the
+    committed ledger, which holds the runs that finished — because an author
+    who has just stopped editing may be either.
+
+    Every plan is answered from one reading of each store, because a pass weighs
+    many plans and a ledger load per plan would cost more than the reviews it
+    starts.
+
+    A plan absent from the map is one no run has named in the last day, and that
+    absence is a refusal to compose rather than a reason to invent a session:
+    such a plan is one to leave to its coordinator.
+    """
+    from reckon import ledger
+
+    moment = time.time() if now_seconds is None else now_seconds
+    newest: dict[str, tuple[float, str, str]] = {}
+    candidates: list[dict[str, Any]] = [
+        dict(pointer) for pointer in runs.list_live(project=project)
+    ]
+    try:
+        rows, _version = ledger.read_records(project, with_figures=False)
+    except Exception:  # noqa: BLE001 — an unreadable ledger names no run
+        rows = []
+    candidates.extend(rows)
+    for record in candidates:
+        plan = _run_plan(record)
+        if not plan:
+            continue
+        started = _run_moment(record)
+        if started is None or moment - started > PLAN_REVIEW_BURST_SECONDS:
+            continue
+        session = str(record.get("session") or "").strip()
+        run_id = str(record.get("run_id") or "").strip()
+        if not session or not run_id:
+            continue
+        held = newest.get(plan)
+        if held is None or started > held[0]:
+            newest[plan] = (started, run_id, session)
+    return {
+        plan: {"run_id": run_id, "session": session}
+        for plan, (_started, run_id, session) in newest.items()
+    }
+
+
+def plan_authoring_run(
+    project: str, plan_slug: str, *, now_seconds: float | None = None
+) -> dict[str, str] | None:
+    """The newest crew run on this plan under a day old, or ``None``."""
+    return plan_authoring_runs(project, now_seconds=now_seconds).get(str(plan_slug))
+
+
+def noted_answer_reason(finding: Mapping[str, Any]) -> str:
+    """The one-line reason a would-not-change finding is answered with.
+
+    The reviewer's own ``REASON`` is the record when it stated one — it is what
+    makes the note worth reading a month later — and a finding whose report
+    carried no reason still gets a line naming the verdict that closed it, so
+    no note is recorded without one.
+    """
+    reason = str(finding.get("reason") or "").strip()
+    if reason:
+        return reason
+    return "the review recorded that this finding would not change the plan"
+
+
+def _note_records(
+    records: Iterable[Mapping[str, Any]],
+    *,
+    base_dir: str | Path | None,
+    by: str,
+    when: str | None,
+    composed: Iterable[str],
+) -> list[dict[str, str]]:
+    """Answer each unanswered would-not-change finding of a composed review.
+
+    A finding the reviewer marked ``WOULD_CHANGE_THE_PLAN: no`` needs no
+    decision from the author, so leaving it open costs a coordinator a turn it
+    cannot spend while paused at a rate limit. Only an explicit ``no`` is
+    answered: a finding whose verdict the report never stated carries
+    ``None``, which is not a no, so it waits for its author like any other.
+
+    ``composed`` names the reviews this reflex dispatched, and only those are
+    answered. A review a coordinator composed is the coordinator's: its
+    findings are its author's to answer, and a reflex that answered them would
+    be writing an answer nobody asked it for, into a repository whose owner has
+    not seen the finding. The filter is by run id rather than by anything about
+    the record's content, because who dispatched a review is not a property the
+    record itself carries.
+    """
+    owned = {str(run_id) for run_id in composed if str(run_id)}
+    noted: list[dict[str, str]] = []
+    for stored in records:
+        record: Mapping[str, Any] = stored
+        if str(record.get("review_run_id") or "").strip() not in owned:
+            continue
+        for finding in list(record.get("findings") or []):
+            if not isinstance(finding, Mapping):
+                continue
+            if finding.get("would_change") is not False:
+                continue
+            finding_id = str(finding.get("id") or "").strip()
+            if not finding_id or _stored_response(record, finding) is not None:
+                continue
+            path = record_response(
+                record,
+                finding_id,
+                action=NOTED_ACTION,
+                reason=noted_answer_reason(finding),
+                by=by,
+                when=when,
+                base_dir=base_dir,
+            )
+            noted.append({"finding": finding_id, "record": str(path)})
+            record = json.loads(path.read_text(encoding="utf-8"))
+    return noted
+
+
+def _project_plan_paths(project: str) -> tuple[list[tuple[str, Path]], list[dict]]:
+    """The live plans of a project, and the documents the catalogue dropped.
+
+    One document whose location disagrees with its declared type makes a strict
+    catalogue raise for the whole tree, which would stop the pass for every
+    plan in the project. The scan is taken in its tolerant mode instead, and
+    the files it dropped are read from the scope's own record, so the pass
+    names the offending document and weighs the rest.
+    """
+    from reckon._store import _docs_dir_for_project
+    from reckon.resources import iter_resources, resource_scan_scope
+
+    docs = _docs_dir_for_project(project)
+    if docs is None:
+        return [], []
+    try:
+        with resource_scan_scope() as dropped:
+            resources = iter_resources(
+                Path(docs), project, include_archived=False, ignore_invalid=True
+            )
+    except OSError:
+        return [], []
+    failed = [
+        {"plan": Path(path).stem, "error": str(reason)}
+        for path, reason in (dropped.get((str(Path(docs)), project)) or [])
+    ]
+    return [
+        (str(resource.slug), Path(resource.path))
+        for resource in resources
+        if str(resource.type) == "plan"
+    ], failed
+
+
+def _reflex_state_path(project: str) -> Path:
+    """Where the reflex records the edit it last weighed each plan at."""
+    from reckon.crew.run_paths import crew_home
+
+    readable = "".join(
+        character if character.isalnum() or character in "._-" else "-"
+        for character in str(project)
+    ).strip("-")
+    return crew_home() / PLAN_REVIEW_REFLEX / f"{readable or 'project'}.json"
+
+
+# The key the state file holds the rotation cursor under. It is not a plan
+# slug: a slug is recorded with a float mtime, which is what tells them apart.
+_REFLEX_CURSOR_KEY = "__cursor__"
+
+# The key the state file holds the reviews the reflex dispatched under, keyed
+# by plan slug. It is what lets a later pass answer a composed review's
+# would-not-change findings and leave every other review alone: the record the
+# reviewer writes names its own run, so the reflex's own dispatches are the
+# only set it may answer.
+_REFLEX_COMPOSED_KEY = "__composed__"
+
+
+def _reflex_state(project: str) -> dict:
+    """The stored state of the last pass: plan mtimes and the rotation cursor."""
+    try:
+        stored = json.loads(_reflex_state_path(project).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return dict(stored) if isinstance(stored, Mapping) else {}
+
+
+def _weighed_edits(project: str) -> dict[str, float]:
+    """The plan mtimes the last pass weighed, or empty when there is none."""
+    return {
+        str(slug): float(stamp)
+        for slug, stamp in _reflex_state(project).items()
+        if isinstance(stamp, (int, float))
+    }
+
+
+def _weighed_cursor(project: str) -> str:
+    """The plan the last pass stopped at, so the next pass starts after it."""
+    cursor = _reflex_state(project).get(_REFLEX_CURSOR_KEY)
+    return cursor if isinstance(cursor, str) else ""
+
+
+def _composed_reviews(project: str) -> dict[str, list[str]]:
+    """The review runs the reflex dispatched, keyed by the plan they review."""
+    stored = _reflex_state(project).get(_REFLEX_COMPOSED_KEY)
+    if not isinstance(stored, Mapping):
+        return {}
+    return {
+        str(slug): [str(run_id) for run_id in run_ids if isinstance(run_ids, list)]
+        for slug, run_ids in stored.items()
+    }
+
+
+def _record_weighed_edits(
+    project: str,
+    weighed: Mapping[str, float],
+    *,
+    cursor: str = "",
+    composed: Mapping[str, Iterable[str]] | None = None,
+) -> None:
+    """Write the mtimes the pass weighed, the plan it stopped at, and its reviews."""
+    path = _reflex_state_path(project)
+    stored: dict[str, Any] = dict(sorted(weighed.items()))
+    if cursor:
+        stored[_REFLEX_CURSOR_KEY] = cursor
+    held = {
+        str(slug): sorted({str(run_id) for run_id in run_ids if str(run_id)})
+        for slug, run_ids in (composed or {}).items()
+    }
+    held = {slug: run_ids for slug, run_ids in held.items() if run_ids}
+    if held:
+        stored[_REFLEX_COMPOSED_KEY] = held
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(stored, indent=2) + "\n", encoding="utf-8")
+    except OSError:
+        # The record is an optimisation: a pass that cannot write it reads
+        # every plan next time, which is slow but never wrong. A pass that
+        # cannot record a review it dispatched answers nothing on that review
+        # later, which is the safe direction: an unanswered finding waits.
+        pass
+
+
+def _owed_review_skip_reason(
+    project: str,
+    plan_slug: str,
+    path: Path,
+    *,
+    base_dir: str | Path | None,
+    now_seconds: float | None,
+    authors: Mapping[str, Mapping[str, str]],
+    records: Iterable[Mapping[str, Any]] | None = None,
+) -> str | None:
+    """Why the reflex must not compose this plan's review now, or ``None``.
+
+    The checks run cheapest first and each answers a different reason the plan
+    is not the reflex's to review yet: a finished plan owes nothing, a plan
+    still being authored has not settled, one whose edit is no longer an
+    authoring burst has no reader for a review, one no recent run names is left
+    to its coordinator, one whose review is already running is being reviewed,
+    and one that has had the reviews its edit allowed must have its findings
+    answered rather than reviewed again.
+    """
+    from reckon.crew import recovery_review_dispatch
+    from reckon.lifecycle import TERMINAL_STATUSES
+
+    status = str(_plan_html.parse_meta(path).get("status") or "").strip().lower()
+    if status in TERMINAL_STATUSES:
+        return f"the plan is {status}, so it owes no review"
+    quiet_remaining = plan_review_quiet_remaining(path, now_seconds=now_seconds)
+    if quiet_remaining > 0:
+        return (
+            f"the plan was edited less than {PLAN_REVIEW_QUIET_SECONDS // 60} "
+            f"minutes ago; its review is composed after {quiet_remaining}s more "
+            "without an edit"
+        )
+    edited_age = plan_review_edit_age(path, now_seconds=now_seconds)
+    if edited_age is None:
+        return "the plan file's last edit cannot be read, so its burst cannot be judged"
+    if edited_age > PLAN_REVIEW_BURST_SECONDS:
+        hours = int(edited_age // 3600)
+        return (
+            f"the plan was last edited {hours}h ago, longer than the "
+            f"{PLAN_REVIEW_BURST_SECONDS // 3600}h authoring burst this pass "
+            "reviews within; its review is its coordinator's to compose"
+        )
+    if str(plan_slug) not in authors:
+        return (
+            "no crew run has named the plan in the last "
+            f"{PLAN_REVIEW_BURST_SECONDS // 3600}h, so no session would read "
+            "its review; it is left to its coordinator"
+        )
+    standing = recovery_review_dispatch._standing_plan_review(project, plan_slug)
+    if standing:
+        return f"a plan review is already in flight as the live run {standing}"
+    # Coverage, not the existence of a covering record: a stored review that
+    # read one section of the plan still answers ``read_plan_review``, so asking
+    # whether any record covers anything refuses a plan whose other sections
+    # were never reviewed. What settles the plan is whether the stored reviews
+    # leave no unit uncovered.
+    contributing, uncovered, _change = review_coverage(
+        project, plan_slug, plan=path, base_dir=base_dir
+    )
+    if contributing and not uncovered:
+        return "a stored review already covers the plan's current content"
+    refusal = compose_burst_refusal(
+        project, plan_slug, base_dir=base_dir, plan_path=path, records=records
+    )
+    if refusal:
+        return refusal
+    return None
+
+
+def compose_owed_plan_reviews(
+    project: str,
+    *,
+    config: Mapping[str, Any] | None = None,
+    launcher: Callable[..., Any] | None = None,
+    base_dir: str | Path | None = None,
+    now_seconds: float | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Compose the review a plan owes after its author's burst, and note its own.
+
+    The producer pass: called from the crew watch sweep, it is what makes a
+    plan's review compose itself after its author stops editing, with no
+    coordinator command in between and no lane named by this caller. Every
+    plan in the project is weighed by :func:`_owed_review_skip_reason`, so a
+    plan still being authored, one past its authoring burst, one no recent run
+    names, one already under review and one whose edit has had the reviews it
+    allowed are each reported with their reason rather than composed.
+
+    The review is dispatched under the session of the run that last named the
+    plan, never under whichever session happens to run the sweep. That session
+    is the plan's author: it holds the lane and the member the review runs on,
+    and its coordinator is the reader the findings are for.
+
+    The would-not-change notes are answered before composition, on the reviews
+    this reflex composed and no others. A coordinator's own review is answered
+    by its coordinator; a reflex that answered it would be writing a decision
+    into a repository on the strength of a finding its owner had not read.
+
+    A ``dry_run`` reports what the pass would compose and answers nothing: a
+    preview that wrote a note would be a preview that acted.
+    """
+    from reckon.crew import recovery
+
+    report: dict[str, Any] = {
+        "project": project,
+        "dry_run": bool(dry_run),
+        "composed": [],
+        "skipped": [],
+        "failed": [],
+        "read": [],
+        "notes": [],
+    }
+    plans, failed = _project_plan_paths(project)
+    report["failed"].extend(failed)
+    if not plans:
+        return report
+    # The reviews this reflex dispatched, carried across passes: a review's
+    # record is written by the review run, so the pass that composed it is
+    # never the pass that reads it. An id is dropped once its record is in the
+    # store, which is the moment its notes have been answered.
+    held = _composed_reviews(project) if not dry_run else {}
+    answered: list[Path] = []
+    # One walk of the store for the whole pass, not one per plan and not one
+    # per section: this pass runs on the sweep's cadence and a project carries
+    # dozens of plans and a thousand stored reviews.
+    records = list_plan_reviews(project, base_dir=base_dir)
+    if not dry_run:
+        owned = {run_id for run_ids in held.values() for run_id in run_ids}
+        try:
+            with _deferring_record_commits() as pending:
+                try:
+                    report["notes"] = _note_records(
+                        records,
+                        base_dir=base_dir,
+                        by=PLAN_REVIEW_REFLEX,
+                        when=None,
+                        composed=owned,
+                    )
+                finally:
+                    # A note written before the failure is already on disk, and
+                    # a later pass reads it as answered rather than writing it
+                    # again, so whatever reached the disk is committed even when
+                    # the walk stops partway.
+                    answered = list(pending)
+        except Exception as exc:  # noqa: BLE001 — the notes written are on disk
+            report["failed"].append(
+                {"error": f"{type(exc).__name__}: {exc}", "stage": "notes"}
+            )
+        if answered:
+            try:
+                _commit_record_writes_once(project, answered)
+            except Exception as exc:  # noqa: BLE001 — the notes are on disk
+                report["failed"].append(
+                    {
+                        "error": f"{type(exc).__name__}: {exc}",
+                        "stage": "notes commit",
+                    }
+                )
+        stored_runs = {
+            str(record.get("review_run_id") or "").strip() for record in records
+        }
+        held = {
+            slug: [run_id for run_id in run_ids if run_id not in stored_runs]
+            for slug, run_ids in held.items()
+        }
+        held = {slug: run_ids for slug, run_ids in held.items() if run_ids}
+    weighed = _weighed_edits(project) if not dry_run else {}
+    passed = dict(weighed)
+    # One reading of each store for the whole pass, so the authoring run each
+    # plan is dispatched under costs one lookup rather than one ledger load.
+    authors = plan_authoring_runs(project, now_seconds=now_seconds)
+    # A plan's edit age is one stat, so the burst window is applied to the whole
+    # project before anything is weighed. Only a plan inside the window can owe
+    # a review, and the read slot is spent on one of those rather than on
+    # whichever plan the rotation happened to reach: a project carrying hundreds
+    # of quiet plans would otherwise spend every pass on a document nobody has
+    # touched and never reach the one being authored.
+    moment = time.time() if now_seconds is None else now_seconds
+    candidates: list[tuple[str, Path, float]] = []
+    for plan_slug, path in plans:
+        edited = _edit_moment(path)
+        if edited is None:
+            report["skipped"].append(
+                {"plan": plan_slug, "reason": "the plan file cannot be read"}
+            )
+            continue
+        age = moment - edited
+        if age < PLAN_REVIEW_QUIET_SECONDS:
+            report["skipped"].append(
+                {
+                    "plan": plan_slug,
+                    "reason": f"the plan was edited {int(age // 60)} minutes ago,"
+                    " inside the quiet period",
+                }
+            )
+            continue
+        if age > PLAN_REVIEW_BURST_SECONDS:
+            report["skipped"].append(
+                {
+                    "plan": plan_slug,
+                    "reason": f"the plan was edited {age / 3600:.1f} hours ago,"
+                    " outside the authoring burst",
+                }
+            )
+            continue
+        if weighed.get(plan_slug) == edited:
+            # The plan has not been written since the pass last weighed it, so
+            # it owes nothing new. This is what keeps the pass proportional to
+            # the edits since the last sweep rather than to the project.
+            continue
+        candidates.append((plan_slug, path, edited))
+    # The freshest edit first: the burst that has just ended is the one most
+    # likely to belong to a session still holding its lane, and a preview that
+    # stops at its time bound should have weighed that one rather than an older
+    # authoring burst that happens to sort earlier. The rotation below still
+    # decides where a real pass starts, so freshness does not starve a plan.
+    candidates.sort(key=lambda row: row[2], reverse=True)
+    # Start after the plan the last pass weighed. The pass takes one plan, so a
+    # plan near the top whose reason never settles would otherwise hold the
+    # only slot on every pass and starve every plan behind it.
+    if not dry_run:
+        cursor = _weighed_cursor(project)
+        names = [slug for slug, _path, _edited in candidates]
+        if cursor in names:
+            begin = names.index(cursor) + 1
+            candidates = candidates[begin:] + candidates[:begin]
+    if not candidates:
+        report["skipped"].append(
+            {"reason": "no plan was edited inside the authoring burst"}
+        )
+    # A pass that weighs nothing keeps the cursor it was given, so a plan that
+    # was pending stays pending instead of the rotation restarting at the top.
+    stopped_at = "" if dry_run else _weighed_cursor(project)
+    # A preview weighs every plan inside the window, so it is bounded by the
+    # clock: the gate it feeds must finish inside thirty seconds whatever the
+    # project's authoring activity.
+    preview_stops_at = time.monotonic() + PLAN_REVIEW_PREVIEW_SECONDS
+    for plan_slug, path, edited in candidates:
+        if dry_run and time.monotonic() > preview_stops_at:
+            report["skipped"].append({"reason": "the preview reached its time bound"})
+            break
+        if report["composed"]:
+            # One review per pass: a burst that leaves a dozen plans owing a
+            # review should start one, not twelve at once on a lane.
+            report["skipped"].append(
+                {"plan": plan_slug, "reason": "this pass already composed one"}
+            )
+            continue
+        if not dry_run and len(report["read"]) >= PLAN_REVIEW_PASS_LIMIT:
+            # Weighing a plan against the live store costs about twenty seconds,
+            # because each plan is checked against the whole stored review set
+            # and a large project carries thousands of records. A preview that
+            # weighed every plan of such a project would not finish inside the
+            # 30 s its gate allows. Weigh one and stop; the cursor carried into
+            # the next pass means the rest are reached one per pass rather than
+            # never.
+            report["skipped"].append(
+                {"reason": f"the pass weighed its {PLAN_REVIEW_PASS_LIMIT} plans"}
+            )
+            break
+        report["read"].append(plan_slug)
+        stopped_at = plan_slug
+        try:
+            reason = _owed_review_skip_reason(
+                project,
+                plan_slug,
+                path,
+                base_dir=base_dir,
+                now_seconds=now_seconds,
+                authors=authors,
+                records=records,
+            )
+            if reason is not None:
+                report["skipped"].append({"plan": plan_slug, "reason": reason})
+                if reason.startswith(
+                    ("a stored review already covers", "the plan is ")
+                ):
+                    # Settled without a review, and nothing short of an edit
+                    # can unsettle it. Every other reason may clear on its own
+                    # (a quiet period expires, a review in flight finishes), so
+                    # those plans are read again on the next pass.
+                    passed[plan_slug] = edited
+                continue
+            if dry_run:
+                report["composed"].append({"plan": plan_slug, "dispatched": False})
+                continue
+            author = authors.get(str(plan_slug))
+            if author is None:
+                # The skip reason above already refused this plan; reaching here
+                # without an author means the run aged out between the two
+                # reads, and a review with no session to run under is not one
+                # this pass may start.
+                report["skipped"].append(
+                    {
+                        "plan": plan_slug,
+                        "reason": "no crew run names the plan under a day old",
+                    }
+                )
+                continue
+            subject = recovery.plan_review_subject(
+                project, plan_slug, author["session"], rubric=CONTENT_RUBRIC
+            )
+            result = recovery.dispatch_review_for_run(
+                subject, config=config, launcher=launcher
+            )
+        except Exception as exc:  # noqa: BLE001 — one plan's failure is that plan's
+            # One plan's failure is that plan's: a document the catalogue
+            # refuses must not stop the pass for every other plan.
+            report["failed"].append(
+                {"plan": plan_slug, "error": f"{type(exc).__name__}: {exc}"}
+            )
+            continue
+        entry = {
+            "plan": plan_slug,
+            "session": author["session"],
+            "dispatched": bool(result.get("dispatched")),
+            "review_run_id": str(result.get("review_run_id") or ""),
+        }
+        if result.get("reason"):
+            entry["reason"] = str(result["reason"])
+        report["composed"].append(entry)
+        composed_run = str(subject.get("run_id") or "")
+        if composed_run and (result.get("dispatched") or result.get("queued")):
+            # Only a review that was really started settles the plan and joins
+            # the set whose notes this reflex answers. A hold that dispatched
+            # nothing leaves the plan owing its review, so the next pass tries
+            # it again instead of waiting for a new edit.
+            passed[plan_slug] = edited
+            held[plan_slug] = sorted({*held.get(plan_slug, []), composed_run})
+    if not dry_run:
+        _record_weighed_edits(project, passed, cursor=stopped_at, composed=held)
+    return report
 
 
 # ── The per-day review summary ──────────────────────────────────────────────
