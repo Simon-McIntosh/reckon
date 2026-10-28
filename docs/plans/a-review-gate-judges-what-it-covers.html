@@ -25,7 +25,7 @@
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-10-28">
 <meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;a-review-gate-judges-what-it-covers#s2&quot;,&quot;a-review-gate-judges-what-it-covers#s9&quot;],&quot;s12&quot;:[&quot;a-review-gate-judges-what-it-covers#s9&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;]}">
 </head>
@@ -260,6 +260,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261028T150632067743-review-of-an-answered-findings-edit-is-covered-d9e202f9b5a6" data-who="reckon-build" data-when="2026-10-28T15:15:49.415Z">
     <div class="r-comment-body"><p>Reviewed r-20261028T105437811135-an-answered-findings-edit-is-covered at 7f9fe32e320346ec612ac224a3610c4665acbac1..d9e202f9b5a653f3f06cb6c4f507e71184b1f9c4: the delta repairs all four findings the previous review recorded, the head gate reads 5 passed EXIT=0 against a base of 2 failed 3 passed EXIT=1, and three non-blocking findings are recorded - two duplicated timestamp parsers against reckon/_timestamps.py:parse_utc, an untested line-anchor path in the coverage repair, and a memo key that does not name the review it caches.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261028T105437811135-an-answered-findings-edit-is-covered" data-who="reckon-build" data-when="2026-10-28T15:05:07Z">
+    <div class="r-comment-body"><p>The answered-finding coverage rule is implemented and its cost measured: an acted finding&#x27;s review covers the section it anchors while the edit stays under review.plan_change_threshold, an acted answer records the edit&#x27;s commit and what that commit is evidence of, head 5 passed against base 2 failed, the declared negative control fails on the rule alone, and coverage on both named plans stays within 1.5x of the base revision.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20261023-s5-premise" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v5 on 2026-10-23, findings reasoning-1 and done_when-1, declined for that wave because §5 was not being built. <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> diffs each cited commit against its own first parent, so there is no comparison against a recorded base to find, and §5's negative control is the span diff that function's docstring already rejects. Rework §5's premise and control before dispatching it.</p></div>
