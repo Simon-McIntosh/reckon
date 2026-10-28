@@ -57,10 +57,13 @@ findings. Two runs carry a blocking finding and are refused by the findings rule
 <code>r-20261027T123148256109-a-worker-widens-to-an-unclaimed-path</code>); both also
 sit below the floor, so the floor would have refused them as well. The remaining 27
 are refused on the floor or an incomplete record, not on a finding.</p>
-<p>The importer population — the 21 test files importing
+<p>The importer population — the test files importing
 <code>reckon.crew.queue_landing</code>, <code>reckon.crew.landing_measure</code> or
-<code>reckon.crew.recovery_review_acceptance</code> — is recorded at base and head in
-the run's gate logs.</p>
+<code>reckon.crew.recovery_review_acceptance</code> — gives 155 passed at head over
+21 files and 148 passed at the base revision over the 20 files that exist there,
+the difference being this node's own seven arms. No failure appears at head that is
+absent at base, so the added-failure delta is zero. <code>ruff check</code> and
+<code>ruff format --check</code> are clean on the changed paths.</p>
 
 </main>
 </body>
