@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A run a review does not block lands — a-run-no-review-blocks-lands</title>
+</head>
+<body>
+<main class="plan-doc">
+
+<h2 id="a-run-no-review-blocks-lands-what-changed">What changed</h2>
+<p>The landing pass accepted a stored review only when it carried no finding of any
+severity, so a review that raised two non-blocking observations held the run for a
+coordinator who had nothing to add. The acceptance predicate now withholds a landing
+on a <em>blocking</em> finding and accepts a review whose findings all declare a
+non-blocking severity. A finding that declares no severity still withholds the
+landing, because the repair reflex already reads an unstated severity as blocking and
+two readers of one record must not disagree.</p>
+
+<h3 id="a-run-no-review-blocks-lands-exemptions">Exemptions are written, not dropped</h3>
+<p>When the pass decides to land, it records each non-blocking finding against the
+stored review's own head-keyed record, exempted with the reason
+<code>non-blocking, noted at landing</code>, before the pointer that carried it is
+promoted away. A landing that could not write those dispositions is refused, because
+a landing that silently drops a reviewer's finding is the defect this section removes
+rather than a cheaper version of it.</p>
+
+<h3 id="a-run-no-review-blocks-lands-conflict">A conflicting head is named before it is measured</h3>
+<p>The pass reads the merge of the run's head onto the primary branch with
+<code>git merge-tree --write-tree</code>, which touches neither the checkout nor the
+branch. A head that conflicts is refused before the expensive measurement runs, and
+the obligation names the conflicting paths. The landing step's own merge applies the
+same refusal, so nothing is written to the branch on either path.</p>
+
+<h2 id="a-run-no-review-blocks-lands-measure">Measure</h2>
+<p><code>tests/test_a_run_a_review_does_not_block_lands.py</code> drives the landing
+pass itself and shows the section's six arms plus the unstated-severity reading:</p>
+<table>
+<thead><tr><th>Arm</th><th>What the pass did</th></tr></thead>
+<tbody>
+<tr><td>Two non-blocking findings, arms add nothing</td><td>Landed in one pass; both findings recorded <code>exempted</code> with the landing reason</td></tr>
+<tr><td>A blocking finding</td><td>Not landed; obligation <code>review acceptance floor or findings</code></td></tr>
+<tr><td>A finding stating no severity</td><td>Not landed, read the same as a blocking one</td></tr>
+<tr><td>A population failure that persists alone</td><td>Not landed; obligation named the test id and its 3/3 head re-runs</td></tr>
+<tr><td>An added failure passing alone 3/3 at both revisions</td><td>Landed; six isolated re-runs observed, three per revision</td></tr>
+<tr><td>Owner idle for a day</td><td>Landed like any other run</td></tr>
+<tr><td>Head conflicting with the primary branch</td><td>Not landed; obligation named the conflicting path, branch head unchanged</td></tr>
+</tbody>
+</table>
+<p>Gate: 7 passed at head. Negative control — restoring the any-finding rule — turned
+the first arm red and left the other six green, which is the mutation this node
+declares.</p>
+<p>Live store, over the runs the landing pass refused on 27 and 28 October: 55
+distinct runs. Of those, 26 have a complete record at or above the score floor and
+every one of them is now accepted — between them they carried 0 to 4 non-blocking
+findings. Two runs carry a blocking finding and are refused by the findings rule
+(<code>r-20261027T045403981624-one-wait-blocks-only-its-request</code>,
+<code>r-20261027T123148256109-a-worker-widens-to-an-unclaimed-path</code>); both also
+sit below the floor, so the floor would have refused them as well. The remaining 27
+are refused on the floor or an incomplete record, not on a finding.</p>
+<p>The importer population — the 21 test files importing
+<code>reckon.crew.queue_landing</code>, <code>reckon.crew.landing_measure</code> or
+<code>reckon.crew.recovery_review_acceptance</code> — is recorded at base and head in
+the run's gate logs.</p>
+
+</main>
+</body>
+</html>
