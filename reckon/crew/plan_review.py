@@ -1759,7 +1759,7 @@ def record_response(
         write_json_atomically(
             committed, updated, indent=2, sort_keys=True, fsync=False, mode=None
         )
-        _review_store.commit_record_write(str(updated.get("project") or ""), committed)
+        _commit_record_write(str(updated.get("project") or ""), committed)
         return committed
     return store_plan_review(updated, base_dir=base_dir)
 
@@ -1839,6 +1839,70 @@ def answering_as(action: str) -> Iterator[None]:
         yield
     finally:
         _ANSWER_OVERRIDE.reset(token)
+
+
+# Answers written inside this region are committed together rather than one
+# commit each. A pass that answers the notes of a composed review writes them
+# all in one turn, and one commit per answer puts a dozen commits in a
+# project's history for one reflex action.
+_DEFERRED_RECORD_COMMITS: ContextVar[list[Path] | None] = ContextVar(
+    "plan_review_deferred_record_commits", default=None
+)
+
+
+@contextmanager
+def _deferring_record_commits() -> Iterator[list[Path]]:
+    """Hold the record paths a block would commit, so the caller commits once."""
+    pending: list[Path] = []
+    token = _DEFERRED_RECORD_COMMITS.set(pending)
+    try:
+        yield pending
+    finally:
+        _DEFERRED_RECORD_COMMITS.reset(token)
+
+
+def _commit_record_write(project: str, path: Path) -> None:
+    """Commit one answered record, or hold it when the block defers commits."""
+    pending = _DEFERRED_RECORD_COMMITS.get()
+    if pending is not None:
+        pending.append(Path(path))
+        return
+    _review_store.commit_record_write(project, path)
+
+
+def _commit_record_writes_once(project: str, paths: Iterable[Path]) -> int:
+    """Commit every answered record under one commit, and return how many.
+
+    Only the records that live in the project's committed tree are committed
+    here, which is the same filter a single answer applies: a staging record is
+    not a tracked file and is left where the host store keeps it. A commit that
+    fails leaves nothing staged, and the caller records it as the pass's
+    failure rather than losing the answers already on disk.
+    """
+    committed = _review_store.committed_review_root(project)
+    if committed is None:
+        return 0
+    root = Path(committed).resolve()
+    inside: list[Path] = []
+    for path in paths:
+        try:
+            Path(path).resolve().relative_to(root)
+        except (OSError, ValueError):
+            continue
+        inside.append(Path(path))
+    if not inside:
+        return 0
+    from reckon import ledger
+
+    ledger._commit_state_write(
+        project,
+        "fix(review): note the findings a composed review would not act on",
+        "Answer the would-not-change findings of a plan review the reflex "
+        "composed, in one commit for the whole pass.",
+        inside,
+        "review",
+    )
+    return len(inside)
 
 
 def _line_unit_map(text: str) -> dict[int, str]:
@@ -2235,12 +2299,25 @@ def compose_burst_refusal(
 # review such a plan owes on its own, and answers the findings its reviewer
 # marked as not changing the plan, so the coordinator is woken only for the
 # findings that would change it.
+#
+# The composition is scoped to an authoring burst on purpose. A pass that
+# composed for every plan owing a review reviewed plans nobody was editing —
+# one last changed eleven days earlier — under whichever session happened to
+# run the sweep, so the findings landed in a coordinator's lap for a document
+# it had not touched. A plan is the reflex's to review only while its author is
+# still working on it and a run on it is recent enough to name that author.
 
 # The plan must have been left alone this long before its review is composed.
 # A coordinator authors a plan over several minutes, and a review composed
 # between two edits reads half a document and raises findings against prose
 # the author was about to replace.
 PLAN_REVIEW_QUIET_SECONDS = 600
+
+# The age past which a plan's edit is no longer an authoring burst. A plan left
+# alone for a day is one its coordinator has finished with or moved away from,
+# and a review of it would be read by nobody: it is the coordinator's to
+# compose, with ``/reckon-build``, when it returns to the plan.
+PLAN_REVIEW_BURST_SECONDS = 24 * 60 * 60
 
 # The most plans one pass weighs. The pass runs on the follower's sweep, so its
 # cost is a bound on the whole watch loop rather than on one review: weighing a
@@ -2273,6 +2350,99 @@ def plan_review_quiet_remaining(
     return max(0, int(remaining))
 
 
+def plan_review_edit_age(
+    plan_path: str | Path, *, now_seconds: float | None = None
+) -> float | None:
+    """How long ago the plan file was last written, or ``None`` when unreadable.
+
+    ``None`` is not zero: a plan whose edit time cannot be measured is not a
+    plan someone is editing now, so it fails the burst test rather than passing
+    it. The two readers of an edit's age — the quiet period and the burst
+    window — measure it here, so they cannot disagree about when the edit was.
+    """
+    try:
+        edited = Path(plan_path).stat().st_mtime
+    except OSError:
+        return None
+    moment = time.time() if now_seconds is None else now_seconds
+    return moment - edited
+
+
+def _run_plan(record: Mapping[str, Any]) -> str:
+    """The plan a live pointer or a ledger row is a run on, or empty.
+
+    The two stores carry it in different places — a live pointer under its
+    ``node``, a committed ledger row at the top level — and a run makes itself
+    known by either, so a reader that wants "a run on this plan" reads both
+    rather than one and calling it the record.
+    """
+    node = record.get("node")
+    if isinstance(node, Mapping) and node.get("plan"):
+        return str(node.get("plan") or "").strip()
+    return str(record.get("plan") or "").strip()
+
+
+def _run_moment(record: Mapping[str, Any]) -> float | None:
+    """When a live pointer or a ledger row began, in epoch seconds, or ``None``.
+
+    A live pointer is stamped when its dispatch was recorded and, again, when it
+    launched; a committed row carries its dispatch and completion stamps. The
+    newest stamp it has is the closest answer to "when did this run happen",
+    and a row carrying none has no age a reader can weigh.
+    """
+    stamps = [
+        moment.timestamp()
+        for key in ("launched_at", "created_at", "dispatched_at", "completed_at")
+        if (moment := _instant(record.get(key))) is not None
+    ]
+    return max(stamps) if stamps else None
+
+
+def plan_authoring_run(
+    project: str, plan_slug: str, *, now_seconds: float | None = None
+) -> dict[str, str] | None:
+    """The newest crew run on this plan under a day old, or ``None``.
+
+    A review composed by the reflex is dispatched under the session that will
+    read its findings, and the store already records which session that is: the
+    plan's own authoring run. The run is looked for in both places a run is kept
+    — the live pointers, which hold a dispatch still in flight, and the
+    committed ledger, which holds the runs that finished — because an author
+    who has just stopped editing may be either.
+
+    ``None`` is the answer a plan with no such run gets, and it is a refusal to
+    compose rather than a reason to invent a session: a plan no run has named
+    in the last day is one to leave to its coordinator.
+    """
+    from reckon import ledger
+
+    moment = time.time() if now_seconds is None else now_seconds
+    newest: tuple[float, str, str] | None = None
+    candidates: list[dict[str, Any]] = [
+        dict(pointer) for pointer in runs.list_live(project=project)
+    ]
+    try:
+        rows, _version = ledger.read_records(project, with_figures=False)
+    except Exception:  # noqa: BLE001 — an unreadable ledger names no run
+        rows = []
+    candidates.extend(rows)
+    for record in candidates:
+        if _run_plan(record) != str(plan_slug):
+            continue
+        started = _run_moment(record)
+        if started is None or moment - started > PLAN_REVIEW_BURST_SECONDS:
+            continue
+        session = str(record.get("session") or "").strip()
+        run_id = str(record.get("run_id") or "").strip()
+        if not session or not run_id:
+            continue
+        if newest is None or started > newest[0]:
+            newest = (started, run_id, session)
+    if newest is None:
+        return None
+    return {"run_id": newest[1], "session": newest[2]}
+
+
 def noted_answer_reason(finding: Mapping[str, Any]) -> str:
     """The one-line reason a would-not-change finding is answered with.
 
@@ -2293,18 +2463,30 @@ def _note_records(
     base_dir: str | Path | None,
     by: str,
     when: str | None,
+    composed: Iterable[str],
 ) -> list[dict[str, str]]:
-    """Answer each unanswered would-not-change finding of these records.
+    """Answer each unanswered would-not-change finding of a composed review.
 
     A finding the reviewer marked ``WOULD_CHANGE_THE_PLAN: no`` needs no
     decision from the author, so leaving it open costs a coordinator a turn it
     cannot spend while paused at a rate limit. Only an explicit ``no`` is
     answered: a finding whose verdict the report never stated carries
     ``None``, which is not a no, so it waits for its author like any other.
+
+    ``composed`` names the reviews this reflex dispatched, and only those are
+    answered. A review a coordinator composed is the coordinator's: its
+    findings are its author's to answer, and a reflex that answered them would
+    be writing an answer nobody asked it for, into a repository whose owner has
+    not seen the finding. The filter is by run id rather than by anything about
+    the record's content, because who dispatched a review is not a property the
+    record itself carries.
     """
+    owned = {str(run_id) for run_id in composed if str(run_id)}
     noted: list[dict[str, str]] = []
     for stored in records:
         record: Mapping[str, Any] = stored
+        if str(record.get("review_run_id") or "").strip() not in owned:
+            continue
         for finding in list(record.get("findings") or []):
             if not isinstance(finding, Mapping):
                 continue
@@ -2375,6 +2557,13 @@ def _reflex_state_path(project: str) -> Path:
 # slug: a slug is recorded with a float mtime, which is what tells them apart.
 _REFLEX_CURSOR_KEY = "__cursor__"
 
+# The key the state file holds the reviews the reflex dispatched under, keyed
+# by plan slug. It is what lets a later pass answer a composed review's
+# would-not-change findings and leave every other review alone: the record the
+# reviewer writes names its own run, so the reflex's own dispatches are the
+# only set it may answer.
+_REFLEX_COMPOSED_KEY = "__composed__"
+
 
 def _reflex_state(project: str) -> dict:
     """The stored state of the last pass: plan mtimes and the rotation cursor."""
@@ -2400,20 +2589,44 @@ def _weighed_cursor(project: str) -> str:
     return cursor if isinstance(cursor, str) else ""
 
 
+def _composed_reviews(project: str) -> dict[str, list[str]]:
+    """The review runs the reflex dispatched, keyed by the plan they review."""
+    stored = _reflex_state(project).get(_REFLEX_COMPOSED_KEY)
+    if not isinstance(stored, Mapping):
+        return {}
+    return {
+        str(slug): [str(run_id) for run_id in run_ids if isinstance(run_ids, list)]
+        for slug, run_ids in stored.items()
+    }
+
+
 def _record_weighed_edits(
-    project: str, weighed: Mapping[str, float], *, cursor: str = ""
+    project: str,
+    weighed: Mapping[str, float],
+    *,
+    cursor: str = "",
+    composed: Mapping[str, Iterable[str]] | None = None,
 ) -> None:
-    """Write the mtimes the pass weighed and the plan it stopped at."""
+    """Write the mtimes the pass weighed, the plan it stopped at, and its reviews."""
     path = _reflex_state_path(project)
     stored: dict[str, Any] = dict(sorted(weighed.items()))
     if cursor:
         stored[_REFLEX_CURSOR_KEY] = cursor
+    held = {
+        str(slug): sorted({str(run_id) for run_id in run_ids if str(run_id)})
+        for slug, run_ids in (composed or {}).items()
+    }
+    held = {slug: run_ids for slug, run_ids in held.items() if run_ids}
+    if held:
+        stored[_REFLEX_COMPOSED_KEY] = held
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(stored, indent=2) + "\n", encoding="utf-8")
     except OSError:
         # The record is an optimisation: a pass that cannot write it reads
-        # every plan next time, which is slow but never wrong.
+        # every plan next time, which is slow but never wrong. A pass that
+        # cannot record a review it dispatched answers nothing on that review
+        # later, which is the safe direction: an unanswered finding waits.
         pass
 
 
@@ -2429,9 +2642,11 @@ def _owed_review_skip_reason(
 
     The checks run cheapest first and each answers a different reason the plan
     is not the reflex's to review yet: a finished plan owes nothing, a plan
-    still being authored has not settled, one whose review is already running
-    is being reviewed, and one that has had the reviews its edit allowed must
-    have its findings answered rather than reviewed again.
+    still being authored has not settled, one whose edit is no longer an
+    authoring burst has no reader for a review, one no recent run names is left
+    to its coordinator, one whose review is already running is being reviewed,
+    and one that has had the reviews its edit allowed must have its findings
+    answered rather than reviewed again.
     """
     from reckon.crew import recovery_review_dispatch
     from reckon.lifecycle import TERMINAL_STATUSES
@@ -2445,6 +2660,22 @@ def _owed_review_skip_reason(
             f"the plan was edited less than {PLAN_REVIEW_QUIET_SECONDS // 60} "
             f"minutes ago; its review is composed after {quiet_remaining}s more "
             "without an edit"
+        )
+    edited_age = plan_review_edit_age(path, now_seconds=now_seconds)
+    if edited_age is None:
+        return "the plan file's last edit cannot be read, so its burst cannot be judged"
+    if edited_age > PLAN_REVIEW_BURST_SECONDS:
+        hours = int(edited_age // 3600)
+        return (
+            f"the plan was last edited {hours}h ago, longer than the "
+            f"{PLAN_REVIEW_BURST_SECONDS // 3600}h authoring burst this pass "
+            "reviews within; its review is its coordinator's to compose"
+        )
+    if plan_authoring_run(project, plan_slug, now_seconds=now_seconds) is None:
+        return (
+            "no crew run has named the plan in the last "
+            f"{PLAN_REVIEW_BURST_SECONDS // 3600}h, so no session would read "
+            "its review; it is left to its coordinator"
         )
     standing = recovery_review_dispatch._standing_plan_review(project, plan_slug)
     if standing:
@@ -2462,34 +2693,37 @@ def _owed_review_skip_reason(
 def compose_owed_plan_reviews(
     project: str,
     *,
-    session: str,
     config: Mapping[str, Any] | None = None,
     launcher: Callable[..., Any] | None = None,
     base_dir: str | Path | None = None,
     now_seconds: float | None = None,
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    """Compose the review each quiet plan owes, and answer its notes.
+    """Compose the review a plan owes after its author's burst, and note its own.
 
     The producer pass: called from the crew watch sweep, it is what makes a
     plan's review compose itself after its author stops editing, with no
     coordinator command in between and no lane named by this caller. Every
     plan in the project is weighed by :func:`_owed_review_skip_reason`, so a
-    plan still being authored, one already under review and one whose edit has
-    had the reviews it allowed are each reported with their reason rather than
-    composed.
+    plan still being authored, one past its authoring burst, one no recent run
+    names, one already under review and one whose edit has had the reviews it
+    allowed are each reported with their reason rather than composed.
 
-    The would-not-change notes are answered on every pass, before and
-    independently of composition: they are answers to reviews already stored,
-    and waiting for the quiet period would leave a coordinator woken for a
-    finding the reviewer had already said needs no decision.
+    The review is dispatched under the session of the run that last named the
+    plan, never under whichever session happens to run the sweep. That session
+    is the plan's author: it holds the lane and the member the review runs on,
+    and its coordinator is the reader the findings are for.
+
+    The would-not-change notes are answered before composition, on the reviews
+    this reflex composed and no others. A coordinator's own review is answered
+    by its coordinator; a reflex that answered it would be writing a decision
+    into a repository on the strength of a finding its owner had not read.
 
     A ``dry_run`` reports what the pass would compose and answers nothing: a
     preview that wrote a note would be a preview that acted.
     """
     from reckon.crew import recovery
 
-    owner = str(session or "").strip() or recovery._sweeping_session(project)
     report: dict[str, Any] = {
         "project": project,
         "dry_run": bool(dry_run),
@@ -2503,28 +2737,49 @@ def compose_owed_plan_reviews(
     report["failed"].extend(failed)
     if not plans:
         return report
+    # The reviews this reflex dispatched, carried across passes: a review's
+    # record is written by the review run, so the pass that composed it is
+    # never the pass that reads it. An id is dropped once its record is in the
+    # store, which is the moment its notes have been answered.
+    held = _composed_reviews(project) if not dry_run else {}
+    answered: list[Path] = []
     if not dry_run:
         # One walk of the store for every plan, not one walk per plan: this
         # pass runs on the sweep's cadence and a project carries dozens of them.
-        report["notes"] = _note_records(
-            list_plan_reviews(project, base_dir=base_dir),
-            base_dir=base_dir,
-            by=PLAN_REVIEW_REFLEX,
-            when=None,
-        )
-    if not owner:
-        # A plan review is dispatched under a session, because its lane and its
-        # member belong to the coordinator that will read its findings. A pass
-        # holding no session composes nothing rather than inventing one.
-        report["skipped"].append(
-            {
-                "reason": (
-                    "the pass holds no session, and a plan review is dispatched "
-                    "under the session that will read its findings"
+        records = list_plan_reviews(project, base_dir=base_dir)
+        owned = {run_id for run_ids in held.values() for run_id in run_ids}
+        try:
+            with _deferring_record_commits() as pending:
+                report["notes"] = _note_records(
+                    records,
+                    base_dir=base_dir,
+                    by=PLAN_REVIEW_REFLEX,
+                    when=None,
+                    composed=owned,
                 )
-            }
-        )
-        return report
+                answered = list(pending)
+        except (OSError, ValueError) as exc:
+            report["failed"].append(
+                {"error": f"{type(exc).__name__}: {exc}", "stage": "notes"}
+            )
+        if answered:
+            try:
+                _commit_record_writes_once(project, answered)
+            except Exception as exc:  # noqa: BLE001 — the notes are on disk
+                report["failed"].append(
+                    {
+                        "error": f"{type(exc).__name__}: {exc}",
+                        "stage": "notes commit",
+                    }
+                )
+        stored_runs = {
+            str(record.get("review_run_id") or "").strip() for record in records
+        }
+        held = {
+            slug: [run_id for run_id in run_ids if run_id not in stored_runs]
+            for slug, run_ids in held.items()
+        }
+        held = {slug: run_ids for slug, run_ids in held.items() if run_ids}
     weighed = _weighed_edits(project) if not dry_run else {}
     passed = dict(weighed)
     # Start after the plan the last pass weighed. The pass takes one plan, so a
@@ -2587,8 +2842,21 @@ def compose_owed_plan_reviews(
             if dry_run:
                 report["composed"].append({"plan": plan_slug, "dispatched": False})
                 continue
+            author = plan_authoring_run(project, plan_slug, now_seconds=now_seconds)
+            if author is None:
+                # The skip reason above already refused this plan; reaching here
+                # without an author means the run aged out between the two
+                # reads, and a review with no session to run under is not one
+                # this pass may start.
+                report["skipped"].append(
+                    {
+                        "plan": plan_slug,
+                        "reason": "no crew run names the plan under a day old",
+                    }
+                )
+                continue
             subject = recovery.plan_review_subject(
-                project, plan_slug, owner, rubric=CONTENT_RUBRIC
+                project, plan_slug, author["session"], rubric=CONTENT_RUBRIC
             )
             result = recovery.dispatch_review_for_run(
                 subject, config=config, launcher=launcher
@@ -2602,19 +2870,23 @@ def compose_owed_plan_reviews(
             continue
         entry = {
             "plan": plan_slug,
+            "session": author["session"],
             "dispatched": bool(result.get("dispatched")),
             "review_run_id": str(result.get("review_run_id") or ""),
         }
         if result.get("reason"):
             entry["reason"] = str(result["reason"])
         report["composed"].append(entry)
-        if result.get("dispatched") or result.get("queued"):
-            # Only a review that was really started settles the plan. A hold
-            # that dispatched nothing leaves the plan owing its review, so the
-            # next pass tries it again instead of waiting for a new edit.
+        composed_run = str(subject.get("run_id") or "")
+        if composed_run and (result.get("dispatched") or result.get("queued")):
+            # Only a review that was really started settles the plan and joins
+            # the set whose notes this reflex answers. A hold that dispatched
+            # nothing leaves the plan owing its review, so the next pass tries
+            # it again instead of waiting for a new edit.
             passed[plan_slug] = edited
+            held[plan_slug] = sorted({*held.get(plan_slug, []), composed_run})
     if not dry_run:
-        _record_weighed_edits(project, passed, cursor=stopped_at)
+        _record_weighed_edits(project, passed, cursor=stopped_at, composed=held)
     return report
 
 

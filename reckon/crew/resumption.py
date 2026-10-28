@@ -2049,18 +2049,18 @@ def sweep(
             reviews = {"error": str(exc)}
 
     # The plan-review composition, on the same cadence and from the same site.
-    # A plan a coordinator has stopped editing owes a content review before its
-    # sections may dispatch, and a coordinator paused at a rate limit composes
-    # none; the pass that already dispatches each settled run's review is what
-    # makes the plan's compose itself. Like the run pass it is idempotent — a
-    # plan whose review is stored or in flight is left alone — and it answers
-    # the findings a review marked as not changing the plan, so the
-    # coordinator is woken only for the ones that would.
+    # A plan whose author has just stopped editing owes a content review before
+    # its sections may dispatch, and a coordinator paused at a rate limit
+    # composes none; the pass that already dispatches each settled run's review
+    # is what makes the plan's compose itself, under the session of the run
+    # that last named the plan rather than this sweep's. Like the run pass it
+    # is idempotent — a plan whose review is stored or in flight is left alone
+    # — and it notes the findings a review it composed marked as not changing
+    # the plan, so the coordinator is woken only for the ones that would.
     plan_reviews: dict[str, Any] = {}
     try:
         plan_reviews = plan_review.compose_owed_plan_reviews(
             project,
-            session=session or "",
             config=config,
             launcher=launch,
             now_seconds=_now(now).timestamp(),
