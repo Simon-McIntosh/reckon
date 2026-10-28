@@ -1,0 +1,120 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_overlapping_queued_requests_launch_in_turn.py::test_the_later_request_launches_once_the_earlier_is_promoted"
+  ],
+  "added_failures_note": "The reviewed manifest's baseline_suite and after_suite are empty (manifest.md:21-22, node unarmed), so the pair is taken from the arms the worker did record: logs/overlapping-base.log at base 1211c30e8b against the same file (1 failure: test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused, which also fails at head and is recorded as environmental) and logs/admission-neighbours-head.log at head b7cbbbc4 (2 failures: that same environmental one plus test_the_later_request_launches_once_the_earlier_is_promoted). The latter passes at base and fails at head, so it is the one added failure.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The pass attempts the launch despite a binding stopped-run claim, which is exactly what restoring the removed pre-check does; the negative control shows this arm reddening at EXIT=1 with four attempts.",
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": 174
+    },
+    {
+      "condition_to_fail": "The claim releases (holder pointer removed) but the request is not launched on the next pass, which fails if the hold is sticky rather than recomputed per pass.",
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": 184
+    },
+    {
+      "condition_to_fail": "A CompetenceLimit request is retried on the timer instead of held; the two passes at now+2h would each add an attempt, so reverting _until_changed_hold makes probe.attempted grow and the assertion fail.",
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": 219
+    },
+    {
+      "condition_to_fail": "The plan stamp moves but the request is not retried, which fails if the guard comparison at queue_admission.py:949 is inverted or the guard is never stored.",
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": 240
+    },
+    {
+      "condition_to_fail": "retry_at is not exactly one back-off after failure_at, which fails if _record_queued_failure is handed the pass start again.",
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": 247
+    },
+    {
+      "condition_to_fail": "The back-off is measured from the injected 2020 pass start, which fails the >365-day comparison if moment=moment is restored.",
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": 254
+    },
+    {
+      "condition_to_fail": "More than one of the four requests reaches the launch; this is the arm the declared negative control reddens.",
+      "file": "tests/test_a_request_that_cannot_launch_costs_nothing.py",
+      "line": 273
+    }
+  ],
+  "base_log_revision": "1211c30e8ba43ec26c5e38a185cd0c30fb9ab4e2",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_run_commands.py:4015",
+    "reckon/crew/queue_admission.py:3370"
+  ],
+  "completed_at": "2026-10-28T17:34:26.104Z",
+  "dispatched_at": "2026-10-28T17:21:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "919",
+      "severity": "blocking",
+      "text": "blocking: _UNTIL_CHANGED_FAILURES matches the substring 'node is not dispatchable', which reckon/crew/summary.py:486 also uses for a capacity refusal (backend at its partition-cores or login-memory bound, raised from reckon/crew/dispatch_admission.py:275-282 and cured by an occupying run finishing). _dependency_guard at line 725 fingerprints only brief, plan, host-config, project-config and code, none of which moves when a run finishes, so a request refused for capacity is now held-until-changed indefinitely where the old bounded back-off retried it - the stranding this section exists to remove, reintroduced for a second refusal class."
+    },
+    {
+      "file": "tests/test_overlapping_queued_requests_launch_in_turn.py",
+      "line": "341",
+      "severity": "blocking",
+      "text": "blocking: section 32's done-when requires that the test files importing reckon.crew.queue_admission add no failures against the base revision, but this neighbour passes at base 1211c30e8b (logs/overlapping-base.log, 10 passed 1 failed) and fails at head b7cbbbc4 (logs/admission-neighbours-head.log, 35 passed 2 failed; logs/overlapping-head-single.log reddens the same test alone) because it asserts the ScopeConflict failure and retry_at this section replaces. The worker reported it under outside_scope rather than repairing it, and its write grant omitted the file that had to move with the change."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "817",
+      "severity": "non-blocking",
+      "text": "non-blocking: _declared_scope_paths duplicates the capability owned by reckon/crew/runs.py:1019 _repository_relative_scope (normalize an in-repository scope to a repository-relative POSIX path); it is a deliberate variant because it does not resolve symlinks, but extending the owner with a resolve=False argument would keep one normalizer in the repository."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-request-that-cannot-launch-costs-nothing.html",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing fragment cites logs/head-1.log as the gate receipt, but that log carries no '#' command/revision header and no trailing bare EXIT= line, so a promotion reading the gate's status from the log finds nothing; logs/queue-admission-tests-head.log:4 also carries the unsubstituted placeholder '<37 queue_admission tests>' as its command."
+    }
+  ],
+  "head_log_revision": "b7cbbbc4aee50f966cdbab851df59a98a81b720e",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read commit by commit: b7cbbbc4ae adds 146 lines to reckon/crew/queue_admission.py plus the 277-line test, and 509b754be2 adds the 8-line evidence fragment; nothing outside the three granted paths changes and the deletion count is one line, the moment=moment argument replaced by moment=_now().",
+    "done_when": "Plan section 32 names four arms counted through a patched _launch_queued; tests/test_a_request_that_cannot_launch_costs_nothing.py:171,196,232,258 implement all four and /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T143214494729-a-request-that-cannot-launch-costs-nothing/logs/head-1.log records '4 passed in 10.05s', but the section's further clause that the test files importing reckon.crew.queue_admission add no failures against the base revision is not met (see FINDING tests/test_overlapping_queued_requests_launch_in_turn.py:341).",
+    "goal": "The node goal is that a request which cannot launch costs an admission pass nothing; reckon/crew/queue_admission.py:3096-3146 now judges a queued request before _launch_queued, holding it held-on-claim on a binding live claim (lines 859-903) and held-until-changed on a CompetenceLimit or contract refusal (lines 919-954).",
+    "manifest": "Read; manifest.md:5 records status complete, listing the gate (line 15), the red negative control with EXIT=1 (lines 19-20), one pre-existing and one out-of-scope related-test failure (line 13 / line 26), and empty baseline_suite and after_suite (lines 21-22) because the node was unarmed.",
+    "write_paths": "The reviewed manifest.md:3 grants reckon/crew/queue_admission.py, tests/test_a_request_that_cannot_launch_costs_nothing.py, docs/evidence/fragments/a-queue-holds-the-whole-plan/a-request-that-cannot-launch-costs-nothing.html and the figures directory; git diff 1211c30e8b..509b754 touches only the first three, so every changed path is inside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_request_that_cannot_launch_costs_nothing.py:273 fails if the claim pre-check is restored away (shown by logs/negative-control.log at EXIT=1 with four attempts) and :219/:240 fail if the until-changed hold is removed, but no assertion covers the capacity-refusal branch that the 'node is not dispatchable' marker now captures.",
+    "evidence": "The four gate arms count real attempts through a patched _launch_queued in tests/test_a_request_that_cannot_launch_costs_nothing.py:107-127 and the negative control is genuinely red, but logs/head-1.log carries neither a command/revision header nor a trailing EXIT= line, and the related-suite clause of the done-when shows one added failure.",
+    "fit": "The added helpers at reckon/crew/queue_admission.py:817-954 follow the module's shape, reuse _verdict_row, _dependency_guard and _failure_text, and carry no plan, ticket or version identifiers in names or comments.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:3096-3146 does judge a request before the launch as 32 asks, but the second mechanism matches the marker 'node is not dispatchable' (line 919), which is also the text of a capacity refusal at reckon/crew/summary.py:486 raised by reckon/crew/dispatch_admission.py:275-282, so a refusal that waiting does cure is now held under the change-only rule.",
+    "reuse": "reckon/crew/queue_admission.py:817-844 re-implements repository-relative scope normalization already owned by reckon/crew/runs.py:1019 _repository_relative_scope rather than extending it, though the comparison itself correctly reuses runs._scopes_overlap at line 894.",
+    "scope_discipline": "Every path in git diff 1211c30e8b..509b754 lies inside the four paths granted at manifest.md:3; the figures directory was granted and left unused, and no file outside the grant was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a request which cannot launch costs an admission pass nothing; reckon/crew/queue_admission.py:3096-3146 judges a queued request before _launch_queued, holding it held-on-claim (lines 859-903) or held-until-changed (lines 919-954).\nVERDICT done_when: Plan section 32 names four arms counted through a patched _launch_queued; tests/test_a_request_that_cannot_launch_costs_nothing.py:171-277 implement all four and logs/head-1.log records '4 passed in 10.05s', but the related-suite clause adds one failure at tests/test_overlapping_queued_requests_launch_in_turn.py:341.\nVERDICT write_paths: manifest.md:3 grants four paths and git diff 1211c30e8b..509b754 touches only three of them, so every changed path is inside the declared scope.\nVERDICT manifest: read; manifest.md:5-26 records status complete, the gate command, the EXIT=1 negative control, the related-suite comparison, and empty baseline_suite and after_suite lines.\nVERDICT diff: read commit by commit; b7cbbbc4ae carries the 146-line admission change and the 277-line test, 509b754be2 adds the 8-line evidence fragment, and no path outside the grant changes.\nCALL_SITES: reckon/crew_run_commands.py:4015, reckon/crew/queue_admission.py:3370\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:919 captures 'node is not dispatchable', which is also the capacity refusal at reckon/crew/summary.py:486, so the hold rule mis-fires on a refusal that waiting cures.\nSCORE evidence: 11\nJUSTIFICATION evidence: the gate counts real attempts through a patched _launch_queued at tests/test_a_request_that_cannot_launch_costs_nothing.py:107-127 and logs/negative-control.log is genuinely red at EXIT=1, but logs/head-1.log has no command header and no EXIT= line and the related-suite clause of the done-when adds one failure.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 1211c30e8b..509b754 is inside the four paths granted at manifest.md:3.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_request_that_cannot_launch_costs_nothing.py:273 and :219 redden when the claim pre-check or the until-changed hold is reverted, but no assertion covers the capacity-refusal branch the line-919 marker now captures.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers at reckon/crew/queue_admission.py:817-954 follow the module's own shape and reuse _verdict_row, _dependency_guard and _failure_text without plan or ticket identifiers.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:817-844 re-implements repository-relative scope normalization owned by reckon/crew/runs.py:1019 _repository_relative_scope rather than extending it, though the overlap test at line 894 correctly reuses runs._scopes_overlap.\nFINDING reckon/crew/queue_admission.py:919 blocking: _UNTIL_CHANGED_FAILURES matches 'node is not dispatchable', which reckon/crew/summary.py:486 also uses for a capacity refusal cured by a run finishing, and _dependency_guard at line 725 watches nothing that moves when one does, so such a request is held indefinitely.\nFINDING tests/test_overlapping_queued_requests_launch_in_turn.py:341 blocking: this neighbour passes at base 1211c30e8b and fails at head b7cbbbc4, so section 32's 'add no failures against the base revision' clause is unmet and the change cannot land without updating it or a coordinated follow-on.\nFINDING reckon/crew/queue_admission.py:817 non-blocking: _declared_scope_paths duplicates the normalization capability owned by reckon/crew/runs.py:1019 _repository_relative_scope.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/a-request-that-cannot-launch-costs-nothing.html:6 non-blocking: the cited gate log logs/head-1.log carries no command/revision header and no trailing EXIT= line, and logs/queue-admission-tests-head.log:4 carries an unsubstituted command placeholder.\n",
+  "review_run_id": "r-20261028T172037278571-review-of-a-request-that-cannot-launch-costs-nothing-509b754be256",
+  "reviewed_base_sha": "1211c30e8ba43ec26c5e38a185cd0c30fb9ab4e2",
+  "reviewed_commits": [
+    "b7cbbbc4aee50f966cdbab851df59a98a81b720e",
+    "509b754be2561eb15557ff4445f9d8625d97a1e9"
+  ],
+  "reviewed_head_sha": "509b754be2561eb15557ff4445f9d8625d97a1e9",
+  "reviewed_run_id": "r-20261028T143214494729-a-request-that-cannot-launch-costs-nothing",
+  "scores": {
+    "durability": 15,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T18:35:00Z",
+  "total": 81
+}
