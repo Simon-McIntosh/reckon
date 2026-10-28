@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import queue_landing, runs
+from reckon.crew import queue_landing, review_dispositions, runs
 from reckon.crew import review as review_module
 
 PROJECT = "landing-fixture"
@@ -27,7 +27,7 @@ def _git(repo: Path, *arguments: str) -> str:
 
 
 @pytest.fixture()
-def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str | Path]:
+def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
@@ -65,11 +65,10 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str |
         _git(repo, "add", "marker.txt")
         _git(repo, "commit", "-q", "-m", f"feat: deliver {step}")
         revisions.append(_git(repo, "rev-parse", "HEAD"))
-    head = revisions[-1]
     return {
         "repo": repo,
         "base": base,
-        "head": head,
+        "head": revisions[-1],
         "revisions": revisions,
     }
 
@@ -84,7 +83,7 @@ def _manifest(commit_entries: list[str]) -> None:
     )
 
 
-def _pointer(repo: Path, head: str) -> None:
+def _pointer(repo: Path) -> None:
     manifest = runs.run_dir(RUN) / runs.DEFAULT_MANIFEST_NAME
     runs._write_json(
         runs.pointer_path(RUN),
@@ -103,35 +102,40 @@ def _pointer(repo: Path, head: str) -> None:
     )
 
 
-def _review(head: str, *, scores: int = 20) -> None:
-    text = "\n".join(
-        f"SCORE {dimension}: {scores}" for dimension in review_module.REVIEW_DIMENSIONS
-    )
+def _store(head: str, *, base: str, text: str) -> None:
     parsed = review_module.parse_review(text)
     parsed.update(
         {
             "project": PROJECT,
             "reviewed_run_id": RUN,
             "review_run_id": "review-of-refused",
+            "reviewed_base_sha": base,
             "reviewed_head_sha": head,
         }
     )
     review_module.store_review(parsed)
 
 
-def _incomplete_review(head: str) -> None:
+def _review(head: str, *, base: str, finding: str = "") -> None:
+    _store(
+        head,
+        base=base,
+        text="\n".join(
+            (
+                *((f"FINDING tests/test_alpha.py:3 {finding}",) if finding else ()),
+                *(
+                    f"SCORE {dimension}: 20"
+                    for dimension in review_module.REVIEW_DIMENSIONS
+                ),
+            )
+        ),
+    )
+
+
+def _incomplete_review(head: str, *, base: str) -> None:
     """A record the acceptance rule cannot read, so it refuses the landing."""
 
-    parsed = review_module.parse_review("SCORE durability: 20\n")
-    parsed.update(
-        {
-            "project": PROJECT,
-            "reviewed_run_id": RUN,
-            "review_run_id": "review-of-refused",
-            "reviewed_head_sha": head,
-        }
-    )
-    review_module.store_review(parsed)
+    _store(head, base=base, text="SCORE durability: 20\n")
 
 
 def _land_stub(calls: list[str]):
@@ -142,13 +146,24 @@ def _land_stub(calls: list[str]):
     return land
 
 
+def _counting_acceptance(judged: list[object], verdict: bool = False):
+    real = queue_landing._review_accepts_promotion
+
+    def counting(review):
+        judged.append(review)
+        return verdict or real(review)
+
+    return counting
+
+
 def test_a_refusal_under_an_old_rule_is_judged_again_when_the_code_moves(
-    delivery: dict[str, str | Path], monkeypatch: pytest.MonkeyPatch
+    delivery: dict[str, object], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     head = str(delivery["head"])
+    base = str(delivery["base"])
     _manifest([head])
-    _pointer(Path(delivery["repo"]), head)
-    _incomplete_review(head)
+    _pointer(Path(delivery["repo"]))
+    _incomplete_review(head, base=base)
     monkeypatch.setattr(queue_landing, "_land", lambda run_id: (False, "not reached"))
     monkeypatch.setattr(queue_landing, "_landing_code_stamp", lambda: "old-rule")
 
@@ -171,21 +186,59 @@ def test_a_refusal_under_an_old_rule_is_judged_again_when_the_code_moves(
     assert calls == [RUN]
 
 
+def test_a_refusal_is_judged_again_when_only_the_review_record_moves(
+    delivery: dict[str, object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The code stamp holds; a disposition recorded on the review is the change."""
+
+    head = str(delivery["head"])
+    base = str(delivery["base"])
+    _manifest([head])
+    _pointer(Path(delivery["repo"]))
+    _incomplete_review(head, base=base)
+    monkeypatch.setattr(queue_landing, "_landing_code_stamp", lambda: "same-rule")
+    monkeypatch.setattr(queue_landing, "_land", lambda run_id: (False, "not reached"))
+
+    first = queue_landing.land_once()
+    refused = runs.read_pointer(RUN)["admission_landing"]
+
+    assert first["landed"] == []
+    assert refused["guard"].startswith("review acceptance")
+
+    _review(
+        head,
+        base=base,
+        finding="non-blocking: the branch naming reads oddly but holds nothing back",
+    )
+    review_dispositions.record_finding_disposition(
+        PROJECT,
+        RUN,
+        0,
+        kind="exempted",
+        reason="the reviewer judged it non-blocking",
+        reviewed_head_sha=head,
+    )
+
+    calls: list[str] = []
+    monkeypatch.setattr(queue_landing, "_land", _land_stub(calls))
+    second = queue_landing.land_once()
+
+    assert second["landed"] == [RUN]
+    assert calls == [RUN]
+
+
 def test_an_unchanged_refusal_is_not_judged_a_second_time(
-    delivery: dict[str, str | Path], monkeypatch: pytest.MonkeyPatch
+    delivery: dict[str, object], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     head = str(delivery["head"])
+    base = str(delivery["base"])
     _manifest([head])
-    _pointer(Path(delivery["repo"]), head)
-    _incomplete_review(head)
+    _pointer(Path(delivery["repo"]))
+    _incomplete_review(head, base=base)
     judged: list[object] = []
-    real = queue_landing._review_accepts_promotion
-
-    def counting(review):
-        judged.append(review)
-        return real(review)
-
-    monkeypatch.setattr(queue_landing, "_review_accepts_promotion", counting)
+    monkeypatch.setattr(
+        queue_landing, "_review_accepts_promotion", _counting_acceptance(judged)
+    )
     monkeypatch.setattr(queue_landing, "_land", lambda run_id: (False, "not reached"))
 
     first = queue_landing.land_once()
@@ -198,12 +251,13 @@ def test_an_unchanged_refusal_is_not_judged_a_second_time(
 
 
 def test_a_refusal_with_no_recorded_stamps_is_judged_once_more(
-    delivery: dict[str, str | Path], monkeypatch: pytest.MonkeyPatch
+    delivery: dict[str, object], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     head = str(delivery["head"])
+    base = str(delivery["base"])
     _manifest([head])
-    _pointer(Path(delivery["repo"]), head)
-    _review(head)
+    _pointer(Path(delivery["repo"]))
+    _review(head, base=base)
 
     def stamp_previous(pointer: dict) -> dict:
         pointer["admission_landing"] = {
@@ -223,32 +277,81 @@ def test_a_refusal_with_no_recorded_stamps_is_judged_once_more(
     assert calls == [RUN]
 
 
-@pytest.mark.parametrize("entry_shape", ["subject", "joined"])
+@pytest.mark.parametrize("entry_shape", ["subject", "subject-with-hex-words", "joined"])
 def test_a_commit_entry_spelling_more_than_one_revision_reaches_its_head(
-    delivery: dict[str, str | Path],
+    delivery: dict[str, object],
     monkeypatch: pytest.MonkeyPatch,
     entry_shape: str,
 ) -> None:
     head = str(delivery["head"])
+    base = str(delivery["base"])
     revisions = [str(revision) for revision in delivery["revisions"]]
     if entry_shape == "subject":
         entry = f"{head[:9]} docs(evidence): record the section-wait repair"
+    elif entry_shape == "subject-with-hex-words":
+        entry = f"{head[:9]} fix: deadbeef and defaced1 both spell hex"
     else:
         entry = " ".join(revisions)
     _manifest([entry])
-    _pointer(Path(delivery["repo"]), head)
-    _review(head)
+    _pointer(Path(delivery["repo"]))
+    # A record for another revision sits beside the one this head needs, so a
+    # selection that took the newest record instead of the matching one is
+    # caught by the head the acceptance judgement is shown.
+    _review(revisions[1], base=base)
+    _review(head, base=base)
     judged: list[object] = []
     calls: list[str] = []
-
-    def counting(review):
-        judged.append(review)
-        return True
-
-    monkeypatch.setattr(queue_landing, "_review_accepts_promotion", counting)
+    monkeypatch.setattr(
+        queue_landing,
+        "_review_accepts_promotion",
+        _counting_acceptance(judged, verdict=True),
+    )
     monkeypatch.setattr(queue_landing, "_land", _land_stub(calls))
 
     result = queue_landing.land_once()
 
     assert result["landed"] == [RUN]
     assert [review["reviewed_head_sha"] for review in judged] == [head]
+
+
+def test_a_commit_entry_leading_with_prose_is_not_guessed(
+    delivery: dict[str, object], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    head = str(delivery["head"])
+    base = str(delivery["base"])
+    entry = "docs(evidence): deadbeef defaced1 record the section-wait repair"
+
+    assert queue_landing._delivered_revision([entry]) == ""
+
+    _manifest([entry])
+    _pointer(Path(delivery["repo"]))
+    _review(head, base=base)
+    judged: list[object] = []
+    calls: list[str] = []
+    monkeypatch.setattr(
+        queue_landing, "_review_accepts_promotion", _counting_acceptance(judged)
+    )
+    monkeypatch.setattr(queue_landing, "_land", _land_stub(calls))
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == []
+    assert calls == []
+    assert judged == []
+    assert "admission_landing" not in runs.read_pointer(RUN)
+
+
+def test_the_delivered_revision_reads_the_revision_not_a_subject_word(
+    delivery: dict[str, object],
+) -> None:
+    head = str(delivery["head"])
+    revisions = [str(revision) for revision in delivery["revisions"]]
+
+    assert (
+        queue_landing._delivered_revision([f"{head[:9]} fix: deadbeef defaced1"])
+        == head[:9]
+    )
+    assert queue_landing._delivered_revision([" ".join(revisions)]) == revisions[-1]
+    assert queue_landing._delivered_revision([f"docs: {head[:9]}"]) == ""
+    # two hexadecimal words are both revisions, so the list rule reads the last
+    assert queue_landing._delivered_revision([f"deadbeef {head[:9]}"]) == head[:9]

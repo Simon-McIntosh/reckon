@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -22,24 +21,32 @@ from reckon.crew.recovery_review_acceptance import (
 _run_srun = subprocess.run
 
 # A revision as a manifest entry may spell it: hexadecimal, at least the
-# seven characters git abbreviates to, and not part of a longer word, so a
-# subject line's own words do not read as one.
-_REVISION_TOKEN = re.compile(r"(?<![0-9A-Fa-f])[0-9A-Fa-f]{7,40}(?![0-9A-Fa-f])")
+# seven characters git abbreviates to.
+_REVISION = re.compile(r"[0-9A-Fa-f]{7,40}")
 
 
 def _delivered_revision(entries: Sequence[Any]) -> str:
     """The revision the last ``manifest_commits`` entry names, or "".
 
     A worker writes its commits however its manifest reads to it: a bare
-    revision, a revision with the subject after it, or several revisions on one
-    line. The delivered head is the last token of the entry that spells a
-    revision, so a subject or a joined list does not hide the commit the run
-    actually delivered.
+    revision, a revision with its subject after it, or several revisions on one
+    line. An entry whose every token is a revision is a bare list and its last
+    token is the delivered commit. Any other entry leads with the revision and
+    carries a subject after it, so its first token is the commit — and only
+    while that token really is a revision. A subject word that happens to be
+    hexadecimal (``deadbeef``), or an entry that leads with prose, therefore
+    never stands in for a commit: the answer is "" and the caller judges
+    nothing rather than guessing a head.
     """
     if not entries:
         return ""
-    found = _REVISION_TOKEN.findall(str(entries[-1] or ""))
-    return found[-1] if found else ""
+    tokens = str(entries[-1] or "").split()
+    if not tokens:
+        return ""
+    if all(_REVISION.fullmatch(token) for token in tokens):
+        return tokens[-1]
+    first = tokens[0]
+    return first if _REVISION.fullmatch(first) else ""
 
 
 def _landing_code_stamp() -> str:
@@ -62,15 +69,16 @@ def _landing_code_stamp() -> str:
 def _review_stamp(review: Mapping[str, Any] | None) -> str:
     """The identity of the review record a judgement was made on, or "".
 
-    Keyed on the record's content, so a reviewer who answers a finding or
-    corrects a score rewrites the identity and the next pass reads the record as
-    it now stands. A run with no readable record has no identity to keep, and an
-    empty one never matches.
+    Keyed on the record's content, so a reviewer who answers a finding, records
+    a disposition or corrects a score rewrites the identity and the next pass
+    reads the record as it now stands. A run with no readable record has no
+    identity to keep, and an empty one never matches.
     """
     if not isinstance(review, Mapping):
         return ""
-    payload = json.dumps(review, sort_keys=True, default=str)
-    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    from reckon.crew.plan_review import _digest
+
+    return _digest(review)
 
 
 def _refusal_holds(
