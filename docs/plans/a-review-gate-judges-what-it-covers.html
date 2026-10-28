@@ -25,7 +25,7 @@
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-10-28">
 <meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;a-review-gate-judges-what-it-covers#s2&quot;,&quot;a-review-gate-judges-what-it-covers#s9&quot;],&quot;s12&quot;:[&quot;a-review-gate-judges-what-it-covers#s9&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;]}">
 </head>
@@ -251,6 +251,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261028T133115418559-review-of-a-queued-request-is-checked-once-c0138556fe95" data-who="reckon-build" data-when="2026-10-28T13:45:41.623Z">
     <div class="r-comment-body"><p>independent review of run r-20261028T110649055482-a-queued-request-is-checked-once at c0138556fe95 read against base 768656861b — parsed record scoring all six dimensions (goal_fidelity 11, evidence 14, scope_discipline 17, durability 13, fit 17, reuse 19), added_failure_count 0 derived from the reviewed run's own base 8 failed arm and a re-run of its head arm at the landed commit (12 passed EXIT=0), and five findings: the delivery fragment claims a re-stamp the code does not perform (blocking), the no-contributing-review branch admits where a fresh dispatch holds, the stamping has no production caller so the goal is dark, the recorded head log carries the base revision in its header, and the carried snapshot refactor is unmet outside the node's write paths</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261028T142323104623-review-of-a-queued-request-is-checked-once-e454c09e2645" data-who="reckon-build" data-when="2026-10-28T14:32:08.622Z">
+    <div class="r-comment-body"><p>independent review of run r-20261028T110649055482-a-queued-request-is-checked-once at base 768656861bffbc5b6b1b9bb20b10ba87dfa7ea1f and head e454c09e2645129ff694ce076aae439488bd4568 — scores goal_fidelity 13, evidence 17, scope_discipline 19, durability 16, fit 18, reuse 17; added_failure_count 0; two non-blocking findings, both about what the node declares rather than hides: the contract is stamped only by the batch entry queue_requests, which no production code calls, so every production pointer written by runs.queue_dispatch takes the dispatch-gate fallback and the narrowed hold is inert until the wiring node lands; and the landing fragment omits the second unmet done_when item, that routing._document_change_is_contract still resolves its own run id, report directory and snapshot name instead of reading through plan_review._snapshot_evidence</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-close-s2" data-who="" data-when="">
     <div class="r-comment-body"><p>Landed at 0e1ab9b3f4. A dispatch is held only on the units its node builds, and the document unit gates it only on a contract change. Gate 4 passed against 2 failed at base, importer population added 0. Three non-blocking review findings went into §10's measure. <a href="/reckon/evidence/archive/a-review-gate-judges-what-it-covers-landed.html#a-node-is-gated-on-its-own-section">evidence</a></p></div>
