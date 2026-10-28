@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: logs/after-suite-final.log records failure_count 0 (11 passed, EXIT=0) at 0ad898be1c and logs/baseline-arm.log records failure_count 10 (10 failed, 1 passed, EXIT=1) against the 1f9672d4ce dispatch-base module, so no failure id is present after the change that was absent before it.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3045",
+    "reckon/crew/queue_admission.py:3058",
+    "reckon/crew/obligations.py:992"
+  ],
+  "completed_at": "2026-10-28T18:07:43.423Z",
+  "dispatched_at": "2026-10-28T18:01:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "f657debcb14",
+      "line": "61",
+      "severity": "non-blocking",
+      "text": "a complete manifest carrying no commits entry at all still leaves the pass in silence: _unreadable_entry_guard returns \"\" for an empty sequence at :61-62, so the same drop the delta closes for an unparsable entry survives for a missing one, and no test arm covers it; worth folding into a later node rather than holding this one."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "f61b6a602ed",
+      "line": "72",
+      "severity": "non-blocking",
+      "text": "_unreadable_entry_holds restates four of the five clauses of _refusal_holds at :120-135 and differs only in comparing the guard text where the other compares review_stamp, so one predicate parameterised by identity would carry both; the split is defensible because no review record exists at that point, but the pair will drift."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all three gained commits against f044b5b959: cb3753f1ca adds _unreadable_entry_guard, _unreadable_entry_holds and the refusal branch in land_once and rewrites the unreadable-entry test arm as a three-way parametrisation plus a dedupe assertion; 352590da73 restates the rule and the gate figures in the evidence fragment; 0ad898be1c corrects the fragment's importer count to 48 passed over the three other files; nothing outside those three paths changed.",
+    "done_when": "the done_when names tests/test_a_refusal_is_judged_again_when_it_changes.py for four behaviours plus no added failures in importing files and ruff on the changed paths; all four arms are still present at head (:158, :214, :256, :288), logs/after-suite-final.log records 11 passed EXIT=0 at 0ad898be1c, logs/baseline-arm.log records 10 failed, 1 passed EXIT=1, logs/importers-head.log records 48 passed EXIT=0, and I re-ran ruff check (All checks passed) and ruff format --check (2 files already formatted, --no-cache) on both changed source paths.",
+    "goal": "the node goal is that a refused landing is judged again when its landing code or review changes; the delta keeps that rule intact and adds the sibling case the prior review found, so a complete run whose manifest names no readable revision now reaches a recorded refusal at reckon/crew/queue_landing.py:503-523 instead of leaving the pass in silence.",
+    "manifest": "read the reviewed run's manifest.md; it reports status complete, commits 9cf17bccaf through 0ad898be1c, after_suite 0 failures EXIT=0 at 0ad898be1c, baseline_suite 10 failures EXIT=1 at 1f9672d4ce, a declared negative control of 3 failed/8 passed, and two further mutations at 3 failed/8 passed and 1 failed/10 passed, and every figure agrees with the tail and EXIT line of the log it names.",
+    "write_paths": "the reviewed run's manifest declares reckon/crew/queue_landing.py, tests/test_a_refusal_is_judged_again_when_it_changes.py, the evidence fragment and a docs/figures directory; the three gained commits touch only the first three and the figures directory stays empty, so the delta sits inside its fence."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-unreadable-entry.log reddens exactly tests/test_a_refusal_is_judged_again_when_it_changes.py:326-367 (3 failed, 8 passed, EXIT=1) when the unreadable-entry refusal is replaced by a silent skip, so the new arms fail under the regression they claim to guard.",
+    "evidence": "logs/after-suite-final.log runs the manifest's literal command at 0ad898be1c and reports 11 passed EXIT=0 (reproduced by me, 11 passed in 9.10s), logs/baseline-arm.log reports 10 failed, 1 passed EXIT=1 at the 1f9672d4ce dispatch-base module, and imports-head log logs 48 passed EXIT=0.",
+    "fit": "reckon/crew/queue_landing.py:52-88 follows the module's existing helper idiom and _unreadable_entry_guard names the mechanism rather than a plan stage; the three commit subjects carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:503-523 refuses a complete run whose last manifest_commits entry yields no revision, recording the entry at :506-512 and appending an obligation at :513-519 instead of the silent continue the previous head took, which is the exact defect the prior review named.",
+    "reuse": "the new refusal reuses _record_attempt at reckon/crew/queue_landing.py:138 and the obligation dict shape the neighbouring branches use, and its guard is already surfaced by reckon/crew/obligations.py:992 without a change there; _unreadable_entry_holds at :72 restates four of the five clauses of _refusal_holds at :120.",
+    "scope_discipline": "git diff --stat f044b5b959..0ad898be1c names only reckon/crew/queue_landing.py, tests/test_a_refusal_is_judged_again_when_it_changes.py and the evidence fragment, all inside the declared write paths, and the declared docs/figures directory is untouched."
+  },
+  "node": "review-of-a-refusal-is-judged-again-when-it-changes-0ad898be1c01",
+  "node:reviewed": "a-refusal-is-judged-again-when-it-changes",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a refused landing is judged again when its landing code or review changes; the delta keeps that rule intact and adds the sibling case the prior review found, so a complete run whose manifest names no readable revision now reaches a recorded refusal at reckon/crew/queue_landing.py:503-523 instead of leaving the pass in silence.\nVERDICT done_when: the done_when names tests/test_a_refusal_is_judged_again_when_it_changes.py for four behaviours plus no added failures in importing files and ruff on the changed paths; all four arms are still present at head (:158, :214, :256, :288), logs/after-suite-final.log records 11 passed EXIT=0 at 0ad898be1c, logs/baseline-arm.log records 10 failed, 1 passed EXIT=1, logs/importers-head.log records 48 passed EXIT=0, and I re-ran ruff check (All checks passed) and ruff format --check (2 files already formatted, --no-cache) on both changed source paths.\nVERDICT write_paths: the reviewed run's manifest declares reckon/crew/queue_landing.py, tests/test_a_refusal_is_judged_again_when_it_changes.py, the evidence fragment and a docs/figures directory; the three gained commits touch only the first three and the figures directory stays empty, so the delta sits inside its fence.\nVERDICT manifest: read the reviewed run's manifest.md; it reports status complete, commits 9cf17bccaf through 0ad898be1c, after_suite 0 failures EXIT=0 at 0ad898be1c, baseline_suite 10 failures EXIT=1 at 1f9672d4ce, a declared negative control of 3 failed/8 passed, and two further mutations at 3 failed/8 passed and 1 failed/10 passed, and every figure agrees with the tail and EXIT line of the log it names.\nVERDICT diff: read all three gained commits against f044b5b959: cb3753f1ca adds _unreadable_entry_guard, _unreadable_entry_holds and the refusal branch in land_once and rewrites the unreadable-entry test arm as a three-way parametrisation plus a dedupe assertion; 352590da73 restates the rule and the gate figures in the evidence fragment; 0ad898be1c corrects the fragment's importer count to 48 passed over the three other files; nothing outside those three paths changed.\nCALL_SITES: reckon/crew/queue_admission.py:3045, reckon/crew/queue_admission.py:3058, reckon/crew/obligations.py:992\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:503-523 refuses a complete run whose last manifest_commits entry yields no revision, recording the entry at :506-512 and appending an obligation at :513-519 instead of the silent continue the previous head took, which is the exact defect the prior review named.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/after-suite-final.log runs the manifest's literal command at 0ad898be1c and reports 11 passed EXIT=0 (reproduced by me, 11 passed in 9.10s), logs/baseline-arm.log reports 10 failed, 1 passed EXIT=1 at the 1f9672d4ce dispatch-base module, and logs/importers-head.log reports 48 passed EXIT=0.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat f044b5b959..0ad898be1c names only reckon/crew/queue_landing.py, tests/test_a_refusal_is_judged_again_when_it_changes.py and the evidence fragment, all inside the declared write paths, and the declared docs/figures directory is untouched.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control-unreadable-entry.log reddens exactly tests/test_a_refusal_is_judged_again_when_it_changes.py:326-367 (3 failed, 8 passed, EXIT=1) when the unreadable-entry refusal is replaced by a silent skip, so the new arms fail under the regression they claim to guard.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_landing.py:52-88 follows the module's existing helper idiom and _unreadable_entry_guard names the mechanism rather than a plan stage; the three commit subjects carry no plan, sprint or ticket identifier.\nSCORE reuse: 17\nJUSTIFICATION reuse: the new refusal reuses _record_attempt at reckon/crew/queue_landing.py:138 and the obligation dict shape the neighbouring branches use, and its guard is already surfaced by reckon/crew/obligations.py:992 without a change there; _unreadable_entry_holds at :72 restates four of the five clauses of _refusal_holds at :120.\nFINDING reckon/crew/queue_landing.py:61 non-blocking: a complete manifest carrying no commits entry at all still leaves the pass in silence, because _unreadable_entry_guard returns \"\" for an empty sequence at :61-62, so the same drop this delta closes for an unparsable entry survives for a missing one, and no test arm covers it.\nFINDING reckon/crew/queue_landing.py:72 non-blocking: _unreadable_entry_holds restates four of the five clauses of _refusal_holds at :120-135 and differs only in comparing the guard text where the other compares review_stamp, so one predicate parameterised by identity would carry both; the split is defensible because no review record exists at that point, but the pair will drift.",
+  "review_run_id": "r-20261028T175955618220-review-of-a-refusal-is-judged-again-when-it-changes-0ad898be1c01",
+  "reviewed_base_sha": "f044b5b9593df6043aeb7238977dfa6fad618ce3",
+  "reviewed_head_sha": "0ad898be1c01b774c756a0a7daf62894156deae9",
+  "reviewed_run_id": "r-20261028T144422619701-a-refusal-is-judged-again-when-it-changes",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T18:16:00+00:00",
+  "total": 108
+}
