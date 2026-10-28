@@ -33,7 +33,8 @@ import pytest
 
 from reckon._timestamps import parse_utc
 from reckon.crew import queue_admission, runs
-from reckon.crew.node import CompetenceLimit
+from reckon.crew.node import CompetenceLimit, CrewError
+from reckon.crew.refusals import format_refusal
 from tests.helpers.git import git as _git
 from tests.test_a_queued_run_is_admitted import (  # noqa: F401 - fixture
     PROJECT,
@@ -135,6 +136,24 @@ def _competence_limit() -> CompetenceLimit:
     )
 
 
+def _capacity_refusal() -> CrewError:
+    """The refusal a full lane gives, wording and remedy as the dispatch raises it.
+
+    Its opening words are the node-contract refusal's, so it is the case that
+    distinguishes "repair the node" from "wait for a slot".
+    """
+    return CrewError(
+        format_refusal(
+            "D09",
+            "node is not dispatchable — backend 'clive' is at its partition "
+            "admitted cores bound (12); one more worker would ask the "
+            "reservation for more cores than it was admitted, and the runs "
+            "occupying it: r-occupant. Wait for one to finish, or raise the "
+            "cores the placement declares.",
+        )
+    )
+
+
 def _launched(pointer, **_):
     """Stand in for a launch that started: the pass only reads the record's shape."""
     return {"run_id": pointer["run_id"], "phase": "starting"}
@@ -216,6 +235,44 @@ def test_a_competence_refusal_is_held_until_the_request_changes(
 
     assert probe.attempted == ["r-too-big", "r-too-big"], "a moved plan retries at once"
     assert released["failed"] == ["r-too-big"]
+
+
+def test_a_capacity_refusal_keeps_its_backoff_rather_than_being_held(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A full lane is cured by a run finishing, so it is retried on the timer.
+
+    Its opening words are the node-contract refusal's, and the contract refusal
+    is held until a change — but nothing a run finishing does moves the
+    dependency guard, so holding this one would strand it until the plan moved.
+    """
+
+    def refuse(pointer, **_):
+        raise _capacity_refusal()
+
+    _, resolve = _config_for()
+    runs.queue_dispatch(_queue(admit_repo, node_id="no-room", run_id="r-no-room"))
+    probe = _LaunchProbe(monkeypatch)
+    probe.answer = refuse
+
+    queue_admission.admit_once(config_for=resolve)
+
+    assert probe.attempted == ["r-no-room"]
+    recorded = runs.read_pointer("r-no-room")
+    assert "node is not dispatchable" in str(recorded["failure"])
+    failed_at = parse_utc(recorded["failure_at"])
+    retry_at = parse_utc(recorded["retry_at"])
+    assert retry_at - failed_at == timedelta(
+        seconds=queue_admission.ADMISSION_RETRY_BACKOFF_SECONDS
+    )
+
+    # The back-off expiring is the only cue a capacity hold ever gives, so a
+    # pass past it must reach the launch.
+    queue_admission.admit_once(config_for=resolve, now=retry_at + timedelta(seconds=1))
+
+    assert probe.attempted == ["r-no-room", "r-no-room"], (
+        "a capacity refusal is retried on its back-off, not held until a change"
+    )
 
 
 def test_a_failures_backoff_runs_from_the_failure_not_the_pass_start(

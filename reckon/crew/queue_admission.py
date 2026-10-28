@@ -37,6 +37,7 @@ from reckon.crew.dispatch_admission import (
 )
 from reckon.crew.dispatch_plan import _dispatch_lane_allowance
 from reckon.crew.node import BudgetHold, CrewError, PlanReviewMissingError, TaskNode
+from reckon.crew.refusals import DISPATCH_REFUSAL_REMEDIES
 from reckon.crew.routing import plan_review_units as plan_review_units  # noqa: PLC0414
 from reckon.ledger import normalize_section
 
@@ -912,17 +913,31 @@ def _live_claim_hold(
     return None
 
 
-#: The refusals no amount of waiting cures. A node too large for its lane is
-#: cured by splitting it or by a wider lane; a node outside its contract is
-#: cured by repairing the plan or the brief. Both change something the guard
-#: fingerprints, so the retry is keyed to that change and never to a timer.
-_UNTIL_CHANGED_FAILURES = ("CompetenceLimit:", "node is not dispatchable")
+#: The remedy carried by a refusal a full lane gives. That refusal is cured by
+#: an occupying run finishing, which moves nothing the dependency guard
+#: fingerprints, so holding it until a change would strand it for as long as
+#: the lane stayed full; it keeps the bounded back-off instead.
+_CAPACITY_REFUSAL_REMEDY = DISPATCH_REFUSAL_REMEDIES["D09"]
+
+_NODE_CONTRACT_REFUSAL = "node is not dispatchable"
 
 
 def _is_until_changed_failure(failure: Any) -> bool:
-    """Whether a recorded failure is cured by a change, not by waiting."""
+    """Whether a recorded failure is cured by a change, not by waiting.
+
+    A node too large for its lane is cured by splitting it or by a wider lane; a
+    node outside its contract is cured by repairing the plan or the brief. Both
+    change something the guard fingerprints, so the retry is keyed to that change
+    and never to a timer. The capacity refusal names the same condition in its
+    opening words, but it is cured by an occupying run finishing, so it is
+    excluded and left on the back-off.
+    """
     text = _failure_text(failure)
-    return any(marker in text for marker in _UNTIL_CHANGED_FAILURES)
+    if "CompetenceLimit:" in text:
+        return True
+    if _NODE_CONTRACT_REFUSAL not in text:
+        return False
+    return _CAPACITY_REFUSAL_REMEDY not in text
 
 
 def _until_changed_hold(
