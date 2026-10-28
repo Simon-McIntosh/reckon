@@ -1,0 +1,93 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: logs/importers-base.log at 81ff53eb records 5 failed/640 passed with ids tests/test_a_code_review_reads_its_projects_package.py::test_this_repository_reads_the_same_modules_as_the_reckon_listing, tests/test_run_verbs_share_one_identity_grammar.py::test_a_matching_project_is_accepted_and_a_disagreeing_one_refused[gc], [shadow] and [verify-gate], and tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt; logs/importers-head.log at 8fd83480c2 records 1 failed/652 passed, whose only id is the last of those five, so no failure is added. The head arm was not re-run at the final head a6fdb7ba40.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:2177",
+    "reckon/mcp_deadlines.py:712",
+    "reckon/crew/routing.py:2700",
+    "reckon/crew/plan_review.py:2284"
+  ],
+  "completed_at": "2026-10-28T12:29:45.728Z",
+  "dispatched_at": "2026-10-28T12:22:38Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "an-answered-findings-edit-is-covered",
+      "recorded_at": "2026-10-28T12:37:12.268381+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "an-answered-findings-edit-is-covered",
+      "recorded_at": "2026-10-28T12:37:27.018761+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing: the coordinator reran the importer population of plan_review at head a6fdb7ba40 against base 81ff53eb50, 2 failed at both, added 0 (logs/coordinator-arms)",
+      "recorded_at": "2026-10-28T12:37:46.290374+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f6597083f39",
+      "line": "823",
+      "severity": "non-blocking",
+      "text": "the _fingerprint_forms docstring states 'Each of the two is formed under the present definition and under the previous one', but the body builds a single payload at line 836 and returns two forms (the present unit fingerprint and the present whole-document digest), so no previous-definition form is ever produced; a reader is told coverage accepts a form the function cannot return."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f8e4043707c",
+      "line": "403",
+      "severity": "non-blocking",
+      "text": "_without_section_status re-implements the normalisation already owned by _without_section_bookkeeping at line 362, differing only in the field tuple (status alone versus _SECTION_BOOKKEEPING_FIELDS); a field-set parameter on the existing helper would carry the previous definition without a second copy of the same three-branch body."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T105008607023-ordering-never-reopens-a-review/logs/importers-head.log",
+      "id": "f5a1eae5722",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the importer-population head arm states revision 8fd83480c2, not the reviewed head a6fdb7ba40, so the zero-added-failures figure does not cover the previous-definition acceptance that de9ccf0bc2 later added to review_coverage and reviews_for_unit_burst; the node's own outside_scope records the same gap, and the fence suite is green at the head I read."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/mcp_edit_plan.py:2177, reckon/mcp_deadlines.py:712 and reckon/crew/routing.py:2700 all call plan_review.review_coverage, whose document-unit cover set is what this diff widened, and reckon/crew/plan_review.py:2284 calls the changed reviews_for_unit_burst.",
+    "diff": "read all three commits against 81ff53eb: 8fd83480c2 adds PLAN_ORDERING_KEYS, _SECTION_BOOKKEEPING_FIELDS and the whole test file; de9ccf0bc2 adds the previous-definition digest acceptance (_without_section_status, previous_definition on _digest_state and _section_digests, _unit_digest_forms) and widens the document-unit match and reviews_for_unit_burst; a6fdb7ba40 adds the evidence fragment only.",
+    "done_when": "the fence evidence measure names three test arms, a live-store arm with a recorded count, the importer population and ruff on the changed paths; the three arms are in tests/test_a_plan_is_reviewed_when_written.py, the live arm is recorded as JSON counts in logs/live-coverage-base.json and logs/live-coverage-head.json (110 plans, 39 ordering-only, 0 uncovered), the importer pair is recorded in logs/importers-base.log (5 failed/640 passed, EXIT=1) and logs/importers-head.log (1 failed/652 passed, EXIT=1), and no ruff receipt exists in the manifest or the logs.",
+    "goal": "the node goal is to remove ordering and bookkeeping from the document unit's review digest; reckon/crew/plan_review.py:145 PLAN_ORDERING_KEYS and :167 _SECTION_BOOKKEEPING_FIELDS implement exactly that, and a plan's depends_on, blocks, after, informs, section waits, effort letters, wall-clock hours, per-section effort and attempt counts no longer reach the document digest.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T105008607023-ordering-never-reopens-a-review/manifest.md; status complete, commits 8fd83480c2/de9ccf0bc2/a6fdb7ba40, tests line the unedited fence command, test_logs naming head-suite.log (8 passed, EXIT=0 at de9ccf0bc2) and the negative-control log, and its own outside_scope admitting the importer head arm was measured at 8fd83480c2 rather than at the final head.",
+    "write_paths": "read the manifest's declared paths; git diff --stat 81ff53eb..a6fdb7ba40 lists reckon/crew/plan_review.py, tests/test_a_plan_is_reviewed_when_written.py and docs/evidence/fragments/a-review-gate-judges-what-it-covers/ordering-never-reopens-a-review.html, all inside the declared scope, with no figure written."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log reinstates section_depends_on in the document digest and reddens tests/test_a_plan_is_reviewed_when_written.py::test_section_waits_leave_every_unit_covered and ::test_the_ordering_exclusion_names_no_section_contract (EXIT=1), and the remaining keys are guarded by assertions comparing two distinct inputs or an expected set, so reverting any exclusion turns uncovered == set() into {'_document'}.",
+    "evidence": "the fence measure names tests/test_a_plan_is_reviewed_when_written.py, a live-store arm, the importer population and ruff; the manifest records the importer pair (5 failed/640 passed at 81ff53eb against 1/652 at 8fd83480c2, zero added) and unifies live counts (110 plans, 39 ordering-only, 0 uncovered) in logs/live-coverage-*.json rather than in a gate log, and records no ruff receipt at all, though I re-ran the named gate at a6fdb7ba40 (8 passed) and ruff check plus ruff format --check clean on both changed paths.",
+    "fit": "reckon/crew/plan_review.py:145 and :167 follow the module's tuple-constant idiom and carry no plan or ticket label, but the docstring at :823 states a property the code does not have (no previous-definition form is built at :836).",
+    "goal_fidelity": "the goal is to remove ordering and bookkeeping from the document unit's review digest and reckon/crew/plan_review.py:429 _digest_state now excludes PLAN_ORDERING_KEYS (:145) and applies _without_section_bookkeeping (:362) which drops status, effort_hours and attempts, so a queue edit no longer moves the document digest.",
+    "reuse": "reckon/crew/plan_review.py:403 _without_section_status is a near-copy of :362 _without_section_bookkeeping, differing only in the field tuple, so the previous-definition normalisation duplicates a mechanism the same module already owns instead of parameterising it; the digest owner (_digest_state :429) is otherwise extended rather than forked.",
+    "scope_discipline": "the four declared paths are reckon/crew/plan_review.py, tests/test_a_plan_is_reviewed_when_written.py, one evidence fragment and one figures directory; git diff 81ff53eb..a6fdb7ba40 touches only the first three, +499/-33, and every change serves the goal."
+  },
+  "node": "review-of-ordering-never-reopens-a-review-a6fdb7ba40f6",
+  "node:reviewed": "ordering-never-reopens-a-review",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to remove ordering and bookkeeping from the document unit's review digest; reckon/crew/plan_review.py:145 PLAN_ORDERING_KEYS and :167 _SECTION_BOOKKEEPING_FIELDS implement exactly that, and a plan's depends_on, blocks, after, informs, section waits, effort letters, wall-clock hours, per-section effort and attempt counts no longer reach the document digest.\nVERDICT done_when: the fence evidence measure names three test arms, a live-store arm with a recorded count, the importer population and ruff on the changed paths; the three arms are in tests/test_a_plan_is_reviewed_when_written.py, the live arm is recorded as JSON counts in logs/live-coverage-base.json and logs/live-coverage-head.json (110 plans, 39 ordering-only, 0 uncovered), the importer pair is recorded in logs/importers-base.log (5 failed/640 passed, EXIT=1) and logs/importers-head.log (1 failed/652 passed, EXIT=1), and no ruff receipt exists in the manifest or the logs.\nVERDICT write_paths: read the manifest's declared paths; git diff --stat 81ff53eb..a6fdb7ba40 lists reckon/crew/plan_review.py, tests/test_a_plan_is_reviewed_when_written.py and docs/evidence/fragments/a-review-gate-judges-what-it-covers/ordering-never-reopens-a-review.html, all inside the declared scope, with no figure written.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T105008607023-ordering-never-reopens-a-review/manifest.md; status complete, commits 8fd83480c2/de9ccf0bc2/a6fdb7ba40, tests line the unedited fence command, test_logs naming head-suite.log (8 passed, EXIT=0 at de9ccf0bc2) and the negative-control log, and its own outside_scope admitting the importer head arm was measured at 8fd83480c2 rather than at the final head.\nVERDICT diff: read all three commits against 81ff53eb: 8fd83480c2 adds PLAN_ORDERING_KEYS, _SECTION_BOOKKEEPING_FIELDS and the whole test file; de9ccf0bc2 adds the previous-definition digest acceptance (_without_section_status, previous_definition on _digest_state and _section_digests, _unit_digest_forms) and widens the document-unit match and reviews_for_unit_burst; a6fdb7ba40 adds the evidence fragment only.\nCALL_SITES: reckon/mcp_edit_plan.py:2177, reckon/mcp_deadlines.py:712, reckon/crew/routing.py:2700, reckon/crew/plan_review.py:2284\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the goal is to remove ordering and bookkeeping from the document unit's review digest and reckon/crew/plan_review.py:429 _digest_state now excludes PLAN_ORDERING_KEYS (:145) and applies _without_section_bookkeeping (:362) which drops status, effort_hours and attempts, so a queue edit no longer moves the document digest.\nSCORE evidence: 16\nJUSTIFICATION evidence: the fence measure names tests/test_a_plan_is_reviewed_when_written.py, a live-store arm, the importer population and ruff; the manifest records the importer pair (5 failed/640 passed at 81ff53eb against 1/652 at 8fd83480c2, zero added) and unifies live counts (110 plans, 39 ordering-only, 0 uncovered) in logs/live-coverage-*.json rather than in a gate log, and records no ruff receipt at all, though I re-ran the named gate at a6fdb7ba40 (8 passed) and ruff check plus ruff format --check clean on both changed paths.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four declared paths are reckon/crew/plan_review.py, tests/test_a_plan_is_reviewed_when_written.py, one evidence fragment and one figures directory; git diff 81ff53eb..a6fdb7ba40 touches only the first three, +499/-33, and every change serves the goal.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative-control.log reinstates section_depends_on in the document digest and reddens tests/test_a_plan_is_reviewed_when_written.py::test_section_waits_leave_every_unit_covered and ::test_the_ordering_exclusion_names_no_section_contract (EXIT=1), and the remaining keys are guarded by assertions comparing two distinct inputs or an expected set, so reverting any exclusion turns uncovered == set() into {'_document'}.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/plan_review.py:145 and :167 follow the module's tuple-constant idiom and carry no plan or ticket label, but the docstring at :823 states a property the code does not have (no previous-definition form is built at :836).\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/plan_review.py:403 _without_section_status is a near-copy of :362 _without_section_bookkeeping, differing only in the field tuple, so the previous-definition normalisation duplicates a mechanism the same module already owns instead of parameterising it; the digest owner (_digest_state :429) is otherwise extended rather than forked.\nFINDING reckon/crew/plan_review.py:823 non-blocking: the _fingerprint_forms docstring states 'Each of the two is formed under the present definition and under the previous one', but the body builds a single payload at line 836 and returns two forms (the present unit fingerprint and the present whole-document digest), so no previous-definition form is ever produced; a reader is told coverage accepts a form the function cannot return.\nFINDING reckon/crew/plan_review.py:403 non-blocking: _without_section_status re-implements the normalisation already owned by _without_section_bookkeeping at line 362, differing only in the field tuple (status alone versus _SECTION_BOOKKEEPING_FIELDS); a field-set parameter on the existing helper would carry the previous definition without a second copy of the same three-branch body.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T105008607023-ordering-never-reopens-a-review/logs/importers-head.log:1 non-blocking: the importer-population head arm states revision 8fd83480c2, not the reviewed head a6fdb7ba40, so the zero-added-failures figure does not cover the previous-definition acceptance that de9ccf0bc2 later added to review_coverage and reviews_for_unit_burst; the node's own outside_scope records the same gap, and the fence suite is green at the head I read.",
+  "review_run_id": "r-20261028T122126665233-review-of-ordering-never-reopens-a-review-a6fdb7ba40f6",
+  "reviewed_base_sha": "81ff53eb50e55c00c700fb2e56f8b1e85649f941",
+  "reviewed_head_sha": "a6fdb7ba40f64e54994f3ae660d0471a910b645c",
+  "reviewed_run_id": "r-20261028T105008607023-ordering-never-reopens-a-review",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T12:27:04+00:00",
+  "total": 98
+}
