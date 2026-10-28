@@ -1223,6 +1223,23 @@ def is_design_review(record: Mapping[str, Any]) -> bool:
     return rubric in _DESIGN_RUBRIC_NAMES
 
 
+def counts_for_rubric(record: Mapping[str, Any], rubric: str) -> bool:
+    """Whether a stored review spends the review budget of the rubric asked about.
+
+    A content review is the read of prose an edit earns and a design review is
+    the prior-art read a plan carries once, so one never spends the other's
+    budget: a plan whose single design review sits beside one content review on
+    the same content has had one content review, not two. A record naming no
+    rubric counts with the content rubric, which is the one a composition
+    defaults to, so an older record is neither dropped from the count nor able
+    to refuse a design composition.
+    """
+    wanted = str(rubric or CONTENT_RUBRIC).strip().lower()
+    if wanted in _DESIGN_RUBRIC_NAMES:
+        return is_design_review(record)
+    return not is_design_review(record)
+
+
 def newest_design_review(
     project: str,
     plan_slug: str,
@@ -2166,6 +2183,7 @@ def reviews_for_unit_burst(
     plan_slug: str,
     unit: str,
     *,
+    rubric: str = CONTENT_RUBRIC,
     base_dir: str | Path | None = None,
     plan_path: str | Path | None = None,
     records: Iterable[Mapping[str, Any]] | None = None,
@@ -2177,6 +2195,10 @@ def reviews_for_unit_burst(
     its count again. The whole-plan fingerprint counts as a review of every
     unit when it matches, because a review that read the whole document read
     that unit too.
+
+    Only reviews of the rubric asked about count: a design review and a
+    content review are two different reads, and neither spends the other's
+    budget.
 
     A burst is bounded to one plan revision: only the reviews that read the
     same revision as the newest one carrying the unit's digest are counted. A
@@ -2201,6 +2223,8 @@ def reviews_for_unit_burst(
     hits: list[dict[str, Any]] = []
     for record in _burst_records(project, base_dir=base_dir, records=records):
         if record.get("plan_slug") != plan_slug:
+            continue
+        if not counts_for_rubric(record, rubric):
             continue
         if record.get("plan_fingerprint") == whole:
             hits.append(record)
@@ -2229,30 +2253,39 @@ def review_burst_refusal(
     plan_slug: str,
     unit: str,
     *,
+    rubric: str = CONTENT_RUBRIC,
     base_dir: str | Path | None = None,
     plan_path: str | Path | None = None,
     records: Iterable[Mapping[str, Any]] | None = None,
 ) -> str | None:
     """The refusal a third review of one edit burst of a unit must carry, or None.
 
-    A unit reviewed :data:`MAX_REVIEWS_PER_EDIT` times for the same digest has
-    had the reviews its edit owed; a further composed review would raise the
-    next finding against prose that has already been reviewed twice, which is
-    the loop the cap exists to stop. The refusal names the open findings the
-    caller must carry or decline, because answering them — not reviewing again
-    — is what closes the unit for dispatch.
+    A unit reviewed :data:`MAX_REVIEWS_PER_EDIT` times under one rubric for the
+    same digest has had the reviews its edit owed; a further composed review
+    would raise the next finding against prose that has already been reviewed
+    twice, which is the loop the cap exists to stop. The refusal names the open
+    findings the caller must carry or decline, because answering them — not
+    reviewing again — is what closes the unit for dispatch.
+
+    This is the per-unit predicate, and it judges the unit it is asked about
+    under the rubric asked about. :func:`compose_burst_refusal` decides which
+    units a composition is asked about: only those the composed review would
+    read, so a unit a stored review already covers never reaches here.
 
     A finding is open only when no stored review of the plan answers it. An
     answer is written to the record the answering command resolved, which need
     not be the record the cap counted: a finding raised by an earlier review of
     the same burst is answered on that review, so reading answers from the
     counted record alone names a finding the author has already answered and no
-    answer command can clear.
+    answer command can clear. For the same reason the answers are read from
+    every stored review of the plan rather than from the counted ones alone: an
+    answer to a content finding may sit on the design record, and vice versa.
     """
     hits = reviews_for_unit_burst(
         project,
         plan_slug,
         unit,
+        rubric=rubric,
         base_dir=base_dir,
         plan_path=plan_path,
         records=records,
@@ -2289,27 +2322,41 @@ def compose_burst_refusal(
     project: str,
     plan_slug: str,
     *,
+    rubric: str = CONTENT_RUBRIC,
     base_dir: str | Path | None = None,
     plan_path: str | Path | None = None,
     records: Iterable[Mapping[str, Any]] | None = None,
 ) -> str | None:
-    """The refusal a composed whole-plan review must carry, or None.
+    """The refusal a composed plan review must carry, or None.
 
-    A whole-plan review reads every unit, so it is a further review of each of
-    them: if any unit has already spent :data:`MAX_REVIEWS_PER_EDIT` reviews on
-    the edit it carries now, composing another would re-review prose that has
-    had the reviews it was owed. The sections are checked before the document
-    unit so the refusal names the tightest limit first.
+    A composed review reads the units the plan is still owed a review of —
+    those :func:`review_coverage` reports uncovered — and no others, so the cap
+    is judged for exactly those units. A section no edit has touched since a
+    stored review covered it is not read again, and counting its stored reviews
+    would refuse every composition of a long-lived plan: the first version of
+    this cap counted forty-six stored reviews of one unchanged section and
+    refused a plan that had been reviewed more than twice. The units are taken
+    from coverage for that reason, and the reviews counted are those of the
+    rubric being composed, so a plan's one design review beside one content
+    review leaves the content review still owed.
+
+    The sections are checked before the document unit so the refusal names the
+    tightest limit first.
     """
     location = _plan_location(project, plan_slug, plan_path)
     if location is None:
         return None
-    try:
-        text = location[1].read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    path = location[1]
+    # Coverage, not the unit list: a composed review reads only the units the
+    # plan still owes one, so only those can be over their limit.
+    _contributing, uncovered, _change = review_coverage(
+        project, plan_slug, plan=path, base_dir=base_dir
+    )
+    if not uncovered:
         return None
-    units = sorted(unit for unit in _section_digests(text) if unit != DOCUMENT_UNIT)
-    units.append(DOCUMENT_UNIT)
+    units = sorted(unit for unit in uncovered if unit != DOCUMENT_UNIT)
+    if DOCUMENT_UNIT in uncovered:
+        units.append(DOCUMENT_UNIT)
     # One listing for every unit: the question is the same for each and the
     # store is the expensive part.
     listed = (
@@ -2322,8 +2369,9 @@ def compose_burst_refusal(
             project,
             plan_slug,
             unit,
+            rubric=rubric,
             base_dir=base_dir,
-            plan_path=plan_path,
+            plan_path=path,
             records=listed,
         )
         if refusal:
