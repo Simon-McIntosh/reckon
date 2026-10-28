@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T11:44:28.344Z",
+  "dispatched_at": "2026-10-28T11:36:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-review-gate-judges-what-it-covers/r-20261028T113500676606-plan-review-of-a-review-gate-judges-what-it-covers/plan.html:192",
+      "id": "done_when-1",
+      "reason": "without that test path in the write scope and the importer population, the node either lands with a red suite it cannot touch or drops the arm that proves the floor is gone.",
+      "text": "\u00a711 removes the acceptance floor but its write paths name only `recovery_review_acceptance.py`, `queue_landing.py`, `landing_measure.py` and the new test, while `tests/test_review_acceptance_floor_tracks_the_dimension_count.py` asserts the floor directly (`test_acceptance_enforces_the_derived_floor` requires a total one below the floor to be refused and one at the floor to be accepted) and `tests/test_a_review_answers_the_domain_checks.py:385` asserts the constant's value, so the change turns at least one of them red and the node is fenced out of fixing it; the done-when's importer population names `queue_landing`, `landing_measure` and `recovery_review_acceptance`, but that file reaches the predicate through `reckon.crew.recovery`, which re-exports it (`reckon/crew/recovery.py:191`), so the declared population can read green while the repository still asserts the removed rule",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-review-gate-judges-what-it-covers/r-20261028T113500676606-plan-review-of-a-review-gate-judges-what-it-covers/plan.html:192",
+      "id": "done_when-2",
+      "reason": "the arms cannot distinguish the rule the section states from one that omits completeness, so the node's gate would prove neither.",
+      "text": "\u00a711's first landing condition is now \"Its review is complete and carries no blocking finding\", and with the score floor removed completeness is the only schema check left on the review side (`_review_missing_measures` at `reckon/crew/recovery_review_subject.py:1245-1299` requires all six dimensions plus an integer total), yet no done-when arm presents an incomplete review, so a landing pass that dropped the completeness check would pass every declared arm (they would only land more runs)",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8cdcbdd7cc5bb1bdbf6333228b51d717877692e5",
+  "plan_fingerprint": "f77eca8819bcf7807e4a20d403bf0a521cb9a581211ac0892713d58b4930fd89",
+  "plan_slug": "a-review-gate-judges-what-it-covers",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T113500676606-plan-review-of-a-review-gate-judges-what-it-covers",
+  "reviewed_blob_sha": "baad4bd5e61cc0f54b349bb827fc6cd970d90592",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/recovery_review_acceptance.py`, `reckon/crew/queue_landing.py` and `reckon/crew/landing_measure.py` all exist, `_review_accepts_promotion` is defined at `recovery_review_acceptance.py:29` and called from `queue_landing.py:368`, and the evidence hrefs carry `.html`.",
+    "done_when": "two findings \u2014 \u00a711's done-when has no arm for the \"review is complete\" landing condition it asserts, and it omits the test file that already encodes the floor the section removes.",
+    "evidence_paths": "pass \u2014 the live-store arm names the run's gate log under its `logs/` directory and the test files it measures against the base revision.",
+    "naming": "pass \u2014 the change introduces no symbol, filename or comment carrying a plan label, stage name or ticket number.",
+    "reasoning": "pass \u2014 the new no-floor rule is consistent with the cited evidence (clean totals spreading 78\u2013118 against a derived floor of 108 at `recovery_review_acceptance.py:24-26`, and one stored total disagreeing with its own dimension sum), and the mechanism names `_review_accepts_promotion` in the real landing path via `queue_landing.py:368`.",
+    "single_goal": "pass \u2014 \u00a711 carries one deliverable, the landing acceptance rule, and its six arms all measure that one rule.",
+    "wiring": "pass \u2014 \u00a711 declares no waits, `plan-section-depends-on` carries only s10 and s12 waits, and followup `f-rgjc-002` (plan.html:214) groups \u00a711 with \u00a72/\u00a73/\u00a79 as wait-free."
+  },
+  "section_digests": {
+    "_document": "8f53e7276d5ec09a06af1d0d14a0f1e43709610dc89ec6e81afd8347d8f58ba4",
+    "s1": "2f80e3c4526e5da0f46c438dc82b2880b0fa395a71a3807823c00850eb9622b9",
+    "s10": "0347256131d51d907a02af2f58beaa7a22b5537fdced1660d95567b2a3ff101d",
+    "s11": "2010b138f0e5041018c272b7dc46ddae5a5ec3a681dd94f345d06ffffce39f24",
+    "s12": "b9d85c58fba665a6ec6d382c6c08e4af211a0068675727b775a65fd42dc39899",
+    "s2": "b003c30eb192f0dfa86d4e6518b4deede24bf6b15c0b15ba5784a6066d3da870",
+    "s3": "7df7d94c9d011998671062ddf1072ba44b1c08d7172f92e43f18961813f1d434",
+    "s4": "491337ffa1e3dbb35aed0b41de9bfb17126787d7b0a08c15bb12879faa1a9b43",
+    "s5": "f21e5477c01ae1e8fb4da7b3d607da52313f50d700b6b7dc3d5a2adb8d9f8956",
+    "s6": "534a6debaffa16edfc0cb75f6488191af897e1ff0b9ad32ecdaaa28148c119ff",
+    "s7": "ce6bf11980ac24dc184e5bd2aa6fd813667fe40e90c0ea97a60a56d649f3fd30",
+    "s8": "fd5dc1e3777871755eeeb65dc14935764ea25a67e2902dd8de2e8831cb64fa78",
+    "s9": "6237a98697d0fead79a4d109178e3da581fa42f7bd6e8028527f46a167cb259e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T11:53:01.370326+00:00"
+}
