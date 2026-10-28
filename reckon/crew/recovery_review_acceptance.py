@@ -73,18 +73,51 @@ def _excusable_finding_indexes(review: Mapping[str, Any] | None) -> tuple[int, .
     )
 
 
+def _scores_are_in_range(review: Mapping[str, Any]) -> bool:
+    """Whether every stored dimension score is a whole number the rubric allows.
+
+    The parser refuses to write a score outside ``0..REVIEW_MAX_SCORE``, so a
+    record carrying one was written by something other than the parser — an
+    older writer, a hand edit, a repair that rewrote the file. The scores are
+    what every later reader compares against, and a figure outside the schema
+    would make those comparisons meaningless, so the landing rule treats such a
+    record as unread rather than landing on it.
+    """
+    scores = review.get("scores")
+    if not isinstance(scores, Mapping):
+        return False
+    for value in scores.values():
+        if isinstance(value, bool) or not isinstance(value, int):
+            return False
+        if not 0 <= value <= review_module.REVIEW_MAX_SCORE:
+            return False
+    return True
+
+
+def _record_is_complete(review: Mapping[str, Any] | None) -> bool:
+    """Whether a stored review carries every measure the landing rule reads.
+
+    Two questions, one answer: the record holds the measures the rubric asks
+    for, and every score it holds is one the schema allows. Both are schema
+    checks on the same record, so a reader asking whether a review may land asks
+    them together — a record that fails either is one this rule cannot read.
+    """
+    return _review_is_complete(review) and _scores_are_in_range(review or {})
+
+
 def _review_accepts_promotion(review: Mapping[str, Any] | None) -> bool:
     """Whether a stored review is clean enough to promote the run it read.
 
-    Clean means complete — every dimension scored and a total parsed — with no
-    finding that withholds the landing. The score sets no bar: a reviewer who
-    scored the work low has said so in the scores, and a run whose review raised
-    nothing blocking is landed on that judgement rather than held from a
-    coordinator who would read the same record. A review that states a
-    non-blocking finding still accepts: the reviewer judged it not to hold the
-    node, so it is recorded against the run as exempted at landing.
+    Clean means complete — every dimension scored, every score inside the
+    schema, and a total parsed — with no finding that withholds the landing. The
+    score sets no bar: a reviewer who scored the work low has said so in the
+    scores, and a run whose review raised nothing blocking is landed on that
+    judgement rather than held from a coordinator who would read the same
+    record. A review that states a non-blocking finding still accepts: the
+    reviewer judged it not to hold the node, so it is recorded against the run
+    as exempted at landing.
     """
-    if not _review_is_complete(review):
+    if not _record_is_complete(review):
         return False
     return not _blocking_finding_indexes(review)
 

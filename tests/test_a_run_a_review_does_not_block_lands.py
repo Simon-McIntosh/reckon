@@ -300,6 +300,19 @@ def _rewrite_total(head: str, total: int | None) -> None:
     path.write_text(json.dumps(record), encoding="utf-8")
 
 
+def _rewrite_score(head: str, dimension: str, value: int) -> None:
+    """Write one dimension score behind the parser's own range refusal.
+
+    The parser raises rather than store a score outside the schema, so the only
+    way to drive a record the reader will open with one is to write the file.
+    """
+    path = _stored_review_file(head)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    record["scores"][dimension] = value
+    record["total"] = sum(record["scores"].values())
+    path.write_text(json.dumps(record), encoding="utf-8")
+
+
 def _completed(argv, code: int = 0, output: str = ""):
     return subprocess.CompletedProcess(argv, code, output, "")
 
@@ -451,6 +464,48 @@ def test_a_refused_landing_leaves_the_stored_record_unchanged(
     after = _stored_record(str(delivery["head"]))
     assert after == before
     assert "finding_dispositions" not in after
+
+
+# ── completeness is the last schema check on the review side ────────────────
+
+
+def _refused_as_incomplete(delivery, monkeypatch: pytest.MonkeyPatch, head: str):
+    """Drive the pass over a stored record and assert it refused the schema."""
+    before = _stored_record(head)
+    monkeypatch.setattr(
+        queue_landing, "_land", lambda run_id: pytest.fail("unreadable review landed")
+    )
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == [], result
+    assert len(result["obligations"]) == 1, result
+    guard = result["obligations"][0]["guard"]
+    assert "incomplete record" in guard, guard
+    after = _stored_record(head)
+    assert after == before
+    assert "finding_dispositions" not in after
+    return result
+
+
+def test_a_review_missing_one_dimension_score_is_not_landed(
+    delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dimensions = review_module.REVIEW_DIMENSIONS
+    _accept(
+        base=str(delivery["base"]),
+        head=str(delivery["head"]),
+        per_dimension=dict.fromkeys(dimensions[:-1], 20),
+    )
+    _refused_as_incomplete(delivery, monkeypatch, str(delivery["head"]))
+
+
+def test_a_dimension_score_outside_the_schema_is_not_landed(
+    delivery, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _accept(base=str(delivery["base"]), head=str(delivery["head"]))
+    _rewrite_score(str(delivery["head"]), review_module.REVIEW_DIMENSIONS[-1], 25)
+    _refused_as_incomplete(delivery, monkeypatch, str(delivery["head"]))
 
 
 # ── arm 2: a blocking finding is not landed ─────────────────────────────────
