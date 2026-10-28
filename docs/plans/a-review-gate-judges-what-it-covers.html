@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-plan-is-reviewed-before-it-is-built,the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-modified" content="2026-10-28">
 <meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;a-review-gate-judges-what-it-covers#s2&quot;,&quot;a-review-gate-judges-what-it-covers#s9&quot;],&quot;s12&quot;:[&quot;a-review-gate-judges-what-it-covers#s9&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;]}">
 </head>
@@ -96,7 +96,7 @@
     </p>
 
     <h2 id="s3">§3 — An edit a finding asked for is covered by that finding's review</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> When a finding is answered <code>--acted</code> and the next edit to the
       plan changes only the section the finding anchors, by less than the word-share threshold the coverage predicate
@@ -228,6 +228,9 @@
 <div class="r-comment" data-section="_top" data-id="c-s10-admission-check-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>The admission-side check landed at a846169813. Section 10 stays open: production queue writes do not record the contract until the queued wiring node lands, and the duplicated snapshot resolution remains. <a href="/reckon/evidence/archive/a-review-gate-judges-what-it-covers-landed.html#a-queued-request-is-checked-once">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-close-s3" data-who="" data-when="">
+    <div class="r-comment-body"><p>Landed at cc3a91f6e6. An answered finding's edit is covered by the review that asked for it, at no added coverage cost (1.08x and 1.00x of base). Noted for the next edit of <code>plan_review.py</code>: use <code>parse_utc</code> in <code>_answer_instant</code> and <code>_commit_time</code>, and add an acted-finding test for a line anchor. <a href="/reckon/evidence/archive/a-review-gate-judges-what-it-covers-landed.html#an-answered-findings-edit-is-covered">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-s10-one-unit-rule" data-who="" data-when="">
     <div class="r-comment-body"><p>The code review of the gate modules on 28 October (<code>r-20261028T090444966085-review-code-6c1b39603c08</code>) proposed one treatment, which this section's node carries. <code>plan_review_units</code> is defined twice, at <code>reckon/crew/routing.py:2434</code> and again at <code>reckon/crew/queue_admission.py:2255</code>, and the two bodies are identical. The rule for which units a request is gated on, which this section changes, therefore lives in two places, and admission and the dispatch gate can disagree. The node deletes the copy in <code>queue_admission.py</code> and imports the one in <code>routing.py</code>, and a test asserts the two names are one object. <code>reckon/crew/routing.py</code> joins this section's write paths for that import.</p></div>
 </div>
@@ -262,7 +265,7 @@
     <div class="r-comment-body"><p>Reviewed r-20261028T105437811135-an-answered-findings-edit-is-covered at 7f9fe32e320346ec612ac224a3610c4665acbac1..d9e202f9b5a653f3f06cb6c4f507e71184b1f9c4: the delta repairs all four findings the previous review recorded, the head gate reads 5 passed EXIT=0 against a base of 2 failed 3 passed EXIT=1, and three non-blocking findings are recorded - two duplicated timestamp parsers against reckon/_timestamps.py:parse_utc, an untested line-anchor path in the coverage repair, and a memo key that does not name the review it caches.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261028T105437811135-an-answered-findings-edit-is-covered" data-who="reckon-build" data-when="2026-10-28T15:05:07Z">
-    <div class="r-comment-body"><p>The answered-finding coverage rule is implemented and its cost measured: an acted finding&#x27;s review covers the section it anchors while the edit stays under review.plan_change_threshold, an acted answer records the edit&#x27;s commit and what that commit is evidence of, head 5 passed against base 2 failed, the declared negative control fails on the rule alone, and coverage on both named plans stays within 1.5x of the base revision.</p></div>
+    <div class="r-comment-body"><p>The answered-finding coverage rule is implemented and its cost measured: an acted finding's review covers the section it anchors while the edit stays under review.plan_change_threshold, an acted answer records the edit's commit and what that commit is evidence of, head 5 passed against base 2 failed, the declared negative control fails on the rule alone, and coverage on both named plans stays within 1.5x of the base revision.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20261023-s5-premise" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v5 on 2026-10-23, findings reasoning-1 and done_when-1, declined for that wave because §5 was not being built. <code>_committed_scope</code> in <code>reckon/crew/promotion_evidence.py</code> diffs each cited commit against its own first parent, so there is no comparison against a recorded base to find, and §5's negative control is the span diff that function's docstring already rejects. Rework §5's premise and control before dispatching it.</p></div>
