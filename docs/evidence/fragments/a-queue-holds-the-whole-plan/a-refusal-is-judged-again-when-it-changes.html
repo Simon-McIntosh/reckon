@@ -1,0 +1,59 @@
+<section id="a-refusal-is-judged-again-when-it-changes-landing">
+  <h2>A landing refused under one rule is judged again when that rule changes</h2>
+
+  <p><strong>What changed.</strong> <code>land_once</code> in
+  <code>reckon/crew/queue_landing.py</code> skipped any run whose current head
+  already carried an <code>admission_landing</code> attempt, so a run refused
+  under one acceptance rule was never judged under the next one. When the score
+  floor left the acceptance rule on 28 October, the five runs it had already
+  refused kept that refusal and the pass reported nothing for two hours. A
+  second silent exit sat beside it: the delivered head was compared against the
+  whole last <code>manifest_commits</code> entry, so an entry carrying its
+  subject or three space-joined revisions matched no head and the run was
+  dropped with no record at all.</p>
+
+  <p><strong>The refusal keeps what made it.</strong>
+  <code>_record_attempt</code> now writes two stamps beside the head, guard and
+  status. <code>code_stamp</code> is the content identity of the code the pass
+  runs from (<code>_landing_code_stamp</code>, through the same
+  <code>follower_code_stamp</code> the admission service uses for its own
+  reload decision), and <code>review_stamp</code> is a digest of the review
+  record the judgement read (<code>_review_stamp</code>). Both are written on
+  every refusal, the interrupted-attempt record and the pre-landing
+  <code>attempting</code> record alike.</p>
+
+  <p><strong>The skip is conditional.</strong> A refused attempt at this head
+  is skipped only while <code>_refusal_holds</code> finds both stamps unchanged.
+  A stamp that cannot be read, and a refusal recorded before stamps existed,
+  matches neither, so such a run reaches the acceptance judgement once more —
+  which is how the six runs held by the retired rule are released without an
+  operator touching the store.</p>
+
+  <p><strong>The delivered head is parsed.</strong>
+  <code>_delivered_revision</code> reads the last entry as the last token that
+  spells a hex revision (<code>_REVISION_TOKEN</code>, seven to forty
+  characters, not part of a longer word), so
+  <code>82f3a3bdc docs(evidence): record the section-wait repair</code> and
+  <code>fe3d85589 be1c86dd5 229f3fcde</code> each reach the worktree head
+  rather than being compared whole.</p>
+
+  <p><strong>Measure.</strong> The gate command
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_refusal_is_judged_again_when_it_changes.py</code> reports
+  <code>5 passed</code>, <code>EXIT=0</code>. Against the base module the same
+  five tests report <code>4 failed, 1 passed</code>, <code>EXIT=1</code>, the
+  one pass being the unchanged-refusal arm, which is behaviour the old pass
+  already held. The declared negative control — restore the skip on any attempt
+  at the same head — reports <code>2 failed, 3 passed</code>,
+  <code>EXIT=1</code>, and the first arm
+  (<code>test_a_refusal_under_an_old_rule_is_judged_again_when_the_code_moves</code>)
+  is among the failures. The three test files that already import
+  <code>reckon.crew.queue_landing</code> report <code>37 passed</code> at the
+  base module and <code>37 passed</code> plus the new file's five at head, so
+  the change adds no failure outside its own gate.</p>
+
+  <p><strong>Scope.</strong> One behaviour in one module: the skip, the stamps
+  it compares, and the manifest entry it parses. A conflict refusal keeps its
+  own guard and is unaffected; whether a cleared conflict should also release a
+  refused head is a separate question this change does not answer.</p>
+</section>
