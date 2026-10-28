@@ -126,11 +126,16 @@ def delivery(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str |
     return {"repo": repo, "base": base, "head": head}
 
 
-def _review(*, base: str, head: str, score: int = 20) -> None:
+def _review(*, base: str, head: str, score: int = 20, finding: str = "") -> None:
     parsed = review_module.parse_review(
         "\n".join(
-            f"SCORE {dimension}: {score}"
-            for dimension in review_module.REVIEW_DIMENSIONS
+            (
+                *((f"FINDING tests/test_alpha.py:3 {finding}",) if finding else ()),
+                *(
+                    f"SCORE {dimension}: {score}"
+                    for dimension in review_module.REVIEW_DIMENSIONS
+                ),
+            )
         )
     )
     parsed.update(
@@ -229,12 +234,16 @@ def test_review_of_older_head_cannot_land(
     assert runs.pointer_path(RUN).exists()
 
 
-def test_below_floor_review_raises_an_owner_obligation(
+def test_a_blocking_finding_raises_an_owner_obligation(
     delivery: dict[str, str | Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _review(base=str(delivery["base"]), head=str(delivery["head"]), score=15)
+    _review(
+        base=str(delivery["base"]),
+        head=str(delivery["head"]),
+        finding="blocking: the new branch has no test that can fail",
+    )
     monkeypatch.setattr(
-        queue_landing, "_land", lambda run_id: pytest.fail("low review landed")
+        queue_landing, "_land", lambda run_id: pytest.fail("blocked review landed")
     )
 
     first = queue_landing.land_once()
@@ -245,7 +254,7 @@ def test_below_floor_review_raises_an_owner_obligation(
         {
             "run_id": RUN,
             "session": SESSION,
-            "guard": "review acceptance floor or findings",
+            "guard": "review acceptance: a blocking finding or an incomplete record",
         }
     ]
     assert second["obligations"] == []
@@ -253,7 +262,8 @@ def test_below_floor_review_raises_an_owner_obligation(
     duties = obligations.obligations(PROJECT, SESSION)["obligations"]
     assert any(item["run_id"] == RUN for item in duties)
     assert any(
-        item["kind"] == "landing-refused" and "floor" in str(item.get("reason") or "")
+        item["kind"] == "landing-refused"
+        and "blocking" in str(item.get("reason") or "")
         for item in duties
         if item["run_id"] == RUN
     ), duties

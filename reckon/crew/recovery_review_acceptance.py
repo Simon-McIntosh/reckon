@@ -16,34 +16,144 @@ from reckon.crew.runs import (
 )
 
 
-# The score a complete review must reach for its acceptance to promote
-# the reviewed run without a coordinator. The total a review can score is the
-# schema dimensions at ``REVIEW_MAX_SCORE`` each, and the floor is nine tenths of
-# that, so the accepting branch over a stored record whose total merely parses
-# is what this exists to prevent.
-REVIEW_ACCEPTANCE_FLOOR = (
-    len(review_module.REVIEW_DIMENSIONS) * review_module.REVIEW_MAX_SCORE * 9 // 10
-)
+#: The reason a non-blocking finding is recorded under when the landing pass
+#: lands the run it was raised against. The emissary is the landing pass itself,
+#: so the reason names where the judgement was made rather than what the
+#: reviewer thought.
+LANDED_NON_BLOCKING_REASON = "non-blocking, noted at landing"
+
+
+def _stored_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """A stored review's findings, enumerated as every other reader enumerates them.
+
+    The repair reflex, the findings surface and the disposition writer all read
+    a record through :func:`reckon.crew.repair.review_findings`, which skips an
+    entry that states no claim because no reader can answer it back. This gate
+    and the exemption writer beside it use that same enumeration, so an index
+    the landing pass exempts is the index the writer keys the disposition
+    against rather than one counted over entries the readers drop.
+    """
+    from reckon.crew import repair as repair_module
+
+    return repair_module.review_findings(review)
+
+
+def _finding_blocks(finding: Mapping[str, Any]) -> bool:
+    """Whether one stored finding withholds the run's landing.
+
+    Only a declared non-blocking severity is excused. A finding that declares
+    nothing — no key, an empty value, a word outside the vocabulary — is a
+    judgement the reviewer left unstated, and the repair reflex treats that as
+    blocking; a gate that read it as non-blocking would let an unreadable
+    severity slip a reviewer's finding past the landing.
+    """
+    severity = review_module.declared_severity(finding)
+    return severity is None or severity == review_module.BLOCKING_FINDING_SEVERITY
+
+
+def _blocking_finding_indexes(review: Mapping[str, Any] | None) -> tuple[int, ...]:
+    """The indexes of the findings that withhold the run's landing."""
+    if not isinstance(review, Mapping):
+        return ()
+    return tuple(
+        index
+        for index, finding in enumerate(_stored_findings(review))
+        if _finding_blocks(finding)
+    )
+
+
+def _excusable_finding_indexes(review: Mapping[str, Any] | None) -> tuple[int, ...]:
+    """The indexes of the findings that state a non-blocking severity."""
+    if not isinstance(review, Mapping):
+        return ()
+    return tuple(
+        index
+        for index, finding in enumerate(_stored_findings(review))
+        if not _finding_blocks(finding)
+    )
+
+
+def _scores_are_in_range(review: Mapping[str, Any]) -> bool:
+    """Whether every stored dimension score is a whole number the rubric allows.
+
+    The parser refuses to write a score outside ``0..REVIEW_MAX_SCORE``, so a
+    record carrying one was written by something other than the parser — an
+    older writer, a hand edit, a repair that rewrote the file. The scores are
+    what every later reader compares against, and a figure outside the schema
+    would make those comparisons meaningless, so the landing rule treats such a
+    record as unread rather than landing on it.
+    """
+    scores = review.get("scores")
+    if not isinstance(scores, Mapping):
+        return False
+    for value in scores.values():
+        if isinstance(value, bool) or not isinstance(value, int):
+            return False
+        if not 0 <= value <= review_module.REVIEW_MAX_SCORE:
+            return False
+    return True
+
+
+def _record_is_complete(review: Mapping[str, Any] | None) -> bool:
+    """Whether a stored review carries every measure the landing rule reads.
+
+    Two questions, one answer: the record holds the measures the rubric asks
+    for, and every score it holds is one the schema allows. Both are schema
+    checks on the same record, so a reader asking whether a review may land asks
+    them together — a record that fails either is one this rule cannot read.
+    """
+    return _review_is_complete(review) and _scores_are_in_range(review or {})
 
 
 def _review_accepts_promotion(review: Mapping[str, Any] | None) -> bool:
     """Whether a stored review is clean enough to promote the run it read.
 
-    Clean means complete — every dimension scored and a total parsed — with a
-    total at or above the floor and no finding at all. Findings are read from
-    the record rather than from the promotion-time severity filter: a review
-    that carries any finding returns to the coordinator, so one finding of any
-    severity is enough to withhold acceptance.
+    Clean means complete — every dimension scored, every score inside the
+    schema, and a total parsed — with no finding that withholds the landing. The
+    score sets no bar: a reviewer who scored the work low has said so in the
+    scores, and a run whose review raised nothing blocking is landed on that
+    judgement rather than held from a coordinator who would read the same
+    record. A review that states a non-blocking finding still accepts: the
+    reviewer judged it not to hold the node, so it is recorded against the run
+    as exempted at landing.
     """
-    if not _review_is_complete(review):
+    if not _record_is_complete(review):
         return False
-    total = review.get("total")
-    if isinstance(total, bool) or not isinstance(total, (int, float)):
-        return False
-    if int(total) < REVIEW_ACCEPTANCE_FLOOR:
-        return False
-    findings = review.get("findings")
-    return not (isinstance(findings, Sequence) and len(findings))
+    return not _blocking_finding_indexes(review)
+
+
+def record_landed_exemptions(
+    project: str,
+    reviewed_run_id: str,
+    review: Mapping[str, Any],
+    *,
+    reviewed_head_sha: str | None = None,
+    base_dir: str | Path | None = None,
+) -> list[int]:
+    """Record the review's non-blocking findings as exempted, and return them.
+
+    A run lands because its review raised nothing blocking, so the findings it
+    did raise must not vanish with the pointer that carried them: each is
+    written into the stored record's own dispositions, naming the landing pass
+    and the reason. The record rewritten is the one for the head this review
+    read, so an exemption recorded against one revision never speaks for
+    another.
+    """
+    from reckon.crew import review_dispositions
+
+    recorded: list[int] = []
+    for index in _excusable_finding_indexes(review):
+        review_dispositions.record_finding_disposition(
+            project,
+            reviewed_run_id,
+            index,
+            kind="exempted",
+            reason=LANDED_NON_BLOCKING_REASON,
+            reviewed_head_sha=reviewed_head_sha,
+            base_dir=base_dir,
+        )
+        recorded.append(index)
+    return recorded
 
 
 def _recorded_gate_passed(
@@ -125,9 +235,10 @@ def accept_clean_review(
 ) -> dict[str, Any] | None:
     """Promote the reviewed run when its stored review is clean.
 
-    When a review run completes with a stored record whose complete total
-    is at least the acceptance floor and which carries no finding, the reviewed
-    run is promoted without a coordinator: the commits its manifest names must
+    When a review run completes with a stored record that is complete and
+    carries no blocking finding, the reviewed run is promoted without a
+    coordinator, whatever its scores: the non-blocking findings it
+    does carry are recorded as exempted, the commits its manifest names must
     already be ancestors of the repository's head, the run's own recorded gate
     must already have passed, the gate is re-run against the repository's
     current head with the run merged, and on all of those passing the run is
@@ -139,8 +250,8 @@ def accept_clean_review(
     off the branch.
 
     None is returned when the run is not acceptance-eligible at all — no stored
-    review, or a review that is incomplete, below the floor, or carrying a
-    finding — because those runs are the coordinator's and this handler has
+    review, or a review that is incomplete or carrying a blocking finding —
+    because those runs are the coordinator's and this handler has
     nothing to add. A dict is returned whenever the run was eligible and an
     outcome was reached, so the sweep records why a refusal did not promote.
     """
@@ -224,14 +335,29 @@ def accept_clean_review(
             "reason": str(refusal),
             "gate_report": report,
         }
+    # Read only once the promotion has happened: an exemption written before it
+    # would mark a finding exempted on a run the promotion then refused.
+    exempted: list[int] = []
+    exemption_refusal = ""
+    try:
+        exempted = record_landed_exemptions(
+            project, run_id, review, reviewed_head_sha=head or None
+        )
+    except (OSError, ValueError) as refusal:
+        exemption_refusal = (
+            "the run was promoted but its review's non-blocking findings could "
+            f"not be recorded as exempted: {refusal}"
+        )
     return {
         "run_id": run_id,
         "accepted": True,
         "promoted": True,
         "review": {
             "total": review.get("total") if review else None,
-            "findings": 0,
+            "blocking_findings": 0,
+            "exempted_findings": len(exempted),
         },
+        **({"exemption_refusal": exemption_refusal} if exemption_refusal else {}),
         "gate_report": report,
         "ledger": {
             "path": str(result.get("ledger_path") or ""),

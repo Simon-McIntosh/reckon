@@ -187,11 +187,18 @@ class _Yield:
         return None
 
 
-def _accept(*, base: str, head: str, score: int = 20, run_id: str = RUN) -> None:
+def _accept(
+    *, base: str, head: str, score: int = 20, run_id: str = RUN, finding: str = ""
+) -> None:
     parsed = review_module.parse_review(
         "\n".join(
-            f"SCORE {dimension}: {score}"
-            for dimension in review_module.REVIEW_DIMENSIONS
+            (
+                *((f"FINDING tests/test_alpha.py:3 {finding}",) if finding else ()),
+                *(
+                    f"SCORE {dimension}: {score}"
+                    for dimension in review_module.REVIEW_DIMENSIONS
+                ),
+            )
         )
     )
     parsed.update(
@@ -536,7 +543,11 @@ def test_the_landing_beat_marks_the_section_done_with_an_evidence_anchor(
 def test_a_run_whose_review_is_not_accepted_is_untouched(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _accept(base=str(delivery["base"]), head=str(delivery["head"]), score=10)
+    _accept(
+        base=str(delivery["base"]),
+        head=str(delivery["head"]),
+        finding="blocking: the new branch has no test that can fail",
+    )
     landed = _land(monkeypatch)
     calls: list[dict] = []
 
