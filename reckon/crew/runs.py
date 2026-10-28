@@ -781,6 +781,14 @@ def queue_dispatch(
                 run_id = str(record["run_id"])
                 with _pointer_lock(run_id):
                     _write_json(pointer_path(run_id), record)
+            # A request is checked for review when it enters the queue: the
+            # digests of the text it was dispatched for are stamped here, from
+            # the plan as this dispatch wrote it, so later admission compares
+            # the plan against this request's own contract rather than against
+            # whatever the plan says at its first pass.
+            from reckon.crew.queue_admission import record_review_contract
+
+            record_review_contract(record)
             _write_steering(
                 str(record["run_id"]),
                 str(dict(record.get("node") or {}).get("brief") or ""),
