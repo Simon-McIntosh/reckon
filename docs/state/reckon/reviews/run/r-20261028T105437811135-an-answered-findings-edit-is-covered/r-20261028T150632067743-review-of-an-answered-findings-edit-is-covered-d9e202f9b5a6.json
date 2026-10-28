@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (gate-base.log, revision 768656861bffbc5b6b1b9bb20b10ba87dfa7ea1f) records 2 failed 3 passed EXIT=1 with failure ids tests/test_an_answered_findings_edit_is_covered.py::test_an_edit_a_finding_asked_for_is_covered and tests/test_an_answered_findings_edit_is_covered.py::test_an_answer_before_the_edit_lands_cites_the_plan_commit; after_suite (gate-head.log, revision 5bc1df31bb) records 5 passed EXIT=0 with no failure ids, so the after arm adds no failure the base arm did not already carry.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/routing.py:2700",
+    "reckon/mcp_edit_plan.py:2177",
+    "reckon/mcp_deadlines.py:712",
+    "reckon/crew/queue_admission.py:2469",
+    "reckon/crew_dispatch_commands.py:2648"
+  ],
+  "completed_at": "2026-10-28T15:15:49.415Z",
+  "dispatched_at": "2026-10-28T15:08:18Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "answer-instant-duplicates-parse-utc",
+      "line": 1557,
+      "severity": "non-blocking",
+      "text": "_answer_instant duplicates reckon/_timestamps.py:parse_utc: the same strip, fromisoformat, malformed-returns-None rule, and the same naive-read-as-UTC policy, which parse_utc's module docstring states as the repository's one parser that callers are meant to migrate to; plan_review already imports it elsewhere. _commit_time at :1574 repeats the same parse on git's %cI output as well, so the module now carries two more hand-rolled copies of a rule it already imports."
+    },
+    {
+      "file": "tests/test_an_answered_findings_edit_is_covered.py",
+      "id": "line-anchor-path-uncovered",
+      "line": 32,
+      "severity": "non-blocking",
+      "text": "The delta's whole performance repair lives in the line-anchor branch of _acted_finding_units (reckon/crew/plan_review.py:2300-2322): the anchor is classified without text, line anchors are collected and resolved lazily through the new reviewed_text callable, and units already covered are dropped. This file's only finding anchor is the section form '#s5', and no test in the tree stores an acted finding with a plan-line anchor, so a regression that resolved no line anchor, or that read the wrong revision's text, would leave the gate green; the case the repair exists for has no assertion under it."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "reviewed-text-memo-key",
+      "line": 1063,
+      "severity": "non-blocking",
+      "text": "reviewed_text_of keys its memo on (plan_path, reviewed_blob_sha) and not on the review it belongs to, so every record for a plan that carries no reviewed_blob_sha collapses onto one key and a later review's line anchor is resolved against the first such record's snapshot; two reviews of one plan taken before and after an edit would then map a line to different sections than their own snapshots would give. Records written by the current store always carry the blob, so this is a narrowing of the fallback rather than a live defect, but the key does not identify the text it caches."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit; 5bc1df31bb folds the two acted readers into _acted_findings, delegates _plan_head_commit to promotion_scope._newest_commit_touching_path, resolves a reviewed anchor from the review's own snapshot under a per-revision memo, and records commit_basis on an acted answer, while d9e202f9b5 only rewrites the evidence fragment.",
+    "done_when": "The measure names three edit arms, a negative control, a live-store arm on two plans, no added failures in the files importing plan_review, and ruff clean on the changed paths; the manifest records head 5 passed EXIT=0 at 5bc1df31bb against base 2 failed 3 passed EXIT=1 at 768656861b, and the plan-2 half the earlier arm left unmeasured now reads records 51 and uncovered [] in logs/timing-coverage.log.",
+    "goal": "The node goal is to make a stored review cover the edit an answered finding asked for, and this delta carries the repairs the previous review asked for; reckon/crew/plan_review.py:1143 hands review_coverage's already-covered units and a per-reviewed-revision text reader into _acted_finding_units, and :1994-1996 record what the commit an acted answer cites is evidence of, both read in the diff at 7f9fe32e320346ec612ac224a3610c4665acbac1..d9e202f9b5a653f3f06cb6c4f507e71184b1f9c4.",
+    "manifest": "Read; it states status complete, names the nine commits, records the head and base arms with their log paths and EXIT lines, the declared negative control with the source restored, the importer suite and the timing arm; the two arm claims I re-read are what gate-head.log (5 passed, EXIT=0) and gate-base.log (2 failed, 3 passed, EXIT=1) actually print.",
+    "write_paths": "The source node's declared write paths are reckon/crew/plan_review.py, tests/test_an_answered_findings_edit_is_covered.py and docs/evidence/fragments/a-review-gate-judges-what-it-covers/an-answered-findings-edit-is-covered.html; git diff --stat between the two revisions lists exactly those three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_an_answered_findings_edit_is_covered.py:221-223 and :286-288 assert the commit basis and fail with a KeyError if the rule is removed, but the new line-anchor branch at reckon/crew/plan_review.py:2315 has no case: the file's only anchor is #s5 at line 32, so a regression that made reviewed_text return None for line anchors would leave every case green.",
+    "evidence": "gate-head.log (revision 5bc1df31bb, 5 passed, EXIT=0) and gate-base.log (revision 768656861b, 2 failed 3 passed, EXIT=1) are on disk with their EXIT lines and the failure ids the manifest quotes, and the negative control at d9e202f9b5 is red on the same assertion the head arm passes, but the plan-2 live-store arm's empty uncovered list is read from a different script and has no live positive control showing the predicate can report a non-empty set on the served store.",
+    "fit": "The new constants sit beside ANSWER_ACTIONS at reckon/crew/plan_review.py:296-304 with a comment stating what the basis records, and the lazy import at :1548 matches the module's own idiom at :918 and :981.",
+    "goal_fidelity": "reckon/crew/plan_review.py:1143-1147 keeps the answered-finding rule while making its text lookup cheap, and :1974-1996 add the commit basis the previous review asked for, so the delta repairs all four recorded findings without weakening the rule.",
+    "reuse": "reckon/crew/plan_review.py:1557 _answer_instant and :1574 _commit_time re-implement the timestamp rule that reckon/_timestamps.py:parse_utc owns and documents (a zone is authoritative, a naive stamp reads as UTC, malformed input returns None), which this module already imports, so two added definitions duplicate an owner rather than extending it.",
+    "scope_discipline": "Every path in the delta is one of the three declared write paths, and the timing script and its log sit in the run directory rather than the repository, so nothing lands outside the fence."
+  },
+  "node": "review-of-an-answered-findings-edit-is-covered-d9e202f9b5a6",
+  "node:reviewed": "an-answered-findings-edit-is-covered",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a stored review cover the edit an answered finding asked for, and this delta carries the previous review's repairs; reckon/crew/plan_review.py:1143 hands review_coverage's covered units and a per-revision text reader to _acted_finding_units, and :1994-1996 record what the commit an acted answer cites is evidence of, both read in the diff.\nVERDICT done_when: the measure names three edit arms, a negative control, a live-store arm on two plans and no added failures; the manifest records head 5 passed EXIT=0 at 5bc1df31bb against base 2 failed 3 passed EXIT=1 at 768656861b, and the plan-2 half the earlier arm left unmeasured now reads records 51 and uncovered [] in logs/timing-coverage.log.\nVERDICT write_paths: the source node's declared paths are reckon/crew/plan_review.py, tests/test_an_answered_findings_edit_is_covered.py and the evidence fragment; git diff --stat 7f9fe32e320346ec612ac224a3610c4665acbac1..d9e202f9b5a653f3f06cb6c4f507e71184b1f9c4 lists exactly those three.\nVERDICT manifest: read; it records status complete, nine commits, both suite arms with their log paths and EXIT lines, the declared negative control with the source restored, and a timing arm, and the arm claims match what gate-head.log and gate-base.log print.\nVERDICT diff: read commit by commit; 5bc1df31bb folds the two acted readers into _acted_findings, delegates the newest-commit lookup to promotion_scope._newest_commit_touching_path, reads a reviewed anchor from the review's own snapshot under a per-revision memo and records commit_basis, and d9e202f9b5 is documentation only.\nCALL_SITES: reckon/crew/routing.py:2700, reckon/mcp_edit_plan.py:2177, reckon/mcp_deadlines.py:712, reckon/crew/queue_admission.py:2469, reckon/crew_dispatch_commands.py:2648\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:1143-1147 keeps the answered-finding rule while making its text lookup cheap, and :1974-1996 add the commit basis the previous review asked for, so all four recorded findings are repaired without weakening the rule.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log (5 passed, EXIT=0 at 5bc1df31bb) and gate-base.log (2 failed 3 passed, EXIT=1 at 768656861b) are on disk with their EXIT lines and the failure ids the manifest quotes, but the plan-2 live-store arm's empty uncovered list comes from a different script and has no live positive control.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the delta is one of the three declared write paths, and the timing script and log sit in the run directory rather than the repository.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_an_answered_findings_edit_is_covered.py:221-223 and :286-288 fail with a KeyError if the commit-basis rule is removed, but the line-anchor branch at reckon/crew/plan_review.py:2315 has no case, so a regression there leaves every test green.\nSCORE fit: 18\nJUSTIFICATION fit: the new constants sit beside ANSWER_ACTIONS at reckon/crew/plan_review.py:296-304 with a comment stating what the basis records, and the lazy import at :1548 matches the module's idiom at :918 and :981.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/plan_review.py:1557 _answer_instant and :1574 _commit_time re-implement the rule that reckon/_timestamps.py:parse_utc owns and that this module already imports, duplicating the owner instead of extending it.\nFINDING reckon/crew/plan_review.py:1557 non-blocking: _answer_instant duplicates reckon/_timestamps.py:parse_utc, including its naive-reads-as-UTC policy and malformed-returns-None rule, and _commit_time at :1574 repeats the same parse on git's %cI output, so the module carries two more hand-rolled copies of a rule it already imports.\nFINDING tests/test_an_answered_findings_edit_is_covered.py:32 non-blocking: the delta's performance repair lives in the line-anchor branch of _acted_finding_units at reckon/crew/plan_review.py:2300-2322, but this file's only anchor is the section form #s5 and no test stores an acted finding with a plan-line anchor, so a regression that resolved no line anchor would leave the gate green.\nFINDING reckon/crew/plan_review.py:1063 non-blocking: reviewed_text_of keys its memo on (plan_path, reviewed_blob_sha) rather than the review it belongs to, so records with no blob sha collapse onto one entry and a later review's line anchor can be resolved against the first such record's snapshot; the key does not identify the text it caches.",
+  "review_run_id": "r-20261028T150632067743-review-of-an-answered-findings-edit-is-covered-d9e202f9b5a6",
+  "reviewed_base_sha": "7f9fe32e320346ec612ac224a3610c4665acbac1",
+  "reviewed_head_sha": "d9e202f9b5a653f3f06cb6c4f507e71184b1f9c4",
+  "reviewed_run_id": "r-20261028T105437811135-an-answered-findings-edit-is-covered",
+  "reviewed_scope_note": "This review covers only the commits the run gained since it was reviewed at 7f9fe32e320346ec612ac224a3610c4665acbac1, namely 5bc1df31bb and d9e202f9b5 over the three paths the dispatch names.",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T15:23:19.079002+00:00",
+  "total": 90
+}
