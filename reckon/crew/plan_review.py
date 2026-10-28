@@ -59,6 +59,7 @@ import json
 import re
 import shlex
 import subprocess
+import time
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -235,7 +236,16 @@ RESPONSE_ACTIONS: tuple[str, ...] = ("acted", "declined")
 # answered for the gate like the other two, so answering it in the plan never
 # reopens the review gate and the section cannot loop.
 CARRIED_ACTION = "carried"
-ANSWER_ACTIONS: tuple[str, ...] = (*RESPONSE_ACTIONS, CARRIED_ACTION)
+
+# The answer a finding gets when the review that raised it said the finding
+# would not change the plan. It closes the finding for the dispatch gate like
+# the author's own answers, so the review a plan owes stops waiting on a
+# decision nobody has to make, and the coordinator is woken only for the
+# findings that would. It is deliberately not one of :data:`RESPONSE_ACTIONS`:
+# those are the author's judgement, and a decline recorded here would be
+# counted by :func:`declined_recurrence` as an author ruling on the rubric.
+NOTED_ACTION = "noted"
+ANSWER_ACTIONS: tuple[str, ...] = (*RESPONSE_ACTIONS, CARRIED_ACTION, NOTED_ACTION)
 
 # The append-only list of every answer a record has received. The ``responses``
 # map keeps only the latest answer per finding, so a finding answered twice
@@ -1678,8 +1688,8 @@ def record_response(
 ) -> Path:
     """Answer one finding on a stored review and persist the updated record.
 
-    ``action`` is ``acted``, ``declined`` or ``carried``. A decline must carry a
-    one-line ``reason``: the decision makes the reason the record, so a
+    ``action`` is ``acted``, ``declined``, ``carried`` or ``noted``. A decline
+    must carry a one-line ``reason``: the decision makes the reason the record, so a
     reasonless decline is refused before anything is written — the stored file
     is left untouched and the raise names what was missing. A carried answer
     records the unit the finding is about — the section named by its anchor, or
@@ -2217,6 +2227,253 @@ def compose_burst_refusal(
         if refusal:
             return refusal
     return None
+
+
+# ── The composition a quiet plan owes, and its would-not-change answers ─────
+# A coordinator must remember to compose a content review after authoring a
+# plan, and one paused at a rate limit cannot. The producer pass composes the
+# review such a plan owes on its own, and answers the findings its reviewer
+# marked as not changing the plan, so the coordinator is woken only for the
+# findings that would change it.
+
+# The plan must have been left alone this long before its review is composed.
+# A coordinator authors a plan over several minutes, and a review composed
+# between two edits reads half a document and raises findings against prose
+# the author was about to replace.
+PLAN_REVIEW_QUIET_SECONDS = 600
+
+# Who an automatic note is recorded as. The answers map carries a ``by``, and a
+# reader of a noted finding can then tell the reflex's answer from an author's.
+PLAN_REVIEW_REFLEX = "plan-review-reflex"
+
+
+def plan_review_quiet_remaining(
+    plan_path: str | Path, *, now_seconds: float | None = None
+) -> int:
+    """The seconds left before a plan's last edit is quiet enough to review.
+
+    Zero means the quiet period has passed. The plan file is the store an edit
+    writes, so its modification time is the last edit; a file that cannot be
+    read answers zero, because a plan whose edit time cannot be measured is not
+    evidence that it is still being written.
+    """
+    try:
+        edited = Path(plan_path).stat().st_mtime
+    except OSError:
+        return 0
+    moment = time.time() if now_seconds is None else now_seconds
+    remaining = PLAN_REVIEW_QUIET_SECONDS - (moment - edited)
+    return max(0, int(remaining))
+
+
+def noted_answer_reason(finding: Mapping[str, Any]) -> str:
+    """The one-line reason a would-not-change finding is answered with.
+
+    The reviewer's own ``REASON`` is the record when it stated one — it is what
+    makes the note worth reading a month later — and a finding whose report
+    carried no reason still gets a line naming the verdict that closed it, so
+    no note is recorded without one.
+    """
+    reason = str(finding.get("reason") or "").strip()
+    if reason:
+        return reason
+    return "the review recorded that this finding would not change the plan"
+
+
+def note_would_not_change_findings(
+    project: str,
+    plan_slug: str,
+    *,
+    base_dir: str | Path | None = None,
+    by: str = PLAN_REVIEW_REFLEX,
+    when: str | None = None,
+) -> list[dict[str, str]]:
+    """Answer each unanswered would-not-change finding of a plan as a note.
+
+    A finding the reviewer marked ``WOULD_CHANGE_THE_PLAN: no`` needs no
+    decision from the author, so leaving it open costs the coordinator a turn
+    it cannot spend when it is paused at a rate limit. Only an explicit ``no``
+    is answered: a finding whose verdict the report never stated carries
+    ``None``, which is not a no, so it waits for its author like any other.
+
+    Each answer is written to the record that raised it, and the record is read
+    back between answers so a plan carrying two such findings keeps both: the
+    store rewrites the whole record, so an answer written from a stale copy
+    would drop the one before it. Returns the notes written, naming the record
+    each was written to.
+    """
+    noted: list[dict[str, str]] = []
+    for stored in list_plan_reviews(project, base_dir=base_dir):
+        if stored.get("plan_slug") != plan_slug:
+            continue
+        record = stored
+        for finding in list(record.get("findings") or []):
+            if not isinstance(finding, Mapping):
+                continue
+            if finding.get("would_change") is not False:
+                continue
+            finding_id = str(finding.get("id") or "").strip()
+            if not finding_id or _stored_response(record, finding) is not None:
+                continue
+            path = record_response(
+                record,
+                finding_id,
+                action=NOTED_ACTION,
+                reason=noted_answer_reason(finding),
+                by=by,
+                when=when,
+                base_dir=base_dir,
+            )
+            noted.append({"finding": finding_id, "record": str(path)})
+            record = json.loads(path.read_text(encoding="utf-8"))
+    return noted
+
+
+def _project_plan_paths(project: str) -> list[tuple[str, Path]]:
+    """The live plans of a project, as slug and path, or empty when unmounted."""
+    from reckon._store import _docs_dir_for_project
+    from reckon.resources import iter_resources
+
+    docs = _docs_dir_for_project(project)
+    if docs is None:
+        return []
+    try:
+        resources = iter_resources(Path(docs), project, include_archived=False)
+    except OSError:
+        return []
+    return [
+        (str(resource.slug), Path(resource.path))
+        for resource in resources
+        if str(resource.type) == "plan"
+    ]
+
+
+def _owed_review_skip_reason(
+    project: str,
+    plan_slug: str,
+    path: Path,
+    *,
+    base_dir: str | Path | None,
+    now_seconds: float | None,
+) -> str | None:
+    """Why the reflex must not compose this plan's review now, or ``None``.
+
+    The checks run cheapest first and each answers a different reason the plan
+    is not the reflex's to review yet: a finished plan owes nothing, a plan
+    still being authored has not settled, one whose review is already running
+    is being reviewed, and one that has had the reviews its edit allowed must
+    have its findings answered rather than reviewed again.
+    """
+    from reckon.crew import recovery_review_dispatch
+    from reckon.lifecycle import TERMINAL_STATUSES
+
+    status = str(_plan_html.parse_meta(path).get("status") or "").strip().lower()
+    if status in TERMINAL_STATUSES:
+        return f"the plan is {status}, so it owes no review"
+    quiet_remaining = plan_review_quiet_remaining(path, now_seconds=now_seconds)
+    if quiet_remaining > 0:
+        return (
+            f"the plan was edited less than {PLAN_REVIEW_QUIET_SECONDS // 60} "
+            f"minutes ago; its review is composed after {quiet_remaining}s more "
+            "without an edit"
+        )
+    standing = recovery_review_dispatch._standing_plan_review(project, plan_slug)
+    if standing:
+        return f"a plan review is already in flight as the live run {standing}"
+    if read_plan_review(project, plan_slug, plan=path, base_dir=base_dir) is not None:
+        return "a stored review already covers the plan's current content"
+    refusal = compose_burst_refusal(
+        project, plan_slug, base_dir=base_dir, plan_path=path
+    )
+    if refusal:
+        return refusal
+    return None
+
+
+def compose_owed_plan_reviews(
+    project: str,
+    *,
+    session: str,
+    config: Mapping[str, Any] | None = None,
+    launcher: Callable[..., Any] | None = None,
+    base_dir: str | Path | None = None,
+    now_seconds: float | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Compose the review each quiet plan owes, and answer its notes.
+
+    The producer pass: called from the crew watch sweep, it is what makes a
+    plan's review compose itself after its author stops editing, with no
+    coordinator command in between and no lane named by this caller. Every
+    plan in the project is weighed by :func:`_owed_review_skip_reason`, so a
+    plan still being authored, one already under review and one whose edit has
+    had the reviews it allowed are each reported with their reason rather than
+    composed.
+
+    The would-not-change notes are answered on every pass, before and
+    independently of composition: they are answers to reviews already stored,
+    and waiting for the quiet period would leave a coordinator woken for a
+    finding the reviewer had already said needs no decision.
+
+    A ``dry_run`` reports what the pass would compose and answers nothing: a
+    preview that wrote a note would be a preview that acted.
+    """
+    from reckon.crew import recovery
+
+    owner = str(session or "").strip() or recovery._sweeping_session(project)
+    report: dict[str, Any] = {
+        "project": project,
+        "dry_run": bool(dry_run),
+        "composed": [],
+        "skipped": [],
+        "notes": [],
+    }
+    plans = _project_plan_paths(project)
+    if not plans:
+        return report
+    if not dry_run:
+        for plan_slug, _path in plans:
+            report["notes"].extend(
+                note_would_not_change_findings(project, plan_slug, base_dir=base_dir)
+            )
+    if not owner:
+        # A plan review is dispatched under a session, because its lane and its
+        # member belong to the coordinator that will read its findings. A pass
+        # holding no session composes nothing rather than inventing one.
+        report["skipped"].append(
+            {
+                "reason": (
+                    "the pass holds no session, and a plan review is dispatched "
+                    "under the session that will read its findings"
+                )
+            }
+        )
+        return report
+    for plan_slug, path in plans:
+        reason = _owed_review_skip_reason(
+            project, plan_slug, path, base_dir=base_dir, now_seconds=now_seconds
+        )
+        if reason is not None:
+            report["skipped"].append({"plan": plan_slug, "reason": reason})
+            continue
+        if dry_run:
+            report["composed"].append({"plan": plan_slug, "dispatched": False})
+            continue
+        subject = recovery.plan_review_subject(
+            project, plan_slug, owner, rubric=CONTENT_RUBRIC
+        )
+        result = recovery.dispatch_review_for_run(
+            subject, config=config, launcher=launcher
+        )
+        entry = {
+            "plan": plan_slug,
+            "dispatched": bool(result.get("dispatched")),
+            "review_run_id": str(result.get("review_run_id") or ""),
+        }
+        if result.get("reason"):
+            entry["reason"] = str(result["reason"])
+        report["composed"].append(entry)
+    return report
 
 
 # ── The per-day review summary ──────────────────────────────────────────────

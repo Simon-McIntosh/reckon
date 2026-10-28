@@ -57,6 +57,7 @@ from reckon import _backends, ledger
 from reckon import budget as budget_module
 from reckon._store import write_atomically, write_json_atomically
 from reckon._timestamps import parse_utc
+from reckon.crew import plan_review
 from reckon.crew.dispatch import (
     _WORKER_DONE_MANIFEST_STATUSES,
     BudgetHold,
@@ -2047,6 +2048,27 @@ def sweep(
             # durable on each resumed run.
             reviews = {"error": str(exc)}
 
+    # The plan-review composition, on the same cadence and from the same site.
+    # A plan a coordinator has stopped editing owes a content review before its
+    # sections may dispatch, and a coordinator paused at a rate limit composes
+    # none; the pass that already dispatches each settled run's review is what
+    # makes the plan's compose itself. Like the run pass it is idempotent — a
+    # plan whose review is stored or in flight is left alone — and it answers
+    # the findings a review marked as not changing the plan, so the
+    # coordinator is woken only for the ones that would.
+    plan_reviews: dict[str, Any] = {}
+    if not dry_run:
+        try:
+            plan_reviews = plan_review.compose_owed_plan_reviews(
+                project,
+                session=session or "",
+                config=config,
+                launcher=launch,
+                now_seconds=_now(now).timestamp(),
+            )
+        except (CrewError, OSError) as exc:
+            plan_reviews = {"error": str(exc)}
+
     report = {
         "project": project,
         "dry_run": bool(dry_run),
@@ -2054,6 +2076,7 @@ def sweep(
         "resumed": resumed,
         "skipped": skipped,
         "reviews": reviews,
+        "plan_reviews": plan_reviews,
         "swept_at": _utc_now(),
     }
     # Two records, because they answer different questions. The append-only log

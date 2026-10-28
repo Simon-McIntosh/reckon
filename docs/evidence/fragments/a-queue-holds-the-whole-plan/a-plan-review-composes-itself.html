@@ -1,0 +1,69 @@
+<section id="a-plan-review-composes-itself-landing">
+  <h2>A plan review composes itself after an authoring burst</h2>
+
+  <p><strong>What changed.</strong> A coordinator had to remember to compose a
+  content review after editing a plan, and one paused at a rate limit could
+  not. A plan therefore sat unreviewed, and its sections could not dispatch
+  past the review gate. The crew watch sweep now composes that review on its
+  own: <code>compose_owed_plan_reviews</code> in
+  <code>reckon/crew/plan_review.py</code> is called from the review pass of
+  <code>sweep</code> in <code>reckon/crew/resumption.py</code>, beside the pass
+  that already dispatches each settled run's review, so every caller of the
+  sweep — the follower's cadence, the resume-ready surface, the MCP sweep
+  action — reaches it once.
+
+  <p><strong>The quiet period.</strong> A review composed between two edits
+  reads half a document and raises findings against prose the author was about
+  to replace, so a plan is composed for only once
+  <code>PLAN_REVIEW_QUIET_SECONDS</code> (ten minutes) have passed since its
+  file was last written. <code>plan_review_quiet_remaining</code> measures it
+  from the plan file's own modification time — the store an edit writes —
+  and a file whose time cannot be read answers zero rather than being taken as
+  quiet.
+
+  <p><strong>The reductions, cheapest first.</strong>
+  <code>_owed_review_skip_reason</code> answers why a plan is not the reflex's
+  to review yet: it is finished, so it owes nothing; it was edited too
+  recently; a plan review is already in flight as a live run
+  (<code>_standing_plan_review</code>, the reader the locked dispatch already
+  uses, so the preview and the dispatch cannot disagree); a stored review
+  already covers the plan's current content
+  (<code>read_plan_review</code> with the plan given, which is the coverage
+  predicate the dispatch gate itself runs); or the edit has had the reviews
+  <code>compose_burst_refusal</code> allows, in which case its findings must be
+  answered rather than reviewed again.
+
+  <p><strong>No lane named.</strong> The composition goes through
+  <code>recovery.plan_review_subject</code> with the content rubric and no
+  <code>--local</code>, which is what the invocation every surface prints also
+  does: a review naming no lane takes the review lanes
+  <code>review_excluded_backends</code> leaves, which keeps it off metered
+  lanes and holds it when the local lane is saturated.
+
+  <p><strong>The notes.</strong> A finding the reviewer marked
+  <code>WOULD_CHANGE_THE_PLAN: no</code> needs no decision from the author, so
+  leaving it open costs a coordinator a turn it cannot spend while paused.
+  <code>note_would_not_change_findings</code> answers each such finding on
+  the record that raised it with a fourth action, <code>noted</code>, carrying
+  the reviewer's own <code>REASON</code> when the report stated one. Only an
+  explicit <code>no</code> is answered: a finding whose verdict the report
+  never stated carries <code>None</code>, which is not a no, so it waits for
+  its author like any other. <code>noted</code> is deliberately not one of
+  <code>RESPONSE_ACTIONS</code> — those are the author's judgement, and a
+  decline recorded here would be counted by <code>declined_recurrence</code> as
+  an author ruling on the rubric. Every record is read back between answers, so
+  a review carrying two such findings keeps both: the store rewrites the whole
+  record, and an answer written from a stale copy would drop the one before it.
+
+  <p><strong>The measure.</strong>
+  <code>tests/test_a_plan_review_composes_itself.py</code> shows the four
+  arms: a plan owing review whose last edit was eleven minutes ago is composed
+  on the next sweep (the composed brief, plan snapshot and sidecar on disk,
+  the launch naming the sweeping session and no lane); one edited two minutes
+  ago is not, and reports the quiet period as its reason; one with a review in
+  flight is not, and names the standing run; and a stored review's
+  would-not-change finding is answered <code>noted</code> with the reviewer's
+  reason while a finding that would change the plan and one carrying no stated
+  verdict both stay open. The negative control removes the quiet-period check,
+  and the two-minute arm fails.
+</section>
