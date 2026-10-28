@@ -1,0 +1,90 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T10:23:12.598Z",
+  "dispatched_at": "2026-10-28T10:18:06Z",
+  "findings": [
+    {
+      "anchor": "a-review-gate-judges-what-it-covers#s10 (plan.html:187)",
+      "id": "reasoning-1",
+      "reason": "as written the node would keep admission's doc-unit recheck only for the section, silently dropping decisions; the plan must either keep a doc-unit arm at admission for contract text or state why queue time freezes coverage, and that choice changes \u00a710's mechanism and its first done-when arm.",
+      "text": "\u00a72 gates a dispatch on the document unit precisely when the changed document text is \"text the node reads as its contract (the summary, decisions and gates)\", and \u00a710's first arm asserts that \"a request queued against a covered section stays admissible \u2026 after a decision is changed\" \u2014 so a queued request may launch to build against a changed contract that an identical fresh dispatch would be refused for, and the plan never reconciles the two, so the node implementing \u00a710 will remove a protection \u00a72 argues for.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "a-review-gate-judges-what-it-covers#s11 (plan.html:191)",
+      "id": "done_when-1",
+      "reason": "the missing arm is the only measure of one of the section's four conditions; without it a red gate cannot detect the condition being unimplemented.",
+      "text": "the mechanism names four landing conditions and the done-when gives an arm for three of them, but \"It merges cleanly\" has no arm, so a landing pass with no merge-cleanliness check at all passes every declared arm.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "a-review-gate-judges-what-it-covers#s10 (plan.html:187)",
+      "id": "wiring-1",
+      "reason": "a coordinator following the plan's own build order reaches \u00a72 and then stops, and one who dispatches \u00a710 instead builds it on a gate that does not yet have \u00a72's per-section rule, which its mechanism and its comment both assume.",
+      "text": "\u00a710's mechanism opens \"With \u00a72, that check is on its own section\" while \u00a72 is `implementable` and unbuilt, no `plan-section-depends-on` meta exists anywhere in the plan, and the build-order followup `f-rgjc-001` (plan.html:197) still says only that \"\u00a72 and \u00a73 \u2026 can be built together \u2026 \u00a74 to \u00a76 are independent\", so \u00a710 (and \u00a79, \u00a711) have neither a declared wait nor any followup that would dispatch them.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "a-review-gate-judges-what-it-covers#s9 (plan.html:183)",
+      "id": "single_goal-1",
+      "reason": "the node cannot be closed on one verdict; the skill-text half has no negative control, so a gate green on the digest arms would still close a node whose three skill edits were incomplete.",
+      "text": "\u00a79's title joins two deliverables (\"reviewed when it is written, and ordering never re-opens it\"): a digest exclusion in `reckon/crew/plan_review.py` and a prose restatement of the write-time rule across `skills/reckon-edit/SKILL.md`, `skills/reckon-create/SKILL.md` and `skills/reckon-build/SKILL.md`, while its negative control (\"keeps section waits in the document digest\") falsifies only the first.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "a-review-gate-judges-what-it-covers#s11 (plan.html:191)",
+      "id": "evidence_paths-1",
+      "reason": "the run-directory and gate-log convention already covers it, so naming the path would tighten the section without changing what it asks the node to build.",
+      "text": "the live-store arm ends \"The counts are recorded\" without naming the gate log or any durable path, where \u00a79's equivalent arm names the gate log, so the only fleet-scale evidence for the section lands wherever the node happens to put it.",
+      "type": "evidence_paths",
+      "would_change": false
+    },
+    {
+      "anchor": "a-review-gate-judges-what-it-covers#s10 (plan.html:232)",
+      "id": "anchors_resolve-1",
+      "reason": "the content is correct and reachable; only its provenance is missing, which the run record supplies.",
+      "text": "the comment that carries the duplicate-definition proof is the only comment in the plan with `data-who=\"\"` and `data-when=\"\"`, so a later reader cannot tell which session measured the two identical bodies or when, while the anchors inside it (`routing.py:2434`, `queue_admission.py:2255`) resolve exactly.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "a8c30dd8431c00150bbda03cba632df9ead1d70b",
+  "plan_fingerprint": "edbb5f2bd46bea0a8510987333e054f0934aee781b1518417462da15902fbac1",
+  "plan_slug": "a-review-gate-judges-what-it-covers",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T101647829519-plan-review-of-a-review-gate-judges-what-it-covers",
+  "reviewed_blob_sha": "bd15a6bf8c022ecf6a6f9e8dc7219a9d28ac83e4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every anchor resolves (`routing.py:2434`, `queue_admission.py:2255`, `_plan_review_owed` `queue_admission.py:2293`, `_review_accepts_promotion` `recovery_review_acceptance.py:29`, `PLAN_METADATA_SCALARS` `plan_review.py:93`, and `a-queue-holds-the-whole-plan` \u00a719/\u00a721/\u00a722/\u00a727 all exist), but the \u00a710 comment carrying the `plan_review_units` duplicate proof has empty `data-who` and `data-when`.",
+    "done_when": "a finding \u2014 \u00a711 lists \"It merges cleanly\" as one of four landing conditions and gives five done-when arms, none of which builds a run that conflicts.",
+    "evidence_paths": "a finding \u2014 \u00a711's live-store arm says only \"The counts are recorded\", naming no gate log or durable path, where \u00a79 names the gate log for the same kind of arm.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach a symbol or a filename; the three new test names describe the behaviour they measure.",
+    "reasoning": "a finding \u2014 \u00a710 removes the document-unit check from admission and asserts a decision change must leave a queued request admissible, which contradicts \u00a72's stated reason for gating on the document unit at all.",
+    "single_goal": "a finding \u2014 \u00a79 carries two deliverables (a digest exclusion in `reckon/crew/plan_review.py` and a restatement of the write-time rule across three SKILL.md files), and its negative control falsifies only the digest half.",
+    "wiring": "a finding \u2014 \u00a79, \u00a710 and \u00a711 are `implementable` but the plan declares no `plan-section-depends-on` at all, and the build-order followup `f-rgjc-001` still enumerates only \u00a72\u2013\u00a76, so \u00a710's stated \"With \u00a72\u2026\" premise has neither a declared wait nor a dispatch path."
+  },
+  "section_digests": {
+    "_document": "e98eca68b56b584f0f9ee74c27fe7110e9f353e929dc823921a51000f3a14bbf",
+    "s1": "2f80e3c4526e5da0f46c438dc82b2880b0fa395a71a3807823c00850eb9622b9",
+    "s10": "d3b4f9845daa63b63ed9025472b9700fa84876d80223cf02a2e0c4dad4a86c38",
+    "s11": "ec47b84ed764009639c399f6ce9d7a03659b14561038ff04fdb2712247725ea6",
+    "s2": "b003c30eb192f0dfa86d4e6518b4deede24bf6b15c0b15ba5784a6066d3da870",
+    "s3": "7df7d94c9d011998671062ddf1072ba44b1c08d7172f92e43f18961813f1d434",
+    "s4": "491337ffa1e3dbb35aed0b41de9bfb17126787d7b0a08c15bb12879faa1a9b43",
+    "s5": "f21e5477c01ae1e8fb4da7b3d607da52313f50d700b6b7dc3d5a2adb8d9f8956",
+    "s6": "534a6debaffa16edfc0cb75f6488191af897e1ff0b9ad32ecdaaa28148c119ff",
+    "s7": "ce6bf11980ac24dc184e5bd2aa6fd813667fe40e90c0ea97a60a56d649f3fd30",
+    "s8": "fd5dc1e3777871755eeeb65dc14935764ea25a67e2902dd8de2e8831cb64fa78",
+    "s9": "d6591eeb9eea9135ac9c7c401fa8f4f32613b24a737fa3098636bbf7c700aafe"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T10:23:56.484303+00:00"
+}
