@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_crew_launch_failure.py::test_the_lift_refuses_a_launch_failed_run_but_a_person_may_still_resume"
+  ],
+  "call_sites": [
+    "reckon/crew/resumption.py:2062 compose_owed_plan_reviews from the watch sweep",
+    "reckon/crew_run_commands.py:123 compose_burst_refusal via _compose_burst_refusal"
+  ],
+  "completed_at": "2026-10-28T08:20:05.022Z",
+  "dispatched_at": "2026-10-28T08:05:18Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-composes-itself-for-its-author.html",
+      "id": "f016ec03bb1",
+      "line": 77,
+      "severity": "blocking",
+      "text": "The fragment states the eighty-four importing files 'report 1 failed and 821 passed at this change', but the head arm it rests on is not recorded: importing-head.log holds seven lines stopping at 17 percent, with no summary line and no EXIT= line, so the done-when's 'add no failures against the base revision' clause is claimed rather than measured and no reader can check it."
+    },
+    {
+      "file": "logs/coordinator-arms/head.log",
+      "id": "f2588e5f004",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The only base/after pair in the reviewed run with both arms complete (logs/coordinator-arms/base.log at b9eab5cda3, 2 failed and 1051 passed, against head.log at 2004ae9ca2, 3 failed and 1050 passed) adds one failure, tests/test_crew_launch_failure.py::test_the_lift_refuses_a_launch_failed_run_but_a_person_may_still_resume, in a file the delta does not touch; it needs a re-run to attribute rather than being read as a regression of this change."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f7bd57d2a42",
+      "line": 2723,
+      "severity": "non-blocking",
+      "text": "The quiet and burst bounds are applied twice, in the candidate pre-filter at plan_review.py:2885-2894 and again in _owed_review_skip_reason at plan_review.py:2723-2733; from the only production caller the second copy is unreachable, so the negative control the fragment records at line 58 ('if False and edited_age > PLAN_REVIEW_BURST_SECONDS') mutates a now-dead line and no longer reddens tests/test_a_plan_review_composes_itself.py:281 at the reviewed head."
+    }
+  ],
+  "justifications": {
+    "durability": "the two added tests redden on reverting their fixes, but the quiet and burst bounds are now applied at plan_review.py:2885-2894 and again at plan_review.py:2723-2733, so the test at tests/test_a_plan_review_composes_itself.py:296 cannot fail on a reversion of either copy alone.",
+    "evidence": "the gate at head records 20 passed EXIT=0 in gate.log, but the done-when's no-added-failures clause has no readable head log: importing-head.log is seven lines at 17 percent with no summary line and no EXIT.",
+    "fit": "the additions follow the module's idiom (helper docstrings naming the mechanism, no plan or ticket identifiers), but plan_review.py:2723-2733 is now a second, unreachable copy of the gate plan_review.py:2885-2894 owns.",
+    "goal_fidelity": "the delta completes the self-composing pass the goal names: reckon/crew/plan_review.py:2880 pre-filters by edit age so the read slot reaches the plan being authored, and plan_review.py:2753 judges coverage by uncovered units rather than by any stored record.",
+    "reuse": "the delta reuses plan_review_edit_age, review_coverage, list_plan_reviews and _commit_record_writes_once rather than forking them; _burst_records at plan_review.py:2146 is a thin selection helper with no existing owner in reckon/crew.",
+    "scope_discipline": "the delta touches only reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py and the node's own evidence fragment, all inside the six declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to restore the self-composing plan review scoped to recent authoring under the run's session; the delta completes it at reckon/crew/plan_review.py:2880 by spending the read slot only among in-window plans and at plan_review.py:2753 by refusing only when stored reviews leave units uncovered, and the live-store arm now lists the watched plan.\nVERDICT done_when: the done_when names tests/test_a_plan_review_composes_itself.py, a live-store arm, an importing-suite delta and ruff; gate.log records 20 passed EXIT=0, live-store-arm.log records 28.8 s on reckon listing a-queue-holds-the-whole-plan under run r-20261028T062227367045 and 7.4 s on nova, but the importing head arm never completed and the negative control cited predates the delta.\nVERDICT write_paths: the declared write paths are reckon/crew/resumption.py, reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py, two evidence fragments and the node's figures dir; git diff 6eb9f86dd4..2004ae9ca2 changes only plan_review.py, the test file and the node fragment, all inside them.\nVERDICT manifest: the manifest reports status complete with gate.log 20 passed EXIT=0, a live-store arm listing the watched plan, and a negative control, but it carries no baseline_suite or after_suite block and its negative_control_log points at negative-control.log whose header revision is 14a4553fa8, not the reviewed head.\nVERDICT diff: read commit by commit against 6eb9f86dd4: 5617864161 adds the burst pre-filter, the candidate sort and the notes-commit repair, eae15928ac threads one stored-review listing through the burst and coverage checks and makes the quiet period read plan_review_edit_age, and 2004ae9ca2 restates the node fragment including the live-store positive control.\nCALL_SITES: reckon/crew/resumption.py:2062 compose_owed_plan_reviews from the watch sweep, reckon/crew_run_commands.py:123 compose_burst_refusal via _compose_burst_refusal\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2880 pre-filters by edit age so the read slot reaches the plan being authored, and plan_review.py:2753 judges coverage by uncovered units rather than by any stored record.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate.log records 20 passed EXIT=0, but importing-head.log stops at 17 percent with no summary and no EXIT, so the no-added-failures clause has no readable head log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 6eb9f86dd4..2004ae9ca2 touches only reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py and the node fragment, all inside the six declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the quiet and burst bounds are applied at plan_review.py:2885-2894 and again at plan_review.py:2723-2733, so tests/test_a_plan_review_composes_itself.py:296 cannot fail on a reversion of either copy alone.\nSCORE fit: 16\nJUSTIFICATION fit: plan_review.py:2723-2733 is now an unreachable second copy of the gate plan_review.py:2885-2894 owns, though the additions otherwise follow the module idiom.\nSCORE reuse: 19\nJUSTIFICATION reuse: the delta reuses plan_review_edit_age, review_coverage, list_plan_reviews and _commit_record_writes_once; _burst_records at plan_review.py:2146 has no existing owner in reckon/crew.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-composes-itself-for-its-author.html:77 blocking: the fragment states 1 failed and 821 passed at this change, but importing-head.log holds seven lines stopping at 17 percent with no summary and no EXIT, so the no-added-failures clause is claimed rather than measured.\nFINDING logs/coordinator-arms/head.log:1 non-blocking: the one complete base/after pair in the run dir adds tests/test_crew_launch_failure.py::test_the_lift_refuses_a_launch_failed_run_but_a_person_may_still_resume, in a file the delta does not touch, and needs a re-run before it is read as a regression.\nFINDING reckon/crew/plan_review.py:2723 non-blocking: the quiet and burst bounds are applied twice, and the second copy is unreachable from the only caller, so the recorded negative control mutating it no longer reddens tests/test_a_plan_review_composes_itself.py:281 at head.\n",
+  "review_run_id": "r-20261028T080305033496-review-of-a-plan-review-composes-itself-for-its-author-2004ae9ca22b",
+  "reviewed_base_sha": "6eb9f86dd4bd711cee34ab2cb8070b4e0db04907",
+  "reviewed_head_sha": "2004ae9ca22b32f0b3612d9d9688010555ec073c",
+  "reviewed_run_id": "r-20261028T062227367045-a-plan-review-composes-itself-for-its-author",
+  "rubric": "content",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T08:22:07.918539+00:00",
+  "total": 101,
+  "verdicts": {
+    "diff": "Read commit by commit against 6eb9f86dd4: 5617864161 adds the burst pre-filter, the candidate sort and the notes-commit repair, eae15928ac threads one stored-review listing through the burst and coverage checks and makes the quiet period read plan_review_edit_age, and 2004ae9ca2 restates the node fragment including the live-store positive control.",
+    "done_when": "The done_when names tests/test_a_plan_review_composes_itself.py, a live-store arm, an importing-suite delta and ruff; gate.log records 20 passed EXIT=0, live-store-arm.log records 28.8 s on reckon listing a-queue-holds-the-whole-plan under run r-20261028T062227367045 and 7.4 s on nova, but the importing head arm never completed and the negative control cited predates the delta.",
+    "goal": "The node's goal is to restore the self-composing plan review scoped to recent authoring under the run's session; the delta completes it at reckon/crew/plan_review.py:2880 by spending the read slot only among in-window plans and at plan_review.py:2753 by refusing only when stored reviews leave units uncovered, and the live-store arm now lists the watched plan.",
+    "manifest": "The manifest reports status complete with gate.log 20 passed EXIT=0, a live-store arm listing the watched plan, and a negative control, but it carries no baseline_suite or after_suite block and its negative_control_log points at negative-control.log whose header revision is 14a4553fa8, not the reviewed head.",
+    "write_paths": "The declared write paths are reckon/crew/resumption.py, reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py, two evidence fragments and the node's figures dir; git diff 6eb9f86dd4..2004ae9ca2 changes only plan_review.py, the test file and the node fragment, all inside them."
+  }
+}
