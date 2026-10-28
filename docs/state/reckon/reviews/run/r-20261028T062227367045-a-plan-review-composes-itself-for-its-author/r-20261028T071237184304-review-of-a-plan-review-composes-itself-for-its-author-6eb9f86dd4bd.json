@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/resumption.py:sweep"
+  ],
+  "completed_at": "2026-10-28T07:26:10.733Z",
+  "dispatched_at": "2026-10-28T07:14:40Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "fde6efd07bb",
+      "line": 2361,
+      "severity": "non-blocking",
+      "text": "The plan_review_edit_age docstring says the quiet period and the burst window both 'measure it here', but plan_review_quiet_remaining at line 2334 re-stats the file itself; a maintainer editing plan_review_edit_age would not change the quiet bound."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "ff23735c5ee",
+      "line": 2775,
+      "severity": "non-blocking",
+      "text": "If _note_records raises partway, `answered = list(pending)` is skipped, so answers already written to disk are never committed; a later pass sees them answered and skips them, leaving the changed records uncommitted indefinitely."
+    }
+  ],
+  "justifications": {
+    "durability": "the two-days arm reddens under the recorded negative control and the sweep-vs-author assertion in tests/test_a_plan_review_composes_itself.py:247 fails if the review reverts to the sweep's session.",
+    "evidence": "tests/test_a_plan_review_composes_itself.py re-run at 6eb9f86dd4 gives 18 passed; the live-store arm records the 30 s timing but its positive control is refused (a stored review already covers the plan), so that clause is unproven rather than measured.",
+    "fit": "the pass follows the surrounding module idiom in reckon/crew/plan_review.py:2293 and introduces no plan, sprint or ticket identifier in any name.",
+    "goal_fidelity": "reckon/crew/plan_review.py:2708 compose_owed_plan_reviews composes only between the quiet period and the burst window, under plan_authoring_runs' newest session, and notes only reviews it dispatched.",
+    "reuse": "the pass reuses recovery_review_subject.plan_review_subject, dispatch_review_for_run, record_response and ledger._commit_state_write rather than forking them.",
+    "scope_discipline": "every path in git diff b9eab5cda3..6eb9f86dd4 is one of the six declared write paths, including the original fragment restored by the mandated revert commit e36c8b9078."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is to restore the self-composing plan review scoped to recent authoring under the run's session; reckon/crew/plan_review.py:2708 implements the plan's three facts and resumption.py:2062 calls it from the sweep.\nVERDICT done_when: the done_when names tests/test_a_plan_review_composes_itself.py, a live-store arm, the importing-suite delta and ruff; the gate log records 18 passed, the live-store arm records the timing with the positive control refused, the importing delta is zero, and ruff check/format pass on the changed paths.\nVERDICT write_paths: the declared write paths are reckon/crew/resumption.py, reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py, the two evidence fragments and the figures dir; every path in the diff is inside them.\nVERDICT manifest: the manifest at the reviewed run directory reports status complete, the four commits, the 18-passed gate, the negative control failing the two-days arm, the importing delta, and honestly records the unmet positive-control precondition under blockers.\nVERDICT diff: read commit by commit: e36c8b9078 restores the reverted implementation as the done_when mandates, 14a4553fa8 adds the burst scoping, 283a870f48 hoists the authoring-run read, and 6eb9f86dd4 records the importing result.\nCALL_SITES: reckon/crew/resumption.py:sweep\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:2708 composes only between the quiet period and the burst window, under plan_authoring_runs' newest session, and notes only reviews it dispatched.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_plan_review_composes_itself.py re-run at 6eb9f86dd4 gives 18 passed; the live-store arm records the 30 s timing but its positive control is refused, so that clause is unproven rather than measured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff b9eab5cda3..6eb9f86dd4 is one of the six declared write paths, including the original fragment restored by the mandated revert commit e36c8b9078.\nSCORE durability: 18\nJUSTIFICATION durability: the two-days arm reddens under the recorded negative control and the sweep-vs-author assertion at tests/test_a_plan_review_composes_itself.py:247 fails if the review reverts to the sweep's session.\nSCORE fit: 18\nJUSTIFICATION fit: the pass follows the surrounding module idiom in reckon/crew/plan_review.py:2293 and introduces no plan, sprint or ticket identifier in any name.\nSCORE reuse: 19\nJUSTIFICATION reuse: the pass reuses plan_review_subject, dispatch_review_for_run, record_response and ledger._commit_state_write rather than forking them.\nFINDING reckon/crew/plan_review.py:2361 non-blocking: the plan_review_edit_age docstring says both readers measure the age here, but plan_review_quiet_remaining at 2334 re-stats the file itself.\nFINDING reckon/crew/plan_review.py:2775 non-blocking: if _note_records raises partway, answers already written to disk are never committed, and a later pass skips them as answered.\n",
+  "review_run_id": "r-20261028T071237184304-review-of-a-plan-review-composes-itself-for-its-author-6eb9f86dd4bd",
+  "reviewed_base_sha": "b9eab5cda3dd01e79c35114fe0bacb33763c5898",
+  "reviewed_head_sha": "6eb9f86dd4bd711cee34ab2cb8070b4e0db04907",
+  "reviewed_run_id": "r-20261028T062227367045-a-plan-review-composes-itself-for-its-author",
+  "rubric": "content",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T07:27:12.443605+00:00",
+  "total": 108,
+  "verdicts": {
+    "diff": "Read commit by commit: e36c8b9078 restores the reverted implementation as the done_when mandates, 14a4553fa8 adds the burst scoping, 283a870f48 hoists the authoring-run read, and 6eb9f86dd4 records the importing result.",
+    "done_when": "The done_when names tests/test_a_plan_review_composes_itself.py, a live-store arm, the importing-suite delta and ruff; the gate log records 18 passed, the live-store arm records the timing with the positive control refused, the importing delta is zero, and ruff check/format pass on the changed paths.",
+    "goal": "The reviewed node's goal is to restore the self-composing plan review scoped to recent authoring under the run's session; reckon/crew/plan_review.py:2708 implements the plan's three facts and resumption.py:2062 calls it from the sweep.",
+    "manifest": "The manifest at the reviewed run directory reports status complete, the four commits, the 18-passed gate, the negative control failing the two-days arm, the importing delta, and honestly records the unmet positive-control precondition under blockers.",
+    "write_paths": "The declared write paths are reckon/crew/resumption.py, reckon/crew/plan_review.py, tests/test_a_plan_review_composes_itself.py, the two evidence fragments and the figures dir; every path in the diff is inside them."
+  }
+}
