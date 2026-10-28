@@ -296,6 +296,13 @@ CARRIED_ACTION = "carried"
 NOTED_ACTION = "noted"
 ANSWER_ACTIONS: tuple[str, ...] = (*RESPONSE_ACTIONS, CARRIED_ACTION, NOTED_ACTION)
 
+# What the commit an ``acted`` answer cites is evidence of. An answer given after
+# its edit landed cites that edit; an answer given before it landed can only cite
+# the plan's newest commit at that moment, which is not evidence of the fix and is
+# recorded as such rather than presented as the edit's commit.
+EDIT_COMMIT = "edit"
+PLAN_COMMIT_AT_ANSWER = "plan commit at answer time"
+
 # The append-only list of every answer a record has received. The ``responses``
 # map keeps only the latest answer per finding, so a finding answered twice
 # keeps only the second there; this list is where the first survives, as the
@@ -359,7 +366,11 @@ def _without_comments_and_followups(state: Mapping[str, Any]) -> Mapping[str, An
     }
 
 
-def _without_section_bookkeeping(state: Mapping[str, Any]) -> Mapping[str, Any]:
+def _without_section_bookkeeping(
+    state: Mapping[str, Any],
+    *,
+    fields: Iterable[str] = _SECTION_BOOKKEEPING_FIELDS,
+) -> Mapping[str, Any]:
     """Return parsed state with each section's bookkeeping removed.
 
     A section carries a declaration (``deferred``, ``implementable``, ``done``)
@@ -378,16 +389,22 @@ def _without_section_bookkeeping(state: Mapping[str, Any]) -> Mapping[str, Any]:
     left in they would earn a review for a figure the plan was merely being
     re-ordered by.
 
+    ``fields`` names the section record keys dropped. The default is the present
+    definition's bookkeeping set; a document digested under the earlier
+    definition, which dropped the lifecycle ``status`` alone, is normalised by
+    passing that one field, so both definitions run through this one body.
+
     A state whose keys are the wrong shape is returned with only what can be
     recognised removed: the normalisation never hides content it cannot classify.
     """
+    dropped = frozenset(fields)
     cleaned = {
         key: value for key, value in state.items() if key != "section_declarations"
     }
     sections = cleaned.get("sections")
     if isinstance(sections, list):
         cleaned["sections"] = [
-            {k: v for k, v in record.items() if k not in _SECTION_BOOKKEEPING_FIELDS}
+            {k: v for k, v in record.items() if k not in dropped}
             if isinstance(record, Mapping)
             else record
             for record in sections
@@ -400,30 +417,12 @@ def _digest(payload: Any) -> str:
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
-def _without_section_status(state: Mapping[str, Any]) -> Mapping[str, Any]:
-    """Return parsed state with only each section's lifecycle status removed.
-
-    This is the normalisation the document unit was digested under before the
-    ordering keys left it, and it is kept for one purpose only: a stored review
-    that carries no snapshot was keyed to the digest that normalisation produced,
-    and comparing it against the present digest alone would orphan a review of
-    bytes nobody has edited. Coverage accepts the digest either normalisation
-    gives the present content, so a review stored under the previous definition
-    keeps covering the text it read, exactly as the legacy whole-document form
-    beside it already does.
-    """
-    cleaned = {
-        key: value for key, value in state.items() if key != "section_declarations"
-    }
-    sections = cleaned.get("sections")
-    if isinstance(sections, list):
-        cleaned["sections"] = [
-            {k: v for k, v in record.items() if k != "status"}
-            if isinstance(record, Mapping)
-            else record
-            for record in sections
-        ]
-    return cleaned
+# The section records dropped by the earlier digest definition: it normalised
+# out the per-section lifecycle status alone, before the effort estimate and the
+# dispatch attempt count joined it. A review stored under that definition was
+# keyed to its digest, and comparing it against the present digest alone would
+# orphan a review of bytes nobody has edited, so coverage accepts both.
+_PREVIOUS_SECTION_FIELDS: tuple[str, ...] = ("status",)
 
 
 def _digest_state(plan, *, keep_declarations=False, previous_definition=False):
@@ -438,7 +437,7 @@ def _digest_state(plan, *, keep_declarations=False, previous_definition=False):
     if keep_declarations:
         return state
     if previous_definition:
-        return _without_section_status(state)
+        return _without_section_bookkeeping(state, fields=_PREVIOUS_SECTION_FIELDS)
     return _without_section_bookkeeping(state)
 
 
@@ -814,21 +813,24 @@ def _wanted_fingerprints(value: str | Iterable[str] | None) -> frozenset[str] | 
 
 
 def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str]:
-    """Section-set and whole-document digests of one snapshot.
+    """The unit fingerprint and the whole-document digest of one snapshot.
 
-    The section-set form digests each authored unit independently, so a review
-    stored under it keeps covering the units it read after another section
-    lands. The whole-document form digests the remaining document as one unit,
-    so a review stored before unit digests existed still matches while the
-    document is unchanged. Each of the two is formed under the present
-    definition and under the previous one, so a review stored before the
-    ordering keys left the document unit still matches the content it read.
+    The first is the per-unit fingerprint, which digests each authored unit
+    independently, so a review stored under it keeps covering the units it read
+    after another section lands. The second digests the remaining document as
+    one unit, so a review stored before unit digests existed still matches while
+    the document is unchanged; a parsed-state input carries no document text, so
+    the document is digested from its state alone.
 
     Both drop what a landing beat writes on its own: the section's lifecycle
     declaration, and the interior of a landed card, whose body is the section's
     own landed form. Keeping either would make a landing demand a fresh review
-    of content nobody authored, which is the one change the beat must not
-    force on a reader.
+    of content nobody authored, which is the one change the beat must not force
+    on a reader.
+
+    A caller that must also match a review stored under the earlier digest
+    definition forms that digest separately, through
+    :func:`_section_digests`'s ``previous_definition``.
     """
     document = _as_document(plan)
     content = document if document is not None else plan
@@ -853,6 +855,24 @@ def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str]:
     return tuple(forms)
 
 
+def _review_snapshot(
+    project: str, plan_slug: str, record: Mapping[str, Any]
+) -> Path | None:
+    """The ``plan.html`` snapshot the review read, or ``None`` without one.
+
+    A review's own snapshot is the text it actually read, held beside the report
+    it composed, so a reader wanting that text reads a file rather than walking
+    the plan's history for the commit that carried the same bytes.
+    """
+    run_id = str(record.get("review_run_id") or "").strip()
+    if not run_id:
+        return None
+    snapshot = (
+        review_report_directory(project, plan_slug, run_id) / _REVIEW_SNAPSHOT_NAME
+    )
+    return snapshot if snapshot.is_file() else None
+
+
 def _snapshot_evidence(
     project: str, plan_slug: str, record: Mapping[str, Any]
 ) -> tuple[dict[str, str], dict[str, str], Mapping[str, Any] | None] | None:
@@ -868,13 +888,8 @@ def _snapshot_evidence(
     names no run or the snapshot is missing, so the caller falls back to the
     stored digests and reads the threshold as zero for that review alone.
     """
-    run_id = str(record.get("review_run_id") or "").strip()
-    if not run_id:
-        return None
-    snapshot = (
-        review_report_directory(project, plan_slug, run_id) / _REVIEW_SNAPSHOT_NAME
-    )
-    if not snapshot.is_file():
+    snapshot = _review_snapshot(project, plan_slug, record)
+    if snapshot is None:
         return None
     text = snapshot.read_text(encoding="utf-8", errors="replace")
     return _section_digests(text), _prose_texts(text), _snapshot_declarations(text)
@@ -1032,6 +1047,32 @@ def review_coverage(
     # for a section the judge leaves unanswered.
     judged: dict[str, tuple[dict[str, Any], str]] = {}
     within_share: dict[str, dict[str, Any]] = {}
+    # A unit this review asked a fix for and was answered ``acted`` on: the edit
+    # that followed is the one its own finding asked for, so the review covers it
+    # while the edit stays under the change threshold. The answer records the
+    # edit's commit, so the covering record carries the evidence for its
+    # verdict.
+    answered: dict[str, dict[str, Any]] = {}
+    # Resolving an anchor against the text its review read walks the plan's
+    # history, so the text is resolved once per reviewed revision for the whole
+    # call: reviews of one revision read the same bytes, and this predicate runs
+    # on every dispatch, plan edit and admission pass rather than once.
+    reviewed_texts: dict[tuple[str, str], str | None] = {}
+
+    def reviewed_text_of(record: Mapping[str, Any]) -> str | None:
+        key = (
+            str(record.get("plan_path") or base_dir or ""),
+            str(record.get("reviewed_blob_sha") or ""),
+        )
+        if key not in reviewed_texts:
+            snapshot = _review_snapshot(project, plan_slug, record)
+            reviewed_texts[key] = (
+                snapshot.read_text(encoding="utf-8", errors="replace")
+                if snapshot is not None
+                else _reviewed_plan_text(record)
+            )
+        return reviewed_texts[key]
+
     for record in sorted(records, key=lambda item: int(item.get("plan_version") or 0)):
         evidence = _snapshot_evidence(project, plan_slug, record)
         if evidence is None:
@@ -1054,6 +1095,11 @@ def review_coverage(
             }
         )
         matched = False
+        # Resolved on the first unit of this review that lands under the
+        # threshold: reading a finding's unit resolves its anchor against the
+        # reviewed text, which is a git lookup, so a review with nothing near
+        # the threshold never pays for it.
+        acted_units: set[str] | None = None
         for identity in outstanding:
             if identity not in digests:
                 continue
@@ -1093,6 +1139,14 @@ def review_coverage(
             newest_evidence[identity] = share
             if share < threshold:
                 within_share[identity] = record
+                if acted_units is None:
+                    acted_units = _acted_finding_units(
+                        record,
+                        covered=covered,
+                        reviewed_text=lambda record=record: reviewed_text_of(record),
+                    )
+                if identity in acted_units:
+                    answered[identity] = record
         if matched:
             contributing.append(record)
     pending = {
@@ -1116,9 +1170,9 @@ def review_coverage(
         for identity, (record, _reviewed_text) in pending.items():
             verdict = verdicts.get(identity)
             if verdict is not None and verdict.required is not None:
-                if verdict.required:
+                if verdict.required and identity not in answered:
                     continue
-                cover = record
+                cover = answered.get(identity, record)
             elif identity in within_share:
                 cover = within_share[identity]
             else:
@@ -1480,6 +1534,60 @@ def plan_commit_for(
     return lines[-1] if lines else None
 
 
+def _plan_head_commit(
+    project: str, plan_slug: str, plan_path: str | Path | None
+) -> str | None:
+    """The newest commit that wrote the plan file, or ``None``.
+
+    An answer to a finding records the edit it answers for: the coordinator
+    applies the fix a finding asked for, commits it, and answers the finding, so
+    the newest commit touching the plan's path is that edit. A project with no
+    resolvable checkout, a plan that has never been committed and a git failure
+    all answer ``None`` rather than a guessed revision.
+    """
+    from reckon.crew import promotion_scope
+
+    location = _plan_location(project, plan_slug, plan_path)
+    if location is None:
+        return None
+    repo, _path, relative = location
+    return promotion_scope._newest_commit_touching_path(repo, relative)
+
+
+def _answer_instant(when: str) -> datetime | None:
+    """The instant an answer was recorded at, or ``None`` when it is unreadable.
+
+    A stored answer's ``when`` is an ISO stamp, timezone-carrying when this
+    module wrote it. A stamp without one is read as UTC so a comparison against a
+    commit's own time is never between two different zones.
+    """
+    text = (when or "").strip()
+    if not text:
+        return None
+    try:
+        instant = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return instant if instant.tzinfo is not None else instant.replace(tzinfo=UTC)
+
+
+def _commit_time(
+    project: str, plan_slug: str, commit: str, plan_path: str | Path | None
+) -> datetime | None:
+    """When ``commit`` landed, or ``None`` when it cannot be read."""
+    location = _plan_location(project, plan_slug, plan_path)
+    if location is None:
+        return None
+    repo, _path, _relative = location
+    output = _git(repo, "show", "-s", "--format=%cI", commit)
+    if not output or not output.strip():
+        return None
+    try:
+        return datetime.fromisoformat(output.strip())
+    except ValueError:
+        return None
+
+
 def _plan_text_at(
     project: str,
     plan_slug: str,
@@ -1816,6 +1924,7 @@ def record_response(
     reason: str | None = None,
     by: str = "",
     when: str | None = None,
+    commit: str | None = None,
     base_dir: str | Path | None = None,
 ) -> Path:
     """Answer one finding on a stored review and persist the updated record.
@@ -1828,7 +1937,13 @@ def record_response(
     the document unit when the anchor names none — under ``section``, so a
     later dispatch of that section reads it back. The response is keyed by
     ``finding_id``, which must name a finding the record carries, so an answer
-    can never attach to a finding nobody can read back. The returned path is the
+    can never attach to a finding nobody can read back. An ``acted`` answer also
+    records the commit of the edit it answers for — named by ``commit`` or, when
+    the caller names none, the newest commit touching the plan — so the coverage
+    that answer earns carries its own evidence. That commit records beside it
+    what it is evidence of: an answer given before its edit landed cites the
+    plan's newest commit at that moment, which is recorded as the plan commit at
+    answer time rather than presented as the edit's commit. The returned path is the
     record whose ``responses`` now carries the answer.
 
     A record that has been promoted is answered on its committed copy, which is
@@ -1855,6 +1970,30 @@ def record_response(
     }
     if action_value == "carried":
         response["section"] = finding_unit(record, str(finding_id))
+    elif action_value == "acted":
+        # The edit is what the answer is evidence of, so the answer names the
+        # commit that wrote it. A caller may name the commit outright; otherwise
+        # the newest commit touching the plan is the edit the finding asked for.
+        project = str(record.get("project") or "")
+        plan_slug = str(record.get("plan_slug") or "")
+        named = str(commit or "").strip()
+        edit = named or _plan_head_commit(project, plan_slug, record.get("plan_path"))
+        if edit:
+            response["commit"] = edit
+            landed = _commit_time(project, plan_slug, edit, record.get("plan_path"))
+            answered_at = _answer_instant(str(response["when"]))
+            if (
+                not named
+                and landed is not None
+                and answered_at is not None
+                and landed > answered_at
+            ):
+                # The cited commit landed after the answer was given, so it is
+                # the plan's newest commit at answer time rather than evidence
+                # of the fix the answer asks for.
+                response["commit_basis"] = PLAN_COMMIT_AT_ANSWER
+            else:
+                response["commit_basis"] = EDIT_COMMIT
     # A carried answer hands the finding to a node; it is not an answer about
     # the plan's prose, so it never displaces one. A finding already answered
     # ``acted`` or ``declined`` keeps that answer: the earlier decision is the
@@ -2106,21 +2245,103 @@ def _anchor_unit(record: Mapping[str, Any], anchor: str, text: str | None) -> st
     return DOCUMENT_UNIT
 
 
+def _acted_findings(record: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """The findings this review raised that carry a stored response of ``acted``.
+
+    An ``acted`` answer is the review saying what the plan must change, so these
+    are the findings whose unit and type the review has already spoken about. A
+    finding answered ``declined``, or left unanswered, asked for no change and is
+    absent here. The response is keyed by the finding's id, the same key
+    :func:`unanswered_findings` reads.
+    """
+    findings = record.get("findings")
+    if not isinstance(findings, list):
+        return []
+    acted: list[Mapping[str, Any]] = []
+    for finding in findings:
+        if not isinstance(finding, Mapping):
+            continue
+        response = _stored_response(record, finding)
+        if response is None:
+            continue
+        if str(response.get("action") or "").strip().lower() != "acted":
+            continue
+        acted.append(finding)
+    return acted
+
+
+def _acted_finding_types(record: Mapping[str, Any]) -> set[str]:
+    """The types a review raised whose finding carries a stored response of ``acted``.
+
+    A type counts only when one of its findings was answered with the ``acted``
+    action: a type raised and declined, or raised and left unanswered, is not an
+    act, so it is absent here.
+    """
+    return {
+        str(finding.get("type") or "").strip()
+        for finding in _acted_findings(record)
+        if str(finding.get("type") or "").strip()
+    }
+
+
+def _acted_finding_units(
+    record: Mapping[str, Any],
+    *,
+    covered: Iterable[str] = (),
+    reviewed_text: Callable[[], str | None] | None = None,
+) -> set[str]:
+    """The units whose findings this review raised and was answered ``acted`` on.
+
+    The unit is the one the finding's anchor names, so a line anchor resolves
+    against the text the review read exactly as a carried answer resolves it.
+    Reading that text walks the plan's history, so it is asked for only when a
+    line anchor needs it — an anchor naming its section outright resolves
+    without it — and a unit already covered is dropped before that read, since
+    the caller only consults this set for a unit no digest has covered.
+    """
+    done = frozenset(covered)
+    units: set[str] = set()
+    line_anchors: list[str] = []
+    for finding in _acted_findings(record):
+        anchor = str(finding.get("anchor") or "")
+        named = _anchor_unit(record, anchor, None)
+        if named != DOCUMENT_UNIT:
+            if named not in done:
+                units.add(named)
+        elif re.search(r":\d+\s*$", anchor):
+            line_anchors.append(anchor)
+        # An anchor naming neither a section nor a line is the document unit,
+        # which only an exact digest match covers, so no text is read for it.
+    if not line_anchors or reviewed_text is None:
+        return units
+    text = reviewed_text()
+    for anchor in line_anchors:
+        unit = _anchor_unit(record, anchor, text)
+        if unit not in done:
+            units.add(unit)
+    return units
+
+
 def finding_unit(
     record: Mapping[str, Any],
     finding_id: str,
     *,
     plan_path: str | Path | None = None,
 ) -> str:
-    """The unit the named finding is about, as a carried answer records it."""
+    """The unit the named finding is about, as a carried answer records it.
+
+    An anchor that names its section outright resolves without reading the
+    reviewed text, so it costs no git lookup; only a line anchor is resolved
+    against the text the review read.
+    """
     finding = _finding_by_id(record, finding_id)
     if finding is None:
         return DOCUMENT_UNIT
-    return _anchor_unit(
-        record,
-        str(finding.get("anchor") or ""),
-        _reviewed_plan_text(record, plan_path),
-    )
+    anchor = str(finding.get("anchor") or "")
+    named = _anchor_unit(record, anchor, None)
+    if named != DOCUMENT_UNIT:
+        return named
+    return _anchor_unit(record, anchor, _reviewed_plan_text(record, plan_path))
 
 
 def _finding_by_id(
@@ -3311,32 +3532,6 @@ def _finding_types(record: Mapping[str, Any]) -> set[str]:
         for finding in findings
         if isinstance(finding, Mapping) and str(finding.get("type") or "").strip()
     }
-
-
-def _acted_finding_types(record: Mapping[str, Any]) -> set[str]:
-    """The types a review raised whose finding carries a stored response of ``acted``.
-
-    A type counts only when one of its findings was answered with the ``acted``
-    action: a type raised and declined, or raised and left unanswered, is not an
-    act, so it is absent here. The response is keyed by the finding's id, the
-    same key :func:`unanswered_findings` reads.
-    """
-    findings = record.get("findings")
-    if not isinstance(findings, list):
-        return set()
-    acted: set[str] = set()
-    for finding in findings:
-        if not isinstance(finding, Mapping):
-            continue
-        finding_type = str(finding.get("type") or "").strip()
-        if not finding_type:
-            continue
-        response = _stored_response(record, finding)
-        if response is not None and (
-            str(response.get("action") or "").strip().lower() == "acted"
-        ):
-            acted.add(finding_type)
-    return acted
 
 
 def _finding_type_recurrence(
