@@ -24,6 +24,16 @@ later reader can open; a second bar in the landing pass would hold the run for a
 coordinator reading the same numbers. The acceptance floor and every reader of it
 are gone with the rule that consulted them.</p>
 
+<h3 id="a-run-no-review-blocks-lands-schema">Completeness is the last schema check</h3>
+<p>With the bar gone, completeness is the only thing left standing between a stored
+review and a landing, so the rule asks it in full: the measures the rubric demands,
+and the range of every score the record holds. A record missing a dimension was
+already refused. One carrying a score outside <code>0..20</code> read as complete —
+the parser raises rather than write such a value, so it reaches the store only from a
+hand edit, an older writer or a repair that rewrote the file, and every later reader
+then compares against a figure the schema does not allow. Both now read as a record
+this rule cannot read.</p>
+
 <h3 id="a-run-no-review-blocks-lands-exemptions">Exemptions follow the landing</h3>
 <p>When the pass lands a run it records each non-blocking finding against the stored
 review's own head-keyed record, exempted with the reason
@@ -50,6 +60,8 @@ pass itself and shows the section's arms:</p>
 <tr><td>A complete review scoring 92 with two non-blocking findings</td><td>Landed, both findings exempted; 92 is well under the retired nine-tenths bar</td></tr>
 <tr><td>A stored total that disagrees with the score sum</td><td>Landed: the rule judges severity alone and never consults the total</td></tr>
 <tr><td>A stored record carrying no total</td><td>Landed on the same reading; the store derives the total it was missing</td></tr>
+<tr><td>A review missing one of the six dimension scores</td><td>Not landed; obligation names the incomplete record, stored record unchanged</td></tr>
+<tr><td>A dimension score outside <code>0..20</code></td><td>Not landed on the same reading; parser refuses to write such a score, so the record is written directly</td></tr>
 <tr><td>A refused landing with a non-blocking finding</td><td>Not landed; the stored record is byte-for-byte unchanged and carries no disposition</td></tr>
 <tr><td>A blocking finding</td><td>Not landed; obligation names the refusal the rule makes</td></tr>
 <tr><td>A finding stating no severity</td><td>Not landed, read the same as a blocking one</td></tr>
@@ -59,9 +71,11 @@ pass itself and shows the section's arms:</p>
 <tr><td>Head conflicting with the primary branch</td><td>Not landed; obligation named the conflicting path, branch head unchanged</td></tr>
 </tbody>
 </table>
-<p>Gate: 11 passed at head. Negative control — restoring the any-finding rule — turned
-the first arm red and left the other arms green, which is the mutation this node
-declares.</p>
+<p>Gate: 13 passed at head. Two negative controls, each logged: restoring the
+any-finding rule turns three arms red (the first, the 92-scoring arm and the
+refused-landing arm, all of which carry a non-blocking finding) and leaves ten green;
+answering completeness <code>True</code> turns exactly the two schema arms red and
+leaves eleven green.</p>
 <p>Live store, over the 56 distinct runs the landing pass refused on 27 and 28
 October, judged by the rule as it now stands: <strong>53 accepted</strong>, and
 <strong>three refused — two for a blocking finding and one the store holds no
