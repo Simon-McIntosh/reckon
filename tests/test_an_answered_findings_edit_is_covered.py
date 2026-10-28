@@ -218,6 +218,9 @@ def test_an_edit_a_finding_asked_for_is_covered(sectioned, monkeypatch):
     assert answered["responses"][FINDING_ID]["commit"] == commit, (
         "the answer records the commit of the edit it answers for"
     )
+    assert (
+        answered["responses"][FINDING_ID]["commit_basis"] == plan_review.EDIT_COMMIT
+    ), "an answer given after its edit cites that edit"
     assert covering[0]["responses"][FINDING_ID]["commit"] == commit, (
         "the covering record carries the edit's commit as its evidence"
     )
@@ -253,6 +256,36 @@ def test_an_edit_past_the_threshold_is_uncovered(sectioned, monkeypatch):
     assert share < 0.40, "but not much past it"
     _, uncovered, _ = _coverage(path)
     assert "s5" in uncovered, "an edit past the threshold still owes a review"
+
+
+def test_an_answer_before_the_edit_lands_cites_the_plan_commit(sectioned, monkeypatch):
+    """An answer given before its edit is committed says what it cites.
+
+    The cited revision is the plan's newest commit at answer time, which is not
+    evidence of the fix the answer asks for, so the record says so rather than
+    presenting that commit as the edit's.
+    """
+    _, repo, path = sectioned
+    _requires_a_review(monkeypatch)
+    _store_review(path, findings=[_finding()])
+    _edit_words(path, "s5", 1)
+    commit = _commit(repo, "the edit the answer has not seen yet")
+
+    stored = plan_review.read_plan_review("sample", "fixture")
+    assert stored is not None
+    answered_path = plan_review.record_response(
+        stored,
+        FINDING_ID,
+        action="acted",
+        by="coordinator",
+        when="2026-01-01T00:00:00+00:00",
+    )
+    response = json.loads(Path(answered_path).read_text())["responses"][FINDING_ID]
+
+    assert response["commit"] == commit, "the plan commit at answer time is recorded"
+    assert response["commit_basis"] == plan_review.PLAN_COMMIT_AT_ANSWER, (
+        "an answer that predates the commit it cites records what it cites"
+    )
 
 
 def test_an_unanswered_finding_earns_no_cover(sectioned, monkeypatch):

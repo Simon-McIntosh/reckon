@@ -296,6 +296,13 @@ CARRIED_ACTION = "carried"
 NOTED_ACTION = "noted"
 ANSWER_ACTIONS: tuple[str, ...] = (*RESPONSE_ACTIONS, CARRIED_ACTION, NOTED_ACTION)
 
+# What the commit an ``acted`` answer cites is evidence of. An answer given after
+# its edit landed cites that edit; an answer given before it landed can only cite
+# the plan's newest commit at that moment, which is not evidence of the fix and is
+# recorded as such rather than presented as the edit's commit.
+EDIT_COMMIT = "edit"
+PLAN_COMMIT_AT_ANSWER = "plan commit at answer time"
+
 # The append-only list of every answer a record has received. The ``responses``
 # map keeps only the latest answer per finding, so a finding answered twice
 # keeps only the second there; this list is where the first survives, as the
@@ -848,6 +855,24 @@ def _fingerprint_forms(plan: Mapping[str, Any] | str | Path) -> tuple[str, str]:
     return tuple(forms)
 
 
+def _review_snapshot(
+    project: str, plan_slug: str, record: Mapping[str, Any]
+) -> Path | None:
+    """The ``plan.html`` snapshot the review read, or ``None`` without one.
+
+    A review's own snapshot is the text it actually read, held beside the report
+    it composed, so a reader wanting that text reads a file rather than walking
+    the plan's history for the commit that carried the same bytes.
+    """
+    run_id = str(record.get("review_run_id") or "").strip()
+    if not run_id:
+        return None
+    snapshot = (
+        review_report_directory(project, plan_slug, run_id) / _REVIEW_SNAPSHOT_NAME
+    )
+    return snapshot if snapshot.is_file() else None
+
+
 def _snapshot_evidence(
     project: str, plan_slug: str, record: Mapping[str, Any]
 ) -> tuple[dict[str, str], dict[str, str], Mapping[str, Any] | None] | None:
@@ -863,13 +888,8 @@ def _snapshot_evidence(
     names no run or the snapshot is missing, so the caller falls back to the
     stored digests and reads the threshold as zero for that review alone.
     """
-    run_id = str(record.get("review_run_id") or "").strip()
-    if not run_id:
-        return None
-    snapshot = (
-        review_report_directory(project, plan_slug, run_id) / _REVIEW_SNAPSHOT_NAME
-    )
-    if not snapshot.is_file():
+    snapshot = _review_snapshot(project, plan_slug, record)
+    if snapshot is None:
         return None
     text = snapshot.read_text(encoding="utf-8", errors="replace")
     return _section_digests(text), _prose_texts(text), _snapshot_declarations(text)
@@ -1033,6 +1053,26 @@ def review_coverage(
     # edit's commit, so the covering record carries the evidence for its
     # verdict.
     answered: dict[str, dict[str, Any]] = {}
+    # Resolving an anchor against the text its review read walks the plan's
+    # history, so the text is resolved once per reviewed revision for the whole
+    # call: reviews of one revision read the same bytes, and this predicate runs
+    # on every dispatch, plan edit and admission pass rather than once.
+    reviewed_texts: dict[tuple[str, str], str | None] = {}
+
+    def reviewed_text_of(record: Mapping[str, Any]) -> str | None:
+        key = (
+            str(record.get("plan_path") or base_dir or ""),
+            str(record.get("reviewed_blob_sha") or ""),
+        )
+        if key not in reviewed_texts:
+            snapshot = _review_snapshot(project, plan_slug, record)
+            reviewed_texts[key] = (
+                snapshot.read_text(encoding="utf-8", errors="replace")
+                if snapshot is not None
+                else _reviewed_plan_text(record)
+            )
+        return reviewed_texts[key]
+
     for record in sorted(records, key=lambda item: int(item.get("plan_version") or 0)):
         evidence = _snapshot_evidence(project, plan_slug, record)
         if evidence is None:
@@ -1100,7 +1140,11 @@ def review_coverage(
             if share < threshold:
                 within_share[identity] = record
                 if acted_units is None:
-                    acted_units = _acted_finding_units(record)
+                    acted_units = _acted_finding_units(
+                        record,
+                        covered=covered,
+                        reviewed_text=lambda record=record: reviewed_text_of(record),
+                    )
                 if identity in acted_units:
                     answered[identity] = record
         if matched:
@@ -1501,14 +1545,47 @@ def _plan_head_commit(
     resolvable checkout, a plan that has never been committed and a git failure
     all answer ``None`` rather than a guessed revision.
     """
+    from reckon.crew import promotion_scope
+
     location = _plan_location(project, plan_slug, plan_path)
     if location is None:
         return None
     repo, _path, relative = location
-    output = _git(repo, "log", "-1", "--format=%H", "--", relative)
-    if output is None:
+    return promotion_scope._newest_commit_touching_path(repo, relative)
+
+
+def _answer_instant(when: str) -> datetime | None:
+    """The instant an answer was recorded at, or ``None`` when it is unreadable.
+
+    A stored answer's ``when`` is an ISO stamp, timezone-carrying when this
+    module wrote it. A stamp without one is read as UTC so a comparison against a
+    commit's own time is never between two different zones.
+    """
+    text = (when or "").strip()
+    if not text:
         return None
-    return output.strip() or None
+    try:
+        instant = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    return instant if instant.tzinfo is not None else instant.replace(tzinfo=UTC)
+
+
+def _commit_time(
+    project: str, plan_slug: str, commit: str, plan_path: str | Path | None
+) -> datetime | None:
+    """When ``commit`` landed, or ``None`` when it cannot be read."""
+    location = _plan_location(project, plan_slug, plan_path)
+    if location is None:
+        return None
+    repo, _path, _relative = location
+    output = _git(repo, "show", "-s", "--format=%cI", commit)
+    if not output or not output.strip():
+        return None
+    try:
+        return datetime.fromisoformat(output.strip())
+    except ValueError:
+        return None
 
 
 def _plan_text_at(
@@ -1863,7 +1940,10 @@ def record_response(
     can never attach to a finding nobody can read back. An ``acted`` answer also
     records the commit of the edit it answers for — named by ``commit`` or, when
     the caller names none, the newest commit touching the plan — so the coverage
-    that answer earns carries its own evidence. The returned path is the
+    that answer earns carries its own evidence. That commit records beside it
+    what it is evidence of: an answer given before its edit landed cites the
+    plan's newest commit at that moment, which is recorded as the plan commit at
+    answer time rather than presented as the edit's commit. The returned path is the
     record whose ``responses`` now carries the answer.
 
     A record that has been promoted is answered on its committed copy, which is
@@ -1894,13 +1974,26 @@ def record_response(
         # The edit is what the answer is evidence of, so the answer names the
         # commit that wrote it. A caller may name the commit outright; otherwise
         # the newest commit touching the plan is the edit the finding asked for.
-        edit = str(commit or "").strip() or _plan_head_commit(
-            str(record.get("project") or ""),
-            str(record.get("plan_slug") or ""),
-            record.get("plan_path"),
-        )
+        project = str(record.get("project") or "")
+        plan_slug = str(record.get("plan_slug") or "")
+        named = str(commit or "").strip()
+        edit = named or _plan_head_commit(project, plan_slug, record.get("plan_path"))
         if edit:
             response["commit"] = edit
+            landed = _commit_time(project, plan_slug, edit, record.get("plan_path"))
+            answered_at = _answer_instant(str(response["when"]))
+            if (
+                not named
+                and landed is not None
+                and answered_at is not None
+                and landed > answered_at
+            ):
+                # The cited commit landed after the answer was given, so it is
+                # the plan's newest commit at answer time rather than evidence
+                # of the fix the answer asks for.
+                response["commit_basis"] = PLAN_COMMIT_AT_ANSWER
+            else:
+                response["commit_basis"] = EDIT_COMMIT
     # A carried answer hands the finding to a node; it is not an answer about
     # the plan's prose, so it never displaces one. A finding already answered
     # ``acted`` or ``declined`` keeps that answer: the earlier decision is the
@@ -2152,21 +2245,19 @@ def _anchor_unit(record: Mapping[str, Any], anchor: str, text: str | None) -> st
     return DOCUMENT_UNIT
 
 
-def _acted_finding_units(record: Mapping[str, Any]) -> set[str]:
-    """The units whose findings this review raised and was answered ``acted`` on.
+def _acted_findings(record: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """The findings this review raised that carry a stored response of ``acted``.
 
-    An ``acted`` answer is the review saying what the plan must change, and the
-    edit that follows is the one its own finding asked for, so the unit it names
-    earns the review's cover while the edit stays under the change threshold. A
-    finding answered ``declined``, or left unanswered, asked for no change and
-    earns nothing. The unit is the one the finding's anchor names, read through
-    :func:`finding_unit`, so a line anchor resolves exactly as a carried answer
-    resolves it.
+    An ``acted`` answer is the review saying what the plan must change, so these
+    are the findings whose unit and type the review has already spoken about. A
+    finding answered ``declined``, or left unanswered, asked for no change and is
+    absent here. The response is keyed by the finding's id, the same key
+    :func:`unanswered_findings` reads.
     """
     findings = record.get("findings")
     if not isinstance(findings, list):
-        return set()
-    units: set[str] = set()
+        return []
+    acted: list[Mapping[str, Any]] = []
     for finding in findings:
         if not isinstance(finding, Mapping):
             continue
@@ -2175,10 +2266,59 @@ def _acted_finding_units(record: Mapping[str, Any]) -> set[str]:
             continue
         if str(response.get("action") or "").strip().lower() != "acted":
             continue
-        finding_id = str(finding.get("id") or "").strip()
-        if not finding_id:
-            continue
-        units.add(finding_unit(record, finding_id))
+        acted.append(finding)
+    return acted
+
+
+def _acted_finding_types(record: Mapping[str, Any]) -> set[str]:
+    """The types a review raised whose finding carries a stored response of ``acted``.
+
+    A type counts only when one of its findings was answered with the ``acted``
+    action: a type raised and declined, or raised and left unanswered, is not an
+    act, so it is absent here.
+    """
+    return {
+        str(finding.get("type") or "").strip()
+        for finding in _acted_findings(record)
+        if str(finding.get("type") or "").strip()
+    }
+
+
+def _acted_finding_units(
+    record: Mapping[str, Any],
+    *,
+    covered: Iterable[str] = (),
+    reviewed_text: Callable[[], str | None] | None = None,
+) -> set[str]:
+    """The units whose findings this review raised and was answered ``acted`` on.
+
+    The unit is the one the finding's anchor names, so a line anchor resolves
+    against the text the review read exactly as a carried answer resolves it.
+    Reading that text walks the plan's history, so it is asked for only when a
+    line anchor needs it — an anchor naming its section outright resolves
+    without it — and a unit already covered is dropped before that read, since
+    the caller only consults this set for a unit no digest has covered.
+    """
+    done = frozenset(covered)
+    units: set[str] = set()
+    line_anchors: list[str] = []
+    for finding in _acted_findings(record):
+        anchor = str(finding.get("anchor") or "")
+        named = _anchor_unit(record, anchor, None)
+        if named != DOCUMENT_UNIT:
+            if named not in done:
+                units.add(named)
+        elif re.search(r":\d+\s*$", anchor):
+            line_anchors.append(anchor)
+        # An anchor naming neither a section nor a line is the document unit,
+        # which only an exact digest match covers, so no text is read for it.
+    if not line_anchors or reviewed_text is None:
+        return units
+    text = reviewed_text()
+    for anchor in line_anchors:
+        unit = _anchor_unit(record, anchor, text)
+        if unit not in done:
+            units.add(unit)
     return units
 
 
@@ -3392,32 +3532,6 @@ def _finding_types(record: Mapping[str, Any]) -> set[str]:
         for finding in findings
         if isinstance(finding, Mapping) and str(finding.get("type") or "").strip()
     }
-
-
-def _acted_finding_types(record: Mapping[str, Any]) -> set[str]:
-    """The types a review raised whose finding carries a stored response of ``acted``.
-
-    A type counts only when one of its findings was answered with the ``acted``
-    action: a type raised and declined, or raised and left unanswered, is not an
-    act, so it is absent here. The response is keyed by the finding's id, the
-    same key :func:`unanswered_findings` reads.
-    """
-    findings = record.get("findings")
-    if not isinstance(findings, list):
-        return set()
-    acted: set[str] = set()
-    for finding in findings:
-        if not isinstance(finding, Mapping):
-            continue
-        finding_type = str(finding.get("type") or "").strip()
-        if not finding_type:
-            continue
-        response = _stored_response(record, finding)
-        if response is not None and (
-            str(response.get("action") or "").strip().lower() == "acted"
-        ):
-            acted.add(finding_type)
-    return acted
 
 
 def _finding_type_recurrence(
