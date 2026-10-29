@@ -47,6 +47,7 @@ import pytest
 
 import reckon
 from reckon._store import _config_home
+from reckon.crew.dispatch_launch import worker_scratch_dir
 from reckon.shim_lookup import real_executable
 
 PACKAGE_ROOT = Path(reckon.__file__).resolve().parents[1]
@@ -758,12 +759,17 @@ def test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit(
     host: dict[str, Any], tmp_path: Path
 ) -> None:
     real_before = _real_live_entries()
-    process, home, marker_dir = _launch_stub_dispatch(
+    process, home, _marker_dir = _launch_stub_dispatch(
         host,
+        # The worker runs fenced, and the fence seals the node's own ``/tmp``
+        # read-only, so a marker written beside the case's own temporary tree
+        # cannot be created whenever that tree sits under it. A run's scratch
+        # directory is the one temporary root the fence keeps writable, and the
+        # supervisor hands the worker its path as ``TMPDIR``.
         stub_source=(
             "#!/bin/sh\n"
-            'echo $$ > "{marker_dir}/worker.pid"\n'
-            ': > "{marker_dir}/marker"\n'
+            'echo $$ > "$TMPDIR/worker.pid"\n'
+            ': > "$TMPDIR/marker"\n'
             "sleep 30\n"
         ),
         node="post-spawn-stop",
@@ -781,16 +787,20 @@ def test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit(
             "the dispatch process failed before returning: "
             f"{_tail(home / 'driver.err')!r}"
         )
-        _run_id, supervisor_pid, run_directory = _await_supervisor(home)
+        run_id, supervisor_pid, run_directory = _await_supervisor(home)
         worker_record = _wait_for(
             lambda: _load_json(run_directory / "worker.json"), timeout=SCAN_BOUND
         )
         assert worker_record, "the supervisor spawned no worker for the stop"
         worker_pid = int(worker_record["pid"])
-        started = _wait_for((marker_dir / "marker").exists, timeout=SCAN_BOUND)
+        scratch = worker_scratch_dir(run_id)
+        started = _wait_for((scratch / "marker").exists, timeout=SCAN_BOUND)
         assert started, (
-            "the stub worker never ran, so the group stop would find nothing to "
-            "end and the recorded exit would not be this stop's"
+            f"the stub worker never ran, so the group stop would find nothing to "
+            f"end and the recorded exit would not be this stop's. It writes its "
+            f"marker to {str(scratch / 'marker')!r}, the scratch directory the "
+            "fence keeps writable for the worker; supervisor stderr: "
+            f"{_tail(run_directory / 'supervisor.stderr.log')!r}"
         )
 
         # Exactly what crew stop sends: SIGTERM to the run's process group,
@@ -807,7 +817,9 @@ def test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit(
         assert isinstance(exit_record, dict), (
             f"the supervisor recorded no exit for the stopped worker {worker_pid} "
             f"within {TERMINAL_BOUND} s, so it exited instead of recording the "
-            "stop's exit"
+            "stop's exit. The record it left reads "
+            f"{_load_json(run_directory / 'exit.json')!r}, and the worker it "
+            f"spawned is {_load_json(run_directory / 'worker.json')!r}"
         )
         # The declared negative control — recording a plain exit instead of the
         # stop's — fails here.
