@@ -2671,18 +2671,52 @@ def _launch_failure_detail(exc: BaseException, spec: Mapping[str, Any]) -> str:
     return base
 
 
-def _supervisor_spawn_worker(
+def _worker_record_writer(
     spec: Mapping[str, Any],
-    *,
-    on_spawn: Callable[[subprocess.Popen], None] | None = None,
-) -> int:
+) -> Callable[[subprocess.Popen], None]:
+    """The writer that records the worker a spawn has just started.
+
+    Called by the spawn retry as each try begins, so the run directory names its
+    worker as soon as the worker exists instead of after the startup watch has
+    run out its window.
+    """
+    run_directory = Path(str(spec["run_directory"]))
+    run_id = str(spec.get("run_id") or "")
+    attempt = int(spec.get("attempt") or 1)
+    launched_at = str(spec.get("launched_at") or "")
+    registered_at = _claim_registration_for_worker(run_directory, run_id)
+
+    def record(process: subprocess.Popen) -> None:
+        _write_attempt_artifact(
+            run_directory,
+            WORKER_RECORD_NAME,
+            {
+                "run_id": run_id,
+                "attempt": attempt,
+                "pid": process.pid,
+                "pid_start_time": _process_start_time(process.pid),
+                "launched_at": launched_at,
+                "claim_registered_at": registered_at,
+                "backend": str(spec["plan"].get("backend") or ""),
+                "argv": list(spec["plan"].get("argv") or ()),
+            },
+            attempt=attempt,
+        )
+
+    return record
+
+
+def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     """Spawn the worker inside the supervisor's own process group.
 
     The answer names the pid and, when the spawn retry's startup poll already
     collected the worker's exit, carries that exit — as an ``_WorkerPid`` — so
     the supervisor writes it instead of waiting on a pid that has been reaped.
-    ``on_spawn`` is called as each try starts, so the caller can record the
-    worker before the startup watch holds the spawn for its window.
+
+    The run's worker record is written here, as each try starts, rather than by
+    the caller after this returns: the startup watch can hold a launch for its
+    whole window, and the record is what a stop, a recovery sweep or any other
+    reader reaches the worker through.
     """
     plan = spec["plan"]
     run_id = str(spec["run_id"])
@@ -2742,7 +2776,7 @@ def _supervisor_spawn_worker(
         argv=argv,
         stderr_path=Path(str(spec["stderr_path"])),
         log_path=Path(str(spec["log_path"])),
-        on_spawn=on_spawn,
+        on_spawn=_worker_record_writer(spec),
     )
     # A poll of a child that has already exited collects its status, and the
     # retry's startup check is such a poll. The status is carried on the pid
@@ -3727,6 +3761,10 @@ def _run_supervisor(spec_path: Path) -> int:
     stop_requested = _record_stop_before_spawn()
     _supervisor_tree_snapshot(spec)
     launched_at = _utc_now()
+    # The spawner writes the worker record as the worker starts, before the
+    # startup watch can hold the launch, so it takes this attempt's launch time
+    # from the spec rather than recomputing one after the watch has returned.
+    spec["launched_at"] = launched_at
     if stop_requested.is_set():
         # The stop arrived while the snapshot ran, before any worker existed,
         # so none is spawned and the launch is over before it began.
@@ -3751,31 +3789,7 @@ def _run_supervisor(spec_path: Path) -> int:
             # the worker it starts leaves that worker parented here rather than
             # to init, where its exit would be uncollectable.
             _become_child_subreaper()
-            registered_at = _claim_registration_for_worker(run_directory, run_id)
-
-            def record_worker(process: subprocess.Popen) -> None:
-                # Written the moment the worker exists, before the startup watch
-                # can hold the spawn for its own window: the run's worker record
-                # is what a stop, a recovery sweep or any other reader reaches
-                # the worker through, and a worker whose whole life is shorter
-                # than that window would otherwise be recorded only once ended.
-                _write_attempt_artifact(
-                    run_directory,
-                    WORKER_RECORD_NAME,
-                    {
-                        "run_id": str(spec.get("run_id") or ""),
-                        "attempt": attempt,
-                        "pid": process.pid,
-                        "pid_start_time": _process_start_time(process.pid),
-                        "launched_at": launched_at,
-                        "claim_registered_at": registered_at,
-                        "backend": str(spec["plan"].get("backend") or ""),
-                        "argv": list(spec["plan"].get("argv") or ()),
-                    },
-                    attempt=attempt,
-                )
-
-            pid = _supervisor_spawn_worker(spec, on_spawn=record_worker)
+            pid = _supervisor_spawn_worker(spec)
         except (OSError, ValueError, KeyError, CrewError) as exc:
             evidence = _launch_failure_evidence(
                 str(spec.get("run_id") or ""), run_directory
