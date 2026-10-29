@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon.crew import landing_measure, recovery, runs
+from reckon.crew.node import CrewError
 from reckon.crew.promotion_records import _node_test_files
 from reckon.crew.recovery_review_acceptance import (
     _review_accepts_promotion,
@@ -386,6 +387,17 @@ def _landing_beat(pointer: Mapping[str, Any], run_id: str) -> str:
     return ""
 
 
+#: Why the land step waives the plan's impl move. The landing pass ticks the
+#: run's section done in ``_landing_beat``, and only after the merge this step
+#: makes, so at the moment the step completes the plan's impl has not moved yet
+#: and ``crew complete`` refuses a passing implement run without this. Recorded
+#: on the ledger row of every run the pass lands.
+LANDING_BEAT_REASON = (
+    "the admission landing pass advances the run's plan section in its landing "
+    "beat, after this merge; the impl has not moved at the moment of completion"
+)
+
+
 def _land_command(run_id: str) -> list[str]:
     """Run the coordinator's land command in one explicit fleet step."""
     from reckon.nested_launch import shim_directory
@@ -403,8 +415,25 @@ def _land_command(run_id: str) -> list[str]:
         run_id,
         "--gate",
         "passed",
+        "--no-impl-change",
+        LANDING_BEAT_REASON,
         "--land",
     ]
+
+
+def _land_timeout(run_id: str) -> float:
+    """The wall-clock bound of one land step, from the run's own project config.
+
+    The step runs the run's promotion gate inside the fleet allocation, so it
+    is bounded by the same flight setting that bounds a measurement. A run whose
+    pointer cannot be read is bounded by the default rather than left unbounded:
+    a step with no bound is the stall the bound exists to prevent.
+    """
+    try:
+        pointer = runs.read_pointer(run_id)
+    except (OSError, ValueError, CrewError):
+        return landing_measure.DEFAULT_MEASURE_TIMEOUT_SECONDS
+    return _measure_timeout(pointer)
 
 
 def _land(run_id: str) -> tuple[bool, str]:
@@ -415,13 +444,22 @@ def _land(run_id: str) -> tuple[bool, str]:
     environment["PYTHONPATH"] = os.pathsep.join(
         part for part in (source, environment.get("PYTHONPATH", "")) if part
     )
-    finished = _run_srun(
-        _land_command(run_id),
-        capture_output=True,
-        text=True,
-        check=False,
-        env=environment,
-    )
+    command = _land_command(run_id)
+    timeout = _land_timeout(run_id)
+    try:
+        finished = _run_srun(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=environment,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return False, (
+            f"the land step exceeded its {timeout:g} s bound and was stopped: "
+            + " ".join(command)
+        )
     output = (finished.stdout or "").strip()
     try:
         receipt = json.loads(output)

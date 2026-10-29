@@ -353,13 +353,15 @@ def test_land_invokes_the_shared_path_through_the_scheduler_shim(
     command = captured["command"]
     assert Path(command[0]).name == "srun"
     assert command[1:3] == ["--overlap", "--ntasks=1"]
-    assert command[-7:] == [
+    assert command[-9:] == [
         "crew",
         "complete",
         "--run",
         RUN,
         "--gate",
         "passed",
+        "--no-impl-change",
+        queue_landing.LANDING_BEAT_REASON,
         "--land",
     ]
     assert captured["options"]["env"]["PYTHONPATH"].split(":")[0] == str(

@@ -20,6 +20,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager, nullcontext
@@ -1246,6 +1247,11 @@ def _pass_verdict_record(
         return None
     return {
         "at": _utc_now(),
+        "started_at": result.get("started_at"),
+        "ended_at": result.get("ended_at"),
+        "release_seconds": result.get("release_seconds"),
+        "launch_seconds": result.get("launch_seconds"),
+        "land_seconds": result.get("land_seconds"),
         "lane": lane,
         "code_stamp": code_stamp,
         "gate": result.get("gate"),
@@ -3769,6 +3775,120 @@ def _join_admitted_plan_review(pointer: Mapping[str, Any], launched_run_id: str)
     return recovery_review_dispatch.join_admitted_plan_review(pointer, launched_run_id)
 
 
+#: The thread name the landing action runs under, so a reader of the process
+#: can tell the landing worker from the admission pass it runs beside.
+LANDING_THREAD_NAME = "reckon-landing"
+
+#: How long a stopping service waits for an in-flight landing action to finish
+#: before leaving its daemon thread to the process exit.
+LANDING_STOP_SECONDS = 1.0
+
+
+class _LandingWorker:
+    """Run one landing action at a time beside the admission pass.
+
+    The landing pass lives in a thread of its own rather than a stage of the
+    pass, so a landing that is slow — a suite measurement, a merge — delays
+    only the next landing. The lock is the whole of the exclusion and it is
+    taken without blocking, so a tick that finds an action in flight leaves it
+    alone instead of stacking a second behind it.
+
+    An action that raises is recorded as a result on the worker and never
+    propagates: a defect in one landing must not end the service that runs the
+    launches, and the next tick starts a fresh action.
+    """
+
+    def __init__(self, lander: Callable[[], Mapping[str, Any]] | None = None) -> None:
+        self._lander = lander
+        self._lock = threading.Lock()
+        self._thread: threading.Thread | None = None
+        self._last: dict[str, Any] = {}
+
+    @property
+    def busy(self) -> bool:
+        return self._lock.locked()
+
+    @property
+    def last(self) -> dict[str, Any]:
+        return dict(self._last)
+
+    def _land(self) -> Mapping[str, Any]:
+        if self._lander is not None:
+            return self._lander()
+        from reckon.crew.queue_landing import land_once
+
+        return land_once()
+
+    def _run(self) -> None:
+        started_at = _utc_now()
+        started = time.monotonic()
+        try:
+            result = dict(self._land() or {})
+        except Exception as exc:  # noqa: BLE001 — a landing defect ends no service
+            result = {
+                "landed": [],
+                "obligations": [],
+                "deferred": [],
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+        finally:
+            ended_at = _utc_now()
+            seconds = round(time.monotonic() - started, 3)
+            self._last = {
+                **result,
+                "started_at": started_at,
+                "ended_at": ended_at,
+                "seconds": seconds,
+            }
+            self._lock.release()
+
+    def tick(self) -> bool:
+        """Start one landing action unless one is in flight."""
+        if not self._lock.acquire(blocking=False):
+            return False
+        thread = threading.Thread(
+            target=self._run, name=LANDING_THREAD_NAME, daemon=True
+        )
+        self._thread = thread
+        thread.start()
+        return True
+
+    def settle(self, timeout: float | None = None) -> dict[str, Any]:
+        """Wait for the action this worker started, and return its last result."""
+        thread = self._thread
+        if thread is not None:
+            thread.join(timeout)
+        return self.last
+
+    def stop(self) -> None:
+        """Let a bounded landing action finish as the service ends."""
+        self.settle(timeout=LANDING_STOP_SECONDS)
+
+
+def _record_stage_timings(
+    result: dict[str, Any],
+    *,
+    started_at: str,
+    started: float,
+    released: float,
+    ended: float,
+    landing: Mapping[str, Any],
+) -> None:
+    """Record the pass's start, end and per-stage seconds on its verdict row.
+
+    Release, launch and land are measured apart because they are held by
+    different things — a lane slot, a merge, a suite — and a row that reported
+    one duration would not tell a reader which of them stalled. ``land_seconds``
+    is the duration of the landing action the row reports: the pass itself
+    never waits for it.
+    """
+    result["started_at"] = started_at
+    result["ended_at"] = _utc_now()
+    result["release_seconds"] = round(released - started, 3)
+    result["launch_seconds"] = round(ended - released, 3)
+    result["land_seconds"] = round(float(landing.get("seconds") or 0.0), 3)
+
+
 def admit_until_stopped(
     *,
     lane: str = "",
@@ -3776,12 +3896,18 @@ def admit_until_stopped(
     once: bool = False,
     launcher: Callable[..., int] | None = None,
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+    lander: Callable[[], Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Repeat the admission pass on a cadence until stopped.
 
     ``--once`` runs a single pass and returns, which is what a test drives. The
     loop otherwise catches ``KeyboardInterrupt`` so a stopped service returns
     the count of passes it ran rather than a traceback.
+
+    The landing pass is not a stage of this loop: it runs in a worker thread
+    under a lock that admits at most one action at a time, so a slow landing
+    delays only the next landing and never a launch or a release. ``--once``
+    waits for the landing it starts, because a manual pass reports what it did.
 
     Every pass whose lane had a queued pointer leaves one JSON line in the
     verdict log under the crew home, so a request that waited without launching
@@ -3818,31 +3944,61 @@ def admit_until_stopped(
         admission_options["config_for"] = config_for
     if once:
         stamp = _admit_code_stamp()
-        from reckon.crew.queue_landing import land_once
+        worker = _LandingWorker(lander)
 
         # The release stage runs before the landing and the launch pass, on a
         # clock of its own: a section that has already landed releases its
         # waiters whether or not this pass goes on to launch or land anything.
+        # A manual pass reports the landing it started, so it waits for it; the
+        # service loop below does not.
+        started_at = _utc_now()
+        started = time.monotonic()
         release = _release_tick()
-        landing = land_once()
+        released = time.monotonic()
+        worker.tick()
+        landing = worker.settle()
         result = admit_once(**admission_options)
+        ended = time.monotonic()
         result["release"] = release
         result["landing"] = landing
+        _record_stage_timings(
+            result,
+            started_at=started_at,
+            started=started,
+            released=released,
+            ended=ended,
+            landing=landing,
+        )
         _record_pass_verdicts(result, lane=lane, code_stamp=stamp)
         return result
     passes = 0
     code_stamp = _admit_code_stamp()
+    worker = _LandingWorker(lander)
     try:
         while True:
             if _admit_code_stamp() != code_stamp and _checkout_code_is_trusted():
                 _reexec_into_current_code()
-            from reckon.crew.queue_landing import land_once
-
+            started_at = _utc_now()
+            started = time.monotonic()
+            # The landing runs in its own thread under its own lock, so this
+            # pass proceeds whether or not one is in flight, and the landing
+            # holds only the next landing.
+            worker.tick()
             release = _release_tick()
-            landing = land_once()
+            released = time.monotonic()
             admitted = admit_once(**admission_options)
+            ended = time.monotonic()
+            landing = worker.last
             admitted["release"] = release
             admitted["landing"] = landing
+            _record_stage_timings(
+                admitted,
+                started_at=started_at,
+                started=started,
+                released=released,
+                ended=ended,
+                landing=landing,
+            )
             _publish_pass_verdicts(
                 _record_pass_verdicts(admitted, lane=lane, code_stamp=code_stamp)
             )
@@ -3850,3 +4006,5 @@ def admit_until_stopped(
             _pause(interval)
     except KeyboardInterrupt:
         return {"passes": passes}
+    finally:
+        worker.stop()
