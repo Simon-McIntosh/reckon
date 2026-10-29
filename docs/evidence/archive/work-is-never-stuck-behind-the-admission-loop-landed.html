@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-is-never-stuck-behind-the-admission-loop-landed">
+  <meta name="plan-title" content="Work Is Never Stuck Behind the Admission Loop — landed record">
+  <meta name="plan-summary" content="Closure synthesis for Work Is Never Stuck Behind the Admission Loop: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).">
+  <meta name="plan-evidence-for" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-verdict" content="qualified">
+  <title>Work Is Never Stuck Behind the Admission Loop — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Work Is Never Stuck Behind the Admission Loop — landed record</h1>
+  <p>Closure synthesis for Work Is Never Stuck Behind the Admission Loop: 0 committed run(s), 0 section-anchored comment(s), and 0 landed commit(s).</p>
+
+
+   <section id="a-slow-station-still-reads-as-alive">
+    <h2>A slow station still reads as alive</h2>
+    <p>The station beats from its own thread every few seconds while its process lives. Each tick records its start and the stage it enters, so a reader calls the station stopped only on a stale beat, and reads a long tick as slow with its stage and age. <code>stale_station_line</code> in <code>reckon/hooks/coordinator_obligations.py</code> emits the restart advice only for a stopped station. Armed command: the node's test does not collect at base 3922d93453, because it imports <code>slow_station_note</code>, which the node adds; 3 passed at head 2af24e99d5. Importer population of <code>station</code>, <code>obligation_snapshot</code> and <code>coordinator_obligations</code>: 0 added. Merged at 8ce0c14f05.</p><p>Review: 112 of 120, no blocking finding. Noted at landing:</p><ul><li>The exported snapshot file is still rewritten only inside a tick, so a reader on another host can age a fresh beat into stopped during a long tick. Readers on the node are fixed.</li><li>The last recorded stage should name the retention sweep rather than <code>publish</code>.</li><li>A figure of beat age against tick age would show the three states.</li></ul>
+  </section>
+
+</main>
+</body>
+</html>
