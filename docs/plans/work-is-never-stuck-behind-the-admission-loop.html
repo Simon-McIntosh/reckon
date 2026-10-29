@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="49">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -227,6 +227,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261028T230902303591-a-landed-section-releases-its-waiters" data-who="reckon-build" data-when="2026-10-29T12:08:33.276Z">
     <div class="r-comment-body"><p>queue_admission._resolve_and_move now owns the resolve-and-move idiom; the queue-time check in dispatch, the pass's release step, a promotion landing a run's section, a discard and a 30 s release tick all reach a waiting request through it, so a landed section releases its waiters with no admission pass — gate tests/test_a_landed_section_releases_its_waiters.py 6 passed at head, negative control 1 failed.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261029T134712468009-review-of-landing-runs-beside-admission-619610fcf9fe" data-who="reckon-build" data-when="2026-10-29T13:57:43.710Z">
+    <div class="r-comment-body"><p>Reviewed r-20261028T222632387609-landing-runs-beside-admission at head 619610fcf9fe against base 13b5e629: six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 15, durability 16, fit 18, reuse 5) with four non-blocking findings — _LandingWorker duplicates the SweepBeat off-tick-path worker, the --no-impl-change waiver is broader than the section and unobserved afterwards, a land step in flight at service stop is orphaned past the 1 s join, and one assertion was updated in a file outside the declared write paths. The record is parsed and accepted; nothing blocks.</p></div>
 </div>
 </section>
 </main>

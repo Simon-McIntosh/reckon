@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-29T13:57:43.710Z",
+  "dispatched_at": "2026-10-29T13:50:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "id": "fd51c15ca1d",
+      "line": 3787,
+      "severity": "non-blocking",
+      "text": "_LandingWorker re-implements the capability SweepBeat already owns at reckon/crew/station.py:144 \u2014 a thread started off the tick path, in-flight exclusion, and an exception contained so the loop survives \u2014 and does not extend or wrap it; only settle() and last() are new, and those could be added to the owner so one mechanism serves both."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "f73a5def3f3",
+      "line": 418,
+      "severity": "non-blocking",
+      "text": "the land command now passes --no-impl-change with LANDING_BEAT_REASON on every landing, waiving the promotion check that a passing implement run moved its plan section; the section text does not ask for it, and nothing records whether the landing beat meant to advance impl afterwards ran, so a landed run whose section never advanced reads the same as one that did."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "id": "ff6104cca92",
+      "line": 4010,
+      "severity": "non-blocking",
+      "text": "worker.stop() joins for LANDING_STOP_SECONDS (1.0 s) and the daemon thread then dies with the process, so a land step still in flight when the service stops exceeds that second and its srun child is left orphaned mid-merge rather than drained or refused."
+    },
+    {
+      "file": "tests/test_queue_landing.py",
+      "id": "f5e45366ada",
+      "line": 356,
+      "severity": "non-blocking",
+      "text": "an assertion was updated in a file outside the node's declared write paths; the change is one line and forced by the --no-impl-change flag the section requires, and the worker declared it under outside_scope."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \u00a73 of work-is-never-stuck-behind-the-admission-loop \u2014 landing off the admission critical path, bounded, with stage timings \u2014 and the landed change does it: reckon/crew/queue_admission.py:3787 defines a _LandingWorker thread under a non-blocking lock, :3986 ticks it once per pass, and :3868 records release, launch and land seconds on the verdict row.\nVERDICT done_when: the done_when names four behaviours; tests/test_landing_runs_beside_admission.py:123 (a pass completes while _land is blocked), :161 (three deliveries, one land per tick), :202 (a step past its bound is refused naming the bound) and :233 (started_at, ended_at and per-stage seconds on each row) assert one each, and the manifest records that file green in the head arm.\nVERDICT write_paths: the manifest declares reckon/crew/queue_admission.py, reckon/crew/queue_landing.py and the new test; the diff also touches tests/test_queue_landing.py:356, outside that set, which the worker declared under outside_scope and which is raised as a finding below.\nVERDICT manifest: read; it records the head arm at 363 passed / 1 failed EXIT=1 against base 357 passed / 1 failed EXIT=1 with the same failing id, names the base, head and negative-control log paths, and records the scratch tree's measurement module and cwd.\nVERDICT diff: read commit by commit (8ba55d63 the feature, 9f9f0b94 the threaded test driver, 619610fc the evidence fragment); five files and 650 insertions, the source hunks confined to the two declared modules plus the one out-of-scope assertion update and the evidence page.\nCALL_SITES: reckon/crew_run_commands.py:4015\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:3986 starts the landing on a worker tick and the service loop never joins it, which is exactly the deliverable \u00a73 states.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-arm.log and logs/base-arm.log carry one failing id each and it is the same id (test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused) at 363 against 357 passed, so the delta is six added cases and no added failure.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: tests/test_queue_landing.py:356 lies outside the declared write paths and reckon/crew/queue_landing.py:418 adds a behaviour \u00a73 does not name, though the manifest declares both.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_landing_runs_beside_admission.py:123 reddens when the serial land_once call is restored, which logs/negative-control.log records as 5 passed / 1 failed / EXIT=1; the timings case at :233 asserts presence and type rather than a measured value, so it guards less.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_admission.py:3780-3795 follows the module's surrounding docstring-and-constant idiom and no added name carries a plan, stage or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:3787 duplicates the off-the-tick-path single-flight worker already owned by SweepBeat at reckon/crew/station.py:144 rather than extending or wrapping it, adding only a settle()/last result contract.\nFINDING reckon/crew/queue_admission.py:3787 non-blocking: _LandingWorker re-implements the capability SweepBeat already owns at reckon/crew/station.py:144 \u2014 a thread started off the tick path, in-flight exclusion, and an exception contained so the loop survives \u2014 and does not extend or wrap it; only settle() and last() are new, and those could be added to the owner so one mechanism serves both.\nFINDING reckon/crew/queue_landing.py:418 non-blocking: the land command now passes --no-impl-change with LANDING_BEAT_REASON on every landing, waiving the promotion check that a passing implement run moved its plan section; the section text does not ask for it, and nothing records whether the landing beat meant to advance impl afterwards ran, so a landed run whose section never advanced reads the same as one that did.\nFINDING reckon/crew/queue_admission.py:4010 non-blocking: worker.stop() joins for LANDING_STOP_SECONDS (1.0 s) and the daemon thread then dies with the process, so a land step still in flight when the service stops exceeds that second and its srun child is left orphaned mid-merge rather than drained or refused.\nFINDING tests/test_queue_landing.py:356 non-blocking: an assertion was updated in a file outside the node's declared write paths; the change is one line and forced by the --no-impl-change flag the section requires, and the worker declared it under outside_scope.\n",
+  "review_run_id": "r-20261029T134712468009-review-of-landing-runs-beside-admission-619610fcf9fe",
+  "reviewed_base_sha": "13b5e6297783391369bcf31d9430fec39745813f",
+  "reviewed_head_sha": "619610fcf9fe4ea016b6e4ac86dbed1adbf2316f",
+  "reviewed_run_id": "r-20261028T222632387609-landing-runs-beside-admission",
+  "rubric": "text",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T14:01:11.287625+00:00",
+  "total": 90
+}
