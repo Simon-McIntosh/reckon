@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="50">
+<meta name="plan-version" content="51">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -230,6 +230,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261029T134712468009-review-of-landing-runs-beside-admission-619610fcf9fe" data-who="reckon-build" data-when="2026-10-29T13:57:43.710Z">
     <div class="r-comment-body"><p>Reviewed r-20261028T222632387609-landing-runs-beside-admission at head 619610fcf9fe against base 13b5e629: six dimensions scored (goal_fidelity 18, evidence 18, scope_discipline 15, durability 16, fit 18, reuse 5) with four non-blocking findings — _LandingWorker duplicates the SweepBeat off-tick-path worker, the --no-impl-change waiver is broader than the section and unobserved afterwards, a land step in flight at service stop is orphaned past the 1 s join, and one assertion was updated in a file outside the declared write paths. The record is parsed and accepted; nothing blocks.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261028T222632387609-landing-runs-beside-admission" data-who="reckon-build" data-when="2026-10-29T13:44:34.174Z">
+    <div class="r-comment-body"><p>The landing pass left the admission loop&#x27;s critical path: admit_until_stopped no longer calls land_once, and landing runs in its own worker thread under its own lock with at most one action in flight, one measure or one crew complete --land per tick, a land step bounded by the landing measure&#x27;s timeout and refused past it with the bound in the guard, each pass record carrying started_at, ended_at and release, launch and land seconds, and the land command passing --no-impl-change naming the landing beat so a passing run whose section is still implementable lands and is then ticked done; six new cases, and the negative control that re-adds the serial land_once call fails the first arm with 5 passed, 1 failed, EXIT=1.</p></div>
 </div>
 </section>
 </main>
