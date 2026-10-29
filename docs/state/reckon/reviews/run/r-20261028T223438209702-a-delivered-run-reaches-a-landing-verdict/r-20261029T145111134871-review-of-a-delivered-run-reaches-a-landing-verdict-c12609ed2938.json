@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3818-3820 the admission pass calls queue_landing.land_once",
+    "reckon/crew/queue_landing.py:683 land_once calls _land(run_id), which builds its argv through _land_command",
+    "reckon/crew/promotion.py:561 promotion's gate checks call _require_gate_evidence, the reader the diff changes"
+  ],
+  "completed_at": "2026-10-29T15:00:19.489Z",
+  "dispatched_at": "2026-10-29T14:55:00Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing",
+      "recorded_at": "2026-10-29T15:03:23.053790+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking, noted at landing",
+      "recorded_at": "2026-10-29T15:03:34.895976+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_delivered_run_reaches_a_landing_verdict.py",
+      "id": "fa81187e139",
+      "line": "260",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert row.get(\"run_id\", run[\"run_id\"]) == run[\"run_id\"] supplies its own value as the default, so it passes whenever report[\"ledger\"] is absent or is not a dict and cannot fail on the regression it appears to guard; assert the ledger row carries the run id independently, or drop the line since report[\"ok\"] is the real claim."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "id": "fb1705cb291",
+      "line": "1253",
+      "severity": "non-blocking",
+      "text": "non-blocking: _declared_manifest_commits still reads each commits entry whole with the same comprehension the diff retired from promotion_evidence.py, so a subject-bearing or multi-revision entry is still presented as an unresolvable commit on the landing-record path reached from reckon/crew/promotion.py:1143 and :1661."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223438209702-a-delivered-run-reaches-a-landing-verdict/logs/after-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223438209702-a-delivered-run-reaches-a-landing-verdict/logs/baseline-arm.log",
+    "importers_base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223438209702-a-delivered-run-reaches-a-landing-verdict/logs/importers-base.log",
+    "importers_head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223438209702-a-delivered-run-reaches-a-landing-verdict/logs/importers-head.log",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223438209702-a-delivered-run-reaches-a-landing-verdict/logs/negative-control.log"
+  },
+  "item_verdicts": {
+    "call_sites": "Verified 3 production call sites: reckon/crew/queue_admission.py:3818-3820, reckon/crew/queue_landing.py:683 and reckon/crew/promotion.py:561.",
+    "diff": "Read 7535dce66a (queue_landing, promotion_evidence and the test) and c12609ed29 (the evidence fragment) against base c97238c9; the source change is one reader reused in a second place, a new awaiting-review record with its repeat-suppression, and 290 lines of test.",
+    "done_when": "The done_when names tests/test_a_delivered_run_reaches_a_landing_verdict.py and two behaviours; logs/after-arm.log ends 6 passed EXIT=0, logs/baseline-arm.log ends 6 failed EXIT=1, and the two land-step cases fail at base with the recorded refusal rather than with an unrelated error.",
+    "goal": "The node goal is that a delivered run always reaches a landing verdict; reckon/crew/queue_landing.py:711-717 now writes admission_landing status awaiting-review with the reflex's state, and reckon/crew/queue_landing.py:503-507 presents each delivered revision to the land step.",
+    "manifest": "The manifest states 6 failed at base and 6 passed at head, an importer population of 66 passed on both arms, and a negative control at 3 failed / 3 passed; each claim matches the log it names, and each log ends in a bare EXIT= line.",
+    "write_paths": "The node declared reckon/crew/queue_landing.py, reckon/crew/promotion_evidence.py, the new test and the evidence fragment; git diff c97238c9..c12609ed29 changes exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "Reverting the awaiting-review record reddens three cases as logs/negative-control.log shows, but tests/test_a_delivered_run_reaches_a_landing_verdict.py:260 compares row.get('run_id', run['run_id']) with run['run_id'] and therefore cannot fail.",
+    "evidence": "logs/baseline-arm.log:89 refuses the subject-bearing entry with 'does not resolve to a commit object' and logs/after-arm.log ends 6 passed EXIT=0, so the gate measures the done_when's two behaviours and its result is recorded rather than claimed.",
+    "fit": "The added definitions at reckon/crew/queue_landing.py:89, :111 and :128 are all private, follow the module's existing lazy-import and Mapping-guard idiom, and carry no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:711-717 records awaiting-review with review_state and review_detail instead of the silent continue, and the land step at reckon/crew/queue_landing.py:503-507 presents every revision the shared reader places.",
+    "reuse": "reckon/crew/promotion_evidence.py:836-843 now reads commit entries through queue_landing._delivered_revision rather than its own split; a capability search for a reflex-state reader over REVIEW_DISPATCH_FIELD found only boolean and queued-refusal readers, so _review_reflex_state extends no existing owner.",
+    "scope_discipline": "Every path in git diff c97238c9..c12609ed29 is inside the declared write paths, but reckon/crew/promotion_evidence.py:1345 also drops an unrelated stray blank line."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a delivered run always reaches a landing verdict; reckon/crew/queue_landing.py:711-717 now writes admission_landing status awaiting-review with the reflex's own state, and reckon/crew/queue_landing.py:503-507 presents each delivered revision to the land step.\nVERDICT done_when: The done_when names tests/test_a_delivered_run_reaches_a_landing_verdict.py and two behaviours; logs/after-arm.log ends 6 passed EXIT=0, logs/baseline-arm.log ends 6 failed EXIT=1, and the two land-step cases fail at base with the recorded refusal rather than with an unrelated error.\nVERDICT write_paths: The node declared reckon/crew/queue_landing.py, reckon/crew/promotion_evidence.py, the new test and the evidence fragment; git diff c97238c9..c12609ed29 changes exactly those four paths and nothing else.\nVERDICT manifest: The manifest states 6 failed at base and 6 passed at head, an importer population of 66 passed on both arms, and a negative control at 3 failed / 3 passed; each claim matches the log it names, and each log ends in a bare EXIT= line.\nVERDICT diff: Read 7535dce66a (queue_landing, promotion_evidence and the test) and c12609ed29 (the evidence fragment) against base c97238c9; the source change is one reader reused in a second place, a new awaiting-review record with its repeat-suppression, and 290 lines of test.\nCALL_SITES: reckon/crew/queue_admission.py:3818-3820 the admission pass calls queue_landing.land_once, reckon/crew/queue_landing.py:683 land_once calls _land which builds its argv through _land_command, reckon/crew/promotion.py:561 promotion's gate checks call _require_gate_evidence\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:711-717 records awaiting-review with review_state and review_detail instead of the silent continue, and the land step at reckon/crew/queue_landing.py:503-507 presents every revision the shared reader places.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/baseline-arm.log:89 refuses the subject-bearing entry with 'does not resolve to a commit object' and logs/after-arm.log ends 6 passed EXIT=0, so the gate measures the done_when's two behaviours and its result is recorded rather than claimed.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: Every path in git diff c97238c9..c12609ed29 is inside the declared write paths, but reckon/crew/promotion_evidence.py:1345 also drops an unrelated stray blank line.\nSCORE durability: 17\nJUSTIFICATION durability: Reverting the awaiting-review record reddens three cases as logs/negative-control.log shows, but tests/test_a_delivered_run_reaches_a_landing_verdict.py:260 compares row.get('run_id', run['run_id']) with run['run_id'] and therefore cannot fail.\nSCORE fit: 19\nJUSTIFICATION fit: The added definitions at reckon/crew/queue_landing.py:89, :111 and :128 are all private, follow the module's existing lazy-import and Mapping-guard idiom, and carry no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/promotion_evidence.py:836-843 now reads commit entries through queue_landing._delivered_revision rather than its own split, and a capability search over REVIEW_DISPATCH_FIELD found only boolean and queued-refusal readers, so _review_reflex_state extends no existing owner.\nFINDING tests/test_a_delivered_run_reaches_a_landing_verdict.py:260 non-blocking: assert row.get(\"run_id\", run[\"run_id\"]) == run[\"run_id\"] supplies its own value as the default, so it passes whenever report[\"ledger\"] is absent or is not a dict and cannot fail on the regression it appears to guard.\nFINDING reckon/crew/promotion_scope.py:1253 non-blocking: _declared_manifest_commits still reads each commits entry whole with the same comprehension the diff retired from promotion_evidence.py, so a subject-bearing or multi-revision entry is still presented as an unresolvable commit on the landing-record path reached from reckon/crew/promotion.py:1143 and :1661.\n",
+  "review_run_id": "r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938",
+  "reviewed_base_sha": "c97238c91cb566c6b6151a8a9f0dd7d9814be6fc",
+  "reviewed_head_sha": "c12609ed2938d92a7ac4135ce82e434dc1291651",
+  "reviewed_run_id": "r-20261028T223438209702-a-delivered-run-reaches-a-landing-verdict",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T15:01:42.509010+00:00",
+  "total": 109
+}
