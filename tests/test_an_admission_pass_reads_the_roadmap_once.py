@@ -201,10 +201,10 @@ def test_a_direct_dispatch_outside_a_pass_builds_its_own(
             ),
         )
 
-    # The pass built once; this dispatch builds its own twice, through the two
-    # caches it creates for itself — the section verdict it reads and the waits
-    # it resolves. What it must not do is read the pass's cache.
-    assert len(builds) == 3, builds
+    # The pass built once; this dispatch adds no whole-project build of its own,
+    # reading only its own plan and the plans its waits name. What it must not
+    # do is read the pass's cache.
+    assert len(builds) == 1, builds
 
 
 def test_the_launches_read_the_waits_an_uncached_computation_gives(

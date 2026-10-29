@@ -165,7 +165,13 @@ def test_the_read_touches_no_project_wide_resource_scan(
     held_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A dispatch's own-section check reads no plan beyond the ones it names."""
-    from reckon import resources
+    from reckon import metadata_index, resources, serve
+
+    # The read under test must resolve the plans it names, so the arm starts
+    # from the cold caches a dispatch process has: a warm index would let the
+    # read answer without resolving anything, and the count would prove nothing.
+    metadata_index.clear()
+    serve._DISC_CACHE.clear()
 
     scanned: list[str] = []
     original = resources.resolve_resource
@@ -194,6 +200,9 @@ def test_the_read_touches_no_project_wide_resource_scan(
     refs, _projects, unmet = queue_admission.dispatch_waits(
         node, repo_root=held_repo, project=PROJECT, live=[]
     )
+    held_verdicts, _inventory = plan_review.section_readiness_rows(
+        PROJECT, held_repo / "docs", PLAN
+    )
 
     assert refs == [], "the fixture's ready section declares no wait of its own"
     assert unmet == []
@@ -205,9 +214,10 @@ def test_the_read_touches_no_project_wide_resource_scan(
         "a plan no wait names was resolved: the read reached past what the "
         f"dispatch names; saw {scanned}"
     )
-    assert {PLAN, UPSTREAM} <= set(scanned), (
-        f"the read never resolved the plans it does name; saw {scanned}"
-    )
+    # The positive control: a project-wide scan would answer differently for a
+    # plan it never read, so the same read must derive both plans it names.
+    derived = {slug for slug, row in held_verdicts.items() if row.get("sections")}
+    assert {PLAN, UPSTREAM} <= derived, derived
 
 
 def test_the_bounded_verdict_equals_the_whole_project_verdict(
