@@ -73,6 +73,23 @@
     node's write paths, and is recorded as outside scope.
   </p>
 
+  <p id="the-brief-is-the-default-answer-snapshot">
+    <strong>The slow-read snapshot keeps working, filed under its own shape.</strong>
+    A roadmap read stores every composition as its tree's last answer for the
+    request shape it composed, marked with whether its key held, and answers a
+    read held past its reserve from that record. The shape carries
+    <code>view</code>, and its own documentation states why: two calls that
+    differ in any shape field compose different payloads. A brief answer
+    carries <code>text</code> and <code>lines</code> that a summary answer does
+    not, so a view-less read now files under
+    <code>view="brief"</code> and a named summary read under
+    <code>view="summary"</code>. Nothing in the store changed. On the merge of
+    current main the slow-read cases answered <strong>6 failed, 5 passed</strong>
+    because they pinned the <em>default</em> shape to
+    <code>summary</code>. That constant now names the brief, no assertion was
+    weakened, and the same file answers <strong>11 passed</strong>.
+  </p>
+
   <p id="the-brief-is-the-default-answer-revision">
     <strong>A landed test that asserted the default view revised.</strong>
     <code>tests/test_mcp_recovery.py</code> held
@@ -83,5 +100,8 @@
     <code>test_single_project_roadmap_answers_named_summary_and_raw_is_explicit</code>,
     as the done-when requires. That file is outside this node's declared write
     paths; the revision is made because the section's own measure names it.
+    The slow-read file above was revised the same way and for the same reason:
+    it named the default answer's shape as <code>summary</code>, and the
+    default answer is now the brief.
   </p>
 </section>
