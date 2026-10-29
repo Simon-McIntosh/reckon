@@ -385,3 +385,50 @@ def test_one_pass_reads_each_plans_stored_reviews_once(
     plan_review.list_plan_reviews(PROJECT)
     assert len(loads) == 1, loads
     assert repository.is_dir()
+
+
+def test_an_admission_pass_holds_the_review_store_read_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A real pass reads each plan's stored reviews once, not once per request."""
+    from tests import test_an_admission_pass_reads_the_roadmap_once as pass_fixtures
+
+    repository = pass_fixtures._seed(tmp_path, monkeypatch, {})
+    pass_fixtures._queue(repository)
+    _seed_stored_review(tmp_path / "config", PLAN, "r-review-1")
+
+    loads: list[str] = []
+    original = plan_review._read_record
+
+    def counting(path: Path) -> Any:
+        # The disk read itself, which is the cost the pass cache exists to
+        # avoid. Only this plan's stored reviews: the store also holds code
+        # reviews, whose reads are not what this arm is about.
+        if Path(path).name.startswith(f"plan-{PLAN}"):
+            loads.append(str(path))
+        return original(path)
+
+    monkeypatch.setattr(plan_review, "_read_record", counting)
+
+    recorded: list[str] = []
+    plain = fixtures._launcher(recorded)
+
+    def launch(
+        document: Any, *, log_path: Any, stderr_path: Any, prompt_path: Any
+    ) -> int:
+        # Each launch asks the gate what this plan's stored reviews are.
+        plan_review.list_plan_reviews(PROJECT)
+        return plain(
+            document,
+            log_path=log_path,
+            stderr_path=stderr_path,
+            prompt_path=prompt_path,
+        )
+
+    result = queue_admission.admit_once(
+        config_for=fixtures._config_for(), launcher=launch
+    )
+
+    assert sorted(result["launched"]) == ["r-s1", "r-s2", "r-s3"], result
+    assert len(recorded) == 3
+    assert len(loads) == 1, loads

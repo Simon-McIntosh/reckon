@@ -1187,14 +1187,39 @@ def review_coverage(
 
 
 def _load(path: Path) -> dict[str, Any] | None:
-    """Return a stored record, or ``None`` when the file is missing or unreadable."""
+    """Return a stored record, or ``None`` when the file is missing or unreadable.
+
+    Inside an admission pass the record is read once and handed out as a copy:
+    the gate judges every request the pass considers, and each request naming
+    the same plan must not cost another read of the same file. The entry is
+    keyed by the path and its own modification time, so a record written during
+    the pass is read rather than answered from the copy taken before it.
+    """
+    cache = _REVIEW_READ_PASS.get()
+    key: tuple[Any, ...] | None = None
+    if cache is not None:
+        try:
+            stamp = path.stat().st_mtime_ns
+        except OSError:
+            stamp = 0
+        key = ("record", str(path), stamp)
+        if key in cache:
+            return copy.deepcopy(cache[key])
+    record = _read_record(path)
+    if cache is not None and key is not None:
+        cache[key] = copy.deepcopy(record)
+    return record
+
+
+def _read_record(path: Path) -> dict[str, Any] | None:
+    """Read one stored record from disk."""
     if not path.is_file():
         return None
     try:
-        record = json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
-    return dict(record) if isinstance(record, Mapping) else None
+    return dict(payload) if isinstance(payload, Mapping) else None
 
 
 def read_plan_review(
@@ -1309,9 +1334,9 @@ def _plan_review_identity(record: Mapping[str, Any]) -> str:
 #: Admission asks the review gate once per queued request, and every one of
 #: those questions used to re-read the same review files; the pass holds the
 #: answer while the store's stamp is unchanged.
-_REVIEW_READ_PASS: ContextVar[
-    dict[tuple[str, str, int, int], list[dict[str, Any]]] | None
-] = ContextVar("plan_review_read_pass", default=None)
+_REVIEW_READ_PASS: ContextVar[dict[tuple[Any, ...], Any] | None] = ContextVar(
+    "plan_review_read_pass", default=None
+)
 
 
 @contextmanager

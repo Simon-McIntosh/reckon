@@ -3122,9 +3122,12 @@ def admit_once(
     local_gated = gate.get("state") in _LANE_GATE_WAITING_STATES
     if local_gated:
         _record_gated_verdicts(result, gate=gate, lane=lane, config_for=config_for)
+    from reckon.crew.plan_review import review_read_pass
+
     with (
         _admit_lock() if lock else nullcontext(),
         readiness_pass(),
+        review_read_pass(),
     ):
         result["requeued"] = _requeue_admitted_failures(
             runs.list_live(phase=LAUNCH_FAILED_PHASE)
