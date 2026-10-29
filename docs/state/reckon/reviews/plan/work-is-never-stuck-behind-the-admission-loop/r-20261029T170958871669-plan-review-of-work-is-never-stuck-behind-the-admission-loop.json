@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-29T17:19:03.268Z",
+  "dispatched_at": "2026-10-29T17:12:40Z",
+  "findings": [
+    {
+      "anchor": "plan.html:170",
+      "id": "reasoning-1",
+      "reason": "with `obligation_snapshot.py` out of scope the node must either read the log per queued request (failing its own once-per-build arm) or leave the stalled row absent from the slice the coordinator hook actually renders, so the deliverable would be measured green while the coordinator still cannot see the stall.",
+      "text": "\u00a713 says the stalled row \"appears in its coordinator's obligations\", but the obligations rows the hook reads on a fresh snapshot are built by the published slice in `reckon/crew/obligation_snapshot.py:1367` (and the earlier slice at `:1277`), both of which call `obligations._queued_item(row, placements=..., now=...)` and are outside s13's declared write paths (`obligations.py`, `needs_you.py`, `queue_admission.py`, `runs.py`, new test); `_queued_item` is called three times per build across two modules, so the done-when's \"reads the verdict log once per obligations build\" arm cannot hold without threading one build-scoped verdict read into both slice call sites",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:170",
+      "id": "done_when-1",
+      "reason": "deleting the module fails those six files at head while leaving it keeps tests on a module with no production caller, so the node cannot satisfy both clauses and must be told which it owns (delete the module and its tests, or keep the module and only drop its stall rows).",
+      "text": "the deliverable says \"remove the stall rows from `needs_you.py`, and the module itself if nothing else calls it\", while the done-when requires that \"the test files importing `reckon.crew.needs_you` add no failure against the base revision\"; six existing test files import the module (`tests/test_a_deferred_run_leaves_the_needs_you_line.py:23`, `tests/test_follow_needs_you_line.py:33`, `tests/test_the_pane_carries_counts_not_names.py:43`, `tests/test_a_pane_settles_when_no_work_is_live.py`, `tests/test_the_stream_carries_only_actionable_lines.py`, `tests/test_follow_drain_line.py`), and none is in the write paths",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:170",
+      "id": "reasoning-2",
+      "reason": "an unmeasured requirement of unknown size is either silently skipped or expands the node into a four-module refactor no arm scores, and the plan should either add an arm showing one parser or drop the fold.",
+      "text": "the deliverable requires that when \u00a77 lands no shared reader the node \"add it and fold \u00a77's readers (the drain view's, `needs_you`'s and `queue_admission`'s last-verdict lookup) onto it, so the log has one parser\", but no done-when arm measures the fold: arm 4 counts reads per build, which a shimmed single call satisfies while three parsers remain; `queue_admission` in fact holds no last-verdict lookup at all today (only `_verdict_row`/`_record_pass_verdicts` writing and truncating `ADMISSION_VERDICT_LOG`, and `runs.py:2109-2120` as the sole reader)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:170",
+      "id": "anchors_resolve-1",
+      "reason": "the trailing clause \"use whatever name \u00a77 lands with\" already carries the implementer past the missing name, so this is a false citation rather than a wrong instruction.",
+      "text": "the parenthetical \"(its head names the constant `queue_admission.STALL_VERDICT`; use whatever name \u00a77 lands with)\" asserts that \u00a77's head names that constant, but `grep -rn STALL_VERDICT reckon/ docs/plans/` returns only s13's own line, and \u00a77's head reads \"\u00a77 \u2014 The queue reports its own stalls where it is read\" with no constant named anywhere in its body",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "plan.html:170",
+      "id": "reasoning-3",
+      "reason": "an unlisted kind defaults to blocking, so every stalled request would hold a coordinator's stop open, and if that is the intent the node should be told so (and told how the hook's duplicate vocabulary stays in step); if it is not, the mirror site is outside scope; either way the decision is the plan's to state, not the node's to guess.",
+      "text": "a new row kind must be classified as blocking or non-blocking and \u00a713 does not say which: `obligations.NON_BLOCKING_DUTY_KINDS` (`obligations.py:152`) governs the derivation, while `reckon/hooks/coordinator_obligations.py:240-242` mirrors that vocabulary as a literal `_NON_BLOCKING_KINDS` set that cannot be imported on the fresh-snapshot path, and the hook is not among the write paths",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "44968c3070f2ecc4561e49c0c75be05fec0d94d9",
+  "plan_fingerprint": "46cdf70cdaa1889874f6a535153d535304ad34f3dd15dc85912ef6eb6a298b72",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 70,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261029T170958871669-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "828818f9ed1a7961bf7aafce21ee6f9c0f7374f0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the cited constant `queue_admission.STALL_VERDICT` exists nowhere in the tree, including in \u00a77's head, which the parenthetical says names it.",
+    "done_when": "a finding \u2014 the module-deletion clause contradicts the section's own \"test files importing `reckon.crew.needs_you` add no failure\" arm, and six existing test files import that module from outside the write paths.",
+    "evidence_paths": "pass \u2014 s13 claims no gate log; its evidence is a grep at a named commit (`3c7f7314b0`) that anyone can re-run, and the claim it supports (\"no module imports `reckon.crew.needs_you` outside itself\") holds at `44968c3070` too.",
+    "naming": "pass \u2014 the new test is named for the behaviour (`test_a_stalled_request_reaches_its_obligations.py`), and no plan label, stage name or ticket number reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 the hook's fresh-snapshot path reaches obligations rows through the published slice in `reckon/crew/obligation_snapshot.py`, which is not among \u00a713's write paths, so the mechanism and its \"reads the log once per build\" arm do not reach the caller the plan relies on.",
+    "single_goal": "pass \u2014 one deliverable: a stalled queued request reads as a stalled obligations row instead of a plain `run-queued` row, and the superseded `needs_you` path is retired with it.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s13: [\"work-is-never-stuck-behind-the-admission-loop#s7\"]`, and the one edge s13 consumes (the stall verdict and the verdict log) is \u00a77's."
+  },
+  "section_digests": {
+    "_document": "f38bd05dc5310908a2d024607059fcf86170080929fec227c1d039e5ba5f95b4",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "2eb777d6b606961403e084633ea400b54c436de86916634c1d828ebf74139130",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2660f0a8230174b58e453e15cd31c113f234218a69c1e8c217b6dd03334a224c",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T17:28:50.334382+00:00"
+}
