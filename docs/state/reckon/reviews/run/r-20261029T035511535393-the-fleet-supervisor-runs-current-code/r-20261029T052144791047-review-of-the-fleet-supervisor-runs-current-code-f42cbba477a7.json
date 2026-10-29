@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own manifest arms and the logs behind them: baseline_suite (logs/base.log, 8e574c0865 repair base archive with this node's test copied in, completed, exit_status 1, failure_count 1, failure_ids [tests/test_the_fleet_supervisor_runs_current_code.py::test_a_stamp_refused_once_is_asked_about_again]) and after_suite (logs/head.log, 73d6325a84, completed, exit_status 0, failure_count 0, failure_ids []). The single base failure is the arm the repair answers and it passes at head, so the change adds no failure id. Importer arms logs/importers-head.log (73d6325a84) and logs/importers-base.log (9da1277b52) both read 33 passed EXIT=0. I read head.log, base.log, negative-control.log and both importer logs myself; each header names its revision and each tail carries a bare EXIT= line.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:2232",
+    "reckon/crew/fleet_node.py:216"
+  ],
+  "completed_at": "2026-10-29T05:31:36.701Z",
+  "dispatched_at": "2026-10-29T05:25:04Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "2149",
+      "severity": "non-blocking",
+      "text": "the re-ask is paced by the fixed MOVE_CHECK_INTERVAL_SECONDS only, so a checkout that stays dirty pays the full trust test -- which loads every module in the package, as the comment at :128-136 states -- once per minute for as long as it stays dirty, with no backoff and no cap; the repository's owner of retry pacing for exactly this probe is reckon/crew/follower_reload.py:174-195, which doubles FOLLOWER_RELOAD_PROBE_RETRY_INITIAL_SECONDS and jitters it, and following it here would keep the re-ask that this repair correctly restores while bounding its cost on a tree that is dirty for hours. Restoring the earlier fixed-interval behaviour is defensible as the prior reviewed shape, so this does not hold the node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/fleet_supervisor.py:2232 is main(), the only caller of serve(), reached in production when the fleet node execs the module as python -m reckon.crew.fleet_supervisor (reckon/crew/fleet_node.py:216); the node's own test file is not counted.",
+    "diff": "read commit by commit; 73d6325a84 deletes the tested_stamp variable and reduces the loop's guard to fleet_supervisor.py:2159 (stamp_read and the stamp differs from the recorded one and the interval has passed), rewrites the constant's comment at :128-136, and adds tests/test_the_fleet_supervisor_runs_current_code.py:294-323; f42cbba477 changes only the fragment's arm table revision labels and the arm counts (four to five, 4 passed to 5 passed, 4 failed to 1 failed 4 passed, and the negative-control description).",
+    "done_when": "the done-when names tests/test_the_fleet_supervisor_runs_current_code.py driven by an injected exec_ and a temporary runtime tree; logs/head.log records 5 passed EXIT=0 at 73d6325a84, logs/base.log records 1 failed 4 passed EXIT=1 at the 8e574c0865 base archive, logs/negative-control.log records 1 failed 4 passed EXIT=1 with the per-stamp exclusion restored, both importer arms read 33 passed, and the file holds five tests, so all three named arms plus the repair's arm are covered.",
+    "goal": "the goal is a supervisor that runs current code; at f42cbba477 reckon/crew/fleet_supervisor.py:2159-2179 re-executes through _reexec (fleet_supervisor.py:1805) when the checkout's stamp has moved and the moved_checkout verdict is trusted, and the repair removes the tested_stamp exclusion that made one refusal final for a stamp, so the reload the goal promises is no longer lost when the tree becomes loadable without its identity moving.",
+    "manifest": "read in full; status reads complete, checkpoint names the round-two repair at 73d6325a84 and the five-arm head gate, after_suite records 5 passed EXIT=0 at 73d6325a84, baseline_suite 1 failed 4 passed EXIT=1 at 8e574c0865, negative_control_log names logs/negative-control.log, and the failure_attribution entries are both test-fixture scaffolding (a half-written stamp, a missing migration directory) rather than code under test.",
+    "write_paths": "the manifest declares reckon/crew/fleet_supervisor.py, tests/test_the_fleet_supervisor_runs_current_code.py, the evidence fragment and an unused figures directory; git diff --stat 8e574c0865..f42cbba477 lists exactly the first three paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_fleet_supervisor_runs_current_code.py:294-323 reddens under the restored per-stamp exclusion because wait_for(run.replacements) never resolves, confirmed by logs/negative-control.log at 1 failed 4 passed, and the arm's later assertions compare the loop's recorded {'running': 'stamp-a', 'disk': 'stamp-b'} against literals the code must derive from its recorded stamp rather than from the test's call, so a regression that passes the current stamp as running would fail them.",
+    "evidence": "logs/base.log reddens exactly one arm (test_a_stamp_refused_once_is_asked_about_again) at the repair base and logs/head.log records 5 passed EXIT=0 at 73d6325a84, both read at the revisions their headers name; the negative-control log's header names 8e574c0865 plus a working tree rather than a committed revision, so the mutation's provenance is stated less precisely than the head arm's.",
+    "fit": "the change follows the module's constant-and-comment idiom at fleet_supervisor.py:128-136 and :2149-2168, and adds no name that carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:2159-2179 now asks the moved_checkout verdict again after each interval while the stamps still differ, so a stamp refused once is adopted when its tree becomes loadable, which is the outage the section describes (a supervisor held on an image older than its checkout until the next commit).",
+    "reuse": "the loop reuses reckon.served_code.moved_checkout through _moved_checkout (fleet_supervisor.py:1836-1845) and the existing _reexec path (fleet_supervisor.py:1805) rather than adding a second moved-and-trusted decision or a second replacement path; the one capability it does not reuse is reckon/crew/follower_reload.py:174-195's probe-retry backoff, recorded as a non-blocking finding.",
+    "scope_discipline": "every path in 8e574c0865..f42cbba477 is a declared write path, no request verb or CLI option is added, the manual reload branch is untouched, and the fragment edit changes only this node's own landing record."
+  },
+  "node": "review-of-the-fleet-supervisor-runs-current-code-f42cbba477a7",
+  "node:reviewed": "the-fleet-supervisor-runs-current-code",
+  "project": "reckon",
+  "review_run_id": "r-20261029T052144791047-review-of-the-fleet-supervisor-runs-current-code-f42cbba477a7",
+  "reviewed_base_sha": "8e574c0865226b3024af65a4e3bd2c36ba5ebdd3",
+  "reviewed_head_sha": "f42cbba477a7fb92042f653e7c25b6edfcc6d43d",
+  "reviewed_range_note": "scored only the commits the reviewed run gained since its earlier review: 8e574c0865..f42cbba477 (73d6325a84 the repair, f42cbba477 the fragment revision labels), read in the reviewed run's worktree the-fleet-supervisor-runs-current-code at HEAD f42cbba477. The dispatch base of the whole run is 9da1277b5258df110fd0d1943cf87b53767e4d1f; the reviews of 407e04e0ad and 8e574c0865 are stored beside this record.",
+  "reviewed_run_id": "r-20261029T035511535393-the-fleet-supervisor-runs-current-code",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T06:20:00+00:00",
+  "total": 112
+}
