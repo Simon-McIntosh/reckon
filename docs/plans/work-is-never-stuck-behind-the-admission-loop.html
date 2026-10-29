@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="40">
+<meta name="plan-version" content="41">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -200,6 +200,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261029T043310684633-review-of-a-slow-station-still-reads-as-alive-2af24e99d53d" data-who="reckon-build" data-when="2026-10-29T04:46:30.541Z">
     <div class="r-comment-body"><p>Reviewed r-20261029T040630579968-a-slow-station-still-reads-as-alive at head 2af24e99d53dab0fbeff80df0e6bae8e7f97a78f against base 3922d93453721f6886dd7e9722aa6aeb56ac8d54 — parse status parsed, total 112 over six independent dimensions (goal_fidelity 19, evidence 19, scope_discipline 19, durability 19, fit 18, reuse 18), added_failure_count 0 with no added failure ids, three non-blocking findings and no blocking one, so the node stands as landed.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261029T040630579968-a-slow-station-still-reads-as-alive" data-who="reckon-build" data-when="2026-10-29T04:29:51.946Z">
+    <div class="r-comment-body"><p>The station now beats from a thread of its own every 5 s while its process lives, each tick records the stage it enters (store-tick, classify, heartbeat, per-project-refresh, publish) and the instants that bound it, and the reader answers `stopped` for a stale beat, `slow` with the stage and age for a fresh beat beside a running tick, `live` otherwise; the hook keeps the restart advice for a stopped station only. Gate `tests/test_a_slow_station_still_reads_as_alive.py`: 3 passed, EXIT=0; negative control (beat from the tick again) 1 failed / 2 passed, EXIT=1; importer population zero added failures (127/2 at head vs 124/2 at base).</p></div>
 </div>
 </section>
 </main>
