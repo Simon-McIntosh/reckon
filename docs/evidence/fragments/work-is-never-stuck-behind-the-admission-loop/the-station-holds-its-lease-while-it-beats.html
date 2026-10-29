@@ -1,0 +1,45 @@
+<article class="r-evidence" data-node="the-station-holds-its-lease-while-it-beats">
+<h3>The station holds its lease while it beats</h3>
+<p id="the-station-holds-its-lease-while-it-beats-verdict">On 29 October the
+fleet supervisor re-executed itself onto new code and started a station while
+the previous station, pid 827990, was still alive; two stations wrote the same
+store for several minutes. <code>run_station</code> renewed its lease only
+between ticks, while <code>HostLease</code> treats a lease untouched for
+<code>LEASE_STALE_SECONDS</code> (30&nbsp;s) as stale, so a tick that took 14.5
+minutes left the live station's lease reading stale for most of its own run and
+anything that asked was free to claim it.</p>
+<p id="the-station-holds-its-lease-while-it-beats-record">The renewal now runs
+on a thread of its own, beside the heartbeat beat and on the same cadence, and
+touches only the lease file: no SQLite, so a heartbeat write waiting out its
+30&nbsp;s busy timeout cannot delay it. A failed renewal marks a
+<code>StoreWriteGuard</code> shared by every handle the station holds; each
+store write checks it before touching the database, so the tick record,
+live-work and obligations publish, retention sweep, the finish stamp and the
+beat thread's own heartbeat all refuse from that moment, and the station's loop
+stops with <code>StationHeldError</code> instead of writing beside the
+successor. A station hosted off the main thread keeps the signal handlers it
+already had, since the stop handler installs only in the interpreter's main
+thread.</p>
+<p id="the-station-holds-its-lease-while-it-beats-measure">Measured through
+<code>tests/test_the_station_holds_its_lease_while_it_beats.py</code> under a
+fast lease clock, so the stale window passes in two real seconds. A held-open
+tick: the lease read fresh in every one of the arm's samples taken across 1.6
+stale windows, a second <code>run_station</code> raised
+<code>StationHeldError</code> naming the holder, and
+<code>StationProcess.ensure</code> started no process. With the heartbeat write
+blocked on every handle past the window, the lease stayed fresh throughout, which
+is what says the renewal is not the beat. With the lease handed to a successor
+mid-refresh, no store write completed after the replacement, the guard refused
+the tick's later writes, and the loop ended with
+<code>StationHeldError</code>. Base arm 3 failed / head arm 3 passed (EXIT 0 at
+head, EXIT 1 at base). The declared negative control moves the renewal back to
+the tick loop: 3 failed, EXIT 1, the held-open case among them. The importer
+population — the 19 test files importing <code>reckon.crew.station</code>,
+<code>reckon.crew.station_store</code> and <code>reckon.crew.host_lease</code> —
+reads 118 passed / 1 failed at base and 120 passed / 2 failed at head; the
+shared failure is <code>test_station_reloads_from_a_node_local_image</code>,
+which collides with the live fleet runtime tree's <code>reload-trees</code>
+directory built by earlier runs, and the second head failure
+(<code>test_one_station_keeps_every_session_transition_once_across_restart</code>)
+does not reproduce alone at head: 5 passed, EXIT 0.</p>
+</article>
