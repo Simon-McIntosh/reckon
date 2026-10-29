@@ -1258,6 +1258,7 @@ def _upstream_hold_item(
     pointer: Mapping[str, Any],
     now: datetime,
     phase: str,
+    verdicts: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """The duty a request held on its section's refs owes its session.
 
@@ -1274,7 +1275,7 @@ def _upstream_hold_item(
     from the plan: the request is held on the refs it was stored with, and a
     plan edited since then must not change what a reader is told it waits on.
     """
-    item = module._queued_item(row, placements={}, now=now)
+    item = module._queued_item(row, placements={}, now=now, verdicts=verdicts)
     waits = list(module.queue_admission.section_waits_for(pointer))
     if waits:
         item["waits"] = waits
@@ -1306,6 +1307,10 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     # the admission pass admits by; a session with nothing queued never orders
     # anything.
     queued_placements: dict[str, dict[str, int]] | None = None
+    # Read once for the whole payload, exactly as the derivation reads it once
+    # for the whole view, so a slice and the derivation over the same files
+    # tell the same request's stall from the same reading.
+    verdicts = module.admission_verdicts()
     for row in state.rows:
         if str(row.get("session") or "") != session:
             continue
@@ -1324,7 +1329,12 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             # from the same constants the admission pass moves it by.
             items.append(
                 _upstream_hold_item(
-                    module, row, pointer=pointer, now=state.now, phase=phase
+                    module,
+                    row,
+                    pointer=pointer,
+                    now=state.now,
+                    phase=phase,
+                    verdicts=verdicts,
                 )
             )
             continue
@@ -1364,7 +1374,12 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
                     list(state.pointers.values()), now=state.now
                 )
             items.append(
-                module._queued_item(row, placements=queued_placements, now=state.now)
+                module._queued_item(
+                    row,
+                    placements=queued_placements,
+                    now=state.now,
+                    verdicts=verdicts,
+                )
             )
             continue
         kind = _duty_kind(module, row)

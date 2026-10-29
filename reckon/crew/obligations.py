@@ -146,10 +146,22 @@ QUEUED_AWAITING_SESSION_DUTY_KIND = "queued-awaiting-session"
 # a wait the lane's own admission pass ends.
 QUEUED_RUN_DUTY_KIND = "run-queued"
 
+# A queued request the admission pass recorded a stall verdict for: the lane
+# could launch it and did not, so the wait is one the lane has already declared
+# rather than a request simply waiting its turn. The two read alike otherwise,
+# which is the stuck-in-the-queue experience this kind removes: a plain queued
+# row says only that the request is waiting, while a stalled row names how long
+# it has been launchable, the stage the pass was in, and the action left to a
+# coordinator. It stays distinct from the plain kind because the wait is not the
+# same wait — this row says admission has already failed to take it.
+STALLED_RUN_DUTY_KIND = "run-stalled"
+
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
 # coordinator to act on a wait it cannot shorten.
-NON_BLOCKING_DUTY_KINDS = frozenset({REVIEW_QUEUED_DUTY_KIND, QUEUED_RUN_DUTY_KIND})
+NON_BLOCKING_DUTY_KINDS = frozenset(
+    {REVIEW_QUEUED_DUTY_KIND, QUEUED_RUN_DUTY_KIND, STALLED_RUN_DUTY_KIND}
+)
 
 
 def _utc_now() -> datetime:
@@ -685,11 +697,77 @@ def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str,
     }
 
 
+def admission_verdicts() -> dict[str, dict[str, Any]]:
+    """The most recent admission verdict recorded for each queued request.
+
+    Read once per obligations build and handed to every queued row that build
+    makes, so a request's stall is decided from one reading of the log rather
+    than one read per request, and two rows in one build cannot disagree about
+    what the pass last decided. The last line naming a request wins, which is
+    how a stall clears: the pass that launches the request records a later
+    verdict against it. A log that cannot be read yields no verdicts, because
+    the absence of a record is not a record of a stall.
+    """
+    path = runs.crew_home() / queue_admission.ADMISSION_VERDICT_LOG
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    verdicts: dict[str, dict[str, Any]] = {}
+    for line in text.splitlines():
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        for row in record.get("pointers") or ():
+            if not isinstance(row, Mapping):
+                continue
+            run_id = str(row.get("run_id") or "")
+            if run_id:
+                verdicts[run_id] = dict(row)
+    return verdicts
+
+
+def _stalled_item(
+    row: Mapping[str, Any], *, stall: Mapping[str, Any], now: datetime
+) -> dict[str, Any]:
+    """The duty a request admission has stalled owes the session that queued it.
+
+    Every field is the pass's own record rather than a second derivation: the
+    age is how long the request has been admissible, not how long it has
+    existed, because a request queued before its section was ready has waited
+    long without ever having been launchable, and only the pass measures the
+    difference. The stage is the one the request is owed, with that stage's
+    duration on the last pass, so a reader learns which of release, launch and
+    land to look at rather than only that the wait is overdue. The action names
+    the two things a coordinator can do with a request the lane owns: move it
+    up the queue, or withdraw it.
+    """
+    item = _live_item(row, kind=STALLED_RUN_DUTY_KIND, now=now)
+    age = stall.get("age_seconds")
+    if isinstance(age, (int, float)) and not isinstance(age, bool):
+        item["age_seconds"] = max(0, int(age))
+    stage = str(stall.get("stage") or "")
+    if stage:
+        item["stage"] = stage
+    stage_seconds = stall.get("stage_seconds")
+    if isinstance(stage_seconds, (int, float)) and not isinstance(stage_seconds, bool):
+        item["stage_seconds"] = round(float(stage_seconds), 3)
+    run_id = str(item.get("run_id") or "")
+    item["next_command"] = (
+        f"stalled at the {stage or 'admission'} stage: admission could launch it "
+        f"and did not — reprioritise it with `reckon crew queue reprioritise "
+        f"--run {run_id} --priority 0`, or drop it"
+    )
+    return item
+
+
 def _queued_item(
     row: Mapping[str, Any],
     *,
     placements: Mapping[str, Mapping[str, int]],
     now: datetime,
+    verdicts: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """The waiting duty one queued request owes the session that dispatched it.
 
@@ -701,7 +779,21 @@ def _queued_item(
     duty and is listed under its own kind by each caller before the ordering
     is read, which is what keeps a refusal from costing an ordering that
     cannot be resolved.
+
+    ``verdicts`` is the build's single reading of the admission verdict log. A
+    request the pass recorded as stalled is built as a stalled row instead of a
+    plain queued one, and only while the request still reads as queued: a
+    request that has moved on to another phase is owed its own duty, not one
+    left behind by a verdict written before the move.
     """
+    run_id = str(row.get("run_id") or "")
+    stall = (verdicts or {}).get(run_id)
+    if (
+        isinstance(stall, Mapping)
+        and str(stall.get("verdict") or "") == queue_admission.STALL_VERDICT
+        and str(row.get("phase") or "") == queue_admission.QUEUED_PHASE
+    ):
+        return _stalled_item(row, stall=stall, now=now)
     item = _live_item(row, kind=QUEUED_RUN_DUTY_KIND, now=now)
     placement = placements.get(str(row.get("run_id") or ""))
     if placement is not None:
@@ -1615,6 +1707,10 @@ def _obligations_view(
     # it, so every pointer is read once and no two duties can disagree about
     # which request goes first. A project with nothing queued orders nothing.
     placements = queue_admission.queued_placements(live_pointers, now=now)
+    # Read once for the whole view, for the same reason: a queued row is told
+    # from a stalled one by the verdict the admission pass last recorded for it,
+    # so one reading serves every row this build makes.
+    verdicts = admission_verdicts()
     for pointer in live_pointers:
         if pointer.get("phase") != queue_admission.HELD_PHASE:
             continue
@@ -1703,7 +1799,9 @@ def _obligations_view(
                     _live_item(row, kind=QUEUED_AWAITING_SESSION_DUTY_KIND, now=now)
                 )
                 continue
-            items.append(_queued_item(row, placements=placements, now=now))
+            items.append(
+                _queued_item(row, placements=placements, now=now, verdicts=verdicts)
+            )
             continue
         kind = ""
         if classification in REVIEW_CLASSIFICATION_KINDS:

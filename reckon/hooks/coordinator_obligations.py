@@ -232,13 +232,13 @@ def derive_within_budget(
 
 # The duty kinds listed but never holding a stop open. A queued review's work
 # is already owned by a reflex that retries, a queued run waits on the lane's
-# own admission pass, and an unreadable record is a reading of a file caught
-# mid-write rather than a duty the coordinator can act on, so blocking would ask
-# a coordinator to act on a wait it cannot shorten. Mirrors the derivation's own
-# vocabulary, which cannot be imported here on the paths that read a fresh
-# snapshot.
+# own admission pass, a stalled run is one that pass could launch and did not,
+# and an unreadable record is a reading of a file caught mid-write rather than a
+# duty the coordinator can act on, so blocking would ask a coordinator to act on
+# a wait it cannot shorten. Mirrors the derivation's own vocabulary, which
+# cannot be imported here on the paths that read a fresh snapshot.
 _NON_BLOCKING_KINDS = frozenset(
-    {"review-queued", "run-queued", "unreadable-review-record"}
+    {"review-queued", "run-queued", "run-stalled", "unreadable-review-record"}
 )
 
 # A session worktree's directory component is the repository name plus a short
