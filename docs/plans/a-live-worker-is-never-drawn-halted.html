@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="109">
+<meta name="plan-version" content="110">
 <meta name="plan-modified" content="2026-10-29">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;a-live-worker-is-never-drawn-halted#s13&quot;]}">
 </head>
@@ -570,7 +570,10 @@
     <div class="r-comment-body"><p>The producer calls the seat owner's decision at start-up (recovery_watch._watch_registration, before any seat is claimed) and on every lease renewal (runs.renew_watch_host_lease); a release disables the unit through an injectable runner, erases the record, calls the claim's own teardown, announces once naming both hosts and exits, while the fleet node's own host holds, and the renewal question reads pointers without publishing; head gate over the 12 files reaching these modules is 2 failed / 56 passed at dbda86022 against 4 failed / 48 passed at base dc3ace589, a strict subset, with the new test file's 6 tests passing.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261029T090105319854-review-of-an-admitted-launch-keeps-the-record-of-its-failure-96afa1ead2ec" data-who="reckon-build" data-when="2026-10-29T09:14:58.708Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261026T233827707346-an-admitted-launch-keeps-the-record-of-its-failure at head 96afa1ead2ec against base b2de715e8fd2 records status parsed, six dimensions scored 19/17/16/18/19/17 (total 106), added_failure_count 0 against the reviewed run&#x27;s own baseline_suite (3 failures) and after_suite (0), and three non-blocking findings: unrelated reflow churn in dispatch_launch.py, a stored-phase attempt number that disagrees with the per-attempt receipt after a relaunch, and _admitting_pass_identity having no assertion behind it.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261026T233827707346-an-admitted-launch-keeps-the-record-of-its-failure at head 96afa1ead2ec against base b2de715e8fd2 records status parsed, six dimensions scored 19/17/16/18/19/17 (total 106), added_failure_count 0 against the reviewed run's own baseline_suite (3 failures) and after_suite (0), and three non-blocking findings: unrelated reflow churn in dispatch_launch.py, a stored-phase attempt number that disagrees with the per-attempt receipt after a relaunch, and _admitting_pass_identity having no assertion behind it.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261026T233827707346-an-admitted-launch-keeps-the-record-of-its-failure" data-who="reckon-build" data-when="2026-10-29T08:58:39.097Z">
+    <div class="r-comment-body"><p>Launch failures now record the evidence a missing pointer leaves behind: the supervisor marks a missing pointer at its own read, writes the run directory listing, pointer presence/phase/mtime, whether the admitted request is still held, and the admitting pass (pid, time, checkout stamp) that rides the admission handover; the record&#x27;s detail names the pointer for a read_pointer CrewError and keeps naming the command and PATH for an exec failure; and immutable per-attempt receipts take the first free attempt number, so a relaunch leaves attempt-1-exit.json intact beside attempt-2-exit.json. Measure: head gate 3 passed; base arm 3 failed with the relaunch assertion differing in launched_at/exited_at.</p></div>
 </div>
 </section>
 </main>
