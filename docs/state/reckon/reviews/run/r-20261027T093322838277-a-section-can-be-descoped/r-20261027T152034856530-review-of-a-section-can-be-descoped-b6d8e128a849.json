@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T15:39:01.083Z",
+  "dispatched_at": "2026-10-27T15:24:44Z",
+  "findings": [
+    {
+      "file": "tests/test_edit_plan_section_writes.py",
+      "id": "f6a68de517c",
+      "line": "184",
+      "severity": "non-blocking",
+      "text": "non-blocking: the enum addition forced a one-literal edit outside the declared write paths; it is disclosed in the manifest's check_finding and needs a coordinator-recorded scope extension."
+    },
+    {
+      "file": "reckon/roadmap.py",
+      "id": "f2e0431f907",
+      "line": "683",
+      "severity": "non-blocking",
+      "text": "non-blocking: a section that declares a section-scoped wait on a descoped section still reads unsatisfied, and _lift_section_edges then puts that descoped node back on the graph, so the critical path can run through it despite the landed record stating it reads closed."
+    },
+    {
+      "file": "negative-control.log",
+      "id": "fd1cb248208",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header states revision 04ffdaf88 plus a working-tree change while its tree is the head worktree, so a reader cannot tell which revision the mutation ran at."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a descoped section declaration carrying a required reason, counted closed for close and the critical path but not done for impl; reckon/_plan_html.py:789 keeps descoped out of OPEN_SECTION_DECLARATIONS, reckon/_plan_html.py:944 skips it in the impl denominator, and the close guard reads that predicate at reckon/_store.py:3850.\nVERDICT done_when: the done_when names tests/test_a_section_can_be_descoped.py with five cases plus the schema, PLAN-FORMAT.md and skill statements; the manifest records the base arm's 5 failed and the head arm's 5 passed, and I read gate_base.log, suite_head.log, gate_head.log, gate_base_wider.log and negative-control.log for myself.\nVERDICT write_paths: read the source manifest's nine declared paths; every path in the diff is inside them except tests/test_edit_plan_section_writes.py:184, a single asserted-literal edit the manifest declares under check_finding.\nVERDICT manifest: read; it records five commits, the armed pair (5 failed at 04ffdaf88, 5 passed at b6d8e128a), the wider pair (8 failed/3538 passed on the base extraction, 2 failed/3543 passed at bcb8a8a0b with both head failures present on the base arm) and the declared negative control, but it records no ruff run and its negative-control.log header names the base revision beside a head-worktree tree.\nVERDICT diff: read commit by commit against 04ffdaf88; de780f087 carries the enum, the store guards, the record round-trip and the doc statements, bcb8a8a0b narrows the parsed record shape so an unstated reason emits no key, and 860b3a83d, b56a3cfb1 and b6d8e128a are evidence-fragment edits; nine files, 501 insertions, all in the declared files but one.\nCALL_SITES: reckon/_store.py:apply_ops, reckon/_store.py:_require_terminal_ready, reckon/_plan_html.py:open_sections, reckon/_plan_html.py:derive_impl_with_source, reckon/_plan_html.py:_read_section_records, reckon/roadmap.py:_plan_dependency_satisfied, reckon/roadmap.py:_section_satisfied\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:789 and reckon/_store.py:3850 close a descoped section for the landing guard, and reckon/_plan_html.py:944 leaves it out of the impl denominator in every derivation, though reckon/roadmap.py:683 still reads a section-scoped wait on one as unsatisfied.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate logs and the negative control at tests/test_a_section_can_be_descoped.py:148 record the measure, but no ruff log is recorded and the negative-control.log header names a revision its tree does not carry.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every diff path sits inside the declared write paths except the one-literal edit at tests/test_edit_plan_section_writes.py:184, which the manifest discloses rather than hides.\nSCORE durability: 15\nJUSTIFICATION durability: the five assertions at tests/test_a_section_can_be_descoped.py:115-218 each redden on a stated regression and the negative control proves the close case, but the whole-map refusal at reckon/_store.py:3032 and the reason-only-on-descoped validator at reckon/_schema.py:1022 carry no assertion.\nSCORE fit: 18\nJUSTIFICATION fit: the new constants and helpers in reckon/_plan_html.py:787 and reckon/_store.py:2697 are named by mechanism and follow the surrounding #: doc-comment and guard idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owners at reckon/_plan_html.py:1051, reckon/_plan_html.py:1607, reckon/_plan_html.py:1198 and reckon/_store.py:3010 rather than adding a parallel mechanism, and a search over reckon/_store.py, reckon/_schema.py and reckon/_plan_html.py found no existing declaration-attribute-with-required-reason owner to duplicate.\nFINDING tests/test_edit_plan_section_writes.py:184 non-blocking: the enum addition forced a one-literal edit outside the declared write paths; it is disclosed in the manifest's check_finding and needs a coordinator-recorded scope extension.\nFINDING reckon/roadmap.py:683 non-blocking: a section that declares a section-scoped wait on a descoped section still reads unsatisfied, and _lift_section_edges then puts that descoped node back on the graph, so the critical path can run through it despite the landed record stating it reads closed.\nFINDING negative-control.log:2 non-blocking: the header states revision 04ffdaf88 plus a working-tree change while its tree is the head worktree, so a reader cannot tell which revision the mutation ran at.",
+  "review_run_id": "r-20261027T152034856530-review-of-a-section-can-be-descoped-b6d8e128a849",
+  "reviewed_base_sha": "04ffdaf88fdeda59b0d1be12d7874fc619cfc060",
+  "reviewed_head_sha": "b6d8e128a8498f7da9b41320bceacf0590a2c26e",
+  "reviewed_run_id": "r-20261027T093322838277-a-section-can-be-descoped",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T07:21:44.002977+00:00",
+  "total": 100
+}
