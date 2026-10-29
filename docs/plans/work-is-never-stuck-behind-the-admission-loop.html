@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="44">
+<meta name="plan-version" content="45">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -197,6 +197,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261029T052144791047-review-of-the-fleet-supervisor-runs-current-code-f42cbba477a7" data-who="reckon-build" data-when="2026-10-29T05:31:36.701Z">
     <div class="r-comment-body"><p>review of r-20261029T035511535393-the-fleet-supervisor-runs-current-code at f42cbba477 (range 8e574c0865..f42cbba477): scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 19 (total 112); added_failure_count 0; one non-blocking finding, that the re-ask is paced by a fixed 60 s interval rather than the probe-retry backoff reckon/crew/follower_reload.py:174-195 already owns, so a persistently dirty checkout pays a full module-load trust test every minute</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261029T035511535393-the-fleet-supervisor-runs-current-code" data-who="reckon-build" data-when="2026-10-29T05:20:43Z">
+    <div class="r-comment-body"><p>the supervisor&#x27;s loop compares only the cheap code stamp each pass and asks reckon.served_code.moved_checkout() for the moved-and-trusted verdict only when that stamp has moved and the interval since the last verdict has passed; it re-executes in place through the existing reload path on a trusted verdict with declared services still running, and asks again after the next interval while the stamps still differ, so a stamp refused once is not held for ever; the gate&#x27;s five arms show 5 passed at head, 1 failed 4 passed under the negative control that restores the per-stamp exclusion, and 1 failed 4 passed at the repair base with the test copied in; no request verb or CLI option added and the manual reload stays</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261029T043310684633-review-of-a-slow-station-still-reads-as-alive-2af24e99d53d" data-who="reckon-build" data-when="2026-10-29T04:46:30.541Z">
     <div class="r-comment-body"><p>Reviewed r-20261029T040630579968-a-slow-station-still-reads-as-alive at head 2af24e99d53dab0fbeff80df0e6bae8e7f97a78f against base 3922d93453721f6886dd7e9722aa6aeb56ac8d54 — parse status parsed, total 112 over six independent dimensions (goal_fidelity 19, evidence 19, scope_discipline 19, durability 19, fit 18, reuse 18), added_failure_count 0 with no added failure ids, three non-blocking findings and no blocking one, so the node stands as landed.</p></div>
