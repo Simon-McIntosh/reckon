@@ -156,7 +156,7 @@ class StationStoreError(RuntimeError):
     """The station's store cannot be opened or used as a node-local store."""
 
 
-class StationLeaseLost(StationStoreError):
+class StationLeaseLostError(StationStoreError):
     """The station no longer holds its lease, so it must write nothing here."""
 
 
@@ -191,7 +191,7 @@ class StoreWriteGuard:
     def check(self) -> None:
         """Refuse a write once the loss is marked."""
         if self._lost.is_set():
-            raise StationLeaseLost(
+            raise StationLeaseLostError(
                 self._reason
                 or "the station no longer holds its lease; refusing to write"
             )

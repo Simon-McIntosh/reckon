@@ -619,16 +619,14 @@ def run_station(
                 beat_seconds=beat_seconds,
             )
             beat.start()
-            renewal = LeaseBeat(
-                lease, guard=store.guard, renew_seconds=renew_seconds
-            )
+            renewal = LeaseBeat(lease, guard=store.guard, renew_seconds=renew_seconds)
             renewal.start()
             while not stopping:
                 if renewal.lost():
                     break
                 try:
                     station.tick()
-                except station_store.StationLeaseLost as lost:
+                except station_store.StationLeaseLostError as lost:
                     raise StationHeldError(
                         f"station lost its lease at {lease.path}: {lost}"
                     ) from None

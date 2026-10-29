@@ -24,7 +24,7 @@ import json
 import os
 import threading
 import time
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -105,7 +105,9 @@ def _lease(runtime: Path, clock: _FastClock, pid: int | None = None) -> HostLeas
     )
 
 
-def _station(store: station_store.StationStore, home: Path, tmp_path: Path) -> station.Station:
+def _station(
+    store: station_store.StationStore, home: Path, tmp_path: Path
+) -> station.Station:
     return station.Station(
         store,
         home=home,
@@ -177,7 +179,7 @@ def _record_writes(
         def wrapper(*args, _original=original, _name=name, **kwargs):
             try:
                 result = _original(*args, **kwargs)
-            except station_store.StationLeaseLost:
+            except station_store.StationLeaseLostError:
                 refused.append((_name, clock()))
                 raise
             completed.append((_name, clock()))
@@ -330,7 +332,9 @@ def test_a_replaced_lease_refuses_every_write_and_stops_the_loop(
         hold.release_and_join(thread)
         store.close()
 
-    assert not thread.is_alive(), "the station's loop kept running after losing its lease"
+    assert not thread.is_alive(), (
+        "the station's loop kept running after losing its lease"
+    )
     assert errors and isinstance(errors[0], station.StationHeldError), errors
     late = [(name, at) for name, at in completed if at > replaced_at]
     assert late == [], f"store writes completed after the lease was replaced: {late}"
