@@ -21,7 +21,7 @@ import os
 import subprocess
 import sys
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextlib import contextmanager, nullcontext
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -1519,7 +1519,9 @@ def _validated_batch_waits(
             elif not ref.startswith((GATE_REF_PREFIX, "readiness:")):
                 section_edges(child)
         if read_own_verdict and node.plan and node.section:
-            rows, _ = _readiness_rows(project, current_docs, cache)
+            rows, _ = _readiness_rows(
+                project, current_docs, cache, plan=node.plan, refs=refs
+            )
             verdicts = (rows.get(node.plan) or {}).get("sections", {})
             own = next(
                 (
@@ -1659,41 +1661,70 @@ def _plan_tree_fingerprint(docs_dir: str | Path | None) -> tuple[int, int, str]:
 
 
 def _readiness_rows(
-    project: str, docs_dir: str | Path | None, cache: dict[str, Any]
+    project: str,
+    docs_dir: str | Path | None,
+    cache: dict[str, Any],
+    *,
+    plan: str = "",
+    refs: Iterable[str] = (),
 ) -> tuple[Mapping[str, Mapping[str, Any]], Mapping[str, Mapping[str, Any]]]:
-    """Read one project's roadmap section verdicts and inventory per pass.
+    """Read the section verdicts and inventory a request's own plan needs.
+
+    A dispatch judges its own section, so the rows it is given come from its
+    plan and the plans its declared waits name, never from the whole project.
+    ``refs`` names the further plans the request's waits point at; a caller
+    naming no plan keeps the whole-project read, which is what a project-level
+    question needs.
 
     ``cache`` is the pass's own, so a pass that launches several requests in
-    one project derives that project's roadmap once. The entry is keyed by the
-    project, its docs directory and :func:`_plan_tree_fingerprint`, so a plan
-    edited or a landing merged while the pass runs misses it.
+    one project reads a plan once. The entry is keyed by the project, its docs
+    directory, the plan and refs asked about, and
+    :func:`_plan_tree_fingerprint`, so a plan edited or a landing merged while
+    the pass runs misses it.
     """
     fingerprint = _plan_tree_fingerprint(docs_dir)
-    key = "|".join((project, str(docs_dir or ""), *(str(part) for part in fingerprint)))
+    key = "|".join(
+        (
+            project,
+            str(docs_dir or ""),
+            plan,
+            ",".join(sorted(str(ref) for ref in refs)),
+            *(str(part) for part in fingerprint),
+        )
+    )
     cached = cache.get(key)
     if cached is not None:
         return cached
     rows: dict[str, Mapping[str, Any] | Any] = {}
     inventory: dict[str, Mapping[str, Any] | Any] = {}
     try:
-        from reckon import _plan_html as plan_html_reader
-        from reckon.crew.plan_review import project_section_readiness
-        from reckon.mcp_discovery import _discover_project, _inventory_row
+        from reckon.crew.plan_review import (
+            project_section_readiness,
+            section_readiness_rows,
+        )
 
-        if not project:
+        if not project or docs_dir is None:
             cache[key] = ({}, {})
             return cache[key]
-        discovered = _discover_project(project, None)
-        items = [_inventory_row(item) for item in discovered.get("inventory", [])]
-        for item in items:
-            if item.get("type") != "plan" or not item.get("slug"):
-                continue
-            html = _plan_html(Path(docs_dir).parent, str(item["slug"]))
-            item["section_declarations"] = plan_html_reader.read_state(html).get(
-                "section_declarations", {}
+        if plan:
+            rows, inventory = section_readiness_rows(
+                project, Path(docs_dir), plan, refs=refs
             )
-        inventory = {str(item.get("slug") or ""): item for item in items}
-        rows = project_section_readiness(project, Path(docs_dir))
+        else:
+            from reckon import _plan_html as plan_html_reader
+            from reckon.mcp_discovery import _discover_project, _inventory_row
+
+            discovered = _discover_project(project, None)
+            items = [_inventory_row(item) for item in discovered.get("inventory", [])]
+            for item in items:
+                if item.get("type") != "plan" or not item.get("slug"):
+                    continue
+                html = _plan_html(Path(docs_dir).parent, str(item["slug"]))
+                item["section_declarations"] = plan_html_reader.read_state(html).get(
+                    "section_declarations", {}
+                )
+            inventory = {str(item.get("slug") or ""): item for item in items}
+            rows = project_section_readiness(project, Path(docs_dir))
     except Exception:  # noqa: BLE001 - an unbuildable roadmap holds every wait
         rows, inventory = {}, {}
     cache[key] = (rows, inventory)
@@ -1939,7 +1970,9 @@ def _section_readiness_state(
     )
     if target_docs is None:
         return PENDING
-    rows, inventory = _readiness_rows(target_project, target_docs, cache)
+    rows, inventory = _readiness_rows(
+        target_project, target_docs, cache, plan=parsed.slug
+    )
     item = inventory.get(parsed.slug)
     if item is None:
         return PENDING
@@ -2081,7 +2114,9 @@ def dispatch_waits(
         ]
         return refs, wait_projects, unmet
     cache = readiness_cache if readiness_cache is not None else {}
-    rows, inventory = _readiness_rows(owner_project, docs_dir, cache)
+    rows, inventory = _readiness_rows(
+        owner_project, docs_dir, cache, plan=node.plan, refs=refs
+    )
     dead = _dead_sections(live)
     unmet = [
         ref
@@ -2139,7 +2174,9 @@ def _ref_state(
         )
         if target_docs is None:
             return PENDING
-        rows, inventory = _readiness_rows(target_project, target_docs, cache)
+        rows, inventory = _readiness_rows(
+            target_project, target_docs, cache, plan=parsed.slug
+        )
     slug, section = parsed.slug, normalize_section(parsed.stage or "")
     if section and (slug, section) in dead_sections:
         return ABANDONED
@@ -2228,6 +2265,10 @@ def resolve_waits(
         str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir),
         docs_dir,
         cache,
+        plan=str(
+            dict(pointer.get("node") or {}).get("plan") or pointer.get("plan") or ""
+        ),
+        refs=refs,
     )
     issues: list[str] = []
     owner_project = str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir)
@@ -3049,7 +3090,9 @@ def admit_once(
     local_gated = gate.get("state") in _LANE_GATE_WAITING_STATES
     if local_gated:
         _record_gated_verdicts(result, gate=gate, lane=lane, config_for=config_for)
-    with _admit_lock() if lock else nullcontext():
+    from reckon.crew.plan_review import review_read_pass
+
+    with _admit_lock() if lock else nullcontext(), review_read_pass():
         result["requeued"] = _requeue_admitted_failures(
             runs.list_live(phase=LAUNCH_FAILED_PHASE)
         )

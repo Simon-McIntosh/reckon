@@ -56,6 +56,7 @@ distinct plans per finding type so that recurrence can reach the lead.
 
 from __future__ import annotations
 
+import copy
 import difflib
 import hashlib
 import json
@@ -1303,6 +1304,55 @@ def _plan_review_identity(record: Mapping[str, Any]) -> str:
     )
 
 
+#: The stored reviews each project's store has yielded during one pass, keyed
+#: by the project, its store root and a cheap stamp of the store's two trees.
+#: Admission asks the review gate once per queued request, and every one of
+#: those questions used to re-read the same review files; the pass holds the
+#: answer while the store's stamp is unchanged.
+_REVIEW_READ_PASS: ContextVar[
+    dict[tuple[str, str, int, int], list[dict[str, Any]]] | None
+] = ContextVar("plan_review_read_pass", default=None)
+
+
+@contextmanager
+def review_read_pass() -> Iterator[None]:
+    """Read each project's stored reviews once for the length of one pass.
+
+    Entered by an admission pass, which judges the review gate for every request
+    it considers. A caller outside such a pass reads the store itself, so a
+    direct dispatch always sees the store as it is now.
+    """
+
+    token = _REVIEW_READ_PASS.set({})
+    try:
+        yield
+    finally:
+        _REVIEW_READ_PASS.reset(token)
+
+
+def _review_store_stamp(root: Path, project: str) -> tuple[int, int]:
+    """A cheap identity for one project's review store.
+
+    The staging directory's and the committed plan tree's own modification
+    times: adding or removing a record moves one of them, so a pass that
+    observes a store change misses its cached read rather than answering from
+    it. Reading them costs two stats rather than one per stored record, which is
+    the cost the pass cache exists to avoid.
+    """
+
+    stamp = [0, 0]
+    directories = [root / project]
+    committed = _review_store.committed_review_root(project)
+    if committed is not None:
+        directories.append(committed / _review_store.COMMITTED_PLAN_DIRNAME)
+    for index, directory in enumerate(directories):
+        try:
+            stamp[index] = directory.stat().st_mtime_ns
+        except OSError:
+            stamp[index] = 0
+    return (stamp[0], stamp[1])
+
+
 def list_plan_reviews(
     project: str | None = None,
     *,
@@ -1333,6 +1383,15 @@ def list_plan_reviews(
     from reckon import flight
 
     root = _review_store.review_store_root(base_dir)
+    cache = _REVIEW_READ_PASS.get()
+    cache_key: tuple[str, str, int, int] | None = None
+    if cache is not None and project is not None:
+        cache_key = (project, str(base_dir or ""), *_review_store_stamp(root, project))
+        cached = cache.get(cache_key)
+        if cached is not None:
+            # A caller sets keys on the records it holds, so the pass hands out
+            # copies: one request's annotation is not the next request's answer.
+            return [copy.deepcopy(record) for record in cached]
     if project is not None:
         directories = [root / project]
     else:
@@ -1377,7 +1436,9 @@ def list_plan_reviews(
     records.sort(
         key=lambda item: (str(item.get("timestamp") or ""), item["review_path"])
     )
-    return records
+    if cache is not None and cache_key is not None:
+        cache[cache_key] = records
+    return [copy.deepcopy(record) for record in records]
 
 
 def is_design_review(record: Mapping[str, Any]) -> bool:
@@ -4990,31 +5051,143 @@ def project_section_readiness(
     """Build the roadmap once and expose every implementable section verdict."""
     try:
         from reckon.mcp_discovery import _discover_project, _inventory_row
-        from reckon.roadmap import build_roadmap
-
-        discovered = _discover_project(project, None)
-        inventory = [_inventory_row(item) for item in discovered.get("inventory", [])]
-        roadmap = build_roadmap(
-            project,
-            inventory,
-            list(discovered.get("sprints", [])),
-            active_sprint_id=discovered.get("active_sprint_id"),
-            docs_dir=docs_dir,
+        from reckon.roadmap import (
+            build_roadmap,
+            roadmap_build_scope,
+            section_verdicts_by_plan,
         )
+
+        with roadmap_build_scope() as scope:
+            discovered = _discover_project(project, None)
+            roadmap = scope.built
+            if roadmap is None:
+                inventory = [
+                    _inventory_row(item) for item in discovered.get("inventory", [])
+                ]
+                roadmap = build_roadmap(
+                    project,
+                    inventory,
+                    list(discovered.get("sprints", [])),
+                    active_sprint_id=discovered.get("active_sprint_id"),
+                    docs_dir=docs_dir,
+                )
     except Exception:  # noqa: BLE001 - an unbuildable roadmap yields no verdict
         return {}
-    return {
-        str(row.get("slug")): {
-            "readiness": str(row.get("readiness") or "unknown"),
-            "sections": {
-                section: row["section_verdicts"][section]
-                for section in row.get("implementable_sections") or ()
-                if section in row.get("section_verdicts", {})
-            },
-        }
-        for row in roadmap.get("pending_work") or ()
-        if row.get("slug")
+    return section_verdicts_by_plan(roadmap)
+
+
+def _plan_inventory_item(
+    project: str, docs_dir: Path, slug: str
+) -> dict[str, Any] | None:
+    """One plan's inventory row, read from its own document.
+
+    The row carries the fields the roadmap judges a plan's readiness by — its
+    status and relations, its gates, decisions, followups and section
+    declarations — assembled the way the project discovery assembles them, so a
+    bounded read gives the roadmap the same row a whole-project read would. A
+    plan file that is absent yields nothing, and the roadmap then reports the
+    plan the way it reports any plan it does not find.
+    """
+    from reckon import _plan_html
+    from reckon.serve import _read_readiness_state, edge_row
+
+    path = docs_dir / "plans" / f"{slug}.html"
+    if not path.is_file():
+        return None
+    rec = _plan_html.parse_meta(path)
+    gates, decisions, followups, declarations = _read_readiness_state(path)
+    item: dict[str, Any] = {
+        "slug": slug,
+        "project": project,
+        "type": rec.get("type", "plan"),
+        "title": rec.get("title") or slug,
+        "status": rec.get("status", ""),
+        "archived": rec.get("archived") or "",
+        "summary": rec.get("summary", ""),
+        "owner": rec.get("owner", ""),
+        "modified": rec.get("modified", ""),
+        "version": int(rec.get("version") or 0),
+        "sprint": rec.get("sprint") or None,
+        "roi": rec.get("roi", "mid"),
+        "effort": rec.get("effort", "M"),
+        "effort_hours": rec.get("effort_hours"),
+        "wall_clock_hours": rec.get("wall_clock_hours"),
+        "effort_calibrated": rec.get("effort_calibrated"),
+        "capability": rec.get("capability"),
+        "tier": rec.get("tier"),
+        "graph_handle": rec.get("graph_handle") or None,
+        "impl": rec.get("impl", 0),
+        "dec_open": rec.get("dec_open", 0),
+        "decisions": decisions,
+        "followups": followups,
+        "blockers": list(rec.get("blockers") or []),
+        "gates": gates,
+        "section_declarations": declarations,
+        **edge_row(rec),
     }
+    if rec.get("north_star"):
+        item["north_star"] = rec["north_star"]
+    return item
+
+
+def section_readiness_rows(
+    project: str,
+    docs_dir: Path,
+    plan: str,
+    *,
+    refs: Iterable[str] = (),
+) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    """One plan's readiness rows, read from its document and its waits' documents.
+
+    A dispatch checks the readiness of its own section, and that verdict depends
+    on the plan's own holds and on whether the sections it waits on have landed.
+    Both live in plan documents, so this reads ``plan`` and the plans its
+    declared waits name — the section waits the plan carries and the whole-plan
+    ``depends_on`` edges — plus any plan an extra wait ref names, and derives
+    their verdicts through the roadmap's own verdict function. Nothing else in
+    the project is read.
+
+    The returned inventory holds the plans actually read, keyed by slug, so a
+    caller asked about a section on a plan outside this set can tell the
+    difference between "not ready" and "not read".
+    """
+    from reckon import _plan_html
+    from reckon._schema import parse_plan_ref, section_depends_on
+    from reckon.roadmap import section_readiness_rows as _rows_for
+
+    slugs: list[str] = [plan]
+
+    def add(slug: str) -> None:
+        if slug and slug not in slugs:
+            slugs.append(slug)
+
+    path = docs_dir / "plans" / f"{plan}.html"
+    if path.is_file():
+        state = _plan_html.read_state_file(path)
+        for ref in state.get("depends_on") or ():
+            parsed = parse_plan_ref(str(ref))
+            if parsed is not None:
+                add(parsed.slug)
+        declared = section_depends_on(
+            path.read_text(encoding="utf-8", errors="replace")
+        )
+        for wait_refs in (declared or {}).values():
+            for ref in wait_refs if isinstance(wait_refs, list) else ():
+                parsed = parse_plan_ref(str(ref))
+                if parsed is not None:
+                    add(parsed.slug)
+    for ref in refs:
+        parsed = parse_plan_ref(str(ref))
+        if parsed is not None:
+            add(parsed.slug)
+
+    inventory = [
+        item
+        for slug in slugs
+        if (item := _plan_inventory_item(project, docs_dir, slug)) is not None
+    ]
+    rows = _rows_for(project, inventory, docs_dir=docs_dir)
+    return rows, {str(item["slug"]): item for item in inventory}
 
 
 def _readiness_by_slug(project: str, docs_dir: Path) -> dict[str, str]:
