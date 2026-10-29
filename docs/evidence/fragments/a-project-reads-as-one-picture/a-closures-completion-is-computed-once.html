@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-title" content="A closure's completion is computed once">
+  <meta name="plan-summary" content="The closure's shipped and total counts are computed by one helper in graph_target.py, and both the graph-target payload and the endpoint view read it, so neither surface keeps a count of its own.">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s14">
+  <meta name="plan-recorded-at" content="2026-10-29">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-tags" content="roadmap,graph-target,dependency-endpoints,one-derivation">
+  <title>A closure's completion is computed once — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-closures-completion-is-computed-once" data-reckon="landed" data-when="2026-10-29">
+  <h2 id="a-closures-completion-is-computed-once-title">A closure's completion is computed once</h2>
+  <p id="a-closures-completion-is-computed-once-landing">landing: <code>_dependency_endpoints</code> no longer counts its own shipped and total members. <code>reckon/graph_target.py</code> gains one <code>_closure_completion(plans, member_keys)</code> returning the shipped count and the member total over one closure, and both <code>resolve_graph_target</code> and <code>_dependency_endpoints</code> read it; the endpoint's <code>shipped_fraction</code> and the target's <code>completion</code> are now the same call's figure. Delivered with <code>tests/test_a_closures_completion_is_computed_once.py</code>, two cases, which reads <code>2 passed</code> at the head and <code>2 failed, 17 passed</code> at the base.</p>
+  <p id="a-closures-completion-is-computed-once-scope">The section names <code>reckon/roadmap.py</code>, but the graph-target family moved to <code>reckon/graph_target.py</code> in <code>4a54f633b0</code> (<em>move the graph-target family into its own module</em>) before this node ran; <code>roadmap.py</code> now only imports <code>_dependency_endpoints</code> and re-exports the resolvers. Both counts live in the new module, so deleting the duplicate is an edit there and <code>roadmap.py</code> is unchanged.</p>
+  <p id="a-closures-completion-is-computed-once-measure">The control is structural, because the behaviour is unchanged by design. Each new case patches <code>reckon.graph_target._closure_completion</code> with a sentinel returning <code>(7, 9)</code> and asserts the surface reports <code>7/9</code> — <code>resolve_graph_target</code>'s <code>completion</code> and <code>shipped_of_total</code>, and the endpoint row's <code>completion</code> and <code>shipped_fraction</code> — and that the helper was called with the closure's three members. On a scratch extraction of the base commit <code>00540b20c4</code> with this node's test file copied in, the gate reads <code>tests/test_graph_target.py</code> and <code>tests/test_roadmap_endpoints.py</code> green and both new cases red — <code>2 failed, 17 passed</code>, <code>EXIT=1</code> — so the base endpoint view keeps its own count and ignores the patch. At the head the same command over the same three files reads <code>19 passed</code>, <code>EXIT=0</code>, so neither pre-existing file adds a failure against its base arm.</p>
+  <p id="a-closures-completion-is-computed-once-control">The declared mutation — restore the endpoint view's own count, replacing the <code>_closure_completion</code> call in <code>_dependency_endpoints</code> with the inline sum over <code>member_slugs</code> and <code>len(member_slugs)</code> — reads <code>1 failed, 1 passed</code>, <code>EXIT=1</code>: <code>test_endpoint_view_reports_the_shared_count</code> fails on <code>assert shared_count, "the endpoint view never consulted the shared count</code> while the graph-target case still passes, so the two are independent readers of one helper rather than one of them echoing the other. The log is <code>negative-control.log</code>. The mutated module was restored from a saved copy and the restored tree re-ran green before the head arm ran.</p>
+  <p id="a-closures-completion-is-computed-once-checks"><code>ruff check</code> and <code>ruff format --check</code> report no findings on either staged path; the two findings from the first run (a missing final newline in the new test) were fixed before staging. The gate ran in the foreground on the fleet allocation.</p>
+</article>
+</body>
+</html>

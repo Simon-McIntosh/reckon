@@ -11,7 +11,7 @@ function therefore reads the roadmap names it needs when it needs them.
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 from reckon._plan_html import derive_fleet_impl_imputing_effort
@@ -21,6 +21,24 @@ from reckon.lifecycle import COMPLETED_STATUSES
 
 def _qualified_plan(project: str, slug: str) -> str:
     return f"{project}:{slug}"
+
+
+def _closure_completion(
+    plans: Mapping[Any, Mapping[str, Any]],
+    member_keys: Iterable[Any],
+) -> tuple[int, int]:
+    """The shipped and total plan counts over one closure's members.
+
+    One closure, one count: the graph-target payload and the endpoint view both
+    report these figures, so both read them here rather than each keeping a
+    count of its own that a later change would have to reach twice.
+    """
+
+    from reckon.roadmap import _status
+
+    keys = list(member_keys)
+    shipped = sum(_status(plans[key]) in COMPLETED_STATUSES for key in keys)
+    return shipped, len(keys)
 
 
 def _claims_graph_handle(
@@ -196,7 +214,7 @@ def resolve_graph_target(
     critical_keys = longest_path(endpoint)
     member_keys = sorted(graph)
     member_set = set(member_keys)
-    shipped = sum(_status(plans[key]) in COMPLETED_STATUSES for key in member_keys)
+    shipped, total = _closure_completion(plans, member_keys)
 
     schedule_rows: dict[tuple[str, str], dict[str, Any]] = {}
     for project in sorted({project for project, _slug in member_keys}):
@@ -262,7 +280,6 @@ def resolve_graph_target(
         if schedule_rows.get(key, {}).get("schedule_ready") is False
     )
     critical_refs = [_qualified_plan(*key) for key in critical_keys]
-    total = len(member_keys)
     depth = len(critical_keys)
     return {
         "target": f"graph:{target_handle}",
@@ -398,16 +415,13 @@ def _dependency_endpoints(
         for member in member_rows:
             repository_counts[member["project"]] += 1
 
-        shipped = sum(
-            _status(plans[slug]) in COMPLETED_STATUSES for slug in member_slugs
-        )
+        shipped, total = _closure_completion(plans, member_slugs)
         held = sum(_status(plans[slug]) == "blocked" for slug in member_slugs)
         open_decision_count = sum(
             row["status"] == "open"
             for slug in member_slugs
             for row in _decision_rows(plans[slug])
         )
-        total = len(member_slugs)
         depth = structural_depth(endpoint_slug)
         handle = str(plans[endpoint_slug].get("graph_handle") or "").strip() or None
         endpoint_project = str(plans[endpoint_slug].get("project") or project)
