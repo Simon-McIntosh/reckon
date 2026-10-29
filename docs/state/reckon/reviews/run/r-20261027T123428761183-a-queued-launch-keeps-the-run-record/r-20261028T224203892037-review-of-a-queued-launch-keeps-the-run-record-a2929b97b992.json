@@ -1,0 +1,77 @@
+{
+  "added_failure_basis": "derived from the reviewed run's own gate logs: after_suite (31e53ae308, head-gate.log) completed with failure_count 0 and no failure ids, baseline_suite (157d8a553e, base-gate.log) completed false at EXIT=4 with no test ids because the new test file does not exist at base, so no failure id exists at head that the baseline lacks.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3410 (admit_once calls _stamp_admission on every launched request)",
+    "reckon/crew/queue_admission.py:3062 (admit_once calls advance_waiting_requests, which reaches _request_state)",
+    "reckon/crew/dispatch.py:274 (dispatch calls resolve_waits, which reaches _request_state)",
+    "reckon/crew_run_commands.py:4015 (the crew admit verb calls admit_until_stopped)"
+  ],
+  "completed_at": "2026-10-28T22:52:50.962Z",
+  "dispatched_at": "2026-10-28T22:45:30Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_launch_keeps_the_run_record.py",
+      "id": "f7a85369310",
+      "line": 326,
+      "severity": "non-blocking",
+      "text": "test_a_failed_admitted_launch_keeps_the_waits_it_recorded calls _record_queued_failure and _restore_queued directly, neither of which this diff changes, and never drives admit_once with a failing launcher, so a regression in the admission pass's own snapshot (for example taking it after the queued-life strip) leaves this arm green while the behaviour the done_when names breaks."
+    },
+    {
+      "file": "tests/test_a_queued_launch_keeps_the_run_record.py",
+      "id": "f914c48c911",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the module docstring promises that a stripped or failed launch leaves nothing binding on the reviewed run's review-records paths, and no test in the file touches a review-records path or a claim, so that clause of the done_when is asserted nowhere in the node's change."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "id": "fc16a4e7780",
+      "line": 3436,
+      "severity": "non-blocking",
+      "text": "QUEUED_LIFE_KEYS re-enumerates the six fields reckon/crew/promotion.py:1807 DISCARD_ADMISSION_KEYS already lists as the queued-life vocabulary, so the set of fields describing a queued request's life has two owners that can drift apart without either test failing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T123428761183-a-queued-launch-keeps-the-run-record/manifest.md",
+      "id": "f43e27f18b9",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "baseline_suite records completed false at EXIT=4 because the new test file collects nothing at the base revision, and the importer arm was run at head only, so the done_when's 'add no failures against the base revision' is recorded as unmeasurable for the gate and left unmeasured for the importer population."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_queued_launch_keeps_the_run_record.py:216 reddens when the queued-life pop is removed and :243 compares the launched key set against a real direct dispatch, and negative-control.log shows three arms failing under the declared mutation.",
+    "evidence": "head-gate.log records 7 passed at EXIT=0 and negative-control.log records a real 3-failed run at EXIT=1, but base-gate.log is a collection error at EXIT=4 and importer-arm.log runs at head only, so no added-failure delta against the base revision exists for the importer files the done_when names.",
+    "fit": "reckon/crew/queue_admission.py:3436-3448 declares the new constants in the module's own ``#:``-documented form beside the existing module constants, and no added name carries a plan label, ticket id or version.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:3494 pops QUEUED_LIFE_KEYS from the launched pointer and 3489-3493 record them under admission_history, so a live run no longer reads a refused request's failure as its own.",
+    "reuse": "reckon/crew/queue_admission.py:3436 re-enumerates the six queued-life fields reckon/crew/promotion.py:1807 DISCARD_ADMISSION_KEYS already lists; a search of reckon/crew for an existing admission-history mechanism found only follow_checkpoint's follower replay history, which is a different store.",
+    "scope_discipline": "git diff --stat 157d8a553e a2929b97b9 names three files, every one of them inside the four write paths the source manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that an admitted launch publishes the launched run's full record; reckon/crew/queue_admission.py:3471 _stamp_admission now moves the request's queued-life fields under admission_history and pops them from the launched pointer, which is the part of that goal the tree did not already satisfy.\nVERDICT done_when: the done_when names tests/test_a_queued_launch_keeps_the_run_record.py; head-gate.log records 7 passed EXIT=0 at 31e53ae3088df, but two clauses of the measure are unmeasured: the review-records claim has no test, and the importer arm ran at head only.\nVERDICT write_paths: read the source manifest's four declared paths; the diff touches reckon/crew/queue_admission.py, tests/test_a_queued_launch_keeps_the_run_record.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queued-launch-keeps-the-run-record.html, all inside them, and the figures directory is unused.\nVERDICT manifest: read; it states 7 passed for the gate and names head-gate.log, base-gate.log, negative-control.log and importer-arm.log, and it records the base arm honestly as a collection error (EXIT=4, completed false) rather than as a pass.\nVERDICT diff: read commit by commit from 157d8a553e to a2929b97b9: 31e53ae308 is the source and test change, b64b12b18f and a2929b97b9 add and correct the evidence fragment; 490 insertions, 1 deletion, three files, all declared.\nCALL_SITES: reckon/crew/queue_admission.py:3410, reckon/crew/queue_admission.py:3062, reckon/crew/dispatch.py:274, reckon/crew_run_commands.py:4015\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:3494 pops QUEUED_LIFE_KEYS from the launched pointer and 3489-3493 record them under admission_history, so a live run no longer reads a refused request's failure as its own.\nSCORE evidence: 11\nJUSTIFICATION evidence: head-gate.log records 7 passed at EXIT=0 and negative-control.log records a real 3-failed run at EXIT=1, but base-gate.log is a collection error at EXIT=4 and importer-arm.log runs at head only, so no added-failure delta against the base revision exists for the importer files the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 157d8a553e a2929b97b9 names three files, every one of them inside the four write paths the source manifest declares.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_queued_launch_keeps_the_run_record.py:216 reddens when the queued-life pop is removed and :243 compares the launched key set against a real direct dispatch, and negative-control.log shows three arms failing under the declared mutation.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_admission.py:3436-3448 declares the new constants in the module's own #:-documented form beside the existing module constants, and no added name carries a plan label, ticket id or version.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:3436 re-enumerates the six queued-life fields reckon/crew/promotion.py:1807 DISCARD_ADMISSION_KEYS already lists; a search of reckon/crew for an existing admission-history mechanism found only follow_checkpoint's follower replay history, which is a different store.\nFINDING tests/test_a_queued_launch_keeps_the_run_record.py:326 non-blocking: test_a_failed_admitted_launch_keeps_the_waits_it_recorded calls _record_queued_failure and _restore_queued directly, neither of which this diff changes, and never drives admit_once with a failing launcher, so a regression in the admission pass's own snapshot (for example taking it after the queued-life strip) leaves this arm green while the behaviour the done_when names breaks.\nFINDING tests/test_a_queued_launch_keeps_the_run_record.py:1 non-blocking: the module docstring promises that a stripped or failed launch leaves nothing binding on the reviewed run's review-records paths, and no test in the file touches a review-records path or a claim, so that clause of the done_when is asserted nowhere in the node's change.\nFINDING reckon/crew/queue_admission.py:3436 non-blocking: QUEUED_LIFE_KEYS re-enumerates the six fields reckon/crew/promotion.py:1807 DISCARD_ADMISSION_KEYS already lists as the queued-life vocabulary, so the set of fields describing a queued request's life has two owners that can drift apart without either test failing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T123428761183-a-queued-launch-keeps-the-run-record/manifest.md:15 non-blocking: baseline_suite records completed false at EXIT=4 because the new test file collects nothing at the base revision, and the importer arm was run at head only, so the done_when's comparison against the base revision is recorded as unmeasurable for the gate and left unmeasured for the importer population.\n",
+  "review_run_id": "r-20261028T224203892037-review-of-a-queued-launch-keeps-the-run-record-a2929b97b992",
+  "reviewed_base_sha": "157d8a553e8158af32c67b8b20d28b4e6206acdb",
+  "reviewed_head_sha": "a2929b97b99294354cb24474dc44ceb22cd7d5d7",
+  "reviewed_run_id": "r-20261027T123428761183-a-queued-launch-keeps-the-run-record",
+  "rubric": "text",
+  "scores": {
+    "durability": 16,
+    "evidence": 11,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T23:12:07.098667+00:00",
+  "total": 94,
+  "verdicts": {
+    "diff": "read commit by commit from 157d8a553e to a2929b97b9: 31e53ae308 is the source and test change, b64b12b18f and a2929b97b9 add and correct the evidence fragment; 490 insertions, 1 deletion, three files, all declared.",
+    "done_when": "the done_when names tests/test_a_queued_launch_keeps_the_run_record.py; head-gate.log records 7 passed EXIT=0 at 31e53ae3088df, but two clauses of the measure are unmeasured: the review-records claim has no test, and the importer arm ran at head only.",
+    "goal": "the node's goal is that an admitted launch publishes the launched run's full record; reckon/crew/queue_admission.py:3471 _stamp_admission now moves the request's queued-life fields under admission_history and pops them from the launched pointer, which is the part of that goal the tree did not already satisfy.",
+    "manifest": "read; it states 7 passed for the gate and names head-gate.log, base-gate.log, negative-control.log and importer-arm.log, and it records the base arm honestly as a collection error (EXIT=4, completed false) rather than as a pass.",
+    "write_paths": "read the source manifest's four declared paths; the diff touches reckon/crew/queue_admission.py, tests/test_a_queued_launch_keeps_the_run_record.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queued-launch-keeps-the-run-record.html, all inside them, and the figures directory is unused."
+  }
+}

@@ -192,7 +192,7 @@ def test_each_pass_prints_its_verdicts_as_one_json_line(
     The first pass has no room, so both requests are held for their session's
     allowance. The second has room for both: the admitted request is launched
     through the shared dispatch path, and the one claiming a path a live run
-    already holds is refused on scope, naming that holder. Every pass prints
+    already holds is held on that claim, naming the holder. Every pass prints
     one line naming both requests, and each line is the record the verdict log
     holds for that same pass.
     """
@@ -234,13 +234,14 @@ def test_each_pass_prints_its_verdicts_as_one_json_line(
 
     decided = {row["run_id"]: row for row in printed[1]["pointers"]}
     assert decided[ADMITTED_ID]["verdict"] == "launched"
-    assert decided[REFUSED_ID]["verdict"] == "refused"
-    # The refusal names the holder and the contested path, which is the detail
-    # a coordinator needs to clear it.
-    refusal = decided[REFUSED_ID]["failure"]
-    assert refusal.startswith("ScopeConflict: "), refusal
-    assert HOLDER_ID in refusal, refusal
-    assert REFUSED_PATH in refusal, refusal
+    assert decided[REFUSED_ID]["verdict"] == "held-on-claim"
+    # The hold names the holder and the contested path, which is the detail a
+    # coordinator needs to clear it. Nothing was attempted, so no failure is
+    # recorded for it.
+    hold = decided[REFUSED_ID]["detail"]
+    assert HOLDER_ID in hold, hold
+    assert REFUSED_PATH in hold, hold
+    assert "failure" not in decided[REFUSED_ID], decided[REFUSED_ID]
 
 
 def test_the_once_flag_prints_one_pass_and_no_loop_line(

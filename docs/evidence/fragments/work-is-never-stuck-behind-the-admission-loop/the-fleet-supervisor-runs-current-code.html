@@ -1,0 +1,74 @@
+<section id="the-fleet-supervisor-runs-current-code-landing">
+  <h2>The fleet supervisor reloads itself when its checkout moves</h2>
+
+  <p><strong>What changed.</strong> The supervisor's request loop in
+  <code>reckon/crew/fleet_supervisor.py</code> compares the cheap code stamp it recorded when
+  it started with the checkout's on every pass. Only when that stamp has moved does it ask
+  <code>reckon.served_code.moved_checkout()</code> — the moved-and-trusted decision the served
+  code path already makes — and it replaces its own image through <code>_reexec</code>, the
+  same path a manual <code>reload</code> request takes, only on a verdict that the checkout
+  moved and may load. The declared services it adopted keep running and a later reader sees
+  one supervisor. A tree with a tracked file modified against <code>HEAD</code> is not
+  trusted, so the supervisor keeps the image it has rather than running code a half-finished
+  edit produced. The trust test behind that verdict loads every module of the package, so it
+  is paid for at most once per <code>MOVE_CHECK_INTERVAL_SECONDS</code> (60 s): a checkout
+  left dirty costs one check per interval rather than one per pass. The same stamp is asked
+  about again after the interval, because a refusal describes the tree at the moment it was
+  taken and the tree can become loadable without its identity moving — dirt discarded, or an
+  import probe that timed out — so a stamp refused once is never held for ever. An identity
+  read that did not answer is never treated as a moved stamp — the loop adopts the first
+  readable stamp rather than testing on every tick, which would loop while the read keeps
+  failing. No request verb and no CLI option is added, and the manual <code>reload</code>
+  request stays for an operator. <code>serve()</code> takes <code>code_stamp</code>,
+  <code>moved_checkout</code> and <code>clock</code> by argument, defaulting to the cheap
+  identity, the served-code decision and the monotonic clock, so a test can drive them
+  against a temporary checkout.</p>
+
+  <p><strong>Why it was needed.</strong> The station was down for 73 minutes on 28 October
+  while the supervisor ran eight days on code that predates its <code>station</code> request.
+  It answered <code>unknown request: station</code> until an operator sent <code>reload</code>
+  by hand. Every fix to how it keeps services now reaches the node without a request.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_the_fleet_supervisor_runs_current_code.py</code>, five tests
+  driven through a real <code>serve()</code> loop in a temporary runtime tree with an injected
+  <code>exec_</code>, an injected cheap stamp, an injected moved-checkout verdict and an
+  injected clock. Each arm is a log whose first line names its revision and whose last line
+  reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change)</td>
+        <td><code>8e574c08</code> + change</td>
+        <td><strong>5 passed</strong>, exit 0</td></tr>
+      <tr><td>base (this node's test copied into a base archive)</td>
+        <td><code>8e574c08</code></td>
+        <td><strong>1 failed, 4 passed</strong>, exit 1 — the stamp-refused-once arm, the one
+        this repair answers</td></tr>
+      <tr><td>negative control (the per-stamp exclusion restored)</td>
+        <td>mutated head</td>
+        <td><strong>1 failed, 4 passed</strong>, exit 1 — the stamp-refused-once arm fails,
+        every other arm still passes</td></tr>
+      <tr><td>existing tests importing the module, head</td>
+        <td><code>73d6325a</code></td>
+        <td>33 passed, exit 0</td></tr>
+      <tr><td>existing tests importing the module, base</td>
+        <td><code>9da1277b</code></td>
+        <td>33 passed, exit 0 — no failures added</td></tr>
+    </tbody>
+  </table>
+
+  <p>The five arms show: a supervisor whose recorded stamp differs from a trusted
+  checkout's re-executes once on its next pass, and no further (<code>argv</code> is
+  <code>python -m reckon.crew.fleet_supervisor</code> with no <code>--standby</code>); an
+  untrusted checkout leaves it running, proven by a <code>ready</code> request it answers
+  after the stamp moved; a dirty checkout costs exactly one trust test for the stamp it moved
+  to across many passes, and a second move inside the 60 s interval is not tested again while
+  a move past the interval costs one more, and a stamp refused once is asked about again
+  after the interval, so dirt discarded without the identity moving is adopted; and a declared service is found running after the
+  replacement by its own evidence — the pid the service wrote into its start marker is alive,
+  its lock is still held, and the marker names exactly one start across the replacement and
+  the stop.</p>
+</section>

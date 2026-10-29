@@ -1,0 +1,49 @@
+<section id="plan-edit-holds-own-units-landing">
+  <h2>A plan edit holds only the request that reads the edited unit</h2>
+  <p>An admission pass now judges the plan-review gate over the units a request
+  actually reads: its own section and the document unit. A stored review that
+  covers the request's section launches it, while a request whose own section
+  is unreviewed is held with reason <code>plan-review-owed</code> and the
+  review invocation recorded as its detail. The narrowed judgment is a
+  <code>units</code> argument to <code>require_plan_reviewed</code>; a direct
+  dispatch passes none and keeps the whole-plan check.</p>
+  <p>Held requests are re-judged on every admission pass, so storing the
+  covering review releases them with no coordinator call. A hand-held request
+  carries no automatic flag and survives the releasing pass untouched. The
+  obligations view emits one <code>plan-review-owed</code> row per plan rather
+  than one per request, naming the held count and the review invocation.</p>
+  <p>Each pass re-derives waits with <code>derive_wait_refs</code> and rewrites
+  the stored <code>waits</code>, keeping the request's own
+  <code>run:</code> refs, so a narrowed dependency releases its waiter and a
+  widened one sends it back to <code>awaiting-upstream</code>. A
+  <code>--after</code> ref on an unlanded run survives that pass. A manifest
+  upstream that reads <code>blocked</code> keeps its waiter waiting: only a
+  failed or abandoned manifest, or a discard, closes a wait as
+  <code>blocked-upstream</code>.</p>
+  <p>The focused arms passed at the repair head:
+  <code>9 passed</code> on
+  <code>tests/test_plan_edit_never_strands.py</code>. The pre-repair modules at
+  the base revision reproduced the defect, <code>7 failed, 2 passed</code>,
+  with the section-2 launch refused as
+  <code>uncovered units: s3</code>. The declared negative control restored the
+  whole-plan admission check and failed the section-2-launches arm with three
+  held sections where the edit touched two, <code>EXIT=1</code>.</p>
+  <p>The suite over every test file that imports the changed modules ran serially
+  at both revisions. The base revision gave <code>2 failed, 635 passed,
+  1 error</code> in 15m59s; the repair head gave <code>3 failed, 634 passed,
+  1 error</code> in 19m36s. The one added failure is
+  <code>test_closed_upstream_blocks_its_waiter[blocked]</code>, which asserts the
+  behaviour this section changes — a blocked manifest closing its waiter — and
+  was outside this node's write grant at the time of that run.</p>
+  <p>The arm was then granted and changed rather than dropped: its blocked case
+  now requires the waiter to stay <code>awaiting-upstream</code> while the
+  failed case still closes it as <code>blocked-upstream</code>. The two other
+  failures and the conftest error fail identically at the base revision. The
+  admission gate over that file, the focused arms and every test calling
+  <code>admit_once</code> gives <code>188 passed, 1 failed</code> at the repair
+  head and <code>180 passed, 9 failed</code> at the base revision, the added
+  failures being this node's own arms and the re-pointed blocked case. The
+  three modules this work touches carry mode <code>100644</code>, and the lint
+  runs are recorded beside the suite logs: the changed paths add no check
+  finding and no format hunk against the base revision.</p>
+</section>

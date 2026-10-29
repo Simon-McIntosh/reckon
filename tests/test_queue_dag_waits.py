@@ -304,8 +304,18 @@ def test_closed_upstream_blocks_its_waiter(
     assert stored["r-waiting"]["phase"] == "awaiting-upstream"
     _upstream_record(first, "r-prior", status=status, revision=None)
     result, launched = _admit()
-    assert result["blocked_upstream"] == ["r-waiting"]
     assert launched == []
+    if status == "blocked":
+        # A blocked manifest is a resumable stop, not a closure: the upstream
+        # run may still deliver when it is resumed, so its waiter keeps
+        # waiting rather than being closed as abandoned.
+        assert result["blocked_upstream"] == []
+        live = {
+            str(row["run_id"]): row for row in runs.list_live(project=fixtures.PROJECT)
+        }
+        assert live["r-waiting"]["phase"] == "awaiting-upstream"
+        return
+    assert result["blocked_upstream"] == ["r-waiting"]
 
 
 def test_complete_upstream_waits_for_its_revision_to_land(

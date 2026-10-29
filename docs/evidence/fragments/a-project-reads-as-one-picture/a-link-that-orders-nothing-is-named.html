@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-project-reads-as-one-picture">
+  <meta name="plan-title" content="A link that orders nothing is named">
+  <meta name="plan-summary" content="The roadmap emits settled-link and redundant-link at severity info, naming the ref and the set that removes it, so a review can judge spent and implied links instead of hunting for them.">
+  <meta name="plan-evidence-for" content="reckon:a-project-reads-as-one-picture">
+  <meta name="plan-verifies" content="reckon:a-project-reads-as-one-picture#s12">
+  <meta name="plan-recorded-at" content="2026-10-27">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-tags" content="roadmap,wiring-findings,settled-link,redundant-link,section-deps,closed-targets">
+  <title>A link that orders nothing is named — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-link-that-orders-nothing-is-named" data-reckon="landed" data-when="2026-10-27">
+  <h2 id="a-link-that-orders-nothing-is-named-title">A link that orders nothing is named</h2>
+  <p id="a-link-that-orders-nothing-is-named-landing">landing: <code>reckon/roadmap.py</code> emits <code>settled-link</code> and <code>redundant-link</code> into <code>wiring_findings</code> at severity <code>info</code> — <code>_settled_link_findings</code> reading each plan's declared <code>depends_on</code>, <code>after</code> and section waits directly (closed targets included, which the roadmap graph cannot show) and reporting a link whose target is closed and satisfied where no open section of the plan still waits on it, and <code>_redundant_link_findings</code> reporting a declared <code>depends_on</code> edge a path of other declared edges already implies; both name the ref and the <code>set</code> that removes it. Delivered with <code>tests/test_a_link_that_orders_nothing_is_named.py</code>, seven cases, at <code>be1c86dd5</code>.</p>
+  <p id="a-link-that-orders-nothing-is-named-change">Both findings are emitted through the existing <code>_finding</code> helper and nothing else in the report changes. <code>_redundant_link_findings</code> reads the graph the roadmap already builds — the edges that still order work, section nodes included — unioned with the declared plan-level edges, and searches a path with the candidate edge removed, so an edge only ever reaches its own target through other edges; a ref declared twice is a duplicate rather than a redundant path and is not reported as one. Only an edge whose target is still open is a redundancy candidate: a settled target is what <code>settled-link</code> reports. Each extra carries <code>ref</code>, <code>field</code>, <code>target</code>, <code>set</code> and <code>remaining</code>, so a review can apply the named op without re-deriving the list. The <code>set</code> an <code>after</code> link names is the whole-list op §11 added, and a section wait's is the keyed <code>set section_depends_on.&lt;sid&gt;</code> form the store already accepts.</p>
+  <p id="a-link-that-orders-nothing-is-named-measure">On the base commit <code>107f292bc</code> — a scratch extraction of that revision with this node's delivered suite copied into it — the gate reads <code>4 failed, 31 passed</code>, <code>EXIT=1</code>: the four cases that read a finding fail, and the three controls that assert silence pass. The log's header records the module the run resolved (<code>module.__file__</code> under the base tree) and its working directory, and <code>grep -c _settled_link_findings</code> over the base <code>roadmap.py</code> reads <code>0</code>, so the failures are the absent code rather than a run that quietly reached the head. At the head <code>be1c86dd5</code> the same command reads <code>35 passed</code>, <code>EXIT=0</code>: the seven cases plus <code>tests/test_graph_target.py</code>, <code>tests/test_roadmap_endpoints.py</code> and <code>tests/test_section_relations_count_as_wiring.py</code>, no file adding a failure against the base arm. <code>ruff check</code> and <code>ruff format --check</code> pass on both staged paths.</p>
+  <p id="a-link-that-orders-nothing-is-named-control">The declared mutation — emit <code>settled-link</code> without checking for an open waiting section — reads <code>1 failed, 6 passed</code>, <code>EXIT=1</code>, failing <code>test_the_same_edges_raise_nothing_while_an_open_section_still_waits</code> with both findings raised on the control fixture; the log is <code>negative-control.log</code>. The guarded module was restored from a saved copy and the tree committed before the head arm ran.</p>
+  <p id="a-link-that-orders-nothing-is-named-counts">Counts per mount, read through the same analyser over every registered project at the head: <code>imas-ambix</code> 17 settled-link and 8 redundant-link over 102 plans; <code>imas-codex</code> 14 and 0 over 54; <code>imas-efit</code> 6 and 1 over 222; <code>nova</code> 18 and 0 over 103; <code>power_convertor</code> 5 and 0 over 21; <code>reckon</code> 26 and 0 over 207; every other mount 0 and 0. The non-zero counts are the instrument seeing something present rather than an empty column: representative findings include <code>reckon</code>'s <code>a-queue-holds-the-whole-plan</code> <code>after 'a-held-dispatch-waits-its-fair-turn' is settled — … is done; remove it with set after []</code>, and <code>imas-ambix</code>'s <code>closed-loop-latent-filter: depends_on 'machine-agnostic-latent-world-model' is implied by another path …</code>. The listing is <code>mount-counts.json</code> and the samples are <code>examples.log</code>.</p>
+</article>
+</body>
+</html>

@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_scores": [],
+  "completed_at": "2026-10-27T18:16:14.943Z",
+  "dispatched_at": "2026-10-27T18:04:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2434",
+      "severity": "non-blocking",
+      "text": "plan_review_units is a second copy of the predicate already owned at reckon/crew/queue_admission.py:2255: the bodies are identical and the docstring differs only in wording, while queue_admission.py:261 and :2332 still call their own copy. Two definitions of one coverage predicate are what lets admission and the dispatch gate disagree later; fold by keeping it in routing.py and importing it from queue_admission."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1263",
+      "severity": "non-blocking",
+      "text": "_git is a third git-subprocess helper beside reckon/served_code.py:93 and reckon/crew/routing.py:537, each wrapping `git -C <repo> ...` with a timeout and a None-on-failure contract. Returning unstripped stdout is not a reason to fork the capability; the file already imports reckon.served_code."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T122427654395-a-plan-review-reads-the-change/manifest.md",
+      "line": "27",
+      "severity": "non-blocking",
+      "text": "the artifacts line claims the importer arms plus the gate gave 99 passed EXIT=0 at head citing importer-repair-head.log, but that log holds five header lines and no summary or EXIT line, so the claim is unreachable from the receipt it names. Re-run the arm into that path or drop the claim; it does not hold the node because the done_when assigns the importer arms to the coordinator."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2639",
+      "severity": "non-blocking",
+      "text": "the branch setting the section narrowing aside when no stored review covers any unit of the plan is new in this diff and is asserted by no test: no test dispatches a section of a plan with no covering review and checks that the refusal names every uncovered unit rather than only that section's."
+    }
+  ],
+  "item_verdicts": [
+    "VERDICT goal: the goal is two mechanisms. The plan commit is recorded at reckon/crew/plan_review.py:1298 plan_commit_for and called from write_review_sidecar at :2201; the per-section gate is reckon/crew/routing.py:2572 (narrowing applied) and :2639 (whole-plan fallback).",
+    "VERDICT done_when: the done_when names tests/test_a_plan_review_reads_the_change.py plus the per-unit predicate in require_plan_reviewed. Four of its behaviours are asserted by the four tests; the new whole-plan fallback at reckon/crew/routing.py:2639 is asserted by none, and the ruff clause has no recorded arm.",
+    "VERDICT write_paths: the manifest declares plan_review.py, routing.py, the new test file and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html; git diff --stat 94e9068e0..c5b465fe2 lists exactly those four files.",
+    "VERDICT manifest: read; it records 4 passed EXIT=0 at repair base d537f8e24 (repair-baseline.log) and at head (repair-head.log), a reverted arm of 1 failed 3 passed EXIT=1 (nc-diff.log), and claims an importer arm of 99 passed from importer-repair-head.log, which holds only its five header lines.",
+    "VERDICT diff: three commits read against 94e9068e0 \u2014 e85fa60bc (the mechanism), d537f8e24 (the evidence fragment) and c5b465fe2 (the repair that reads a unit's lines from structural spans at reckon/crew/plan_review.py:1348 instead of filtering a whole-file diff by data-id). 610 insertions and 8 deletions, all inside the declared scope."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is two mechanisms. The plan commit is recorded at reckon/crew/plan_review.py:1298 plan_commit_for and called from write_review_sidecar at :2201; the per-section gate is reckon/crew/routing.py:2572 (narrowing applied) and :2639 (whole-plan fallback).\nVERDICT done_when: the done_when names tests/test_a_plan_review_reads_the_change.py plus the per-unit predicate in require_plan_reviewed. Four of its behaviours are asserted by the four tests; the new whole-plan fallback at reckon/crew/routing.py:2639 is asserted by none, and the ruff clause has no recorded arm.\nVERDICT write_paths: the manifest declares plan_review.py, routing.py, the new test file and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html; git diff --stat 94e9068e0..c5b465fe2 lists exactly those four files.\nVERDICT manifest: read; it records 4 passed EXIT=0 at repair base d537f8e24 (repair-baseline.log) and at head (repair-head.log), a reverted arm of 1 failed 3 passed EXIT=1 (nc-diff.log), and claims an importer arm of 99 passed from importer-repair-head.log, which holds only its five header lines.\nVERDICT diff: three commits read against 94e9068e0 \u2014 e85fa60bc (the mechanism), d537f8e24 (the evidence fragment) and c5b465fe2 (the repair that reads a unit's lines from structural spans at reckon/crew/plan_review.py:1348 instead of filtering a whole-file diff by data-id). 610 insertions and 8 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_review_subject.py:779 (review_scope), reckon/crew/recovery_review_subject.py:806 (write_review_sidecar), reckon/crew/dispatch_plan.py:854 (require_plan_reviewed), reckon/crew/queue_admission.py:2325 (require_plan_reviewed)\nSCORE goal_fidelity: 18\nSCORE evidence: 15\nSCORE scope_discipline: 17\nSCORE durability: 15\nSCORE fit: 16\nSCORE reuse: 5\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:1348 _unit_lines, run against docs/plans/a-queue-holds-the-whole-plan.html, attributes 4 lines carrying s19's prose and 381 to the document unit, so the change block reaches the reviewer on the real plan format; the gate narrows at reckon/crew/routing.py:2572.\nJUSTIFICATION evidence: repair-baseline.log and repair-head.log are real receipts (4 passed, EXIT=0 at d537f8e24 and at c5b465fe) and nc-diff.log reddens the diff assertion with 1 failed EXIT=1, but no ruff arm is recorded and the importer receipt the manifest cites carries no result line.\nJUSTIFICATION scope_discipline: git diff --stat 94e9068e0..c5b465fe2 touches only the four declared paths, the one behaviour beyond the goal being the (unanswered) rendering at reckon/crew/plan_review.py:1534 that done_when's 'previous findings and their answers' implies.\nJUSTIFICATION durability: tests/test_a_plan_review_reads_the_change.py:195 reddens when the pre-repair filter is reinstated (nc-diff.log, 1 failed EXIT=1) and :213 fails if the narrowing at reckon/crew/routing.py:2572 is reverted, but the new fallback at reckon/crew/routing.py:2639 is asserted by no test.\nJUSTIFICATION fit: the additions follow the module's idiom of private helpers with mechanism docstrings and lazy imports, as reckon/crew/plan_review.py:1545 _project_repo_root, and no plan label, ticket or version appears in any added name or comment.\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:2255 already owns plan_review_units with a byte-identical body, so the copy added at reckon/crew/routing.py:2434 re-implements an owned capability without extending the owner.\nFINDING reckon/crew/routing.py:2434 non-blocking: plan_review_units is a second copy of the predicate already owned at reckon/crew/queue_admission.py:2255: the bodies are identical and the docstring differs only in wording, while queue_admission.py:261 and :2332 still call their own copy. Two definitions of one coverage predicate are what lets admission and the dispatch gate disagree later; fold by keeping it in routing.py and importing it from queue_admission.\nFINDING reckon/crew/plan_review.py:1263 non-blocking: _git is a third git-subprocess helper beside reckon/served_code.py:93 and reckon/crew/routing.py:537, each wrapping `git -C <repo> ...` with a timeout and a None-on-failure contract. Returning unstripped stdout is not a reason to fork the capability; the file already imports reckon.served_code.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T122427654395-a-plan-review-reads-the-change/manifest.md:27 non-blocking: the artifacts line claims the importer arms plus the gate gave 99 passed EXIT=0 at head citing importer-repair-head.log, but that log holds five header lines and no summary or EXIT line, so the claim is unreachable from the receipt it names. Re-run the arm into that path or drop the claim; it does not hold the node because the done_when assigns the importer arms to the coordinator.\nFINDING reckon/crew/routing.py:2639 non-blocking: the branch setting the section narrowing aside when no stored review covers any unit of the plan is new in this diff and is asserted by no test: no test dispatches a section of a plan with no covering review and checks that the refusal names every uncovered unit rather than only that section's.\n",
+  "review_run_id": "r-20261027T180248521309-review-of-a-plan-review-reads-the-change-c5b465fe2de5",
+  "reviewed_base_sha": "94e9068e0fd965e58923d29b309f08216b80bb7c",
+  "reviewed_head_sha": "c5b465fe2de5b7e6a3384c238582513231da4f82",
+  "reviewed_run_id": "r-20261027T122427654395-a-plan-review-reads-the-change",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T18:17:05.868626+00:00",
+  "total": 86
+}

@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3043",
+    "reckon/crew/queue_admission.py:3056"
+  ],
+  "completed_at": "2026-10-27T23:14:37.051Z",
+  "dispatched_at": "2026-10-27T23:06:53Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sentence states fifteen tests pass while 655d0eac14 added a sixteenth test in the same round (grep -c '^def test_' tests/test_the_landing_pass_measures_and_lands.py returns 16), so the evidence record states a coverage figure the suite no longer has and a later reader comparing it to a gate log of 16 passed sees a contradiction with no way to tell which is right."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T124654403923-the-landing-pass-measures-and-lands/manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the source done_when states each added id is re-run alone three times at base and at head, and after_suite records a gate that ran the whole node test file once at head with no isolated re-run of the added id anywhere in the log set, so the flake evidence the measure asks for is not in the record."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T124654403923-the-landing-pass-measures-and-lands/negative-control-6.log",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log the manifest names at negative_control_6_log ends with the pre-fix ESCAPED NotADirectoryError line and carries no bare EXIT= line, so admission cannot read an exit status from the only artefact that falsifies this round's fix; the required negative_control_log field points at the earlier negative-control.log, which does end EXIT=1, so the requirement is met only for the tests added before this round."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read all three commits from 29fd0205c3: 655d0eac14 moves root creation inside base_checkout's guard and raises BaseCheckoutError (reckon/crew/landing_measure.py:493-503), pins the checkout location at tests/test_the_landing_pass_measures_and_lands.py:649 and adds test_an_unusable_scratch_root_refuses_that_run_and_returns at :658; 961b24a39a joins one wrapped assertion onto one line with no behaviour change; c3e7594228 adds a paragraph to the evidence fragment and leaves its test count at fifteen while the suite now holds sixteen.",
+    "done_when": "the source done_when names tests/test_the_landing_pass_measures_and_lands.py, the -n 8 importer population and ruff on the changed paths; after.log records 16 passed at c3e7594228, importer-base.log reads 1 failed 279 passed at 29fd0205c3 against importer-head.log 1 failed 280 passed at 655d0eac14 carrying the same single id, and ruff.log is clean on the three changed code paths, so the gate asserts the measure except for the three-times isolated re-run of the added id, which no log records.",
+    "goal": "the source node's goal is to land an accepted run from the landing pass by measuring its suite there with flakes told apart from regressions; the three gained commits leave that rule untouched and only turn a scratch-root OSError into the module's existing BaseCheckoutError at reckon/crew/landing_measure.py:493-503 so one run's refusal no longer stops the pass, which serves the goal.",
+    "manifest": "read; it records commits 655d0eac14, 961b24a39a and c3e7594228, after_suite 16 passed at c3e7594228, the importer pair at 29fd0205c3 and 655d0eac14, ruff clean at c3e7594228, and log paths that exist on disk and end in EXIT=0 or EXIT=1 as stated.",
+    "write_paths": "the source declared reckon/crew/queue_landing.py, reckon/crew/landing_measure.py, tests/test_the_landing_pass_measures_and_lands.py and the evidence fragment; git diff --stat 29fd0205c3..c3e7594228 lists only the test file, landing_measure.py and the evidence fragment, all inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_the_landing_pass_measures_and_lands.py:658 errors with NotADirectoryError out of land_once when the guard at reckon/crew/landing_measure.py:494-503 is reverted, and :649 fails if the checkout moves off the configured scratch root, so both new assertions name a change that reddens them.",
+    "evidence": "after.log at c3e7594228 records 16 passed and the importer pair shows the same single pre-existing id at both arms, but no log records the done_when's three isolated re-runs of the added id, so the recorded gate covers the measure only in part.",
+    "fit": "the new comment at reckon/crew/landing_measure.py:499-500 states the mechanism in the same voice as the docstring above it, the exception is the module's existing BaseCheckoutError, and no plan or ticket label appears in the added lines.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:493-503 raises the module's own BaseCheckoutError where the OSError used to escape, so land_once at reckon/crew/queue_landing.py:311 refuses one run instead of ending the admission loop, which is the node's stated purpose.",
+    "reuse": "the diff adds no function, class or module; it wraps the create-and-mkdtemp pair in the guard that already exists for the git calls at reckon/crew/landing_measure.py:505-525 and still calls the owner reckon/crew/dispatch_launch.py:765, and a search of reckon/crew for another scratch-root creator found only worker_scratch_dir, which names a run's fixed directory rather than a unique temp tree.",
+    "scope_discipline": "git diff --stat 29fd0205c3..c3e7594228 lists exactly reckon/crew/landing_measure.py, tests/test_the_landing_pass_measures_and_lands.py and the evidence fragment, all among the source node's declared write paths, in 58 insertions and 4 deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to land an accepted run from the landing pass by measuring its suite there with flakes told apart from regressions; the three gained commits leave that rule untouched and only turn a scratch-root OSError into the module's existing BaseCheckoutError at reckon/crew/landing_measure.py:493-503 so one run's refusal no longer stops the pass, which serves the goal.\nVERDICT done_when: the source done_when names tests/test_the_landing_pass_measures_and_lands.py, the -n 8 importer population and ruff on the changed paths; after.log records 16 passed at c3e7594228, importer-base.log reads 1 failed 279 passed at 29fd0205c3 against importer-head.log 1 failed 280 passed at 655d0eac14 carrying the same single id, and ruff.log is clean on the three changed code paths, so the gate asserts the measure except for the three-times isolated re-run of the added id, which no log records.\nVERDICT write_paths: the source declared reckon/crew/queue_landing.py, reckon/crew/landing_measure.py, tests/test_the_landing_pass_measures_and_lands.py and the evidence fragment; git diff --stat 29fd0205c3..c3e7594228 lists only the test file, landing_measure.py and the evidence fragment, all inside that set.\nVERDICT manifest: read; it records commits 655d0eac14, 961b24a39a and c3e7594228, after_suite 16 passed at c3e7594228, the importer pair at 29fd0205c3 and 655d0eac14, ruff clean at c3e7594228, and log paths that exist on disk and end in EXIT=0 or EXIT=1 as stated.\nVERDICT diff: read all three commits from 29fd0205c3: 655d0eac14 moves root creation inside base_checkout's guard and raises BaseCheckoutError (reckon/crew/landing_measure.py:493-503), pins the checkout location at tests/test_the_landing_pass_measures_and_lands.py:649 and adds test_an_unusable_scratch_root_refuses_that_run_and_returns at :658; 961b24a39a joins one wrapped assertion onto one line with no behaviour change; c3e7594228 adds a paragraph to the evidence fragment and leaves its test count at fifteen while the suite now holds sixteen.\nCALL_SITES: reckon/crew/queue_admission.py:3043, reckon/crew/queue_admission.py:3056\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:493-503 raises the module's own BaseCheckoutError where the OSError used to escape, so land_once at reckon/crew/queue_landing.py:311 refuses one run instead of ending the admission loop, which is the node's stated purpose.\nSCORE evidence: 16\nJUSTIFICATION evidence: after.log at c3e7594228 records 16 passed and the importer pair shows the same single pre-existing id at both arms, but no log records the done_when's three isolated re-runs of the added id, so the recorded gate covers the measure only in part.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 29fd0205c3..c3e7594228 lists exactly reckon/crew/landing_measure.py, tests/test_the_landing_pass_measures_and_lands.py and the evidence fragment, all among the source node's declared write paths, in 58 insertions and 4 deletions.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_landing_pass_measures_and_lands.py:658 errors with NotADirectoryError out of land_once when the guard at reckon/crew/landing_measure.py:494-503 is reverted, and :649 fails if the checkout moves off the configured scratch root, so both new assertions name a change that reddens them.\nSCORE fit: 19\nJUSTIFICATION fit: the new comment at reckon/crew/landing_measure.py:499-500 states the mechanism in the same voice as the docstring above it, the exception is the module's existing BaseCheckoutError, and no plan or ticket label appears in the added lines.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module; it wraps the create-and-mkdtemp pair in the guard that already exists for the git calls at reckon/crew/landing_measure.py:505-525 and still calls the owner reckon/crew/dispatch_launch.py:765, and a search of reckon/crew for another scratch-root creator found only worker_scratch_dir, which names a run's fixed directory rather than a unique temp tree.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html:56 non-blocking: the sentence states fifteen tests pass while 655d0eac14 added a sixteenth test in the same round (grep -c '^def test_' tests/test_the_landing_pass_measures_and_lands.py returns 16), so the evidence record states a coverage figure the suite no longer has and a later reader comparing it to a gate log of 16 passed sees a contradiction with no way to tell which is right.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T124654403923-the-landing-pass-measures-and-lands/manifest.md:25 non-blocking: the source done_when states each added id is re-run alone three times at base and at head, and after_suite records a gate that ran the whole node test file once at head with no isolated re-run of the added id anywhere in the log set, so the flake evidence the measure asks for is not in the record.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T124654403923-the-landing-pass-measures-and-lands/negative-control-6.log:5 non-blocking: the log the manifest names at negative_control_6_log ends with the pre-fix ESCAPED NotADirectoryError line and carries no bare EXIT= line, so admission cannot read an exit status from the only artefact that falsifies this round's fix; the required negative_control_log field points at the earlier negative-control.log, which does end EXIT=1, so the requirement is met only for the tests added before this round.",
+  "review_run_id": "r-20261027T230455880030-review-of-the-landing-pass-measures-and-lands-c3e75942283e",
+  "reviewed_base_sha": "29fd0205c39d9bba5a49fb484a3bde89383399c2",
+  "reviewed_commit": "c3e75942283eb1e61efa01ca72c57b30a4ef1147",
+  "reviewed_head_sha": "c3e75942283eb1e61efa01ca72c57b30a4ef1147",
+  "reviewed_run_id": "r-20261027T124654403923-the-landing-pass-measures-and-lands",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T23:17:26.467610+00:00",
+  "total": 113
+}

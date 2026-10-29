@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3043",
+    "reckon/crew/queue_admission.py:3056"
+  ],
+  "completed_at": "2026-10-27T22:46:04.712Z",
+  "dispatched_at": "2026-10-27T22:37:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "489",
+      "severity": "non-blocking",
+      "text": "non-blocking: root.mkdir(parents=True, exist_ok=True) at :489 and tempfile.mkdtemp at :490 run before base_checkout's own try, while reckon/crew/queue_landing.py:145 now catches only BaseCheckoutError, so an OSError from an unwritable or full scratch root -- the condition this commit exists for -- escapes _measure_delivery and land_once instead of becoming an unreadable measurement; reckon/crew/queue_admission.py:3058 calls land_once in a loop that catches only KeyboardInterrupt, so the admission service stops rather than refusing that one run."
+    },
+    {
+      "file": "tests/test_the_landing_pass_measures_and_lands.py",
+      "line": "649",
+      "severity": "non-blocking",
+      "text": "non-blocking: both scratch-root assertions (:614 and :649) only assert the fixture's own RECKON_WORKER_SCRATCH_ROOT is empty after the checkout ends, which is vacuously true if base_checkout goes back to building under TMPDIR -- the tree simply lands elsewhere -- so the commit's headline change has no assertion that fails when it is reverted; an assertion such as tree.is_relative_to(delivery['scratch_root']) inside the with block would fail on that revert."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit from 271ce535ca: cdba9ff46f replaces the local scratch_root() with dispatch_launch.worker_scratch_root at reckon/crew/landing_measure.py:489, prunes a registration left by a failed removal at :505-530 and narrows queue_landing's handler to BaseCheckoutError with an inner measurement handler at reckon/crew/queue_landing.py:126-155, adding two tests; 29fd0205c3 updates the evidence fragment only.",
+    "done_when": "the source done_when names tests/test_the_landing_pass_measures_and_lands.py, the importer population with -n 8 and ruff on the changed paths; the gate records 15 passed in after.log, importer-base.log reads 1 failed 277 passed at 271ce535ca and importer-head.log 1 failed 279 passed at cdba9ff46f with the same single id, and ruff.log is clean on the three changed code paths.",
+    "goal": "the source node's goal is to land an accepted run from the landing pass by measuring its suite there with flakes told apart from regressions; the gained commits cdba9ff46f and 29fd0205c3 leave the flake rule alone and move the base checkout onto the fleet's own scratch root at reckon/crew/landing_measure.py:489-490, so they serve that goal.",
+    "manifest": "read; it records commits cdba9ff46f and 29fd0205c3, after_suite 15 passed at cdba9ff46f, the importer pair at 271ce535ca and cdba9ff46f, and ruff clean, with log paths that exist on disk and end in EXIT=0 or EXIT=1 as stated.",
+    "write_paths": "the source declared reckon/crew/queue_landing.py, reckon/crew/landing_measure.py, tests/test_the_landing_pass_measures_and_lands.py and the evidence fragment; git diff --stat 271ce535ca..29fd0205c3 lists exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_landing_pass_measures_and_lands.py:648 fails if the prune at reckon/crew/landing_measure.py:529 is removed, since a registration outlives the directory (verified: git worktree list shows a prunable entry until prune runs), and :673-674 fails if queue_landing reports a measurement error as a checkout failure; no assertion fails if the checkout moves back off worker_scratch_root.",
+    "evidence": "after.log records '15 passed in 18.04s' at cdba9ff46f and importer-head.log records '1 failed, 279 passed' carrying the same id as importer-base.log, so added_failure_count 0 is read from the logs rather than claimed; the gate ran at cdba9ff46f, not at the docs-only head 29fd0205c3.",
+    "fit": "reckon/crew/landing_measure.py:457-470 names the new error and the git adapter for what they do, keeps the module's _RUN seam, and carries no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:489-490 builds the base checkout under dispatch_launch.worker_scratch_root, so a shared-storage TMPDIR can no longer move the measurement's scratch tree onto GPFS, which is the change the commit states.",
+    "reuse": "the change deletes the local scratch_root() duplication and calls the existing owner reckon/crew/dispatch_launch.py:765; the search for a bounded git helper found private ones at reckon/crew/routing.py:537, reckon/crew/plan_review.py:1263 and reckon/git_dates.py:127, none of which carries a timeout, so the added _git at landing_measure.py:461 adapts this module's own subprocess seam rather than forking an owned capability.",
+    "scope_discipline": "git diff --stat 271ce535ca..29fd0205c3 lists only the four declared write paths, in 143 insertions and 71 deletions."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to land an accepted run from the landing pass by measuring its suite there with flakes told apart from regressions; the gained commits cdba9ff46f and 29fd0205c3 leave the flake rule alone and move the base checkout onto the fleet's own scratch root at reckon/crew/landing_measure.py:489-490, so they serve that goal.\nVERDICT done_when: the source done_when names tests/test_the_landing_pass_measures_and_lands.py, the importer population with -n 8 and ruff on the changed paths; the gate records 15 passed in after.log, importer-base.log reads 1 failed 277 passed at 271ce535ca and importer-head.log 1 failed 279 passed at cdba9ff46f with the same single id, and ruff.log is clean on the three changed code paths.\nVERDICT write_paths: the source declared reckon/crew/queue_landing.py, reckon/crew/landing_measure.py, tests/test_the_landing_pass_measures_and_lands.py and the evidence fragment; git diff --stat 271ce535ca..29fd0205c3 lists exactly those four and nothing else.\nVERDICT manifest: read; it records commits cdba9ff46f and 29fd0205c3, after_suite 15 passed at cdba9ff46f, the importer pair at 271ce535ca and cdba9ff46f, and ruff clean, with log paths that exist on disk and end in EXIT=0 or EXIT=1 as stated.\nVERDICT diff: read commit by commit from 271ce535ca: cdba9ff46f replaces the local scratch_root() with dispatch_launch.worker_scratch_root at reckon/crew/landing_measure.py:489, prunes a registration left by a failed removal at :505-530 and narrows queue_landing's handler to BaseCheckoutError with an inner measurement handler at reckon/crew/queue_landing.py:126-155, adding two tests; 29fd0205c3 updates the evidence fragment only.\nCALL_SITES: reckon/crew/queue_admission.py:3043, reckon/crew/queue_admission.py:3056\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:489-490 builds the base checkout under dispatch_launch.worker_scratch_root, so a shared-storage TMPDIR can no longer move the measurement's scratch tree onto GPFS, which is the change the commit states.\nSCORE evidence: 18\nJUSTIFICATION evidence: after.log records '15 passed in 18.04s' at cdba9ff46f and importer-head.log records '1 failed, 279 passed' carrying the same id as importer-base.log, so added_failure_count 0 is read from the logs rather than claimed; the gate ran at cdba9ff46f, not at the docs-only head 29fd0205c3.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 271ce535ca..29fd0205c3 lists only the four declared write paths, in 143 insertions and 71 deletions.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_landing_pass_measures_and_lands.py:648 fails if the prune at reckon/crew/landing_measure.py:529 is removed, since a registration outlives the directory (verified: git worktree list shows a prunable entry until prune runs), and :673-674 fails if queue_landing reports a measurement error as a checkout failure; no assertion fails if the checkout moves back off worker_scratch_root.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/landing_measure.py:457-470 names the new error and the git adapter for what they do, keeps the module's _RUN seam, and carries no plan or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change deletes the local scratch_root() duplication and calls the existing owner reckon/crew/dispatch_launch.py:765; the search for a bounded git helper found private ones at reckon/crew/routing.py:537, reckon/crew/plan_review.py:1263 and reckon/git_dates.py:127, none of which carries a timeout, so the added _git at landing_measure.py:461 adapts this module's own subprocess seam rather than forking an owned capability.\nFINDING reckon/crew/landing_measure.py:489 non-blocking: root.mkdir(parents=True, exist_ok=True) at :489 and tempfile.mkdtemp at :490 run before base_checkout's own try, while reckon/crew/queue_landing.py:145 now catches only BaseCheckoutError, so an OSError from an unwritable or full scratch root -- the condition this commit exists for -- escapes _measure_delivery and land_once instead of becoming an unreadable measurement; reckon/crew/queue_admission.py:3058 calls land_once in a loop that catches only KeyboardInterrupt, so the admission service stops rather than refusing that one run.\nFINDING tests/test_the_landing_pass_measures_and_lands.py:649 non-blocking: both scratch-root assertions (:614 and :649) only assert the fixture's own RECKON_WORKER_SCRATCH_ROOT is empty after the checkout ends, which is vacuously true if base_checkout goes back to building under TMPDIR -- the tree simply lands elsewhere -- so the commit's headline change has no assertion that fails when it is reverted; an assertion such as tree.is_relative_to(delivery['scratch_root']) inside the with block would fail on that revert.",
+  "review_run_id": "r-20261027T223552561732-review-of-the-landing-pass-measures-and-lands-29fd0205c39d",
+  "reviewed_base_sha": "271ce535ca859cc8aa754d5a1c32537110f811a0",
+  "reviewed_commit": "29fd0205c39d9bba5a49fb484a3bde89383399c2",
+  "reviewed_head_sha": "29fd0205c39d9bba5a49fb484a3bde89383399c2",
+  "reviewed_run_id": "r-20261027T124654403923-the-landing-pass-measures-and-lands",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T22:48:22.001380+00:00",
+  "total": 104
+}

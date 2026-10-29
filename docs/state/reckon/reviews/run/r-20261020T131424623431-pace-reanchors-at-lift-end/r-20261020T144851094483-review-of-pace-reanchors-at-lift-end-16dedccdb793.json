@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-20T15:06:25.080Z",
+  "dispatched_at": "2026-10-20T14:49:53Z",
+  "findings": [
+    {
+      "file": "tests/test_a_paced_window_reanchors_at_lift_end.py",
+      "line": 260,
+      "severity": "follow-on",
+      "text": "follow-on: the re-anchored releases_at path is unguarded. reckon/budget.py:3022 _re_anchor_releases_at is added code that no test asserts: tests/test_a_paced_window_reanchors_at_lift_end.py contains no assertion on releases_at (grep for it returns nothing), so a regression that mis-solves the release instant on the re-anchored line, or drops it, leaves the suite green. The held verdicts the negative control exercises (test lines 260, 277, 425) guard the held/unheld decision only. The branch is reachable in production: reckon/budget.py:3231 reads releases_at whenever a re-anchored group is held."
+    },
+    {
+      "file": "manifest.md",
+      "line": 15,
+      "severity": "follow-on",
+      "text": "follow-on: the manifest's gate-command fields carry angle-bracket placeholders. manifest.md:15 'tests:' and manifest.md:21-22 baseline_suite.command / after_suite.command read 'scratch/arm_resume.sh <base_tree> base' and '... <worktree> head' with literal <base_tree>/<worktree> placeholders rather than the literal command with absolute paths, which the manifest contract forbids; the gate receipt can still be recovered from the log's own '# command:' header, and the arms' failure_ids are also abbreviated to five ids where scratch/arm_base.log and scratch/arm_head.log each carry seventeen, so the recorded lists understate the suite. Neither affects the code gate."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (one sentence: re-anchor the default pace hold at a lift's end, no lift record granted); landed at reckon/crew/budget_lift.py:452 clear() stamping u_end/t_end and 556 effective_budget backfilling, and reckon/budget.py:2930 group_pace adding re_anchor with 3187 pace_hold comparing against it.\nVERDICT done_when: the done_when names tests/test_a_paced_window_reanchors_at_lift_end.py and the four cases plus a byte-identical real-lifts assertion and a literal negative control; the manifest records the run (gate.log 7 passed EXIT=0, negative_control.log 3 failed EXIT=1) and the base/head arm logs record each lift/budget file in its own process.\nVERDICT write_paths: the four declared write paths are reckon/budget.py, reckon/crew/budget_lift.py, tests/test_a_paced_window_reanchors_at_lift_end.py and the evidence fragment; git show --stat over the three commits touches exactly those four files.\nVERDICT manifest: read; it reports status complete, names gate.log and negative_control.log, and its baseline_suite/after_suite arms both exit 1 with a five-id failure list (the logs carry seventeen); the arms are recorded, though the command fields carry placeholders.\nVERDICT diff: read commit by commit (6acef11ad feat, 2524cd3bd fix, 16dedccdb docs); 997 insertions over four files, every path inside the declared scope, the last commit touching only the evidence HTML.\nCALL_SITES: reckon/budget.py:1762 group_pace call in the budget report, reckon/budget.py:1791 pace_hold call, reckon/budget.py:3473 group_pace call in the group view, reckon/crew/picker/snapshot.py:763 budget.preflight consuming the verdict\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/budget.py:2930 attaches re_anchor on the no-lift branch and 3187 holds on that line, so a 75%-at-4%-elapsed group is admitted where the brief said it was held.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate log records tests/test_a_paced_window_reanchors_at_lift_end.py 7 passed at 2524cd3bd and the two arm logs record 40 shared files with zero added failure ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat over 6acef11ad..16dedccdb touches only the four declared paths, no fifth file.\nSCORE durability: 15\nJUSTIFICATION durability: the negative control at scratch/nc.sh forces re_anchored False and reddens tests/test_a_paced_window_reanchors_at_lift_end.py:260 (3 failed), but reckon/budget.py:3022 _re_anchor_releases_at is asserted nowhere.\nSCORE fit: 16\nJUSTIFICATION fit: the added docstrings and helper spelling follow reckon/crew/budget_lift.py:624 drain_line and reckon/budget.py:2988 _pace_releases_at, and no added name carries a plan or version label.\nSCORE reuse: 17\nJUSTIFICATION reuse: no owner computes a spread from a lift end to the reset; reckon/crew/budget_lift.py:624 drain_line is the nearest line capability and the addition extends it rather than forking it.\nFINDING tests/test_a_paced_window_reanchors_at_lift_end.py:260 follow-on: the re-anchored releases_at path (reckon/budget.py:3022) has no assertion, so a regression there passes the suite.\nFINDING manifest.md:15 follow-on: the gate-command fields carry <base_tree>/<worktree> placeholders and the arm failure_ids are abbreviated to five of seventeen.",
+  "review_run_id": "r-20261020T144851094483-review-of-pace-reanchors-at-lift-end-16dedccdb793",
+  "reviewed_base_sha": "2f5c6e4d655fb34b33562585497bd7d4d7d4cbde",
+  "reviewed_head_sha": "16dedccdb793cb02e74937e6692ee75de2bfbc7b",
+  "reviewed_run_id": "r-20261020T131424623431-pace-reanchors-at-lift-end",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-20T15:06:28.912143+00:00",
+  "total": 106
+}

@@ -1,0 +1,33 @@
+<section id="ordering-never-reopens-a-review" class="evidence-fragment">
+  <h3>Ordering never re-opens a review</h3>
+  <p>
+    The document unit of a plan review digested the plan's dependency wiring and
+    effort figures beside its decisions, gates and summary, so re-ordering a
+    queue re-opened a review of text nobody had edited.
+    <code>PLAN_ORDERING_KEYS</code> in <code>reckon/crew/plan_review.py</code>
+    orders out <code>depends_on</code>, <code>blocks</code>, <code>after</code>,
+    <code>informs</code>, the <code>plan-section-depends-on</code> mapping, the
+    legacy effort letter and the wall-clock estimate; a section record is digested
+    without its status, effort estimate and attempt count. Decisions, gates, the
+    summary and section prose stay, because they are the contract a node builds
+    against.
+  </p>
+  <p>
+    Coverage also accepts a review's stored document digest under the previous
+    normalisation of the present content. Without it the definition move alone
+    uncovered the document unit on 34 of reckon's 110 live plans that carry an
+    answered review, 10 of them byte-identical to the bytes their review read;
+    with it, none of the 39 plans whose only change since their review was
+    ordering or bookkeeping is uncovered.
+  </p>
+  <table id="ordering-never-reopens-a-review-measure">
+    <thead><tr><th>Measure</th><th>Figure</th></tr></thead>
+    <tbody>
+      <tr><td>new test file</td><td>8 passed</td></tr>
+      <tr><td>negative control (section waits kept in the digest)</td><td>2 failed, 1 of them the first arm</td></tr>
+      <tr><td>test files importing <code>plan_review</code></td><td>head 1 failed / 652 passed against base 5 / 640, zero added</td></tr>
+      <tr><td>live plans with an answered review</td><td>110 measured, 56 with a snapshot</td></tr>
+      <tr><td>ordering/bookkeeping-only live plans</td><td>39, none uncovered</td></tr>
+    </tbody>
+  </table>
+</section>

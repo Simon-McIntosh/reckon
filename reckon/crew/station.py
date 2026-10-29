@@ -7,7 +7,9 @@ import os
 import re
 import signal
 import sys
+import threading
 import time
+import traceback
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -16,10 +18,14 @@ from typing import Any
 from reckon import checkout_trust, flight
 from reckon.crew import (
     follower_reload,
+    obligation_snapshot,
     recovery,
+    recovery_liveness,
     recovery_watch,
+    resumption,
     station_obligations,
     station_store,
+    station_subscriber,
     ticker,
 )
 from reckon.crew.host_lease import HostLease, local_host
@@ -30,9 +36,199 @@ from reckon.crew_follow_commands import (
 from reckon.crew_follow_commands import _FOLLOWER_IMAGE_PIN_ENV as IMAGE_PIN_ENV
 from reckon.crew_follow_commands import _FOLLOWER_SOURCE_ROOT_ENV as SOURCE_ROOT_ENV
 
+# How often one session's sweep runs with no fleet change to trigger it. A
+# provider hold and a declared external wait both end on the clock, so a
+# station that swept only on change would leave a lapsed run until something
+# else in the fleet moved.
+SWEEP_BEAT_SECONDS = resumption.DEFAULT_SWEEP_SECONDS
+
+# The sweep's own record of who ran it. The station is not a follower and has
+# no session of its own, so it takes the shared slot a hand-run pass uses
+# rather than a follower's per-session entry.
+SWEEP_WRITER = {"kind": "other", "key": "station"}
+
 
 class StationHeldError(RuntimeError):
     """A station already holds this node's writer lease."""
+
+
+# How often the station's own liveness beat is written. It is a handful of
+# seconds because the beat's whole job is to stay inside the stale window while
+# a tick is busy: the tick can spend minutes in one per-project refresh, and a
+# beat written only by the tick hands every reader a station that reads stopped
+# while it is working.
+STATION_BEAT_SECONDS = 5.0
+
+
+def _start_thread(run: Callable[[], None]) -> None:
+    threading.Thread(target=run, name="station-sweep", daemon=True).start()
+
+
+class StationBeat:
+    """Write the station's heartbeat from a thread of its own.
+
+    The beat is the one fact an off-node reader has about this station being
+    alive, and the tick is the worst place to write it: a tick walks mounted
+    projects across ledger reads and path resolution, and under a loaded
+    filesystem one takes minutes. So liveness is written here, on its own
+    thread and its own store handle, for as long as the process lives; what the
+    tick records instead is progress -- the stage it has entered and the
+    instants that bound it -- and the reader compares the two to tell a slow
+    station from a stopped one.
+    """
+
+    def __init__(
+        self,
+        root: Path,
+        *,
+        beat_seconds: float | None = None,
+        clock: Callable[[], datetime] | None = None,
+        store: station_store.StationStore | None = None,
+    ) -> None:
+        self.root = root
+        self.beat_seconds = (
+            STATION_BEAT_SECONDS if beat_seconds is None else beat_seconds
+        )
+        self._clock = clock or (lambda: datetime.now(tz=UTC))
+        self._store = store
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def _handle(self) -> station_store.StationStore:
+        """This thread's own store handle, opened on first use.
+
+        A handle of its own rather than the tick's: the two write the same
+        table from different threads, and a connection shared across threads is
+        the kind of coupling that turns one slow tick into a corrupted beat.
+        """
+        if self._store is None:
+            self._store = station_store.StationStore(self.root)
+        return self._store
+
+    def beat_once(self) -> None:
+        """Move the heartbeat to now."""
+        self._handle().heartbeat(now=self._clock())
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self.beat_once()
+            except Exception:  # noqa: BLE001 - a missed beat is retried on the next
+                print(
+                    "station-beat-failure: the heartbeat could not be written",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                traceback.print_exc(file=sys.stderr)
+            self._stop.wait(self.beat_seconds)
+
+    def start(self) -> None:
+        """Beat once, then keep beating on its own thread."""
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(
+            target=self._run, name="station-beat", daemon=True
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Stop beating and close this thread's handle."""
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=max(1.0, self.beat_seconds * 2))
+            self._thread = None
+        if self._store is not None:
+            self._store.close()
+            self._store = None
+
+
+class SweepBeat:
+    """Run each session's sweep for the station, off its tick path.
+
+    A sweep walks registered worktrees and can run for hours, so the station
+    hands it to its own thread rather than paying for it between two ticks: a
+    heartbeat stalled behind a sweep is a station an off-node reader calls
+    stopped. A session already walking is not started again, and a session
+    with nothing due is not started at all.
+    """
+
+    def __init__(
+        self,
+        *,
+        sweep: Callable[..., Any] | None = None,
+        start: Callable[[Callable[[], None]], None] | None = None,
+        beat_seconds: float = SWEEP_BEAT_SECONDS,
+    ) -> None:
+        self.sweep = resumption.sweep if sweep is None else sweep
+        self.beat_seconds = beat_seconds
+        self._start = _start_thread if start is None else start
+        self._last: dict[tuple[str, str], float] = {}
+        self._in_flight: set[tuple[str, str]] = set()
+        self._lock = threading.Lock()
+
+    def request(
+        self,
+        project: str,
+        session: str,
+        *,
+        moment: datetime,
+        changed: bool,
+    ) -> bool:
+        """Start this session's sweep when a change or the beat makes it due."""
+        key = (project, session)
+        stamp = moment.timestamp()
+        with self._lock:
+            last = self._last.get(key)
+            due = changed or last is None or (stamp - last) >= self.beat_seconds
+            if not due or key in self._in_flight:
+                return False
+            self._last[key] = stamp
+            self._in_flight.add(key)
+        self._start(lambda: self._run(project, session, key, moment))
+        return True
+
+    def _run(
+        self, project: str, session: str, key: tuple[str, str], moment: datetime
+    ) -> None:
+        try:
+            self.sweep(project, session=session, now=moment, writer=dict(SWEEP_WRITER))
+        except Exception:  # noqa: BLE001 - one session's sweep costs one pass
+            print(
+                f"station-sweep-failure: {project}/{session}: "
+                "the sweep could not complete",
+                file=sys.stderr,
+                flush=True,
+            )
+            traceback.print_exc(file=sys.stderr)
+        finally:
+            with self._lock:
+                self._in_flight.discard(key)
+
+
+def _sessions_to_sweep(pointers: list[Mapping[str, Any]]) -> list[str]:
+    """The sessions this host's station sweeps.
+
+    A session's runs can be launched on more than one host, and a sweep works a
+    whole session rather than a run, so the host that sweeps has to be chosen
+    for the session rather than tested per run: leaving out a session with any
+    run elsewhere leaves it out on every host, and no station ever resumes or
+    reviews it. Exactly one host owns each session instead, decided from the
+    same pointers on every host — the host holding its first-sorted live run —
+    so a split session is swept once and not twice. Ownership can move while a
+    session's runs change; the sweep is idempotent per run, so a session whose
+    owner moves is swept twice rather than dropped.
+    """
+    grouped: dict[str, list[Mapping[str, Any]]] = {}
+    for pointer in pointers:
+        session = str(pointer.get("session") or "")
+        if session and str(pointer.get("run_id") or ""):
+            grouped.setdefault(session, []).append(pointer)
+    owned: list[str] = []
+    for session, records in sorted(grouped.items()):
+        owner = min(records, key=lambda record: str(record.get("run_id") or ""))
+        if not recovery_liveness._record_is_known_foreign(owner):
+            owned.append(session)
+    return owned
 
 
 def station_lease(root: Path) -> HostLease:
@@ -89,16 +285,9 @@ class StationReloader:
             r"[0-9a-f]{40}", current
         ):
             return
-        original_cache = checkout_trust._committed_tree_cache
-        checkout_trust._committed_tree_cache = lambda: (
-            self.runtime_root / "reload-trees"
+        image, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
+            self.source_root, current, active_root=self.import_root
         )
-        try:
-            image, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
-                self.source_root, current, active_root=self.import_root
-            )
-        finally:
-            checkout_trust._committed_tree_cache = original_cache
         if not image.is_relative_to(self.runtime_root):
             os.close(pin)
             raise RuntimeError(f"station reload image escaped runtime root: {image}")
@@ -131,23 +320,53 @@ class Station:
         home: Path | None = None,
         projects: Callable[[], Mapping[str, Path]] = flight.mounted_project_docs,
         stall_seconds: int = 900,
+        sweeps: SweepBeat | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         self.store = store
         self.home = home or crew_home()
         self.projects = projects
         self.stall_seconds = stall_seconds
+        self.clock = clock or (lambda: datetime.now(tz=UTC))
+        # The review reflex and settle detection run here, once for every
+        # session on the node, rather than in each follower.
+        self.sweeps = SweepBeat() if sweeps is None else sweeps
         # The home this station's rows describe. A follower reads this store
         # only when its own home is the same one, because a store built from
         # another home holds another fleet's rows.
         self.store.set_station_value(station_store.CREW_HOME_KEY, str(self.home))
 
+    def _enter(self, stage: str, *, started: datetime | None = None) -> None:
+        """Record the stage this tick has entered, and its start when it opens.
+
+        The stage is what a reader names when the tick outlives the stale
+        window, and the start is what makes the tick's age measurable at all.
+        Both are written before the work they name rather than after it, so a
+        stage a reader sees is the stage the tick has not yet finished.
+        """
+        if started is not None:
+            self.store.set_station_value(
+                obligation_snapshot.STATION_TICK_STARTED_AT_KEY,
+                started.astimezone(UTC).isoformat(),
+            )
+        self.store.set_station_value(obligation_snapshot.STATION_TICK_STAGE_KEY, stage)
+
     def tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
         """Publish every new transition, then move the heartbeat."""
-        moment = now or datetime.now(tz=UTC)
+        moment = now or self.clock()
+        stages = obligation_snapshot.STATION_TICK_STAGES
+        self._enter(stages[0], started=moment)
         self.store.tick(home=self.home)
+        self._enter(stages[1])
         verdicts = self.store.classify_tick(
             now_seconds=moment.timestamp(), stall_seconds=self.stall_seconds
         )
+        # The heartbeat moves before anything is published, because every
+        # snapshot this pass exports carries the heartbeat it reads: a station
+        # that beat only at the end would hand its first reader the previous
+        # station's beat, or none at all, and read as stopped while it started.
+        self._enter(stages[2])
+        self.store.heartbeat(now=moment)
         pointers = {
             str(row["run_id"]): json.loads(str(row["fields"]))
             for row in self.store.pointer_rows()
@@ -159,6 +378,10 @@ class Station:
             | {str(value.get("project") or "") for value in pointers.values()}
         )
         published: list[dict[str, Any]] = []
+        # Every project's refresh and export happens in this one stage, because
+        # it is the stage the night's slow ticks spent their time in: a reader
+        # that names it says the station is walking a project, not that it died.
+        self._enter(stages[3])
         for project in sorted(project_names - {""}):
             current = {
                 run_id: verdict
@@ -201,6 +424,20 @@ class Station:
                 events.append(event)
             self.store.record_tick(project, events, next_known, at=moment)
             published.extend(events)
+            # The reading a pane's settle is judged by, written on every tick
+            # rather than on change: a pane settles on emptiness, and a quiet
+            # fleet is exactly the case that publishes no transition.
+            project_live, unowned, live_sessions = (
+                station_subscriber.live_work_populations(project_pointers)
+            )
+            station_subscriber.record_live_work(
+                self.store,
+                project,
+                at=moment,
+                project_live=project_live,
+                unowned=unowned,
+                sessions=live_sessions,
+            )
             # Each session's duties are derived from the same fleet reading
             # this tick just committed, so a change the station published is a
             # change the coordinator's obligations reflect on the same pass.
@@ -211,8 +448,25 @@ class Station:
                 changed=bool(events),
                 now=moment,
             )
-        self.store.heartbeat(now=moment)
+            # The sweep's two passes run for every session this host owns, on
+            # a change and on the beat, so a hold or a declared
+            # wait that ends while the fleet is quiet is still resumed, and a
+            # settled run is still reviewed.
+            for session in _sessions_to_sweep(project_pointers):
+                self.sweeps.request(
+                    project,
+                    session,
+                    moment=moment,
+                    changed=bool(events),
+                )
+        self._enter(stages[4])
         self.store.sweep_retention(now=moment)
+        # The finish stamp is what closes the tick for a reader: until it is
+        # later than the start, a stage on record is a tick still running.
+        self.store.set_station_value(
+            obligation_snapshot.STATION_TICK_FINISHED_AT_KEY,
+            self.clock().astimezone(UTC).isoformat(),
+        )
         return published
 
 
@@ -251,9 +505,14 @@ def run_station(*, interval: float = 1.0, once: bool = False) -> None:
             signum: signal.signal(signum, stop)
             for signum in (signal.SIGINT, signal.SIGTERM)
         }
+        beat: StationBeat | None = None
         try:
             station = Station(store)
             reloader = StationReloader(store.root)
+            # The beat starts before the first tick, so a station whose opening
+            # tick is slow is never read as one that never started.
+            beat = StationBeat(store.root, clock=station.clock)
+            beat.start()
             renewed_at = time.monotonic()
             while not stopping:
                 station.tick()
@@ -268,6 +527,8 @@ def run_station(*, interval: float = 1.0, once: bool = False) -> None:
                 reloader.poll()
                 time.sleep(interval)
         finally:
+            if beat is not None:
+                beat.stop()
             for signum, handler in previous.items():
                 signal.signal(signum, handler)
             lease.release()

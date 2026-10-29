@@ -729,6 +729,24 @@ def plan_dispatch(
     default_token_budget = _resolved_token_budget(config, backend)
     node.time_budget = node.time_budget or default_budget
     node.section = normalize_section(node.section)
+    # A plan-review finding its author answered ``carried`` is work this node
+    # owes, so it is appended to the node's done-when here rather than edited
+    # into the plan: editing the plan reopens the review gate, whose next review
+    # raises the next finding. Every dispatch path reaches this point, so a
+    # carried finding is delivered once per dispatch of its section and never to
+    # another section's node. A section with no carried finding, and a node with
+    # no plan section, are untouched.
+    if node.section and node.plan and project:
+        from reckon.crew import plan_review as plan_review_module
+
+        node.done_when = plan_review_module.with_carried_findings(
+            node.done_when,
+            plan_review_module.carried_findings_for_section(
+                project,
+                node.plan,
+                node.section,
+            ),
+        )
     resolved_run_id = run_id or new_run_id(node.id)
     durable_manifest = str(run_dir(resolved_run_id) / "manifest.md")
     caller_manifest = bool(node.manifest_path)

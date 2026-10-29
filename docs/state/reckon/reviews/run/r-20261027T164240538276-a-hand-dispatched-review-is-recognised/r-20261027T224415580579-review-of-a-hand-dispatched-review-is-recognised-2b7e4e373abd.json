@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:489 _reflex_review_in_flight calls recovery._review_in_flight",
+    "reckon/crew/obligations.py:514 and :603 _current_review_in_flight",
+    "reckon/crew/obligation_snapshot.py:1136 calls _current_review_in_flight"
+  ],
+  "completed_at": "2026-10-27T22:54:15.191Z",
+  "dispatched_at": "2026-10-27T22:45:20Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T164240538276-a-hand-dispatched-review-is-recognised/manifest.md",
+      "id": "f72d89fddd8",
+      "line": "15-16",
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite measure different file sets, because after_suite adds tests/test_figure_review.py that baseline_suite omits, and the importing sweep's zero-added claim rests on a one-test base arm rather than the same population; both base arms are recorded separately (figure_at_base.log, snapshot_test_base.log) and the single changed production module makes the inference sound, so the node is not held."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T164240538276-a-hand-dispatched-review-is-recognised/logs/after.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T164240538276-a-hand-dispatched-review-is-recognised/logs/baseline.log"
+  },
+  "item_verdicts": {
+    "diff": "Read the four commits from 793f29f738001d9e2aca9a0cc349be794b4c0894 to 2b7e4e373abd504a282a881da172c446152d47ab: a629631761 rewrites _review_pointer_rubric and moves the granted-path test ahead of the role gate, b9471ae4c5 corrects the figure-review fixture's directory, and 9e97d267cd and 2b7e4e373a record the fragment.",
+    "done_when": "The done_when names tests/test_a_hand_dispatched_review_is_recognised.py and its four arms; that file carries four arms at lines 130, 147, 163 and 189, red at base (baseline.log, 4 failed, EXIT=1) and green after (after.log, 13 passed, EXIT=0).",
+    "goal": "The goal is that the in-flight matcher compute expected record paths from the reviewed run's directory, and recovery_review_dispatch.py:441-445 now calls run_review_record_paths(runs.run_dir(reviewed_run_id), ...), the same call the composer makes at recovery_review_subject.py:866-874.",
+    "manifest": "Read the manifest; it names four commits, 13 passed on the node suite, 572 passed and 1 failed on the importing sweep, a 4-failed negative control, and its log paths, and each log header revision and EXIT line matches those claims.",
+    "write_paths": "Nine granted paths were read; the diff touches reckon/crew/recovery_review_dispatch.py, tests/test_a_hand_dispatched_review_is_recognised.py and the landing fragment, all granted, plus tests/test_figure_review.py which resume-1-advice.txt added; tests/test_review_in_flight_by_record_path.py was granted and left unchanged."
+  },
+  "justifications": {
+    "durability": "logs/negative_control.log reinstates the reviewer-directory composition and all four arms in tests/test_a_hand_dispatched_review_is_recognised.py fail (4 failed, EXIT=1), which is the regression this change prevents.",
+    "evidence": "The four arms redden at base and pass after as claimed, but baseline_suite omits tests/test_figure_review.py which after_suite includes, and the zero-added sweep claim compares a 573-test after run against a one-test base arm in logs/snapshot_test_base.log.",
+    "fit": "The rewritten _review_pointer_rubric at recovery_review_dispatch.py:416-472 keeps the module's existing _review_record_subject helper and docstring idiom, and adds no forbidden name.",
+    "goal_fidelity": "recovery_review_dispatch.py:441-445 computes the expected names from runs.run_dir(reviewed_run_id), the directory the composer declares them under at recovery_review_subject.py:866, so both sides name one path.",
+    "reuse": "It calls the existing owners rather than forking them, review.py:2992 run_review_record_directory and :2997 run_review_record_paths, and a search across reckon/crew found recovery_review_subject.py:866 as the only other composer, which the matcher now follows.",
+    "scope_discipline": "Every changed path is inside the granted scope, with tests/test_figure_review.py granted by resume-1-advice.txt, and the plan itself was not edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is that the in-flight matcher compute expected record paths from the reviewed run's directory, and recovery_review_dispatch.py:441-445 now calls run_review_record_paths(runs.run_dir(reviewed_run_id), ...), the same call the composer makes at recovery_review_subject.py:866-874.\nVERDICT done_when: The done_when names tests/test_a_hand_dispatched_review_is_recognised.py and its four arms; that file carries four arms at lines 130, 147, 163 and 189, red at base (baseline.log, 4 failed, EXIT=1) and green after (after.log, 13 passed, EXIT=0).\nVERDICT write_paths: Nine granted paths were read; the diff touches reckon/crew/recovery_review_dispatch.py, tests/test_a_hand_dispatched_review_is_recognised.py and the landing fragment, all granted, plus tests/test_figure_review.py which resume-1-advice.txt added; tests/test_review_in_flight_by_record_path.py was granted and left unchanged.\nVERDICT manifest: Read the manifest; it names four commits, 13 passed on the node suite, 572 passed and 1 failed on the importing sweep, a 4-failed negative control, and its log paths, and each log header revision and EXIT line matches those claims.\nVERDICT diff: Read the four commits from 793f29f738001d9e2aca9a0cc349be794b4c0894 to 2b7e4e373abd504a282a881da172c446152d47ab: a629631761 rewrites _review_pointer_rubric and moves the granted-path test ahead of the role gate, b9471ae4c5 corrects the figure-review fixture's directory, and 9e97d267cd and 2b7e4e373a record the fragment.\nCALL_SITES: reckon/crew/obligations.py:489 _reflex_review_in_flight calls recovery._review_in_flight, reckon/crew/obligations.py:514 and :603 _current_review_in_flight, reckon/crew/obligation_snapshot.py:1136 calls _current_review_in_flight\nSCORE goal_fidelity: 20\nSCORE evidence: 16\nSCORE scope_discipline: 19\nSCORE durability: 19\nSCORE fit: 19\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: recovery_review_dispatch.py:441-445 computes the expected names from runs.run_dir(reviewed_run_id), the directory the composer declares them under at recovery_review_subject.py:866, so both sides name one path.\nJUSTIFICATION evidence: The four arms redden at base and pass after as claimed, but baseline_suite omits tests/test_figure_review.py which after_suite includes, and the zero-added sweep claim compares a 573-test after run against a one-test base arm in logs/snapshot_test_base.log.\nJUSTIFICATION scope_discipline: Every changed path is inside the granted scope, with tests/test_figure_review.py granted by resume-1-advice.txt, and the plan itself was not edited.\nJUSTIFICATION durability: logs/negative_control.log reinstates the reviewer-directory composition and all four arms in tests/test_a_hand_dispatched_review_is_recognised.py fail (4 failed, EXIT=1), which is the regression this change prevents.\nJUSTIFICATION fit: The rewritten _review_pointer_rubric at recovery_review_dispatch.py:416-472 keeps the module's existing _review_record_subject helper and docstring idiom, and adds no forbidden name.\nJUSTIFICATION reuse: It calls the existing owners rather than forking them, review.py:2992 run_review_record_directory and :2997 run_review_record_paths, and a search across reckon/crew found recovery_review_subject.py:866 as the only other composer, which the matcher now follows.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T164240538276-a-hand-dispatched-review-is-recognised/manifest.md:15-16 non-blocking: baseline_suite and after_suite measure different file sets, because after_suite adds tests/test_figure_review.py that baseline_suite omits, and the importing sweep's zero-added claim rests on a one-test base arm rather than the same population; both base arms are recorded separately (figure_at_base.log, snapshot_test_base.log) and the single changed production module makes the inference sound, so the node is not held.",
+  "review_run_id": "r-20261027T224415580579-review-of-a-hand-dispatched-review-is-recognised-2b7e4e373abd",
+  "reviewed_base_sha": "793f29f738001d9e2aca9a0cc349be794b4c0894",
+  "reviewed_head_sha": "2b7e4e373abd504a282a881da172c446152d47ab",
+  "reviewed_run_id": "r-20261027T164240538276-a-hand-dispatched-review-is-recognised",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T22:52:28.610018+00:00",
+  "total": 113
+}

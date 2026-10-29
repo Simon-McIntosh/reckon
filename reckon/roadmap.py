@@ -8,9 +8,12 @@ graph traversal in each surface.
 
 from __future__ import annotations
 
+import json
 import re
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -1937,6 +1940,284 @@ def _unwired_plan_findings(
     return out
 
 
+def _declared_waits_by_section(
+    plan: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> dict[str, list[str]]:
+    """A plan's section waits, keyed by the section that declares each one.
+
+    The mapping is read from the row when it carries one and from the authored
+    markup otherwise, so one reader answers for a composed row and for a
+    discovery row. An entry that names no section declares no wait: that is the
+    refusal the section-edge reader reports, and it declares a wait here.
+    """
+
+    mapping = _plan_section_deps(plan, docs_dir, project, slug) or {}
+    waits: dict[str, list[str]] = {}
+    for raw_section, raw_refs in mapping.items():
+        section = str(raw_section or "").strip()
+        refs = [raw_refs] if isinstance(raw_refs, str) else raw_refs
+        if not is_section_identity(section) or not isinstance(refs, list):
+            continue
+        waits[section] = [str(ref) for ref in refs]
+    return waits
+
+
+def _removal_op(path: str, remaining: list[str]) -> str:
+    """The ``set`` that removes one link and leaves the rest in place."""
+
+    return f"set {path} {json.dumps(remaining)}"
+
+
+def _settled_link_findings(
+    project: str,
+    plans: Mapping[str, dict[str, Any]],
+    all_plans: Mapping[str, dict[str, Any]],
+    docs_dir: Path | None,
+) -> list[dict[str, Any]]:
+    """Name the links whose target has landed and which order nothing now.
+
+    A link is spent once its target is closed and satisfied and no open section
+    of the waiting plan still waits on it. It is reported at ``info`` because
+    removing it is a review's judgment rather than the analyser's: the
+    declaration recorded a relationship that was true when it was written, and
+    the finding says only that nothing still orders work through it.
+
+    The plan's declared relationship lists and its section waits are read
+    directly, including ``after`` and closed targets, because the roadmap's own
+    graph holds only open sections and the edges that still order work, so
+    nothing spent is visible there. An open section that waits on the same
+    target keeps a plan-level link alive: that edge is what the remaining work
+    is read against, and removing it would hide the wait rather than tidy it.
+    """
+
+    findings: list[dict[str, Any]] = []
+    for slug, plan in sorted(plans.items()):
+        if str(plan.get("type") or "plan") != "plan":
+            continue
+        if _status(plan) in TERMINAL_STATUSES:
+            continue
+        authored = _plan_authored_state(plan, docs_dir, project, slug)
+        open_ids = set(open_sections(authored))
+        waits = _declared_waits_by_section(plan, docs_dir, project, slug)
+        open_waits: list[tuple[str, str | None]] = []
+        for section, refs in sorted(waits.items()):
+            if section not in open_ids:
+                continue
+            for ref in refs:
+                parsed = parse_plan_ref(ref)
+                if parsed is None or parsed.is_external(project):
+                    continue
+                open_waits.append((parsed.slug, parsed.stage))
+
+        def still_waited(
+            target_slug: str,
+            stage: str | None,
+            waiting: list[tuple[str, str | None]] = open_waits,
+        ) -> bool:
+            return any(
+                waited_slug == target_slug and (stage is None or waited_stage == stage)
+                for waited_slug, waited_stage in waiting
+            )
+
+        for field in ("depends_on", "after"):
+            refs = [str(ref) for ref in plan.get(field) or []]
+            for ref in refs:
+                parsed = parse_plan_ref(ref)
+                if parsed is None or parsed.is_external(project):
+                    continue
+                target = all_plans.get(parsed.slug)
+                if target is None or _status(target) not in COMPLETED_STATUSES:
+                    continue
+                if parsed.stage and not _section_satisfied(
+                    target,
+                    parsed.stage,
+                    _plan_authored_state(target, docs_dir, project, parsed.slug).get(
+                        "section_declarations"
+                    ),
+                ):
+                    continue
+                if still_waited(parsed.slug, parsed.stage):
+                    continue
+                remaining = list(refs)
+                remaining.remove(ref)
+                op = _removal_op(field, remaining)
+                findings.append(
+                    _finding(
+                        "settled-link",
+                        "info",
+                        (
+                            f"{slug}: {field} {ref!r} is settled — "
+                            f"{parsed.slug} is {_status(target)}; remove it with {op}"
+                        ),
+                        slug=slug,
+                        extra={
+                            "ref": ref,
+                            "field": field,
+                            "target": parsed.slug,
+                            "target_status": _status(target),
+                            "set": op,
+                            "remaining": remaining,
+                        },
+                    )
+                )
+
+        for section, refs in sorted(waits.items()):
+            if section in open_ids:
+                continue
+            for ref in refs:
+                parsed = parse_plan_ref(ref)
+                if (
+                    parsed is None
+                    or parsed.is_external(project)
+                    or not parsed.stage
+                    or parsed.followup
+                ):
+                    continue
+                target = all_plans.get(parsed.slug)
+                if target is None or _status(target) not in COMPLETED_STATUSES:
+                    continue
+                if not _section_satisfied(
+                    target,
+                    parsed.stage,
+                    _plan_authored_state(target, docs_dir, project, parsed.slug).get(
+                        "section_declarations"
+                    ),
+                ):
+                    continue
+                remaining = list(refs)
+                remaining.remove(ref)
+                op = _removal_op(f"section_depends_on.{section}", remaining)
+                findings.append(
+                    _finding(
+                        "settled-link",
+                        "info",
+                        (
+                            f"{slug}: section wait {section} -> {ref!r} is settled — "
+                            f"{parsed.slug} is {_status(target)} and {section} is "
+                            f"closed; remove it with {op}"
+                        ),
+                        slug=slug,
+                        extra={
+                            "ref": ref,
+                            "field": "section_depends_on",
+                            "section": section,
+                            "target": parsed.slug,
+                            "target_status": _status(target),
+                            "set": op,
+                            "remaining": remaining,
+                        },
+                    )
+                )
+    return findings
+
+
+def _reachable_avoiding(
+    adjacency: Mapping[str, Iterable[str]],
+    start: str,
+    goal: str,
+    skipped: tuple[str, str],
+) -> bool:
+    """Whether ``goal`` is reachable from ``start`` without one named edge."""
+
+    seen = {start}
+    stack = [start]
+    while stack:
+        node = stack.pop()
+        for nxt in sorted(adjacency.get(node, ())):
+            if (node, nxt) == skipped:
+                continue
+            if nxt == goal:
+                return True
+            if nxt not in seen:
+                seen.add(nxt)
+                stack.append(nxt)
+    return False
+
+
+def _redundant_link_findings(
+    project: str,
+    plans: Mapping[str, dict[str, Any]],
+    all_plans: Mapping[str, dict[str, Any]],
+    local_graph: Mapping[str, Iterable[str]],
+) -> list[dict[str, Any]]:
+    """Name a declared edge that a path of other edges already implies.
+
+    The graph read here is the roadmap's own — the edges that still order work,
+    section nodes included — together with the declared plan-level edges. The
+    path is searched with the candidate edge removed, so the edge reaches its
+    own target only through other edges; a ref declared twice is a duplicate
+    rather than a redundant path and is not reported as one here.
+
+    Only an edge whose target is still open can be redundant: an edge to a
+    settled target is spent, which ``settled-link`` reports instead.
+    """
+
+    adjacency: dict[str, set[str]] = defaultdict(set)
+    for node, targets in local_graph.items():
+        adjacency[str(node)].update(str(target) for target in targets)
+    for other_slug, other in all_plans.items():
+        if str(other.get("type") or "plan") != "plan":
+            continue
+        if _status(other) in TERMINAL_STATUSES:
+            continue
+        for ref in other.get("depends_on") or []:
+            parsed = parse_plan_ref(str(ref))
+            if parsed is None or parsed.is_external(project):
+                continue
+            target = all_plans.get(parsed.slug)
+            if target is None or _status(target) in COMPLETED_STATUSES:
+                continue
+            adjacency[str(other_slug)].add(parsed.slug)
+
+    findings: list[dict[str, Any]] = []
+    for slug, plan in sorted(plans.items()):
+        if str(plan.get("type") or "plan") != "plan":
+            continue
+        if _status(plan) in TERMINAL_STATUSES:
+            continue
+        refs = [str(ref) for ref in plan.get("depends_on") or []]
+        for ref in refs:
+            parsed = parse_plan_ref(ref)
+            if parsed is None or parsed.is_external(project):
+                continue
+            target = all_plans.get(parsed.slug)
+            if target is None or _status(target) in COMPLETED_STATUSES:
+                continue
+            if parsed.slug == slug or refs.count(ref) > 1:
+                continue
+            if parsed.slug not in adjacency.get(slug, set()):
+                continue
+            if not _reachable_avoiding(
+                adjacency, slug, parsed.slug, (slug, parsed.slug)
+            ):
+                continue
+            remaining = list(refs)
+            remaining.remove(ref)
+            op = _removal_op("depends_on", remaining)
+            findings.append(
+                _finding(
+                    "redundant-link",
+                    "info",
+                    (
+                        f"{slug}: depends_on {ref!r} is implied by another path to "
+                        f"{parsed.slug}; remove it with {op}"
+                    ),
+                    slug=slug,
+                    extra={
+                        "ref": ref,
+                        "field": "depends_on",
+                        "target": parsed.slug,
+                        "set": op,
+                        "remaining": remaining,
+                    },
+                )
+            )
+    return findings
+
+
 def _plan_followups(
     plan: Mapping[str, Any],
     docs_dir: Path | None,
@@ -2857,6 +3138,86 @@ def _held_paths_by_section(
     return grouped
 
 
+class _RoadmapScope:
+    """The roadmap the builds inside one scope produced, read after its work."""
+
+    __slots__ = ("built",)
+
+    def __init__(self) -> None:
+        self.built: dict[str, Any] | None = None
+
+
+#: The scope whose builds record their roadmap, when a caller opened one. A
+#: project's discovery derives a roadmap for its ready set, and a reader that
+#: also asks for that project's section verdicts would otherwise derive the
+#: whole project a second time for an answer already in hand.
+_BUILT_ROADMAP: ContextVar[_RoadmapScope | None] = ContextVar(
+    "roadmap_built_in_scope", default=None
+)
+
+
+@contextmanager
+def roadmap_build_scope() -> Iterator[_RoadmapScope]:
+    """Record the roadmap the builds inside this scope produce.
+
+    The caller reads ``scope.built`` once the work inside the scope is done. A
+    caller that needs the whole project's roadmap for more than the ready set
+    uses it to make one derivation serve both answers.
+    """
+
+    scope = _RoadmapScope()
+    token = _BUILT_ROADMAP.set(scope)
+    try:
+        yield scope
+    finally:
+        _BUILT_ROADMAP.reset(token)
+
+
+def section_verdicts_by_plan(
+    roadmap: Mapping[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Each pending plan's readiness and its implementable-section verdicts.
+
+    One shape, read by the whole-project readiness read and by the bounded
+    per-section read a dispatch makes, so the two cannot disagree about which
+    sections a row carries or under which key.
+    """
+
+    return {
+        str(row.get("slug")): {
+            "readiness": str(row.get("readiness") or "unknown"),
+            "sections": {
+                section: row["section_verdicts"][section]
+                for section in row.get("implementable_sections") or ()
+                if section in row.get("section_verdicts", {})
+            },
+        }
+        for row in roadmap.get("pending_work") or ()
+        if row.get("slug")
+    }
+
+
+def section_readiness_rows(
+    project: str,
+    inventory: list[dict[str, Any]],
+    *,
+    docs_dir: Path | str | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Section readiness for exactly the plans ``inventory`` names.
+
+    A dispatch judges its own section, so it builds the roadmap over the plans
+    it reads rather than over the whole project: the caller puts one plan and
+    the plans its declared waits name into ``inventory``, and every verdict
+    comes from the same :func:`section_readiness_verdict` the whole-project
+    build uses. A plan absent from ``inventory`` carries no row, which is the
+    same answer a whole-project build gives a plan it does not find.
+    """
+
+    return section_verdicts_by_plan(
+        build_roadmap(project, list(inventory), [], docs_dir=docs_dir)
+    )
+
+
 def build_roadmap(
     project: str,
     inventory: list[dict[str, Any]],
@@ -2881,7 +3242,7 @@ def build_roadmap(
     """
 
     with resource_scan_scope():
-        return _build_roadmap(
+        roadmap = _build_roadmap(
             project,
             inventory,
             sprints,
@@ -2892,6 +3253,10 @@ def build_roadmap(
             review=review,
             docs_dir=docs_dir,
         )
+    scope = _BUILT_ROADMAP.get()
+    if scope is not None:
+        scope.built = roadmap
+    return roadmap
 
 
 def _build_roadmap(
@@ -4148,6 +4513,10 @@ def _build_roadmap(
     review_findings = _review_health(project, review_block, local_graph)
     inventory_docs_dir = Path(docs_dir) if docs_dir is not None else None
     findings.extend(_unwired_plan_findings(project, plans, inventory_docs_dir))
+    findings.extend(
+        _settled_link_findings(project, plans, all_plans, inventory_docs_dir)
+    )
+    findings.extend(_redundant_link_findings(project, plans, all_plans, local_graph))
     sprint_ids = {
         identity
         for sprint in sprints

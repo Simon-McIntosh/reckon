@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T15:27:52.087Z",
+  "dispatched_at": "2026-10-27T15:12:17Z",
+  "findings": [
+    {
+      "file": "reckon/mcp.py",
+      "id": "f9222c78054",
+      "line": 2329,
+      "severity": "non-blocking",
+      "summary": "_roadmap_scoped's docstring still says the registered MCP wrapper 'defaults single-project clients to the compact summary', which is exactly the behaviour this change replaces; a reader of the function's contract is pointed at the old default."
+    },
+    {
+      "file": "tests/test_mcp_recovery.py",
+      "id": "f6a303ca834",
+      "line": 373,
+      "severity": "non-blocking",
+      "summary": "This file is outside the node's declared write paths; the rename and the explicit view=\"summary\" call are required by the section's own done-when, and the worker disclosed the edit under outside_scope, so the coordinator must add the path to the node's grants at promotion or revert it."
+    },
+    {
+      "file": "reckon/mcp_budget.py",
+      "id": "f47b2f8134a",
+      "line": 66,
+      "severity": "non-blocking",
+      "summary": "DEFAULT_VIEWS still maps roadmap to summary and VIEW_BUDGETS has no (\"roadmap\", \"brief\") row, so the new default answer is held to the 20,000-character summary row; the brief serialised to 17,772 on reckon, and a project only ~13% larger would have its default read refused by a budget sized for the payload it replaced."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the goal is to make the project brief composed by reckon/project_brief.py the default answer of roadmap(project) with no view and to have both skills lead with it; reckon/mcp.py:2086-2103 resolves a view-less single-project call to BRIEF_VIEW and reckon/mcp.py:2513-2516 composes it, so the landed change does what the goal states.\nVERDICT done_when: the done-when asserts a default fixture read returns the brief with each ranked row carrying the ranking's reason, a named summary read unchanged, both skill fast paths naming the brief first, a revision of the landed default-is-summary test, a served base arm, and a negative control, with gate 'tests/test_the_brief_is_the_default_answer.py tests/test_mcp_tools.py'; the manifest's recorded tests: line names only the first file and no log exists for test_mcp_tools.py, though I re-ran both at dd8e349 in a $TMPDIR git-archive extraction (41 passed, EXIT=0), so the claim holds but only the one-file gate is recorded.\nVERDICT write_paths: declared as reckon/mcp.py, skills/reckon-roadmap/SKILL.md, skills/reckon-status/SKILL.md, tests/test_the_brief_is_the_default_answer.py, the evidence fragment and the figures directory; the diff touches every declared path plus tests/test_mcp_recovery.py, which the worker disclosed under outside_scope.\nVERDICT manifest: read; it states status complete, records the head gate 6 passed, the base gate 5 failed/1 passed at 411ddcee, the negative control at EXIT=1, and 113 roadmap-reader tests passing at head, and it names its logs under the run's logs/ directory.\nVERDICT diff: read commit by commit against the base 411ddcee; six files changed (reckon/mcp.py, two skills, two test files, one evidence fragment), all inside the declared scope except tests/test_mcp_recovery.py, and the change is confined to default-view resolution, the brief composition, the brief refusal on portfolio/graph targets, and the skill fast paths.\nCALL_SITES: reckon/mcp.py:3777 (_refuse_when_stale(_roadmap_deadline_tool(), name=\"roadmap\")), reckon/project_maintenance_commands.py:1580 (_roadmap via the CLI roadmap verb), reckon/mcp_deadlines.py:808 (_roadmap_scoped readiness read, view None, returns raw)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2086-2103 returns BRIEF_VIEW for a view-less single-project read and circumspectly leaves portfolio and graph targets on their own default, matching the goal exactly.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/base-brief.txt records 5 failed/1 passed at 411ddcee and logs/head-brief.txt 6 passed at dd8e349 with EXIT lines, but the recorded gate omits tests/test_mcp_tools.py named in the done-when and no log or base arm exists for it or for logs/head-roadmap-readers.txt (113 passed at head only).\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every diff path is declared except tests/test_mcp_recovery.py:373, a rename plus a view=\"summary\" argument outside the granted paths that the section's own done-when requires and the worker disclosed.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_brief_is_the_default_answer.py:186 fails if the default resolves to summary again (shown by the recorded negative control at EXIT=1), but no assertion exercises the new portfolio/graph brief refusal at reckon/mcp.py:2340-2353 and tests/test_the_briefs_ranked_rows_carry_the_rankings_own_reason compares the brief's rows against the same fixture rows handed to build_roadmap, a passthrough check that cannot distinguish carrying a reason from echoing its input.\nSCORE fit: 15\nJUSTIFICATION fit: the addition follows the surrounding view-composition idiom and introduces no forbidden names, but reckon/mcp.py:2329 still documents the wrapper as defaulting clients to the compact summary, contradicting the landed behaviour.\nSCORE reuse: 20\nJUSTIFICATION reuse: _brief_view delegates to reckon/project_brief.py:project_brief with payload= and reuses roadmap_view(view=\"summary\") for its top-level fields, and _check_roadmap_view wraps reckon/mcp_views.py:normalize_roadmap_view, so no capability is forked.",
+  "review_run_id": "r-20261027T150928502146-review-of-the-brief-is-the-default-answer-dd8e349f63ea",
+  "reviewed_base_sha": "411ddcee698b3b31ffa368762f827a48bf0d6c44",
+  "reviewed_head_sha": "dd8e349f63ea9876151ebb10dfaad59427ddcae2",
+  "reviewed_run_id": "r-20261027T100759949584-the-brief-is-the-default-answer",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T07:25:48.801269+00:00",
+  "total": 97
+}

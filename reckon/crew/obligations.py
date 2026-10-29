@@ -104,6 +104,8 @@ DUTY_ROW_FIELDS = (
     "score",
     "floor",
     "exempt_alternative",
+    # How many requests one plan's review hold keeps waiting.
+    "held_count",
 )
 
 # A review whose attempt the lane's admission gate refused with ``lane-paused``
@@ -1636,6 +1638,46 @@ def _obligations_view(
                 "next_command": f"reckon crew queue release --run {run_id}",
             }
         )
+    # Requests an admission pass held because a plan unit they read carries no
+    # stored review are one duty per plan, not one per request: one composed
+    # review answers every one of them, so the row names how many wait and the
+    # command that releases them.
+    review_holds: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for pointer in live_pointers:
+        if pointer.get("phase") != queue_admission.HELD_PHASE:
+            continue
+        if str(pointer.get("session") or "") != session:
+            continue
+        hold = pointer.get("queue_hold")
+        if not isinstance(hold, dict) or not hold.get("automatic"):
+            continue
+        if str(hold.get("reason") or "") != queue_admission.PLAN_REVIEW_HELD_REASON:
+            continue
+        plan = str(pointer.get("plan") or (pointer.get("node") or {}).get("plan") or "")
+        owner = str(pointer.get("project") or project)
+        review_holds.setdefault((owner, plan), []).append(pointer)
+    if review_holds:
+        from reckon.crew import plan_review
+
+        for (owner, plan), held in review_holds.items():
+            started = [
+                parse_utc((pointer.get("queue_hold") or {}).get("started_at"))
+                for pointer in held
+            ]
+            ages = [int((now - moment).total_seconds()) for moment in started if moment]
+            items.append(
+                {
+                    "kind": "plan-review-owed",
+                    "run_id": str(held[0].get("run_id") or ""),
+                    "plan": plan,
+                    "held_count": len(held),
+                    "age_seconds": min(ages) if ages else 0,
+                    "reason": queue_admission.PLAN_REVIEW_HELD_REASON,
+                    "next_command": plan_review.review_invocation(
+                        owner, plan, session=session
+                    ),
+                }
+            )
     for row in _classified_rows(project):
         if str(row.get("session") or "") != session:
             continue
