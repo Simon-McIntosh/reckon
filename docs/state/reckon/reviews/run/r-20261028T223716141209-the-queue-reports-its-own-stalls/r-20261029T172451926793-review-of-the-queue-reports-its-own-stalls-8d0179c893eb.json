@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-29T17:40:26.084Z",
+  "dispatched_at": "2026-10-29T17:29:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 127,
+      "severity": "non-blocking",
+      "text": "NOT_ADMISSIBLE_PHASES re-spells the pair that WAITING_UPSTREAM_PHASES already owns at reckon/crew/queue_admission.py:81, whose comment says the two are declared there 'rather than spelled out at each filter'; _stall_stage at :1419 still spells the same pair inline, so one fact now has three spellings in one module and a phase added to one leaves the stall rule's suppression and the stage derivation disagreeing."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 114,
+      "severity": "non-blocking",
+      "text": "HOLD_VERDICTS enumerates the same seven hold words that reckon/crew/runs.py:2110 _DRAIN_STUCK_VERDICTS already enumerates as its queued subset; a hold word added at a write site has to be added to both sets and nothing fails when it is added to only one, so a new hold would either keep a request stalling or drop it from the drain view's stuck rule."
+    },
+    {
+      "file": "tests/test_the_queue_reports_its_own_stalls.py",
+      "line": 210,
+      "severity": "non-blocking",
+      "text": "the hold cases are parametrised over `sorted(queue_admission.HOLD_VERDICTS)` and the phase case at :276 over NOT_ADMISSIBLE_PHASES, so the test's input set is the production constant itself: dropping a word from that set deletes the case silently instead of failing, which is the one regression this guard cannot see."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223716141209-the-queue-reports-its-own-stalls/manifest.md",
+      "line": 23,
+      "severity": "non-blocking",
+      "text": "baseline_suite names tests/test_a_refusal_at_admission_is_routed.py while after_suite (line 24) names tests/test_the_queue_reports_its_own_stalls.py, so the recorded arms are not one template resolved over each tree and the pair cannot be read as a same-gate delta; the reproduction it carries (test_a_request_no_lane_fits_is_held_naming_the_shortfall red at 0533fe80dc) is real and belongs under artifacts rather than in the base arm."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to record a stall verdict when admissible work waits on a lane with room; reckon/crew/queue_admission.py:4100-4114 now records it after the pass has walked its queue and :1479-1483 skips a request this pass held or a prior pass's hold accounts for, so the verdict is reserved for a request the lane could have advanced.\nVERDICT done_when: the measure is one stall for an eleven-minute admissible wait, no stall for a claim or a room-less lane, the drain view reading the recorded verdict, no new row kind, no added failures in the importer files and ruff clean; tests/test_the_queue_reports_its_own_stalls.py:207-296 add the hold and waiting-phase cases, logs/hold-rule-head.log records '15 passed' EXIT=0 at 8d0179c893, logs/hold-rule-base.log reproduces the reported failure at 0533fe80dc, logs/importers-head.log records 121 passed / 1 failed with that failure reproduced with the rule reverted (logs/cap-refusal-without-hold-rule.log), and a fresh ruff check and ruff format --check over both changed paths at the reviewed head report all checks passed and 2 files already formatted.\nVERDICT write_paths: the manifest declares six paths; the round's two commits b8a0b80212 and 8d0179c893 touch reckon/crew/queue_admission.py, tests/test_the_queue_reports_*_stalls.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/the-queue-reports-its-own-stalls.html, all inside that set, while the merge 0533fe80dc lands origin/main's peer files and authors none of them.\nVERDICT manifest: read; it reports status complete, both commits, the head arm 15 passed EXIT=0, the base reproduction 1 failed EXIT=1 naming test_a_request_no_lane_fits_is_held_naming_the_shortfall, the hold-clause control 9 failed EXIT=1, and six rubric lines, with the baseline/after arm mismatch recorded as a finding below.\nVERDICT diff: read commit by commit against aa8e5a80a6 - b8a0b80212 moves _record_stalls from before the pass's loop to after it, adds HOLD_VERDICTS (:114) and NOT_ADMISSIBLE_PHASES (:127), threads a held collection into the rule and adds 86 lines of tests; 8d0179c893 rewrites the landing fragment's prose and measurement paragraph; no test is removed and no path falls outside the declared scope.\nCALL_SITES: reckon/crew/queue_admission.py:admit_until_stopped (4327), reckon/crew/needs_you.py:_stall_rows (200), reckon/crew/runs.py:_drain_week_view (2126)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4100-4114 records the stall once the pass has decided each request and :1479-1483 suppresses it for a held request, which is the goal's own condition.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/hold-rule-head.log ('15 passed', EXIT=0) and logs/negative-control-holds.log ('9 failed, 12 passed', EXIT=1) record the gate and its control, but the manifest's baseline_suite names a different test file from after_suite, so the recorded arms are not one command over two trees.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: b8a0b80212 and 8d0179c893 change only reckon/crew/queue_admission.py, tests/test_the_queue_reports_its_own_stalls.py and the always-permitted landing fragment.\nSCORE durability: 13\nJUSTIFICATION durability: logs/negative-control-holds.log shows the nine hold and phase cases red at EXIT=1 when the clauses are deleted, but tests/test_the_queue_reports_its_own_stalls.py:210 and :276 parametrise over the production sets, so removing a word from either silently removes its case instead of failing.\nSCORE fit: 17\nJUSTIFICATION fit: the constants at reckon/crew/queue_admission.py:114 and :127 follow the module's '#:' comment-then-constant idiom and held_this_pass names its purpose, with no plan, stage or ticket label anywhere in the change.\nSCORE reuse: 5\nJUSTIFICATION reuse: NOT_ADMISSIBLE_PHASES at reckon/crew/queue_admission.py:127 re-spells WAITING_UPSTREAM_PHASES declared at :81 and HOLD_VERDICTS at :114 duplicates the seven hold words reckon/crew/runs.py:2110 _DRAIN_STUCK_VERDICTS already enumerates, duplicating both owners rather than extending either.\nFINDING reckon/crew/queue_admission.py:127 non-blocking: NOT_ADMISSIBLE_PHASES re-spells the pair that WAITING_UPSTREAM_PHASES already owns at reckon/crew/queue_admission.py:81, whose comment says the two are declared there 'rather than spelled out at each filter'; _stall_stage at :1419 still spells the same pair inline, so one fact now has three spellings in one module and a phase added to one leaves the stall rule's suppression and the stage derivation disagreeing.\nFINDING reckon/crew/queue_admission.py:114 non-blocking: HOLD_VERDICTS enumerates the same seven hold words that reckon/crew/runs.py:2110 _DRAIN_STUCK_VERDICTS already enumerates as its queued subset; a hold word added at a write site has to be added to both sets and nothing fails when it is added to only one, so a new hold would either keep a request stalling or drop it from the drain view's stuck rule.\nFINDING tests/test_the_queue_reports_its_own_stalls.py:210 non-blocking: the hold cases are parametrised over sorted(queue_admission.HOLD_VERDICTS) and the phase case at :276 over NOT_ADMISSIBLE_PHASES, so the test's input set is the production constant itself: dropping a word from that set deletes the case silently instead of failing, which is the one regression this guard cannot see.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223716141209-the-queue-reports-its-own-stalls/manifest.md:23 non-blocking: baseline_suite names tests/test_a_refusal_at_admission_is_routed.py while after_suite (line 24) names tests/test_the_queue_reports_its_own_stalls.py, so the recorded arms are not one template resolved over each tree and the pair cannot be read as a same-gate delta; the reproduction it carries is real and belongs under artifacts rather than in the base arm.\n",
+  "review_run_id": "r-20261029T172451926793-review-of-the-queue-reports-its-own-stalls-8d0179c893eb",
+  "reviewed_base_sha": "aa8e5a80a67b0ee2550c93cefa1c8e95f2575915",
+  "reviewed_head_sha": "8d0179c893eb1874f2ee2bc1650a63e5b381c1c6",
+  "reviewed_run_id": "r-20261028T223716141209-the-queue-reports-its-own-stalls",
+  "rubric": "text",
+  "scores": {
+    "durability": 13,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T17:50:00.000000+00:00",
+  "total": 86
+}

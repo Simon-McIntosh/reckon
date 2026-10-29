@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="71">
+<meta name="plan-version" content="72">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -270,6 +270,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261029T162047877552-review-of-the-queue-reports-its-own-stalls-aa8e5a80a67b" data-who="reckon-build" data-when="2026-10-29T16:28:17.695Z">
     <div class="r-comment-body"><p>the repair round reads as landed — the stuck rule at reckon/crew/runs.py:2234 now needs a waiting phase and a waiting verdict, the drain view is measured by two tests at tests/test_the_queue_reports_its_own_stalls.py:236 and :273, and the review scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 15, fit 18, reuse 5 with three non-blocking findings and no blocking one</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261029T172451926793-review-of-the-queue-reports-its-own-stalls-8d0179c893eb" data-who="reckon-build" data-when="2026-10-29T17:40:26.084Z">
+    <div class="r-comment-body"><p>independent review of r-20261028T223716141209 at 8d0179c893 (base aa8e5a80) is parsed: scores goal_fidelity 17, evidence 15, scope_discipline 19, durability 13, fit 17, reuse 5; 0 added failures from the reviewed run&#x27;s own arms; four non-blocking findings (NOT_ADMISSIBLE_PHASES re-spells WAITING_UPSTREAM_PHASES at queue_admission.py:127, HOLD_VERDICTS duplicates runs.py:2110&#x27;s hold enumeration at :114, the hold/phase tests parametrise over the production constants at tests/test_the_queue_reports_its_own_stalls.py:210 and :276, and the manifest&#x27;s baseline arm names a different test file from its after arm)</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261028T223438209702-a-delivered-run-reaches-a-landing-verdict" data-who="reckon-build" data-when="2026-10-29T14:50:33.553Z">
     <div class="r-comment-body"><p>§8 landed: `land_once` records `awaiting-review` in `admission_landing` with the review reflex's own state (dispatched, or refused with its recorded reason) instead of continuing silently, and the `crew complete --land` step presents the revisions `queue_landing._delivered_revision` places, retiring `promotion_evidence`'s whole-entry reader; base arm 6 failed / head arm 6 passed, importer population 66 passed on both arms.</p></div>
