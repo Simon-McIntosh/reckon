@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: after_suite (logs/head-gate.log) completes with 0 failures; baseline_suite (logs/baseline-arm-note.txt) is a pytest collection error at the base revision, which carries no such test file, so no base test id exists to difference and no failure is added by the change.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:872",
+    "reckon/crew/queue_admission.py:2604",
+    "reckon/crew/queue_admission.py:2679",
+    "reckon/crew/plan_review.py:1319"
+  ],
+  "completed_at": "2026-10-29T00:55:31.433Z",
+  "dispatched_at": "2026-10-28T23:43:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "id": "f75679bbb8d",
+      "line": "2789",
+      "severity": "blocking",
+      "text": "the digest short-circuit returns None before the unanswered-findings refusal at reckon/crew/routing.py:2841-2849, so a launch of a queued request passes a plan whose review leaves findings unanswered while a fresh direct dispatch on the same plan refuses it. Reproduced at the reviewed head in a scratch extraction: with a design review carrying finding F1 and no response, _launch returned None and _direct returned 'the review of plan ... leaves 1 finding(s) unanswered: F1'. This contradicts the plan section's done-when ('each launch's verdict equals the verdict of a fresh direct dispatch at the same moment') and is a regression against the base, where review_coverage ran unconditionally before the same refusal. Remedy: reuse only the coverage computation and its record, and keep the unanswered-findings check after it."
+    },
+    {
+      "file": "tests/test_a_launch_reuses_what_queue_time_proved.py",
+      "id": "f40721d5b5c",
+      "line": "240",
+      "severity": "non-blocking",
+      "text": "in the edit=False parametrization both sides of 'assert _launch(repo, node) == _direct(repo, node)' are None, so the assertion holds whatever the code does and could not have caught the divergence above; the arm that would carry weight (a state where the two verdicts differ) is absent."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T222907809727-a-launch-reuses-what-queue-time-proved/logs/head-importers.log",
+      "id": "f8398d219ee",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "the run the manifest leans on for 'The test files importing reckon.crew.routing and reckon.crew.plan_review add no failures against the base revision' is truncated mid-run (20 lines, no summary, no EXIT line) and shows one F at 84%, so the arm is unreadable rather than green and the done_when's delta floor is unestablished."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "the change reaches dispatch_plan.py:872, queue_admission.py:2604 (_dispatch_gate_owed) and the admission pass's _plan_review_owed at queue_admission.py:2679, and read_plan_review at plan_review.py:1319 now routes through the memo.",
+    "diff": "read commit by commit against fd7bb0bbad; one commit, four files, 504 insertions and 2 deletions: the short-circuit and its digest helpers in reckon/crew/routing.py, the memo in reckon/crew/plan_review.py, a 249-line test, and the landing fragment.",
+    "done_when": "the measure names tests/test_a_launch_reuses_what_queue_time_proved.py; the manifest records '5 passed EXIT=0' in logs/head-gate.log and I re-read that log, but its third arm ('each launch's verdict equals a fresh direct dispatch's') is asserted only where both sides are None or where both raise, and a probe at the reviewed head shows launch=None against direct=refusal for an unanswered review finding, so the measure is not met.",
+    "goal": "the goal is 'reuse a queued request's recorded contract at launch'; reckon/crew/routing.py:2788-2792 reads the request's recorded section and document digests and returns at once when neither moved, and reckon/crew/plan_review.py:1219 review_coverage_memo shares one coverage computation across a pass, so the reuse is landed.",
+    "manifest": "read; it records status complete, 5 passed on the new test, a negative control that dropped the digest comparison and failed 1 of 5, and a timing arm 3.238792s -> 0.161400s (ratio 0.049833); its baseline_suite is a pytest collection error (exit 4) rather than a base test population, and logs/head-importers.log, which the note leans on for 'no failures against the base revision', is truncated mid-run with one F and no summary or EXIT line.",
+    "write_paths": "the manifest declares reckon/crew/routing.py, reckon/crew/plan_review.py, tests/test_a_launch_reuses_what_queue_time_proved.py and the evidence fragment; git show --stat 0baeb0d40d changes exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_launch_reuses_what_queue_time_proved.py:201 reddens when the digest comparison is removed (logs/negative-control.log: 1 failed, 4 passed), but no assertion covers the unanswered-findings path, which is exactly the behaviour the short-circuit changed.",
+    "evidence": "tests/test_a_launch_reuses_what_queue_time_proved.py:201 asserts calls == [] under a patched review_coverage and logs/head-gate.log records 5 passed, but the verdict-equality arm at line 240 is vacuous in its edit=False case and the base arm is a collection error, so the done_when's delta and equivalence are not measured.",
+    "fit": "reckon/crew/plan_review.py:1189 follows the existing module-level cache idiom of reckon/crew/follower_registration.py:212 and the new names carry no plan, issue or version label.",
+    "goal_fidelity": "reckon/crew/routing.py:2789 returns None as soon as the digests match, which reuses the contract as the goal states, but it also skips the unanswered-findings refusal at reckon/crew/routing.py:2841, so the change does more than the goal authorises.",
+    "reuse": "a search over reckon/crew for a memo of review coverage found only unrelated caches (_DELIVERY_TRACE_CACHE, _SNAPSHOT_CACHE), and the addition reuses the existing owners _section_digests, _contract_digest, section_record_id and runs.list_handovers rather than forking them.",
+    "scope_discipline": "git show --stat 0baeb0d40d lists only reckon/crew/routing.py, reckon/crew/plan_review.py, the new test and the permitted landing fragment, all inside the declared write paths."
+  },
+  "node": "review-of-a-launch-reuses-what-queue-time-proved-0baeb0d40d78",
+  "node:reviewed": "a-launch-reuses-what-queue-time-proved",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'reuse a queued request's recorded contract at launch'; reckon/crew/routing.py:2788-2792 reads the request's recorded section and document digests and returns at once when neither moved, and reckon/crew/plan_review.py:1219 review_coverage_memo shares one coverage computation across a pass, so the reuse is landed.\nVERDICT done_when: the measure names tests/test_a_launch_reuses_what_queue_time_proved.py; the manifest records '5 passed EXIT=0' in logs/head-gate.log and I re-read that log, but its third arm ('each launch's verdict equals a fresh direct dispatch's') is asserted only where both sides are None or where both raise, and a probe at the reviewed head shows launch=None against direct=refusal for an unanswered review finding, so the measure is not met.\nVERDICT write_paths: the manifest declares reckon/crew/routing.py, reckon/crew/plan_review.py, tests/test_a_launch_reuses_what_queue_time_proved.py and the evidence fragment; git show --stat 0baeb0d40d changes exactly those four paths and nothing else.\nVERDICT manifest: read; it records status complete, 5 passed on the new test, a negative control that dropped the digest comparison and failed 1 of 5, and a timing arm 3.238792s -> 0.161400s (ratio 0.049833); its baseline_suite is a pytest collection error (exit 4) rather than a base test population, and logs/head-importers.log, which the note leans on for 'no failures against the base revision', is truncated mid-run with one F and no summary or EXIT line.\nVERDICT diff: read commit by commit against fd7bb0bbad; one commit, four files, 504 insertions and 2 deletions: the short-circuit and its digest helpers in reckon/crew/routing.py, the memo in reckon/crew/plan_review.py, a 249-line test, and the landing fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:872, reckon/crew/queue_admission.py:2604, reckon/crew/queue_admission.py:2679, reckon/crew/plan_review.py:1319\nSCORE goal_fidelity: 13\nSCORE evidence: 11\nSCORE scope_discipline: 20\nSCORE durability: 13\nSCORE fit: 18\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:2789 returns None as soon as the digests match, which reuses the contract as the goal states, but it also skips the unanswered-findings refusal at reckon/crew/routing.py:2841, so the change does more than the goal authorises.\nJUSTIFICATION evidence: tests/test_a_launch_reuses_what_queue_time_proved.py:201 asserts calls == [] under a patched review_coverage and logs/head-gate.log records 5 passed, but the verdict-equality arm at line 240 is vacuous in its edit=False case and the base arm is a collection error, so the done_when's delta and equivalence are not measured.\nJUSTIFICATION scope_discipline: git show --stat 0baeb0d40d lists only reckon/crew/routing.py, reckon/crew/plan_review.py, the new test and the permitted landing fragment, all inside the declared write paths.\nJUSTIFICATION durability: tests/test_a_launch_reuses_what_queue_time_proved.py:201 reddens when the digest comparison is removed (logs/negative-control.log: 1 failed, 4 passed), but no assertion covers the unanswered-findings path, which is exactly the behaviour the short-circuit changed.\nJUSTIFICATION fit: reckon/crew/plan_review.py:1189 follows the existing module-level cache idiom of reckon/crew/follower_registration.py:212 and the new names carry no plan, issue or version label.\nJUSTIFICATION reuse: a search over reckon/crew for a memo of review coverage found only unrelated caches (_DELIVERY_TRACE_CACHE, _SNAPSHOT_CACHE), and the addition reuses the existing owners _section_digests, _contract_digest, section_record_id and runs.list_handovers rather than forking them.\nFINDING reckon/crew/routing.py:2789 blocking: the digest short-circuit returns None before the unanswered-findings refusal at reckon/crew/routing.py:2841-2849, so a launch of a queued request passes a plan whose review leaves findings unanswered while a fresh direct dispatch on the same plan refuses it. Reproduced at the reviewed head in a scratch extraction: with a design review carrying finding F1 and no response, _launch returned None and _direct returned 'the review of plan ... leaves 1 finding(s) unanswered: F1'. This contradicts the plan section's done-when ('each launch's verdict equals the verdict of a fresh direct dispatch at the same moment') and is a regression against the base, where review_coverage ran unconditionally before the same refusal. Remedy: reuse only the coverage computation and its record, and keep the unanswered-findings check after it.\nFINDING tests/test_a_launch_reuses_what_queue_time_proved.py:240 non-blocking: in the edit=False parametrization both sides of 'assert _launch(repo, node) == _direct(repo, node)' are None, so the assertion holds whatever the code does and could not have caught the divergence above; the arm that would carry weight (a state where the two verdicts differ) is absent.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T222907809727-a-launch-reuses-what-queue-time-proved/logs/head-importers.log:19 non-blocking: the run the manifest leans on for 'The test files importing reckon.crew.routing and reckon.crew.plan_review add no failures against the base revision' is truncated mid-run (20 lines, no summary, no EXIT line) and shows one F at 84%, so the arm is unreadable rather than green and the done_when's delta floor is unestablished.",
+  "review_run_id": "r-20261028T234015324511-review-of-a-launch-reuses-what-queue-time-proved-0baeb0d40d78",
+  "reviewed_base_sha": "fd7bb0bbadf082a4eafb947328763abfc928acc5",
+  "reviewed_head_sha": "0baeb0d40d780256c17223fe67396b938c5723f0",
+  "reviewed_run_id": "r-20261028T222907809727-a-launch-reuses-what-queue-time-proved",
+  "scores": {
+    "durability": 13,
+    "evidence": 11,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T00:54:01+00:00",
+  "total": 94
+}

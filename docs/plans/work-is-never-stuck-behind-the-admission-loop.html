@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -174,6 +174,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-s9-reproduced" data-who="" data-when="">
     <div class="r-comment-body"><p>Reproduced on 28 October. Five first dispatches of waiting nodes in this plan, each a single <code>reckon crew dispatch</code> call with no retry, answered <code>already awaiting-upstream</code> naming the run that call had just created: <code>r-20261028T222632387609</code>, <code>r-20261028T222907809727</code>, <code>r-20261028T223157371721</code>, <code>r-20261028T223438209702</code> and <code>r-20261028T223716141209</code>. The defect is reachable on a first dispatch, and the investigation can start from the CLI call with <code>--allow-unreconciled-runs</code> and a declared section wait.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261028T234015324511-review-of-a-launch-reuses-what-queue-time-proved-0baeb0d40d78" data-who="reckon-build" data-when="2026-10-29T00:55:31.433Z">
+    <div class="r-comment-body"><p>review of r-20261028T222907809727-a-launch-reuses-what-queue-time-proved at head 0baeb0d40d780256c17223fe67396b938c5723f0 scores goal_fidelity 13, evidence 11, scope_discipline 20, durability 13, fit 18, reuse 19, with added_failure_count 0; one blocking finding (the digest short-circuit at reckon/crew/routing.py:2789 skips the unanswered-findings refusal, so a launch passes a plan a fresh direct dispatch refuses).</p></div>
 </div>
 </section>
 </main>
