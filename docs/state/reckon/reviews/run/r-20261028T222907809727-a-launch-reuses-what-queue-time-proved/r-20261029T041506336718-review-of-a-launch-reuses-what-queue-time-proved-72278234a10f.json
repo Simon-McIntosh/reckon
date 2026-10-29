@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (logs/baseline-suite.log, revision 768656861b, completed, 8 failed, EXIT=1) and after_suite (logs/head-gate.log, revision 72278234a1, completed, 8 passed, EXIT=0, failure_ids []); every baseline failure id is also present after as a pass, so the change adds no failure id.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:872",
+    "reckon/crew/queue_admission.py:2631",
+    "reckon/crew/queue_admission.py:273"
+  ],
+  "completed_at": "2026-10-29T04:27:34.192Z",
+  "dispatched_at": "2026-10-29T04:19:42Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T222907809727-a-launch-reuses-what-queue-time-proved/manifest.md",
+      "id": "f48dfd825bf",
+      "line": "10",
+      "severity": "blocking",
+      "text": "the landing line states the node's measure as 'the launch-gate median went 3.238792s -> 0.161400s (ratio 0.049833)' while the same manifest's artifacts line 24 and blockers line 31 record ratio 1.104565 against the plan section's requirement that the after figure be below a tenth of the before, and status line 5 reads complete; promotion lands this line as a comment on \u00a74, so an unmet measure would be recorded on the plan as met, and the honest value of the line is that the timing target is unmet and the node's status is blocked."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-launch-reuses-what-queue-time-proved.html",
+      "id": "f8b1a9bca14",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "the timing row and manifest artifacts line 24 quote 'median 3.119198 s before, 3.445356 s after, ratio 1.104565' from logs/launch-gate-timing.log, but that log's own summary line reads 'median before 3.703811s median after 3.625281s ratio 0.978797' and carries neither quoted figure, so the committed evidence does not reconcile with the log it cites even though both readings support the same conclusion."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T222907809727-a-launch-reuses-what-queue-time-proved/manifest.md",
+      "id": "fc235910537",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "test_logs cites logs/importer-head-final.log as the head importer arm, and that file ends at 97% with no summary line and no EXIT; the complete arm for the same 138 test files is logs/importer-head.log (2 failed, 1322 passed, 1 error) against the base arm's 6 failed, 1318 passed, which is the evidence the done_when's importer clause actually rests on."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "fd92d544bd2",
+      "line": "1290",
+      "severity": "non-blocking",
+      "text": "newest_settled_covering_review copies review_coverage's selection predicate rather than extending the owner: the whole-fingerprint branch at 1319-1321 restates review_coverage's at 1035-1045, and the digest loop at 1339-1372 restates its per-record match at 1101-1116, so a future change to the coverage rule can leave the fast path naming a record the computation would not, which is the divergence the previous review round repaired."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch_plan.py:872, reckon/crew/queue_admission.py:2631 (gate-owed query with no marker published) and reckon/crew/queue_admission.py:273-312 (the launch that publishes ADMISSION_REVIEW_UNITS around the real dispatch) were read.",
+    "diff": "read commit by commit: e350471a50 names the covering review and moves the contract comparison into queue_admission, bc57f46bed records the new arms in the evidence fragment, 72278234a1 settles the selection from the single highest stored version.",
+    "done_when": "\u00a74 names tests/test_a_launch_reuses_what_queue_time_proved.py, a timing arm below a tenth of before, an importer-failure floor and ruff; the test arms hold (logs/head-gate.log, 8 passed), the importer floor holds on logs/importer-head.log (2 failed, 1322 passed against the base 6 failed, 1318 passed), and the timing arm does not (ratio 1.104565).",
+    "goal": "the goal is a launch reusing what queue time proved; reckon/crew/routing.py:2773-2792 skips only the coverage computation and still judges the named record's findings, which is the goal as \u00a74 states it.",
+    "manifest": "read in full; its landing line 10 still records the retracted 3.238792s -> 0.161400s measure while its artifacts line 24 and blockers line 31 record ratio 1.104565, and status line 5 reads complete with the done-when target unmet.",
+    "write_paths": "the manifest declares routing.py, plan_review.py, queue_admission.py, the new test and the evidence fragment; git diff --stat over 49765673c6..72278234a1 lists exactly those five paths."
+  },
+  "justifications": {
+    "durability": "the eight gate tests fail at 768656861b and pass at 72278234a1, and the two newly added arms each have a recorded negative control that reddens exactly that arm (logs/negative-control-newest-covering.log, logs/negative-control-launch-marker.log).",
+    "evidence": "the call-count arms are recorded in logs/head-gate.log (8 passed, EXIT=0 at 72278234a1 against 8 failed at 768656861b), but \u00a74's timing arm is measured at ratio 1.104565 (manifest line 24) against the required below a tenth, and those figures appear in no line of the cited logs/launch-gate-timing.log.",
+    "fit": "plan_review.py:1290 follows the module's docstring-and-lazy-import idiom, and the new function is named for what it decides rather than for any plan label.",
+    "goal_fidelity": "reckon/crew/routing.py:2773-2792 now reads the record a coverage run would name and judges its findings, so a launch reaches a direct dispatch's verdict while still skipping the coverage computation.",
+    "reuse": "queue_admission.py:2521 now owns the contract comparison routing.py used to copy, but plan_review.py:1290 re-derives review_coverage's selection predicate (plan_review.py:1035-1060, 1101-1160) beside the owner instead of adding an early exit inside it.",
+    "scope_discipline": "every path in 49765673c6..72278234a1 is one of the node's declared write paths; reckon/crew/queue_admission.py is the one path \u00a74 does not name and the manifest's outside_scope line discloses it as the single-owner repair of the earlier review's finding."
+  },
+  "node": "review-of-a-launch-reuses-what-queue-time-proved-72278234a10f",
+  "node:reviewed": "a-launch-reuses-what-queue-time-proved",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a launch reusing what queue time proved; reckon/crew/routing.py:2773-2792 skips only the coverage computation and still judges the named record's findings.\nVERDICT done_when: \u00a74 names tests/test_a_launch_reuses_what_queue_time_proved.py, a timing arm below a tenth of before, an importer floor and ruff; the test arms hold (logs/head-gate.log, 8 passed) and the timing arm does not (manifest line 24, ratio 1.104565).\nVERDICT write_paths: the manifest declares routing.py, plan_review.py, queue_admission.py, the new test and the evidence fragment, and git diff --stat over 49765673c6..72278234a1 lists exactly those five paths.\nVERDICT manifest: read in full; landing line 10 records the retracted 0.049833 measure while artifacts line 24 records ratio 1.104565, and status line 5 reads complete with the target unmet.\nVERDICT diff: read commit by commit; e350471a50 names the covering review and moves the contract comparison into queue_admission, bc57f46bed records the new arms, 72278234a1 settles the selection from the highest stored version alone.\nCALL_SITES: reckon/crew/dispatch_plan.py:872, reckon/crew/queue_admission.py:2631, reckon/crew/queue_admission.py:273\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:2773-2792 reads the record a coverage run would name and judges its findings, reaching a direct dispatch's verdict while skipping the computation.\nSCORE evidence: 7\nJUSTIFICATION evidence: the call-count arms hold at logs/head-gate.log (8 passed at 72278234a1 against 8 failed at 768656861b) but the quoted timing figures at manifest line 24 appear in no line of the cited logs/launch-gate-timing.log and miss \u00a74's target.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every path in 49765673c6..72278234a1 is a declared write path, with reckon/crew/queue_admission.py disclosed in the manifest's outside_scope line as the single-owner repair.\nSCORE durability: 18\nJUSTIFICATION durability: all eight gate tests fail at 768656861b and pass at 72278234a1, and each newly added arm has a control that reddens it (logs/negative-control-newest-covering.log, logs/negative-control-launch-marker.log).\nSCORE fit: 17\nJUSTIFICATION fit: plan_review.py:1290 follows the module's docstring-and-lazy-import idiom and names what it decides rather than any plan label.\nSCORE reuse: 9\nJUSTIFICATION reuse: queue_admission.py:2521 now owns the contract comparison, but plan_review.py:1290 re-derives review_coverage's selection predicate instead of adding an early exit inside it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T222907809727-a-launch-reuses-what-queue-time-proved/manifest.md:10 blocking: the landing line states ratio 0.049833 as the node's measure while artifacts line 24 records 1.104565, so promotion would land an unmet \u00a74 timing target as met.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-launch-reuses-what-queue-time-proved.html:55 non-blocking: the quoted 3.119198/3.445356/1.104565 figures appear in no line of logs/launch-gate-timing.log, whose summary reads 3.703811/3.625281/0.978797.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T222907809727-a-launch-reuses-what-queue-time-proved/manifest.md:17 non-blocking: test_logs cites importer-head-final.log, which has no summary and no EXIT; the complete arm is importer-head.log (2 failed against the base's 6).\nFINDING reckon/crew/plan_review.py:1290 non-blocking: newest_settled_covering_review restates review_coverage's selection predicate at plan_review.py:1035-1045 and 1101-1116 rather than extending the owner with an early exit, so the two can drift apart.",
+  "review_run_id": "r-20261029T041506336718-review-of-a-launch-reuses-what-queue-time-proved-72278234a10f",
+  "reviewed_base_sha": "49765673c6df36c9115b1689ff614e1765835ae8",
+  "reviewed_head_sha": "72278234a10fbb6675e003ae83805a1a063ca838",
+  "reviewed_range_note": "scored the delta gained since the earlier review at 49765673c6 (commits e350471a50, bc57f46bed, 72278234a1); plan section reckon:work-is-never-stuck-behind-the-admission-loop \u00a74 read as the semantic authority.",
+  "reviewed_run_id": "r-20261028T222907809727-a-launch-reuses-what-queue-time-proved",
+  "scores": {
+    "durability": 18,
+    "evidence": 7,
+    "fit": 17,
+    "goal_fidelity": 15,
+    "reuse": 9,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T05:34:00+00:00",
+  "total": 82
+}

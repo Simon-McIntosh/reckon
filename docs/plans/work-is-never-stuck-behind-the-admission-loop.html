@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -188,6 +188,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261029T013552373289-review-of-a-launch-reuses-what-queue-time-proved-49765673c6df" data-who="reckon-build" data-when="2026-10-29T02:41:08.689Z">
     <div class="r-comment-body"><p>Second opinion on commits 5b6cefcbc8 and 49765673c6 (delta since the earlier review at 0baeb0d40d): the repair closes the earlier blocking finding by reading the review record and keeping the unanswered-findings refusal on the short-circuit branch, proved by a red negative control, so a launch now reaches a direct dispatch's verdict. Four non-blocking findings remain: the short-circuit reads the mtime-newest record rather than the covering one, two digest/section checks duplicate queue_admission owners, `launching` is inferred from a ContextVar that a non-launch caller also sets, and the done_when's importer arm is still unestablished.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261029T041506336718-review-of-a-launch-reuses-what-queue-time-proved-72278234a10f" data-who="reckon-build" data-when="2026-10-29T04:27:34.192Z">
+    <div class="r-comment-body"><p>Review of run r-20261028T222907809727-a-launch-reuses-what-queue-time-proved at head 72278234a1 over base 49765673c6, stored as a parsed record at both declared paths. Scores: goal_fidelity 15, evidence 7, scope_discipline 16, durability 18, fit 17, reuse 9. Four findings, one blocking: the reviewed manifest&#x27;s landing line still records the retracted 0.049833 timing ratio as the node&#x27;s measure while its own artifacts line records 1.104565, so promotion would land the plan section&#x27;s timing target as met when it is unmet. The three non-blocking findings are: the evidence fragment&#x27;s quoted timing figures appear in no line of the log it cites; test_logs cites a truncated importer arm where a complete one exists at the reviewed head; and plan_review.newest_settled_covering_review restates review_coverage&#x27;s selection predicate beside the owner.</p></div>
 </div>
 </section>
 </main>
