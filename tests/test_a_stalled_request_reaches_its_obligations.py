@@ -100,9 +100,7 @@ def _queue(repository, run_ids: list[str]) -> dict[str, dict]:
 
 def _rows(payload: dict, run_id: str) -> list[dict]:
     return [
-        row
-        for row in payload["obligations"]
-        if str(row.get("run_id") or "") == run_id
+        row for row in payload["obligations"] if str(row.get("run_id") or "") == run_id
     ]
 
 
@@ -168,9 +166,10 @@ def test_a_later_launch_verdict_clears_the_stalled_row(chain_repo) -> None:
     """The pass that launches the request replaces the stall it recorded."""
     _queue(chain_repo, [RUN_ID])
     _write_log([_stall_record(RUN_ID)])
-    assert _rows(obligations_module.obligations(PROJECT, SESSION), RUN_ID)[0][
-        "kind"
-    ] == obligations_module.STALLED_RUN_DUTY_KIND
+    assert (
+        _rows(obligations_module.obligations(PROJECT, SESSION), RUN_ID)[0]["kind"]
+        == obligations_module.STALLED_RUN_DUTY_KIND
+    )
 
     with _log_path().open("a", encoding="utf-8") as stream:
         stream.write(
