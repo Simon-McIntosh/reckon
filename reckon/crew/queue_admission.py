@@ -658,6 +658,16 @@ def _is_lane_hold(failure: Any) -> bool:
     return _failure_text(failure).startswith(("LaneHeld", "LanePaused"))
 
 
+def _admitting_pass_identity() -> dict[str, Any]:
+    """The admission pass that has taken a request, as its handover records it.
+
+    The handover outlives the queued pointer, so it is the only place a launch
+    that loses its pointer can learn which pass launched it, on which process,
+    from which checkout.
+    """
+    return {"pid": os.getpid(), "at": _utc_now(), "code": _admit_code_stamp()}
+
+
 def _admit_code_stamp() -> str:
     """The content identity of the checkout the admission service would run.
 
@@ -3393,7 +3403,7 @@ def admit_once(
             restore_error = None
             # A handover identifies the admitted attempt while its original
             # pointer remains published and dispatch checks the launch.
-            runs.write_handover(pointer)
+            runs.write_handover(pointer, admitted_by=_admitting_pass_identity())
             try:
                 candidate = _launch_queued(
                     pointer,

@@ -449,20 +449,52 @@ def _handover_path(project: str, identity: tuple[str, str, str, str]) -> Path:
     return handover_dir() / f"{key[:32]}.json"
 
 
-def write_handover(pointer: Mapping[str, Any]) -> Path:
+def write_handover(
+    pointer: Mapping[str, Any],
+    *,
+    admitted_by: Mapping[str, Any] | None = None,
+) -> Path:
     """Record that the admission pass has taken this node's request.
 
     Written before the pass releases the queued pointer and cleared once the
     launched run's own pointer exists or the request has been put back, so the
     run is named on disk for the whole of that gap rather than for none of it.
+
+    ``admitted_by`` names the pass that took the request. It is written here
+    because this record is the only one that survives the gap: a launch whose
+    pointer goes missing mid-launch leaves the supervisor with nothing else
+    that says which pass launched it or when.
     """
     project = str(pointer.get("project") or "")
     path = _handover_path(project, _node_identity(pointer))
     record = dict(pointer)
     record["phase"] = ADMITTED_PHASE
+    if admitted_by is not None:
+        record["admitted_by"] = dict(admitted_by)
     path.parent.mkdir(parents=True, exist_ok=True)
     _write_json(path, record)
     return path
+
+
+def find_handover(run_id: str) -> dict[str, Any] | None:
+    """The handover record held for one run, or ``None`` when none is held.
+
+    The handover is keyed by node identity rather than by run id, so a reader
+    holding only the run id — the supervisor of a launch whose pointer has
+    gone — finds it by walking the directory instead of recomputing a key from
+    a node it may no longer be able to read.
+    """
+    directory = handover_dir()
+    if not directory.is_dir():
+        return None
+    for path in sorted(directory.glob("*.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, dict) and str(data.get("run_id") or "") == run_id:
+            return data
+    return None
 
 
 def clear_handover(pointer: Mapping[str, Any]) -> None:
