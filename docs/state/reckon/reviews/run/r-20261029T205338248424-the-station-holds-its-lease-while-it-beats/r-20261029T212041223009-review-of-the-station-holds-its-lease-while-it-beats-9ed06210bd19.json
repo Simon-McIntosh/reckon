@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms at the same command: baseline_suite at f845e102ac lists three failing ids (test_a_held_open_tick_keeps_the_lease_fresh_and_refuses_a_second_station, test_the_lease_is_renewed_while_the_heartbeat_write_is_blocked, test_a_replaced_lease_refuses_every_write_and_stops_the_loop) in gate-base.log, and after_suite at 1898660cc4 lists none in gate-head.log, so the change adds zero ids. Those three are the new test's own cases, absent from the base tree's file, so the base arm's red is a shape failure (run_station refuses the injected keyword arguments) rather than the defect reproducing, and the negative control in gate-negative-control.log carries the falsification instead: 3 failed, EXIT=1, the held-open case among them.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:47",
+    "reckon/crew/fleet_supervisor.py:1945",
+    "reckon/crew/fleet_supervisor.py:1988"
+  ],
+  "completed_at": "2026-10-29T21:36:52.537Z",
+  "dispatched_at": "2026-10-29T21:24:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "186",
+      "severity": "non-blocking",
+      "text": "_PromotionLeaseRenewer already renews a HostLease from a daemon thread at LEASE_RENEW_SECONDS with start and stop, and LeaseBeat duplicates that loop; one renewer lifted into reckon/crew/host_lease.py with an on-loss callback would serve both, but the node was fenced out of every file that could hold it."
+    },
+    {
+      "file": "reckon/crew/station_store.py",
+      "line": "372",
+      "severity": "non-blocking",
+      "text": "connect() creates the schema and calls _ensure_station_identity() without guard.check(), so a store handle whose connection is opened after the loss still writes identity rows; that is narrower than the done-when's 'no store write of any kind', though it needs a handle opened after mark_lost, which the station's own two handles are not."
+    },
+    {
+      "file": "tests/test_the_station_holds_its_lease_while_it_beats.py",
+      "line": "341",
+      "severity": "non-blocking",
+      "text": "the arm asserts only that some write was refused, not that each write method refuses, so a regression removing guard.check() from sweep_retention, write_cursor or delete_obligation leaves this case green while the twelfth of the done-when's writes it was protecting is unguarded again."
+    },
+    {
+      "file": "tests/test_the_station_holds_its_lease_while_it_beats.py",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "the module docstring narrates the previous behaviour ('The lease used to be renewed between ticks') instead of stating the mechanism, which the repository's naming rule bans in source comments and docstrings."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261029T205338248424-the-station-holds-its-lease-while-it-beats/gate-base.log",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "the '# module' header line names the head worktree's station.py while the arm actually imported the scratch base tree; I confirmed by importing it directly that .../base-tree-AjDy/reckon/crew/station.py is the module resolved and that it has no LeaseBeat, so the log's provenance line is wrong even though the manifest's measurement_module records the base tree correctly."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: 1fa13ba996 adds LeaseBeat, StoreWriteGuard, the twelve guard checks and the 341-line test; 1898660cc4 renames StationLeaseLost to StationLeaseLostError and drops an unused import; 9ed06210bd adds the 45-line evidence fragment. 583 insertions and 22 deletions, all inside the declared scope.",
+    "done_when": "The done_when names five facts for tests/test_the_station_holds_its_lease_while_it_beats.py; the file's three cases cover all five and the manifest records gate-head.log at 3 passed EXIT=0 against gate-negative-control.log at 3 failed EXIT=1, which is the held-open case failing under the declared mutation.",
+    "goal": "The node goal is to renew the station's lease from a thread of its own and refuse every store write once the lease is lost; reckon/crew/station.py:147 adds LeaseBeat renewing off the tick, reckon/crew/station_store.py:163 adds StoreWriteGuard which twelve store write methods check before touching the database, and reckon/crew/station.py:622 wires both so the loop ends with StationHeldError.",
+    "manifest": "Read; it records head 3 passed EXIT=0, base 3 failed EXIT=1, the negative control 3 failed EXIT=1, an importer population of 19 files at 118 passed/1 failed base and 120 passed/2 failed head with the single added id probed alone (5 passed EXIT=0), and ruff clean on the staged paths; I re-ran ruff check and ruff format --check over a full extraction of 9ed06210bd and both claims hold (All checks passed, 3 files already formatted).",
+    "write_paths": "The manifest declares reckon/crew/station.py, reckon/crew/station_store.py, the new test and the evidence fragment; git diff --stat f845e102ac..9ed06210bd lists exactly those four files and no fifth."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_holds_its_lease_while_it_beats.py:340 reddens if any store write completes after the lease was replaced and :341 reddens if the guard never fires at all, but 'refused' need only be non-empty, so dropping guard.check() from one method the tick does not reach, such as sweep_retention, reddens nothing.",
+    "evidence": "gate-head.log, gate-base.log and gate-negative-control.log each name their revision and command and end in a bare EXIT= line (0, 1, 1), but the base arm fails on the injected keyword arguments rather than behaviourally, the negative-control log keeps one traceback line so a reader cannot see which assertion failed per case, and its own '# module' header names a tree other than the one imported.",
+    "fit": "LeaseBeat at reckon/crew/station.py:147 mirrors StationBeat at :67 and SweepBeat at :226 in shape and reuses LEASE_RENEW_SECONDS rather than a local constant, and no added name carries a plan or ticket label, but the test's module docstring at :3 narrates the old behaviour instead of the mechanism.",
+    "goal_fidelity": "reckon/crew/station.py:622 starts LeaseBeat before the first tick and reckon/crew/station_store.py:191 refuses each guarded write once mark_lost has run, which is the goal; the plan's phrase 'the beat thread marks' is realised in the lease thread instead, a wording difference with no behavioural consequence.",
+    "reuse": "reckon/crew/promotion.py:186 already owns 'renew a HostLease on a daemon thread at LEASE_RENEW_SECONDS with a stop event', and LeaseBeat at reckon/crew/station.py:147 duplicates that loop rather than extending it; the natural owner, reckon/crew/host_lease.py, lies outside this node's write scope, so the extraction is a coordinator decision.",
+    "scope_discipline": "git diff --stat f845e102ac..9ed06210bd lists only reckon/crew/station.py, reckon/crew/station_store.py, the new test and the evidence fragment, and the fragment is a new 45-line file rather than a rewrite of a shared record."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to renew the station's lease from a thread of its own and refuse every store write once the lease is lost; reckon/crew/station.py:147 adds LeaseBeat renewing off the tick, reckon/crew/station_store.py:163 adds StoreWriteGuard which twelve store write methods check before touching the database, and reckon/crew/station.py:622 wires both so the loop ends with StationHeldError.\nVERDICT done_when: the done_when names five facts for tests/test_the_station_holds_its_lease_while_it_beats.py; the file's three cases cover all five and the manifest records gate-head.log at 3 passed EXIT=0 against gate-negative-control.log at 3 failed EXIT=1, which is the held-open case failing under the declared mutation.\nVERDICT write_paths: the manifest declares reckon/crew/station.py, reckon/crew/station_store.py, the new test and the evidence fragment; git diff --stat f845e102ac..9ed06210bd lists exactly those four files and no fifth.\nVERDICT manifest: read; it records head 3 passed EXIT=0, base 3 failed EXIT=1, the negative control 3 failed EXIT=1, an importer population of 19 files at 118 passed/1 failed base and 120 passed/2 failed head with the single added id probed alone (5 passed EXIT=0), and ruff clean on the staged paths; I re-ran ruff check and ruff format --check over a full extraction of 9ed06210bd and both claims hold (All checks passed, 3 files already formatted).\nVERDICT diff: read commit by commit; 1fa13ba996 adds LeaseBeat, StoreWriteGuard, the twelve guard checks and the 341-line test, 1898660cc4 renames StationLeaseLost to StationLeaseLostError and drops an unused import, and 9ed06210bd adds the 45-line evidence fragment, 583 insertions and 22 deletions all inside the declared scope.\nCALL_SITES: reckon/crew_follow_commands.py:47, reckon/crew/fleet_supervisor.py:1945, reckon/crew/fleet_supervisor.py:1988\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:622 starts LeaseBeat before the first tick and reckon/crew/station_store.py:191 refuses each guarded write once mark_lost has run, which is the goal; the plan's phrase 'the beat thread marks' is realised in the lease thread instead, a wording difference with no behavioural consequence.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log, gate-base.log and gate-negative-control.log each name their revision and command and end in a bare EXIT= line (0, 1, 1), but the base arm fails on the injected keyword arguments rather than behaviourally, the negative-control log keeps one traceback line so a reader cannot see which assertion failed per case, and its own '# module' header names a tree other than the one imported.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat f845e102ac..9ed06210bd lists only reckon/crew/station.py, reckon/crew/station_store.py, the new test and the evidence fragment, and the fragment is a new 45-line file rather than a rewrite of a shared record.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_the_station_holds_its_lease_while_it_beats.py:340 reddens if any store write completes after the lease was replaced and :341 reddens if the guard never fires at all, but 'refused' need only be non-empty, so dropping guard.check() from one method the tick does not reach, such as sweep_retention, reddens nothing.\nSCORE fit: 17\nJUSTIFICATION fit: LeaseBeat at reckon/crew/station.py:147 mirrors StationBeat at :67 and SweepBeat at :226 in shape and reuses LEASE_RENEW_SECONDS rather than a local constant, and no added name carries a plan or ticket label, but the test's module docstring at :3 narrates the old behaviour instead of the mechanism.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion.py:186 already owns 'renew a HostLease on a daemon thread at LEASE_RENEW_SECONDS with a stop event', and LeaseBeat at reckon/crew/station.py:147 duplicates that loop rather than extending it; the natural owner, reckon/crew/host_lease.py, lies outside this node's write scope, so the extraction is a coordinator decision.\nFINDING reckon/crew/promotion.py:186 non-blocking: _PromotionLeaseRenewer already renews a HostLease from a daemon thread at LEASE_RENEW_SECONDS with start and stop, and LeaseBeat duplicates that loop; one renewer lifted into reckon/crew/host_lease.py with an on-loss callback would serve both, but the node was fenced out of every file that could hold it.\nFINDING reckon/crew/station_store.py:372 non-blocking: connect() creates the schema and calls _ensure_station_identity() without guard.check(), so a store handle whose connection is opened after the loss still writes identity rows; that is narrower than the done-when's 'no store write of any kind', though it needs a handle opened after mark_lost, which the station's own two handles are not.\nFINDING tests/test_the_station_holds_its_lease_while_it_beats.py:341 non-blocking: the arm asserts only that some write was refused, not that each write method refuses, so a regression removing guard.check() from sweep_retention, write_cursor or delete_obligation leaves this case green while the twelfth of the done-when's writes it was protecting is unguarded again.\nFINDING tests/test_the_station_holds_its_lease_while_it_beats.py:3 non-blocking: the module docstring narrates the previous behaviour ('The lease used to be renewed between ticks') instead of stating the mechanism, which the repository's naming rule bans in source comments and docstrings.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261029T205338248424-the-station-holds-its-lease-while-it-beats/gate-base.log:5 non-blocking: the '# module' header line names the head worktree's station.py while the arm actually imported the scratch base tree; I confirmed by importing it directly that .../base-tree-AjDy/reckon/crew/station.py is the module resolved and that it has no LeaseBeat, so the log's provenance line is wrong even though the manifest's measurement_module records the base tree correctly.",
+  "review_run_id": "r-20261029T212041223009-review-of-the-station-holds-its-lease-while-it-beats-9ed06210bd19",
+  "reviewed_base_sha": "f845e102aca40ec470c740bbf6ee000223116193",
+  "reviewed_head_sha": "9ed06210bd1946068237e308f76c86e7856ed0f4",
+  "reviewed_run_id": "r-20261029T205338248424-the-station-holds-its-lease-while-it-beats",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T21:40:25.136655+00:00",
+  "total": 91
+}
