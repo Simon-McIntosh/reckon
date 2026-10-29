@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "head arm 2 failed ids are both present in the base arm's 5 failed ids; the three base-only failures are the extracted tree's missing .venv",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_views.py:4069",
+    "reckon/crew/obligation_snapshot.py:1313",
+    "reckon/crew/station_obligations.py:182",
+    "reckon/hooks/coordinator_obligations.py:188"
+  ],
+  "completed_at": "2026-10-29T18:56:38.470Z",
+  "dispatched_at": "2026-10-29T18:51:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/needs_you.py",
+      "line": "160",
+      "severity": "non-blocking",
+      "text": "non-blocking: _stall_verdicts already reads the admission verdict log into a latest-verdict-per-run mapping and filters on queue_admission.STALL_VERDICT, which is exactly what admission_verdicts at reckon/crew/obligations.py:700 re-implements; the owner is unreachable from production (no module imports needs_you since the follower pane dropped its last caller), so the duplicate will drift from the copy the six needs_you test files still exercise, and the natural owner for both is the module that defines the log and its verdict words, reckon/crew/queue_admission.py."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "737",
+      "severity": "non-blocking",
+      "text": "non-blocking: the docstring says the forwarded age \"is how long the request has been admissible, not how long it has existed ... and only the pass measures the difference\", but the field read one line later from the verdict row is set by queue_admission._record_stalls (reckon/crew/queue_admission.py:1487) as moment minus queued_at, which includes any wait on upstream refs since only the plan-review hold release shifts queued_at; the pass-level admissible_age_seconds is a different, aggregate field, so a request released from awaiting-upstream after an hour reports an hour, and the landing fragment repeats the same claim."
+    },
+    {
+      "file": "tests/test_a_stalled_request_reaches_its_obligations.py",
+      "line": "66",
+      "severity": "non-blocking",
+      "text": "non-blocking: the stall fixture writes the same constant into the pass-level admissible_age_seconds (:66) and the per-row age_seconds (:73), so the age assertions at :120 and :138 hold whichever of the two fields the row reads; distinct values would make those assertions discriminate, which matters because the docstring's claim about admissibility turns on exactly that difference."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the three commits against b58264ae9e \u2014 47952bcec1 adds the kind, the reader, _stalled_item and the stall branch in both producers, e4a650166a is the formatter pass on the new test only, and 9e959d520f adds the landing fragment; no other file changes.",
+    "done_when": "read the plan's \u00a713 done-when in docs/plans/work-is-never-stuck-behind-the-admission-loop.html and the node prompt's FENCE \u2014 EVIDENCE line; tests/test_a_stalled_request_reaches_its_obligations.py carries every named arm \u2014 derivation row (line 108), fresh snapshot build (line 129), plain run-queued row (line 151), launch verdict clearing the stall (line 168), hook stop not held (line 193) and one log read per build (line 205) \u2014 and the manifest records the base arm, head arm and negative control with their logs.",
+    "goal": "the node goal is a stalled request shown as a non-blocking row in its coordinator's obligations with the verdict log read once per build; reckon/crew/obligations.py:157 adds STALLED_RUN_DUTY_KIND \"run-stalled\", :790 routes a queued row whose last verdict is queue_admission.STALL_VERDICT to _stalled_item, :162 adds the kind to NON_BLOCKING_DUTY_KINDS, and :700 reads the verdict log once and hands it to every queued row.",
+    "manifest": "read; it states base 490 passed / 5 failed and head 499 passed / 2 failed with both arms completed and the two head ids present in the base arm's own id list, so one added failure set is empty by the run's own record.",
+    "write_paths": "read the manifest's six declared paths and the diff's changed set \u2014 reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_a_stalled_request_reaches_its_obligations.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-stalled-request-reaches-its-obligations.html are all inside them, and no figure directory or plan file is touched."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.log shows the declared mutation (stall branch dropped from _queued_item) reddening 5 of the 6 new cases at EXIT=1 while the plain-queue case stays green, and tests/test_a_stalled_request_reaches_its_obligations.py:233 fails if the build reads the log per row.",
+    "evidence": "logs/base-arm.log ends \"5 failed, 490 passed\" and logs/head-arm.log ends \"2 failed, 499 passed\", both EXIT=1 and both completed, so the head arm adds no failure and the two remaining ids are the base arm's own.",
+    "fit": "the new kind, reader and item builder follow the surrounding idiom in reckon/crew/obligations.py:688-720, but the _stalled_item docstring at :737 states a property of the forwarded field that the field does not have.",
+    "goal_fidelity": "reckon/crew/obligations.py:790-797 returns _stalled_item only while the row still reads queue_admission.QUEUED_PHASE and the verdict is the stall word, and :162 plus reckon/hooks/coordinator_obligations.py:241 make the kind non-blocking in both sets the plan names.",
+    "reuse": "reckon/crew/needs_you.py:160 already owns the bulk latest-stall-per-run read of the same log and reckon/crew/queue_admission.py:1361 owns the per-run form, and reckon/crew/obligations.py:700 is a third parse of that file rather than a call to either owner.",
+    "scope_discipline": "every path in the three commits is inside the six declared write paths, and the fragment at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-stalled-request-reaches-its-obligations.html is the one evidence artifact the node prompt permits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a stalled request shown as a non-blocking row in its coordinator's obligations with the verdict log read once per build; reckon/crew/obligations.py:157 adds STALLED_RUN_DUTY_KIND \"run-stalled\", :790 routes a queued row whose last verdict is queue_admission.STALL_VERDICT to _stalled_item, :162 adds the kind to NON_BLOCKING_DUTY_KINDS, and :700 reads the verdict log once and hands it to every queued row.\nVERDICT done_when: read the plan's \u00a713 done-when in docs/plans/work-is-never-stuck-behind-the-admission-loop.html and the node prompt's FENCE \u2014 EVIDENCE line; tests/test_a_stalled_request_reaches_its_obligations.py carries every named arm \u2014 derivation row (line 108), fresh snapshot build (line 129), plain run-queued row (line 151), launch verdict clearing the stall (line 168), hook stop not held (line 193) and one log read per build (line 205) \u2014 and the manifest records the base arm, head arm and negative control with their logs.\nVERDICT write_paths: read the manifest's six declared paths and the diff's changed set \u2014 reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_a_stalled_request_reaches_its_obligations.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-stalled-request-reaches-its-obligations.html are all inside them, and no figure directory or plan file is touched.\nVERDICT manifest: read; it states base 490 passed / 5 failed and head 499 passed / 2 failed with both arms completed and the two head ids present in the base arm's own id list, so one added failure set is empty by the run's own record.\nVERDICT diff: read the three commits against b58264ae9e \u2014 47952bcec1 adds the kind, the reader, _stalled_item and the stall branch in both producers, e4a650166a is the formatter pass on the new test only, and 9e959d520f adds the landing fragment; no other file changes.\nCALL_SITES: reckon/mcp_views.py:4069, reckon/crew/obligation_snapshot.py:1313, reckon/crew/station_obligations.py:182, reckon/hooks/coordinator_obligations.py:188\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:790-797 returns _stalled_item only while the row still reads queue_admission.QUEUED_PHASE and the verdict is the stall word, and :162 plus reckon/hooks/coordinator_obligations.py:241 make the kind non-blocking in both sets the plan names.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-arm.log ends \"5 failed, 490 passed\" and logs/head-arm.log ends \"2 failed, 499 passed\", both EXIT=1 and both completed, so the head arm adds no failure and the two remaining ids are the base arm's own.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the three commits is inside the six declared write paths, and the fragment at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-stalled-request-reaches-its-obligations.html is the one evidence artifact the node prompt permits.\nSCORE durability: 17\nJUSTIFICATION durability: logs/negative-control.log shows the declared mutation (stall branch dropped from _queued_item) reddening 5 of the 6 new cases at EXIT=1 while the plain-queue case stays green, and tests/test_a_stalled_request_reaches_its_obligations.py:233 fails if the build reads the log per row.\nSCORE fit: 16\nJUSTIFICATION fit: the new kind, reader and item builder follow the surrounding idiom in reckon/crew/obligations.py:688-720, but the _stalled_item docstring at :737 states a property of the forwarded field that the field does not have.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/needs_you.py:160 already owns the bulk latest-stall-per-run read of the same log and reckon/crew/queue_admission.py:1361 owns the per-run form, and reckon/crew/obligations.py:700 is a third parse of that file rather than a call to either owner.\nFINDING reckon/crew/needs_you.py:160 non-blocking: _stall_verdicts already reads the admission verdict log into a latest-verdict-per-run mapping and filters on queue_admission.STALL_VERDICT, which is exactly what admission_verdicts at reckon/crew/obligations.py:700 re-implements; the owner is unreachable from production (no module imports needs_you since the follower pane dropped its last caller), so the duplicate will drift from the copy the six needs_you test files still exercise, and the natural owner for both is the module that defines the log and its verdict words, reckon/crew/queue_admission.py.\nFINDING reckon/crew/obligations.py:737 non-blocking: the docstring says the forwarded age \"is how long the request has been admissible, not how long it has existed ... and only the pass measures the difference\", but the field read one line later from the verdict row is set by queue_admission._record_stalls (reckon/crew/queue_admission.py:1487) as moment minus queued_at, which includes any wait on upstream refs since only the plan-review hold release shifts queued_at; the pass-level admissible_age_seconds is a different, aggregate field, so a request released from awaiting-upstream after an hour reports an hour, and the landing fragment repeats the same claim.\nFINDING tests/test_a_stalled_request_reaches_its_obligations.py:66 non-blocking: the stall fixture writes the same constant into the pass-level admissible_age_seconds (:66) and the per-row age_seconds (:73), so the age assertions at :120 and :138 hold whichever of the two fields the row reads; distinct values would make those assertions discriminate, which matters because the docstring's claim about admissibility turns on exactly that difference.\n",
+  "review_run_id": "r-20261029T184750106064-review-of-a-stalled-request-reaches-its-obligations-9e959d520fb3",
+  "reviewed_base_sha": "b58264ae9e40b1bf0989fd2528f7e19662080eec",
+  "reviewed_head_sha": "9e959d520fb3ae3ebffd61b94b2a326f02c17d32",
+  "reviewed_run_id": "r-20261029T175000539238-a-stalled-request-reaches-its-obligations",
+  "role": "review",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T19:00:10.317623+00:00",
+  "total": 94
+}
