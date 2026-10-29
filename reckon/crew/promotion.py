@@ -2003,7 +2003,9 @@ def _release_waiters_of_a_discard(run_id: str) -> dict[str, Any]:
     from reckon.crew import queue_admission
 
     try:
-        return queue_admission._release_waiters([f"{queue_admission.REQUEST_REF_PREFIX}{run_id}"])
+        return queue_admission._release_waiters(
+            [f"{queue_admission.REQUEST_REF_PREFIX}{run_id}"]
+        )
     except Exception as exc:  # noqa: BLE001 - the discard has already happened
         return {
             "candidates": [],
