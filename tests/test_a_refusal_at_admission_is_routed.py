@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -248,19 +248,26 @@ def test_a_request_no_lane_fits_is_held_naming_the_shortfall(
 
     result = queue_admission.admit_once(config_for=_config_for(config))
 
-    assert result["held"] == ["r-request"]
     assert result["routed"] == []
+    assert result["failed"] == ["r-request"]
     assert len(result["obligations"]) == 1
     obligation = result["obligations"][0]
     assert obligation["run_id"] == "r-request"
     assert "shortfall of 637856 tokens" in obligation["detail"]
-    verdict = result["verdicts"][0]
-    assert verdict["verdict"] == "held-until-changed"
     # The stored reason is the refusal itself, not the lane's last allowance.
     held = runs.read_pointer("r-request")
     assert held["phase"] == "queued"
     assert "CompetenceLimit" in held["failure"]
     assert "context estimate" in held["failure"]
+
+    # Nothing the refused request depends on has moved, so every later pass
+    # holds it rather than attempting the same doomed launch again.
+    later = datetime.now(UTC) + timedelta(hours=2)
+    again = queue_admission.admit_once(config_for=_config_for(config), now=later)
+
+    assert again["failed"] == []
+    assert again["held"] == ["r-request"]
+    assert again["verdicts"][0]["verdict"] == "held-until-changed"
 
 
 def test_a_request_routed_to_a_lane_this_service_cannot_launch_is_queued_there(

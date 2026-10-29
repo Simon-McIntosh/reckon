@@ -3801,24 +3801,13 @@ def admit_once(
                     )
                     continue
                 else:
-                    # No lane's window holds it. The request stays where it is
-                    # under the existing until-changed hold: its failure is the
-                    # reason, and the one obligation names the shortfall.
-                    result["held"].append(reported_id)
-                    result.setdefault("hold_detail", {})[reported_id] = failure
+                    # No lane's window holds it. The attempt is reported as the
+                    # failure it was, and the one obligation names the shortfall
+                    # in tokens; the recorded guard is what holds every later
+                    # pass until the request itself changes.
                     result["obligations"].append(
                         {"run_id": reported_id, "detail": str(route["obligation"])}
                     )
-                    verdicts.append(
-                        _verdict_row(
-                            pointer,
-                            allowance=allowance,
-                            allowance_source=allowance_source,
-                            verdict="held-until-changed",
-                            failure=failure,
-                        )
-                    )
-                    continue
             if record is None:
                 if first_report and not hold_only:
                     _report_queued_failure(pointer)
