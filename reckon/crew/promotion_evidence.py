@@ -834,8 +834,17 @@ def _require_gate_evidence(
             delivered = parse_manifest(delivered_text)
         except (OSError, KeyError, ValueError):
             delivered = {}
+    # The manifest's commit entries are read through the one reader the landing
+    # pass reads them with, so a worker's entry is one thing here and there. An
+    # entry carrying the revision's subject after it, or several revisions on
+    # one line, still names the revision it delivered; reading the entry whole
+    # as a revision refused the deliveries the pass had just accepted.
+    from reckon.crew.queue_landing import _delivered_revision
+
     declared = [
-        str(sha).strip() for sha in (delivered.get("commits") or []) if str(sha).strip()
+        revision
+        for entry in (delivered.get("commits") or [])
+        if (revision := _delivered_revision([str(entry)]))
     ]
     declared_absent = _commits_field_declares_absence(delivered_text, record)
 
@@ -1331,7 +1340,6 @@ def _recorded_disposition(record: Mapping[str, Any]) -> str:
     if not isinstance(recorded, Mapping):
         return ""
     return str(recorded.get("kind") or "").strip()
-
 
 
 from reckon.crew.promotion_checks import (

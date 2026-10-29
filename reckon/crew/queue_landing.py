@@ -86,6 +86,83 @@ def _unreadable_entry_holds(
     )
 
 
+def _review_reflex_state(pointer: Mapping[str, Any]) -> tuple[str, str]:
+    """The review reflex's own state for this run, as ``(state, detail)``.
+
+    A run waiting for its review is not a run with nothing to say: the reflex
+    either dispatched a review or was refused, and it writes which onto the run
+    it acted for. Reading that record beside the waiting run is what turns a
+    silent skip into a verdict a coordinator can act on. A run carrying no
+    record at all has not been picked up yet, which is reported as a refusal to
+    dispatch with that reason rather than as an absence of state.
+    """
+    from reckon.crew.recovery_review_dispatch import REVIEW_DISPATCH_FIELD
+
+    recorded = pointer.get(REVIEW_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return "refused", "the review reflex has recorded no attempt for this run"
+    if str(recorded.get("status") or "") == "dispatched":
+        return "dispatched", ""
+    reason = str(recorded.get("reason") or "").strip()
+    return "refused", reason or str(recorded.get("status") or "")
+
+
+def _awaiting_review_holds(
+    previous: Mapping[str, Any] | None,
+    head: str,
+    state: str,
+    detail: str,
+    code_stamp: str,
+) -> bool:
+    """Whether this head already carries this awaiting-review record."""
+
+    if not isinstance(previous, Mapping):
+        return False
+    return (
+        previous.get("status") == "awaiting-review"
+        and recovery.same_revision(str(previous.get("head") or ""), head)
+        and str(previous.get("review_state") or "") == state
+        and str(previous.get("review_detail") or "") == detail
+        and bool(code_stamp)
+        and str(previous.get("code_stamp") or "") == code_stamp
+    )
+
+
+def _record_awaiting_review(
+    run_id: str,
+    pointer: Mapping[str, Any],
+    *,
+    head: str,
+    code_stamp: str,
+    review_stamp: str,
+) -> None:
+    """Record that this head's landing waits on the review reflex.
+
+    The run is not refused and not landed: it has a verdict, and the verdict
+    names what it waits for. Writing it once per head and reflex state keeps a
+    pass that runs every 30 seconds from rewriting the pointer for a run whose
+    situation has not moved.
+    """
+    state, detail = _review_reflex_state(pointer)
+    if _awaiting_review_holds(
+        pointer.get("admission_landing"), head, state, detail, code_stamp
+    ):
+        return
+
+    def mutation(record: dict[str, Any]) -> dict[str, Any]:
+        record["admission_landing"] = {
+            "head": head,
+            "status": "awaiting-review",
+            "review_state": state,
+            "review_detail": detail,
+            "code_stamp": code_stamp,
+            "review_stamp": review_stamp,
+        }
+        return record
+
+    runs._mutate_pointer(run_id, mutation)
+
+
 def _landing_code_stamp() -> str:
     """The content identity of the code that judges a landing.
 
@@ -399,7 +476,15 @@ LANDING_BEAT_REASON = (
 
 
 def _land_command(run_id: str) -> list[str]:
-    """Run the coordinator's land command in one explicit fleet step."""
+    """Run the coordinator's land command in one explicit fleet step.
+
+    The revision the run's manifest delivers is presented to the promotion, so
+    the step asserts the revision this pass read rather than leaving the
+    promotion to read the worker's commit entry for itself. An entry carrying
+    its subject after the revision, or several revisions on one line, is then
+    the delivery it was to the pass, instead of a citation no store can resolve
+    under the entry's own spelling.
+    """
     from reckon.nested_launch import shim_directory
 
     return [
@@ -415,10 +500,37 @@ def _land_command(run_id: str) -> list[str]:
         run_id,
         "--gate",
         "passed",
+        *[
+            token
+            for revision in _delivered_revisions(run_id)
+            for token in ("--commit", revision)
+        ],
         "--no-impl-change",
         LANDING_BEAT_REASON,
         "--land",
     ]
+
+
+def _delivered_revisions(run_id: str) -> tuple[str, ...]:
+    """The revisions this run's manifest delivers, as the pass reads them.
+
+    Read through the reader the pass used, because the two must agree on what a
+    delivered run delivered: a land step that read the entries again would be a
+    second reader, and a second reader is a second answer. Every entry the
+    reader can place becomes a presented revision, so the promotion's boundary
+    check covers the run's whole delivery and not only its tip.
+    """
+    try:
+        pointer = runs.read_pointer(run_id)
+    except (OSError, ValueError, CrewError):
+        return ()
+    classified = recovery.classify_pointer(pointer)
+    revisions: list[str] = []
+    for entry in classified.get("manifest_commits") or ():
+        revision = _delivered_revision([entry])
+        if revision and revision not in revisions:
+            revisions.append(revision)
+    return tuple(revisions)
 
 
 def _land_timeout(run_id: str) -> float:
@@ -512,7 +624,10 @@ def land_once() -> dict[str, Any]:
     stamp and the review record it judged are both unchanged. A manifest whose
     last commit entry names no revision is refused with that entry quoted and an
     obligation for the run's session, so the run is visible to a coordinator
-    rather than dropped from the pass in silence.
+    rather than dropped from the pass in silence. A delivered run whose head
+    carries no review is recorded ``awaiting-review`` with the review reflex's
+    own state beside it, so waiting for a review is a verdict on the record
+    rather than a run the pass never mentions.
     """
     from reckon.crew.recovery_review_subject import select_review_for_head
 
@@ -593,6 +708,13 @@ def land_once() -> dict[str, Any]:
             ):
                 continue
         if stale or review is None:
+            _record_awaiting_review(
+                run_id,
+                pointer,
+                head=head,
+                code_stamp=code_stamp,
+                review_stamp=review_stamp,
+            )
             continue
         if not _review_accepts_promotion(review):
             guard = "review acceptance: a blocking finding or an incomplete record"
