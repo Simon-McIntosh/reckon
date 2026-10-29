@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-29T02:34:56.741Z",
+  "dispatched_at": "2026-10-29T02:00:45Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:165",
+      "id": "done_when-1",
+      "reason": "the node either fails its own third arm or edits a fenced-out module, and the interface claim that no advice path changes is false.",
+      "text": "s12 requires \"the restart line is emitted only in the second case\" and retires \"the restart advice for a slow but live station\", but the advice is built in `stale_station_line` at `reckon/hooks/coordinator_obligations.py:903-925`, which is not among s12's write paths (`reckon/crew/station.py`, `obligation_snapshot.py`, `station_obligations.py`, the new test)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:165",
+      "id": "single_goal-1",
+      "reason": "arm four proves the refresh scheduler and arms one to three prove liveness, so one verdict cannot close both and a failure in the scheduler would block the liveness repair.",
+      "text": "s12 mixes two deliverables: a beat thread that separates liveness from progress, and a per-project refresh bound that carries an over-long project to the next tick",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:165",
+      "id": "reasoning-1",
+      "reason": "the rubric asks for the caller the mechanism relies on; without it the node cannot know whether the `slow` state must also be exported through `obligation_snapshot` (`stale` at `obligation_snapshot.py:457`) or read only from the store.",
+      "text": "s12 says \"a reader calls the station stopped only when the beat is stale\" and never names that reader, while the only place the stale flag becomes advice is `reckon/hooks/coordinator_obligations.py:903-925`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:169",
+      "id": "wiring-1",
+      "reason": "the followup is the instruction a coordinator follows, so the two newest sections would never be queued.",
+      "text": "followup `f-wns-001` queues s2, s3, 5, 8, 4, 7, 9 and 6, and names neither s11 nor s12, although both are declared `implementable` and both are independent of every section it lists",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:165",
+      "id": "evidence_paths-1",
+      "reason": "the mechanism and its gate stand on the beat placement already visible at `station.py:254-261`; the samples only corroborate it.",
+      "text": "s12's diagnosis rests on \"five `py-spy` samples\" with no log path, beside a durable log path and pids for every other claim (pid 3903707, the fleet log)",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "730d2cdc9dd22249d3ce317b4ca48c73a1d6506b",
+  "plan_fingerprint": "b614d0bc52ed34039f5095e37f169b75221bb415409d6ebe925577ac7d8fe10a",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 30,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261029T014112762226-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "da802e5fe25e0529a5ee68fddf07353b02705331",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every citation checked resolves: `~/.local/state/fleet/fleet-1291586.log` carries `unknown request: station` from `2026-10-26T22:15:36Z` (line 202) and `reloading` at `2026-10-29T00:57:16Z` (line 230), `STATION_STALE_SECONDS` (`reckon/crew/obligation_snapshot.py:315`), `station_obligations.refresh`/`publish` (`151`, `318`, called per project at `reckon/crew/station.py:332`), `classify_tick`/heartbeat (`station.py:254-261`), and the admit-service stamp and trust helpers s11 reuses (`reckon/crew/queue_admission.py:660`, `685`, `3541-3582`).",
+    "done_when": "a finding \u2014 s12's third arm (the restart line is emitted only for a stale beat) and its \"restart advice ... retired\" clause are decided in `reckon/hooks/coordinator_obligations.py:903` `stale_station_line`, a file outside s12's four declared write paths.",
+    "evidence_paths": "a finding \u2014 s12's five `py-spy` samples are cited with no path, so a later reader cannot open them; s11's log path and pids are durable and verified.",
+    "naming": "pass \u2014 s11 and s12 name mechanisms (`code stamp`, `trusted checkout`, `slow`, `carried to the next tick`); no plan labels, stage IDs, ticket numbers or changelog prose reach a symbol or comment.",
+    "reasoning": "a finding \u2014 s12 separates liveness from progress but names no caller of the separation: it says \"a reader calls the station stopped only when the beat is stale\" without naming the module that makes that judgement into the restart advice.",
+    "single_goal": "a finding \u2014 s12 carries two independent deliverables: separating liveness from progress, and bounding each per-project refresh so a slow project is carried to the next tick.",
+    "wiring": "a finding \u2014 the only open followup (`f-wns-001`, the block a coordinator acts on to queue this plan) lists s2, s3, 5, 8, 4, 7, 9 and 6, and omits s11 and s12, both declared `implementable` and both independent of every section it lists."
+  },
+  "section_digests": {
+    "_document": "c8b61c2342da073f0e0a6b8f17732cdb8601796b7c729ef3cb040e465b340dcc",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a57f0806ab07c7796168c1cbf8ae5aa8303589f029c192c13a201c3d460c1104",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2660f0a8230174b58e453e15cd31c113f234218a69c1e8c217b6dd03334a224c",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T02:59:40.610561+00:00"
+}
