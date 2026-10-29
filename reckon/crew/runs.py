@@ -2098,6 +2098,31 @@ _DRAIN_WEEK_PHASES = (
 )
 
 
+#: The phases a request can still be waiting in when a stuck row is written.
+#: Any other phase has become a run, and a run's age is a worker's running time
+#: rather than a wait the queue owes anyone, however long it has held.
+_DRAIN_STUCK_PHASES = frozenset(
+    {"queued", "launch-failed", "awaiting-upstream", "blocked-upstream", "held"}
+)
+#: The verdict words that leave a request in the queue. A pass records it, so
+#: only a word that says the pass did not launch the request can be the cause a
+#: stuck row names; ``launched``, ``routed`` and ``moved`` say the opposite.
+_DRAIN_STUCK_VERDICTS = frozenset(
+    {
+        "stalled",
+        "refused",
+        "unplaced",
+        "held-for-allowance",
+        "held-by-gate",
+        "held-on-claim",
+        "held-until-changed",
+        "held-on-retry-backoff",
+        "held-on-plan-review",
+        "held-behind-earlier-request",
+    }
+)
+
+
 def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, Any]:
     """Summarise the queue and its recent throughput from one pointer read."""
     from reckon import ledger
@@ -2196,15 +2221,21 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
         phase_start = parse_utc(phase_stamp)
         overdue = phase_start is not None and phase_start < hour_ago
         # A request is stuck when a pass examined it, recorded why it did not
-        # launch, and the request is still here an hour or more later. The cause
-        # is read from that record rather than derived a second time: the drain
-        # view no longer resolves a request's waits to decide this, so the
+        # launch, and the request is still waiting an hour or more later. The
+        # cause is read from that record rather than derived a second time: the
+        # drain view no longer resolves a request's waits to decide this, so the
         # request that waited past an hour is named by the verdict the pass that
         # last looked at it recorded, and a request no pass has examined is not
-        # reported stuck on this view's own judgement.
+        # reported stuck on this view's own judgement. The phase and the word
+        # both have to say the request is waiting: a run a pass launched carries
+        # a launch verdict and a working phase, and its age is its own.
         run_id = str(pointer.get("run_id") or "")
         last_verdict = latest_verdict.get(run_id)
-        stuck = bool(overdue and last_verdict)
+        stuck = bool(
+            overdue
+            and phase in _DRAIN_STUCK_PHASES
+            and last_verdict in _DRAIN_STUCK_VERDICTS
+        )
         for view in targets(plan):
             view["phases"][bucket] += 1
             view["remaining"] += 1
