@@ -88,6 +88,9 @@ def _drive_one_pass(monkeypatch: pytest.MonkeyPatch, **options) -> dict:
 
     The stop is injected at the pause that ends a pass, so the pass under test
     has completed — released, admitted and recorded — before the loop leaves.
+    The loop runs in a thread of its own, so a case can tell a pass that
+    finished from one that is still waiting: a caller that joined the loop
+    forever would report neither.
     """
     recorded: list[dict] = []
 
@@ -104,8 +107,17 @@ def _drive_one_pass(monkeypatch: pytest.MonkeyPatch, **options) -> dict:
     monkeypatch.setattr(queue_admission, "admit_once", admit_once)
     monkeypatch.setattr(queue_admission, "_pause", pause)
     monkeypatch.setattr(queue_admission, "_record_pass_verdicts", record)
-    result = queue_admission.admit_until_stopped(interval=0.0, **options)
-    return {"loop": result, "records": recorded}
+
+    done = threading.Event()
+    state: dict = {}
+
+    def drive() -> None:
+        state["loop"] = queue_admission.admit_until_stopped(interval=0.0, **options)
+        done.set()
+
+    thread = threading.Thread(target=drive, daemon=True)
+    thread.start()
+    return {"done": done, "state": state, "records": recorded}
 
 
 def test_an_admission_pass_completes_while_a_landing_is_blocked(
@@ -126,7 +138,7 @@ def test_an_admission_pass_completes_while_a_landing_is_blocked(
 
     def blocked_land(run_id: str) -> tuple[bool, str]:
         entered.set()
-        released.wait(timeout=10.0)
+        released.wait(timeout=60.0)
         return True, ""
 
     monkeypatch.setattr(queue_landing, "_land", blocked_land)
@@ -135,10 +147,11 @@ def test_an_admission_pass_completes_while_a_landing_is_blocked(
 
     try:
         assert entered.wait(timeout=5.0), "the landing step was never reached"
-        assert driven["loop"] == {"passes": 1}, driven
+        # The pass completes while the landing is still held: the admission
+        # loop does not wait for it.
+        assert driven["done"].wait(timeout=10.0), "the pass waited for the landing"
+        assert driven["state"]["loop"] == {"passes": 1}, driven["state"]
         assert any(record.get("admitted") for record in driven["records"])
-        # The pass completed while the landing had not: the admission loop does
-        # not wait for it.
         assert not released.is_set(), "the pass waited for the landing"
         assert waits._phase_of(chain_repo, "s2") == queue_admission.QUEUED_PHASE
     finally:
@@ -227,6 +240,7 @@ def test_each_pass_record_carries_its_stage_timings(
         return {"landed": [], "obligations": [], "deferred": []}
 
     driven = _drive_one_pass(monkeypatch, lander=lander)
+    assert driven["done"].wait(timeout=10.0), "the pass did not finish"
     rows = [record for record in driven["records"] if "started_at" in record]
     assert rows, driven["records"]
     row = rows[0]
@@ -269,7 +283,8 @@ def test_a_raising_landing_is_restarted_and_never_stops_the_loop(
         raise RuntimeError("the landing script vanished")
 
     driven = _drive_one_pass(monkeypatch, lander=always_raising)
-    assert driven["loop"]["passes"] >= 1, driven["loop"]
+    assert driven["done"].wait(timeout=10.0), "the pass did not finish"
+    assert driven["state"]["loop"]["passes"] >= 1, driven["state"]["loop"]
 
 
 def test_the_land_step_waives_the_impl_move_the_beat_makes(
