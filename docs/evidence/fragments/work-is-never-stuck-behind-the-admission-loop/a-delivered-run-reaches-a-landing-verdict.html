@@ -1,0 +1,34 @@
+<article class="r-evidence" data-node="a-delivered-run-reaches-a-landing-verdict">
+<h3>A delivered run always reaches a landing verdict</h3>
+<p id="a-delivered-run-reaches-a-landing-verdict-verdict">Two exits dropped a
+delivered implementation run with nothing written down. <code>land_once</code>
+continued past a run whose head carried no review, so a coordinator could not
+tell a run waiting on its review from one the pass never reached. And the
+<code>crew complete --land</code> step the pass runs re-read the worker's
+<code>commits:</code> entry as one revision, so an entry carrying its subject
+after the revision, or several revisions on one line, was refused as an
+unresolvable commit by the step the pass had just decided to take.</p>
+<p id="a-delivered-run-reaches-a-landing-verdict-record">The pass now writes
+<code>awaiting-review</code> into the run's <code>admission_landing</code> with
+the review reflex's own state beside it — <code>review_state: dispatched</code>,
+or <code>refused</code> with the reason the reflex recorded — once per head and
+state, so a pass every 30&nbsp;s does not rewrite the pointer for a situation
+that has not moved. The land step presents the revisions the shared reader
+<code>queue_landing._delivered_revision</code> places, and
+<code>promotion_evidence</code> reads the manifest's commit entries through that
+same reader, retiring its own whole-entry reading.</p>
+<p id="a-delivered-run-reaches-a-landing-verdict-measure">Measured through
+<code>crew complete --land</code> with the land step's own argv, on a repository
+whose manifest carries each entry shape. At the base revision both land cases
+fail on the recorded defect, refused verbatim: <em>run
+'r-20261019T140000000000-entry-shape' presents '&lt;sha&gt; feat: change 2' as a
+commit, but that identifier does not resolve to a commit object in the run
+repository</em>, and the same for an entry joining three revisions. At head both
+exit 0 with <code>"ok": true</code>. Base arm 6 failed / head arm 6 passed. The
+test files importing <code>reckon.crew.queue_landing</code> and
+<code>reckon.crew.promotion_evidence</code> are identical on both arms: 66
+passed at base, 66 at head, no added failure id. The declared negative control
+restores the silent <code>continue</code> past a run with no review at its head,
+and the first arm fails: 3 failed, 3 passed, the three awaiting-review cases
+among the failures.</p>
+</article>
