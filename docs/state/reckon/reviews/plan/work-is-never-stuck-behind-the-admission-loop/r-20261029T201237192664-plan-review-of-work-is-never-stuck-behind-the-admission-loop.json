@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-29T20:19:29.644Z",
+  "dispatched_at": "2026-10-29T20:15:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:173",
+      "id": "reasoning-1",
+      "reason": "without naming the order, a worker renewing after the beat write, or inside the same try, ships a station whose lease still lapses under contention, and the section's own measure (a held-open tick) cannot see it.",
+      "text": "the deliverable renews the lease \"from the same thread that writes its heartbeat, on the beat's cadence\" without ordering the renewal before the beat's store write, and that write can block for the full stale window: `StationBeat._run` calls `beat_once()`, a SQLite write opened with `timeout=30.0` (`reckon/crew/station_store.py:330`), before its 5 s wait, and `LEASE_STALE_SECONDS` is 30.0 (`reckon/crew/host_lease.py:16`); when the write raises `database is locked` the loop's `except Exception` (`station.py:116`) skips to the next beat, so the renewal can lag past the stale window or be skipped entirely. The Why itself blames this contention (\"the beat thread's write waits behind the other writer's transactions on the shared SQLite store\") for the heartbeat staleness in the incident, so the mechanism as written leaves the second cause it cites unaddressed and a second writer can still be admitted exactly as on 29 October.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:173",
+      "id": "done_when-1",
+      "reason": "restating the arm as \"during that held-open tick\" is the difference between a regression guard and an arm that passes on the code the section exists to fix.",
+      "text": "the fourth arm, \"`StationProcess.ensure` with a live, beating station starts no second process\", passes on the unfixed code whenever the lease is fresh, which it is between ticks today: `ensure` returns at `fleet_supervisor.py:1924-1933` on a fresh same-host holder whose `os.kill(pid, 0)` succeeds, so the arm asserts a behaviour the current code already has and only falsifies if it runs inside the arm-1 held-open tick. As stated, the arm measures nothing about this change.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:173",
+      "id": "reasoning-2",
+      "reason": "the section must state which writes are guarded, or a worker implementing the sentence exactly still leaves the longest write \u2014 and the post-loop writes \u2014 beside the new holder.",
+      "text": "\"The tick checks that mark before each project's refresh and before it publishes, so a station that loses its lease mid-tick stops writing at once. It never finishes a long tick beside the new holder\" is not what per-project boundary checks produce: one project's refresh is the long stage the Why measures at 14.5 minutes, so a lease lost during project N's refresh still lets that project's `record_tick`, `record_live_work`, `station_obligations.publish` and sweep requests complete (`station.py:385-461`), and the tick afterwards still writes `sweep_retention` and the finish stamp (`station.py:462-469`) with no check at all; on a single-project tick the station writes beside the new holder for the whole tick.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c363c70fece1b867ec094febcdc3d4845700fbe5",
+  "plan_fingerprint": "391a35b5b5afc60672301ad9f5b9f7642e623ef113a223626475ea32ca704b1e",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 80,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261029T201237192664-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "9df09bc190253abc610b1e27872cce924f5c0057",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `run_station` (`reckon/crew/station.py:473`), the between-tick renew (`station.py:517-524`), `LEASE_STALE_SECONDS` (`reckon/crew/host_lease.py:16`), `StationHeldError` (`station.py:51`) and `StationProcess.ensure` (`reckon/crew/fleet_supervisor.py:1903`) all resolve as cited.",
+    "done_when": "a finding \u2014 the fourth arm (`StationProcess.ensure` starts no second process) holds on the unfixed code as written, because it does not say it is exercised during the held-open tick.",
+    "evidence_paths": "pass \u2014 s14 authors no gate log and writes nothing to a scratch path; its claims cite code anchors and incident pids/timestamps.",
+    "naming": "pass \u2014 the new test path `tests/test_the_station_holds_its_lease_while_it_beats.py` names the mechanism it checks, with no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 the mechanism places the renewal behind the very SQLite write whose contention the section's own Why names as a cause, and its \"stops writing at once\" claim is not produced by per-project boundary checks.",
+    "single_goal": "pass \u2014 one deliverable, that a live station's right to write is renewed on the same cadence as its liveness and released the moment it is lost; arms 2 and 4 assert existing `claim`/`ensure` behaviour as consequences rather than adding a second deliverable.",
+    "wiring": "pass \u2014 s14 declares no `depends-on`, which is correct because both upstreams it leans on (\u00a711's `StationReloader` and \u00a712's `StationBeat`) stand at `done` and are present in `reckon/crew/station.py` at c363c70f, so nothing is held awaiting an unlanded section and no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "73e9fcfa9c40e3a103b02a110bb84572496352fa17a1be06a529b66bd9dcd61f",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "04c9fdd7526cfe4dfeef352997e9b994c33e3cd321ed7aad49e40c97710c087a",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2660f0a8230174b58e453e15cd31c113f234218a69c1e8c217b6dd03334a224c",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T20:29:00.372351+00:00"
+}
