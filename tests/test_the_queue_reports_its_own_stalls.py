@@ -205,3 +205,98 @@ def test_a_lane_with_no_room_or_a_live_claim_records_no_stall(
         lambda *args, **kwargs: "held by r-other over a shared path",
     )
     assert _stalls(_admit()) == []
+
+
+def _drained(repository, monkeypatch, pointers, verdict_records):
+    """The drain view over one seeded fleet, with the ledger and plans stubbed."""
+    for pointer in pointers:
+        runs._write_json(runs.pointer_path(pointer["run_id"]), pointer)
+    _write_log(verdict_records)
+    monkeypatch.setattr(runs, "_drain_plan_states", lambda _project: [])
+    monkeypatch.setattr(runs, "_unloaded_sections", lambda *_args: {})
+    monkeypatch.setattr(
+        "reckon.ledger.load", lambda *_args, **_kwargs: ({"runs": []}, 0)
+    )
+    return runs.drain(PROJECT)["week"]
+
+
+def _pointer(run_id: str, phase: str, *, age_seconds: float) -> dict:
+    stamp = (datetime.now(UTC) - timedelta(seconds=age_seconds)).isoformat()
+    return {
+        "run_id": run_id,
+        "project": PROJECT,
+        "session": fixtures.SESSION,
+        "node": {"plan": fixtures.PLAN, "section": "s1"},
+        "phase": phase,
+        "created_at": stamp,
+        "queued_at": stamp,
+    }
+
+
+def test_the_drain_view_reports_the_queue_age_and_the_stall_stage(
+    chain_repo, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The drain view carries the queue's age and names the stage a stall holds."""
+    pointer = _pointer(RUN_ID, queue_admission.QUEUED_PHASE, age_seconds=2 * 3600)
+    week = _drained(
+        chain_repo,
+        monkeypatch,
+        [pointer],
+        [
+            {
+                "at": datetime.now(UTC).isoformat(),
+                "admissible_age_seconds": 720.0,
+                "pointers": [
+                    {
+                        "run_id": RUN_ID,
+                        "verdict": queue_admission.STALL_VERDICT,
+                        "stage": "launch",
+                        "stage_seconds": LAST_LAUNCH_SECONDS,
+                        "age_seconds": 700.0,
+                    }
+                ],
+            }
+        ],
+    )
+
+    assert week["project"]["admissible_age_seconds"] == 720.0
+    stuck = {row["run_id"]: row for row in week["project"]["stuck"]}
+    assert RUN_ID in stuck, week["project"]["stuck"]
+    row = stuck[RUN_ID]
+    assert row["stalled"] is True
+    assert row["last_verdict"] == queue_admission.STALL_VERDICT
+    assert row["stage"] == "launch"
+    assert row["stage_seconds"] == LAST_LAUNCH_SECONDS
+    assert row["age_seconds"] >= 3600
+
+
+def test_a_launched_run_is_not_stuck(
+    chain_repo, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run a pass launched is working, however old it is.
+
+    The stuck rule reads a recorded verdict, so it must say which verdicts still
+    leave a request waiting. A launch verdict says the opposite: the request
+    became a run, and its age is the worker's running time rather than a wait
+    the queue owes anyone.
+    """
+    working = _pointer("r-working", "launched", age_seconds=2 * 3600)
+    queued_without_a_verdict = _pointer(
+        "r-quiet", queue_admission.QUEUED_PHASE, age_seconds=2 * 3600
+    )
+    week = _drained(
+        chain_repo,
+        monkeypatch,
+        [working, queued_without_a_verdict],
+        [
+            {
+                "at": datetime.now(UTC).isoformat(),
+                "pointers": [{"run_id": "r-working", "verdict": "launched"}],
+            }
+        ],
+    )
+
+    stuck = {row["run_id"] for row in week["project"]["stuck"]}
+    assert "r-working" not in stuck, week["project"]["stuck"]
+    assert "r-quiet" not in stuck, week["project"]["stuck"]
+    assert week["project"]["phases"]["launched"] == 1
