@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-29T07:06:23.101Z",
+  "dispatched_at": "2026-10-29T06:56:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f4e1e256913",
+      "line": 1198,
+      "severity": "non-blocking",
+      "text": "the cache branch added to _load re-implements the stat-keyed parse memo the repository already owns at reckon/file_memo.py:358 memoized - same identity discipline (a stat signature, here path plus st_mtime_ns), same deep-copy hand-out, same uncached-on-stat-failure behaviour - so it duplicates that owner rather than wrapping it; reckon/ledger.py:1251 states file_memo is 'the repository's one memo for a parse keyed on a file's stat identity', and this second keying forks it."
+    },
+    {
+      "file": "tests/test_a_dispatch_reads_one_sections_readiness.py",
+      "id": "fac50297275",
+      "line": 434,
+      "severity": "non-blocking",
+      "text": "no arm reddens if the _load record cache at reckon/crew/plan_review.py:1198-1209 is removed: with no store write during the pass the project-level cache at reckon/crew/plan_review.py:1411 answers every later list_plan_reviews call before _load is reached, so the single read this arm counts comes from entering review_read_pass, not from the record cache the commit message credits; the cache's only reachable purpose - a record written mid-pass moving the project-level store stamp - is never exercised, so the _load docstring's claim that a record written during the pass is read rather than answered from a copy is unproven."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that a dispatch compute a section's readiness from its own plan and the plans its waits name (prompt.txt:38); the commit gained since the last review answers the prior blocking finding by holding both passes around an admission pass at reckon/crew/queue_admission.py:3125-3130, entering readiness_pass() and review_read_pass() together.\nVERDICT done_when: the dispatch's evidence clause asks that within one admission pass require_plan_reviewed and newest_design_review read each plan's stored reviews once, counted for three queued requests on one plan (prompt.txt:140); tests/test_a_dispatch_reads_one_sections_readiness.py:390-434 drives a real queue_admission.admit_once over three queued requests and asserts one _read_record for that plan's stored reviews, and the manifest records that arm green at the head and red with the answering commit reverted.\nVERDICT write_paths: the reviewed commit was fenced to reckon/crew/plan_review.py, reckon/crew/queue_admission.py and tests/test_a_dispatch_reads_one_sections_readiness.py; git show --stat b51afd9985 lists exactly those three files and nothing else.\nVERDICT manifest: read; it records the head arm as 10 passed in 40.73s EXIT=0 at b51afd9985, the base arm as 9 passed in 43.33s EXIT=0 at 3531bb13b8, the negative control as 1 failed EXIT=1, and names every log on disk.\nVERDICT diff: read b51afd9985 against base 3531bb13b8 commit by commit: 3 files, 81 insertions and 6 deletions, adding the review_read_pass entry in admit_once, splitting _read_record out of _load and caching that read inside the pass, and adding one test arm.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:_plan_review_gate, reckon/crew/queue_admission.py:_dispatch_gate_owed, reckon/crew/routing.py:require_plan_reviewed, reckon/crew/plan_review.py:review_coverage, reckon/crew/plan_review.py:list_plan_reviews, reckon/crew/plan_review.py:read_plan_review, reckon/crew/plan_review.py:_load\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:3130 enters review_read_pass beside readiness_pass, so the pass-scoped store read the prior review found unreachable now runs on every admission pass.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_dispatch_reads_one_sections_readiness.py:434 counts one stored-record read across three queued requests in a real admission pass, but it counts _read_record calls rather than the stat calls the done_when names and does not measure the record cache at reckon/crew/plan_review.py:1198.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat b51afd9985 shows three changed files, each named in the dispatch's write paths, with no change outside them.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_dispatch_reads_one_sections_readiness.py:434 reddens when reckon/crew/queue_admission.py:3130 is reverted (negative-control.log, 1 failed EXIT=1), but no assertion reddens when the record cache at reckon/crew/plan_review.py:1198-1209 is removed.\nSCORE fit: 17\nJUSTIFICATION fit: the function-local import at reckon/crew/queue_admission.py:3125 matches the file's own idiom for plan_review imports (lines 1703, 1717, 2582, 2738), and no added name carries a plan label or version.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/plan_review.py:1198 re-implements the stat-keyed parse memo owned by reckon/file_memo.py:358 rather than wrapping it, duplicating the capability reckon/ledger.py:1251 names as the repository's one memo.\nFINDING reckon/crew/plan_review.py:1198 non-blocking: the cache branch added to _load duplicates reckon/file_memo.py:358 memoized (stat-keyed identity, deep-copy hand-out) instead of wrapping the owner the repository names as its one stat-keyed parse memo at reckon/ledger.py:1251, so two keying disciplines now hold the same kind of entry.\nFINDING tests/test_a_dispatch_reads_one_sections_readiness.py:434 non-blocking: no arm reddens when the _load record cache at reckon/crew/plan_review.py:1198-1209 is removed, because list_plan_reviews' project-level cache at reckon/crew/plan_review.py:1411 answers each later request before _load is reached; the mid-pass store write that is the cache's only reachable purpose is never exercised.",
+  "review_run_id": "r-20261029T064954778402-review-of-a-dispatch-reads-one-sections-readiness-b51afd99856e",
+  "reviewed_base_sha": "3531bb13b82b8bffa67150e40a1aed636b063293",
+  "reviewed_head_sha": "b51afd99856eade61c02cc0fd8087f5c28fab170",
+  "reviewed_run_id": "r-20261027T163624860248-a-dispatch-reads-one-sections-readiness",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T07:23:37.093324+00:00",
+  "total": 87
+}
