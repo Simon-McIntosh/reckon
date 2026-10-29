@@ -1,0 +1,90 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-29T16:05:50.396Z",
+  "dispatched_at": "2026-10-29T16:00:31Z",
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "id": "f1c4a9e270b3",
+      "line": 2207,
+      "severity": "blocking",
+      "text": "the drain view's stuck rule is now `stuck = bool(overdue and last_verdict)` with no filter on the pointer's phase or on the verdict word, so any live pointer older than an hour that has any recorded verdict lands in view['stuck']; before this change only phase queued/launch-failed (and an awaiting-upstream whose waits would resolve) counted. Runs.drain builds `pointers` from list_live (reckon/crew/runs.py:2282) and a pass writes verdict=\"launched\" for a request it launched (reckon/crew/queue_admission.py:4072), so a dispatch that has been working for over an hour now reads as stuck. The plan asked the view to read the recorded STALL verdict in place of resolving waits, not any verdict."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "id": "a7b2e5c019d4",
+      "line": 2222,
+      "severity": "blocking",
+      "text": "the done-when's second bullet \u2014 \"the drain view reports its age\" \u2014 is asserted by no test: the four tests in tests/test_the_queue_reports_its_own_stalls.py exercise queue_admission.admit_once and needs_you.needs_you_rows only, and neither they nor any other test calls runs._drain_week_view or runs.drain for the new admissible_age_seconds, age_seconds, stalled, stage and stage_seconds fields; the whole drain-view half of the landed change, including the stuck-rule replacement, is unmeasured, and the defect above passed because of it."
+    },
+    {
+      "file": "tests/test_drain_week_view.py",
+      "id": "e93d1f4b6a52",
+      "line": 139,
+      "severity": "non-blocking",
+      "text": "test_old_upstream_wait_is_stuck_only_when_admission_would_advance_it still passes but no longer guards the rule it names: it asserts resolve_waits separately (:180-:197) and then reads the stuck list, which the landed change derives from recorded verdicts rather than from resolve_waits; r-waiting has no verdict in its fixture (:198-:208) so it is absent from the stuck list for a reason the test does not state, and it would now be stuck if one were recorded. The test reads as coverage of the retired rule and gives none."
+    },
+    {
+      "file": "tests/test_the_queue_reports_its_own_stalls.py",
+      "id": "c5108d7fea41",
+      "line": 168,
+      "severity": "non-blocking",
+      "text": "`stalled[0][\"stage\"] == recorded[0][\"stage\"]` is a round-trip assertion: the test writes the value the writer produced (recorded[0], from _admit) into the verdict log at :164 and then compares the reader's output against that same variable, so it holds whatever stage the writer records and would survive the writer regressing; the kinds of row the assertion does guard independently are len(stalled)==1, kind==\"blocked\" and the age bound at :169."
+    },
+    {
+      "file": "reckon/crew/needs_you.py",
+      "id": "b28f6a0d3c75",
+      "line": 160,
+      "severity": "non-blocking",
+      "text": "_stall_verdicts re-implements the verdict-log read the landed change also adds inline in runs._drain_week_view (:2111-:2145) and in queue_admission._last_verdict_of (): all three parse the same lines, keep the last verdict per run and track the stall fields, so the stall/clear semantics now live in three places; no shared reader existed before the change, and one could have been added rather than three copies kept."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "id": "9de0c4f1ab68",
+      "line": 1453,
+      "severity": "non-blocking",
+      "text": "_record_stalls calls _last_verdict_of(run_id) once per pointer (:1453) and _last_stage_seconds(stage) once per stall (:1491), and each call re-reads and re-parses the entire verdict log (capped at 1 MB); a pass over a queue of N requests therefore does at least 2N full parses of that file on the admission service loop, where one read per pass would serve every lookup."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "id": "77a3b0e5d9c1",
+      "line": 2136,
+      "severity": "non-blocking",
+      "text": "the drain view compares against the literal \"stalled\" where the writer defines queue_admission.STALL_VERDICT, so renaming the verdict constant leaves the reader silently matching nothing and every stall clears as if a later verdict had replaced it."
+    },
+    {
+      "file": "reckon/crew/needs_you.py",
+      "id": "d4f6e8250b33",
+      "line": 157,
+      "severity": "non-blocking",
+      "text": "the needs-you row is reachable only from tests in production: nothing under reckon/ imports reckon.crew.needs_you at all \u2014 needs_you_rows is called only from needs_you() (:252), needs_you_runs only from needs_you() \u2014 so the stall's delivery to a request's session, which the plan names as its route, is exercised only by the test's direct call; the plan chose this module, so this is recorded rather than scored against the node."
+    },
+    {
+      "file": "logs/baseline-arm.log",
+      "id": "57c31a90be2f",
+      "line": 42,
+      "severity": "non-blocking",
+      "text": "the base arm's four failures are all `AttributeError: module 'reckon.crew.queue_admission' has no attribute 'STALL_VERDICT'` raised at tests/test_the_queue_reports_its_own_stalls.py:90 inside the _stalls helper, after admit_once has already returned; the manifest reads that as showing \"the behaviour is genuinely new rather than already-correct code reimplemented\", but it only shows the constant is new \u2014 a base that already recorded stalls perfectly would fail identically, so the reproduction claim is stronger than the log supports."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a stall verdict when admissible work waits on a lane with room; reckon/crew/queue_admission.py:1428 records it from admit_once at :3746, naming the request, the release/launch/land stage and that stage's last recorded duration.\nVERDICT done_when: the done-when names three behaviours for tests/test_the_queue_reports_its_own_stalls.py; the eleven-minute stall (:101), the record-once-then-clear case (:136) and the no-room/no-claim cases (:176) are asserted, but its second bullet \u2014 the drain view reports its age \u2014 has no assertion anywhere: no test calls runs._drain_week_view.\nVERDICT write_paths: the manifest declares the three source modules, the new test and the evidence fragment; every path in the diff (reckon/crew/queue_admission.py, reckon/crew/runs.py, reckon/crew/needs_you.py, tests/test_the_queue_reports_its_own_stalls.py, docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/the-queue-reports-its-own-stalls.html) is inside that set.\nVERDICT manifest: read; it records the head arm as 4 passed EXIT=0 in logs/after-arm.log and the base arm as 4 failed EXIT=1 in logs/baseline-arm.log, names the negative-control log, and its rubric lines cover evidence, negative-control, interface, scope, reproduction and lint.\nVERDICT diff: read commit by commit against base 1ed6b58d \u2014 one commit, a07d04759a, 611 insertions and 28 deletions across five files, all inside the declared scope and none of them unrelated.\nCALL_SITES: reckon/crew/queue_admission.py:4139, reckon/crew/queue_admission.py:4168, reckon/crew/runs.py:2280 (reached from reckon/crew_run_commands.py:1565, reckon/mcp_views.py:4269 and reckon/crew/obligations.py:1765); reckon/crew/needs_you.py has no production caller.\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:3746 records the stall before the pass launches anything, with the stage from _stall_stage (:1397) and its duration from _last_stage_seconds (:1368), which is the deliverable the goal states.\nSCORE evidence: 11\nJUSTIFICATION evidence: logs/after-arm.log records 4 passed EXIT=0 but it asserts only admit_once and needs_you, while the done-when's drain-view bullet (reckon/crew/runs.py:2222) has no assertion and the base arm reddens on a missing constant rather than on behaviour (logs/baseline-arm.log:42).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all five changed paths in a07d04759a lie inside the declared write paths, and the fragment is the always-permitted landing record rather than extra prose.\nSCORE durability: 12\nJUSTIFICATION durability: the negative control at reckon/crew/queue_admission.py:1446 is proven \u2014 logs/negative-control.log shows test_a_lane_with_no_room_or_a_live_claim_records_no_stall red at EXIT=1 \u2014 but the drain-view half at reckon/crew/runs.py:2206-:2230 has no test that reddens if it regresses, and tests/test_drain_week_view.py:139 now passes vacuously.\nSCORE fit: 15\nJUSTIFICATION fit: the added functions follow the module's docstring-and-constant idiom and carry no plan or stage label, but reckon/crew/runs.py:2136 spells the verdict as a literal instead of queue_admission.STALL_VERDICT.\nSCORE reuse: 11\nJUSTIFICATION reuse: no reader of the verdict log is shared, and the landed change adds a third parse of it at reckon/crew/needs_you.py:160 beside the inline one at reckon/crew/runs.py:2111 and queue_admission._last_verdict_of, duplicating the capability rather than extending one owner.\nFINDING reckon/crew/runs.py:2207 blocking: the drain view's stuck rule is now `stuck = bool(overdue and last_verdict)` with no filter on the pointer's phase or on the verdict word, so any live pointer older than an hour that has any recorded verdict lands in view['stuck']; before this change only phase queued/launch-failed (and an awaiting-upstream whose waits would resolve) counted. Runs.drain builds `pointers` from list_live (reckon/crew/runs.py:2282) and a pass writes verdict=\"launched\" for a request it launched (reckon/crew/queue_admission.py:4072), so a dispatch that has been working for over an hour now reads as stuck. The plan asked the view to read the recorded STALL verdict in place of resolving waits, not any verdict.\nFINDING reckon/crew/runs.py:2222 blocking: the done-when's second bullet \u2014 the drain view reports its age \u2014 is asserted by no test: the four tests in tests/test_the_queue_reports_its_own_stalls.py exercise queue_admission.admit_once and needs_you.needs_you_rows only, and neither they nor any other test calls runs._drain_week_view or runs.drain for the new admissible_age_seconds, age_seconds, stalled, stage and stage_seconds fields; the whole drain-view half of the landed change, including the stuck-rule replacement, is unmeasured.\nFINDING tests/test_drain_week_view.py:139 non-blocking: test_old_upstream_wait_is_stuck_only_when_admission_would_advance_it still passes but no longer guards the rule it names: it asserts resolve_waits separately (:180-:197) and then reads the stuck list, which the landed change derives from recorded verdicts rather than from resolve_waits; r-waiting has no verdict in its fixture (:198-:208) so it is absent from the stuck list for a reason the test does not state, and it would now be stuck if one were recorded.\nFINDING tests/test_the_queue_reports_its_own_stalls.py:168 non-blocking: `stalled[0][\"stage\"] == recorded[0][\"stage\"]` is a round-trip assertion: the test writes the value the writer produced into the verdict log at :164 and compares the reader's output against that same variable, so it holds whatever stage the writer records and would survive the writer regressing.\nFINDING reckon/crew/needs_you.py:160 non-blocking: _stall_verdicts re-implements the verdict-log read the landed change also adds inline in runs._drain_week_view (:2111-:2145) and in queue_admission._last_verdict_of; all three keep the last verdict per run and track the stall fields, so the stall/clear semantics live in three places and one could have served all three.\nFINDING reckon/crew/queue_admission.py:1453 non-blocking: _record_stalls re-reads and re-parses the entire verdict log once per pointer through _last_verdict_of and again per stall through _last_stage_seconds, so a pass over a queue of N requests does at least 2N full parses of the 1 MB-capped file on the service loop where one read per pass would serve every lookup.\nFINDING reckon/crew/runs.py:2136 non-blocking: the drain view compares against the literal \"stalled\" where the writer defines queue_admission.STALL_VERDICT, so renaming the constant leaves the reader matching nothing and every stall clearing as if a later verdict had replaced it.\nFINDING reckon/crew/needs_you.py:157 non-blocking: the needs-you row is reachable only from tests in production \u2014 nothing under reckon/ imports reckon.crew.needs_you, so needs_you_rows is called only from needs_you() and that only from needs_you_runs(), and the stall's delivery to a request's session is exercised only by the test's direct call.\nFINDING logs/baseline-arm.log:42 non-blocking: all four base-arm failures are `AttributeError: module 'reckon.crew.queue_admission' has no attribute 'STALL_VERDICT'` at tests/test_the_queue_reports_its_own_stalls.py:90 inside the _stalls helper after admit_once returned, so the log shows the constant is new rather than that the behaviour was absent; a base already recording stalls would fail identically.\n",
+  "review_run_id": "r-20261029T155817732809-review-of-the-queue-reports-its-own-stalls-a07d04759a28",
+  "reviewed_base_sha": "1ed6b58d0ef839ff6ea47ea433744374df5a1e5a",
+  "reviewed_head_sha": "a07d04759a286c51bebd5956382f39b5b655547c",
+  "reviewed_run_id": "r-20261028T223716141209-the-queue-reports-its-own-stalls",
+  "rubric": "text",
+  "scores": {
+    "durability": 12,
+    "evidence": 11,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 11,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T16:10:00.000000+00:00",
+  "total": 86
+}
