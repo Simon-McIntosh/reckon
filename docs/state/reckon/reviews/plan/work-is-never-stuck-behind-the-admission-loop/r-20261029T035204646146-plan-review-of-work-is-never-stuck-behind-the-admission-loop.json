@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-29T03:59:34.922Z",
+  "dispatched_at": "2026-10-29T03:54:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:166",
+      "id": "reasoning-1",
+      "reason": "a worker following the mechanism as written cannot produce the stage the same section's first arm requires, and would either invent an unstated tick-stage record or drop the arm's check.",
+      "text": "the mechanism says \"Each tick records its start and end\", while the done-when's first arm requires the station to read `slow` \"with the stage named\"; no tick stage is recorded today in `reckon/crew/station.py` (the tick calls `store.tick`, `classify_tick`, `heartbeat`, then the per-project loop), in `station_store.py` (whose station values are only `heartbeat`, crew home, event generation/counter, `fleet:<project>` and live-work readings), or anywhere else, so knowing a tick's start time yields its age but not which phase it is in",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:166",
+      "id": "reasoning-2",
+      "reason": "both paths key on the same `station` row `heartbeat`, so decoupling the beat from the tick fixes both with no change to the excluded module; naming it would only make the reader inventory complete.",
+      "text": "the section names `obligation_snapshot`'s `stale` flag as \"the reader\", but the follower pane's restart advice is a second, independent path: `station_subscriber.stale_heartbeat_line` over its own `STALE_HEARTBEAT_SECONDS = 90.0`, whose text is \"restart it with: reckon crew station\", and `reckon/crew/station_subscriber.py` is not among s12's write paths",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:166",
+      "id": "wiring-1",
+      "reason": "the exclusion is explicit and s12's own measure is unaffected; a coordinator can open it as its own section, and recording it would change the plan's bookkeeping rather than any node's work.",
+      "text": "the section says \"Bounding a slow tick's per-project refresh is a separate deliverable\", but no section and no followup in the plan carries it (no other section mentions `refresh`), so the promise has no owner",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "9da1277b5258df110fd0d1943cf87b53767e4d1f",
+  "plan_fingerprint": "b3f59bed2dfbff00049ab61ae81d7f68b814e25a2e44f484d1d25da90660e231",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 36,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261029T035204646146-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "a3c2e06e06c2b5a9779f680720c5b8baf5fa3895",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `obligation_snapshot`'s `stale` flag is exactly at `obligation_snapshot.py:457`, `stale_station_line` is defined at `coordinator_obligations.py:902-925`, `STATION_STALE_SECONDS` resolves to `FRESHNESS_WINDOW_SECONDS = 120.0` (`obligation_snapshot.py:51,315`), `classify_tick` exists at `station_store.py:710`, and `station_obligations.refresh` exists and is reached from `publish` (`station_obligations.py:151,333`) which `tick` calls at `station.py:332`.",
+    "done_when": "pass \u2014 the three arms are each measurable against the base revision, and the declared negative control (\"beats from the tick again\") genuinely falsifies the first arm: with the heartbeat written inside `tick` at `station.py:261`, a tick blocked in `station_obligations.publish`/`refresh` for three stale windows leaves a heartbeat age above `STATION_STALE_SECONDS`, so the slow/live reading cannot appear.",
+    "evidence_paths": "pass \u2014 the done-when names a new repository test file; no gate or evidence path points at a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 the new test is named by its mechanism, and no plan label, stage name, ticket number or changelog prose reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 the stated mechanism records only each tick's start and end, but the done-when requires the slow reading to name the tick's current stage, and no stage is recorded anywhere in the station.",
+    "single_goal": "pass \u2014 the removed fourth arm leaves one deliverable, separating liveness from progress; the per-project refresh bound is explicitly excluded.",
+    "wiring": "pass \u2014 s12 declares no `depends-on` and needs none; its write paths (`reckon/crew/station.py`, `reckon/crew/obligation_snapshot.py`, `reckon/hooks/coordinator_obligations.py`, new test) are claimed by no other section in the plan."
+  },
+  "section_digests": {
+    "_document": "c8b61c2342da073f0e0a6b8f17732cdb8601796b7c729ef3cb040e465b340dcc",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2660f0a8230174b58e453e15cd31c113f234218a69c1e8c217b6dd03334a224c",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T04:02:52.516727+00:00"
+}
