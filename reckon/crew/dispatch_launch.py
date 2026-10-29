@@ -60,7 +60,9 @@ from reckon.crew.runs import (
     _utc_now,
     _write_json,
     crew_home,
+    find_handover,
     placement_job_alive,
+    pointer_path,
     process_alive,
     read_pointer,
     run_dir,
@@ -1872,6 +1874,21 @@ def _attempt_artifact_path(run_directory: Path, name: str, attempt: int) -> Path
     return run_directory / f"attempt-{attempt}-{name}"
 
 
+def _free_attempt_number(run_directory: Path, name: str, attempt: int) -> int:
+    """The first attempt number at or above ``attempt`` with no receipt yet.
+
+    An admitted relaunch keeps the request's run id, so it arrives carrying the
+    attempt number its predecessor had. Writing its receipt at that number would
+    overwrite the record of how the earlier attempt ended, which is the only
+    account of it — the canonical ``exit.json`` is cleared before every launch.
+    The receipt therefore takes its own number and every attempt keeps its own.
+    """
+    number = max(1, attempt)
+    while _attempt_artifact_path(run_directory, name, number).exists():
+        number += 1
+    return number
+
+
 def _prepare_attempt_records(
     run_directory: Path,
     *,
@@ -1941,10 +1958,16 @@ def _prepare_attempt_records(
             except (TypeError, ValueError):
                 recorded_attempt = max(1, attempt - 1)
             archived["attempt"] = recorded_attempt
-            _supervisor_write(
-                _attempt_artifact_path(run_directory, name, recorded_attempt),
-                archived,
+            archived_path = _attempt_artifact_path(
+                run_directory, name, recorded_attempt
             )
+            # An immutable receipt already at this number is that attempt's own
+            # account of itself, written when it ended. The canonical record
+            # being retired here is a copy of it, so overwriting would replace
+            # the elder account with a younger copy of the same content and, if
+            # the numbers arrive out of order, with a different attempt's.
+            if not archived_path.exists():
+                _supervisor_write(archived_path, archived)
         current.unlink(missing_ok=True)
 
 
@@ -1967,9 +1990,10 @@ def _write_attempt_artifact(
     attempt: int,
 ) -> bool:
     """Write an immutable receipt and expose it only while its attempt is current."""
-    record = {**payload, "attempt": attempt}
+    number = _free_attempt_number(run_directory, name, attempt)
+    record = {**payload, "attempt": number}
     written = _supervisor_write(
-        _attempt_artifact_path(run_directory, name, attempt), record
+        _attempt_artifact_path(run_directory, name, number), record
     )
     if _attempt_is_current(run_directory, attempt):
         written = _supervisor_write(run_directory / name, record) and written
@@ -2541,6 +2565,100 @@ class _WorkerPid(int):
         return worker_pid
 
 
+class _PointerMissingError(CrewError):
+    """The supervisor's first read found no live pointer for its run.
+
+    Raised only around that read, so a launch failure can tell a pointer that
+    went missing from a command that could not be run: the two want different
+    recovery, and the message alone does not say which happened.
+    """
+
+    def __init__(self, run_id: str, path: Path, cause: CrewError) -> None:
+        super().__init__(str(cause))
+        self.run_id = run_id
+        self.path = path
+
+
+def _launch_failure_evidence(run_id: str, run_directory: Path) -> dict[str, Any]:
+    """What stood on disk when the supervisor's launch failed before a worker.
+
+    A launch that ends before it spawns leaves no stream, so the run directory
+    and the admission handover are the whole of the evidence. Recording it at
+    the failure is what lets a later reader name what removed the pointer
+    instead of meeting the same unexplained refusal. The pointer carries no
+    writer stamp of its own, so the nearest thing a reader can check is whether
+    a deliberate discard was recorded for the run.
+    """
+    from reckon.crew.promotion import discard_recorded
+
+    pointer = pointer_path(run_id)
+    try:
+        listing = sorted(path.name for path in run_directory.iterdir())
+    except OSError:
+        listing = []
+    pointer_present = pointer.exists()
+    phase: Any = None
+    modified_ns: int | None = None
+    if pointer_present:
+        try:
+            modified_ns = pointer.stat().st_mtime_ns
+            phase = json.loads(pointer.read_text(encoding="utf-8")).get("phase")
+        except (OSError, ValueError, AttributeError):
+            phase = None
+    handover = find_handover(run_id)
+    admitted_by: dict[str, Any] | None = None
+    handover_phase: Any = None
+    if isinstance(handover, Mapping):
+        handover_phase = handover.get("phase")
+        admitted = handover.get("admitted_by")
+        if isinstance(admitted, Mapping):
+            admitted_by = dict(admitted)
+    return {
+        "pointer_path": str(pointer),
+        "pointer_present": pointer_present,
+        "pointer_phase": phase,
+        "pointer_modified_at_ns": modified_ns,
+        # The request the admission pass is holding for this run, either as a
+        # pointer still at a waiting phase or as the handover it keeps for the
+        # gap between releasing that pointer and publishing the launched one.
+        "queued_pointer_present": bool(
+            handover is not None or phase in ("queued", "held")
+        ),
+        "handover_present": handover is not None,
+        "handover_phase": handover_phase,
+        "admitting_pass": admitted_by,
+        "discard_recorded": bool(discard_recorded(run_id)),
+        "run_directory_listing": listing,
+    }
+
+
+def _launch_failure_detail(exc: BaseException, spec: Mapping[str, Any]) -> str:
+    """The launch-failure record's detail, in the terms of what actually failed.
+
+    A missing pointer and a command that cannot be run reach this boundary as
+    the same kind of event and want opposite recoveries: one names a record a
+    reader should go and look for, the other names a command and the PATH it was
+    looked for on. The record keeps the exception's own type and message either
+    way, so nothing a reader relied on is replaced by the branch.
+    """
+    cause = exc.__cause__ if isinstance(exc, _PointerMissingError) else None
+    recorded = cause if cause is not None else exc
+    base = f"worker did not spawn: {type(recorded).__name__}: {recorded}"
+    if isinstance(exc, _PointerMissingError):
+        return (
+            f"{base}; the launch found no pointer at {exc.path} — it went missing "
+            "after the dispatch wrote it and before this read"
+        )
+    if isinstance(exc, OSError):
+        argv = [str(word) for word in (spec.get("plan") or {}).get("argv") or ()]
+        command = argv[0] if argv else ""
+        return (
+            f"{base}; the command {command!r} could not be run — fix the command "
+            f"and PATH (PATH={os.environ.get('PATH', '')})"
+        )
+    return base
+
+
 def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     """Spawn the worker inside the supervisor's own process group.
 
@@ -2549,7 +2667,14 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     the supervisor writes it instead of waiting on a pid that has been reaped.
     """
     plan = spec["plan"]
-    record = read_pointer(str(spec["run_id"]))
+    run_id = str(spec["run_id"])
+    try:
+        record = read_pointer(run_id)
+    except CrewError as exc:
+        # Marked at the read rather than inferred from the message later: this
+        # is the one place a missing pointer becomes a launch failure, and the
+        # record's recovery detail has to name the absence, not the PATH.
+        raise _PointerMissingError(run_id, pointer_path(run_id), exc) from exc
     environment = _worker_runtime_environment(
         plan.get("environment") or {},
         run_id=str(spec["run_id"]),
@@ -3291,7 +3416,10 @@ def _reap_worker_on_its_terminal_manifest(
             stop_requested is not None
             and stop_deadline is None
             and not stop_killed
-            and (pending_step_resolution is None or (run_directory / "step-task.txt").exists())
+            and (
+                pending_step_resolution is None
+                or (run_directory / "step-task.txt").exists()
+            )
             and stop_requested.is_set()
         ):
             # A stop reaches the run's worker and its children. A placed
@@ -3305,10 +3433,13 @@ def _reap_worker_on_its_terminal_manifest(
                 reach_run=True,
             )
             _record_ended(ended_pids, delivered)
-            if _run_uses_step(run_directory) and not (
-                run_directory / "step-task.txt"
-            ).exists():
-                pending_step_since = now if pending_step_since is None else pending_step_since
+            if (
+                _run_uses_step(run_directory)
+                and not (run_directory / "step-task.txt").exists()
+            ):
+                pending_step_since = (
+                    now if pending_step_since is None else pending_step_since
+                )
             if delivered:
                 stop_deadline = now + stop_grace_seconds
                 wait_started_at = now
@@ -3379,7 +3510,10 @@ def _reap_worker_on_its_terminal_manifest(
         if (
             deadline is not None
             and signalled_at is None
-            and (pending_step_resolution is None or (run_directory / "step-task.txt").exists())
+            and (
+                pending_step_resolution is None
+                or (run_directory / "step-task.txt").exists()
+            )
             and now >= deadline
         ):
             delivered = signal_worker(
@@ -3391,10 +3525,13 @@ def _reap_worker_on_its_terminal_manifest(
                 reach_run=True,
             )
             _record_ended(ended_pids, delivered)
-            if _run_uses_step(run_directory) and not (
-                run_directory / "step-task.txt"
-            ).exists():
-                pending_step_since = now if pending_step_since is None else pending_step_since
+            if (
+                _run_uses_step(run_directory)
+                and not (run_directory / "step-task.txt").exists()
+            ):
+                pending_step_since = (
+                    now if pending_step_since is None else pending_step_since
+                )
             if delivered:
                 signalled_at = now
                 if wait_started_at is None:
@@ -3597,6 +3734,10 @@ def _run_supervisor(spec_path: Path) -> int:
             _become_child_subreaper()
             pid = _supervisor_spawn_worker(spec)
         except (OSError, ValueError, KeyError, CrewError) as exc:
+            evidence = _launch_failure_evidence(
+                str(spec.get("run_id") or ""), run_directory
+            )
+            recorded = exc.__cause__ if isinstance(exc, _PointerMissingError) else exc
             failure_record = _supervisor_exit_record(
                 run_id=str(spec.get("run_id") or ""),
                 attempt=attempt,
@@ -3604,7 +3745,19 @@ def _run_supervisor(spec_path: Path) -> int:
                 launched_at=launched_at,
                 status=None,
                 run_directory=run_directory,
-            ) | {"detail": f"worker did not spawn: {type(exc).__name__}: {exc}"}
+            ) | {
+                "detail": _launch_failure_detail(exc, spec),
+                "launch_failure": {
+                    "kind": (
+                        "pointer-missing"
+                        if isinstance(exc, _PointerMissingError)
+                        else "spawn"
+                    ),
+                    "exception_type": type(recorded).__name__,
+                    "message": str(recorded),
+                    **evidence,
+                },
+            }
             _write_attempt_artifact(
                 run_directory,
                 EXIT_RECORD_NAME,
