@@ -409,33 +409,37 @@ def _stored_measurement(
     return landing_measure.Measurement.from_dict(record)
 
 
-def _stored_measurements(project: str) -> list[dict[str, Any]]:
-    """Every measurement stored for one project, as bound-sizing history.
+def _measurement_record(run_id: str) -> dict[str, Any] | None:
+    """One run's stored measurement, or ``None`` when it carries none."""
+    try:
+        record = json.loads(_measurement_path(run_id).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return dict(record) if isinstance(record, Mapping) else None
+
+
+def _pass_history(
+    pointers: Sequence[Mapping[str, Any]], project: str
+) -> list[dict[str, Any]]:
+    """This project's stored measurements, read once for a whole landing pass.
 
     A bound is sized from how long this project's populations actually take, so
-    the history is read from the run directories — which outlive the live
-    pointer — and only records naming this project are used: another
-    repository's seconds per file measure a different suite. A project with no
-    readable history gets an empty list, which is the floor.
+    the history is the measurement record of each of the project's own live
+    runs — not a walk of the runs directory, which holds thousands of other
+    projects' and promoted runs' entries and is on shared storage. The pass
+    reads this once and hands the same list to every run it measures, so the
+    number of reads is the project's run count rather than the directory's
+    entry count.
     """
     records: list[dict[str, Any]] = []
     if not project:
         return records
-    try:
-        directories = sorted(runs.runs_dir().iterdir())
-    except OSError:
-        return records
-    for directory in directories:
-        try:
-            record = json.loads(
-                (directory / "landing-measure" / "measurement.json").read_text(
-                    encoding="utf-8"
-                )
-            )
-        except (OSError, ValueError):
+    for pointer in pointers:
+        if str(pointer.get("project") or "") != project:
             continue
-        if isinstance(record, Mapping) and str(record.get("project") or "") == project:
-            records.append(dict(record))
+        record = _measurement_record(str(pointer.get("run_id") or ""))
+        if record is not None:
+            records.append(record)
     return records
 
 
@@ -476,7 +480,11 @@ def _measure_timeout(pointer: Mapping[str, Any]) -> float:
 
 
 def _measure_delivery(
-    pointer: Mapping[str, Any], run_id: str, head: str, tree: str
+    pointer: Mapping[str, Any],
+    run_id: str,
+    head: str,
+    tree: str,
+    stored: Sequence[Mapping[str, Any]] = (),
 ) -> Any:
     """Run the three suite readings for one delivered run.
 
@@ -485,6 +493,10 @@ def _measure_delivery(
     measurement that cannot be taken — no base revision, or a base checkout
     that cannot be built — yields an unreadable measurement so the caller
     refuses the landing instead of inferring a verdict from nothing.
+
+    ``stored`` is the project's measurement history, read by the pass once for
+    all its runs; a caller that names none measures with the floor as its only
+    bound.
     """
     command = str(pointer.get("suite_command") or "").strip()
     if not command:
@@ -502,7 +514,6 @@ def _measure_delivery(
             project=project,
         )
     timeout = _measure_timeout(pointer)
-    stored = _stored_measurements(project)
     logs = runs.run_dir(run_id) / "landing-measure"
     try:
         # Only the checkout is inside this except: an error raised by the
@@ -799,7 +810,12 @@ def land_once() -> dict[str, Any]:
     obligations: list[dict[str, str]] = []
     deferred: list[str] = []
     measured_this_pass = False
-    for pointer in sorted(runs.list_live(), key=_delivery_order):
+    live = sorted(runs.list_live(), key=_delivery_order)
+    # One history read per project for the whole pass, not one per run: the
+    # run directory holds thousands of entries on shared storage, and the pass
+    # exists to stay off that cost.
+    history: dict[str, list[dict[str, Any]]] = {}
+    for pointer in live:
         if (
             str(pointer.get("role") or (pointer.get("node") or {}).get("role") or "")
             != "implement"
@@ -936,8 +952,15 @@ def land_once() -> dict[str, Any]:
             deferred.append(run_id)
             continue
         else:
-            measured = _measure_delivery(pointer, run_id, head, tree)
+            if project not in history:
+                history[project] = _pass_history(live, project)
+            stored = history[project]
+            measured = _measure_delivery(pointer, run_id, head, tree, stored)
             measured_this_pass = measured_this_pass or measured is not None
+            if measured is not None:
+                # A run measured in this pass is part of its project's history
+                # for the runs judged after it.
+                stored.append(measured.as_dict())
         measure_guard = _measure_guard(measured)
         if measure_guard:
             _record_attempt(

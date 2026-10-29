@@ -164,9 +164,10 @@ def test_only_the_projects_own_measurements_size_its_bound(
     path = runs.run_dir("r-elsewhere") / "landing-measure" / "measurement.json"
     path.parent.mkdir(parents=True)
     path.write_text(json.dumps(record), encoding="utf-8")
+    pointer = {"run_id": "r-elsewhere", "project": "elsewhere"}
 
-    assert queue_landing._stored_measurements(PROJECT) == []
-    assert queue_landing._stored_measurements("elsewhere") == [record]
+    assert queue_landing._pass_history([pointer], PROJECT) == []
+    assert queue_landing._pass_history([pointer], "elsewhere") == [record]
 
 
 def test_every_arm_records_its_elapsed_seconds_and_file_count(
@@ -198,6 +199,101 @@ def test_every_arm_records_its_elapsed_seconds_and_file_count(
     assert stored["population"]["base"]["file_count"] == 7
     assert stored["suite"]["base"]["file_count"] == 1
     assert stored["project"] == PROJECT
+
+
+class _Yield:
+    """A context manager handing back a prepared tree, for the base arm."""
+
+    def __init__(self, tree: Path) -> None:
+        self._tree = tree
+
+    def __enter__(self) -> Path:
+        return self._tree
+
+    def __exit__(self, *_exception: object) -> bool:
+        return False
+
+
+def _clean_measurement() -> landing_measure.Measurement:
+    return landing_measure.Measurement(
+        command="pytest {node_test_files}",
+        suite={},
+        population={},
+        head=HEAD,
+        project=PROJECT,
+    )
+
+
+def test_a_pass_reads_the_projects_history_once_for_every_run_it_measures(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The runs directory is thousands of entries on shared storage.
+
+    The pass reads one measurement record per run of its own project and hands
+    the same history to every run it measures, so the reads do not grow with
+    the directory's population nor multiply by the number of measured runs.
+    """
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    for n in range(60):
+        path = runs.run_dir(f"r-unrelated-{n}") / "landing-measure"
+        path.mkdir(parents=True)
+        (path / "measurement.json").write_text(
+            json.dumps(_stored_measurement(elapsed=5.0, file_count=1)), encoding="utf-8"
+        )
+    pointers = []
+    for n in range(3):
+        run_id = f"r-mine-{n}"
+        directory = runs.run_dir(run_id) / "landing-measure"
+        directory.mkdir(parents=True)
+        (directory / "measurement.json").write_text(
+            json.dumps(_stored_measurement(elapsed=900.0, file_count=100)),
+            encoding="utf-8",
+        )
+        runs._write_json(runs.pointer_path(run_id), {"run_id": run_id})
+        pointers.append({"run_id": run_id, "project": PROJECT})
+
+    reads: list[str] = []
+    original = Path.read_text
+
+    def counting_read_text(self, *args, **kwargs):
+        if self.name == "measurement.json":
+            reads.append(str(self))
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", counting_read_text)
+
+    history = queue_landing._pass_history(pointers, PROJECT)
+    after_history = len(reads)
+
+    assert after_history == len(pointers) == 3
+    assert after_history < 60
+
+    base_tree = tmp_path / "base"
+    base_tree.mkdir()
+    monkeypatch.setattr(
+        landing_measure, "base_checkout", lambda *_a, **_k: _Yield(base_tree)
+    )
+    monkeypatch.setattr(
+        landing_measure, "measure_run", lambda **_kwargs: _clean_measurement()
+    )
+    for pointer in pointers:
+        queue_landing._measure_delivery(
+            {
+                **pointer,
+                "repo": str(tmp_path),
+                "base_sha": BASE,
+                "suite_command": "pytest {node_test_files}",
+                "node": {"id": "implementation"},
+            },
+            str(pointer["run_id"]),
+            HEAD,
+            str(tmp_path / "head"),
+            history,
+        )
+
+    # Measuring three runs added no history read at all.
+    assert len(reads) == after_history
 
 
 def _refusal(
