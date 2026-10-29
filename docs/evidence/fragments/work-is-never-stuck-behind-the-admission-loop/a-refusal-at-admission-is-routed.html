@@ -1,0 +1,12 @@
+<section id="a-refusal-at-admission-is-routed">
+  <h2>A refusal at admission is routed to a lane that fits</h2>
+  <p>An admission pass that refuses a queued request with <code>CompetenceLimit</code> no longer parks it. The pass asks the picker for its ranked candidates, takes the first whose competence verdict passes (a candidate carrying no exclusion), and moves the request there with <code>move_queued_run</code>, which recomposes the launch on the destination backend and carries the request's recorded waivers. A destination the service launches is launched in the same pass; a destination on another lane leaves the request queued on that lane with one obligation naming the lane.</p>
+  <p>Only when no lane's window holds the request does it stay where it is, under the existing until-changed hold, with exactly one obligation naming the shortfall in tokens. The stored reason is the refusal itself rather than the lane's last allowance, so a coordinator reading the pointer sees what refused it.</p>
+  <p><code>crew queue edit</code> now raises the same two refusals the next launch would, while the coordinator who made the edit is present: <code>ScopeConflict</code> naming the live run whose claim covers the edited scope, and <code>CompetenceLimit</code> naming the shortfall against the widest window any lane declares. An accepted edit re-records the request's review contract through <code>queue_admission.record_review_contract</code>, so it keeps the narrowed hold rather than falling to the dispatch gate's wider one.</p>
+  <table id="a-refusal-at-admission-is-routed-measure">
+    <tr><th>arm</th><th>result</th></tr>
+    <tr><td>head gate, <code>tests/test_a_refusal_at_admission_is_routed.py</code></td><td>6 passed, EXIT=0</td></tr>
+    <tr><td>negative control (picker candidate query skipped)</td><td>first arm fails, EXIT=1</td></tr>
+  </table>
+  <p>No refusal family and no public definition is added: both edit-time refusals are the existing <code>CompetenceLimit</code> and <code>ScopeConflict</code>, raised earlier.</p>
+</section>

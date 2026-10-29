@@ -39,7 +39,13 @@ from reckon.crew.dispatch_admission import (
     _dispatch_lane_gate,
 )
 from reckon.crew.dispatch_plan import _dispatch_lane_allowance
-from reckon.crew.node import BudgetHold, CrewError, PlanReviewMissingError, TaskNode
+from reckon.crew.node import (
+    BudgetHold,
+    CompetenceLimit,
+    CrewError,
+    PlanReviewMissingError,
+    TaskNode,
+)
 from reckon.crew.refusals import DISPATCH_REFUSAL_REMEDIES
 from reckon.crew.routing import plan_review_units as plan_review_units  # noqa: PLC0414
 from reckon.ledger import normalize_section
@@ -985,6 +991,129 @@ def _until_changed_hold(
         "last attempt was refused by the node's own size or contract; "
         "not retried until its plan, brief, route or code changes"
     )
+
+
+def _service_may_launch(destination: str, *, lane: str) -> bool:
+    """Whether this admission service is the one that launches ``destination``.
+
+    A service started without a lane admits every route the configuration
+    serves. A service bound to one lane launches that lane's requests; a
+    destination on any other lane is left queued there for the service that
+    owns it rather than launched by a service whose lane the request has left.
+    """
+    return not lane or destination == lane
+
+
+def _candidate_route(config: Mapping[str, Any], backend: str) -> dict[str, str]:
+    """The lane and model key a destination backend's own configuration names."""
+    entry = (config.get("backends") or {}).get(backend)
+    if not isinstance(entry, Mapping):
+        return {"backend": backend, "lane": "", "model_key": ""}
+    return {
+        "backend": str(backend),
+        "lane": str(entry.get("lane") or backend),
+        "model_key": str(entry.get("model_key") or ""),
+    }
+
+
+def _record_queued_on(run_id: str, route: Mapping[str, str], *, reason: str) -> None:
+    """Leave a request queued on another lane, naming the lane it now waits on."""
+
+    def stamp(current: dict[str, Any]) -> dict[str, Any]:
+        current["backend"] = str(route["backend"])
+        current["requested_backend"] = str(route["backend"])
+        current["lane"] = str(route.get("lane") or "")
+        current["model_key"] = str(route.get("model_key") or "")
+        current["lane_move"] = {
+            "from_backend": str(current.get("lane_move", {}).get("from_backend") or ""),
+            "to_backend": str(route["backend"]),
+            "reason": reason,
+        }
+        return current
+
+    runs._mutate_pointer(run_id, stamp)
+
+
+def _competence_shortfall(refusal: CompetenceLimit) -> str:
+    """The refusal's own shortfall, in tokens, for the obligation it raises."""
+    verdict = refusal.verdict
+    estimate = verdict.get("estimated_tokens")
+    window = verdict.get("window_tokens")
+    shortfall = verdict.get("shortfall_tokens")
+    if estimate is None or window is None:
+        return str(refusal)
+    return (
+        f"context-fit: the node's estimated {estimate} usable input tokens exceed "
+        f"every lane's window, widest {window} tokens, a shortfall of "
+        f"{shortfall if shortfall is not None else estimate} tokens"
+    )
+
+
+def _route_competence_refusal(
+    pointer: Mapping[str, Any],
+    refusal: CompetenceLimit,
+    *,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+    lane: str,
+) -> dict[str, Any]:
+    """Ask the picker which lane fits a request its own lane refused, and move it.
+
+    The pass does not judge fit itself: the picker's candidates have already run
+    the competence verdict per backend under the lifts in force, so the first
+    candidate that carries no exclusion is the lane whose window holds the
+    request. A destination this service launches is launched in the same pass;
+    any other leaves the request queued on that lane, named in an obligation.
+    Only when no lane fits does the request stay where it was, and the
+    obligation then names the shortfall in tokens rather than the lane's last
+    allowance.
+    """
+    from reckon.crew.picker import snapshot as picker_snapshot
+    from reckon.crew.picker.types import PickRequest
+
+    node = _node_from_pointer(pointer)
+    project = str(pointer.get("project") or "")
+    repository = Path(str(pointer.get("repo") or "."))
+    config = dict(
+        config_for(pointer)
+        if config_for is not None
+        else _resolve_lane_config(pointer, select_local=False)
+    )
+    options = pointer.get("dispatch_options") or {}
+    request = PickRequest(
+        project,
+        node,
+        comment=str(options.get("comment") or ""),
+        session=str(pointer.get("session") or ""),
+    )
+    refused_backend = str(pointer.get("backend") or "")
+    run_id = str(pointer["run_id"])
+    for candidate in picker_snapshot.candidates(request, config, repository):
+        destination = str(candidate.backend)
+        if destination == refused_backend or candidate.reasons:
+            continue
+        route = _candidate_route(config, destination)
+        reason = (
+            f"routed off {refused_backend or 'its lane'} after a context-fit "
+            "refusal at admission"
+        )
+        if _service_may_launch(destination, lane=lane):
+            moved = move_queued_run(run_id, destination, reason=reason, config=config)
+            return {"record": moved, "queued_on": "", "obligation": ""}
+        _record_queued_on(run_id, route, reason=reason)
+        return {
+            "record": None,
+            "queued_on": destination,
+            "obligation": (
+                f"routed off {refused_backend or 'its lane'} after a context-fit "
+                f"refusal and is queued on lane {destination!r}, which this "
+                "admission service does not launch"
+            ),
+        }
+    return {
+        "record": None,
+        "queued_on": "",
+        "obligation": _competence_shortfall(refusal),
+    }
 
 
 def _retry_backoff_hold(
@@ -3301,6 +3430,9 @@ def admit_once(
         "failed": [],
         "requeued": [],
         "verdicts": [],
+        "routed": [],
+        "moved": [],
+        "obligations": [],
     }
     local_gated = gate.get("state") in _LANE_GATE_WAITING_STATES
     if local_gated:
@@ -3571,6 +3703,7 @@ def admit_once(
             record = None
             failure = "dispatch did not return a launched record"
             caught: Exception | None = None
+            competence_refusal: CompetenceLimit | None = None
             hold_only = False
             reported_id = str(pointer["run_id"])
             restore_error = None
@@ -3610,6 +3743,14 @@ def admit_once(
                     except Exception as fallback_error:  # noqa: BLE001 - restore the waiting request
                         caught = fallback_error
                         failure = f"{type(fallback_error).__name__}: {fallback_error}"
+            except CompetenceLimit as exc:
+                # A context-fit refusal is a fact about the lane that was
+                # asked, not about the request alone: another lane's window may
+                # hold it. The pass falls through to the picker below, after the
+                # request has been written back as one queued pointer.
+                caught = exc
+                competence_refusal = exc
+                failure = f"{type(exc).__name__}: {exc}"
             except Exception as exc:  # noqa: BLE001 - every dispatch failure keeps its request
                 caught = exc
                 failure = f"{type(exc).__name__}: {exc}"
@@ -3629,6 +3770,44 @@ def admit_once(
                 # The launch outcome is settled here: either the run's own
                 # pointer names the node, or the request has been written back.
                 runs.clear_handover(pointer)
+            if record is None and competence_refusal is not None:
+                route = _route_competence_refusal(
+                    pointer,
+                    competence_refusal,
+                    config_for=config_for,
+                    lane=lane,
+                )
+                record = route.get("record")
+                if record is not None:
+                    # The move launched the request on the lane that fits, in
+                    # this pass and in place of the refused one.
+                    result["routed"].append(reported_id)
+                elif route.get("queued_on"):
+                    # Another service owns the lane it now waits on, so the
+                    # request keeps its place there and the obligation names
+                    # the lane rather than the refusal.
+                    result["moved"].append(reported_id)
+                    result["obligations"].append(
+                        {"run_id": reported_id, "detail": str(route["obligation"])}
+                    )
+                    verdicts.append(
+                        _verdict_row(
+                            pointer,
+                            allowance=allowance,
+                            allowance_source=allowance_source,
+                            verdict="moved",
+                            detail=f"queued on {route['queued_on']}",
+                        )
+                    )
+                    continue
+                else:
+                    # No lane's window holds it. The attempt is reported as the
+                    # failure it was, and the one obligation names the shortfall
+                    # in tokens; the recorded guard is what holds every later
+                    # pass until the request itself changes.
+                    result["obligations"].append(
+                        {"run_id": reported_id, "detail": str(route["obligation"])}
+                    )
             if record is None:
                 if first_report and not hold_only:
                     _report_queued_failure(pointer)
