@@ -59,7 +59,7 @@ def main() -> None:
             ha="left",
             va="center",
         )
-    for extension in (".svg", ".png"):
+    for extension in (".svg",):
         figure.savefig(
             "docs/figures/the-monitor-reads-each-fact-once/"
             "the-station-carries-every-row-at-cutover/rows-by-session-of-addressing"

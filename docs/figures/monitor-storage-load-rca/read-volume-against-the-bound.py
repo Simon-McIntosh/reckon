@@ -88,7 +88,7 @@ def main() -> None:
         132.0,
     )
     right.tick_params(axis="y", labelleft=False, left=False)
-    for extension in (".svg", ".png"):
+    for extension in (".svg",):
         figure.savefig(
             f"docs/figures/monitor-storage-load-rca/read-volume-against-the-bound{extension}",
             bbox_inches="tight",
