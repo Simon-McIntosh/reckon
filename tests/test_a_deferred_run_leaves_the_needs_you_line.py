@@ -1,14 +1,12 @@
-"""A run the coordinator has deferred leaves the needs-you line until its instant.
+"""A run the coordinator has deferred leaves the obligations rows until its instant.
 
-The line names the runs the coordinator owes action on. A run they have put off
-until an instant is not owed before that instant, and naming it on the reminder
-cadence is a notification for work already parked -- measured 2026-10-21, when a
-run deferred for two hours was named at 2h12m, 2h15m and 2h17m, each naming a
-notification that started a turn.
+The rows name the runs the coordinator owes action on. A run they have put off
+until an instant is not owed before that instant, so it is held out of the set
+until the instant passes.
 
-The obligations view already honours a deferral. The line reads that view's own
-reader rather than a second copy of its rules, because two readers of what needs
-the coordinator that disagree leave the noisier one winning.
+The obligations view honours the deferral, and these rows read that view's own
+reader rather than a second copy of its rules: two readers of what needs the
+coordinator that disagree leave the noisier one winning.
 
 The instant is handed in rather than read, so a case sets the clock instead of
 sleeping and the boundary is asserted either side of it.
@@ -75,12 +73,6 @@ def _write_delivered_pointer(
     crew._write_json(crew.pointer_path(run_id), pointer)
 
 
-def _line(moment: float) -> str:
-    """The composed needs-you line for a moment, as the pane prints it."""
-    summary = need_module.needs_you(PROJECT, session=SESSION, moment=moment)
-    return need_module.needs_you_line(summary)
-
-
 def _nodes(moment: float) -> list[str]:
     return [
         str(row.get("node"))
@@ -99,16 +91,15 @@ def test_a_deferred_run_leaves_the_line_until_its_instant(home):
 
     # An hour ahead: the deferred run is held out, and the run whose deferral
     # has already expired is named -- only what is still in force is held out.
-    holding = _line(now)
-    assert "deferred-node" not in holding, holding
-    assert "expired-node" in holding, holding
     assert _nodes(now) == ["expired-node"], _nodes(now)
 
     # The instant is the boundary, asserted either side of it rather than by a
     # sleep: one second before, still parked; one second after, owed again.
-    assert "deferred-node" not in _line(deferred_until - 1.0)
-    returned = _line(deferred_until + 1.0)
-    assert returned.count("deferred-node") == 1, returned
+    assert _nodes(deferred_until - 1.0) == ["expired-node"], _nodes(
+        deferred_until - 1.0
+    )
+    returned = _nodes(deferred_until + 1.0)
+    assert "deferred-node" in returned, returned
     assert "expired-node" in returned, returned
 
     # And the run is named once -- the derivation holds one row for it, not one
@@ -138,4 +129,3 @@ def test_the_line_reads_the_obligations_deferral_reader(home, monkeypatch):
     )
 
     assert need_module.needs_you_runs(PROJECT, session=SESSION) == []
-    assert "own-node" not in _line(time.time())

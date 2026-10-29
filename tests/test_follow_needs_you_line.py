@@ -1,19 +1,20 @@
-"""A follower stands a line naming the runs that need the coordinator.
+"""A follower's stream carries no standing line naming the runs it counts.
 
-The standing line names every owned run whose state needs action, and says so
-again while the work is still owed: an unpromoted or blocked run is something
-the coordinator has not done yet. It prints nothing about an empty set -- a pane
-with nothing outstanding names nothing the coordinator can act on, and under a
-session host every printed line is a notification that starts a coordinator
-turn. So an empty set never prints, not on the change and not on the cadence.
+The pane carries counts on its rows -- ``w`` working, ``h`` halted, ``d``
+delivered, ``q`` queued -- and a run that needs the coordinator is named, with
+the command for it, by the obligations list. A standing summary line composed
+beside those rows said the same thing a second time, on a cadence, under a
+session host where every printed line starts a coordinator turn. It is gone, and
+these cases hold it gone: however long the set holds, however it drains, and in
+an arming that passes no flag at all.
 
-The line is one derivation, in ``reckon/crew/needs_you.py``, because the follower
-prints it while it lives and again as the run it names is delivered; two
-derivations would let the pane and its closing row disagree about which runs
-needed attention. So the last case here asserts the two agree over one fixture
-rather than asserting each alone.
+The derivation behind it survives, because the counters and the obligations list
+read it. So the cases here assert two things together: the stream emits nothing,
+and the derivation still names exactly the runs the coordinator owes -- the
+owning session's, never a peer's -- with the age and the stored-review mark a
+reader of a row needs.
 
-The list reads the owning session's runs only. A peer's blocked run in the same
+The set is the owning session's runs alone. A peer's blocked run in the same
 fixture must never appear: the reader can do nothing about it, and naming it
 would send a coordinator to a run another session already owns.
 """
@@ -21,7 +22,6 @@ would send a coordinator to a run another session already owns.
 from __future__ import annotations
 
 import json
-import re
 import threading
 import time
 from pathlib import Path
@@ -37,9 +37,6 @@ PROJECT = "needs-proj"
 SESSION = "mine"
 PEER = "peers"
 
-# One second, so a case finishes in the time it takes to observe a handful of
-# lines rather than the production ten minutes.
-REMIND_SECONDS = 1.0
 POLL_SECONDS = 0.01
 OBSERVE_SECONDS = 3.2
 
@@ -47,13 +44,6 @@ OBSERVE_SECONDS = 3.2
 # transition stamped this far before the fixture is built, so the case asserts a
 # real span rather than a literal that would have to be edited as time passes.
 HELD_SECONDS = 2 * 60 * 60
-
-# The age token the pane prints for a span in hours; minutes alone below one.
-_AGE_TOKEN = re.compile(r"\b\d+h\d{2}m\b|\b\d+m\b")
-
-# An entry in a composed line: the node, then the follower's age token, then the
-# ``reviewed`` mark when a stored review is already on file.
-_ENTRY_TOKEN = re.compile(r"(\S+) (?:\d+h\d{2}m|\d+m)(?: reviewed)?")
 
 
 @pytest.fixture()
@@ -124,15 +114,17 @@ def _write_stored_review(project: str, run_id: str) -> None:
 
     store = review_module.review_store_root() / project
     store.mkdir(parents=True, exist_ok=True)
-    (store / f"{run_id}.json").write_text(json.dumps({"verdict": "pass"}))
+    (store / f"{run_id}.json").write_text(
+        json.dumps({"reviewed_run_id": run_id, "verdict": "pass"})
+    )
 
 
 class _Clock:
     """A follower's clock the case steps by hand.
 
     The follower reads its clock through one callable, so handing the generator
-    this one makes the arming, a set change and a ten-minute cadence observable
-    in a test that lasts a fraction of a second.
+    this one makes a long wait observable in a test that lasts a fraction of a
+    second.
     """
 
     def __init__(self, start: float = 1000.0) -> None:
@@ -143,29 +135,6 @@ class _Clock:
 
     def advance(self, seconds: float) -> None:
         self.now += seconds
-
-
-def _drive(
-    events: list[dict], stop: threading.Event, *, session: str
-) -> threading.Thread:
-    """Consume the follower's watch generator on a thread, ended by ``stop``."""
-
-    def run() -> None:
-        events.extend(
-            follow._follow_watch_lines(
-                PROJECT,
-                session=session,
-                poll_interval=POLL_SECONDS,
-                stop=stop,
-                sweep=None,
-                remind=REMIND_SECONDS,
-                lifetime=OBSERVE_SECONDS * 2,
-            )
-        )
-
-    thread = threading.Thread(target=run, daemon=True)
-    thread.start()
-    return thread
 
 
 def _drive_at_own_pace(
@@ -183,7 +152,6 @@ def _drive_at_own_pace(
                 sweep=None,
                 clock=clock,
                 sleeper=lambda _seconds: None,
-                remind=follow._needs_remind_seconds(None),
             )
         )
 
@@ -192,24 +160,12 @@ def _drive_at_own_pace(
     return thread
 
 
-def _wait_for_lines(events: list[dict], count: int, *, bound: float = 5.0) -> list[str]:
-    """Wait until this many lines have been emitted, and return them.
-
-    The lines are re-read from the event list on every pass: the follower
-    appends as it yields, so a snapshot taken once would never grow.
-    """
-    deadline = time.time() + bound
-    while time.time() < deadline and len(_needs_you_lines(events)) < count:
-        time.sleep(0.01)
-    return _needs_you_lines(events)
-
-
 def _advance(clock: _Clock, seconds: float, *, step: float = 1.0) -> None:
     """Move a stepped clock forward, yielding so the follower's passes can run.
 
     The spans these cases speak in are minutes and the follower's clock is the
     fake one, so a span is walked in slices: each slice is a moment the
-    follower's cadence can be measured at, and the sleep between slices is only
+    follower's pass can be measured at, and the sleep between slices is only
     there to let a pass happen.
     """
     remaining = float(seconds)
@@ -219,21 +175,10 @@ def _advance(clock: _Clock, seconds: float, *, step: float = 1.0) -> None:
         time.sleep(0.005)
 
 
-def _nodes_in_line(line: str) -> set[str]:
-    """The node names a composed line prints, read back off the line itself.
-
-    Each entry in a group reads ``<node> <age>[ reviewed]``, so the token before
-    the age is the node. Parsing the pane's own text is the point: comparing the
-    emitter's helper with the derivation's helper compares one function with
-    itself and cannot fail.
-    """
-    return {match.group(1) for match in _ENTRY_TOKEN.finditer(line)}
-
-
 # The event name the standing summary line was written under. It is spelled
 # here as a literal rather than read from the module, because the follower no
-# longer writes it: a case asserts the stream carries no such row, and a restored
-# emitter is exactly what the negative control reinstates.
+# longer writes it: a case asserts the stream carries no such row, and a
+# restored emitter is exactly what the negative control reinstates.
 NEEDS_YOU_EVENT = "follow.needs-you"
 
 
@@ -245,29 +190,8 @@ def _needs_you_lines(events: list[dict]) -> list[str]:
     ]
 
 
-def _run_needs_you(
-    home: Path, *, session: str = SESSION
-) -> tuple[list[str], list[dict]]:
-    """Drive one follower for the observation window and return its lines and rows.
-
-    A live producer is never started: the wait pass composes the standing line
-    on its own, and the run does not settle, so the follower is left running
-    until the stop event ends it.
-    """
-    events: list[dict] = []
-    stop = threading.Event()
-    thread = _drive(events, stop, session=session)
-    try:
-        time.sleep(OBSERVE_SECONDS)
-    finally:
-        stop.set()
-        thread.join(timeout=5.0)
-    rows = [e for e in events if e.get("event") == NEEDS_YOU_EVENT]
-    return _needs_you_lines(events), rows
-
-
-def test_the_line_never_prints_however_long_the_set_holds(home):
-    """The first case: no standing summary line, however long the set holds.
+def test_the_stream_never_carries_a_standing_line(home):
+    """No standing summary line, however long the set holds.
 
     This is the case the negative control fails: restore the standing line and
     the 35 minutes below emit one line per beat of the interval, naming the
@@ -310,11 +234,7 @@ def test_the_line_never_prints_however_long_the_set_holds(home):
 
 
 def test_an_empty_set_is_never_announced(home):
-    """An empty set draws no summary line, however long the follower waits.
-
-    This is the case the negative control fails: restore the cadence for the
-    empty set and the same 35 minutes emit one line per beat of the interval.
-    """
+    """An empty fleet draws nothing, however long the follower waits."""
     clock = _Clock()
     events: list[dict] = []
     stop = threading.Event()
@@ -332,9 +252,8 @@ def test_an_empty_set_is_never_announced(home):
 def test_a_draining_set_prints_nothing(home):
     """A set that empties after the pane was shown it full prints nothing.
 
-    An empty set names nothing the coordinator can act on, so the line that
-    named the run prints while the run is owed and stops when it is promoted;
-    nothing at all is printed, on the change or on the cadence.
+    A run is owed, then promoted: the derivation drops it, and the stream never
+    carried a sentence about it either way.
     """
     clock = _Clock()
     events: list[dict] = []
@@ -350,10 +269,14 @@ def test_a_draining_set_prints_nothing(home):
             manifest_status="complete",
         )
         _advance(clock, 2.0)
+        assert [
+            row["run_id"]
+            for row in need_module.needs_you_runs(PROJECT, session=SESSION)
+        ] == ["r-own"]
+
         crew.pointer_path("r-own").unlink()
         _advance(clock, 2.0)
-        # The stream carries no standing line at all: not while the run is owed,
-        # and not when the set drains.
+        assert need_module.needs_you_runs(PROJECT, session=SESSION) == []
         assert _needs_you_lines(events) == [], _needs_you_lines(events)
 
         # And then nothing, for as long as the fleet stays quiet.
@@ -365,13 +288,12 @@ def test_a_draining_set_prints_nothing(home):
         assert not thread.is_alive()
 
 
-def test_an_arming_with_no_flag_carries_the_default_cadence(home):
-    """An arming that passes no ``--remind`` still gets the line and the beat.
+def test_an_arming_with_no_flag_carries_no_line(home):
+    """An arming that passes no interval option prints nothing either.
 
-    The flag is an override, not a switch: the fleet's followers arm through the
-    command with no interval, so the default has to be what they run on. The
-    clock is stepped by hand, which makes a ten-minute cadence observable here
-    in a fraction of a second.
+    The fleet's followers arm through the command with no flags, so the default
+    is what they run on. The clock is stepped by hand, which makes a long wait
+    observable here in a fraction of a second.
     """
     _write_pointer(
         home, "r-own-work", "own-node", session=SESSION, manifest_status="running"
@@ -402,13 +324,13 @@ def test_an_arming_with_no_flag_carries_the_default_cadence(home):
         assert not thread.is_alive()
 
 
-def test_the_line_and_the_fleet_counters_agree(home):
-    """The rows the line prints tally with the counters the fleet derives.
+def test_the_rows_and_the_fleet_counters_agree(home):
+    """The rows the derivation returns tally with the counters beside them.
 
     Both halves come from :mod:`reckon.crew.recovery_watch`: ownership from its
     partition and the working, blocked and unpromoted figures from its counter.
-    The line reads the same bucket constants, so this asserts that the two
-    readers still agree about the same fixture rather than each about itself.
+    This asserts that the two readers still agree about the same fixture rather
+    than each about itself.
     """
     _write_pointer(
         home,
@@ -473,10 +395,6 @@ def test_a_run_with_no_dated_transition_ages_from_its_creation(home):
     assert [row["node"] for row in rows] == ["own-old", "own-recent"], rows
     assert rows[0]["age_seconds"] >= HELD_SECONDS - 60, rows[0]
     assert rows[1]["age_seconds"] < 600, rows[1]
-    line = need_module.needs_you_line({"working": 0, "runs": rows})
-    first_entry = line.split(", ")[0]
-    assert first_entry.endswith("own-old 2h00m"), line
-    assert re.search(r"own-old \d+h\d{2}m", line), line
 
 
 def test_a_stored_review_marks_its_run(home):
@@ -495,19 +413,14 @@ def test_a_stored_review_marks_its_run(home):
     )
     _write_stored_review(PROJECT, "r-reviewed")
 
-    lines, _rows = _run_needs_you(home)
-
-    # The stream carries no standing line, so the mark is asserted on the
-    # composer the reader of a composed line reads.
     rows, _counts = need_module.needs_you_rows(PROJECT, session=SESSION)
-    composed = need_module.needs_you_line({"working": 0, "runs": rows})
-    assert lines == [], lines
-    assert "reviewed-node" in composed, composed
-    assert "reviewed" in composed, composed
+
+    assert [row["node"] for row in rows] == ["reviewed-node"], rows
+    assert rows[0]["reviewed"] is True, rows[0]
 
 
-def test_the_follower_and_the_derivation_name_the_same_runs(home):
-    """One fixture, two readers: the pane's line and the module name the same set."""
+def test_the_derivation_names_the_owning_sessions_runs_only(home):
+    """One fixture, one reader: the derivation names the owed set and no peer's run."""
     _write_pointer(
         home,
         "r-own-unpromoted",
@@ -519,20 +432,28 @@ def test_the_follower_and_the_derivation_name_the_same_runs(home):
         home, "r-own-work", "own-node", session=SESSION, manifest_status="running"
     )
     _write_pointer(
-        home, "r-peer-block", "peer-block-node", session=PEER, manifest_status="blocked"
+        home,
+        "r-peer-block",
+        "peer-block-node",
+        session=PEER,
+        manifest_status="blocked",
     )
 
-    lines, _rows = _run_needs_you(home)
+    clock = _Clock()
+    events: list[dict] = []
+    stop = threading.Event()
+    thread = _drive_at_own_pace(events, stop, clock, session=SESSION)
+    try:
+        time.sleep(0.2)
+        _advance(clock, 20 * 60, step=10.0)
+    finally:
+        stop.set()
+        thread.join(timeout=2.0)
+        assert not thread.is_alive()
 
     derived_rows, _counts = need_module.needs_you_rows(PROJECT, session=SESSION)
-    derived_nodes = {str(row["node"]) for row in derived_rows}
-    assert derived_nodes == {"own-unpromoted"}, derived_rows
-
-    # The stream carries no summary line at all, so the node names are read off
-    # the derivation's own composition, which is what a reader who composes a
-    # line sees. Comparing it with the emitted lines is vacuous now: the stream
-    # names no set.
-    assert lines == [], lines
-    composed = need_module.needs_you_line({"working": 0, "runs": derived_rows})
-    emitted_nodes = _nodes_in_line(composed)
-    assert emitted_nodes == derived_nodes, (emitted_nodes, derived_nodes, composed)
+    assert {str(row["node"]) for row in derived_rows} == {"own-unpromoted"}, (
+        derived_rows
+    )
+    # The stream names no set at all: the names live in the obligations list.
+    assert _needs_you_lines(events) == [], _needs_you_lines(events)

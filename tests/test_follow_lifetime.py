@@ -3,8 +3,9 @@
 The host ends a Monitor at thirty minutes and announces it in its own words,
 after a pane that went silent for reasons the reader cannot see. A follower
 armed for slightly less reaches its own deadline first: it prints one line
-naming how to re-arm and the owning session's runs that need the coordinator,
-releases its delivery registration, and exits cleanly.
+naming how to re-arm, releases its delivery registration, and exits cleanly. The
+runs that still need the coordinator are named by the obligations list, not by
+that line.
 
 These tests run the real command against a temporary crew config home, because
 the end of the journey is the process exiting by itself with that line on its
@@ -315,10 +316,11 @@ def test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on(home) -> No
         f"the last line must be marked as the follower's end; got {final!r}"
     )
     _assert_attach_line_within(final, PROJECT, SESSION)
-    assert RUN_ID in final, (
-        f"the line must name the run that needs a decision; {final!r}"
+    # The row names how to continue watching; the runs that need a decision are
+    # named by the obligations list, so the row names none of them.
+    assert RUN_ID not in final, (
+        f"the line names how to continue watching, not the runs themselves; {final!r}"
     )
-    assert NODE in final, f"the line must name that run's node; {final!r}"
 
     state = runs.follower_state(PROJECT, SESSION)
     assert state["registered"] is False, "the registration is released, not held"

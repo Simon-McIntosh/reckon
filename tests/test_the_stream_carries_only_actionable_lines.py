@@ -162,6 +162,6 @@ def test_the_follower_carries_no_rule_of_its_own():
     from reckon.crew import needs_you
 
     assert not hasattr(follow, "_needs_you_events")
-    # The composer is not reached by the follower; it survives only for the
-    # settle row's tail and for readers that compose a line of their own.
-    assert callable(needs_you.needs_you_line)
+    # No composer survives anywhere: the pane carries counts, and the runs that
+    # need action are named by the obligations list.
+    assert not hasattr(needs_you, "needs_you_line")
