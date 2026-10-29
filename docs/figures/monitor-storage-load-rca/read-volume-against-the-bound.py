@@ -18,7 +18,8 @@ BOUND_CPU_PERCENT = 5.0
 
 ARMS: tuple[tuple[str, float, float], ...] = (
     ("5 live runs", 126.273, 42.332),
-    ("71 live runs", 1067.146, 91.714),
+    ("71 live runs, contended", 1067.146, 91.714),
+    ("69 live runs, quiet node", 1159.9, 57.248),
 )
 
 SUBJECT = "#2f6f8f"
@@ -78,14 +79,14 @@ def main() -> None:
         [arm[1] for arm in ARMS],
         BOUND_MB_PER_MIN,
         "read volume [MB/min]",
-        1560.0,
+        1520.0,
     )
     _arm_axis(
         right,
         [arm[2] for arm in ARMS],
         BOUND_CPU_PERCENT,
         "CPU [% of one core]",
-        132.0,
+        130.0,
     )
     right.tick_params(axis="y", labelleft=False, left=False)
     for extension in (".svg",):

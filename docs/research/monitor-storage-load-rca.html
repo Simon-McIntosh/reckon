@@ -318,14 +318,19 @@
       <figcaption>One node station, measured alone over 60 s windows on clu-2068 on 2026-10-29. The cutover bound is
       20 MB/min of read volume and 5 % of one core for all crew monitor processes together, drawn dotted. Read volume is
       <code>rchar</code>, which counts bytes served from the page cache as well as from GPFS; <code>read_bytes</code> was 0.0
-      in both arms, so nothing was refetched from the file server. Both arms were measured while eight test processes ran
-      on the same node, which suppresses the station’s CPU share, so the CPU figures are a lower bound. At 71 live runs the
-      window also recorded one D-state sample, at wait channel <code>xlog_wait_on_iclog</code>.</figcaption>
+      in every arm, so nothing was refetched from the file server. The two large arms are the same station over the same
+      crew home taken twice, once while eight test processes shared the node and once on a quiet node; the populations
+      differ by two runs because the live fleet moved between them. A D-state sample was taken in both: one at
+      <code>xlog_wait_on_iclog</code> and three at <code>cxiWaitEventWait</code>.</figcaption>
     </figure>
     <p>Read volume scales with the number of live runs, and its slope is the cost that matters: 126 MB/min at five live
-    runs, 1,067 MB/min at 71. Against a bound of 20 MB/min the station is five times over at five runs and fifty times over
-    at 71. CPU follows the same shape, 42 % of one core and then 92 %, against a bound of 5 %. The D-state sample that
-    fails the third part of the bound is a wait on the XFS journal of the runtime root, not on GPFS.</p>
+    runs, and 1,067 and 1,160 MB/min in two windows over about seventy. Against a bound of 20 MB/min the station is five
+    times over at five runs and more than fifty times over at seventy. CPU follows the same shape but not the same
+    proportion, 42 % of one core at five runs and 57 % or 92 % at seventy depending on what else the node is doing; every
+    arm is more than ten times the 5 % bound. The D-state samples that fail the third part of the bound sit on two
+    different waits: the contended window waits on the runtime root’s own journal (<code>xlog_wait_on_iclog</code>) and the
+    quiet one waits on the file server where the streams live (<code>cxiWaitEventWait</code>), so the station blocks on
+    storage in both places it reads from.</p>
     <p>A separate probe says where the bytes go. On a cold runtime root one store tick over five live runs reads 8.2 MB and
     one whole station tick reads 91 MB, or 83 MB when the store is already warm; every later tick reads 0.07 MB. The store’s stream ingest is therefore already
     incremental — a tick whose streams have not grown reads nothing at all — and the cost is the classification pass. It
