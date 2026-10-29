@@ -1242,6 +1242,49 @@ def _resolved_suite_gate(
     return (resolved, "armed") if resolved else ("", "unarmed")
 
 
+#: How a scoped template is shown to a worker. The source placeholder is a
+#: substitution token rather than a command word, so the prompt spells what it
+#: stands for: a worker handed the bare token cannot run it as a command.
+_SUITE_TEMPLATE_SPELLING = "<node tests>"
+
+
+def _suite_gate_prompt_body(declared: str | None, resolved: str) -> str:
+    """The FENCE — SUITE body for a run's prompt: template, rule, resolution.
+
+    A worker told only the resolved file list is told a list its own change
+    invalidates: a node that deletes a test leaves the head arm naming a file
+    no tree of its own holds, and the arm then collects nothing while reading
+    as clean. So the prompt states the template and the per-tree rule beside
+    the resolution this node's whole scope produces, and the worker resolves
+    the template over each tree it runs against.
+
+    An unscoped declaration has nothing to resolve, so it is stated as the one
+    command both arms run.
+    """
+    from reckon.crew.promotion_records import SCOPED_SUITE_PLACEHOLDER
+
+    template = " ".join(str(declared or "").split())
+    if SCOPED_SUITE_PLACEHOLDER not in template:
+        return f"  {resolved}\n  Run exactly this command, unedited, for both arms.\n"
+    shown = template.replace(SCOPED_SUITE_PLACEHOLDER, _SUITE_TEMPLATE_SPELLING)
+    return (
+        "  Template, as the project arms it, with "
+        f"{_SUITE_TEMPLATE_SPELLING} standing for the test files in this node's\n"
+        "  write scope that exist in the tree the command runs against:\n"
+        f"    {shown}\n"
+        "  Resolve it over the tree you run it against: a write path absent from\n"
+        "  that tree is dropped, so a test your change adds is not in the base\n"
+        "  arm and one it deletes is not in the head arm. Run the template once\n"
+        "  per arm, resolved over that arm's own tree, and record in each arm's\n"
+        "  `command` the string you actually ran.\n"
+        "  With this node's whole write scope substituted it reads:\n"
+        f"    {resolved}\n"
+        "  Promotion compares each arm's command with this template resolved\n"
+        "  over that arm's own tree, and refuses an after arm left naming no\n"
+        "  test file, or an arm that exited having collected none.\n"
+    )
+
+
 @contextlib.contextmanager
 def _request_claim_restored_on_refusal(run_id, request):
     """Return an admitted request to its waiting phase without an absent pointer."""
@@ -2529,7 +2572,16 @@ def dispatch(
             run_directory=directory,
             worktree=worktree["path"],
             working_directory=working_directory,
-            suite_command=suite_command_resolved,
+            # The prompt carries the template and the per-tree rule beside the
+            # resolution, so the worker can resolve it over each arm's tree
+            # rather than run a file list its own change invalidates. The record
+            # keeps the resolved command itself, which is the string promotion
+            # substitutes when no tree answers what an arm holds.
+            suite_command=(
+                _suite_gate_prompt_body(suite_command, suite_command_resolved)
+                if suite_command_resolved
+                else ""
+            ),
             suite_gate=suite_gate,
             launch_instant=attempt_started_at,
             needs_help_after_failures=int(fences.get("needs_help_after_failures", 2)),
