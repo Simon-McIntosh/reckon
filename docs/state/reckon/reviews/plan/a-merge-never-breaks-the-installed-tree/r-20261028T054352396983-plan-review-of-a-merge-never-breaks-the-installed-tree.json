@@ -1,0 +1,49 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T05:51:49.016Z",
+  "dispatched_at": "2026-10-28T05:45:28Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-merge-never-breaks-the-installed-tree.html:59",
+      "id": "reasoning-1",
+      "reason": "the plan's cause is \"the place, not the merge\", and a pull is such a merge, so a guard that recognises only the `git merge` verb leaves the most common way a coordinator updates the shared checkout able to reproduce the incident the plan cites.",
+      "text": "the new rule is scoped to a `git merge` command, yet the shared checkout has `pull.rebase=false` (measured with `git config --get pull.rebase`), so an ordinary `git pull --no-rebase origin <branch>` runs a merge in the installed tree and writes the same conflict markers the plan exists to prevent",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-merge-never-breaks-the-installed-tree.html:67",
+      "id": "done_when-1",
+      "reason": "a fail-open arm is exactly where such a rule silently switches itself off, and without a case that separates exit 1 from an error exit the gate cannot show which path it proved, so an implementation that fails open on every non-zero prediction would pass the node's whole measure.",
+      "text": "the done-when asserts the conflicting arm is denied and the clean and linked-worktree arms are allowed, but asserts nothing about the arm the Deliverable declares for a prediction that cannot answer (an unknown revision), and it does not require the test to show a conflict exit is distinguished from a prediction error exit",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c886889acbe3d95fd0f959ec5ad8de35413e8a77",
+  "plan_fingerprint": "b08b0faa843d74be597abd66ef36cc9d9a5af1ccbf80e0615bf354b1261286ae",
+  "plan_slug": "a-merge-never-breaks-the-installed-tree",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T054352396983-plan-review-of-a-merge-never-breaks-the-installed-tree",
+  "reviewed_blob_sha": "9a30a482ca22a9cbedbcfc7fe700abe44bb5bbd5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `2bafddb13` is `fix(crew): prove a follower's replacement imports before it reloads` (2026-09-25), `a44b5105f` resolves to a 2026-10-08 commit, the recovery split landed as promote `ba21415ea8` at 19:04:27 on 2026-10-08 matching \"merged at 19:04\", `reckon/crew/recovery.py` and `reckon/hooks/worker_git_guard.py` both exist, and the guard is registered as a `PreToolUse`/`Bash` hook in `~/.claude/settings.json`, so \"already registered ... for every session\" is true and the scope claim \"applies only inside a crew run\" matches `decide()`'s early return on a missing `RECKON_RUN_ID`.",
+    "done_when": "a finding \u2014 \u00a72's done-when exercises the conflict, clean and linked-worktree arms but never the \"the prediction cannot answer\" arm its own Deliverable declares, and it never states how an exit-1 conflict is told from an error exit.",
+    "evidence_paths": "pass \u2014 the gate is a committed test under `tests/`, the negative control is logged into the run record, and nothing in the plan writes evidence to a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the new test name and the rule are named for what they do (`test_merge_guard_refuses_a_conflicting_merge.py`), and no plan label, ticket number or version tag reaches a path, symbol or comment.",
+    "reasoning": "a finding \u2014 the root cause matches the cited evidence and the stated mechanism does produce the done-when: I ran `git merge-tree --write-tree --no-messages HEAD side` on git 2.39.3 in a conflicting scratch repository and it printed the three stage lines for `f.txt` (so the conflicted path is available despite `--no-messages`) and exited 1; but the rule is scoped to the `git merge` verb while the shared checkout's own pull policy performs merges too.",
+    "single_goal": "pass \u2014 \u00a72 has one deliverable (one new refusal rule in the existing guard), one test file, and one negative control; the docstring sentence is part of that same rule, not a second one.",
+    "wiring": "pass \u2014 the plan declares `plan-standalone` and no section carries a link; the sprint item in `docs/sprints/S25.html` repeats the same done-when slug, and no plan or section under `docs/` declares a dependency on `a-merge-never-breaks-the-installed-tree`, so nothing it needs is missing and no relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "da410b8a55fb4b80319c54c4f8402be860b943f9ff8dd94d1f7fb913a83e463e",
+    "s1": "7d5eafa15a07203fd1719fe3721f32e01acc84d7a925aed9145999a20a6f8b66",
+    "s2": "8707f1145e09e9b54eacb57acb60b4677a1ed43ebc85f9996dfef1cb0fcedb16"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T07:17:09.461598+00:00"
+}

@@ -2853,6 +2853,40 @@ def annotate_review_of_run(
     return annotated
 
 
+def _stamp_finding_ids(record: dict[str, Any]) -> dict[str, Any]:
+    """Return ``record`` with an ``id`` on every mapping finding that lacks one.
+
+    A repair answers a finding by its id, and the id is a pure function of the
+    finding's own ``file``, ``line`` and ``text`` shared with
+    :func:`reckon.crew.repair.finding_id`. Stamping it at store time means the
+    record on disk carries the identity a later answer names, rather than every
+    reader having to re-derive it and a hand-written record being answerable by
+    nothing. A bare-string finding keeps its shape: it has no location to derive
+    from here and is given its id when read. The caller's mapping is not
+    mutated; a copy is returned only when at least one id was added.
+    """
+    findings = record.get("findings")
+    if not isinstance(findings, list):
+        return record
+    # Imported here because repair imports this module; a module-level import
+    # would close the cycle at load time.
+    from reckon.crew.repair import finding_id as _finding_id
+
+    stamped: list[Any] = []
+    changed = False
+    for entry in findings:
+        finding = entry
+        if isinstance(entry, Mapping) and not str(entry.get("id") or "").strip():
+            identifier = _finding_id(entry)
+            if identifier:
+                finding = {**entry, "id": identifier}
+                changed = True
+        stamped.append(finding)
+    if not changed:
+        return record
+    return {**record, "findings": stamped}
+
+
 def store_review(
     record: dict[str, Any],
     *,
@@ -2920,6 +2954,7 @@ def store_review(
     if not record.get("timestamp"):
         record = dict(record)
         record["timestamp"] = datetime.now(UTC).isoformat()
+    record = _stamp_finding_ids(record)
     record = _derive_landed_total(record)
     if base_sha and head_sha:
         path = review_path(

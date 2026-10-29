@@ -399,7 +399,9 @@ def test_text_selection_skips_a_figure_only_record(
 def test_in_flight_review_reads_rubric_from_its_record_path(
     project: dict, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    review_directory = runs.run_dir("review-run")
+    # A run review declares its record inside the reviewed run's directory, so
+    # the fixture composes that directory from the record the matcher reads.
+    record_directory = runs.run_dir(str(project["record"]["run_id"]))
     head = project["head_sha"]
     pointer = {
         "run_id": "review-run",
@@ -409,7 +411,7 @@ def test_in_flight_review_reads_rubric_from_its_record_path(
             "id": "hand-named-figure",
             "role": "review",
             "write_paths": review_module.run_review_record_paths(
-                review_directory, RUN_ID, reviewed_head_sha=head
+                record_directory, RUN_ID, reviewed_head_sha=head
             ),
         },
     }
@@ -420,7 +422,7 @@ def test_in_flight_review_reads_rubric_from_its_record_path(
 
     pointer["node"]["id"] = "hand-named-review"
     pointer["node"]["write_paths"] = review_module.run_review_record_paths(
-        review_directory,
+        record_directory,
         RUN_ID,
         reviewed_head_sha=head,
         rubric=review_module.FIGURE_REVIEW_RUBRIC,

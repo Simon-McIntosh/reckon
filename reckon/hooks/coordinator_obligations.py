@@ -925,6 +925,26 @@ def stale_station_line(*, project: str, session: str, answer: Mapping[str, Any])
     )
 
 
+def slow_station_note(*, answer: Mapping[str, Any]) -> str:
+    """The header note a live station's running tick puts on the checklist.
+
+    A tick that outlives the stale window is not a station to restart: its beat
+    is fresh, so the process is alive, and the stage it has entered is the work
+    it is actually doing. Cycling it would cost the fleet the refresh in
+    flight, so the note names the stage and the age and carries no remedy.
+    """
+    stage = str(answer.get("tick_stage") or "")
+    age = answer.get("tick_age_seconds")
+    measured = (
+        f"its tick has run {_format_age(int(age))}"
+        if age is not None
+        else "its tick is running"
+    )
+    if stage:
+        measured += f" in the {stage} stage"
+    return f"the station is alive but slow: {measured}, so no restart is needed"
+
+
 def inject(payload: dict[str, Any], text: str) -> None:
     """Write one prompt-mode additionalContext object, dismissing nothing."""
     event = str(payload.get("hook_event_name") or "UserPromptSubmit")
@@ -1033,6 +1053,21 @@ def _prompt(payload: dict[str, Any]) -> int:
             inject(
                 payload,
                 stale_station_line(project=project, session=session, answer=station),
+            )
+            return 0
+        if station.get("state") == module.STATION_SLOW:
+            # The station is alive and working through a long tick: the rows it
+            # serves are its own, so the list is shown as it is, headed by what
+            # it is doing. Only a stale beat is a station to restart.
+            _inject_list(
+                payload,
+                project=project,
+                session=session,
+                obligations=recheck_worktree_held_rows(
+                    station["payload"], project=project
+                ),
+                reloading=False,
+                note=slow_station_note(answer=station),
             )
             return 0
         _inject_list(

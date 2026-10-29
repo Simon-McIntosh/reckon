@@ -1,0 +1,74 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's own arms carry no failing id: baseline_suite exited 4 having collected nothing (failure_ids []) and after_suite exited 0 (failure_ids []), so the added-failure count is zero against that pair as recorded in logs/gate-base.log and logs/gate-head.log",
+  "backend": "native",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:624",
+    "reckon/crew/dispatch.py:1233",
+    "reckon/crew/dispatch.py:2572",
+    "reckon/crew/dispatch_claims.py:1169",
+    "reckon/crew/recovery_repair_dispatch.py:685",
+    "reckon/crew/queue_landing.py:285"
+  ],
+  "completed_at": "2026-10-28T22:39:46.277Z",
+  "dispatched_at": "2026-10-28T22:32:17Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": "345",
+      "severity": "non-blocking",
+      "text": "non-blocking: _paths_present_in_tree duplicates a capability the repository already owns \u2014 reckon/velocity.py:337 _tree_paths lists every tracked path at a revision with one ls-tree -r --name-only, and the public read_blobs at reckon/velocity.py:409 answers which (revision, path) specs the object store holds, returning None for a missing one. The addition neither extends nor imports either owner, so the reuse dimension scores 5 under the rubric; the divergence is deliberate in one respect only (it returns None rather than raising when the probe cannot answer), which could have been a thin wrapper over read_blobs."
+    },
+    {
+      "file": "tests/test_a_scoped_suite_names_only_present_files.py",
+      "line": "361",
+      "severity": "non-blocking",
+      "text": "non-blocking: _write_suite_manifest is defined twice in the new test file, identically at line 145 and again at line 361; the second definition shadows the first, so seven lines are dead and a later edit to one copy silently has no effect on the tests that call it."
+    },
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "685",
+      "severity": "non-blocking",
+      "text": "non-blocking: the per-tree rule reaches dispatch but not repair briefs. _reviewed_run_suite_command resolves the reviewed run's template over the whole write scope and hands the repair both its done-when text (repair.py:645 'run with exactly <resolved list>') and its recorded suite_command, so the repair's record carries no {node_test_files} placeholder; _arm_missing_fields therefore takes its unscoped branch and promotion compares the repair's arm command literally. A repair of a scope whose test set changed is now refused either way \u2014 running the inherited list exits 4 over a deleted file (collected_no_test) and resolving per tree fails command_matches_suite_command \u2014 where before the change the same pair promoted silently. The file is outside this node's write scope; the landed collected-nothing refusal is what makes the gap observable."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit against 45124a4c: 00a0fc0750 resolves the template per tree, adds the collected-nothing and named-no-file refusals and composes the suite fence body; 870add7a4f adds the landing fragment; 696 insertions and 18 deletions across five files.",
+    "done_when": "the done-when asks a test resolving head and base commands for a fixture that deletes one test and adds another, both matching the armed command, plus a collected-nothing pair refused; tests/test_a_scoped_suite_names_only_present_files.py:193-320 asserts exactly that and logs/gate-head.log records 5 passed EXIT=0.",
+    "goal": "the node's goal is to resolve the armed scoped suite over the files each tree holds, tell the worker the template and that rule, and refuse an arm that collected nothing; promotion_records.py:432-470 and dispatch.py:1249-1290 do all three for the dispatch path, while recovery_repair_dispatch.py:685 leaves repair briefs on the old whole-scope list.",
+    "manifest": "read; it records status complete, the literal 5-test command, head 5 passed EXIT=0, base EXIT=4, negative control 3 failed EXIT=1, and names four logs under the run directory.",
+    "write_paths": "the manifest declares six paths and the diff against 45124a4c touches five of them with nothing outside."
+  },
+  "justifications": {
+    "durability": "tests/test_a_scoped_suite_names_only_present_files.py:204-210 pins the head and base commands to the constants the fixture itself committed, and logs/negative-control.log shows three of the five cases redden when the presence check at promotion_records.py:345 is bypassed, so the assertions can fail for the defect they name.",
+    "evidence": "the gate names tests/test_a_scoped_suite_names_only_present_files.py and logs/gate-head.log records 5 passed EXIT=0 at head 00a0fc0750 with the declared mutation red at logs/negative-control.log (3 failed, EXIT=1), but the base arm at logs/gate-base.log exited 4 having collected nothing, so 'the same test fails at the base' is evidenced as an unmeasured arm rather than as a failing test.",
+    "fit": "the added functions follow the module's private-helper idiom and their names describe the mechanism (promotion_records.py:345, :475, :515), but tests/test_a_scoped_suite_names_only_present_files.py:361 repeats a helper already defined at :145.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:432-470 resolves the template over the revision's own tree and reckon/crew/dispatch.py:1249-1290 states the template and the rule to the worker, but reckon/crew/recovery_repair_dispatch.py:685 hands a repair worker the resolved whole-scope list with no template, so 'telling the worker the template and that rule' does not reach repair briefs.",
+    "reuse": "reckon/velocity.py:337 _tree_paths and the public reckon/velocity.py:409 read_blobs already answer which paths a revision holds, and promotion_records.py:345 re-implements that capability instead of extending either owner.",
+    "scope_discipline": "the diff against 45124a4c changes exactly reckon/crew/promotion_records.py, reckon/crew/prompts.py, reckon/crew/dispatch.py, tests/test_a_scoped_suite_names_only_present_files.py and the landing fragment, all inside the six paths the manifest declares."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to resolve the armed scoped suite over the files each tree holds, tell the worker the template and that rule, and refuse an arm that collected nothing; reckon/crew/promotion_records.py:432-470 does the per-tree resolution and reckon/crew/dispatch.py:1249-1290 states the rule, but reckon/crew/recovery_repair_dispatch.py:685 still hands repair workers the resolved whole-scope list with no template.\nVERDICT done_when: the done-when asks a test that resolves head and base commands for a fixture deleting one test and adding another, both matching the armed command, with a collected-nothing pair refused; tests/test_a_scoped_suite_names_only_present_files.py:193-320 asserts exactly that and logs/gate-head.log records 5 passed EXIT=0, though the base arm at logs/gate-base.log collected nothing (EXIT=4) rather than failing as the section words it.\nVERDICT write_paths: the manifest declares six paths; the diff against 45124a4c touches five of them \u2014 reckon/crew/promotion_records.py, reckon/crew/prompts.py, reckon/crew/dispatch.py, tests/test_a_scoped_suite_names_only_present_files.py and the landing fragment \u2014 and nothing else.\nVERDICT manifest: read; it records status complete, the literal 5-test command, head gate 5 passed EXIT=0, base EXIT=4, negative control 3 failed EXIT=1, and names logs/gate-base.log, logs/gate-head.log, logs/negative-control.log and logs/defect-reproduction.log.\nVERDICT diff: read commit by commit against 45124a4c; 00a0fc0750 resolves the template over each tree's object store, adds the collected-nothing and named-no-file refusals and composes the suite fence body, 870add7a4f adds the landing fragment, and the 696 insertions across five files all sit inside the declared scope.\nCALL_SITES: reckon/crew/promotion.py:624, reckon/crew/dispatch.py:1233, reckon/crew/dispatch.py:2572, reckon/crew/dispatch_claims.py:1169, reckon/crew/recovery_repair_dispatch.py:685, reckon/crew/queue_landing.py:285\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:432-470 resolves the template over the revision's own tree and reckon/crew/dispatch.py:1249-1290 states the template and the rule to the worker, but reckon/crew/recovery_repair_dispatch.py:685 hands a repair worker the resolved whole-scope list with no template.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log records 5 passed EXIT=0 at head 00a0fc0750 with the declared mutation red at logs/negative-control.log, but the base arm at logs/gate-base.log exited 4 having collected nothing rather than failing as the done-when words it.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff against 45124a4c changes exactly reckon/crew/promotion_records.py, reckon/crew/prompts.py, reckon/crew/dispatch.py, tests/test_a_scoped_suite_names_only_present_files.py and the landing fragment, all inside the six paths the manifest declares.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_scoped_suite_names_only_present_files.py:204-210 pins the head and base commands to the constants the fixture itself committed, and logs/negative-control.log shows three of the five cases redden when the presence check at reckon/crew/promotion_records.py:345 is bypassed.\nSCORE fit: 17\nJUSTIFICATION fit: the added functions follow the module's private-helper idiom and name the mechanism (reckon/crew/promotion_records.py:345, :475, :515), but tests/test_a_scoped_suite_names_only_present_files.py:361 repeats a helper already defined at :145.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/velocity.py:337 _tree_paths and the public reckon/velocity.py:409 read_blobs already answer which paths a revision holds, and reckon/crew/promotion_records.py:345 re-implements that capability instead of extending either owner.\nFINDING reckon/crew/promotion_records.py:345 non-blocking: _paths_present_in_tree duplicates reckon/velocity.py:337 _tree_paths (ls-tree -r --name-only at a revision) and the public reckon/velocity.py:409 read_blobs, without extending or importing either owner.\nFINDING tests/test_a_scoped_suite_names_only_present_files.py:361 non-blocking: _write_suite_manifest is defined twice in the new test file, identically at line 145 and again at line 361, so the second shadows the first and the first is dead.\nFINDING reckon/crew/recovery_repair_dispatch.py:685 non-blocking: repair briefs inherit the resolved whole-scope command rather than the template, so the per-tree rule cannot reach them and a repair of a scope whose test set changed is refused at promotion under the new collected-nothing check with no route to resolve it.\n",
+  "review_run_id": "r-20261028T222957191327-review-of-the-scoped-suite-names-only-present-files-870add7a4f3a",
+  "reviewed_base_sha": "45124a4c544599664badb52d3932c0aeb0ff3053",
+  "reviewed_head_sha": "870add7a4f3aa125827df08348d1052f9260f426",
+  "reviewed_run_id": "r-20261027T143820539336-the-scoped-suite-names-only-present-files",
+  "reviewer": "review-of-the-scoped-suite-names-only-present-files-870add7a4f3a",
+  "reviewer_run_id": "r-20261028T222957191327-review-of-the-scoped-suite-names-only-present-files-870add7a4f3a",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T22:37:12Z",
+  "total": 92
+}

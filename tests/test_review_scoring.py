@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _store
+from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
 
 VALID_TEXT = """\
@@ -274,7 +275,17 @@ def test_written_record_reads_back_equal_to_what_was_written(
     path = review_module.store_review(record)
     assert path == review_module.review_path("reckon", "r-reviewed-run")
     assert path.is_file()
-    assert review_module.read_review("reckon", "r-reviewed-run") == record
+    # The store stamps every finding with the id an answer names, so the record
+    # reads back identical to what was written once that stamp is derived the
+    # same way from the finding's own content.
+    stamped = {
+        **record,
+        "findings": [
+            {**finding, "id": repair_module.finding_id(finding)}
+            for finding in record["findings"]
+        ],
+    }
+    assert review_module.read_review("reckon", "r-reviewed-run") == stamped
     assert review_module.read_review("reckon", "r-other-run") is None
 
 
@@ -362,9 +373,7 @@ def test_base_dir_override_moves_the_store_and_leaves_config_untouched(
 
 
 def test_a_parsed_review_reduces_to_its_ledger_row_block() -> None:
-    block = review_module.ledger_block(
-        review_module.parse_review(VALID_TEXT)
-    )
+    block = review_module.ledger_block(review_module.parse_review(VALID_TEXT))
     assert block == {
         "status": "parsed",
         "scores": {

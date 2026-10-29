@@ -185,7 +185,6 @@ from .recovery_repair_dispatch import (
     dispatch_repair_for_run as dispatch_repair_for_run,
 )
 from .recovery_review_acceptance import (
-    REVIEW_ACCEPTANCE_FLOOR as REVIEW_ACCEPTANCE_FLOOR,
     _commits_missing_from as _commits_missing_from,
     _recorded_gate_passed as _recorded_gate_passed,
     _review_accepts_promotion as _review_accepts_promotion,

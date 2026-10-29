@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3043",
+    "reckon/crew/queue_admission.py:3056"
+  ],
+  "completed_at": "2026-10-27T21:33:15.381Z",
+  "dispatched_at": "2026-10-27T21:22:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "165",
+      "severity": "non-blocking",
+      "text": "non-blocking: runner_argv drops nothing when test_files is empty, so a run whose fenced scope holds no test file armed with a placeholder-free project command (which _scoped_suite_command returns verbatim) re-runs the whole project suite up to six times per added id; the counts stay correct because _fails reads only the one id, but the landing pass loses its bound on run time for that class of run."
+    },
+    {
+      "file": "tests/test_the_landing_pass_measures_and_lands.py",
+      "line": "349",
+      "severity": "non-blocking",
+      "text": "non-blocking: the case table's expected value is derived from the same command and files the test hands isolated_command, so it mirrors the implementation's own rule rather than an independent source; it does redden on the reverted narrowing (reuse-negative.log), so it is real coverage, but a rule the test and the code share would pass it."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html",
+      "line": "42",
+      "severity": "non-blocking",
+      "text": "non-blocking: the record states the importer population passed at the delivered head, but importer-head.log ran at 737d0aa283 and the delivered head is 98b1f10192, and the manifest's after_suite.revision names 737d0aa283 too; the result is unaffected because 98b1f10192 is docs-only, but the record names a revision it did not run."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against ccaf5a1c3; 737d0aa283 deletes _VALUE_OPTIONS and _ASSIGNMENT from reckon/crew/landing_measure.py:157 and derives the narrowed command from promotion_records._node_test_files at reckon/crew/queue_landing.py:84, and 98b1f10192 rewrites the evidence fragment to describe that mechanism.",
+    "done_when": "the done_when names tests/test_the_landing_pass_measures_and_lands.py with stubbed commands, three isolated re-runs per id per revision, a clean importer population and ruff on the changed paths; the manifest records baseline.log at 9 passed and after.log at 10 passed, importer 8 passed at both arms and ruff clean, and this review re-ran the gate at the delivered head 98b1f10192 for 10 passed, EXIT=0.",
+    "goal": "the node's goal is to land an accepted run by measuring its suite at base and head with flakes told apart from regressions; commit 737d0aa283 narrows the single-id re-run by the files the run's own armed command was resolved from, at reckon/crew/landing_measure.py:165 and reckon/crew/queue_landing.py:84, which is what makes an added id's isolated result mean that id.",
+    "manifest": "read; it records status complete, commits aebc724cf/9362ba76/ccaf5a1c3/737d0aa28/98b1f10192, the gate and negative-control log paths, baseline_suite and after_suite each with failure_count 0 and empty failure_ids, and the answer that closed the reuse request at 737d0aa283.",
+    "write_paths": "the declared scope is reckon/crew/queue_landing.py, reckon/crew/landing_measure.py, tests/test_the_landing_pass_measures_and_lands.py and the node's own evidence fragment; the diff of ccaf5a1c3..98b1f10192 touches exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_landing_pass_measures_and_lands.py:356 asserts literal surviving tokens and reddens in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T124654403923-the-landing-pass-measures-and-lands/reuse-negative.log when 737d0aa283's narrowing is reverted, while the sibling case table at :349 restates the implementation's own rule.",
+    "evidence": "tests/test_the_landing_pass_measures_and_lands.py:315 and the reuse-negative.log pair (2 failed, 8 passed, EXIT=1) record both arms of the change, and this review re-ran the gate at the delivered head for 10 passed.",
+    "fit": "the delta keeps the module's frozen-dataclass and docstring idiom at reckon/crew/landing_measure.py:158 and the names it adds (_target_name, the test_files parameter) describe the mechanism, with no plan, ticket or author reference.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:177 now removes exactly the node's own test files from the armed command, so the isolated arm runs the added id rather than the file it lives in.",
+    "reuse": "reckon/crew/queue_landing.py:84 reuses promotion_records._node_test_files, the owner of node-test-file resolution, and 737d0aa283 deletes the local option table and shell-assignment copy rather than keeping a third one.",
+    "scope_discipline": "git diff ccaf5a1c3..98b1f10192 changes only reckon/crew/landing_measure.py, reckon/crew/queue_landing.py, tests/test_the_landing_pass_measures_and_lands.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html, all four inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to land an accepted run by measuring its suite at base and head with flakes told apart from regressions; commit 737d0aa283 narrows the single-id re-run by the files the run's own armed command was resolved from, at reckon/crew/landing_measure.py:165 and reckon/crew/queue_landing.py:84, which is what makes an added id's isolated result mean that id.\nVERDICT done_when: the done_when names tests/test_the_landing_pass_measures_and_lands.py with stubbed commands, three isolated re-runs per id per revision, a clean importer population and ruff on the changed paths; the manifest records baseline.log at 9 passed and after.log at 10 passed, importer 8 passed at both arms and ruff clean, and this review re-ran the gate at the delivered head 98b1f10192 for 10 passed, EXIT=0.\nVERDICT write_paths: the declared scope is reckon/crew/queue_landing.py, reckon/crew/landing_measure.py, tests/test_the_landing_pass_measures_and_lands.py and the node's own evidence fragment; the diff of ccaf5a1c3..98b1f10192 touches exactly those four paths and nothing else.\nVERDICT manifest: read; it records status complete, commits aebc724cf/9362ba76/ccaf5a1c3/737d0aa28/98b1f10192, the gate and negative-control log paths, baseline_suite and after_suite each with failure_count 0 and empty failure_ids, and the answer that closed the reuse request at 737d0aa283.\nVERDICT diff: read commit by commit against ccaf5a1c3; 737d0aa283 deletes _VALUE_OPTIONS and _ASSIGNMENT from reckon/crew/landing_measure.py:157 and derives the narrowed command from promotion_records._node_test_files at reckon/crew/queue_landing.py:84, and 98b1f10192 rewrites the evidence fragment to describe that mechanism.\nCALL_SITES: reckon/crew/queue_admission.py:3043, reckon/crew/queue_admission.py:3056\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:177 now removes exactly the node's own test files from the armed command, so the isolated arm runs the added id rather than the file it lives in.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_the_landing_pass_measures_and_lands.py:315 and the reuse-negative.log pair (2 failed, 8 passed, EXIT=1) record both arms of the change, and this review re-ran the gate at the delivered head for 10 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff ccaf5a1c3..98b1f10192 changes only reckon/crew/landing_measure.py, reckon/crew/queue_landing.py, tests/test_the_landing_pass_measures_and_lands.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html, all four inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_landing_pass_measures_and_lands.py:356 asserts literal surviving tokens and reddens in /home/ITER/mcintos/.config/reckon/crew/runs/r-20261027T124654403923-the-landing-pass-measures-and-lands/reuse-negative.log when 737d0aa283's narrowing is reverted, while the sibling case table at :349 restates the implementation's own rule.\nSCORE fit: 19\nJUSTIFICATION fit: the delta keeps the module's frozen-dataclass and docstring idiom at reckon/crew/landing_measure.py:158 and the names it adds (_target_name, the test_files parameter) describe the mechanism, with no plan, ticket or author reference.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/queue_landing.py:84 reuses promotion_records._node_test_files, the owner of node-test-file resolution, and 737d0aa283 deletes the local option table and shell-assignment copy rather than keeping a third one.\nFINDING reckon/crew/landing_measure.py:165 non-blocking: runner_argv drops nothing when test_files is empty, so a run whose fenced scope holds no test file armed with a placeholder-free project command (which _scoped_suite_command returns verbatim) re-runs the whole project suite up to six times per added id; the counts stay correct because _fails reads only the one id, but the landing pass loses its bound on run time for that class of run.\nFINDING tests/test_the_landing_pass_measures_and_lands.py:349 non-blocking: the case table's expected value is derived from the same command and files the test hands isolated_command, so it mirrors the implementation's own rule rather than an independent source; it does redden on the reverted narrowing (reuse-negative.log), so it is real coverage, but a rule the test and the code share would pass it.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/the-landing-pass-measures-and-lands.html:42 non-blocking: the record states the importer population passed at the delivered head, but importer-head.log ran at 737d0aa283 and the delivered head is 98b1f10192, and the manifest's after_suite.revision names 737d0aa283 too; the result is unaffected because 98b1f10192 is docs-only, but the record names a revision it did not run.",
+  "review_run_id": "r-20261027T211912676242-review-of-the-landing-pass-measures-and-lands-98b1f10192eb",
+  "reviewed_base_sha": "ccaf5a1c3cffc257232ed2141633b593dd3617b0",
+  "reviewed_commit": "98b1f10192ebd0d1ab85310b248cac31d73d2a86",
+  "reviewed_head_sha": "98b1f10192ebd0d1ab85310b248cac31d73d2a86",
+  "reviewed_run_id": "r-20261027T124654403923-the-landing-pass-measures-and-lands",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T21:37:09.775412+00:00",
+  "total": 113
+}

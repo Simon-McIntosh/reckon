@@ -258,6 +258,45 @@ def _pointer_declared_paths(pointer: Mapping[str, Any]) -> tuple[str, ...]:
     return tuple(str(path) for path in node.get("write_paths") or ())
 
 
+#: Where a pointer's node records each path its worker granted itself.
+WRITE_GRANTS_KEY = "write_grants"
+
+
+def declared_write_grants(pointer: Mapping[str, Any]) -> list[dict[str, str]]:
+    """Every path one run's scope grants, in declaration order, with its source.
+
+    The scope is the node's declared write paths. A path the run's own worker
+    widened to arrives in ``WRITE_GRANTS_KEY`` beside the reason and the time,
+    and reading it back here is what lets a review name the grant rather than
+    only the path: an original dispatch grant and a self-grant are the same
+    path in the declaration, so the source is the only thing that separates
+    them. A grant recorded for a path the declaration no longer holds is not
+    reported, because a narrow or a release already withdrew it.
+    """
+    node = pointer.get("node")
+    node = node if isinstance(node, Mapping) else {}
+    recorded = node.get(WRITE_GRANTS_KEY)
+    by_path: dict[str, Mapping[str, Any]] = {}
+    for entry in recorded or ():
+        if isinstance(entry, Mapping):
+            known = str(entry.get("path") or "")
+            if known:
+                by_path.setdefault(known, entry)
+    grants: list[dict[str, str]] = []
+    for path in node.get("write_paths") or ():
+        declared = str(path)
+        entry = by_path.get(declared)
+        source = str(entry.get("source") or "").strip() if entry else ""
+        grants.append(
+            {
+                "path": declared,
+                "source": source or "dispatch",
+                "reason": str(entry.get("reason") or "").strip() if entry else "",
+            }
+        )
+    return grants
+
+
 def _pointer_preferred_projects(pointer: Mapping[str, Any]) -> tuple[str, ...]:
     """The projects a pointer's grant prefers when a repository hosts several."""
     authority = pointer.get("authority")
@@ -381,6 +420,7 @@ def _repository_scope_claims(
     exclude_run_ids: Iterable[str] = (),
     candidate_paths: Iterable[str | Path] | None = None,
     candidate_repositories: Iterable[str | Path] | None = None,
+    regard_waiting: bool = False,
 ) -> list[_RepositoryScopeClaim]:
     """Read live claims globally and group their paths by repository root.
 
@@ -399,6 +439,13 @@ def _repository_scope_claims(
     test against reads every claim rather than passing one over. A caller that
     names no candidate paths — a re-read of one run's claim, and the scopes view
     that reports every claim — reads every disposition exactly as before.
+
+    ``regard_waiting`` keeps a queued or upstream-waiting request's claim
+    binding. A launch lets a waiting request's claim pass, because that request
+    has no worker yet and its own admission will check the paths again. A
+    widening cannot rely on a later check: it is adding a path to a scope that
+    already exists, so a path a waiting request declares is a path a worker will
+    start writing when its turn comes, and it is refused here instead.
     """
     excluded = set(exclude_run_ids)
     repository_projects = mounted_repository_projects()
@@ -457,6 +504,10 @@ def _repository_scope_claims(
         )
         phase = str(pointer.get("phase") or "")
         disposition = claim_disposition(pointer) if relevant else None
+        # A waiting request binds when the caller is widening, and the
+        # disregarded-claim wording is dropped with the verdict it described:
+        # the refusal must not carry a reason saying the claim holds nothing.
+        waiting_binds = regard_waiting and phase in WAITING_REQUEST_PHASES
         project = str(pointer.get("project") or "")
         run_id = str(pointer.get("run_id") or "unknown")
         node_id = str(node.get("id") or "unknown")
@@ -477,10 +528,16 @@ def _repository_scope_claims(
                     absolute_path=absolute,
                     declared_path=declared,
                     derived_from=derived_from,
-                    binding=True if disposition is None else disposition.binding,
+                    binding=(
+                        True
+                        if disposition is None or waiting_binds
+                        else disposition.binding
+                    ),
                     unread=disposition is None,
                     disposition_reason=(
-                        "" if disposition is None else disposition.reason
+                        ""
+                        if disposition is None or waiting_binds
+                        else disposition.reason
                     ),
                     registered_at=str(pointer.get("created_at") or ""),
                     unintegrated=()
@@ -2039,6 +2096,7 @@ def refuse_widen_scope_conflicts(
     added_paths: Iterable[str],
     *,
     set_aside_run_ids: Iterable[str] = (),
+    regard_waiting: bool = False,
 ) -> None:
     """Judge added fence paths with the same claim rule as dispatch.
 
@@ -2047,6 +2105,14 @@ def refuse_widen_scope_conflicts(
     promotion's acceptance. The judgement is made by the caller, because a
     dispatch onto those same paths still refuses as it always has; only the
     acceptance that names the path is allowed to walk past the claim.
+
+    ``regard_waiting`` is set by the run's own worker granting itself a path: a
+    path a queued request declares is a path a worker will start writing when
+    its turn comes, and unlike a launch there is no later admission that would
+    see the collision, so the waiting claim binds. A coordinator's widening
+    keeps the launch's reading and crosses a waiting claim, which is the
+    behaviour the queue relies on when it reorders a request onto a finished
+    run's paths.
     """
     set_aside = {str(run_id) for run_id in set_aside_run_ids}
     node = pointer.get("node")
@@ -2082,6 +2148,7 @@ def refuse_widen_scope_conflicts(
             for repository, _path, _absolute, _declared, _derived in candidate_scope
             if repository is not None
         ),
+        regard_waiting=regard_waiting,
     )
     if set_aside:
         claims = [claim for claim in claims if claim.run_id not in set_aside]
@@ -2100,5 +2167,8 @@ def refuse_widen_scope_conflicts(
         claims=claims,
         base_revision=widening_base,
         own_run_id=str(pointer.get("run_id") or ""),
-        own_registered_at=_utc_now(),
+        # A self-widen has no registration race to settle: the run is already
+        # under way, so no own stamp is given and a waiting peer refuses on
+        # sight. A coordinator widening keeps the stamp it always had.
+        own_registered_at=None if regard_waiting else _utc_now(),
     )

@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T05:33:13.388Z",
+  "dispatched_at": "2026-10-28T05:29:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-lane-can-say-where-it-stands.html:469",
+      "id": "reasoning-1",
+      "reason": "the section's whole justification is a figure that is not currently declared anywhere, and its cited `crew.json:395` is precisely the \"a log is not stale for describing its own moment\" error \u00a75b records as corrected.",
+      "text": "\u00a77 opens by asserting that \"Flight config declares `usable_input_window: 1016576` for the local lane\" and treats that as a live overstatement, but the project's flight config (`docs/state/reckon/flight.yaml`, `backends: clive`) declares no `usable_input_window` at all, and every 1,016,576 in the tree is inside a historical dispatch session key or run record (e.g. `docs/state/reckon/crew.json:395`, alias `dsv4-flash`, model `deepseek-v4-flash`) \u2014 a row recording what it was dispatched against, which the plan itself insists must not be read as a current figure; the plan's own comment `c-alcs-005-figures-restale` (2026-09-17) already measured config at 480,000 in step with a 512,000 endpoint, five weeks before \u00a77 was authored, so a node building \u00a77 would re-derive a window nothing declares",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-lane-can-say-where-it-stands.html:469",
+      "id": "done_when-1",
+      "reason": "a node dispatched on this section cannot decide whether to build the verification or to leave it open, and with no negative control it can satisfy the done-when on either reading.",
+      "text": "\u00a77's \"Done when the lane's declared window agrees with what its endpoint serves and the guard fires on the disagreement\" asks for a guard reckon does not have, while the same paragraph states that \"Whether reckon should verify a declared window against the endpoint it is about to dispatch into is the question this plan leaves open\" and that the reconciliation \"is not this project's to perform\"; the measure also declares no negative control \u2014 no fixture, mutation or named string a red log must carry, in contrast with \u00a75d's explicit falsifier requirement, so a node cannot tell whether a passing suite shows the guard firing or merely shows nothing calling it",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-lane-can-say-where-it-stands.html:469",
+      "id": "single_goal-1",
+      "reason": "as written the section can never be closed by a reckon node, because half its done-when is another repository's deliverable and the other half is undeclared work.",
+      "text": "\u00a77 bundles (a) bringing the local lane's declared window and model name into step with its endpoint, which the paragraph assigns to \"the session that runs the serve, through its own repository's refresher\" and which no reckon write scope can complete, with (b) making reckon's own gate refuse when the declared window stops describing the deployment, which is the open design question; the section's own `data-capability-class`/effort (1.0 h, general) is sized for one of these and one verdict cannot close both",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-lane-can-say-where-it-stands.html:398",
+      "id": "anchors_resolve-1",
+      "reason": "a node told to edit the function \"at dispatch.py:3840\" opens the wrong file and finds no such function, and the `promotion.py` attribution is the same class of unchecked file pointer \u00a75d records as having already been repeated to two sessions before anyone grepped it.",
+      "text": "the \u00a75d \"verified sites\" paragraph and the \u00a77 migration note point at four locations that do not resolve at 39a7287f0d: `dispatch.py:3840` is empty and `_backend_settings` is now defined at `reckon/crew/dispatch_sessions.py:910` with `dispatch.py:3612` only re-exporting it; `promotion.py:1483` neither calls `_backend_settings` nor uses `StreamMeasures` (promotion.py:71 imports the function, promotion.py:2232 imports the class, and the only reconstruction call is `promotion_checks.py:132`); `resumption.py:407` is a sweep-cadence comment and the real calls sit at `resumption.py:779`, `:949` and `:1021`; `_flight_schema.py:284` carries nothing, with `effective_input_window` declared at `:376` and `:460`",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f65cc8edfc232366b9b8f060c47ac80d26378130",
+  "plan_fingerprint": "f5d88bac6b69d0edd8da8239a0e6848fc7f6a318deb0528ad52906c673b1807e",
+  "plan_slug": "a-lane-can-say-where-it-stands",
+  "plan_version": 49,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T052758071581-plan-review-of-a-lane-can-say-where-it-stands",
+  "reviewed_blob_sha": "f25155ea9d9867ac22f6bbdb24f05e2471a0a4a3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 four source anchors in \u00a75d/\u00a77 do not resolve: `dispatch.py:3840`, `promotion.py:1483`, `resumption.py:407` and `_flight_schema.py:284`.",
+    "done_when": "a finding \u2014 \u00a77's done-when requires reckon's guard to fire on a declared-versus-served disagreement while \u00a77's own prose leaves exactly that question open, and the measure names no negative control.",
+    "evidence_paths": "pass \u2014 the only evidence path the plan cites, `docs/evidence/archive/a-lane-can-say-where-it-stands-landed.html`, exists and its `#reconstructed-backend-merges` anchor resolves; no gate is routed to a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 \u00a77 prescribes no new symbol, file or comment text, and the identifiers it discusses (`usable_input_window`, `effective_input_window`) are mechanism names; the `\u00a7N`/`f-alcs-` tokens appear only as the plan's own record labels, which is where plan labels belong.",
+    "reasoning": "a finding \u2014 \u00a77's stated premise (a declared window of 1,016,576 set several times above the serve) is contradicted by the live configuration and by this plan's own comment record, and the contradiction is the same \"a log describes its own moment\" misreading \u00a75b corrects.",
+    "single_goal": "a finding \u2014 \u00a77 carries two deliverables: re-deriving the lane's declared window (which \u00a77 assigns to another repository's refresher, \"not this project's to perform\") and making reckon refuse on the disagreement.",
+    "wiring": "pass \u2014 the plan declares `plan-informs` to `a-window-paces-the-lane` and `advise-the-lane-never-force-it`, no `plan-depends-on` is needed because \u00a77's prerequisite work sits in another repository, and the one open followup (`f-wisnaf-mig-a-lane-can-say-where-it-`) names `/reckon-build \u2026 \u00a77`, matching `s7`'s `data-status=\"implementable\"`."
+  },
+  "section_digests": {
+    "_document": "13d49d3f3b97b6882a2e18c6f82bae69aa810bf34c5493b3a7a616eff6ed830f",
+    "coordinator-share": "797423eda4e46c2903df9330c5d93c6bf1037060728a5d3e789a853ed6db03cd",
+    "out-of-scope": "05ba96e49194715d9c8e53a81fb28517aee38503e873746a63774a153a04c75e",
+    "parse-strictly": "421857d4647b797d3f6c1d1de38d1d6e6cb10cac9a3984e7612504fa57a787ec",
+    "pin-the-denominator": "6005af9e1227b4dbcf79a92298608537dad44316e76f6d6df7785291e7da6f5a",
+    "read-before-you-dispatch": "6d6012297c098ddc565de2b4cab093575b48c7d4860b7ca690994d5be1e03a0b",
+    "s7": "fca161d6b6224497656a82fe487c5396e2edc5a387f8639cb9eb88cfd15c2b79",
+    "the-surface": "ab50f37c455115c9d169f6b6ec630410942afdde9a65d0b2a1840557baf09a02",
+    "what-is-wrong": "82c746b6ca6c6f7644e8d2152e67552dc8e1a39509b713920f79e76a9f0f2f93",
+    "what-prose-was-hiding": "1dc31ffa030821dff2a7248dab148d9e094032c26d6ef11c2d1e4f04480adf0a",
+    "where-the-probe-lives": "4044c9c212c82bde7d848e297bf006785c08d2ef765b288a476828fccacb6e5a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T05:34:06.683897+00:00"
+}

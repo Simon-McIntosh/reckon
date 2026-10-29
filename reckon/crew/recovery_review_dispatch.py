@@ -271,8 +271,9 @@ def _repair_round_token(round_id: str) -> str:
 # dispatch — so a refusal, an awaiting-lane hold, a decline-only round and an
 # exhausted retry each leave it unchanged and the round in hand free to be
 # attempted again. The record is run-wide and durable: a new head reviewed after
-# the first repair is a second round, and once one round has opened the run is
-# handed back to its coordinator rather than repaired again. Held beside the
+# the first repair is a second round, and a run is repaired again until its
+# round budget is spent, at which point it is escalated to its coordinator.
+# Held beside the
 # per-round field because the two answer different questions: the dispatch field
 # says what happened to the head in hand, this says whether any round ever
 # opened and how far it got.
@@ -282,6 +283,19 @@ REPAIR_ROUNDS_FIELD = "repair_rounds"
 # round record; every other outcome is a refusal or a hold on the round already
 # in hand.
 REPAIR_ROUND_OPENING_STATUSES = frozenset({"resumed", "dispatched"})
+
+# How many automatic repair rounds one run may open before the reflex stops and
+# escalates the run to its coordinator. A round is one review-and-repair turn:
+# the first review's repair is round one, a later head reviewed after that
+# repair is round two, and so on. A run still carrying a blocking finding after
+# the third round raises one escalation and opens no further round.
+AUTOMATIC_REPAIR_ROUND_LIMIT = 3
+
+# The pointer dispatch status the reflex records once the automatic repair
+# budget is spent. Its presence is what names the scale escalation as one row
+# rather than one per sweep: a sweep that reads it for the same round records
+# nothing further.
+REPAIR_ESCALATED_STATUS = "escalated"
 
 # The dispatch role whose findings a repair acts on, and the node-id prefix a
 # composed repair carries. A review of a review, an investigate run and a test
@@ -407,32 +421,54 @@ def _review_pointer_rubric(
     The composed review fields select the record paths, including the rubric
     suffix and reviewed head. Reading those declared paths identifies the
     rubric a live review will write without treating its node id as a type tag.
+
+    The expected paths are computed from the reviewed run's directory, because
+    that is where the composer declares them: a run review writes its record
+    inside ``<the reviewed run>/review-records/`` so its fence reaches no other
+    run's record. Computing them from the reviewer's own directory — where the
+    review's own run files live — names a path no dispatch composes, so a live
+    review never matched and every review read as missing.
+
+    A review of a run whose head resolves must declare the head-keyed path the
+    composer grants for that head, because that is where the dispatch it was
+    launched with sends its record: a declaration naming an earlier revision is
+    not this run's review at the head it carries now, and the legacy headless
+    spelling does not stand for it either. Only when the run's head cannot be
+    resolved does the headless declaration carry the match, because then there
+    is no head to name and no declaration to tell apart from one at any
+    revision.
+
+    The head-keyed requirement is also what separates a review from a run that
+    merely claims part of the record scope. A coordinator delegates a write
+    claim over a run's review record to another run to force a refusal, and
+    that pointer declares the headless path alone: no dispatch of this run
+    composed it, so it must not answer as the review and silence the dispatch
+    whose refusal is the point.
     """
-    reviewer_run_id = str(pointer.get("run_id") or "")
     node = pointer.get("node") or {}
-    declared_paths = {str(path) for path in node.get("write_paths") or ()}
-    if not reviewer_run_id or not declared_paths:
+    declared = [Path(str(path)) for path in node.get("write_paths") or ()]
+    if not reviewed_run_id or not declared:
         return None
-    review_directory = runs.run_dir(reviewer_run_id)
+    reviewed_directory = review_module.run_review_record_directory(
+        runs.run_dir(reviewed_run_id)
+    )
+    inside = {path.name for path in declared if path.parent == reviewed_directory}
+    if not inside:
+        return None
     for candidate in (review_module.FIGURE_REVIEW_RUBRIC, None):
-        expected = set(
-            review_module.run_review_record_paths(
-                review_directory,
+        composed = [
+            Path(path).name
+            for path in review_module.run_review_record_paths(
+                runs.run_dir(reviewed_run_id),
                 reviewed_run_id,
                 reviewed_head_sha=reviewed_head,
                 rubric=candidate,
             )
-        )
-        if declared_paths.intersection(expected):
+        ]
+        # The last name composed is the head-keyed one when a head resolved, and
+        # the headless one when it did not.
+        if composed[-1] in inside:
             return candidate or ""
-        if reviewed_head:
-            legacy = set(
-                review_module.run_review_record_paths(
-                    review_directory, reviewed_run_id, rubric=candidate
-                )
-            )
-            if declared_paths.intersection(legacy):
-                return candidate or ""
     return None
 
 
@@ -504,7 +540,11 @@ def _review_in_flight(
     The dispatch record the reflex wrote is read first, because it is the
     precise answer and it carries the head the attempt composed for; a review
     launched by a coordinator by hand carries no record, so the live pointers
-    are swept for one whose granted record paths name the same pair. A recorded
+    are swept for one whose granted record paths name the same pair — and that
+    sweep is not narrowed to runs that look like reviewers by their role or
+    minted id, because a hand dispatch chooses both freely. The granted path is
+    what the composer wrote for this run, so it names this run's review
+    whatever the pointer calls itself. A recorded
     run whose pointer is gone is not in flight — the review died — and the
     reflex is free to dispatch again rather than wait on a run that no longer
     exists: a promoted or abandoned review leaves no live pointer, and a sweep
@@ -541,13 +581,13 @@ def _review_in_flight(
     run_id = str(record.get("run_id") or "")
     candidates = list_live(project=project) if pointers is None else pointers
     for pointer in candidates:
-        if not _is_review_run(pointer):
-            continue
         pointer_rubric = _review_pointer_rubric(pointer, run_id, head)
         if pointer_rubric is not None:
             if pointer_rubric != (rubric or ""):
                 continue
             return str(pointer.get("run_id") or "")
+        if not _is_review_run(pointer):
+            continue
         if rubric == review_module.FIGURE_REVIEW_RUBRIC:
             continue
         reviewed, reviewed_head = _review_subject(pointer, project)
@@ -1262,9 +1302,14 @@ def review_settle_seconds_remaining(record: Mapping[str, Any]) -> float:
     revision the run no longer carries, so the reflex waits the settle window
     out from the run's own resume stamp before composing. A run with no resume
     stamp is settled already.
+
+    The stamp read is the newest resume of either kind, because a resume a
+    coordinator drove with advice moves the head exactly as an automatic one
+    does and records its own instant: reading the sweep's stamp alone would
+    date such a run from whatever automatic resume it last had, and compose a
+    review of the head the advice door was called to move past.
     """
-    resume = record.get("auto_resume")
-    resumed_at = parse_utc(resume.get("at")) if isinstance(resume, Mapping) else None
+    resumed_at = _latest_resume_at(record)
     if resumed_at is None:
         return 0.0
     elapsed = (datetime.now(tz=UTC) - resumed_at).total_seconds()
@@ -2576,6 +2621,69 @@ def _composed_review_options(
     return options
 
 
+WRITE_GRANTS_HEADING = "Reviewed run's write scope (every grant and its source)"
+
+
+def _write_grants_block(record: Mapping[str, Any]) -> str:
+    """The reviewed run's write scope with each path's grant source, or "".
+
+    A reviewer judges scope discipline against the manifest's orientation
+    paths, which are the ones the dispatch wrote. A path the run's own worker
+    widened to is not in that record, so without this block a self-grant reads
+    to the review as an out-of-scope change. Listing every declared path beside
+    the source of its grant lets the review count a self-grant as inside the
+    scope it was given.
+    """
+    from reckon.crew.dispatch_claims import declared_write_grants
+
+    grants = declared_write_grants(record)
+    if not grants:
+        return ""
+    lines = [WRITE_GRANTS_HEADING + ":"]
+    for grant in grants:
+        reason = f" — {grant['reason']}" if grant["reason"] else ""
+        lines.append(f"  {grant['path']} (source: {grant['source']}){reason}")
+    if any(grant["source"] == "worker" for grant in grants):
+        lines.append(
+            "A path whose source is worker is a self-grant: the run's own worker "
+            "widened its claim to it and recorded why, so a change there is "
+            "inside the run's declared scope."
+        )
+    return "\n".join(lines)
+
+
+def _list_write_grants_in_brief(
+    record: Mapping[str, Any], fields: Mapping[str, Any]
+) -> None:
+    """Append the grant list to a run review's composed brief, once.
+
+    The fields composer writes the brief before the dispatch decides whether it
+    launches, so the grant list is added on that file here rather than inside
+    the composition. A brief already carrying the heading is left alone, so the
+    same dispatch composed twice does not grow the text.
+    """
+    block = _write_grants_block(record)
+    if not block:
+        return
+    brief = str(fields.get("brief") or "").strip()
+    if not brief:
+        return
+    path = Path(brief)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return
+    if WRITE_GRANTS_HEADING in text:
+        return
+    text = text.rstrip("\n") + "\n\n" + block + "\n"
+    try:
+        path.write_text(text, encoding="utf-8")
+    except OSError:
+        return
+    if isinstance(fields, dict):
+        fields["brief_text"] = text
+
+
 def _dispatch_composed_review(
     record: Mapping[str, Any],
     fields: Mapping[str, Any],
@@ -2589,6 +2697,8 @@ def _dispatch_composed_review(
     """Launch either review subject from the shared fields and dispatch path."""
     run_id = str(record.get("run_id") or "")
     dispatch_subject = record if record.get("subject") == "plan" else run_id
+    if record.get("subject") != "plan":
+        _list_write_grants_in_brief(record, fields)
     rubric = str(fields.get("rubric") or "")
     profile = rubric if rubric == review_module.FIGURE_REVIEW_RUBRIC else None
 

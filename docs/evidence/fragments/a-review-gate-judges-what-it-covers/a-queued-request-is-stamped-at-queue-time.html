@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-gate-judges-what-it-covers">
+  <meta name="plan-title" content="A queued request is stamped at queue time">
+  <meta name="plan-summary" content="runs.queue_dispatch records the section and document digests a queued request was dispatched against, so admission judges the request by its own contract instead of re-running the dispatch gate on every pass.">
+  <meta name="plan-evidence-for" content="reckon:a-review-gate-judges-what-it-covers">
+  <meta name="plan-verifies" content="reckon:a-review-gate-judges-what-it-covers#s10">
+  <meta name="plan-recorded-at" content="2026-10-28">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,reckon-tooling,review,queue">
+  <title>A queued request is stamped at queue time — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="a-queued-request-is-stamped-at-queue-time-note" class="r-note" data-node="a-queued-request-is-stamped-at-queue-time" data-reckon="landed" data-when="2026-10-28">
+  <h2 id="a-queued-request-is-stamped-at-queue-time-head">A queued request is stamped at queue time</h2>
+  <p id="a-queued-request-is-stamped-at-queue-time-rule">The admission-side check landed first and compared a request's recorded contract against the plan, but no production writer recorded that contract: <code>queue_admission.record_review_contract</code> was called only by the batch entry <code>queue_admission.queue_requests</code>, which no production path calls. Every pointer written by <code>runs.queue_dispatch</code> therefore carried no contract and fell back to re-running the whole dispatch gate on every admission pass, which is the behaviour the section narrows.</p>
+  <p id="a-queued-request-is-stamped-at-queue-time-mechanism"><code>queue_dispatch</code> in <code>reckon/crew/runs.py</code> now calls <code>record_review_contract(record)</code> once the queued pointer is written, in both the first-write and the re-queue branches. The stamp is taken after that write and outside the per-run pointer lock, because <code>record_review_contract</code> takes the same lock itself; the digest of the section's prose and of the document text the request reads (the summary, decisions and gates) is recorded from the plan as the dispatch left it. A pointer that cannot be stamped keeps no contract and is judged by the dispatch gate, which is what it was judged by before, so the write fails closed.</p>
+  <p id="a-queued-request-is-stamped-at-queue-time-gate">Node gate on <code>tests/test_a_queued_request_is_stamped_at_queue_time.py</code>: head 6 passed, <code>EXIT=0</code>. The file queues a request through the production path (<code>reckon.crew.dispatch.queue_requests</code>), asserts the recorded section and document digests equal the queue-time plan and survive a later edit, shows an edit to another section and a change to its own section's waits leave the request admissible, and shows a decision change and an own-section text change each hold the request until a stored review covers the pointer's own recorded text, with no further dispatch. Each arm also compares the queued request's verdict with a fresh dispatch of the same section.</p>
+  <p id="a-queued-request-is-stamped-at-queue-time-mutation">Negative control, the declared mutation — remove the <code>record_review_contract</code> call from <code>runs.queue_dispatch</code>: 4 failed, 2 passed, <code>EXIT=1</code>. The failures are the two recording arms and the two narrowed-admission arms, which assert that admission answered from the request's own contract rather than by falling back to <code>_dispatch_gate_owed</code>. All four pass at the head arm.</p>
+  <p id="a-queued-request-is-stamped-at-queue-time-importers">The 234 test files that import <code>reckon.crew.runs</code>, run at the head revision with <code>-n 8</code>: 4 failed, 1728 passed, <code>EXIT=1</code>. The same four ids run at base revision 816e631ad4 give 4 failed, <code>EXIT=1</code>, so the change adds no failure against the base — <code>test_no_removal_site_still_deletes_with_git_worktree_remove</code>, <code>test_the_primary_arm_cannot_read_the_shadows_session_directory</code>, <code>test_no_removal_path_decides_liveness_from_the_phase_gated_claim</code> and <code>test_every_registered_crew_verb_is_documented_or_exempt</code>.</p>
+  <p id="a-queued-request-is-stamped-at-queue-time-logs">Logs are in the run directory: <code>logs/head-arm.log</code>, <code>logs/negative-control.log</code>, <code>logs/importer-population-head.log</code> and <code>logs/importer-population-base.log</code>.</p>
+</article>
+</body>
+</html>

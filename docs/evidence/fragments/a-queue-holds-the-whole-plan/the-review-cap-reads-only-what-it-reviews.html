@@ -1,0 +1,82 @@
+<section id="the-review-cap-reads-only-what-it-reviews-landing">
+  <h2>The review cap reads only what the composition reads</h2>
+
+  <p><strong>What changed.</strong> A composed plan review reads the units the
+  plan is still owed a review of, but the cap that refuses a third review of one
+  edit burst counted every unit digest in the document. A section no edit had
+  touched therefore held the composition at its limit forever, and the plan
+  could not be reviewed again. The cap also counted a design review against the
+  content budget, so one design review beside one content review on the same
+  prose read as a full burst and refused the second content review.
+
+  <p><strong>The defect, reproduced on the live store.</strong>
+  <code>compose_burst_refusal("reckon", "a-review-gate-judges-what-it-covers")</code>
+  at the base revision
+  <code>0a44066307d7</code> returned
+  <code>unit s1 of reckon:a-review-gate-judges-what-it-covers has had 2 reviews
+  for this edit, and a third is refused; carry or decline its open findings:
+  none</code>. s1 carried exactly one content review and one design review at
+  one revision, both covering the section's present prose, and
+  <code>review_coverage</code> reported the plan as covering s1 — so the
+  refusal named two reviews of a unit the composition would not read, and named
+  no open finding for the author to answer.
+
+  <p><strong>The unit set.</strong> <code>compose_burst_refusal</code> in
+  <code>reckon/crew/plan_review.py</code> now takes its
+  unit set from <code>review_coverage</code>'s uncovered set — exactly what the
+  composition will read — and returns <code>None</code> when nothing is
+  uncovered. A covered section's stored reviews are never consulted, so a
+  long-lived plan is not refused for the reviews its neighbours have already
+  had.
+
+  <p><strong>The rubric.</strong> <code>counts_for_rubric</code> decides whether
+  a stored review spends the budget of the rubric being composed, and both
+  <code>reviews_for_unit_burst</code> and <code>review_burst_refusal</code> take
+  a <code>rubric</code> argument (defaulting to the content rubric, which is
+  what a composition composes). A record naming no rubric counts with the
+  content rubric, so an older record is neither dropped nor able to refuse a
+  design composition. A design review is a different read of the same prose and
+  never spends the content budget; a content review never spends the design
+  budget.
+
+  <p><strong>The cap still bites where it should.</strong> An incomplete review
+  covers nothing, so a unit whose two reviews each left out an item of their own
+  rubric is still uncovered, is still read by the composition, and its third
+  review is still refused naming the open findings to carry or decline. A fresh
+  edit is a new digest and starts the count again.
+
+  <p><strong>Measure.</strong> The gate command
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_carried_finding_reaches_the_node.py</code> reports
+  <code>11 passed</code>, <code>EXIT=0</code> at the head, against
+  <code>9 passed</code>, <code>EXIT=0</code> at the base revision. The caps are
+  shown load-bearing by mutation rather than by passing alone: with the declared
+  negative control applied — counting every unit and every rubric again — the
+  design-plus-content arm and the rubric arm both fail
+  (<code>2 failed, 9 passed</code>, <code>EXIT=1</code>), and no arm the head
+  fails appears in it.
+
+  <p><strong>Live store.</strong> At the head, <code>compose_burst_refusal</code>
+  returns <code>None</code> for <code>reckon:a-review-gate-judges-what-it-covers</code>,
+  <code>reckon:a-queue-holds-the-whole-plan</code> and
+  <code>nova:kernel-compile-barrier</code>; the first of the three is the plan
+  the base revision refused. The two that were already unrefused are the
+  positive control: the change does not buy a quiet answer by refusing nothing
+  it should refuse.
+
+  <p><strong>Regression.</strong> The test files importing
+  <code>reckon.crew.plan_review</code> (78 files) report
+  <code>1 failed, 720 passed</code> at the head; the one failure,
+  <code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>,
+  asserts that the build skill names <code>reckon crew queue hold</code>, which
+  is an authoring gap in <code>skills/reckon-build/SKILL.md</code> unrelated to
+  this change and present at the base revision. No failure is added by this
+  node.
+
+  <p><strong>Left alone.</strong> The composer's wrapper in
+  <code>reckon/crew_run_commands.py</code> still calls
+  <code>compose_burst_refusal</code> without naming a rubric, and its docstring
+  still describes a composition as a read of every unit. Threading
+  <code>--rubric</code> through that wrapper is outside this node's write scope
+  and is recorded in its manifest as outside-scope work.
+</section>

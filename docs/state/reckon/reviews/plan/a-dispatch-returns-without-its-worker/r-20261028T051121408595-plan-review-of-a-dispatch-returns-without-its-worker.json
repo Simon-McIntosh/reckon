@@ -1,0 +1,113 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-28T05:18:07.226Z",
+  "dispatched_at": "2026-10-28T05:13:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1024",
+      "id": "anchors_resolve-1",
+      "reason": "a node dispatched on \u00a718 re-implements landed work, and its declared negative control (\"restore the second resolver\") would re-add the resolver that commit removed, turning a completed section into a regression.",
+      "text": "\u00a718's done-when and its opening paragraph are written against `dispatch._fleet_record_path` (`reckon/crew/dispatch.py`, about line 9614), which no longer exists: commit d9b3b1a714 (2026-10-27, \"fix(crew): read the fleet record where its owner publishes it\") deleted the duplicate resolver and its dispatch re-export, made `_read_fleet_record` ask `fleet_supervisor.state_directory()`, and added `tests/test_dispatch_reads_the_fleet_record_through_its_owner.py` \u2014 which is exactly \u00a718's done-when \u2014 yet `plan-section-declarations` still reads `s18: implementable` and the plan records neither the commit nor the landing",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:674",
+      "id": "anchors_resolve-2",
+      "reason": "\u00a79 is declared `done` on a gate a later reader cannot open, so an auditor resolving the section's evidence finds a miss and cannot tell a landed section from a lost one.",
+      "text": "\u00a79's done-when names `tests/test_discard_removes_an_empty_worktree.py`, which does not exist; the plan's own currency audit (line 1283) says the file was never created and the work landed as `tests/test_discard_releases_a_clean_worktree.py` (present, 4 passed)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1412",
+      "id": "anchors_resolve-3",
+      "reason": "the section's whole instruction is \"correct it in the owner rather than beside it\", and the owner it names is the wrong file, so the node opens a module that cannot contain the fix.",
+      "text": "\u00a716's scope correction cites `_stranded_launch` (about line 6600/6613), `_standing_plan_review` (about 2283), `_discard_stranded_review` (about 1329) and `dispatch_review_for_run` (about 2389) as residing in `reckon/crew/recovery.py`; that module no longer holds them \u2014 `_stranded_launch` is in `reckon/crew/recovery_liveness.py` and the other three in `reckon/crew/recovery_review_dispatch.py`",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1019",
+      "id": "anchors_resolve-4",
+      "reason": "the node is sent to extract code from a 12,638-line file that no longer exists in that shape; it would have to re-derive the starting point before the refactor, and the split may already satisfy part of the done-when.",
+      "text": "\u00a717 is written against a file layout that has since changed: it states `dispatch.py` is 12,638 lines and that `_supervisor_command` and its seven private helpers are surrounded by it, but `dispatch.py` is now 3,686 lines, `_supervisor_command` is defined in `reckon/crew/dispatch_peer.py:454`, and `_start_supervisor`, `_write_boundary_tree_snapshot`, `_spawn_through_fleet` and `_confirm_supervisor_survived` are in `reckon/crew/dispatch_launch.py` (3,792 lines)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1016",
+      "id": "reasoning-1",
+      "reason": "a node following the section hunts a pre-admission pointer write that the plan's own evidence says is not the mechanism, and may add the second release path the scope comment forbids instead of routing the plan branch through `_stranded_launch`.",
+      "text": "\u00a716's done-when asks the node to name \"the step that writes the plan-review pointer before admission is decided\", fixing a pre-admission write; the plan's own correction two comments later (c-20261005-s16-correction, line 1412) states the opposite mechanism: the pointer write is not the fault, `dispatch_review_for_run`'s plan branch and `_standing_plan_review` return before the strand check that the non-plan branch reaches, so an existing release never fires",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:729",
+      "id": "single_goal-1",
+      "reason": "no single node can be closed on it, which is why the section has accreted three landed subsections (routing, batch step, headless tabs) while its declaration still reads `implementable` even though c-20261002T1645 reports the on-node proof passed and \"\u00a710 can be declared done\".",
+      "text": "\u00a710's done-when bundles four deliverables under one verdict: a `spawn` verb in another repository's `bin/fleet-supervisor` (which the section itself says \"needs the user's go-ahead in the brief of whichever session makes it\"), five reckon behaviours (FIFO routing, no-record fork, unacknowledged refusal, producer start, sweep and resumption via the supervisor), and an on-node `scancel`-of-the-step proof assigned to imas-ambix-67",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:75",
+      "id": "anchors_resolve-5",
+      "reason": "s2 is closed and \u00a73's supersede bullet already names the tree snapshot as the holder, so no node is directed by \u00a72's line; the stale anchor only costs a reader who returns to \u00a72 for the lifetime facts.",
+      "text": "\u00a72's measured paragraph attributes the time a dispatch spends to `reckon/crew/routing.py:880` \"where it blocks on worktree creation\", but that line is commit classification (`classify`'s dirty/integrated branch) and `_repository_tree_snapshot` is defined at `routing.py:732`; the same paragraph's unqualified \"No code path holds the dispatch process open after the worker launches\" is contradicted by \u00a73 and by comment c-20260923T0955, which measured live dispatches held minutes in the post-launch tree snapshot",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1020",
+      "id": "done_when-1",
+      "reason": "without a control the node cannot show that its new module boundary is load-bearing, so the section can close on a move that changes no behaviour and proves nothing.",
+      "text": "\u00a717 declares no negative control; its only measure is \"the population of test files importing `reckon.crew.dispatch` adds no failure against base\", a delta that a refactor leaving the supervisor behaviour unreachable would still satisfy",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "109427ee3888d6140ac9df35ecd431a52668e997",
+  "plan_fingerprint": "74462bad5edbfd1204d80c65dc2b63695eba020b6040a099040c2c789c01c8e5",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 160,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261028T051121408595-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "eafe2152e61a745532274ae0d9441e4a77056841",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 three of the four sections still to be built cite a symbol, module or line that no longer exists, and \u00a79's done-when names a test file that was never created.",
+    "done_when": "a finding \u2014 \u00a717's only measure is a population no-added-failure delta against base, with no negative control at all, so its gate cannot show the guard fires.",
+    "evidence_paths": "pass \u2014 every landed section cites a durable path (`docs/research/data/dispatch-lifetime.json`, `docs/evidence/archive/a-dispatch-returns-without-its-worker-landed.html#s2/#s5/#s7/#s10`, figures under `docs/figures/a-dispatch-returns-without-its-worker/`), and all four anchors resolve; the open sections name no path, and the archive convention those landed sections establish is where their evidence would go.",
+    "naming": "pass \u2014 no symbol, file or comment the plan instructs carries a plan label, stage name, ticket number or version tag; plan-name references (`worker-death-is-recorded`, `a-follower-keeps-your-work-in-view`) are prose cross-references, not code names.",
+    "reasoning": "a finding \u2014 \u00a716's section text states a mechanism (a pointer written before admission is decided) that the plan's own later correction refutes (the release exists; the plan branch returns before it), and \u00a710's declared status contradicts its own recorded evidence.",
+    "single_goal": "a finding \u2014 \u00a710's done-when spans a dotfiles change, five reckon launch behaviours and an on-node `scancel` proof, so one verdict cannot close it.",
+    "wiring": "pass \u2014 the plan declares `plan-informs: a-follower-outlives-its-monitor` and no `plan-depends-on`; every dependency its open sections need is internal to this plan, so nothing it needs is missing (the \u00a79 work that landed under `a-crew-process-ends-with-its-owner` is history, recorded in the currency-audit comment at line 1283, and the \u00a710 on-node half is a handoff to imas-ambix-67, recorded at line 1259)."
+  },
+  "section_digests": {
+    "_document": "96d726d00d1ed65f8441cc9deb8e585b961f1a58b1c4f0ffbedc31a0e00e600e",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T07:10:59.079812+00:00"
+}

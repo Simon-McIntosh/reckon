@@ -594,19 +594,12 @@ def _population_has_live_work(project: str, *, session: str | None) -> bool:
     rather than on a producer, and the dispatch guard names an absent producer
     with its remedy to the session that is trying to dispatch.
     """
-    from reckon.crew import node as node_module
     from reckon.crew import runs as runs_module
+    from reckon.crew import station_subscriber
 
-    for pointer in runs_module._list_live_records(project=project):
-        owner = str(pointer.get("session") or "")
-        # A pointer with no recorded owner stays in the counted set, matching
-        # the dispatch fence: absence cannot prove it belongs to a peer.
-        if session is not None and owner and owner != session:
-            continue
-        if str(pointer.get("phase") or "") in node_module._TERMINAL_RUN_PHASES:
-            continue
-        return True
-    return False
+    return station_subscriber.population_has_live_work(
+        runs_module._list_live_records(project=project), session
+    )
 
 
 
@@ -1491,6 +1484,22 @@ def _follow_gap_rows(
     return rows
 
 
+class _ArmingStop:
+    """The stop signal a subscriber's poll loop reads, from the arming's own.
+
+    ``_follow_watch_lines`` takes ``stop`` as anything with ``is_set``, and a
+    caller that passes none is armed to run until something else ends it. The
+    subscriber's loop reads the same question through this, so one stop
+    governs both the loop a pane runs and the checks inside it.
+    """
+
+    def __init__(self, stopped: Callable[[], bool]) -> None:
+        self._stopped = stopped
+
+    def is_set(self) -> bool:
+        return bool(self._stopped())
+
+
 def _follow_watch_lines(
     project: str,
     *,
@@ -1609,6 +1618,17 @@ def _follow_watch_lines(
     settle_populations = (session, *sorted(observed_sessions - {None}))
 
     def _is_live(name: str | None) -> bool:
+        if subscriber is not None:
+            # The station writes each project's has-live-work reading on its
+            # tick, so a pane that reads the station judges its populations
+            # from that reading rather than by listing the live pointer
+            # directory once per population per sample. A reading the station
+            # has stopped refreshing is no answer, not "no work": settling on
+            # it would end a pane over live work behind a stalled station, so
+            # that case falls back to the listing.
+            verdict = subscriber.live_work(name)
+            if verdict is not None:
+                return verdict
         return _population_has_live_work(project, session=name)
 
     # Resolved once per arming: an explicit interval from a caller that drives
@@ -1621,9 +1641,10 @@ def _follow_watch_lines(
     def _check_settle() -> None:
         """End this arming when the work this pane carries has drained.
 
-        The judgement is ``_population_has_live_work``'s, not one derived here:
-        the same call a producer stop is reported against. It is sampled on a
-        cadence because a settle costs a live-pointer scan.
+        The judgement is the fleet's own, not one derived here: a pane reading
+        a station takes the reading the station wrote for each population, and
+        a pane reading a producer lists the live pointer directory as it always
+        did. It is sampled on a cadence because each of those costs a read.
 
         One empty reading does not settle the pane. An admission handover
         leaves the session with no unfinished run for as long as the dispatch
@@ -2116,9 +2137,16 @@ def _follow_watch_lines(
         )
         _echo_follow_line(line)
 
-    # Set once the pane has been told its stored history is being restored, so
-    # the resume event is emitted on the first pass alone.
-    station_stale_reported = False
+    def _subscriber_pass() -> bool:
+        """One pass's own work, handed to the subscriber's poll loop.
+
+        The loop owns the read, the paint and the wait; this owns the checks
+        that end an arming. The recovery sweep is deliberately absent: it runs
+        once for every session on the node, in the station, so a pane that
+        swept beside the station would pay the same fleet reads once per pane.
+        """
+        _tick()
+        return not (lifetime_elapsed or consumer_gone or settled)
 
     while not _stopped() and not lifetime_elapsed and not consumer_gone and not settled:
         if subscriber is not None:
@@ -2126,7 +2154,9 @@ def _follow_watch_lines(
             # rows after its stored cursor, paints them with the row path, and
             # writes its place back. Nothing on this pass opens a file under
             # the crew home except the two leases the producer and the
-            # delivery registration still need until they are retired.
+            # delivery registration still need until they are retired. The
+            # poll loop is the subscriber's own, driven here for this arming,
+            # so a pane and a test read rows by one path rather than two.
             if first_attach:
                 first_attach = False
                 resume_state = {}
@@ -2137,29 +2167,14 @@ def _follow_watch_lines(
                         "session": session or "",
                         "reported": {},
                     }
-            # Painted before the sweep is paid for: the rows are what the
-            # reader is waiting on and the sweep is the long call.
-            for event in subscriber.poll():
+            for event in subscriber.wake(
+                stop=_ArmingStop(_stopped),
+                interval=poll_interval,
+                sleeper=sleeper,
+                each_pass=_subscriber_pass,
+            ):
                 yield event
-            for event in subscriber.flush():
-                yield event
-            if not station_stale_reported:
-                line = subscriber.stale_line()
-                if line is not None:
-                    station_stale_reported = True
-                    yield {
-                        "event": STATION_STALE_EVENT,
-                        "project": project,
-                        "session": session or "",
-                        "run_id": None,
-                        "line": line,
-                    }
-            _tick()
-            if lifetime_elapsed or consumer_gone or settled:
-                break
-            _sweep_on_cadence()
-            sleeper(poll_interval)
-            continue
+            break
         if not runs.producer_live(project):
             identity = runs.watch_producer_identity(project)
             reason = _logged_producer_stop(project)

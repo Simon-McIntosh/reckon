@@ -79,6 +79,11 @@ class Candidate:
     # the runway that pool buys. Absent on a lane with no metered account, which
     # has no window to burn.
     burn: dict[str, Any] | None = None
+    # Why an offered candidate was admitted outside its lane's ordinary terms.
+    # It stays out of ``reasons``, which the picker reads as exclusions, so a
+    # lane a policy reserves and a lane offered by an exception read alike in
+    # ``reasons`` -- empty -- and the note is what distinguishes them.
+    note: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

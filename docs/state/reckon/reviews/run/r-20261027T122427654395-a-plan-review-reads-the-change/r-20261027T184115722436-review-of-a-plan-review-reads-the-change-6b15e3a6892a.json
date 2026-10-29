@@ -1,0 +1,35 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_scores": [
+    "CALL_SITES: reckon/crew/queue_admission.py:2325, reckon/crew/dispatch_plan.py:854"
+  ],
+  "completed_at": "2026-10-27T18:59:30.793Z",
+  "dispatched_at": "2026-10-27T18:43:51Z",
+  "findings": [],
+  "item_verdicts": {
+    "diff": "VERDICT diff: two commits read against c5b465fe2 \u2014 bbfcfbd57 drops the scope guard from the unanswered-finding refusal at reckon/crew/routing.py:2646 and rewrites the comment above it, and 6b15e3a68 appends a paragraph to docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html; 16 insertions and 3 deletions, no new definition in either file.",
+    "done_when": "VERDICT done_when: \u00a719's done_when names tests/test_a_plan_review_reads_the_change.py; the gained repair's measure is the six named plan-review regression tests, 6 failed EXIT=1 at c5b465fe2 (repair2-baseline-six.log) and 6 passed EXIT=0 at bbfcfbd5 (repair2-six.log), and the narrowing their red arm exercises is the one routing.py:2646 guards.",
+    "goal": "VERDICT goal: the node goal is \u00a719 of a-queue-holds-the-whole-plan \u2014 a review reads the change and the gate holds only what changed; the commits gained since the last review repair the narrowed gate so an unanswered finding still refuses, at reckon/crew/routing.py:2646 (`if unanswered and scope is None:` became `if unanswered:`).",
+    "manifest": "VERDICT manifest: read; it records baseline 6 failed EXIT=1 at c5b465fe2 and after 6 passed EXIT=0 at bbfcfbd5, importer 132 passed, adjacent 95 passed and a zero ruff delta, and I reproduced the base arm for the named gate test (DID NOT RAISE PlanReviewMissingError at c5b465fe2) and saw it pass at head.",
+    "write_paths": "VERDICT write_paths: the run declared reckon/crew/plan_review.py, reckon/crew/routing.py, tests/test_a_plan_review_reads_the_change.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html; git diff --stat c5b465fe2..6b15e3a6 lists only routing.py and the evidence fragment, both inside that set."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \u00a719 of a-queue-holds-the-whole-plan \u2014 a review reads the change and the gate holds only what changed; the commits gained since the last review repair the narrowed gate so an unanswered finding still refuses, at reckon/crew/routing.py:2646 (`if unanswered and scope is None:` became `if unanswered:`).\nVERDICT done_when: \u00a719's done_when names tests/test_a_plan_review_reads_the_change.py; the gained repair's measure is the six named plan-review regression tests, 6 failed EXIT=1 at c5b465fe2 (repair2-baseline-six.log) and 6 passed EXIT=0 at bbfcfbd5 (repair2-six.log), and the narrowing their red arm exercises is the one routing.py:2646 guards.\nVERDICT write_paths: the run declared reckon/crew/plan_review.py, reckon/crew/routing.py, tests/test_a_plan_review_reads_the_change.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html; git diff --stat c5b465fe2..6b15e3a6 lists only routing.py and the evidence fragment, both inside that set.\nVERDICT manifest: read; it records baseline 6 failed EXIT=1 at c5b465fe2 and after 6 passed EXIT=0 at bbfcfbd5, importer 132 passed, adjacent 95 passed and a zero ruff delta, and I reproduced the base arm for the named gate test (DID NOT RAISE PlanReviewMissingError at c5b465fe2) and saw it pass at head.\nVERDICT diff: two commits read against c5b465fe2 \u2014 bbfcfbd57 drops the scope guard from the unanswered-finding refusal at reckon/crew/routing.py:2646 and rewrites the comment above it, and 6b15e3a68 appends a paragraph to docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html; 16 insertions and 3 deletions, no new definition in either file.\nCALL_SITES: reckon/crew/queue_admission.py:2325, reckon/crew/dispatch_plan.py:854\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:2646 now refuses any hot review's unanswered finding whatever the scope, which is the behaviour the six named tests assert and the property the narrowing had suppressed.\nSCORE evidence: 19\nJUSTIFICATION evidence: repair2-baseline-six.log (6 failed, EXIT=1 at c5b465fe2) and repair2-six.log (6 passed, EXIT=0 at bbfcfbd5) are real receipts, its five DID NOT RAISE lines match the evidence fragment's claim, and I re-ran tests/test_plan_review_gate.py::test_a_finding_left_unanswered_refuses_the_build_by_name at a c5b465fe2 tree (failed, DID NOT RAISE) and at head (passed).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c5b465fe2..6b15e3a6 touches only reckon/crew/routing.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-plan-review-reads-the-change.html, both inside the run's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: the six regression tests at tests/test_plan_review_gate.py:303 and its five siblings redden when the guard is reinstated (nc-unanswered.log, routing.py at c5b465fe2, 6 failed EXIT=1) and pass at head; the change adds no test of its own and relies on these pre-existing ones.\nSCORE fit: 18\nJUSTIFICATION fit: the edit at reckon/crew/routing.py:2643 updates the comment to state the mechanism the condition now encodes, keeps the module's idiom, and adds no plan label, ticket or version to any name or comment.\nSCORE reuse: 20\nJUSTIFICATION reuse: neither commit adds a definition \u2014 the diff is one condition at reckon/crew/routing.py:2646 and one prose paragraph in the evidence fragment \u2014 so no capability is forked.\n",
+  "review_run_id": "r-20261027T184115722436-review-of-a-plan-review-reads-the-change-6b15e3a6892a",
+  "reviewed_base_sha": "c5b465fe2de5b7e6a3384c238582513231da4f82",
+  "reviewed_head_sha": "6b15e3a6892a577e1a3de02a8687a4d803ce6137",
+  "reviewed_run_id": "r-20261027T122427654395-a-plan-review-reads-the-change",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T19:01:38.366573+00:00",
+  "total": 115
+}

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A queued launch keeps the run's full record — evidence</title>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="a-queue-holds-the-whole-plan">
+<meta name="plan-section" content="s25">
+</head>
+<body>
+<article class="r-evidence" id="a-queued-launch-keeps-the-run-record">
+<h1>A queued launch keeps the run's full record</h1>
+<p>An admitted launch publishes the launched run's record: the same keys a direct dispatch writes, with the request's queued-life facts moved under <code>admission_history</code> instead of sitting at the top level where a reader of a live run takes them for a launch that failed.</p>
+
+<h2 id="a-queued-launch-keeps-the-run-record-measure">Measure</h2>
+<p><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_launch_keeps_the_run_record.py</code> — <strong>7 passed</strong>, <code>EXIT=0</code>, at revision <code>31e53ae308</code>.</p>
+<ul>
+<li>A request refused once and then launched by one admission pass carries <code>argv</code>, <code>worktree</code>, <code>lane</code> and every key a direct dispatch writes (key-set delta against a direct dispatch is empty), and carries none of <code>failure</code>, <code>failure_at</code>, <code>failure_attempts</code>, <code>retry_at</code> at the top level.</li>
+<li>The same facts are present under <code>admission_history</code>, one entry per admitted attempt, holding the refusal's text, its time, its attempt count and the retry instant alongside the request's <code>queued_at</code>.</li>
+<li>The launched record reads as a promotable run: its recorded argv resolves the lane settings promotion reads its stream with, its worktree is a real directory, and a promotion dry run reports no refusal about a missing argv. The queued-shaped record the defect produced is refused with <code>records no argv and its backend is not in the supplied config</code>, so the arm can fail.</li>
+<li>Both restore paths a failed admitted launch takes — annotating the live pointer and writing the snapshot back — keep <code>waits</code> and <code>wait_projects</code>, and a later re-derivation of the refs from the plan drops neither.</li>
+<li>A wait whose request ref names no project records an issue on the request (<code>the wait names no project, so its landing cannot be read</code>) and raises it as an obligation, instead of sitting <code>PENDING</code> with no reason a reader can reach.</li>
+</ul>
+
+<h2 id="a-queued-launch-keeps-the-run-record-control">Negative control</h2>
+<p>Applying the declared mutation — merging the launched record into the queued one, so the queued record wins the write — fails 3 of 7 arms including the argv arm, at <code>EXIT=1</code>. Log: <code>negative-control.log</code> in the run directory.</p>
+
+<h2 id="a-queued-launch-keeps-the-run-record-importers">Importers</h2>
+<p>Four test files importing <code>reckon.crew.queue_admission</code> ran at head against the change: <strong>52 passed</strong>, 0 failures, <code>EXIT=0</code> (<code>importer-arm.log</code>). The full importer population at base and head is the coordinator's arm.</p>
+
+<p>The base arm of the gate itself cannot measure a base tree: the test file is new in this node, so the base revision collects nothing (<code>ERROR: file or directory not found</code>, <code>EXIT=4</code>, <code>base-gate.log</code>). That is recorded as the collection error it is rather than as a passing base.</p>
+</article>
+</body>
+</html>

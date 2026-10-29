@@ -1,10 +1,11 @@
 """Amend one run's declared write claim through its live pointer.
 
 A claim names the paths a worker may write. Widening adds paths only when the
-recorded worker is not running, and checks peer claims before the pointer write.
-Narrowing and release require a proven-local, proven-dead worker because they
-remove protection from paths another worker may soon claim. Each operation
-preserves the pointer's other fields and reports the paths it changed.
+recorded worker is not running, or when the run's own worker asks for them, and
+checks peer claims before the pointer write. Narrowing and release require a
+proven-local, proven-dead worker because they remove protection from paths
+another worker may soon claim. Each operation preserves the pointer's other
+fields and reports the paths it changed.
 """
 
 from __future__ import annotations
@@ -61,9 +62,20 @@ def declared_claim_paths(run_id: str) -> tuple[str, ...]:
 
 
 def widen_claim(
-    run_id: str, paths: Iterable[str], *, acceptance: bool = False
+    run_id: str,
+    paths: Iterable[str],
+    *,
+    acceptance: bool = False,
+    reason: str = "",
+    self_widen: bool = False,
 ) -> tuple[dict[str, Any], list[str]]:
-    """Add paths to a stopped run, checking peer claims under the pointer lock.
+    """Add paths to a run, checking peer claims under the pointer lock.
+
+    A live worker keeps its claim fixed, because it is already writing against
+    the boundary a widening would move. The exception is the run's own worker:
+    it is the writer asking for its own boundary to move, so ``self_widen``
+    admits it and records the grant, its reason and the fact that the worker
+    made it. Any other caller waits for the process to exit.
 
     A promotion acceptance keeps the scope from before its grant. Promotion
     validates the stated reason against that scope while the widened claim
@@ -75,10 +87,13 @@ def widen_claim(
     requested = _distinct(path.strip() for path in paths if path.strip())
     if not requested:
         raise CrewError("widen_claim needs at least one path")
+    stated_reason = str(reason).strip()
+    if self_widen and not stated_reason:
+        raise CrewError("a self-widen must state the reason for the grant")
     added: list[str] = []
 
     def amend(pointer: dict[str, Any]) -> dict[str, Any]:
-        if record_process_alive(pointer) is True:
+        if record_process_alive(pointer) is True and not self_widen:
             raise ClaimAmendmentRefusedError(
                 run_id, "its worker is still running; wait for that process to exit"
             )
@@ -100,7 +115,10 @@ def widen_claim(
                 pointer,
                 added,
                 set_aside_run_ids=_set_aside_on_acceptance(run_id, acceptance),
+                regard_waiting=self_widen,
             )
+        if self_widen and added:
+            _record_self_grant(node, added, stated_reason)
         if not acceptance and isinstance(original, list):
             original.extend(path for path in added if path not in original)
         node["write_paths"] = declared
@@ -108,6 +126,35 @@ def widen_claim(
         return pointer
 
     return _mutate_pointer(run_id, amend), added
+
+
+def _record_self_grant(node: dict[str, Any], added: Iterable[str], reason: str) -> None:
+    """Record each path a run's own worker granted itself, with its reason.
+
+    The grant is kept beside the declaration it widened, so a reader can tell a
+    path the worker widened the boundary for from one it was dispatched with.
+    """
+    from reckon.crew.dispatch_claims import WRITE_GRANTS_KEY
+    from reckon.crew.runs import _utc_now
+
+    recorded = node.get(WRITE_GRANTS_KEY)
+    grants = list(recorded) if isinstance(recorded, list) else []
+    known = {
+        str(entry.get("path") or "") for entry in grants if isinstance(entry, Mapping)
+    }
+    for path in added:
+        if path in known:
+            continue
+        known.add(path)
+        grants.append(
+            {
+                "path": path,
+                "reason": reason,
+                "source": "worker",
+                "at": _utc_now(),
+            }
+        )
+    node[WRITE_GRANTS_KEY] = grants
 
 
 def narrow_claim(
@@ -258,11 +305,20 @@ def _amended(
 
 def _amend(pointer: Mapping[str, Any], paths: Sequence[str]) -> None:
     """Rewrite the live pointer's declared write paths, preserving its keys."""
+    from reckon.crew.dispatch_claims import WRITE_GRANTS_KEY
+
     payload = dict(pointer)
     node = _node(pointer)
     if not _node(pointer):
         raise CrewError("live pointer carries no node mapping to amend")
     node["write_paths"] = list(paths)
+    grants = node.get(WRITE_GRANTS_KEY)
+    if isinstance(grants, list):
+        node[WRITE_GRANTS_KEY] = [
+            entry
+            for entry in grants
+            if isinstance(entry, Mapping) and str(entry.get("path") or "") in set(paths)
+        ]
     payload["node"] = node
     original = payload.get("accepted_scope_before_widening")
     if isinstance(original, list):

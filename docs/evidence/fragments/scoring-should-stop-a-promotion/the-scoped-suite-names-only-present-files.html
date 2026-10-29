@@ -1,0 +1,65 @@
+<section id="the-scoped-suite-names-only-present-files-landing">
+  <h2>The scoped suite names only the files each tree holds</h2>
+
+  <p><strong>What changed.</strong> <code>_scoped_suite_command</code> in
+  <code>reckon/crew/promotion_records.py</code> now takes the revision whose tree the
+  command will run against, and resolves <code>{node_test_files}</code> over the
+  write paths that tree holds rather than over the write paths alone: presence is read
+  from the revision's own tree through the object store
+  (<code>_paths_present_in_tree</code>, <code>git cat-file --batch-check</code>), so a
+  test the node deletes leaves the head arm and one it creates leaves the base arm.
+  The arm comparison now compares each arm's recorded command with that per-tree
+  resolution of the same template, and still accepts the whole-scope spelling, so a
+  run record dispatched before the rule still promotes. An after arm left naming no
+  test file, or an arm that exited having collected none (exit 4 or 5 with no
+  failure), is refused as <code>unmeasured</code>; an empty base is recorded as
+  <code>baseline_measured_nothing</code> rather than refused, because a change that
+  creates the tests measuring it has nothing to measure against at the base.</p>
+
+  <p>Dispatch's suite fence (<code>_suite_gate_prompt_body</code> in
+  <code>reckon/crew/dispatch.py</code>, rendered by <code>compose_prompt</code> in
+  <code>reckon/crew/prompts.py</code>) states the template, the per-tree rule and the
+  string the node's whole scope produces, so a worker resolves the template over each
+  arm's tree instead of running a file list its own change invalidates. The run
+  record still carries <code>suite_command</code> (the template verbatim) and
+  <code>suite_command_resolved</code>.</p>
+
+  <h3>Measured</h3>
+
+  <p>Assignment from <code>git archive</code> extractions on node-local disk, with the
+  <code>.venv</code> and <code>.env</code> of the main checkout linked. Each log names
+  its revision and tree on its first lines and ends in a bare
+  <code>EXIT=&lt;code&gt;</code> line.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>45124a4c54</code></td>
+          <td><code>EXIT=4</code> — the case fails at the base: the file is new, so the
+              base tree holds none of it and pytest collects nothing (5 ids unavailable
+              at the base rather than failing)</td></tr>
+      <tr><td>head</td><td><code>00a0fc0750</code></td>
+          <td><code>EXIT=0</code> — 5 passed</td></tr>
+      <tr><td>head, presence check bypassed (negative control)</td>
+          <td><code>00a0fc0750</code></td>
+          <td><code>EXIT=1</code> — 3 failed: <code>test_each_tree_resolves_the_template_over_the_files_it_*</code>,
+              <code>test_a_pair_resolved_per_tree_is_accepted_*</code>,
+              <code>test_an_arm_that_exited...is_refused</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The recorded defect reproduces independently of the tests: resolving the armed
+  command over the write paths without the presence check and running it in a tree
+  where the named test was deleted prints
+  <code>ERROR: file or directory not found: tests/test_a.py</code>, then
+  <code>no tests ran in 0.00s</code>, and exits <code>4</code>.</p>
+
+  <h3>Gate</h3>
+
+  <p><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_scoped_suite_names_only_present_files.py</code>, plus the three sibling
+  suite-arming test files at the head: 24 passed.
+  <code>ruff check</code> and <code>ruff format --check</code> add no finding on the
+  staged paths (the one <code>S608</code> in <code>reckon/crew/prompts.py</code> is
+  present at the base revision and is not this change's).</p>
+</section>

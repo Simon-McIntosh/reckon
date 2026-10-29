@@ -1,3 +1,4 @@
+import os
 import time
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
@@ -16,7 +17,9 @@ from reckon.crew_dispatch_commands import (
     _lane_paused_detail,
     _resolved_flight,
     _resolved_gc_repo,
+    _run_review,
     crew,
+    crew_review,
 )
 
 # Preserve the CLI re-export while the retired name resolves through the
@@ -25,6 +28,143 @@ crew_unwatch = tombstone_command("unwatch")
 
 
 crew_resume_ready = tombstone_command("resume-ready")
+
+
+def _answer_carried_finding(pretty, **params):
+    """Answer a plan-review finding as carried, on the review verb's behalf.
+
+    A carried answer records the finding against the unit its anchor names and
+    opens no review: the finding is answered for the dispatch gate, and a later
+    dispatch of that section appends its text to the node's done-when. The
+    answer surface is the review verb's own flags, so the caller names
+    ``--answer FINDING --carried`` exactly as it names ``--acted`` or
+    ``--declined``; the subject and lane flags a review dispatch takes do not
+    apply to an answer and are refused rather than silently dropped.
+    """
+    from reckon.crew import plan_review
+
+    def refuse(detail: str) -> None:
+        _emit({"error": "crew_error", "detail": detail}, pretty)
+        raise click.exceptions.Exit(1)
+
+    if params.get("acted") or params.get("declined") is not None:
+        refuse(
+            "--carried answers a finding alone: name it without --acted or "
+            "--declined, which are the other two answers"
+        )
+    if params.get("dry_run") or params.get("local"):
+        refuse("--dry-run and --local apply only to review dispatch")
+    if (
+        params.get("around_plan")
+        or params.get("paths")
+        or params.get("portfolio")
+        or params.get("sprint_id")
+    ):
+        refuse("--answer applies to a plan review, not a code or portfolio subject")
+    plan_slug = str(params.get("plan_slug") or "").strip()
+    if not plan_slug:
+        refuse("--answer requires --plan PLAN")
+    answer = str(params.get("answer") or "").strip()
+    if not answer:
+        refuse("--carried requires --answer FINDING_ID")
+    session = str(params.get("session") or "").strip()
+    project = str(params.get("project") or "").strip()
+    # The answer's covering-review resolution, its two-review ambiguity refusal
+    # and the record it writes belong to the review verb, so a carried answer
+    # runs through that branch with its action named rather than resolving the
+    # covering review a second time here.
+    with plan_review.answering_as(plan_review.CARRIED_ACTION):
+        _run_review(
+            project,
+            plan_slug,
+            "",
+            (),
+            session,
+            "design",
+            False,
+            dry_run=False,
+            pretty=pretty,
+            answer=answer,
+            acted=True,
+            declined=None,
+            review_run=str(params.get("review_run") or ""),
+        )
+
+
+def _compose_burst_refusal(params: Mapping[str, Any]) -> str | None:
+    """The cap's refusal for a whole-plan composition, or None.
+
+    A review of the whole plan is a review of every unit the plan carries, so
+    it is composed only while each of them still has one left in its edit
+    burst. Every other subject — an answer, a code neighbourhood, a portfolio,
+    a sprint — is left to the verb, which refuses or composes it as before; a
+    dry run is left alone too, because it dispatches nothing and is how a
+    caller inspects a refusal before hitting it.
+    """
+    from reckon.crew import plan_review
+
+    plan_slug = str(params.get("plan_slug") or "").strip()
+    if not plan_slug or str(params.get("answer") or "").strip():
+        return None
+    if params.get("dry_run"):
+        return None
+    if any(
+        (
+            params.get("around_plan"),
+            params.get("paths"),
+            params.get("portfolio"),
+            params.get("sprint_id"),
+        )
+    ):
+        return None
+    if str(params.get("rubric") or "") == plan_review.PORTFOLIO_REVIEW_RUBRIC:
+        return None
+    project = str(params.get("project") or "").strip()
+    return plan_review.compose_burst_refusal(project, plan_slug)
+
+
+def _install_carried_answer() -> None:
+    """Add the ``--carried`` answer flag to the review verb.
+
+    The three answers a plan-review finding accepts are one surface: acted on,
+    declined with a reason, or carried to the section that builds it. The verb
+    itself is defined beside the dispatch verbs; the carried branch is answered
+    here, so the option is attached to the existing command object rather than
+    a second ``review`` command being registered, and every other invocation
+    reaches the verb's own callback unchanged.
+    """
+    params = getattr(crew_review, "params", None)
+    if not isinstance(params, list):
+        return
+    if any("--carried" in getattr(param, "opts", ()) for param in params):
+        return
+    params.append(
+        click.Option(
+            ["--carried"],
+            is_flag=True,
+            help="Carry the finding to the section it is about, for its next node.",
+        )
+    )
+    original = crew_review.callback
+
+    def callback(carried=False, **kwargs):
+        if carried:
+            params = dict(kwargs)
+            pretty = kwargs.get("pretty", False)
+            params.pop("pretty", None)
+            return _answer_carried_finding(pretty, **params)
+        refusal = _compose_burst_refusal(kwargs)
+        if refusal:
+            _emit(
+                {"error": "crew_error", "detail": refusal}, kwargs.get("pretty", False)
+            )
+            raise click.exceptions.Exit(1)
+        return original(**kwargs)
+
+    crew_review.callback = callback
+
+
+_install_carried_answer()
 
 
 def _merge_land_refusal(
@@ -605,9 +745,11 @@ def crew_dispose(
     naming a rubric answers the text review rather than failing on an argument
     it never had to know about.
     """
+    from reckon.crew import merge as merge_module
     from reckon.crew import obligations as obligations_module
     from reckon.crew import recovery, review_dispositions, runs
     from reckon.crew import review as review_module
+    from reckon.crew import review_records as review_records_module
 
     # The run's own project is the store the disposition is written to, so
     # --project is optional and a disagreeing one is refused rather than
@@ -642,6 +784,7 @@ def crew_dispose(
     # A code review scores no dimensions, so its only disposition space is its
     # findings: a dimension named against one is refused by name rather than
     # resolved to a dimension no code review carries.
+    tree: Path | None = None
     code_key = review_dispositions.code_review_identity(reviewed_run_id)
     if code_key and named_dimension:
         raise click.ClickException(
@@ -692,7 +835,7 @@ def crew_dispose(
             # The revision the run's work is at, named by the refusal below when
             # the store's record describes another; the record itself is
             # selected through the reading both readers share.
-            head, _tree = recovery._review_head_and_tree(pointer)
+            head, tree = recovery._review_head_and_tree(pointer)
         try:
             if pointer is None:
                 stored, described = recovery.select_review_for_head(
@@ -706,6 +849,31 @@ def crew_dispose(
             raise click.ClickException(
                 f"cannot read the stored review for run {reviewed_run_id!r}: {exc}"
             ) from exc
+    if stored is None and described:
+        # A repair moves the run's head past the revision its review read. The
+        # by-head selection then finds no record describing the new head, but a
+        # review of an ancestor is still the run's own evidence about the work
+        # under review, so a disposition against it stands: the finding it
+        # raises is the work the repair was asked to answer. Accept that record
+        # and write the disposition onto it rather than refusing outright.
+        repository = tree
+        if repository is None:
+            try:
+                repository = merge_module.project_repository(project)
+            except merge_module.MergeError:
+                repository = None
+        _descent_path, descent_record, _descent_head = (
+            review_records_module.stored_review_descending_from(
+                project,
+                reviewed_run_id,
+                head,
+                repository=repository,
+                rubric=rubric,
+            )
+        )
+        if descent_record is not None:
+            stored = descent_record
+            described = ""
     if stored is None:
         if described:
             raise click.ClickException(
@@ -1139,9 +1307,9 @@ WIDEN_FOLDED_MANIFEST_STATUS = "complete"
 
 
 WIDEN_RULE = (
-    "only a run whose worker process has stopped is widened, "
-    "because a live worker is already writing against the boundary a widening "
-    "would move"
+    "a stopped run is widened by its coordinator, or a live run by its own "
+    "worker granting itself a path no live run claims, because any other "
+    "widening would move the boundary a live worker is writing against"
 )
 
 #: Where a reopen records what it granted, beside the run's other records.
@@ -1283,20 +1451,45 @@ def _widen_folded_disposition(record: Mapping[str, Any]) -> dict[str, Any] | Non
     required=True,
     help="Path to add to the run's declared write scope. Repeat for each path.",
 )
+@click.option(
+    "--reason",
+    "reason",
+    default="",
+    help=("Why the path is added. Recorded with a self-grant, and required for one."),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_widen(run_id, write_paths, pretty, project=None):
-    """Add a path to any run whose worker process has stopped.
+def crew_widen(run_id, write_paths, pretty, project=None, reason=""):
+    """Add a path to a stopped run, or to the run's own worker.
 
     Claim mutation checks the worker and peer claims under the pointer lock.
     The run's phase and manifest status describe its work, not whether its
     process can still write against the boundary being moved.
+
+    ``RECKON_RUN_ID`` names the run whose worker this process is, so a worker's
+    ``--run`` must name it: the live-worker exception is the worker moving its
+    own boundary, never another run's. A self-widen states its reason, which is
+    recorded with the grant.
     """
     _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
+    own_run = str(os.environ.get("RECKON_RUN_ID") or "").strip()
+    if own_run and own_run != run_id:
+        raise click.ClickException(
+            f"run {own_run!r} is this worker's own run; a worker widens only its "
+            f"own scope, never run {run_id!r}"
+        )
+    self_widen = bool(own_run) and own_run == run_id
+    if self_widen and not str(reason).strip():
+        raise click.ClickException(
+            "a self-widen requires --reason, which is recorded with the grant"
+        )
     from reckon.crew.claims import ClaimAmendmentRefusedError, widen_claim
+    from reckon.crew.dispatch_claims import declared_write_grants
 
     try:
-        updated, added = widen_claim(run_id, write_paths)
+        updated, added = widen_claim(
+            run_id, write_paths, reason=reason, self_widen=self_widen
+        )
     except ClaimAmendmentRefusedError as exc:
         raise click.ClickException(
             f"{exc}; use `crew resume` once its turn has ended"
@@ -1311,11 +1504,13 @@ def crew_widen(run_id, write_paths, pretty, project=None):
             "node": str((updated.get("node") or {}).get("id") or ""),
             "session_id": str(updated.get("session_id") or ""),
             "folded_disposition": _widen_folded_disposition(updated),
+            "self_widen": self_widen,
             "added": added,
             "write_paths": [
                 str(path)
                 for path in (updated.get("node") or {}).get("write_paths") or ()
             ],
+            "grants": declared_write_grants(updated),
         },
         pretty,
     )

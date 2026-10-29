@@ -58,6 +58,27 @@ FALSIFIABLE_EVIDENCE_CONTRACT = (
     "  tree, so an unfilled field reads as no work."
 )
 
+# The rubric self-check contract. A delivery is judged against a rubric of
+# dimensions, and a worker that records its own reading of each one before it
+# delivers gives a reviewer the same answers while the work is still in the
+# worker's hands, when a gap costs one more turn rather than a whole round.
+# The manifest is the store because the manifest is the record a coordinator
+# and a repair already read, so the self-check travels with the delivery rather
+# than in a channel nobody inspects. An absent line is reported as absent, not
+# as a passing verdict: a rubric that credits silence is one that always
+# passes. Kept as a standalone constant so a test can compose with it masked
+# out and diff against the live prompt, which proves the addition is removable
+# and scoped.
+RUBRIC_SELF_CHECK_CONTRACT = (
+    "CONTRACT — YOUR RUBRIC SELF-CHECK BEFORE DELIVERY\n"
+    "  Before you deliver, record one line per review dimension in your manifest:\n"
+    "  `rubric.<dimension>: <state>`. State each dimension against the work you\n"
+    "  are about to deliver rather than against what you intended to do. Write\n"
+    "  `rubric.<dimension>: answered` for a dimension you have answered; for one\n"
+    "  you have not, write what is missing. A dimension with no line is reported\n"
+    "  as no self-check at all, never as a passing one."
+)
+
 # The write-fence rule, embedded in every composed prompt beside the two
 # contracts above. It lives here for the same reason its siblings do: the
 # prompt embeds no protocol reference by design, so a rule carried only by a
@@ -437,6 +458,8 @@ def _invariant_prompt_prefix() -> str:
         + "\n\n"
         + FALSIFIABLE_EVIDENCE_CONTRACT
         + "\n\n"
+        + RUBRIC_SELF_CHECK_CONTRACT
+        + "\n\n"
         + FENCE_WRITE_GRANT_CONTRACT
         + "\n\nNODE     "
     )
@@ -444,6 +467,28 @@ def _invariant_prompt_prefix() -> str:
 
 INVARIANT_PROMPT_PREFIX = _invariant_prompt_prefix()
 INVARIANT_PROMPT_BOUNDARY = len(INVARIANT_PROMPT_PREFIX)
+
+# A rubric self-check line, matched on the manifest text. The state must carry
+# something: an empty value is the same silence as an absent line, and reading
+# it as a check would credit the worker for a heading.
+_RUBRIC_SELF_CHECK_LINE = re.compile(
+    r"^rubric\.([A-Za-z0-9_.-]+):[ \t]*\S", re.MULTILINE
+)
+
+
+def missing_rubric_self_checks(
+    manifest_text: str, dimensions: Iterable[str]
+) -> list[str]:
+    """Return the dimensions a manifest records no rubric self-check for.
+
+    The reader a delivery's reviewer consults, so the same function answers for
+    the prompt that asks for the lines and for anyone auditing a delivered
+    manifest. A dimension whose line is absent or carries no state is reported;
+    the call never turns silence into a pass.
+    """
+    recorded = set(_RUBRIC_SELF_CHECK_LINE.findall(manifest_text or ""))
+    return [dimension for dimension in dimensions if dimension not in recorded]
+
 
 # ── Prompt composition ──────────────────────────────────────────────────────
 
@@ -595,8 +640,11 @@ def compose_prompt(
     ``launch_instant`` is the attempt's own recorded start; the FENCE — TIME
     line states it, the deadline it sets, and the clock that checks them.
 
-    ``suite_command`` is the command this run's promotion will actually run,
-    already resolved for the node's scope by the caller that recorded it.
+    ``suite_command`` is the body of the suite fence, already composed by the
+    caller that recorded it: a scoped declaration is stated as the template
+    with the rule resolving it over each arm's own tree, and an unscoped one as
+    the single command both arms run. It is never the source placeholder, which
+    no worker can run.
     ``suite_gate`` names what a resolved-nothing declaration means — ``unarmed``
     when the project declares a command this node's scope empties — and an
     unset value says nothing, which is the prompt an undeclared project gets.
@@ -725,17 +773,17 @@ RUNTIME FILESYSTEM
             + _artifact_allowance(node.done_when)
         )
     closure_authority_contract = CLOSURE_AUTHORITY_CONTRACT if can_land else ""
-    # The suite command is stated as the run's own resolved string, never the
-    # project's template: a worker handed `{node_test_files}` cannot run it,
-    # and the pair it records has to match the command promotion re-runs. A
+    # The fence names the project's template and the rule that resolves it over
+    # each arm's own tree, beside the string this node's whole scope produces: a
+    # worker given only a file list runs a list its own change invalidates, and
+    # one handed the bare `{node_test_files}` token cannot run it at all. A
     # declaration this node's scope empties is named as unarmed so the worker
     # owes no pair rather than inventing one; an undeclared project says
     # nothing, which is the prompt every run had before the command was carried.
     if suite_command:
         suite_gate_block = (
             "\nFENCE — SUITE (the command promotion runs before and after your change)\n"
-            f"  {suite_command}\n"
-            "  Run exactly this command, unedited, for both arms.\n"
+            f"{suite_command.rstrip()}\n"
         )
     elif suite_gate == "unarmed":
         suite_gate_block = (

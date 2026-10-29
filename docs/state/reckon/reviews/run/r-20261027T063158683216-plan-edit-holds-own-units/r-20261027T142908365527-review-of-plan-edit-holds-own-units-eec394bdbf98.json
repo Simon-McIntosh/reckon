@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-27T14:46:45.726Z",
+  "dispatched_at": "2026-10-27T14:33:17Z",
+  "findings": [
+    {
+      "file": "logs/ruff_delta.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: ruff_delta.log opens with its `command:` line and names no revision or tree, unlike logs/head_admission.log and logs/base_admission.log whose first line carries arm, revision and tree; a later reader cannot tell which revision the recorded zero delta (8 check findings at base and 8 at head, 4 format hunks at base and 4 at head) was measured at."
+    },
+    {
+      "file": "tests/test_queue_dag_waits.py",
+      "line": "316",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added `assert live[\"r-waiting\"][\"phase\"] == \"awaiting-upstream\"` is trivially true; the queue helper set that phase before `_admit()` ran, so an admission pass that did nothing at all leaves it satisfied; the guard against a blocked upstream closing its waiter rests entirely on `assert result[\"blocked_upstream\"] == []` at :312, which does fail if \"blocked\" returns to RUN_FAILED_STATUSES."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is to hold a queued request for plan review only when its own section or the document unit is uncovered and to release it once a review covers them, and the commits gained since the prior review (66cbc109c..eec394bdb) repair the one arm that contradicted its third measure rather than re-implementing the goal, at tests/test_queue_dag_waits.py:306-318.\nVERDICT done_when: the third measure requires a request waiting --after a run whose manifest reads blocked to stay awaiting-upstream and move to blocked-upstream only for failed, abandoned or a discard, and reckon/crew/queue_admission.py:1153 in the reviewed tree reads RUN_FAILED_STATUSES = (\"failed\", \"abandoned\") with :1627 routing a blocked status to PENDING.\nVERDICT write_paths: the source prompt fences routing.py, queue_admission.py, obligations.py, tests/test_plan_edit_never_strands.py and the evidence fragment, the resume advice grants tests/test_queue_dag_waits.py explicitly, and the diff of 66cbc109c..eec394bdb touches only those five granted paths and nothing else.\nVERDICT manifest: read; it carries acts naming the re-pointed arm, the mode restoration and the ruff logs, a readable baseline_suite at c4333460f (9 failure ids, EXIT 1 via logs/base_admission.log) and after_suite at fced9a5c2 (1 failure id, EXIT 1 via logs/head_admission.log), and an outside_scope entry naming the failure that fails identically at base.\nVERDICT diff: read both commits against 66cbc109c; fced9a5c2 restores mode 100644 on reckon/crew/obligations.py, reckon/crew/queue_admission.py and reckon/crew/routing.py and re-points the blocked case of test_closed_upstream_blocks_its_waiter, and eec394bdb adds the evidence paragraph recording the grant, the gate at both revisions, the modes and the lint delta, so no production source line changes in this delta.\nCALL_SITES: reckon/crew/queue_admission.py:2621 admit_once, reckon/crew/queue_admission.py:1589 _request_state, reckon/crew/queue_admission.py:1627 status-to-ABANDONED branch, reckon/crew/obligations.py:1571 obligations, reckon/crew/routing.py:2501 require_plan_reviewed\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_queue_dag_waits.py:312 now requires a blocked upstream to leave its waiter un-closed, and reckon/crew/queue_admission.py:1153 in the reviewed tree carries the matching status tuple.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head_admission.log first line names arm=head revision=fced9a5c2 and its last line reads EXIT=1 after 1 failed, 188 passed, while logs/base_admission.log gives 9 failed, 180 passed at c4333460f with every head failure present in the base set.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --summary 66cbc109c..eec394bdb lists only reckon/crew/obligations.py, reckon/crew/queue_admission.py and reckon/crew/routing.py as mode changes plus tests/test_queue_dag_waits.py and the evidence fragment, all inside the fence as the resume advice extends it.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_queue_dag_waits.py:312 fails if \"blocked\" is restored to RUN_FAILED_STATUSES at reckon/crew/queue_admission.py:1153, because blocked_upstream would carry r-waiting instead of an empty list.\nSCORE fit: 16\nJUSTIFICATION fit: the comment at tests/test_queue_dag_waits.py:308-310 states the resumable-stop mechanism rather than a plan label and the file modes return to 100644, but the test name still reads test_closed_upstream_blocks_its_waiter while its blocked branch now asserts the waiter stays open.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition and reuses the single run-status vocabulary owner RUN_FAILED_STATUSES at reckon/crew/queue_admission.py:1153, which a capability search over reckon/crew for FAILED_STATUSES found in that module alone.\nFINDING logs/ruff_delta.log:1 non-blocking: the ruff delta log names no revision or tree on its header line, unlike the admission gate logs, so the revision its recorded zero delta was measured at cannot be recovered from the record.\nFINDING tests/test_queue_dag_waits.py:316 non-blocking: the added phase assertion is trivially true because the queue helper set awaiting-upstream before _admit() ran, so the real guard is the blocked_upstream assertion at :312.\n",
+  "review_run_id": "r-20261027T142908365527-review-of-plan-edit-holds-own-units-eec394bdbf98",
+  "reviewed_base_sha": "66cbc109c01c1dc1f6441eb3454fcfeec0e0ddb9",
+  "reviewed_head_sha": "eec394bdbf989666afa714ab6f5fca1f378ef46e",
+  "reviewed_run_id": "r-20261027T063158683216-plan-edit-holds-own-units",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-27T14:46:47.499727+00:00",
+  "total": 108
+}

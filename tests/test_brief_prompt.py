@@ -241,10 +241,11 @@ def test_a_plan_prompt_is_byte_identical_to_that_snapshot(monkeypatch) -> None:
     assert _compose() == PLAN_PROMPT_SNAPSHOT
 
 
-# The composed plan-carrier prompt as produced before the brief carrier existed,
-# taken under SNAPSHOT_INTERPRETER with the node, project, worktree, manifest
-# path and budget this module composes with. A change to the plan path that the
-# assertions above do not name fails here.
+# The composed plan-carrier prompt, taken under SNAPSHOT_INTERPRETER with the
+# node, project, worktree, manifest path and budget this module composes with.
+# Its plan-carrier shape predates the brief carrier, and it now carries the
+# rubric self-check contract every composed prompt does. A change to the plan
+# path that the assertions above do not name fails here.
 PLAN_PROMPT_SNAPSHOT = """You are a worker on one node. Read the live plan first; it is the
 semantic authority for context, decisions, evidence inputs and constraints.
 
@@ -267,6 +268,14 @@ CONTRACT — EVIDENCE THAT COULD HAVE FAILED
   landed by a marker it introduced rather than one it removed.
   Record the commits and paths you changed; a coordinator cannot see your
   tree, so an unfilled field reads as no work.
+
+CONTRACT — YOUR RUBRIC SELF-CHECK BEFORE DELIVERY
+  Before you deliver, record one line per review dimension in your manifest:
+  `rubric.<dimension>: <state>`. State each dimension against the work you
+  are about to deliver rather than against what you intended to do. Write
+  `rubric.<dimension>: answered` for a dimension you have answered; for one
+  you have not, write what is missing. A dimension with no line is reported
+  as no self-check at all, never as a passing one.
 
 FENCE — WRITE GRANTS
   Never write the operator's memory directory or any path outside your

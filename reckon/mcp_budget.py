@@ -32,6 +32,8 @@ VIEW_BUDGETS = {
     ("read_plan", "raw"): 60_000,
     ("read_plan", "schema"): 30_000,
     ("read_plan", "section"): 24_000,
+    # read_plan view=why: one ref's state, waits, holders and last five events.
+    ("read_plan", "why"): 24_000,
     # audit: counts for summary, a page of findings for detail.
     ("audit", "summary"): 24_000,
     ("audit", "detail"): 30_000,

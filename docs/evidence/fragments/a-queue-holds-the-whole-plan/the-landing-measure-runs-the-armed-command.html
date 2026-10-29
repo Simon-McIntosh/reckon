@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>the-landing-measure-runs-the-armed-command — landing record</title>
+</head>
+<body>
+<main>
+<section id="the-landing-measure-runs-the-armed-command-record">
+<h2>The landing measure runs the suite command the run armed</h2>
+<p>An armed suite command is written the way a shell reads it:
+<code>PYTHONPATH=. .venv/bin/python -m pytest -q {node_test_files}</code>. The
+landing measure took that text, split it with <code>shlex</code> and handed the
+tokens to <code>subprocess</code> as an argv, so the leading assignment became
+the program it tried to start and every arm stopped before reaching a test. The
+base checkout also carried no <code>.venv</code>, so the relative interpreter
+the command names could not start there even with the assignment resolved.
+Reproduced by restoring the raw shlex argv in <code>measure_run</code>: the head
+case fails on <code>'the base arm did not run'</code>, which is the refusal the
+plan recorded against two reckon runs.</p>
+<p><code>reckon/crew/landing_measure.py</code> now resolves the command before
+any arm starts. <code>armed_argv</code> peels the leading
+<code>NAME=value</code> tokens into the environment the arms run under and
+substitutes <code>{node_test_files}</code> with the node's own fenced test files,
+so the suite pair, the importer population and the isolated re-runs all start
+the same program with the same environment. <code>_link_environment</code> gives
+the base tree the <code>.venv</code> link a provisioned worktree carries,
+resolved through any link the repository itself has. <code>_carry_missing_tests</code>
+copies the node's test files the base revision lacks in from the head, so the
+base arm reads the test the node added and counts its failures rather than
+exiting on a missing file.</p>
+<p>A command that is not scoped carries no assignment, so its arms inherit the
+measurement's environment exactly as before: the assignment handling adds
+nothing to a command that declares none, and a scoped command that resolves to
+no test file is refused as unmeasurable rather than silently measuring the whole
+suite.</p>
+<h3>Measured</h3>
+<ul>
+<li><code>tests/test_the_landing_measure_runs_the_armed_command.py</code> drives
+<code>measure_run</code> over a synthesised repository with a real subprocess
+runner: <strong>1 passed</strong>, <code>EXIT=0</code>. Both suite arms are
+readable and carry the substituted files and the assignment as environment; the
+base arm counts <code>tests/test_carried.py::test_carried_fails</code>, a file
+it does not carry in git; the population and all four isolated re-run calls
+carry <code>PYTHONPATH=.</code> as environment; the head-only id is isolated as
+real.</li>
+<li>Importer population of <code>reckon.crew.landing_measure</code>:
+<code>tests/test_the_landing_pass_measures_and_lands.py</code> at the base
+revision f1270e9219 reads <strong>16 passed</strong>, <code>EXIT=0</code>, and at
+the delivered head <strong>16 passed</strong>, <code>EXIT=0</code>: no added
+failure.</li>
+<li>Negative control, raw shlex argv restored: <strong>1 failed</strong>,
+<code>EXIT=1</code>, the failing id naming the base arm that did not run.</li>
+</ul>
+</section>
+</main>
+</body>
+</html>

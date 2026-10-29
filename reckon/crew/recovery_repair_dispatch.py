@@ -23,7 +23,6 @@ from reckon.crew.runs import (
 )
 
 
-
 def _is_repair_node(record: Mapping[str, Any]) -> bool:
     """Whether a run was minted by the repair composer.
 
@@ -337,7 +336,8 @@ def _decline_only_reason(
     non_blocking = _non_blocking_repository_paths(review, fence)
     if non_blocking:
         parts.append(
-            "non-blocking finding(s) cite repository path(s): " + ", ".join(non_blocking)
+            "non-blocking finding(s) cite repository path(s): "
+            + ", ".join(non_blocking)
         )
     return "; ".join(parts)
 
@@ -364,6 +364,7 @@ def _record_repair_dispatch(
     repair_run_id: str = "",
     backend: str = "",
     node_id: str = "",
+    open_findings: Sequence[Mapping[str, Any]] | None = None,
 ) -> int:
     """Write the reflex's repair outcome onto the reviewed run it acted for.
 
@@ -420,6 +421,10 @@ def _record_repair_dispatch(
             "at": _utc_now(),
             "attempt": attempt,
         }
+        if open_findings is not None:
+            pointer[REPAIR_DISPATCH_FIELD]["open_findings"] = [
+                dict(row) for row in open_findings
+            ]
         return pointer
 
     _mutate_pointer(run_id, record)
@@ -589,6 +594,44 @@ def _opened_repair_rounds(record: Mapping[str, Any]) -> Mapping[str, Any]:
     durable = _live_pointer_or_absent(str(record.get("run_id") or "")) or record
     opened = durable.get(REPAIR_ROUNDS_FIELD)
     return opened if isinstance(opened, Mapping) else {}
+
+
+def _recorded_repair_dispatch(record: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The last repair outcome recorded on the run's own pointer, or empty.
+
+    Read afresh for the same reason the opened-round record is: a sweep that
+    reconsiders the same round must see the escalation a previous cadence wrote
+    so it records no second one. A gone pointer or a record carrying no field
+    answers empty, which leaves the round free to act.
+    """
+    durable = _live_pointer_or_absent(str(record.get("run_id") or "")) or record
+    prior = durable.get(REPAIR_DISPATCH_FIELD)
+    return prior if isinstance(prior, Mapping) else {}
+
+
+def _open_finding_names(review: Mapping[str, Any]) -> list[dict[str, str]]:
+    """One row per blocking finding, naming the id an answer would target.
+
+    An escalation is useful only if the coordinator can see what is still open,
+    so each row carries the finding's stable id, its location and its text. The
+    id is the same value a repair round answers by, so a coordinator can answer
+    the escalated finding with the verbs that accept a finding id rather than
+    re-reading the whole review.
+    """
+    rows: list[dict[str, str]] = []
+    for finding in repair_module.blocking_findings(review):
+        location = str(finding.get("file") or "").strip()
+        line = str(finding.get("line") or "").strip()
+        if location and line:
+            location = f"{location}:{line}"
+        rows.append(
+            {
+                "id": str(finding.get("id") or "").strip(),
+                "location": location or line,
+                "text": str(finding.get("text") or "").strip(),
+            }
+        )
+    return rows
 
 
 def _repair_in_flight(record: Mapping[str, Any], *, node_id: str, project: str) -> str:
@@ -800,39 +843,54 @@ def dispatch_repair_for_run(
         }
     fields = _review_dispatch_fields(record)
     round_id = repair_module.repair_round_id(review, reviewed_run_id=run_id)
-    # The reflex opens at most one automatic repair round per run. A round that
-    # has already opened — a resume or a dispatch that actually started — settles
-    # the run's automatic repair for good: a *later* head composes a different
-    # round, and opening that one too is what a field run measured as the same
-    # node resumed on reviews scoring 82, 83 and 83, each a new head drawing a
-    # new review and a new round. The run is handed back to its coordinator
-    # instead, recorded with the earlier round, its attempts and the new review's
-    # score so a reader sees why no repair fired. A round already recorded as
-    # opened is the round in hand, so its own retry (below) is untouched, and a
-    # round that was only ever refused never entered the record at all, leaving
-    # it free to open.
+    # The reflex opens a run's automatic repair rounds up to
+    # AUTOMATIC_REPAIR_ROUND_LIMIT. A *later* head composes a different round,
+    # and each one is repaired in turn until the budget is spent; a field run
+    # measured the same node resumed on reviews scoring 82, 83 and 83, each a
+    # new head drawing a new review and a new round, so the rounds are bounded
+    # rather than open-ended. Once the budget is spent the run is escalated to
+    # its coordinator exactly once, recorded with the earlier round, its
+    # attempts, the new review's score and the findings still open, so a reader
+    # sees what needs answering. A round already recorded as opened is the round
+    # in hand, so its own retry (below) is untouched, and a round that was only
+    # ever refused never entered the record at all, leaving it free to open.
     opened_rounds = _opened_repair_rounds(record)
     opened_count = int(opened_rounds.get("count") or 0)
     opened_round_id = str(opened_rounds.get("round_id") or "")
-    if opened_count and opened_round_id and opened_round_id != round_id:
+    if (
+        opened_count
+        and opened_round_id
+        and opened_round_id != round_id
+        and opened_count >= AUTOMATIC_REPAIR_ROUND_LIMIT
+    ):
         earlier_attempts = int(opened_rounds.get("attempts") or 0)
         score = review.get("total")
+        open_findings = _open_finding_names(review)
         reason = (
-            f"a repair round was already opened for this run (round "
-            f"{opened_round_id}, {earlier_attempts} attempt(s)); this review "
-            f"scores {score}, so the run is handed back to its coordinator"
+            f"the automatic repair budget is spent: {opened_count} round(s) "
+            f"opened (latest {opened_round_id}, {earlier_attempts} attempt(s)) "
+            f"and this review scores {score}; the run needs a coordinator"
         )
-        _record_repair_dispatch(
-            run_id,
-            status="handed-to-coordinator",
-            reason=reason,
-            round_id=round_id,
+        prior = _recorded_repair_dispatch(record)
+        already_recorded = str(
+            prior.get("status") or ""
+        ) == REPAIR_ESCALATED_STATUS and str(prior.get("round_id") or "") == str(
+            round_id or ""
         )
+        if not already_recorded:
+            _record_repair_dispatch(
+                run_id,
+                status=REPAIR_ESCALATED_STATUS,
+                reason=reason,
+                round_id=round_id,
+                open_findings=open_findings,
+            )
         return {
             "run_id": run_id,
             "dispatched": False,
-            "handed_to_coordinator": True,
+            "escalated": True,
             "round_id": round_id,
+            "open_findings": open_findings,
             "reason": reason,
         }
     repo = str(record.get("repo") or "")
@@ -850,6 +908,19 @@ def dispatch_repair_for_run(
     # repair never stood on. A promoted run never reaches here (the launch
     # refusal above settles it), so this is the unpromoted case by construction.
     reviewed_head = _review_carried_head(review)
+    # A later round's brief carries only the work since the previous round was
+    # reviewed, not the whole run again: the last reviewed head is named by the
+    # round id the reflex last opened, which is ``<run>@<head>``.
+    review_diff = ""
+    previous_head = opened_round_id.partition("@")[2]
+    if (
+        previous_head
+        and reviewed_head
+        and not same_revision(previous_head, reviewed_head)
+    ):
+        review_diff = (
+            _diff_between(_review_tree(record), previous_head, reviewed_head) or ""
+        )
     # The repair inherits the reviewed run's own recorded suite command, so its
     # review measures added failures against the same suite the reviewed run was
     # measured with. An unarmed reviewed run yields no command, and the repair is
@@ -870,6 +941,7 @@ def dispatch_repair_for_run(
         # already held rather than the fleet's own record.
         run_record=record,
         suite_command=inherited_suite,
+        diff=review_diff,
     )
     if composed is None:
         # The composer returns None for a finding-bearing record in two cases,
@@ -1264,13 +1336,16 @@ from .recovery_liveness import (  # noqa: E402
     process_alive,
 )
 from .recovery_review_dispatch import (  # noqa: E402
+    AUTOMATIC_REPAIR_ROUND_LIMIT,
     REPAIR_ADVICE_SCOPE_LINE,
     REPAIR_DISPATCH_FIELD,
+    REPAIR_ESCALATED_STATUS,
     REPAIR_RESUME_LIMIT,
     REPAIR_ROUNDS_FIELD,
     REPAIR_ROUND_OPENING_STATUSES,
     REPAIR_ROUND_TOKEN_LINE,
     REPAIR_SOURCE_ROLE,
+    _diff_between,
     _no_lane_reason,
     _repair_round_token,
     _resolved_review_config,
@@ -1283,6 +1358,7 @@ from .recovery_review_subject import (  # noqa: E402
     _review_is_complete,
     _review_tree,
     _stored_review,
+    same_revision,
 )
 from .recovery_stream import (  # noqa: E402
     manifest_status_is_terminal,

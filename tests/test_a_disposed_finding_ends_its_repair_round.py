@@ -221,7 +221,9 @@ def test_folded_first_leaves_only_second_in_brief_and_scope(round_fixture, monke
     assert FINDINGS[1]["file"] in resumed[0]
     _, persisted = review.stored_record(PROJECT, RUN_ID)
     assert persisted is not None
-    assert persisted["findings"] == FINDINGS
+    assert persisted["findings"] == [
+        {**finding, "id": repair.finding_id(finding)} for finding in FINDINGS
+    ]
     assert persisted[review.FINDING_DISPOSITIONS_KEY]["0"]["kind"] == "folded"
 
 

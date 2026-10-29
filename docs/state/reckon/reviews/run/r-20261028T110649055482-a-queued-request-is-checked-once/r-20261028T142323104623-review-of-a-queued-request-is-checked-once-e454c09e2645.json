@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-28T14:32:08.622Z",
+  "dispatched_at": "2026-10-28T14:25:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "id": "f6a91a9c673",
+      "line": "2217",
+      "severity": "non-blocking",
+      "text": "non-blocking: the contract is stamped only by the batch entry queue_requests, which has no production caller (grep over reckon/ finds dispatch.py:287 defines the delegate and nothing invokes it); production queue writes go through runs.queue_dispatch, which stamps nothing, so every production pointer falls to _dispatch_gate_owed and behaves exactly as before this node. The narrowed hold is therefore inert in production until the coordinator's separate wiring node lands; the node names this in its fragment and its outside_scope, so it is declared rather than hidden."
+    },
+    {
+      "file": "docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-queued-request-is-checked-once.html",
+      "id": "f1b70ca834a",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing record states the pending production wiring plainly but omits the second unmet done_when item \u2014 that routing._document_change_is_contract still resolves review_run_id, review_report_directory and _REVIEW_SNAPSHOT_NAME itself instead of reading the snapshot through plan_review._snapshot_evidence. The manifest records it under blockers and outside_scope, but the fragment becomes the plan comment, so plan section 10 will read as fully satisfied while one carried requirement is not."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "_plan_review_owed is reached from _release_plan_review_holds (queue_admission.py:2553) and admit_once (queue_admission.py:2796).",
+    "diff": "read commit by commit against 768656861bffbc5b6b1b9bb20b10ba87dfa7ea1f; c0138556fe adds review_contract/record_review_contract/_contract_is_current and the narrowed predicate, e454c09e26 factors _dispatch_gate_owed and answers the two no-comparison states with the dispatch gate's own verdict.",
+    "done_when": "the done_when names tests/test_a_queued_request_is_checked_once.py and its five arms; all five arms are present in the file and the head log records 14 passed EXIT=0 against 10 failed 4 passed EXIT=1 at base, but the carried requirement that _document_change_is_contract read its snapshot through plan_review._snapshot_evidence is not met and is declared as a blocker rather than evidenced.",
+    "goal": "the node goal is to hold a queued request only while its own recorded contract has an unreviewed change; queued_placements and admit_once now reach _plan_review_owed (queue_admission.py:2408), which compares the pointer's recorded section and document digests against the plan instead of re-running the whole dispatch gate, and that narrowing is delivered for the batch entry only.",
+    "manifest": "read; it records status complete with the gate command, five named logs, baseline_suite 10 failures at 7686568 and after_suite 0 at e454c09e26, added_failure_count 0, and states the two unmet items under blockers and outside_scope.",
+    "write_paths": "read the manifest's declared paths and the dispatch fence; the diff touches reckon/crew/queue_admission.py, tests/test_a_queued_request_is_checked_once.py and the evidence fragment, all inside the grant, and leaves the granted routing.py, node.py and figure directory untouched."
+  },
+  "justifications": {
+    "durability": "test_its_own_section_text_change_holds_it_until_a_covering_review at tests/test_a_queued_request_is_checked_once.py:216 reddens if the section-digest comparison is removed, and the declared mutation log shows the other-section arm reddening; no added assertion compares a value against an input the test itself supplied.",
+    "evidence": "logs/head-arm.log records 14 passed EXIT=0 at e454c09e26 and I re-ran the named gate in the reviewed worktree to the same 14 passed EXIT=0, with logs/base-arm.log and logs/negative-control.log carrying their own EXIT lines.",
+    "fit": "the re-export at queue_admission.py:39 uses the same noqa: PLC0414 idiom as dispatch.py:143 and the new helpers follow the module-local lazy-import style of the surrounding predicate.",
+    "goal_fidelity": "queue_admission.py:2408 holds a request only on a moved-and-uncovered recorded digest, but the effective production path runs.queue_dispatch stamps no contract so _dispatch_gate_owed at queue_admission.py:2380 returns the pre-change verdict.",
+    "reuse": "plan_review_units is deleted from queue_admission and imported from routing.py:2434 with an identity assertion, and the predicate reuses review_coverage, _section_digests, _contract_digest, _document_change_is_contract and _uncovered_change_detail; the only small duplication is the gate-verdict-as-reason try/except now also present at crew_dispatch_commands.py:1862.",
+    "scope_discipline": "the three changed paths are all inside the fence and no plan file was edited, though one required done_when item was left undone because its file, plan_review.py, lies outside the grant."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to hold a queued request only while its own contract has an unreviewed change; reckon/crew/queue_admission.py:2408 now compares the pointer's recorded section and document digests against the plan instead of re-running the whole dispatch gate, reached from admit_once and _release_plan_review_holds.\nVERDICT done_when: tests/test_a_queued_request_is_checked_once.py carries all five named arms and logs/head-arm.log records 14 passed EXIT=0 against 10 failed 4 passed EXIT=1 at base, but the carried requirement that routing._document_change_is_contract read its snapshot through plan_review._snapshot_evidence is unmet and declared, not evidenced.\nVERDICT write_paths: the manifest's declared paths and the dispatch fence both list queue_admission.py, routing.py, node.py, the test and the evidence fragment; the diff touches three of them and leaves routing.py, node.py and the figure directory untouched.\nVERDICT manifest: read; it records status complete, the gate command, five named logs, baseline 10 failures at 7686568 against 0 at e454c09e26, and the two unmet items under blockers and outside_scope.\nVERDICT diff: read commit by commit from 768656861bffbc5b6b1b9bb20b10ba87dfa7ea1f; c0138556fe adds review_contract, record_review_contract and _contract_is_current with the narrowed predicate, e454c09e26 factors _dispatch_gate_owed and answers the two no-comparison states with the dispatch gate's verdict.\nCALL_SITES: reckon/crew/queue_admission.py:_release_plan_review_holds, reckon/crew/queue_admission.py:admit_once\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:2408 narrows the hold, but reckon/crew/queue_admission.py:2217 stamps a contract only in queue_requests, which no production code calls, so runs.queue_dispatch pointers take _dispatch_gate_owed at :2380 and behave as before.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-arm.log records 14 passed EXIT=0 at e454c09e26 and I re-ran the named gate in the reviewed worktree to the same 14 passed EXIT=0, with base and negative-control logs carrying their own EXIT lines.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every changed path (queue_admission.py, the test, the evidence fragment) is inside the fence and no plan file was edited, though one required done_when item was left undone because plan_review.py lies outside the grant.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_queued_request_is_checked_once.py:216 reddens if the section-digest comparison is dropped, and logs/negative-control.log shows the other-section arm reddening under the declared mutation; no added assertion compares a value against an input the test itself supplied.\nSCORE fit: 18\nJUSTIFICATION fit: the re-export at reckon/crew/queue_admission.py:39 uses the same noqa: PLC0414 idiom as reckon/crew/dispatch.py:143 and the helpers keep the module's lazy-import style.\nSCORE reuse: 17\nJUSTIFICATION reuse: plan_review_units is deleted here and imported from reckon/crew/routing.py:2434 with an identity assertion, and the predicate reuses review_coverage, _section_digests, _contract_digest and _document_change_is_contract; the only repeated idiom is the gate-verdict try/except also at reckon/crew_dispatch_commands.py:1862.\nFINDING reckon/crew/queue_admission.py:2217 non-blocking: the contract is stamped only by queue_requests, which has no production caller, so production pointers from runs.queue_dispatch all take the dispatch-gate fallback and the narrowed hold is inert until the wiring node lands.\nFINDING docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-queued-request-is-checked-once.html:1 non-blocking: the landing record states the pending production wiring but omits the second unmet done_when item, that routing._document_change_is_contract does not read through plan_review._snapshot_evidence, so plan section 10 will read as fully satisfied.",
+  "review_run_id": "r-20261028T142323104623-review-of-a-queued-request-is-checked-once-e454c09e2645",
+  "reviewed_base_sha": "768656861bffbc5b6b1b9bb20b10ba87dfa7ea1f",
+  "reviewed_head_sha": "e454c09e2645129ff694ce076aae439488bd4568",
+  "reviewed_run_id": "r-20261028T110649055482-a-queued-request-is-checked-once",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T14:50:53.977402+00:00",
+  "total": 100
+}

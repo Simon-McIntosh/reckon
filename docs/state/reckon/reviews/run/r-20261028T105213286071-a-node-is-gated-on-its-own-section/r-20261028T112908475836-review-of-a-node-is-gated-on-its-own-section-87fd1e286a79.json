@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:872",
+    "reckon/crew/queue_admission.py:2325"
+  ],
+  "completed_at": "2026-10-28T11:38:49.943Z",
+  "dispatched_at": "2026-10-28T11:30:30Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-queued-request-is-checked-once",
+      "recorded_at": "2026-10-28T11:40:48.248128+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-queued-request-is-checked-once",
+      "recorded_at": "2026-10-28T11:40:53.564277+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-queued-request-is-checked-once",
+      "recorded_at": "2026-10-28T11:40:59.943344+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "id": "f2bcb74bcc7",
+      "line": 2511,
+      "severity": "non-blocking",
+      "text": "CONTRACT_DOCUMENT_FIELDS names summary, decisions and gates, but only decisions is guarded: trimming the tuple to (\"decisions\",) leaves all four tests green, so a regression that stops a summary or gate edit from holding a node passes the suite."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "id": "f818718cc4e",
+      "line": 2549,
+      "severity": "non-blocking",
+      "text": "The three fail-closed branches of _document_change_is_contract (no candidate review, no review run id, missing or unreadable snapshot) are untested, so flipping any of them to return False would let an unseen document change through with every test still green."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "id": "fef1244f5e2",
+      "line": 2552,
+      "severity": "non-blocking",
+      "text": "_document_change_is_contract re-implements the stored-review snapshot lookup that plan_review._snapshot_evidence already owns; it duplicates the run-id, review_report_directory and _REVIEW_SNAPSHOT_NAME resolution rather than extending that owner."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch_plan.py:872 (enforce per flight config, node carries its section) and reckon/crew/queue_admission.py:2325 (enforce=True, units=plan_review_units(node.section)) both reach the changed narrowing; reckon/crew/dispatch.py:143 re-exports it.",
+    "diff": "Read both commits against base 81ff53eb50; e0e70c7fde adds 85 lines to reckon/crew/routing.py and a new 186-line test file, 87fd1e286a adds the 30-line landing fragment, and nothing else changed.",
+    "done_when": "The done_when names a s2/s3 plan, a stored content review, an s3 edit, s2 admitted, s3 refused naming s3, the refusal naming every uncovered unit, the contract rule for the document unit, no added failure in the importing-files arm, and a negative control; tests/test_a_node_is_gated_on_its_own_section.py carries each arm and logs/gate-head.log, logs/gate-base.log and logs/negative-control.log record their results.",
+    "goal": "The node's goal is to make the dispatch-time plan-review gate judge only the units the node builds; routing.py:2705-2720 narrows the gating set to the caller's scope and drops the document unit unless its contract text changed.",
+    "manifest": "The manifest reads status complete, commits e0e70c7fde and 87fd1e286a, head 4 passed EXIT=0 against base 2 failed 2 passed EXIT=1, negative control 2 failed EXIT=1, and the importer arm head 3 failed 858 passed 1 error against base 6 failed 855 passed 1 error.",
+    "write_paths": "The declared paths are reckon/crew/routing.py, tests/test_a_node_is_gated_on_its_own_section.py, docs/evidence/fragments/a-review-gate-judges-what-it-covers/a-node-is-gated-on-its-own-section.html and the figures directory for the node; git diff --name-only 81ff53eb50 87fd1e286a lists exactly the first three."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the dispatch-time plan-review gate judge only the units the node builds, and reckon/crew/routing.py:2705-2722 now keeps the uncovered set whole for the refusal while filtering a gating set to the caller's scope and dropping the document unit unless its contract text changed.\nVERDICT done_when: the done_when names the s2/s3 section arm, the refusal naming every uncovered unit, the document-unit contract rule, the importing-files arm and a negative control; tests/test_a_node_is_gated_on_its_own_section.py carries each arm and the three gate logs record 4 passed EXIT=0 at head, 2 failed EXIT=1 at base and 2 failed EXIT=1 under the declared mutation.\nVERDICT write_paths: the declared scope is reckon/crew/routing.py, tests/test_a_node_is_gated_on_its_own_section.py and the a-node-is-gated-on-its-own-section evidence fragment; git diff --name-only 81ff53eb50 87fd1e286a lists exactly those three paths.\nVERDICT manifest: read; it records status complete, commits e0e70c7fde and 87fd1e286a, head 4 passed EXIT=0 against base 2 failed 2 passed EXIT=1, negative control 2 failed EXIT=1, and the importer arm adding no failure at head (logs/gate-head.log, logs/gate-base.log, logs/negative-control.log, logs/importers-head.log, logs/importers-base.log).\nVERDICT diff: read both commits against base 81ff53eb50e55c00c700fb2e56f8b1e85649f941; e0e70c7fde changes only reckon/crew/routing.py (+85/-5) and adds tests/test_a_node_is_gated_on_its_own_section.py (+186), and 87fd1e286a adds only the 30-line landing fragment.\nCALL_SITES: reckon/crew/dispatch_plan.py:872, reckon/crew/queue_admission.py:2325\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:2705-2722 keeps `owed` for the message and drops the document unit from `gating` only when _document_change_is_contract finds the contract text unchanged, which is exactly \u00a72's rule.\nSCORE evidence: 16\nJUSTIFICATION evidence: the done_when's test arms are recorded in logs/gate-head.log and logs/gate-base.log on the literal command, but its ruff clause is met only as an unchanged delta on reckon/crew/routing.py rather than as a pass.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-only against 81ff53eb50 lists three paths, all inside the four declared write paths, and no plan, index or sprint file is written.\nSCORE durability: 14\nJUSTIFICATION durability: the refusal-naming case and the document-edit case in tests/test_a_node_is_gated_on_its_own_section.py:145 and :160 fail at base and under the declared mutation, but reckon/crew/routing.py:2511 leaves the summary and gates members and the fail-closed fallbacks at :2549-:2560 with no assertion that reddens if they change.\nSCORE fit: 17\nJUSTIFICATION fit: the added names at reckon/crew/routing.py:2511-:2524 follow the module's existing private-helper style and name a mechanism rather than a plan stage, and the new test file passes ruff check.\nSCORE reuse: 13\nJUSTIFICATION reuse: _contract_digest reuses plan_review._digest and _without_comments_and_followups, but _document_change_is_contract at reckon/crew/routing.py:2552 duplicates the snapshot lookup already owned by plan_review._snapshot_evidence at reckon/crew/plan_review.py:747.\nFINDING reckon/crew/routing.py:2511 non-blocking: CONTRACT_DOCUMENT_FIELDS names summary, decisions and gates, but only decisions is guarded \u2014 trimming the tuple to (\"decisions\",) leaves all four tests green.\nFINDING reckon/crew/routing.py:2549 non-blocking: the three fail-closed branches of _document_change_is_contract (no candidate review, no review run id, missing or unreadable snapshot) are untested, so flipping any of them to return False gating nothing would pass the suite.\nFINDING reckon/crew/routing.py:2552 non-blocking: the stored-review snapshot lookup re-implements the capability plan_review._snapshot_evidence owns, without extending that owner.",
+  "review_run_id": "r-20261028T112908475836-review-of-a-node-is-gated-on-its-own-section-87fd1e286a79",
+  "reviewed_base_sha": "81ff53eb50e55c00c700fb2e56f8b1e85649f941",
+  "reviewed_head_sha": "87fd1e286a79bfadfabc0fb2840a96b6643b2f6e",
+  "reviewed_run_id": "r-20261028T105213286071-a-node-is-gated-on-its-own-section",
+  "rubric_lines": {
+    "durability": "14",
+    "evidence": "16",
+    "fit": "17",
+    "goal_fidelity": "18",
+    "reuse": "13",
+    "scope_discipline": "19"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-28T11:38:51.137985+00:00",
+  "total": 97
+}

@@ -1191,6 +1191,7 @@ def _reserved_lane_exclusion(
     attempts: int,
     utilisation: float | None,
     lift_in_force: bool = False,
+    waive_tier: bool = False,
 ) -> str | None:
     """The reason a lane's policy withholds it from this node, or None.
 
@@ -1213,12 +1214,21 @@ def _reserved_lane_exclusion(
     under an uncapped lift still withholds the lane, with the verdict's own
     reason. What remains of the policy is the tier and attempts terms, which are
     what keep an ordinary node on the local lane.
+
+    ``waive_tier`` is the oversize-node waiver: a caller that has established no
+    lane outside the policy's coverage can run the node at all waives the tier
+    and attempts terms, and every other term -- the window ceiling and the
+    budget verdict the caller has already applied -- still withholds the lane.
     """
     floor = policy.get(flight.PICKER_RESERVED_LANE_FLOOR_KEY) or {}
     threshold = policy.get(flight.PICKER_RESERVED_LANE_ATTEMPTS_KEY)
     ceiling = float(policy.get(flight.PICKER_RESERVED_LANE_CEILING_KEY) or 0)
     attempts_met = isinstance(threshold, int) and attempts >= threshold
-    if not _reserved_lane_floor_met(declared, floor) and not attempts_met:
+    if (
+        not waive_tier
+        and not _reserved_lane_floor_met(declared, floor)
+        and not attempts_met
+    ):
         return (
             f"reserved-lane: {lane} is offered at its hardest tier "
             f"{sorted(floor)} or after {threshold} attempts; this node declares "
@@ -1311,6 +1321,57 @@ def _group_name(group: Any, config: Mapping[str, Any] | None) -> str | None:
         if tuple(declared_members) == members:
             return str(name)
     return None
+
+
+OVERSIZE_CONTEXT_WAIVER_NOTE = "offered because no open lane fits the node's context"
+
+
+def _excluded_only_on_context(reasons: list[str]) -> bool:
+    """Whether context fit is the whole of why a candidate was removed."""
+    return bool(reasons) and all(
+        reason.startswith("context-fit: ") for reason in reasons
+    )
+
+
+def _candidate_availability(
+    request: PickRequest,
+    name: str,
+    config: Mapping[str, Any],
+    backend: Mapping[str, Any],
+    model: str | None,
+    repo: Path,
+    *,
+    availability_cache: dict[tuple[str, str | None], dict[str, Any]] | None,
+    cached_only: bool,
+    now: datetime,
+) -> str:
+    """One lane's serving status, from its document, the cache, then the probe."""
+    cache_key = (name, model)
+    observation = (availability_cache or {}).get(cache_key)
+    if observation is None:
+        # A lane publishing what it serves answers from that document, which is
+        # authoritative for it and costs no request.
+        observation = _serving_observation(backend)
+    if observation is None and cached_only:
+        observation = _cached_observation(request.project, name, config, now=now)
+    if observation is None:
+        if cached_only:
+            # A cached pick issues no request. An absent or expired observation
+            # is unknown, never a claim the lane is down, so the candidate stays
+            # offered for Jev to weigh.
+            observation = {"status": "unknown"}
+        else:
+            serving_backend = {
+                **config["backends"][name],
+                "model": model,
+                "effort": backend.get("effort"),
+            }
+            observation = resumption.probe_lane_availability(
+                request.project, name, serving_backend, root=repo
+            )
+            if availability_cache is not None:
+                availability_cache[cache_key] = observation
+    return str(observation.get("status") or "unknown")
 
 
 def candidates(
@@ -1499,6 +1560,10 @@ def candidates(
         else:
             variants.append((name, None, None))
     result = []
+    # The reserved candidates a policy withheld, with the readings their policy
+    # was judged on, so the set-wide oversize waiver below can re-judge each of
+    # them without re-reading a window or a budget.
+    reserved_withheld: list[dict[str, Any]] = []
     for name, model_key, _model_settings in variants:
         local = name == config.get("local_backend")
         # A lane model's row is built through the same two steps dispatch takes:
@@ -1614,20 +1679,32 @@ def candidates(
                 now=now,
                 session=request.session,
             )
+            reserved_utilisation = (
+                utilisation
+                if not live_snapshot
+                else _reserved_fill_window_utilisation(group, view, config, now=now)
+            )
             withheld = _reserved_lane_exclusion(
                 family,
                 reserved[family],
                 declared=declared_requirements,
                 attempts=attempts,
-                utilisation=(
-                    utilisation
-                    if not live_snapshot
-                    else _reserved_fill_window_utilisation(group, view, config, now=now)
-                ),
+                utilisation=reserved_utilisation,
                 lift_in_force=lift_in_force,
             )
             if withheld:
                 reasons.append(withheld)
+                reserved_withheld.append(
+                    {
+                        "backend": name,
+                        "backend_settings": backend,
+                        "model": model,
+                        "family": family,
+                        "utilisation": reserved_utilisation,
+                        "lift_in_force": lift_in_force,
+                        "availability_cache": availability_cache,
+                    }
+                )
         # Already-excluded candidates need no repository census or serving probe.
         context_block = None
         if not reasons:
@@ -1649,34 +1726,17 @@ def candidates(
         if reasons:
             availability = "not-probed"
         else:
-            cache_key = (name, model)
-            observation = (availability_cache or {}).get(cache_key)
-            if observation is None:
-                # A lane publishing what it serves answers from that document,
-                # which is authoritative for it and costs no request.
-                observation = _serving_observation(backend)
-            if observation is None and cached_only:
-                observation = _cached_observation(
-                    request.project, name, config, now=now
-                )
-            if observation is None:
-                if cached_only:
-                    # A cached pick issues no request. An absent or expired
-                    # observation is unknown, never a claim the lane is down,
-                    # so the candidate stays offered for Jev to weigh.
-                    observation = {"status": "unknown"}
-                else:
-                    serving_backend = {
-                        **config["backends"][name],
-                        "model": model,
-                        "effort": backend.get("effort"),
-                    }
-                    observation = resumption.probe_lane_availability(
-                        request.project, name, serving_backend, root=repo
-                    )
-                    if availability_cache is not None:
-                        availability_cache[cache_key] = observation
-            availability = str(observation.get("status") or "unknown")
+            availability = _candidate_availability(
+                request,
+                name,
+                config,
+                backend,
+                model,
+                repo,
+                availability_cache=availability_cache,
+                cached_only=cached_only,
+                now=now,
+            )
             if availability in {"refused", "unavailable", "logged-out"}:
                 reasons.append("availability: " + availability)
         reset = parse_utc(str(budget_facts.get("resets_at") or ""))
@@ -1748,4 +1808,93 @@ def candidates(
                 ),
             )
         )
+    # A node too large for every lane no policy reserves would be refused
+    # outright, and its work never enters the queue. That decision belongs here
+    # because only this function holds the whole set: when no unreserved
+    # candidate is left and every unreserved one was removed on context fit
+    # alone, the tier and attempts terms of a reserved lane's policy are waived
+    # for this node. Nothing else is: the window ceiling and the budget verdict
+    # were already applied when the candidate's reasons were built, and a
+    # candidate held by one of those is left exactly as it was. A candidate the
+    # waiver does admit is measured on its own context fit -- a reserved lane
+    # whose window the node also exceeds cannot run it either -- and probed for
+    # serving like any other offered candidate, since an offer that skipped the
+    # probe would be the only one in the set that did.
+    unreserved = [candidate for candidate in result if candidate.family not in reserved]
+    if (
+        reserved_withheld
+        and unreserved
+        and all(_excluded_only_on_context(c.reasons) for c in unreserved)
+    ):
+        for withheld_lane in reserved_withheld:
+            candidate = next(
+                (
+                    c
+                    for c in result
+                    if c.backend == withheld_lane["backend"]
+                    and c.model == withheld_lane["model"]
+                ),
+                None,
+            )
+            if candidate is None:
+                continue
+            # The waiver reaches the policy's own terms and nothing else. A lane
+            # a budget verdict, a paused gate, a review exclusion or an
+            # in-harness launch already removed is removed for that reason, and
+            # a reason list holding any of them is left exactly as it is rather
+            # than emptied along with the policy's.
+            policy_reasons = [
+                reason
+                for reason in candidate.reasons
+                if reason.startswith("reserved-lane: ")
+            ]
+            if not policy_reasons or len(policy_reasons) != len(candidate.reasons):
+                continue
+            still_withheld = _reserved_lane_exclusion(
+                withheld_lane["family"],
+                reserved[withheld_lane["family"]],
+                declared=declared_requirements,
+                attempts=attempts,
+                utilisation=withheld_lane["utilisation"],
+                lift_in_force=withheld_lane["lift_in_force"],
+                waive_tier=True,
+            )
+            if still_withheld:
+                continue
+            contexts: dict[str, Any] = {}
+            fit_reasons = _fit(
+                request,
+                candidate.backend,
+                withheld_lane["backend_settings"],
+                repo,
+                verdict_inputs=shared,
+                authority=authority,
+                context_out=contexts,
+            )
+            if fit_reasons:
+                candidate.reasons[:] = fit_reasons
+                continue
+            for reason in policy_reasons:
+                candidate.reasons.remove(reason)
+            candidate.context = _context_block(
+                contexts.get(candidate.backend),
+                node_context_tokens,
+                lane_utilisation.get(candidate.backend, {}),
+            )
+            availability = _candidate_availability(
+                request,
+                candidate.backend,
+                config,
+                withheld_lane["backend_settings"],
+                candidate.model,
+                repo,
+                availability_cache=withheld_lane["availability_cache"],
+                cached_only=cached_only,
+                now=now,
+            )
+            if availability in {"refused", "unavailable", "logged-out"}:
+                candidate.reasons.append("availability: " + availability)
+                continue
+            candidate.availability = availability
+            candidate.note = OVERSIZE_CONTEXT_WAIVER_NOTE
     return result
