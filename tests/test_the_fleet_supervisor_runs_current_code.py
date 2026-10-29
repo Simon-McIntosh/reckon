@@ -265,8 +265,8 @@ def test_a_dirty_checkout_costs_one_trust_test_per_moved_stamp(tmp_path):
         wait_for((run.runtime / "requests").exists)
         assert run.verdict_checks() == []
 
-        # One move, then many passes on the tree it moved to: the verdict is
-        # remembered for that stamp, so exactly one trust test is paid.
+        # One move, then many passes on the tree it moved to: inside the
+        # interval the verdict is not asked again, so exactly one is paid.
         run.set_stamp("stamp-b")
         wait_for(run.verdict_checks)
         _passes(2)
@@ -287,6 +287,36 @@ def test_a_dirty_checkout_costs_one_trust_test_per_moved_stamp(tmp_path):
         assert len(run.verdict_checks()) == 2, run.verdict_checks()
         assert run.verdict_checks()[1] == {"running": "stamp-a", "disk": "stamp-c"}
         assert run.replacements() == []
+    finally:
+        run.stop()
+
+
+def test_a_stamp_refused_once_is_asked_about_again(tmp_path):
+    run = Running(tmp_path, trusted=False)
+    try:
+        wait_for((run.runtime / "requests").exists)
+        run.set_stamp("stamp-b")
+        wait_for(run.verdict_checks)
+        _passes(2)
+        assert len(run.verdict_checks()) == 1, run.verdict_checks()
+        assert run.replacements() == []
+
+        # The dirt is discarded without the identity moving: the committed tree
+        # the stamp names is now the code on disk and may be loaded. A verdict
+        # taken once must not stand for ever, or the supervisor would keep an
+        # image older than the stamp it is holding until the next commit.
+        run.trust.write_text("trusted\n", encoding="utf-8")
+        _passes(2)
+        assert len(run.verdict_checks()) == 1, run.verdict_checks()
+
+        run.set_clock(fleet_supervisor.MOVE_CHECK_INTERVAL_SECONDS)
+        wait_for(run.replacements)
+        assert len(run.verdict_checks()) == 2, run.verdict_checks()
+        assert run.verdict_checks()[1] == {"running": "stamp-a", "disk": "stamp-b"}
+        assert run.replacements()[0]["argv"][1:3] == [
+            "-m",
+            "reckon.crew.fleet_supervisor",
+        ]
     finally:
         run.stop()
 

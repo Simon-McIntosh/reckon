@@ -128,9 +128,13 @@ REQUEST_READ_BYTES = 65536
 # The trust test behind a moved-checkout verdict loads every module in the
 # package, so it is not something a loop that wakes twice a second can run on
 # every pass. A pass compares the cheap code stamp only; the verdict is paid for
-# when the stamp has moved, once for that stamp, and never twice inside this
-# interval. A checkout left dirty therefore costs one check however long it
-# stays dirty, and a tree that moves several times in a minute costs one.
+# when the stamp has moved, and never twice inside this interval. A checkout
+# left dirty therefore costs one check per interval rather than one per pass,
+# and the same stamp is asked about again after the interval: a tree whose dirt
+# is discarded, or a verdict refused for a reason that has since passed, is
+# adopted then. Giving up on a stamp after one refusal would hold a stale image
+# for exactly as long as that stamp is the one on disk, which for a moved HEAD
+# is until the next commit.
 MOVE_CHECK_INTERVAL_SECONDS = 60.0
 
 # A session created with ``--create-background`` applies its layout with no
@@ -2137,7 +2141,6 @@ def serve(
     try:
         pending = b""
         recorded_stamp = code_stamp()
-        tested_stamp: str | None = None
         tested_at: float | None = None
         while True:
             _reap_finished_children()
@@ -2153,16 +2156,13 @@ def serve(
                 # would loop forever while the read keeps failing.
                 if stamp_read:
                     recorded_stamp = current_stamp
-            elif (
-                stamp_read
-                and current_stamp not in (recorded_stamp, tested_stamp)
-                and interval_passed
-            ):
-                # The cheap stamp has moved, so this is the one pass in the
-                # interval that pays for the verdict. That verdict carries the
-                # trust test, and it is remembered for this stamp, so a tree
-                # left dirty costs one check rather than one per pass.
-                tested_stamp = current_stamp
+            elif stamp_read and current_stamp != recorded_stamp and interval_passed:
+                # The cheap stamp has moved and the interval since the last
+                # verdict has passed, so this pass pays for the verdict. It is
+                # asked again after the next interval while the stamps still
+                # differ: a refusal describes the tree at the moment it was
+                # taken, and the tree can become loadable without its identity
+                # moving -- dirt discarded, or an import probe that timed out.
                 tested_at = clock()
                 verdict = moved_checkout(recorded_stamp)
                 if verdict.moved and verdict.trusted:
