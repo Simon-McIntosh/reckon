@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:274",
+    "reckon/crew/promotion.py:684",
+    "reckon/crew/promotion.py:1990",
+    "reckon/crew/queue_admission.py:2600",
+    "reckon/crew/queue_admission.py:3826"
+  ],
+  "completed_at": "2026-10-29T12:21:19.973Z",
+  "dispatched_at": "2026-10-29T12:14:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "2403",
+      "severity": "non-blocking",
+      "text": "non-blocking: _release_waiters repeats the candidate scan and the resolve/move bookkeeping that advance_waiting_requests already owns at queue_admission.py:2561, and unlike that owner it never calls _rederive_waits, so a request whose waits a plan edit rewrote after it queued is not among the inline release's candidates; the 30 s tick still reaches it, but the inline route covers less than \"every mover uses one function\" implies."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "684",
+      "severity": "non-blocking",
+      "text": "non-blocking: the inline release derives readiness from the plan, and promotion writes no section_declarations itself, so it releases nothing unless the landing beat has already recorded the section as done at queue_landing.py:360; the service's ordering (land_once before admit_once, queue_admission.py:3822) makes that true today, but the docstring's \"has now landed\" claims more than the call can see, leaving a hand-promoted run silently releasing nobody."
+    },
+    {
+      "file": "tests/test_a_landed_section_releases_its_waiters.py",
+      "line": "248",
+      "severity": "non-blocking",
+      "text": "non-blocking: _json_line is defined and never called, and import json at line 15 exists only for it; dead code in a new test file suggests a JSON-shape assertion is made somewhere when none is."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all three commits against c9aab06ac87 \u2014 13b347150a adds _resolve_and_move, _release_waiters, _release_tick and the promotion/discard callers, 8337f6ebbf is formatting only, and 5558b4e7d5 adds the evidence fragment; reckon/crew/dispatch.py:274 replaces its inline resolve-then-move idiom with one call, so the duplicated idiom is retired rather than copied.",
+    "done_when": "read the node's FENCE \u2014 EVIDENCE measure against tests/test_a_landed_section_releases_its_waiters.py; every named arm is present \u2014 the promotion release with a neighbouring section left waiting at lines 119-140, the tick release and its pacing at 143-167, the raising release at 170-191, the patched count of the shared function at 194-213, and the discard arm at 232-246 \u2014 and I re-ran the gate at the reviewed head in a scratch extraction, which printed \"6 passed\", EXIT=0.",
+    "goal": "the node's goal is \"release a landed section's waiting requests without an admission pass\"; reckon/crew/promotion.py:684 calls _release_waiters_of_the_landed_section from complete(), which hands the plan#section ref to queue_admission._release_waiters at reckon/crew/queue_admission.py:2403 and moves a waiting request to queued, while reckon/crew/queue_admission.py:2486 adds the service's own 30 s release tick, so a release no longer waits behind a launch or landing pass.",
+    "manifest": "read; it records the gate at \"6 passed\" EXIT=0, the negative control at \"1 failed\" EXIT=1 with the first arm red, the importer arms at 62 passed at base and 62 passed at head, and it states the queue_landing.py boundary under evidence_inputs instead of claiming the declaration write.",
+    "write_paths": "read the manifest's six declared paths; the diff against c9aab06ac87 changes exactly reckon/crew/queue_admission.py, reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_a_landed_section_releases_its_waiters.py and the always-permitted evidence fragment at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-landed-section-releases-its-waiters.html, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the recorded negative control removes the inline release call from reckon/crew/promotion.py:684 and the first arm reddens at tests/test_a_landed_section_releases_its_waiters.py:137, and each remaining arm names a condition under which it fails (the tick not running at line 158, a raising release propagating at line 185, dispatch bypassing the shared function at line 203); the clock assertion at line 163 compares the value handed to _release_tick against what the store kept, which is falsifiable only through the skipped tick at line 161.",
+    "evidence": "the gate log records \"6 passed\" EXIT=0 and I re-ran the same file against a git-archive extraction of 5558b4e7d5, which printed \"6 passed\" EXIT=0, so the measure holds at the reviewed head and not only on the worker's uncommitted tree.",
+    "fit": "the new helpers are private and sit beside resolve_waits at reckon/crew/queue_admission.py:2345-2500, the comments describe latency and pacing rather than naming any plan, section or ticket, and the one public addition RELEASE_TICK_SECONDS at queue_admission.py:2479 is a module constant, not a callable definition.",
+    "goal_fidelity": "reckon/crew/promotion.py:684 and reckon/crew/queue_admission.py:2486 give the release both an inline route on landing and its own 30 s tick, so a landed ref reaches queued without an admission pass; the inline route's reach is narrowed by the promotion not writing the plan declaration itself (see the finding at promotion.py:684).",
+    "reuse": "_resolve_and_move at reckon/crew/queue_admission.py:2345 wraps the existing resolve_waits and retires the copy in reckon/crew/dispatch.py:274, but _release_waiters at queue_admission.py:2403 re-walks the candidate scan that advance_waiting_requests already owns at queue_admission.py:2561 instead of extending it, and no owner for a paced tick exists anywhere in reckon/crew (the search found only this module's _RELEASE_TICK_LAST).",
+    "scope_discipline": "git diff --stat c9aab06ac87 5558b4e7d5 names five files, all inside the manifest's declared write paths, and the two pre-existing ruff findings at reckon/crew/promotion.py:1706 are present unchanged at the base revision (1666 there), so the commit adds no lint delta."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"release a landed section's waiting requests without an admission pass\"; reckon/crew/promotion.py:684 calls _release_waiters_of_the_landed_section from complete(), which hands the plan#section ref to queue_admission._release_waiters at reckon/crew/queue_admission.py:2403 and moves a waiting request to queued, while reckon/crew/queue_admission.py:2486 adds the service's own 30 s release tick, so a release no longer waits behind a launch or landing pass.\nVERDICT done_when: read the node's FENCE \u2014 EVIDENCE measure against tests/test_a_landed_section_releases_its_waiters.py; every named arm is present \u2014 the promotion release with a neighbouring section left waiting at lines 119-140, the tick release and its pacing at 143-167, the raising release at 170-191, the patched count of the shared function at 194-213, and the discard arm at 232-246 \u2014 and I re-ran the gate at the reviewed head in a scratch extraction, which printed \"6 passed\", EXIT=0.\nVERDICT write_paths: read the manifest's six declared paths; the diff against c9aab06ac87 changes exactly reckon/crew/queue_admission.py, reckon/crew/dispatch.py, reckon/crew/promotion.py, tests/test_a_landed_section_releases_its_waiters.py and the always-permitted evidence fragment at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-landed-section-releases-its-waiters.html, and nothing outside them.\nVERDICT manifest: read; it records the gate at \"6 passed\" EXIT=0, the negative control at \"1 failed\" EXIT=1 with the first arm red, the importer arms at 62 passed at base and 62 passed at head, and it states the queue_landing.py boundary under evidence_inputs instead of claiming the declaration write.\nVERDICT diff: read all three commits against c9aab06ac87 \u2014 13b347150a adds _resolve_and_move, _release_waiters, _release_tick and the promotion/discard callers, 8337f6ebbf is formatting only, and 5558b4e7d5 adds the evidence fragment; reckon/crew/dispatch.py:274 replaces its inline resolve-then-move idiom with one call, so the duplicated idiom is retired rather than copied.\nCALL_SITES: reckon/crew/dispatch.py:274, reckon/crew/promotion.py:684, reckon/crew/promotion.py:1990, reckon/crew/queue_admission.py:2600, reckon/crew/queue_admission.py:3826\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:684 and reckon/crew/queue_admission.py:2486 give the release both an inline route on landing and its own 30 s tick, so a landed ref reaches queued without an admission pass; the inline route's reach is narrowed by the promotion not writing the plan declaration itself (see the finding at promotion.py:684).\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate log records \"6 passed\" EXIT=0 and I re-ran the same file against a git-archive extraction of 5558b4e7d5, which printed \"6 passed\" EXIT=0, so the measure holds at the reviewed head and not only on the worker's uncommitted tree.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat c9aab06ac87 5558b4e7d5 names five files, all inside the manifest's declared write paths, and the two pre-existing ruff findings at reckon/crew/promotion.py:1706 are present unchanged at the base revision (1666 there), so the commit adds no lint delta.\nSCORE durability: 17\nJUSTIFICATION durability: the recorded negative control removes the inline release call from reckon/crew/promotion.py:684 and the first arm reddens at tests/test_a_landed_section_releases_its_waiters.py:137, and each remaining arm names a condition under which it fails (the tick not running at line 158, a raising release propagating at line 185, dispatch bypassing the shared function at line 203); the clock assertion at line 163 compares the value handed to _release_tick against what the store kept, which is falsifiable only through the skipped tick at line 161.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers are private and sit beside resolve_waits at reckon/crew/queue_admission.py:2345-2500, the comments describe latency and pacing rather than naming any plan, section or ticket, and the one public addition RELEASE_TICK_SECONDS at queue_admission.py:2479 is a module constant, not a callable definition.\nSCORE reuse: 16\nJUSTIFICATION reuse: _resolve_and_move at reckon/crew/queue_admission.py:2345 wraps the existing resolve_waits and retires the copy in reckon/crew/dispatch.py:274, but _release_waiters at queue_admission.py:2403 re-walks the candidate scan that advance_waiting_requests already owns at queue_admission.py:2561 instead of extending it, and no owner for a paced tick exists anywhere in reckon/crew (the search found only this module's _RELEASE_TICK_LAST).\nFINDING reckon/crew/queue_admission.py:2403 non-blocking: _release_waiters repeats the candidate scan and the resolve/move bookkeeping that advance_waiting_requests already owns at queue_admission.py:2561, and unlike that owner it never calls _rederive_waits, so a request whose waits a plan edit rewrote after it queued is not among the inline release's candidates; the 30 s tick still reaches it, but the inline route covers less than \"every mover uses one function\" implies.\nFINDING reckon/crew/promotion.py:684 non-blocking: the inline release derives readiness from the plan, and promotion writes no section_declarations itself, so it releases nothing unless the landing beat has already recorded the section as done at queue_landing.py:360; the service's ordering (land_once before admit_once, queue_admission.py:3822) makes that true today, but the docstring's \"has now landed\" claims more than the call can see, leaving a hand-promoted run silently releasing nobody.\nFINDING tests/test_a_landed_section_releases_its_waiters.py:248 non-blocking: _json_line is defined and never called, and import json at line 15 exists only for it; dead code in a new test file suggests a JSON-shape assertion is made somewhere when none is.",
+  "review_run_id": "r-20261029T121052223132-review-of-a-landed-section-releases-its-waiters-5558b4e7d52c",
+  "reviewed_base_sha": "c9aab06ac87de71d17d46c0cbe7645f69b7a870c",
+  "reviewed_head_sha": "5558b4e7d52cad9354f539d49af2c121c458c6cb",
+  "reviewed_run_id": "r-20261028T230902303591-a-landed-section-releases-its-waiters",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T12:19:25.832840+00:00",
+  "total": 106
+}
