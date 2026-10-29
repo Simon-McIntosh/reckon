@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-29T19:59:29.292Z",
+  "dispatched_at": "2026-10-29T19:54:43Z",
+  "findings": [
+    {
+      "anchor": "work-is-never-stuck-behind-the-admission-loop.html:173",
+      "id": "done_when-1",
+      "reason": "the arm as written passes on an implementation that leaves the section's central hazard open for the rest of a long tick, so it needs either an arm that the tick stops publishing on a lost lease or a check between projects inside the tick.",
+      "text": "the deliverable says a failed renewal stops the station \"rather than continuing to write without the lease\", but the stated mechanism \"exits at its next check\" and the third arm measures only that the loop stops; the check sits at the top of `while not stopping` in `run_station`, so a tick of the 14.5 minutes this section cites keeps calling `store.record_tick` for every remaining project after the lease is gone, while the peer that replaced the lease is already writing to the same store \u2014 the double-writer state the section exists to prevent",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "68c356a7d40efe5c47c22056209e40cf07d3895a",
+  "plan_fingerprint": "a0499f15928ffecdafae2ae85bb9a58f71487bde5ac4d24e018b4c8a3c507574",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 78,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261029T194645217349-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "f47a1aa53ae0687d28ad60e94c61a3953351dfa6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `reckon/crew/station.py` (`run_station` at 473, `beat.start()` at 515, `lease.renew()` at 520 after `station.tick()` at 518), `reckon/crew/host_lease.py` (`LEASE_STALE_SECONDS = 30.0` at :16, `HostLease.holder()` at :66-71, `renew()` at :118), `StationHeldError` at station.py:51, and `StationProcess.ensure` at `reckon/crew/fleet_supervisor.py:1903`; \u00a711 and \u00a712 resolve to plan sections.",
+    "done_when": "a finding \u2014 \u00a714's third arm measures only that the first station's loop stops, while the deliverable promises it stops \"rather than continuing to write without the lease\", which a tick of the length the section cites cannot satisfy.",
+    "evidence_paths": "pass \u2014 the section's evidence is the fleet log (`~/.local/state/fleet/fleet-1291586.log`, lines `station started as pid 827990` / `1144293` / `1145083` at 19:19:49Z and 19:20:38Z, matching the section's 19:19:37Z re-exec and its pids) and its gate is the new test file; no gate log is proposed inside a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the proposed test name `tests/test_the_station_holds_its_lease_while_it_beats.py` states what it measures, and no symbol or comment in the deliverable carries a plan label, stage name or ticket number into code.",
+    "reasoning": "pass \u2014 all three checks hold. The stated root cause matches the evidence: `run_station` renews only between ticks (`lease.renew()` at station.py:520 after `station.tick()` at :518) while `HostLease.holder()` treats a lease untouched for 30 s as stale (host_lease.py:16, :70), and the fleet log shows a second station started 49 s after the first during the re-exec while 827990 was still alive. The mechanism produces the measure: a beat every `STATION_BEAT_SECONDS = 5.0` (station.py:60) renewing the same lease object keeps the mtime inside the 30 s window however long a tick runs, and `StationProcess.ensure` (fleet_supervisor.py:1903-1940) already decides on `lease.holder()`, so the fix reaches the real caller without touching a file outside the declared write paths. The caller is named (`run_station`, `StationProcess.ensure`).",
+    "single_goal": "pass \u2014 \u00a714 carries one deliverable: move lease renewal onto the beating thread and make a lost lease stop the station; the refusal by `StationHeldError` and `StationProcess.ensure` leaving a live holder alone are consequences of that one mechanism, not separate work items.",
+    "wiring": "pass \u2014 \u00a714 declares no upstream and needs none to be schedulable: the beat thread it extends (\u00a712) and the supervisor reload it cites (\u00a711) are both `done`, and `plan-section-declarations` marks \u00a713 `done` and \u00a714 `implementable`, which the tree confirms (STALL_VERDICT/STALLED_RUN_DUTY_KIND landed at 09be94bfd3; `run_station` still renews its lease inside the tick loop)."
+  },
+  "section_digests": {
+    "_document": "73e9fcfa9c40e3a103b02a110bb84572496352fa17a1be06a529b66bd9dcd61f",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "1ba6c85984067fb84e9b0879d4226e43c4063cc3b0d06880860f55af80c414e1",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2660f0a8230174b58e453e15cd31c113f234218a69c1e8c217b6dd03334a224c",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T20:09:10.803334+00:00"
+}
