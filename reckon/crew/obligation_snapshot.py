@@ -311,8 +311,33 @@ def station_database_name() -> str:
 
 
 # A heartbeat older than this is reported stale rather than trusted: the
-# station writes it on every tick, so this is a station that stopped.
+# station beats from a thread of its own for as long as its process lives, so
+# this is a station that stopped.
 STATION_STALE_SECONDS = FRESHNESS_WINDOW_SECONDS
+
+# Beside its heartbeat the station keeps the stage a tick has entered and the
+# instants that bound that tick. The beat answers whether the process is alive
+# and these answer whether it is making progress, and the two are different
+# questions: a tick that spends minutes in one per-project refresh leaves a
+# fresh beat beside a tick that has run past the window. The writer names both
+# the keys and the stages through here, so the two readings cannot drift.
+STATION_TICK_STAGE_KEY = "tick_stage"
+STATION_TICK_STARTED_AT_KEY = "tick_started_at"
+STATION_TICK_FINISHED_AT_KEY = "tick_finished_at"
+STATION_TICK_STAGES = (
+    "store-tick",
+    "classify",
+    "heartbeat",
+    "per-project-refresh",
+    "publish",
+)
+
+# The three readings one station answer carries. ``stopped`` is a beat past the
+# window, ``slow`` a fresh beat with one tick running past it, and ``live``
+# everything else, including the beat between two ticks.
+STATION_LIVE = "live"
+STATION_SLOW = "slow"
+STATION_STOPPED = "stopped"
 
 
 def station_snapshot_path(project: str, *, home: str | Path | None = None) -> Path:
@@ -330,10 +355,36 @@ def station_heartbeat_age(value: Any, *, now: datetime | None = None) -> int | N
     return max(0, int((instant - stamped).total_seconds()))
 
 
+def station_tick_reading(
+    markers: Mapping[str, Any], *, now: datetime | None = None
+) -> tuple[str, int | None]:
+    """The stage the station's running tick is in, and how long it has run.
+
+    A tick is running when the start instant it recorded is later than the last
+    finish the same station recorded, which is what tells the tick between two
+    beats from one that never returned. The stage is returned either way, so a
+    reader can name the work a station was last in, and the age only for a tick
+    still running: a finished tick's age measures nothing a reader acts on.
+    """
+    stage = str(markers.get(STATION_TICK_STAGE_KEY) or "")
+    started = _parse_instant(markers.get(STATION_TICK_STARTED_AT_KEY))
+    if started is None:
+        return stage, None
+    finished = _parse_instant(markers.get(STATION_TICK_FINISHED_AT_KEY))
+    if finished is not None and finished >= started:
+        return stage, None
+    instant = _utc_now() if now is None else now
+    return stage, max(0, int((instant - started).total_seconds()))
+
+
 def _read_station_document(
     project: str, session: str, *, environ: Mapping[str, str] | None = None
-) -> tuple[dict[str, Any], str] | None:
-    """The session's document from the node's station store, with its heartbeat.
+) -> tuple[dict[str, Any], dict[str, str]] | None:
+    """The session's document from the station store, with the station's markers.
+
+    The markers are the station table's own key/value rows -- the heartbeat and
+    the tick's stage and bounding instants -- read in the same cursor as the
+    document so a reader sees one station's beat beside one station's tick.
 
     An absent store, a missing row, a row written for another project and an
     unreadable database all answer None: a reader falls through to the exported
@@ -357,9 +408,12 @@ def _read_station_document(
             row = connection.execute(
                 "SELECT payload FROM obligations WHERE session = ?", (session,)
             ).fetchone()
-            beat = connection.execute(
-                "SELECT value FROM station WHERE key = 'heartbeat'"
-            ).fetchone()
+            markers = {
+                str(key): str(value)
+                for key, value in connection.execute(
+                    "SELECT key, value FROM station"
+                ).fetchall()
+            }
         finally:
             connection.close()
     except sqlite3.Error:
@@ -372,9 +426,12 @@ def _read_station_document(
                 row = connection.execute(
                     "SELECT payload FROM obligations WHERE session = ?", (session,)
                 ).fetchone()
-                beat = connection.execute(
-                    "SELECT value FROM station WHERE key = 'heartbeat'"
-                ).fetchone()
+                markers = {
+                    str(key): str(value)
+                    for key, value in connection.execute(
+                        "SELECT key, value FROM station"
+                    ).fetchall()
+                }
             finally:
                 connection.close()
         except sqlite3.Error:
@@ -391,7 +448,7 @@ def _read_station_document(
         or str(document.get("project") or "") != project
     ):
         return None
-    return dict(document), ("" if beat is None else str(beat[0]))
+    return dict(document), markers
 
 
 def _read_station_export(
@@ -434,9 +491,15 @@ def read_station_answer(
 
     The station on this node is read first, then the snapshot a station exported
     for readers off its node. The answer carries the payload in the shape the
-    derivation returns, the station heartbeat's age, and whether that age makes
-    it stale -- a station can be quiet because the fleet is quiet, which is not
-    the same thing as a station that stopped, and only the age separates them.
+    derivation returns and three readings of the station itself: the heartbeat's
+    age, the tick's current stage and age, and the ``state`` those two make.
+
+    ``stopped`` is the only state a restart answers, and only the beat decides
+    it: a station can be quiet because the fleet is quiet, which is not a
+    station that stopped. A fresh beat with a tick that has outlived the window
+    is ``slow`` instead -- alive, working, and not something to cycle. An
+    exported snapshot names no tick stage, so an off-node reading is either
+    ``stopped`` or ``live`` and never claims a progress it cannot see.
     """
     instant = _utc_now() if now is None else now
     found = _read_station_document(project, session, environ=environ)
@@ -446,15 +509,26 @@ def read_station_answer(
         if exported is None:
             return None
         beat = exported.pop("_station_heartbeat", None)
-        found = (exported, "" if beat is None else str(beat))
+        found = (exported, {"heartbeat": "" if beat is None else str(beat)})
         source = "snapshot"
-    document, heartbeat = found
-    age = station_heartbeat_age(heartbeat, now=instant)
+    document, markers = found
+    age = station_heartbeat_age(markers.get("heartbeat"), now=instant)
+    stale = age is None or age > STATION_STALE_SECONDS
+    stage, tick_age = station_tick_reading(markers, now=instant)
+    if stale:
+        state = STATION_STOPPED
+    elif tick_age is not None and tick_age > STATION_STALE_SECONDS:
+        state = STATION_SLOW
+    else:
+        state = STATION_LIVE
     return {
         "source": source,
+        "state": state,
         "payload": live_payload(document),
         "heartbeat_age_seconds": age,
-        "stale": age is None or age > STATION_STALE_SECONDS,
+        "tick_stage": stage,
+        "tick_age_seconds": tick_age,
+        "stale": stale,
     }
 
 
