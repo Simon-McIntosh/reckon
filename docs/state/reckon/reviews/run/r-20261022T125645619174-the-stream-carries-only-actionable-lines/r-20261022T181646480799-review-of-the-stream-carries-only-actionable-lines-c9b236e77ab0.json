@@ -1,0 +1,42 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_arm_lock_is_never_held_by_a_follower.py::test_stubborn_orphan_cannot_hold_arm_lock_past_bound"
+  ],
+  "completed_at": "2026-10-22T19:02:40.642Z",
+  "dispatched_at": "2026-10-22T18:40:00Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T125645619174-the-stream-carries-only-actionable-lines/manifest.md",
+      "id": "fa139ec63fb",
+      "line": 19,
+      "severity": "follow-on",
+      "text": "follow-on: negative_control_log names logs/negative-control-lift.log, whose header records the mutation '(mutated: the lift states are withheld again in stream_carries)' and whose 7 failing ids are in tests/test_a_standing_lift_is_announced_once.py and tests/test_a_limit_reset_reaches_every_pane.py; that is not the control the node declared ('restore the needs-you summary line; the delivered-run case must then print it beside its row and fail'), whose red log is the sibling logs/negative-control.log (1 failed, EXIT=1, tests/test_follow_needs_you_line.py::test_the_line_never_prints_however_long_the_set_holds). Both logs exist and both are red, so the recorded control facts still admit under the rule the prompt states, but the named path points a reader comparing it against the declared string at a log that carries a different mutation."
+    },
+    {
+      "file": "tests/test_the_stream_carries_only_actionable_lines.py",
+      "id": "ffe648b0394",
+      "line": 1,
+      "severity": "follow-on",
+      "text": "follow-on: the module docstring and the inline comments count 'six kinds' (lines 1, 119) while the landed rule carries eight \u2014 ticker.py:326-357 enumerates eight kinds and plan \u00a783 lists the same eight (adding the budget lift and the declared wait) \u2014 and the gate drives a stream holding only four of them (delivered, halted, limit-reset, and the audited `waiting` kind), so the coverage the section's done-when names ('one event of every kind ... exactly the eight actionable kinds, each once') is narrower than the rule the file guards."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make the follower's Monitor stream carry only lines that ask the coordinator to act, with no needs-you summary line; reckon/crew/ticker.py:1195 stream_carries plus its filter in RowPolicy.feed (ticker.py:1591) and RowPolicy.flush (ticker.py:1902), and the removal of the needs-you emitter, its four call sites and its CLI branch in reckon/crew_follow_commands.py, carry it, so the delivered and halted pane words, a limit reset, a lift, a declared wait and an audited coordinator kind are the only rows the stream prints.\nVERDICT done_when: the node's done_when names tests/test_the_stream_carries_only_actionable_lines.py; the manifest's tests: line records it as 6 passed and I re-ran that one file at c9b236e77 with UV_PROJECT_ENVIRONMENT=/home/ITER/mcintos/Code/reckon/.venv and the four follower variables unset, reproducing 6 passed.\nVERDICT write_paths: read the manifest's declared paths; git diff 301ea5412..c9b236e77 touches reckon/crew/ticker.py, reckon/crew_follow_commands.py, twenty test files and one evidence fragment, all inside the declared set, and reckon/crew/needs_you.py was declared but left unchanged.\nVERDICT manifest: read; it records status complete, the gate results (6 passed on the gate file, 86 passed on the ten widened files with the halt file, the four chunk arms, and the two residual timing ids), and its negative_control_log names a log whose mutation is not the declared control (see the finding at manifest.md:19).\nVERDICT diff: read commit by commit against 301ea5412; eleven commits change two source modules, twenty test files and one evidence fragment, all inside the declared write paths, and the removed lines are the needs-you emitter and its call sites rather than any unrelated capability.\nCALL_SITES: reckon/crew_follow_commands.py:_follow_watch_lines, reckon/crew_follow_commands.py:follower_row_path, reckon/crew/ticker.py:RowPolicy.feed, reckon/crew/ticker.py:RowPolicy.flush, reckon/crew/ticker.py:Ticker, reckon/crew/ticker.py:PaneRowPath\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the follower's row path now filters every released row through reckon/crew/ticker.py:1195 stream_carries and the standing needs-you emitter is gone from reckon/crew_follow_commands.py, which is exactly the goal, though the rule keeps an audited `waiting` row that plan \u00a783's own text lists among the rows that leave the stream.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate at tests/test_the_stream_carries_only_actionable_lines.py drives the row path and its 6-passed result is recorded in the manifest and reproduced, but the file counts six kinds against the rule's eight and drives only four of them, so the section's 'one event of every kind' is only partly asserted.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff 301ea5412..c9b236e77 is inside the write paths the manifest declares, with reckon/crew/needs_you.py declared and untouched, and no source outside reckon/crew/ticker.py and reckon/crew_follow_commands.py changed.\nSCORE durability: 16\nJUSTIFICATION durability: the added assertions compare against independent literals (test_only_the_actionable_kinds_reach_the_stream asserts words == [\"waiting\", \"delivered\"], which reddens if stream_carries stops filtering launches or promoted rows), and the declared negative control restores the needs-you line and reddens tests/test_follow_needs_you_line.py::test_the_line_never_prints_however_long_the_set_holds, though the manifest points negative_control_log at a different mutation's log.\nSCORE fit: 16\nJUSTIFICATION fit: ticker.py:1195 stream_carries composes the module's own transition_class, _pane_word and declares_a_wait helpers and its prose follows the file's comment idiom, and no added name carries a plan label or version.\nSCORE reuse: 18\nJUSTIFICATION reuse: stream_carries is a new predicate in the module that already owns the row vocabulary and it extends that owner by composing transition_class, _pane_word and declares_a_wait rather than forking them, and the search over reckon/crew for an existing 'does the stream carry this row' predicate found none besides the policy's private _row_class, which it reads through the same helpers rather than duplicating.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261022T125645619174-the-stream-carries-only-actionable-lines/manifest.md:19 follow-on: negative_control_log names logs/negative-control-lift.log whose recorded mutation is 'the lift states are withheld again in stream_carries', not the declared control 'restore the needs-you summary line', whose red log is the sibling logs/negative-control.log; the field points a reader at the wrong mutation.\nFINDING tests/test_the_stream_carries_only_actionable_lines.py:1 follow-on: the file counts six actionable kinds while the landed rule carries eight and drives only four, so the gate's coverage is narrower than the section's done-when requires.\n",
+  "review_run_id": "r-20261022T181646480799-review-of-the-stream-carries-only-actionable-lines-c9b236e77ab0",
+  "reviewed_base_sha": "301ea5412065bcabe616c2defcd8dafddfc67bb5",
+  "reviewed_head_sha": "c9b236e77ab052e7b4e9064fdaf03d08eaed04d9",
+  "reviewed_run_id": "r-20261022T125645619174-the-stream-carries-only-actionable-lines",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T07:29:14.500438+00:00",
+  "total": 101
+}
