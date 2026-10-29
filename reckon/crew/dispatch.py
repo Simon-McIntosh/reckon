@@ -271,16 +271,13 @@ def _queue_validated_waits(
     queued, position = queue_dispatch(record, max_requests=max_requests, cap=cap)
     phase = str(queued.get("phase") or queue_admission.QUEUED_PHASE)
     if refs and phase == queue_admission.QUEUED_PHASE:
-        target = queue_admission.resolve_waits(
+        phase = queue_admission._resolve_and_move(
             record,
             live=[*(live if live is not None else list_live()), record],
             docs_dir=Path(str(record["repo"])) / "docs",
             cache=cache if cache is not None else {},
+            run_id=str(queued["run_id"]),
         )
-        if target != phase and queue_admission._move_pointer(
-            str(queued["run_id"]), target
-        ):
-            phase = target
     return queued, position, phase
 
 

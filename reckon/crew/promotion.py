@@ -677,7 +677,47 @@ def complete(
         )
         if commit_list_shortfall is not None:
             result["commit_list_shortfall"] = dict(commit_list_shortfall)
+        # The section this run delivered has now landed, so the requests queued
+        # behind it are released here rather than at the next admission pass:
+        # release latency is then the promotion's own duration instead of the
+        # duration of whatever pass is in progress.
+        result["released"] = _release_waiters_of_the_landed_section(record)
         return result
+
+
+def _release_waiters_of_the_landed_section(
+    record: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Release the requests waiting on the section this promotion delivered.
+
+    The landing is already recorded when this runs, so a release that raises is
+    reported here and leaves the landing as it stands: a release is a
+    consequence of a landing, never a condition of one. A failure that belongs
+    to a single request is written on that request, by the release itself.
+    """
+    from reckon.crew import queue_admission
+
+    node = record.get("node") or {}
+    plan = str(node.get("plan") or "").strip()
+    section = str(node.get("section") or "").strip()
+    if not plan or not section:
+        return {
+            "candidates": [],
+            "promoted": [],
+            "blocked": [],
+            "failed": {},
+        }
+    ref = f"{plan}#{section}"
+    try:
+        return queue_admission._release_waiters([ref])
+    except Exception as exc:  # noqa: BLE001 - the landing has already happened
+        return {
+            "candidates": [],
+            "promoted": [],
+            "blocked": [],
+            "failed": {},
+            "error": f"releasing the waiters of {ref!r} raised: {exc}",
+        }
 
 
 # A deferred shadow pick is started detached by dispatch and attaches its answer
@@ -1943,7 +1983,34 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             "removed": record,
             "discard_record": written,
             "stacked_descendants": stacked_descendants_still_live(record),
+            # The requests waiting on this run wait on something that will now
+            # never deliver, so they are released here: the release reads the
+            # discard record just written and blocks them, instead of leaving
+            # them waiting until the next admission pass reports them stuck.
+            "released": _release_waiters_of_a_discard(run_id),
             **_remove_discarded_worktree(record),
+        }
+
+
+def _release_waiters_of_a_discard(run_id: str) -> dict[str, Any]:
+    """Release the requests waiting on a run this discard has just removed.
+
+    The departure is recorded before this runs, so the refs a request holds
+    against the run resolve to the failure the discard is. A release that
+    raises is reported here and does not undo the discard, which has already
+    happened.
+    """
+    from reckon.crew import queue_admission
+
+    try:
+        return queue_admission._release_waiters([f"{queue_admission.REQUEST_REF_PREFIX}{run_id}"])
+    except Exception as exc:  # noqa: BLE001 - the discard has already happened
+        return {
+            "candidates": [],
+            "promoted": [],
+            "blocked": [],
+            "failed": {},
+            "error": f"releasing the waiters of {run_id!r} raised: {exc}",
         }
 
 

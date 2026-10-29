@@ -2342,6 +2342,172 @@ def resolve_waits(
     return AWAITING_UPSTREAM_PHASE
 
 
+def _resolve_and_move(
+    pointer: Mapping[str, Any],
+    *,
+    live: Sequence[Mapping[str, Any]],
+    docs_dir: str | Path | None,
+    cache: dict[str, Any],
+    dead_sections: set[tuple[str, str]] = frozenset(),  # type: ignore[assignment]
+    run_id: str = "",
+) -> str:
+    """Resolve one request's waits and move its pointer to the phase they justify.
+
+    The one owner of the resolve-and-move idiom. The queue-time check in a
+    dispatch, the release step of an admission pass, a promotion that lands a
+    section, a discard that closes a request and the service's release tick all
+    reach a request through here, so every route that can make a wait's upstream
+    land releases its waiters by the same derivation.
+
+    The phase the request already holds is the one a caller reports when the
+    move cannot be written: a request is never launched from a phase the store
+    did not record.
+    """
+    phase = str(pointer.get("phase") or AWAITING_UPSTREAM_PHASE)
+    target = resolve_waits(
+        pointer,
+        live=live,
+        docs_dir=docs_dir,
+        cache=cache,
+        dead_sections=dead_sections,
+    )
+    if target == phase:
+        return phase
+    if not _move_pointer(run_id or str(pointer.get("run_id") or ""), target):
+        return phase
+    if isinstance(pointer, dict):
+        pointer["phase"] = target
+    return target
+
+
+#: The field a release that raised leaves on the request it could not move, so
+#: the failure reaches the request's own record rather than only the caller that
+#: triggered the release.
+RELEASE_FAILURE_KEY = "release_failure"
+
+
+def _record_release_failure(run_id: str, detail: str) -> bool:
+    """Write a failed release against one request, reporting whether it landed."""
+
+    def write(current: dict[str, Any]) -> dict[str, Any]:
+        current[RELEASE_FAILURE_KEY] = detail
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, write)
+    except Exception:  # noqa: BLE001 - an unwritable pointer is no evidence
+        return False
+    return True
+
+
+def _release_waiters(
+    refs: Iterable[str],
+    *,
+    live: Sequence[Mapping[str, Any]] | None = None,
+    cache: dict[str, Any] | None = None,
+    docs_dir_for: Callable[[Mapping[str, Any]], Path] | None = None,
+) -> dict[str, Any]:
+    """Release every waiting request whose waits name one of ``refs``.
+
+    Called by the route that made the refs land — a promotion, for the section
+    its run delivered, and a discard, for the requests waiting on the run it
+    removed — so the release does not wait for the next admission pass. A ref is
+    a trigger and not a verdict: each candidate's waits are re-derived against
+    the roadmap, so a request whose other refs are still pending stays waiting.
+
+    A release that raises for one request is recorded on that request and does
+    not end the release for the others. The landing that triggered it has
+    already happened, so a refused release is a fact about one request rather
+    than a condition on the landing.
+    """
+    landed = {str(ref).strip() for ref in refs if str(ref).strip()}
+    if not landed:
+        return {
+            "candidates": [],
+            "promoted": [],
+            "blocked": [],
+            "failed": {},
+        }
+    pointers = list(live if live is not None else runs.list_live())
+    shared = cache if cache is not None else {}
+    promoted: list[str] = []
+    blocked: list[str] = []
+    failed: dict[str, str] = {}
+    candidates: list[str] = []
+    for pointer in pointers:
+        if not isinstance(pointer, dict):
+            continue
+        if str(pointer.get("phase") or "") not in WAITING_UPSTREAM_PHASES:
+            continue
+        if not landed.intersection(section_waits_for(pointer)):
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        candidates.append(run_id)
+        docs_dir = (
+            docs_dir_for(pointer)
+            if docs_dir_for is not None
+            else Path(str(pointer.get("repo") or "") or ".") / "docs"
+        )
+        try:
+            target = _resolve_and_move(
+                pointer,
+                live=pointers,
+                docs_dir=docs_dir,
+                cache=shared,
+            )
+        except Exception as exc:  # noqa: BLE001 - one request cannot end the release
+            detail = f"release for {run_id!r} raised: {exc}"
+            failed[run_id] = detail
+            _record_release_failure(run_id, detail)
+            continue
+        if target == QUEUED_PHASE:
+            promoted.append(run_id)
+        elif target == BLOCKED_UPSTREAM_PHASE:
+            blocked.append(run_id)
+    return {
+        "candidates": candidates,
+        "promoted": promoted,
+        "blocked": blocked,
+        "failed": failed,
+    }
+
+
+#: How often the admission service runs the release step on its own tick. A
+#: release reads readiness and moves waiting requests and launches nothing, so
+#: it is paced by its own clock rather than by the pass interval: a pass holding
+#: launches or landings must not delay a section's waiters.
+RELEASE_TICK_SECONDS = 30.0
+
+#: When the release step last ran, on the monotonic clock. Process-local: it
+#: paces this service's ticks, and a restarted service releases at once.
+_RELEASE_TICK_LAST = {"at": 0.0}
+
+
+def _release_tick(
+    *,
+    now: float | None = None,
+    interval: float = RELEASE_TICK_SECONDS,
+) -> dict[str, Any]:
+    """Run the release step alone, at most once per ``interval``.
+
+    The admission service calls this as a stage of its own, beside rather than
+    inside a launch pass or a landing, so a request whose upstream landed by any
+    route — a promotion, a discard, a hand merge of the plan — moves to
+    ``queued`` within one tick however long those stages take.
+    """
+    moment = time.monotonic() if now is None else now
+    last = float(_RELEASE_TICK_LAST.get("at") or 0.0)
+    if last and moment - last < interval:
+        return {
+            "ran": False,
+            "waited_seconds": round(moment - last, 3),
+            "interval_seconds": interval,
+        }
+    _RELEASE_TICK_LAST["at"] = moment
+    released = advance_waiting_requests(runs.list_live())
+    return {"ran": True, **released}
+
+
 def _rederive_waits(
     pointer: dict[str, Any],
     *,
@@ -2430,14 +2596,15 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
                 continue
             docs_dir = Path(str(pointer.get("repo") or "") or ".") / "docs"
             previous_issues = list(pointer.get("upstream_obligations") or ())
-            target = resolve_waits(
+            run_id = str(pointer.get("run_id") or "")
+            target = _resolve_and_move(
                 pointer,
                 live=live,
                 docs_dir=docs_dir,
                 cache=cache,
                 dead_sections=dead,
+                run_id=run_id,
             )
-            run_id = str(pointer.get("run_id") or "")
             issues = list(pointer.get("upstream_obligations") or ())
             if issues:
                 obligations[run_id] = issues[0]
@@ -2451,10 +2618,10 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
 
                 runs._mutate_pointer(run_id, record_issues)
             if target == phase:
+                # The request holds the phase its waits justify: either they
+                # still wait, or the move could not be written and is retried
+                # on the next tick.
                 continue
-            if not _move_pointer(run_id, target):
-                continue
-            pointer["phase"] = target
             changed = True
             if target == QUEUED_PHASE:
                 promoted.append(run_id)
@@ -3653,8 +3820,13 @@ def admit_until_stopped(
         stamp = _admit_code_stamp()
         from reckon.crew.queue_landing import land_once
 
+        # The release stage runs before the landing and the launch pass, on a
+        # clock of its own: a section that has already landed releases its
+        # waiters whether or not this pass goes on to launch or land anything.
+        release = _release_tick()
         landing = land_once()
         result = admit_once(**admission_options)
+        result["release"] = release
         result["landing"] = landing
         _record_pass_verdicts(result, lane=lane, code_stamp=stamp)
         return result
@@ -3666,8 +3838,10 @@ def admit_until_stopped(
                 _reexec_into_current_code()
             from reckon.crew.queue_landing import land_once
 
+            release = _release_tick()
             landing = land_once()
             admitted = admit_once(**admission_options)
+            admitted["release"] = release
             admitted["landing"] = landing
             _publish_pass_verdicts(
                 _record_pass_verdicts(admitted, lane=lane, code_stamp=code_stamp)
