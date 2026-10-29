@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="270">
+<meta name="plan-version" content="271">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -275,6 +275,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-close-s25" data-who="" data-when="">
     <div class="r-comment-body"><p>Landed by hand at 4de3faf743 after the automatic pass refused it on its own landing order. A failed admitted launch keeps the request's record. <a href="/reckon/evidence/archive/a-queue-holds-the-whole-plan-landed.html#a-queued-launch-keeps-the-run-record">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-s30-reflex-refusal-hidden" data-who="" data-when="">
+    <div class="r-comment-body"><p>Evidence from 28 and 29 October for this section's scope. Twice the obligation read "the review reflex owns this dispatch … no manual dispatch is needed" while the reflex was refusing to dispatch: for <code>r-20261028T110649055482</code>, attempt 10, and for <code>r-20261028T222907809727</code>, attempt 2. Each refusal recorded on the pointer's <code>review_dispatch</code> named an undisposed blocking finding. Disposing the finding was the only remedy, and the obligation never said so. A reflex-owned obligation should carry the reflex's last refusal and its remedy whenever <code>review_dispatch.status</code> is <code>refused</code>.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-plan-group-20261023" data-who="reckon-42" data-when="2026-10-23T17:40:00Z">
     <div class="r-comment-body"><p><strong>The plans this one consolidates, grouped on 23 October 2026.</strong> This plan is the single live owner of queue-first dispatch; the others either built its substrate or are retired into it.</p><ul><li><strong>Queue substrate, done:</strong> <code>a-held-dispatch-waits-its-fair-turn</code> (the queue, the admit service, per-session share), <code>a-coordinator-can-clear-its-own-duties</code> (the review exemption §3 moves), <code>a-held-session-routes-to-a-serving-lane</code> and <code>advise-the-lane-never-force-it</code> (a hold queues for local).</li><li><strong>Slot fairness, superseded by §4:</strong> <code>the-local-lane-is-the-default</code> §11, §12 and §15 (dispatch counts against the router's per-session slots) and <code>imas-ambix:local-lane-admission-control</code> §22 (the router's per-session split), retired by that plan's §27, which waits on §4 here.</li><li><strong>Lane choice:</strong> <code>lane-and-model-routing</code> §47 to §54 (lifts and pace), which §7 here consumes.</li><li><strong>Landing without the coordinator:</strong> <code>the-crew-does-its-own-bookkeeping</code> §22 and <code>a-review-is-sized-to-its-risk</code>, which §6 consumes.</li><li><strong>Runtime the drain rests on:</strong> <code>the-fleet-node-stays-in-service</code>, <code>a-worker-is-charged-to-a-job</code> and <code>a-dispatch-returns-without-its-worker</code>. A week-long drain needs the admit service and fleet node to stay up, and §14 records any outage it meets.</li></ul><p>§8 to §14 were added the same day so that the queue respects the work's DAG across projects, a coordinator can hold, release and bump queued work, a plan edit cannot strand a queued request, and a final dogfood phase proves a week-long drain.</p></div>
