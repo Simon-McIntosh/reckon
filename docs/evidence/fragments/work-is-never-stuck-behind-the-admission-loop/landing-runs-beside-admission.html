@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-title" content="The landing pass runs beside the admission loop, bounded">
+  <meta name="plan-summary" content="admit_until_stopped no longer calls land_once: landing runs in its own worker thread under its own lock, at most one action in flight, each tick one measurement or one crew complete --land; the land step is bounded by the landing measure's timeout and a step past it is stopped and refused naming the bound; each pass record carries started_at, ended_at and release, launch and land seconds; the land command passes --no-impl-change naming the landing beat so a passing implement run whose section is still implementable lands and is then ticked done. Six new tests; the negative control fails the first arm.">
+  <meta name="plan-evidence-for" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-recorded-at" content="2026-10-29">
+  <meta name="plan-verdict" content="passed">
+  <title>The landing pass runs beside the admission loop, bounded | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The landing pass runs beside the admission loop, bounded</h1>
+
+    <section id="landing-runs-beside-admission-what-changed">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/queue_admission.py</code> stopped calling
+        <code>land_once</code> between passes. <code>_LandingWorker</code> runs the
+        landing pass in a thread of its own, named <code>reckon-landing</code>,
+        under a lock taken without blocking: a tick that finds an action in flight
+        starts nothing, so at most one landing action exists at a time and a slow
+        landing delays only the next landing. An action that raises is recorded on
+        the worker as an <code>error</code> result and the next tick starts a fresh
+        one, so a landing defect never ends the service that runs the launches.
+        <code>--once</code> still waits for the landing it starts, because a manual
+        pass reports what it did; the service loop does not.</p>
+      <p>Each pass record now carries <code>started_at</code>, <code>ended_at</code>
+        and <code>release_seconds</code>, <code>launch_seconds</code> and
+        <code>land_seconds</code> — the three stages are held by different things (a
+        lane slot, a merge, a suite), and one figure would not name which stalled.
+        The landing action's own record carries its <code>started_at</code>,
+        <code>ended_at</code> and <code>seconds</code>.</p>
+      <p><code>reckon/crew/queue_landing.py</code>: <code>_land</code> bounds its
+        <code>srun</code> step with the landing measure's timeout
+        (<code>_land_timeout</code>, resolving the run's pointer and the flight
+        config, defaulting to the measure's own default when the pointer cannot be
+        read). <code>subprocess.TimeoutExpired</code> becomes a refusal whose guard
+        names the bound and the stopped command, and
+        <code>land_once</code> records it as <code>refused</code> on the live
+        pointer with an owner obligation. <code>_land_command</code> passes
+        <code>--no-impl-change</code> with <code>LANDING_BEAT_REASON</code>: the
+        landing beat that advances the run's section runs only after the merge, so
+        the plan's impl has not moved when <code>crew complete</code> judges the
+        run, and the pass refused its own deliveries without it.</p>
+    </section>
+
+    <section id="landing-runs-beside-admission-gate">
+      <h2>Gate</h2>
+      <p>Command at the node head <code>9f9f0b9416ac</code>:
+        <code>PYTHONPATH=$W $PY -P -m pytest -p no:cacheprovider -q</code> over every
+        test file importing <code>queue_landing</code> or <code>queue_admission</code>
+        (54 files, absolute paths, the new file included):
+        <strong>363 passed, 1 failed, EXIT=1</strong>
+        (<code>head-arm.log</code>). The same set at the base revision
+        <code>13b5e629</code>, resolved over a scratch tree under <code>$TMPDIR</code>
+        whose header records the imported module as that tree's
+        <code>reckon/crew/queue_landing.py</code> (the new file is absent there and
+        dropped): <strong>357 passed, 1 failed, EXIT=1</strong>
+        (<code>base-arm.log</code>). The one failure is the same id in both arms —
+        <code>test_overlapping_queued_requests_launch_in_turn.py::
+        test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused</code> —
+        so this node adds no failure against its base.</p>
+      <p>Negative control: the declared mutation — call <code>land_once</code> from
+        <code>admit_until_stopped</code> again — applied to a scratch tree of the head
+        under <code>$TMPDIR</code>, its header recording the module as that tree's
+        <code>reckon/crew/queue_admission.py</code>:
+        <strong>5 passed, 1 failed, EXIT=1</strong>
+        (<code>negative-control.log</code>), the failure being
+        <code>test_an_admission_pass_completes_while_a_landing_is_blocked</code> —
+        the pass can no longer finish while the landing is held.</p>
+      <p>Both arms were first run with a bare <code>python -m pytest</code> from the
+        node worktree; that invocation puts the working directory first on
+        <code>sys.path</code>, so the scratch trees were not the code under test and
+        the mutated tree reported six passes. The runs above use
+        <code>python -P</code> with absolute test paths, and each header's
+        <code># module:</code> line records the file actually imported. The earlier
+        logs were overwritten by these, not kept beside them.</p>
+      <p><code>ruff check</code> and <code>ruff format --check</code> pass on
+        <code>queue_admission.py</code>, <code>queue_landing.py</code>,
+        <code>tests/test_landing_runs_beside_admission.py</code> and the one updated
+        expectation in <code>tests/test_queue_landing.py</code>.</p>
+    </section>
+
+    <section id="landing-runs-beside-admission-cases">
+      <h2>The six cases</h2>
+      <ul>
+        <li>An admission pass completes and releases a waiter while a landing it does
+          not call is blocked on a patched <code>_land</code>; the loop runs in a
+          thread and must return while the landing is still held.</li>
+        <li>A landing tick that finds three accepted deliveries runs one
+          <code>land</code> and defers the other two, one landed per later tick.</li>
+        <li>A land step past its bound is stopped inside the bound and recorded as
+          refused with the bound in the guard.</li>
+        <li>Each pass record carries <code>started_at</code>, <code>ended_at</code> and
+          numeric <code>release_seconds</code>, <code>launch_seconds</code> and
+          <code>land_seconds</code>, and the landing action its own start, end and
+          duration.</li>
+        <li>A landing that raises is recorded on the worker, restarted on the next
+          tick, and never stops the loop.</li>
+        <li><code>land_once</code> over a run whose section is still implementable
+          lands it with <code>--no-impl-change</code> naming the landing beat, and the
+          section is then ticked <code>done</code>.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
