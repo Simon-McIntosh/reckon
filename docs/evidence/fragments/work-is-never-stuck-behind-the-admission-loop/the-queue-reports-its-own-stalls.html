@@ -9,18 +9,24 @@
   <p>Every row a pass writes carries the age of the oldest request the lane could launch and did not,
   measured through the lane's own gate and allowance. The drain view reports each stuck request's
   age and stage from the recorded verdict in place of resolving its waits a second time: an overdue
-  request is stuck when a pass examined it, recorded why it did not launch, and it is still there an
-  hour later. A request the lane has no room for, and one a live run's claim holds, record no stall —
-  its wait is accounted for by the hold the pass already names. No monitor-stream row is written; the
-  stall is the one added verdict kind and no new row kind is added.</p>
+  request is stuck when it is still in a waiting phase and its last recorded verdict is one that
+  leaves it there — the stall, a hold, a refusal. A run a pass launched carries a launch verdict and
+  a working phase, so its age is never reported as a wait. A request the lane has no room for, and
+  one a live run's claim holds, record no stall — its wait is accounted for by the hold the pass
+  already names. No monitor-stream row is written; the stall is the one added verdict kind and no new
+  row kind is added.</p>
   <p>The request's own session sees the stall once through the needs-you rows, under the blocked
   kind, carrying the stage the stall named, and the row clears when a later verdict for the request
   replaces the stall.</p>
-  <p>Measured by <code>tests/test_the_queue_reports_its_own_stalls.py</code>: four tests pass. An
+  <p>Measured by <code>tests/test_the_queue_reports_its_own_stalls.py</code>: six tests pass. An
   eleven-minute wait on a lane with room yields exactly one stall verdict naming the launch stage and
   its last recorded duration (12.5 s); a second pass over the same wait yields none; the recorded
   stall reaches its session as one row and clears on a later verdict; a lane with no room and a
-  request a live claim holds each yield no stall. Negative control: removing the room clause leaves
-  one failing test —
-  <code>test_a_lane_with_no_room_or_a_live_claim_records_no_stall</code> — at exit 1.</p>
+  request a live claim holds each yield no stall; the drain view carries the age the pass recorded
+  and the stall's stage and stage duration on its stuck row; and a run a pass launched is not stuck
+  however old it is. At the base revision five pass and
+  <code>test_a_launched_run_is_not_stuck</code> fails. Negative controls: removing the room clause
+  leaves <code>test_a_lane_with_no_room_or_a_live_claim_records_no_stall</code> failing at exit 1,
+  and reverting the stuck-rule repair leaves <code>test_a_launched_run_is_not_stuck</code> failing at
+  exit 1.</p>
 </section>
