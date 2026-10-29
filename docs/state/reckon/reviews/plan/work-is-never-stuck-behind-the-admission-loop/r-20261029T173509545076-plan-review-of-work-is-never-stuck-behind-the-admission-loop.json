@@ -1,0 +1,43 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-29T17:43:15.817Z",
+  "dispatched_at": "2026-10-29T17:36:38Z",
+  "findings": [],
+  "plan_commit": "ce02f6a5590d145a0208b954e969ed1f71eceeb5",
+  "plan_fingerprint": "2d678de8b6778d58471587d0b6b4b90a3d9e1e7d86cf9ca5f7e275c517ad4aa9",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 71,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261029T173509545076-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "51c91928e4b4286bae8da612c4ea42eeabd2ac63",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited symbol and name resolves: `obligations._queued_item` at `obligations.py:688` with `_live_item(... kind=QUEUED_RUN_DUTY_KIND ...)` at `:705` (the \"near line 705\" claim is exact), its three call sites at `obligations.py:1706`, `obligation_snapshot.py:1277` and `:1367`; `NON_BLOCKING_DUTY_KINDS` at `:152`; `_NON_BLOCKING_KINDS` at `coordinator_obligations.py:240`; `needs_you.needs_you_rows` at `needs_you.py:152`; exactly six test files import `reckon.crew.needs_you`; commit `3c7f7314b0` exists and its subject matches; and `3c7f7314b0`'s \"no production importer\" claim holds (only `tests/` import it). The `the-monitor-shows-the-work-it-watches \u00a793` citation resolves \u2014 \u00a793 is `done`, landed at `d8fb79b9df`, and its landing comment records precisely the follow-up s13 relies on (\"needs_you.py now has no production importer \u2026 re-home or delete it\").",
+    "done_when": "pass \u2014 the five arms are each observable (stalled row from the derivation and from a fresh snapshot build, plain `run-queued` without the verdict, launch-verdict clears, the row does not hold the stop, one log read per build), the negative control is named (drop the stall check from `_queued_item` and the stalled case fails), and the suite arm is delta-based against the base revision.",
+    "evidence_paths": "pass \u2014 evidence is the new in-repo test `tests/test_a_stalled_request_reaches_its_obligations.py` plus a ruff gate; no scratchpad or node-local path is cited.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol, filename or comment; the new row kind's name is left to the implementer (\"use the verdict word \u00a77 lands with\"), and the \u00a77/\u00a793 references are prose only.",
+    "reasoning": "pass \u2014 all three checks hold: (1) the stated root cause matches the cited evidence (nothing in `reckon/` imports `needs_you`, so the stall reaches no per-session reader; the obligations hook derives from `obligations.py`, which builds only a plain `run-queued` row), (2) the mechanism produces every arm (a per-build verdict reading passed into `_queued_item` yields the stalled row via both producers; adding the kind to `_NON_BLOCKING_KINDS` is what `_blocking_items` filters at `coordinator_obligations.py:1303`, so arm four follows), and (3) the real code path is named and verified. One observation, not a finding because it does not misdirect: `obligations.NON_BLOCKING_DUTY_KINDS` (`obligations.py:152`) is read only by a test, not by production logic \u2014 the functional stop gate is the hook's `_NON_BLOCKING_KINDS` \u2014 but s13 already names both, so a node obeying it will edit the functional set.",
+    "single_goal": "pass \u2014 one deliverable (a stalled obligation row for a queued request whose last admission verdict is a stall); the mirror-set edit, the read-once plumbing and the snapshot-path requirement all serve that one verdict.",
+    "wiring": "pass \u2014 s13's dependency is declared (`plan-section-depends-on` carries `\"s13\":[\"work-is-never-stuck-behind-the-admission-loop#s7\"]`), \u00a77 is `implementable` so the queue holds s13 as awaiting-upstream, and the write paths match the modules the mechanism actually lives in (`reckon/crew/obligations.py`, `reckon/crew/obligation_snapshot.py`, `reckon/hooks/coordinator_obligations.py`)."
+  },
+  "section_digests": {
+    "_document": "f38bd05dc5310908a2d024607059fcf86170080929fec227c1d039e5ba5f95b4",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2660f0a8230174b58e453e15cd31c113f234218a69c1e8c217b6dd03334a224c",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T17:48:27.216014+00:00"
+}
