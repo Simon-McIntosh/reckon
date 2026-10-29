@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -260,6 +260,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261029T161434401699-review-of-a-landing-measure-is-bounded-by-what-it-measures-8dbc633a903a" data-who="reckon-build" data-when="2026-10-29T16:23:05.109Z">
     <div class="r-comment-body"><p>Independent review of r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures covering only the gained commit 8dbc633a90 (base 35f4d6af36): status parsed, six dimensions scored goal_fidelity 16, evidence 16, scope_discipline 19, durability 13, fit 18, reuse 13, zero added failures (base arm 61 passed and after arm 11 passed, both EXIT=0), and four non-blocking findings — the history-read case's second assertion compares a counter against itself, no case drives land_once so the pass-wide wiring is unguarded, _pass_history reads only live pointers so a landed run's measurement stops sizing bounds, and _measurement_record duplicates the read half of _stored_measurement.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures" data-who="reckon-build" data-when="2026-10-29T16:13:00Z">
+    <div class="r-comment-body"><p>A landing-measure arm&#x27;s bound is now the larger of the configured floor and twice its file count times the project&#x27;s median seconds per file, every arm records elapsed seconds and file count in its Arm record and measurement.json, a timeout or base-checkout refusal is judged again on a doubling capped back-off with code and review unchanged while an added regression still holds until one of them moves, a stored timed-out measurement is no longer reused, and the project&#x27;s measurement history is read once per landing pass from its own live runs rather than by walking the runs directory per measured run — 11 cases in tests/test_a_landing_measure_is_bounded_by_what_it_measures.py, base arm 61 passed / after arm 11 passed at 8dbc633a90, two negative controls at 1 failed each.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261029T155817732809-review-of-the-queue-reports-its-own-stalls-a07d04759a28" data-who="reckon-build" data-when="2026-10-29T16:05:50.396Z">
     <div class="r-comment-body"><p>independent review of r-20261028T223716141209-the-queue-reports-its-own-stalls at a07d04759a scores goal_fidelity 18, evidence 11, scope_discipline 19, durability 12, fit 15, reuse 11 (total 86), records zero added failures, and raises two blocking findings — the drain view's stuck rule at runs.py:2207 marks any live pointer older than an hour with any verdict as stuck (a run launched and working over an hour now reads as stuck), and the done-when's drain-view age bullet at runs.py:2222 has no test at all</p></div>
