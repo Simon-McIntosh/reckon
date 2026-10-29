@@ -47,13 +47,15 @@ RUN_ID = "r-a-slow-read-scope-case"
 SHORT_DEADLINE = 1.0
 SHORT_RESERVE = 0.4
 
-# The request shape a plain summary read of PROJECT asks for, written out
+# The request shape a read of PROJECT that names no view asks for, written out
 # rather than read back from the module: a defect in the shape a read composes
-# or files under has to show up against a value this file owns.
-SUMMARY_SHAPE = {
+# or files under has to show up against a value this file owns. A single
+# project's default answer is the brief, and a brief composition is not the
+# summary's payload, so the two are filed under shapes of their own.
+DEFAULT_SHAPE = {
     "sprint": None,
     "max_paths": 5,
-    "view": "summary",
+    "view": "brief",
     "cursor": None,
     "limit": None,
 }
@@ -173,7 +175,7 @@ def _timed_call(loop: asyncio.AbstractEventLoop, tool, **kwargs) -> tuple[dict, 
     return loop.run_until_complete(measure())
 
 
-def _shape(view: str = "summary") -> dict:
+def _shape(view: str = "brief") -> dict:
     scoped = mcp_module._roadmap_snapshot_scope(
         PROJECT, None, None, 5, view, None, None
     )
@@ -181,7 +183,7 @@ def _shape(view: str = "summary") -> dict:
     return scoped[2]
 
 
-def _key(view: str = "summary") -> str:
+def _key(view: str = "brief") -> str:
     scoped = mcp_module._roadmap_snapshot_scope(
         PROJECT, None, None, 5, view, None, None
     )
@@ -189,7 +191,7 @@ def _key(view: str = "summary") -> str:
     return scoped[0]
 
 
-def _last(home: Home, view: str = "summary") -> dict | None:
+def _last(home: Home, view: str = "brief") -> dict | None:
     return roadmap_snapshot.roadmap_snapshot_last(PROJECT, home.docs, _shape(view))
 
 
@@ -239,7 +241,7 @@ def test_a_read_past_its_reserve_answers_from_the_last_snapshot(
     assert answered["composition"] == 1, "the answer is not the stored composition"
     stale = answered["stale"]
     assert stale["key"] == stored["key"]
-    assert stale["shape"] == SUMMARY_SHAPE
+    assert stale["shape"] == DEFAULT_SHAPE
     assert stale["reason"] == mcp_module._ROADMAP_STALE_REASON
     assert stale["age_seconds"] >= SHORT_RESERVE / 2, stale
     assert elapsed < SHORT_DEADLINE, f"answered after its deadline: {elapsed:.3f}s"
