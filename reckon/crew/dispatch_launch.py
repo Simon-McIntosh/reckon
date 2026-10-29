@@ -2673,13 +2673,19 @@ def _launch_failure_detail(exc: BaseException, spec: Mapping[str, Any]) -> str:
 
 def _worker_record_writer(
     spec: Mapping[str, Any],
-) -> Callable[[subprocess.Popen], None]:
+) -> Callable[[subprocess.Popen], None] | None:
     """The writer that records the worker a spawn has just started.
 
     Called by the spawn retry as each try begins, so the run directory names its
     worker as soon as the worker exists instead of after the startup watch has
     run out its window.
+
+    None when the spec names no run directory: a caller that reaches the spawn
+    seam without a run to record into has nowhere to put the record, and the
+    record belongs to a run, not to a spawn.
     """
+    if not spec.get("run_directory"):
+        return None
     run_directory = Path(str(spec["run_directory"]))
     run_id = str(spec.get("run_id") or "")
     attempt = int(spec.get("attempt") or 1)
