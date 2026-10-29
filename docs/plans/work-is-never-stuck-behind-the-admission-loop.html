@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="52">
+<meta name="plan-version" content="53">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -236,6 +236,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261028T222632387609-landing-runs-beside-admission" data-who="reckon-build" data-when="2026-10-29T13:44:34.174Z">
     <div class="r-comment-body"><p>The landing pass left the admission loop's critical path: admit_until_stopped no longer calls land_once, and landing runs in its own worker thread under its own lock with at most one action in flight, one measure or one crew complete --land per tick, a land step bounded by the landing measure's timeout and refused past it with the bound in the guard, each pass record carrying started_at, ended_at and release, launch and land seconds, and the land command passing --no-impl-change naming the landing beat so a passing run whose section is still implementable lands and is then ticked done; six new cases, and the negative control that re-adds the serial land_once call fails the first arm with 5 passed, 1 failed, EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261028T223438209702-a-delivered-run-reaches-a-landing-verdict" data-who="reckon-build" data-when="2026-10-29T14:50:33.553Z">
+    <div class="r-comment-body"><p>§8 landed: `land_once` records `awaiting-review` in `admission_landing` with the review reflex&#x27;s own state (dispatched, or refused with its recorded reason) instead of continuing silently, and the `crew complete --land` step presents the revisions `queue_landing._delivered_revision` places, retiring `promotion_evidence`&#x27;s whole-entry reader; base arm 6 failed / head arm 6 passed, importer population 66 passed on both arms.</p></div>
 </div>
 </section>
 </main>
