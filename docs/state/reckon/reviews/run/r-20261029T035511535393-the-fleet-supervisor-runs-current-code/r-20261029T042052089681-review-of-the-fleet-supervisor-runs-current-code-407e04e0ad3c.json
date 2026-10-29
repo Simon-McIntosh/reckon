@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (logs/base.log, revision 9da1277b52, completed, 3 failed, EXIT=1) and after_suite (logs/head.log, revision 407e04e0ad, completed, 3 passed, EXIT=0, failure_ids []); the three baseline failure ids are the new test's three arms failing against base source and all three pass at head, so the change adds no failure id. The importer arms agree: logs/importers-base.log 33 passed against logs/importers-head.log 33 passed.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:2209",
+    "reckon/crew/fleet_node.py:216"
+  ],
+  "completed_at": "2026-10-29T04:32:43.010Z",
+  "dispatched_at": "2026-10-29T04:24:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "2146",
+      "severity": "blocking",
+      "text": "the trust verdict is recomputed on every 0.5 s loop pass while the checkout stays untrusted, with no interval, deferral or backoff: moved_checkout_is_trustworthy runs a git status subprocess over reckon/ and skills/ each pass (reckon/checkout_trust.py:733), and when the tree is clean but does not import it spawns an interpreter that imports every module and records nothing (reckon/checkout_trust.py:849-868), so a checkout that stays untrusted makes the supervisor spend most of each pass inside a probe and answer its FIFO at the probe's cadence rather than at REQUEST_WAIT_SECONDS; the repository's owner of this decision paces exactly this, gating on FOLLOWER_FRESHNESS_SECONDS and backing off with jitter and a doubling gap for a timed-out probe (reckon/crew/follower_reload.py:333-343, 373-400)."
+    },
+    {
+      "file": "tests/test_the_fleet_supervisor_runs_current_code.py",
+      "line": "247",
+      "severity": "non-blocking",
+      "text": "assert calls[0][\"adopted\"] == {\"demo\": recorded} compares two readings of recorded_service_pid on the same runtime tree, one taken before the move and one inside the exec_ stand-in, so it would still hold if that reader returned a constant; the arm's independence comes from line 248 (os.kill liveness) and line 249 (the service process's own single start marker), not from this line."
+    },
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "1803",
+      "severity": "non-blocking",
+      "text": "_supervisor_source_root and _checkout_code_is_trusted restate queue_admission.py:672-694 body for body, and _source_code_stamp restates queue_admission.py:660-668, so how a long-running reckon process resolves its checkout root and asks the trusted-checkout question now has two more copies to keep in step with the owner; reckon/served_code.py:813 moved_checkout already exposes the moved-and-trusted decision publicly and was not extended."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/fleet_supervisor.py:2209 is main(), the only caller of serve(), reached in production by the fleet-supervisor console script that the batch step execs at reckon/crew/fleet_node.py:216; the node's test files are not counted.",
+    "diff": "read commit by commit (one commit, 407e04e0ad, 405 insertions and 2 deletions over 3 files): three private wrappers at fleet_supervisor.py:1803-1840, two injected parameters and the stamp comparison in serve() at :2056-2160, a 263-line new test, and a 68-line landing fragment whose element id is node-prefixed.",
+    "done_when": "\u00a711's measure names tests/test_the_fleet_supervisor_runs_current_code.py with an injected exec_ and a temporary runtime tree, three behaviours, the same stamp and trust test the admit service uses, no new request verb and ruff clean; logs/head.log records 3 passed EXIT=0 at 407e04e0ad, logs/base.log records the same three arms failing at 9da1277b52, logs/negative-control.log records 2 failed under the declared mutation, and I re-ran ruff check and ruff format --check over the two changed source paths (all checks passed, 2 files already formatted).",
+    "goal": "the goal is to reload the fleet supervisor onto current code when its stamp moves; reckon/crew/fleet_supervisor.py:2134 records the stamp at loop start and :2146-2157 re-executes through the pre-existing _reexec (fleet_supervisor.py:1791) when the stamp moved and the checkout is trusted, which is the goal as the node states it.",
+    "manifest": "read in full; status reads complete, the landing line states the measure with its 3-passed/2-failed-untrusted figures, test_logs names five logs whose revisions and EXIT lines I opened, and the two retry_failures are attributed to scaffolding in the test fixture rather than to code under test.",
+    "write_paths": "the manifest declares reckon/crew/fleet_supervisor.py, tests/test_the_fleet_supervisor_runs_current_code.py, the evidence fragment and the (unused) figure directory; git diff --stat over 9da1277b52..407e04e0ad lists exactly three paths, the first three of those, and nothing else."
+  },
+  "justifications": {
+    "durability": "the base arm is the negative control the rubric asks for: all three arms fail at 9da1277b52 (logs/base.log) and pass at 407e04e0ad (logs/head.log), and the declared mutation reddens the moved-stamp and service arms while the untrusted arm still passes; arm three's independence rests on fleet_supervisor.py-free evidence (the service's own start marker, one write) rather than on tests/test_the_fleet_supervisor_runs_current_code.py:247, which compares two readings of recorded_service_pid.",
+    "evidence": "logs/head.log (3 passed, EXIT=0, revision 407e04e0ad), logs/base.log (3 failed, EXIT=1, base 9da1277b52), logs/negative-control.log (2 failed, EXIT=1 under the declared mutation) and the two 33-passed importer arms are all recorded with revision and exit status, and the done_when's ruff clause I verified by re-running it rather than reading it.",
+    "fit": "fleet_supervisor.py:1820-1840 follows the module's docstring-and-lazy-import idiom and its names describe what each decides, but :2146 recomputes the trust verdict every loop pass where the sibling reloader paces the same decision (reckon/crew/follower_reload.py:333-343, 373-400).",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:2146 replaces the running image through the same _reexec a manual reload takes, so a moved stamp reaches the node without an operator request while the declared services it adopted keep running.",
+    "reuse": "fleet_supervisor.py:1803-1840 adds _supervisor_source_root, _source_code_stamp and _checkout_code_is_trusted as near-verbatim copies of queue_admission.py:660-694's trio instead of sharing one owner, although reckon/served_code.py:813 already owns the moved-and-trusted decision.",
+    "scope_discipline": "every path in 9da1277b52..407e04e0ad is one of the node's declared write paths, no request verb or CLI option was added, and the manual reload branch at fleet_supervisor.py:2000-2005 is untouched."
+  },
+  "node": "review-of-the-fleet-supervisor-runs-current-code-407e04e0ad3c",
+  "node:reviewed": "the-fleet-supervisor-runs-current-code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to reload the fleet supervisor onto current code when its stamp moves; reckon/crew/fleet_supervisor.py:2134 records the stamp at loop start and :2146-2157 re-executes through the pre-existing _reexec when the stamp moved and the checkout is trusted.\nVERDICT done_when: \u00a711 names tests/test_the_fleet_supervisor_runs_current_code.py with three behaviours, the admit service's stamp and trust test, no new request verb and ruff clean; logs/head.log records 3 passed EXIT=0, logs/base.log the same three arms failing, logs/negative-control.log 2 failed under the declared mutation, and ruff check and format --check pass when I re-ran them on both changed source paths.\nVERDICT write_paths: the manifest declares fleet_supervisor.py, the new test, the fragment and an unused figure directory; git diff --stat over 9da1277b52..407e04e0ad lists exactly the first three and nothing else.\nVERDICT manifest: read in full; status complete, landing states the measure with its 3-passed and 2-failed-untrusted figures, five test_logs opened with their revisions and EXIT lines, and both retry_failures attributed to the test fixture rather than to code under test.\nVERDICT diff: read commit by commit, one commit 407e04e0ad with 405 insertions and 2 deletions: three private wrappers at fleet_supervisor.py:1803-1840, two injected parameters plus the stamp comparison at :2056-2160, a 263-line test and a 68-line node-prefixed fragment.\nCALL_SITES: reckon/crew/fleet_supervisor.py:2209, reckon/crew/fleet_node.py:216\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:2146 replaces the running image through the same _reexec a manual reload takes, so a moved stamp reaches the node with no operator request.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head.log, logs/base.log and logs/negative-control.log each record a revision, a summary and an EXIT line, the importer arms read 33 passed on both sides, and the ruff clause I verified by re-running it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 9da1277b52..407e04e0ad is a declared write path, and no request verb or CLI option was added.\nSCORE durability: 18\nJUSTIFICATION durability: all three arms fail at 9da1277b52 (logs/base.log) and pass at 407e04e0ad (logs/head.log), with the declared mutation reddening the two stamp-dependent arms, though tests/test_the_fleet_supervisor_runs_current_code.py:247 pairs two readings of the same reader.\nSCORE fit: 16\nJUSTIFICATION fit: fleet_supervisor.py:1820-1840 follows the module's docstring-and-lazy-import idiom, but :2146 recomputes the trust verdict every pass where follower_reload.py:333-400 paces the same decision.\nSCORE reuse: 7\nJUSTIFICATION reuse: fleet_supervisor.py:1803-1840 copies queue_admission.py:660-694's root, stamp and trust trio rather than extending the owner, and reckon/served_code.py:813 already owns the moved-and-trusted decision.\nFINDING reckon/crew/fleet_supervisor.py:2146 blocking: the trust verdict is recomputed on every 0.5 s pass with no interval or backoff, so an untrusted checkout makes the supervisor run git status (checkout_trust.py:733) or a full module-import probe (checkout_trust.py:849) each pass and answer its FIFO at the probe's cadence, where follower_reload.py:333-400 paces the same decision.\nFINDING tests/test_the_fleet_supervisor_runs_current_code.py:247 non-blocking: adopted equals a second reading of recorded_service_pid on the same tree, so it would hold if that reader returned a constant; the arm's independence is lines 248-249.\nFINDING reckon/crew/fleet_supervisor.py:1803 non-blocking: _supervisor_source_root and _checkout_code_is_trusted restate queue_admission.py:672-694 body for body, adding two more copies of the resolution and verdict to keep in step with the owner.",
+  "review_run_id": "r-20261029T042052089681-review-of-the-fleet-supervisor-runs-current-code-407e04e0ad3c",
+  "reviewed_base_sha": "9da1277b5258df110fd0d1943cf87b53767e4d1f",
+  "reviewed_head_sha": "407e04e0ad3c428725f74fb05e4506e0c32654fc",
+  "reviewed_range_note": "scored the single landed commit 407e04e0ad against base 9da1277b52, read in the reviewed run's worktree at the-fleet-supervisor-runs-current-code; plan section reckon:work-is-never-stuck-behind-the-admission-loop \u00a711 read as the semantic authority and the reviewed node's own prompt.txt read for goal, done_when and write paths.",
+  "reviewed_run_id": "r-20261029T035511535393-the-fleet-supervisor-runs-current-code",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 7,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T04:30:13+00:00",
+  "total": 98
+}

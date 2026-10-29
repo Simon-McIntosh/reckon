@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -194,6 +194,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261029T041506336718-review-of-a-launch-reuses-what-queue-time-proved-72278234a10f" data-who="reckon-build" data-when="2026-10-29T04:27:34.192Z">
     <div class="r-comment-body"><p>Review of run r-20261028T222907809727-a-launch-reuses-what-queue-time-proved at head 72278234a1 over base 49765673c6, stored as a parsed record at both declared paths. Scores: goal_fidelity 15, evidence 7, scope_discipline 16, durability 18, fit 17, reuse 9. Four findings, one blocking: the reviewed manifest's landing line still records the retracted 0.049833 timing ratio as the node's measure while its own artifacts line records 1.104565, so promotion would land the plan section's timing target as met when it is unmet. The three non-blocking findings are: the evidence fragment's quoted timing figures appear in no line of the log it cites; test_logs cites a truncated importer arm where a complete one exists at the reviewed head; and plan_review.newest_settled_covering_review restates review_coverage's selection predicate beside the owner.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261029T042052089681-review-of-the-fleet-supervisor-runs-current-code-407e04e0ad3c" data-who="reckon-build" data-when="2026-10-29T04:32:43.010Z">
+    <div class="r-comment-body"><p>the independent review of the-fleet-supervisor-runs-current-code at 407e04e0ad (base 9da1277b52) is stored as a parsed record scoring all six dimensions (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 16, reuse 7) with added_failure_count 0, one blocking finding (reckon/crew/fleet_supervisor.py:2146 recomputes the trusted-checkout verdict on every 0.5 s loop pass with no interval or backoff, so an untrusted checkout makes the supervisor run git status or a full module-import probe each pass) and two non-blocking findings (the paired reading at tests/test_the_fleet_supervisor_runs_current_code.py:247, and the root/stamp/trust wrappers at fleet_supervisor.py:1803-1840 restating queue_admission.py:660-694)</p></div>
 </div>
 </section>
 </main>
