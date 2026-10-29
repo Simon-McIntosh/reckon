@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1050",
+    "reckon/hooks/coordinator_obligations.py:1058",
+    "reckon/hooks/coordinator_obligations.py:1327",
+    "reckon/mcp_views.py:4044"
+  ],
+  "completed_at": "2026-10-29T04:46:30.541Z",
+  "dispatched_at": "2026-10-29T04:40:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station.py",
+      "line": "462",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `publish` stage is entered after the per-project publish loop has already finished and immediately before sweep_retention, so a tick stuck in retention reports the stage `publish` \u2014 work that is done \u2014 contradicting the _enter docstring's claim that a stage a reader sees is one the tick has not yet finished; renaming the last stage to name the retention sweep, or entering it before the loop, would keep the reading honest."
+    },
+    {
+      "file": "reckon/crew/station_obligations.py",
+      "line": "280",
+      "severity": "non-blocking",
+      "text": "non-blocking: the exported snapshot carries the store's heartbeat but the file is only rewritten from inside the tick, so during a minutes-long tick an off-node reader that falls through to the export still ages a fresh beat into `stopped` and the hook still emits the restart advice this node exists to suppress; the file is outside this node's fence and the manifest records the neighbouring fact, but its outside_scope entry says the export \"can only read stopped or live\" rather than that it can still read stopped wrongly, so the residual defect should be folded into a node owning station_obligations.py."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-slow-station-still-reads-as-alive.html",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment is prose only while docs/figures/work-is-never-stuck-behind-the-admission-loop/a-slow-station-still-reads-as-alive was a declared write path, and a two-axis diagram of beat age against tick age showing the stopped, slow and live regions is the clearest statement of what this section changes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read both commits against 3922d93453721f6886dd7e9722aa6aeb56ac8d54 \u2014 401028768b32 adds the beat thread, the five tick stages and the stage/tick-age reader, and 2af24e99d5 lands the evidence fragment; the reader's new state field is additive so the two unchanged `stale` consumers keep their behaviour.",
+    "done_when": "read the measure at the node prompt's FENCE \u2014 EVIDENCE line and compared it with tests/test_a_slow_station_still_reads_as_alive.py; all three named arms are present (slow with stage and age at lines 225-231, stopped within one window at lines 267-271, restart advice only for stopped at lines 328-344) and the arm that would fail without the thread asserts heartbeat_age_seconds <= WINDOW_SECONDS at line 231 after three windows of a blocked refresh.",
+    "goal": "the node's goal is \"keep the station's beat independent of how long its tick takes\"; reckon/crew/station.py:67 adds StationBeat, started at reckon/crew/station.py:514 before the first tick, which writes the heartbeat from its own thread and own store handle, so the beat no longer waits on the tick.",
+    "manifest": "read; it reports the gate at 3 passed EXIT=0, the negative control at 1 failed/2 passed EXIT=1, and the importer population at 124/2 base against 127/2 head, and it records the export path gap under outside_scope rather than claiming it.",
+    "write_paths": "read the manifest's seven declared paths; the diff touches exactly five of them (reckon/crew/station.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_a_slow_station_still_reads_as_alive.py, docs/evidence/fragments/.../a-slow-station-still-reads-as-alive.html) and nothing outside them, with the declared figures directory left unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_slow_station_still_reads_as_alive.py:231 fails if the beat returns to the tick, which the recorded negative control demonstrates by reinstating exactly that change and reddening line 225, and each added assertion compares a value read back through obligation_snapshot.read_station_answer against clock-derived bounds rather than against anything the test passed in.",
+    "evidence": "the gate is the file's own three arms and I re-ran `PYTHONPATH=<worktree> .venv/bin/python -m pytest -q tests/test_a_slow_station_still_reads_as_alive.py` at head, which printed \"3 passed in 9.88s\", and the recorded negative-control.log shows the same file at \"1 failed, 2 passed\" with the first arm red at tests/test_a_slow_station_still_reads_as_alive.py:225.",
+    "fit": "reckon/crew/station.py:67 follows the surrounding SweepBeat idiom of a class holding its own thread and stop event, and the stage vocabulary lives once in reckon/crew/obligation_snapshot.py:326 with no plan label or version token in any new name.",
+    "goal_fidelity": "reckon/crew/station.py:113 beats every STATION_BEAT_SECONDS on its own thread and reckon/crew/station.py:369 keeps the tick's own heartbeat write at the start of the tick only, so the beat no longer depends on tick duration.",
+    "reuse": "StationBeat wraps station_store.StationStore.heartbeat (reckon/crew/station_store.py:454) and the reader extends the existing read_station_answer at reckon/crew/obligation_snapshot.py:482 rather than adding a second reader; searching reckon/ for a stoppable periodic-beat owner found only reckon/change_streams.py:601, a private detector loop of that class and not a reusable mechanism.",
+    "scope_discipline": "all five changed paths are inside the manifest's declared write paths and no unrelated file appears in the diff against 3922d93453721f6886dd7e9722aa6aeb56ac8d54."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"keep the station's beat independent of how long its tick takes\"; reckon/crew/station.py:67 adds StationBeat, started at reckon/crew/station.py:514 before the first tick, which writes the heartbeat from its own thread and own store handle, so the beat no longer waits on the tick.\nVERDICT done_when: read the measure at the node prompt's FENCE \u2014 EVIDENCE line and compared it with tests/test_a_slow_station_still_reads_as_alive.py; all three named arms are present (slow with stage and age at lines 225-231, stopped within one window at lines 267-271, restart advice only for stopped at lines 328-344) and the arm that would fail without the thread asserts heartbeat_age_seconds <= WINDOW_SECONDS at line 231 after three windows of a blocked refresh.\nVERDICT write_paths: read the manifest's seven declared paths; the diff touches exactly five of them (reckon/crew/station.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_a_slow_station_still_reads_as_alive.py, docs/evidence/fragments/.../a-slow-station-still-reads-as-alive.html) and nothing outside them, with the declared figures directory left unused.\nVERDICT manifest: read; it reports the gate at 3 passed EXIT=0, the negative control at 1 failed/2 passed EXIT=1, and the importer population at 124/2 base against 127/2 head, and it records the export path gap under outside_scope rather than claiming it.\nVERDICT diff: read both commits against 3922d93453721f6886dd7e9722aa6aeb56ac8d54 \u2014 401028768b32 adds the beat thread, the five tick stages and the stage/tick-age reader, and 2af24e99d5 lands the evidence fragment; the reader's new state field is additive so the two unchanged `stale` consumers keep their behaviour.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1050, reckon/hooks/coordinator_obligations.py:1058, reckon/hooks/coordinator_obligations.py:1327, reckon/mcp_views.py:4044\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:113 beats every STATION_BEAT_SECONDS on its own thread and reckon/crew/station.py:369 keeps the tick's own heartbeat write at the start of the tick only, so the beat no longer depends on tick duration.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate is the file's own three arms and I re-ran `PYTHONPATH=<worktree> .venv/bin/python -m pytest -q tests/test_a_slow_station_still_reads_as_alive.py` at head, which printed \"3 passed in 9.88s\", and the recorded negative-control.log shows the same file at \"1 failed, 2 passed\" with the first arm red at tests/test_a_slow_station_still_reads_as_alive.py:225.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all five changed paths are inside the manifest's declared write paths and no unrelated file appears in the diff against 3922d93453721f6886dd7e9722aa6aeb56ac8d54.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_slow_station_still_reads_as_alive.py:231 fails if the beat returns to the tick, which the recorded negative control demonstrates by reinstating exactly that change and reddening line 225, and each added assertion compares a value read back through obligation_snapshot.read_station_answer against clock-derived bounds rather than against anything the test passed in.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/station.py:67 follows the surrounding SweepBeat idiom of a class holding its own thread and stop event, and the stage vocabulary lives once in reckon/crew/obligation_snapshot.py:326 with no plan label or version token in any new name.\nSCORE reuse: 18\nJUSTIFICATION reuse: StationBeat wraps station_store.StationStore.heartbeat (reckon/crew/station_store.py:454) and the reader extends the existing read_station_answer at reckon/crew/obligation_snapshot.py:482 rather than adding a second reader; searching reckon/ for a stoppable periodic-beat owner found only reckon/change_streams.py:601, a private detector loop of that class and not a reusable mechanism.\nFINDING reckon/crew/station.py:462 non-blocking: the `publish` stage is entered after the per-project publish loop has already finished and immediately before sweep_retention, so a tick stuck in retention reports the stage `publish` \u2014 work that is done \u2014 contradicting the _enter docstring's claim that a stage a reader sees is one the tick has not yet finished; renaming the last stage to name the retention sweep, or entering it before the loop, would keep the reading honest.\nFINDING reckon/crew/station_obligations.py:280 non-blocking: the exported snapshot carries the store's heartbeat but the file is only rewritten from inside the tick, so during a minutes-long tick an off-node reader that falls through to the export still ages a fresh beat into `stopped` and the hook still emits the restart advice this node exists to suppress; the file is outside this node's fence and the manifest records the neighbouring fact, but its outside_scope entry says the export \"can only read stopped or live\" rather than that it can still read stopped wrongly, so the residual defect should be folded into a node owning station_obligations.py.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-slow-station-still-reads-as-alive.html:1 non-blocking: the fragment is prose only while docs/figures/work-is-never-stuck-behind-the-admission-loop/a-slow-station-still-reads-as-alive was a declared write path, and a two-axis diagram of beat age against tick age showing the stopped, slow and live regions is the clearest statement of what this section changes.",
+  "review_run_id": "r-20261029T043310684633-review-of-a-slow-station-still-reads-as-alive-2af24e99d53d",
+  "reviewed_base_sha": "3922d93453721f6886dd7e9722aa6aeb56ac8d54",
+  "reviewed_head_sha": "2af24e99d53dab0fbeff80df0e6bae8e7f97a78f",
+  "reviewed_run_id": "r-20261029T040630579968-a-slow-station-still-reads-as-alive",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T04:50:03.126952+00:00",
+  "total": 112
+}

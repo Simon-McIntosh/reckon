@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -197,6 +197,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261029T042052089681-review-of-the-fleet-supervisor-runs-current-code-407e04e0ad3c" data-who="reckon-build" data-when="2026-10-29T04:32:43.010Z">
     <div class="r-comment-body"><p>the independent review of the-fleet-supervisor-runs-current-code at 407e04e0ad (base 9da1277b52) is stored as a parsed record scoring all six dimensions (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 16, reuse 7) with added_failure_count 0, one blocking finding (reckon/crew/fleet_supervisor.py:2146 recomputes the trusted-checkout verdict on every 0.5 s loop pass with no interval or backoff, so an untrusted checkout makes the supervisor run git status or a full module-import probe each pass) and two non-blocking findings (the paired reading at tests/test_the_fleet_supervisor_runs_current_code.py:247, and the root/stamp/trust wrappers at fleet_supervisor.py:1803-1840 restating queue_admission.py:660-694)</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261029T043310684633-review-of-a-slow-station-still-reads-as-alive-2af24e99d53d" data-who="reckon-build" data-when="2026-10-29T04:46:30.541Z">
+    <div class="r-comment-body"><p>Reviewed r-20261029T040630579968-a-slow-station-still-reads-as-alive at head 2af24e99d53dab0fbeff80df0e6bae8e7f97a78f against base 3922d93453721f6886dd7e9722aa6aeb56ac8d54 — parse status parsed, total 112 over six independent dimensions (goal_fidelity 19, evidence 19, scope_discipline 19, durability 19, fit 18, reuse 18), added_failure_count 0 with no added failure ids, three non-blocking findings and no blocking one, so the node stands as landed.</p></div>
 </div>
 </section>
 </main>
