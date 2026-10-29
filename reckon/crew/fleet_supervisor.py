@@ -1800,6 +1800,44 @@ def _reexec(exec_: Any, *, standby: bool = False) -> None:
     exec_(argv[0], argv)
 
 
+def _supervisor_source_root() -> Path:
+    """The checkout that supplied this imported package.
+
+    Resolved the way the followers and the admission service resolve theirs, so
+    the supervisor, the followers and the admit service all name one tree rather
+    than each counting its own way up from ``__file__``.
+    """
+    from reckon.crew_follow_commands import _import_root
+
+    return _import_root(sys.modules[__name__])
+
+
+def _source_code_stamp() -> str:
+    """The content identity of the code the checkout would run next.
+
+    The same identity the admission service records and compares against, so a
+    commit that changes nothing under ``reckon/`` moves nothing here and
+    re-executes nothing.
+    """
+    from reckon.crew.follower_registration import follower_code_stamp
+
+    return follower_code_stamp()
+
+
+def _checkout_code_is_trusted() -> bool:
+    """Whether the checkout may replace this image.
+
+    The same trusted-checkout test the admission service and the followers use:
+    clean under ``reckon/`` against ``HEAD`` and importable. A tree mid-merge
+    refuses, so a running supervisor is never replaced by half-finished code.
+    """
+    from reckon import checkout_trust
+
+    return checkout_trust.moved_checkout_is_trustworthy(
+        _supervisor_source_root()
+    ).trusted
+
+
 def _run_session_copy(name: str, layout: str, environ: Mapping[str, str] | None) -> int:
     """Start a session through a fresh copy of this module, bounded.
 
@@ -2020,13 +2058,26 @@ def serve(
     *,
     exec_: Any = os.execv,
     standby: bool = False,
+    code_stamp: Callable[[], str] | None = None,
+    checkout_trusted: Callable[[], bool] | None = None,
 ) -> int:
     """Read requests from the FIFO until the batch step ends.
 
     Nothing here terminates the loop: the batch step is meant to outlive every
-    session on the node, so the loop ends only when the allocation does or when
-    a ``reload`` replaces this image.
+    session on the node, so the loop ends only when the allocation does, when a
+    ``reload`` replaces this image, or when this loop's own stamp comparison
+    finds the checkout has moved onto code this image does not carry.
+
+    ``code_stamp`` and ``checkout_trusted`` default to the stamp and
+    trusted-checkout test the admission service uses; both enter by argument so
+    a caller can drive the comparison against a temporary checkout.
     """
+    from reckon import checkout_trust
+
+    code_stamp = _source_code_stamp if code_stamp is None else code_stamp
+    checkout_trusted = (
+        _checkout_code_is_trusted if checkout_trusted is None else checkout_trusted
+    )
     environ = os.environ if environ is None else environ
     strip_inherited_variables(environ)
     apply_task_ceiling(environ)
@@ -2080,8 +2131,29 @@ def serve(
     # whichever whole lines the wakeup delivered.
     try:
         pending = b""
+        recorded_stamp = code_stamp()
         while True:
             _reap_finished_children()
+            current_stamp = code_stamp()
+            stamp_read = current_stamp != checkout_trust.IDENTITY_UNKNOWN
+            if recorded_stamp == checkout_trust.IDENTITY_UNKNOWN:
+                # The identity this image would compare against did not answer
+                # at start, so there is nothing to compare against yet: adopt
+                # the checkout's stamp rather than re-executing on every tick,
+                # which would loop forever while the read keeps failing.
+                if stamp_read:
+                    recorded_stamp = current_stamp
+            elif stamp_read and current_stamp != recorded_stamp and checkout_trusted():
+                # The checkout has moved onto code this image does not carry and
+                # it may be run: replace the image in place through the same
+                # path a manual ``reload`` takes, so the declared services it
+                # adopted keep running and a later reader sees one supervisor.
+                log(
+                    f"code stamp moved from {recorded_stamp} to {current_stamp}; "
+                    "re-executing"
+                )
+                recorded_stamp = current_stamp
+                _reexec(exec_, standby=is_standby)
             if not is_standby:
                 station_process.ensure()
             if not readable_within(descriptor, REQUEST_WAIT_SECONDS):

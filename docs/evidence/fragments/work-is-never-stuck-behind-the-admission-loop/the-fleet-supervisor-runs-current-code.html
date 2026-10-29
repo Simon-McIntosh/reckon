@@ -1,0 +1,68 @@
+<section id="the-fleet-supervisor-runs-current-code-landing">
+  <h2>The fleet supervisor reloads itself when its checkout moves</h2>
+
+  <p><strong>What changed.</strong> The supervisor's request loop in
+  <code>reckon/crew/fleet_supervisor.py</code> now compares the code stamp it recorded when
+  it started with the stamp the checkout carries on every pass. When the two differ and the
+  checkout is trusted, it replaces its own image through <code>_reexec</code> — the same path
+  a manual <code>reload</code> request takes — so the declared services it adopted keep
+  running and a later reader sees one supervisor. Both inputs are the ones the admission
+  service already uses: <code>follower_code_stamp()</code> for the identity and
+  <code>checkout_trust.moved_checkout_is_trustworthy()</code> for the trusted-checkout test,
+  resolved against the same import root
+  (<code>reckon.crew_follow_commands._import_root</code>). A tree with a tracked file modified
+  against <code>HEAD</code> is not trusted, so the supervisor keeps the image it has rather
+  than running code a half-finished edit produced. An identity read that did not answer is
+  never treated as a moved stamp: the loop adopts the first readable stamp instead of
+  re-executing on every tick, which would loop forever while the read keeps failing. Once the
+  stamp has been acted on it is recorded, so a stand-in replacement that returns cannot make
+  the loop act twice. No request verb and no CLI option is added, and the manual
+  <code>reload</code> request stays for an operator. <code>serve()</code> takes
+  <code>code_stamp</code> and <code>checkout_trusted</code> by argument, defaulting to the
+  admit service's implementations, so a test can drive the comparison against a temporary
+  checkout.</p>
+
+  <p><strong>Why it was needed.</strong> The station was down for 73 minutes on 28 October
+  while the supervisor ran eight days on code that predates its <code>station</code> request.
+  It answered <code>unknown request: station</code> until an operator sent <code>reload</code>
+  by hand. Every fix to how it keeps services now reaches the node without a request.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_the_fleet_supervisor_runs_current_code.py</code>, three arms
+  driven through a real <code>serve()</code> loop in a temporary runtime tree with an injected
+  <code>exec_</code> and injected stamp and trust inputs. Each arm is a log whose first line
+  names its revision and whose last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>head (this change)</td>
+        <td><code>9da1277b</code> + change</td>
+        <td><strong>3 passed</strong>, exit 0</td></tr>
+      <tr><td>base (new test copied into a base archive)</td>
+        <td><code>9da1277b</code></td>
+        <td><strong>3 failed</strong>, exit 1 — <code>serve()</code> takes no stamp or trust
+        argument, so no arm reaches its assertion</td></tr>
+      <tr><td>negative control (stamp comparison removed)</td>
+        <td>mutated head</td>
+        <td><strong>2 failed</strong>, exit 1 — the moved-stamp arm and the service arm both
+        fail, the untrusted arm still passes</td></tr>
+      <tr><td>existing tests importing the module, head</td>
+        <td><code>9da1277b</code> + change</td>
+        <td>33 passed, exit 0</td></tr>
+      <tr><td>existing tests importing the module, base</td>
+        <td><code>9da1277b</code></td>
+        <td>33 passed, exit 0 — no failures added</td></tr>
+    </tbody>
+  </table>
+
+  <p>The three arms show: a supervisor whose recorded stamp differs from a trusted
+  checkout's re-executes once on its next pass, and no further (<code>argv</code> is
+  <code>python -m reckon.crew.fleet_supervisor</code> with no <code>--standby</code>); an
+  untrusted checkout leaves it running, proven by a <code>ready</code> request it answers
+  after the stamp moved; and a declared service recorded before the replacement is found
+  running after it — the replacement image adopts the same pid through
+  <code>DeclaredServices.reload()</code>, and the service's own start marker is written
+  exactly once across the replacement and the stop.</p>
+</section>
