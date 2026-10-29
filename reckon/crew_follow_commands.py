@@ -26,7 +26,7 @@ from reckon.crew.follower_reload import (  # noqa: F401 - re-exported for caller
     _StampPoll,
 )
 from reckon.crew.session_host import SETTLE_ENV, SETTLED_EXIT_CODE, owner_alive
-from reckon.crew.station_subscriber import STATION_GAP_EVENT, STATION_STALE_EVENT
+from reckon.crew.station_subscriber import STATION_GAP_EVENT
 from reckon.crew_dispatch_commands import _crew_modules, _emit_crew_result, crew
 from reckon.env_duration import read_duration_override
 
@@ -566,22 +566,6 @@ def _ticker_layout_signature() -> str:
 
 
 
-def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, Any]]:
-    """List the owning session's runs whose state needs the coordinator now.
-
-    The list itself is :func:`reckon.crew.needs_you.needs_you`'s, so the row the
-    pane prints at the end of an arming names exactly the runs the standing line
-    names while it lives. Read at the moment the follower ends rather than
-    accumulated from the stream: a run falls into a needs-action state whether or
-    not a producer ever wrote a transition for it, and a run that finished while
-    no producer was up would otherwise be named by nobody.
-    """
-    from reckon.crew import needs_you as needs_you_module
-
-    return needs_you_module.needs_you_runs(project, session=session)
-
-
-
 def _population_has_live_work(project: str, *, session: str | None) -> bool:
     """Whether this follower's own fleet still holds a run that has not ended.
 
@@ -659,34 +643,23 @@ def _hand_off_from_follower(project: str, session: str | None) -> bool:
     return _hand_off_to_waiting_host(project, session)
 
 
-def _follower_end_line(
-    *,
-    attach_line: str,
-    needs: list[Mapping[str, str]],
-    handed_to_host: bool = False,
-) -> str:
+def _follower_end_line(*, attach_line: str, handed_to_host: bool = False) -> str:
     """Compose the single line a reader acts on as the pane goes dark.
+
+    The row exists for one reason: the reader acts on how to continue watching,
+    so it carries the re-arm instruction and nothing else. A run that needs the
+    coordinator is named by the obligations list, not by a line composed here.
 
     When the arming handed its session to a waiting host, the line says so and
     carries no ``re-arm with``: the host runs the session's next follower, so a
     re-arm command would arm a second follower beside one the host consumes.
     """
-    if not needs:
-        tail = "no runs need you"
-    else:
-        outstanding = ", ".join(f"{row['run_id']} ({row['node']})" for row in needs)
-        if len(needs) == 1:
-            tail = f"1 run needs you: {outstanding}"
-        else:
-            tail = f"{len(needs)} runs need you: {outstanding}"
     if handed_to_host:
-        head = (
+        return (
             "follower end: arming lifetime elapsed; session host now delivers "
             "this session; nothing needs re-arming"
         )
-    else:
-        head = f"follower end: arming lifetime elapsed; re-arm with: {attach_line}"
-    return f"{head}; {tail}"
+    return f"follower end: arming lifetime elapsed; re-arm with: {attach_line}"
 
 
 def _follower_end_event(
@@ -706,7 +679,6 @@ def _follower_end_event(
 
     handed = _hand_off_from_follower(project, session)
     attach_line = runs_module._watch_attach_line(project, session=session)
-    needs = _needs_you_runs(project, session=session)
     return {
         "event": FOLLOWER_END_EVENT,
         "project": project,
@@ -715,78 +687,30 @@ def _follower_end_event(
         "armed_seconds": armed_seconds,
         "elapsed_seconds": round(float(elapsed), 3),
         "attach_line": attach_line,
-        "needs_you": needs,
         "handed_to_host": handed,
-        "line": _follower_end_line(
-            attach_line=attach_line, needs=needs, handed_to_host=handed
-        ),
+        "line": _follower_end_line(attach_line=attach_line, handed_to_host=handed),
     }
 
-
-
-def _follower_settle_line(
-    *, since: float, observed: Iterable[str] = (), tail: str = ""
-) -> str:
-    """The line the pane shows when a session drains, or nothing at all.
-
-    A line the pane prints names something the coordinator can act on. A settle
-    whose fleet has drained names nothing to act on, so the composed line is
-    empty: the pane shows nothing, while the follower still exits with its
-    settle code so its session host retires the child as it does today.
-
-    The tail is composed by :func:`reckon.crew.needs_you.drain_tail`, the same
-    derivation the standing needs-you line reads: it names the runs the session
-    still owes, and is empty when the fleet has drained or when that line
-    already named the same set. With no tail there is no line.
-
-    When it does print, the stamp is the wall clock the reader's own tools
-    print, taken at the moment the session's last live run was seen, so
-    ``since`` names when the fleet actually drained rather than when this pane
-    happened to notice. A session at a terminal already knows its own id, so the
-    bare stamp is the whole of the news; the line names a session only when this
-    pane carries more than its own — the ones it was asked to observe — because
-    then the reader has more than one fleet in view.
-    """
-    if not tail:
-        return ""
-    stamp = time.strftime("%H:%M", time.localtime(since))
-    names = ", ".join(sorted({str(name) for name in observed if name}))
-    head = f"no live work since {stamp}"
-    if names:
-        head = f"no live work in {names} since {stamp}"
-    return f"{head} · {tail}"
 
 
 def _follower_settle_event(
     project: str,
     *,
     session: str | None,
-    since: float,
-    shown: tuple[Any, ...] | None = None,
-    observed: Iterable[str] = (),
 ) -> dict[str, Any]:
     """Build the follower's terminal row for a session whose work drained.
 
-    Like the lifetime end row it is about the follower rather than the fleet,
-    so it carries the line to print verbatim. The line is empty when the fleet
-    drained with nothing outstanding: the row is still emitted, because the
-    follower leaves with its settle code either way, and the reader keys on the
-    event rather than the line. ``shown`` is the signature of the set the
-    pane's last needs-you line printed, which the tail compares against so the
-    row repeats nothing that line already said.
+    The row is about the follower rather than the fleet, and it is emitted so
+    the follower's host retires the child on its settle status. It carries an
+    empty line: a drained pane whose work is all landed has nothing to say that
+    the obligations list does not already name, so nothing is composed for it.
     """
-    from reckon.crew import needs_you as needs_you_module
-
     return {
         "event": FOLLOWER_SETTLE_EVENT,
         "project": project,
         "session": session or "",
         "run_id": None,
-        "line": _follower_settle_line(
-            since=since,
-            observed=observed,
-            tail=needs_you_module.drain_tail(project, session=session, shown=shown),
-        ),
+        "line": "",
     }
 
 
@@ -1521,7 +1445,6 @@ def _follow_watch_lines(
     reloaded_in_place: bool = False,
     settle: bool = False,
     settle_interval: float | None = None,
-    remind: float | None = None,
     subscriber=None,
 ):
     """Yield this follower's transitions for as long as its session lives.
@@ -1606,7 +1529,6 @@ def _follow_watch_lines(
     # one that refills inside it, an admitted run above all, does not.
     settled = False
     saw_live = False
-    last_live_at: float | None = None
     # When the population was first seen empty, so the grace is measured
     # against the drain rather than against the poll that happened to notice
     # it. Cleared by any sighting of unfinished work.
@@ -1654,7 +1576,7 @@ def _follow_watch_lines(
         that appears inside the grace, an admitted run above all, clears the
         emptiness and keeps the pane.
         """
-        nonlocal settled, saw_live, last_live_at, settle_empty_since
+        nonlocal settled, saw_live, settle_empty_since
         nonlocal settle_sampled_at
         if not settle or settled:
             return
@@ -1674,7 +1596,6 @@ def _follow_watch_lines(
         # open. Each session is asked through the same judgement that owns it.
         if any(_is_live(name) for name in settle_populations):
             saw_live = True
-            last_live_at = time.time()
             settle_empty_since = None
             return
         if not saw_live:
@@ -1884,21 +1805,13 @@ def _follow_watch_lines(
         _check_settle()
         _renew_producer_lease()
 
-    # The follower prints no standing summary line. Under the session host every
-    # printed line is a notification that starts a coordinator turn, and the
-    # needs-you summary named the orchestrator rather than the lead, repeated the
-    # rows the stream already carries, and was restated by the obligations hook
-    # on every prompt; its reminder cadence woke a coordinator to read a list it
-    # had just seen. The rule is stated once, in
+    # The follower prints no standing summary line, and no closing row that
+    # names runs either. Under the session host every printed line is a
+    # notification that starts a coordinator turn. The obligations list names
+    # every run the session still owes, with the command for each, so a line
+    # here would restate it. The rule is stated once, in
     # :func:`reckon.crew.ticker.stream_carries`: the stream carries a line only
-    # when it names something only the coordinator can do next. The settle row's
-    # tail still names the runs a drained session owes, which is the one summary
-    # a reader can act on.
-    #
-    # ``shown`` is what the settle tail compares against. With no standing line
-    # to show a set, nothing has been shown, so the tail names every outstanding
-    # run rather than suppressing a set a line already named.
-    shown_needs_signature: tuple | None = None
+    # when it names something only the coordinator can do next.
 
     from reckon.crew.resumption import DEFAULT_SWEEP_SECONDS
 
@@ -2547,13 +2460,7 @@ def _follow_watch_lines(
         yield printed
 
     if settled:
-        yield _follower_settle_event(
-            project,
-            session=session,
-            since=last_live_at if last_live_at is not None else time.time(),
-            shown=shown_needs_signature,
-            observed=observed_sessions - {None},
-        )
+        yield _follower_settle_event(project, session=session)
         return
 
     if lifetime_elapsed:
@@ -2898,25 +2805,6 @@ def crew_host(
     )
 
 
-def _needs_remind_seconds(remind: str | None) -> float:
-    """The standing line's cadence: ``--remind`` when given, ten minutes else.
-
-    The default lives where the option is read, so an arming that passes no flag
-    still carries a cadence, and an operator who wants a different interval
-    overrides it with the flag.
-    """
-    from reckon.crew import needs_you as needs_you_module
-    from reckon.crew import runs as runs_module
-    from reckon.crew.node import parse_duration
-
-    if remind is None:
-        return float(needs_you_module.DEFAULT_REMIND_SECONDS)
-    try:
-        return float(parse_duration(remind))
-    except runs_module.CrewError as exc:
-        raise click.ClickException(str(exc)) from exc
-
-
 @crew.command(name="follow")
 @click.option("--project", required=True, help="Project whose watch stream to follow.")
 @click.option(
@@ -2968,21 +2856,9 @@ def _needs_remind_seconds(remind: str | None) -> float:
     metavar="DURATION",
     help=(
         "End this follower after DURATION (an integer plus s, m or h, e.g. 29m), "
-        "printing one final line that names how to re-arm and this session's "
-        "runs that need the coordinator. The host ends a Monitor at thirty "
-        "minutes, so arm slightly less and re-arm on the final line instead of "
-        "discovering the end when the host kills the pane."
-    ),
-)
-@click.option(
-    "--remind",
-    default=None,
-    metavar="DURATION",
-    help=(
-        "Re-emit the standing needs-you line every DURATION (an integer plus s, "
-        "m or h, e.g. 10m) while the session still owes the coordinator a run, "
-        "even when nothing has changed. Defaults to ten minutes; this overrides "
-        "that interval. An empty set is never re-emitted on this cadence."
+        "printing one final line that names how to re-arm. The host ends a "
+        "Monitor at thirty minutes, so arm slightly less and re-arm on the "
+        "final line instead of discovering the end when the host kills the pane."
     ),
 )
 @_ticker_options
@@ -2995,7 +2871,6 @@ def crew_follow(
     json_output,
     pretty,
     lifetime,
-    remind=None,
     width=0,
     theme=None,
     no_color=False,
@@ -3035,7 +2910,6 @@ def crew_follow(
             lifetime_seconds = float(parse_duration(lifetime))
         except runs_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
-    remind_seconds = _needs_remind_seconds(remind)
     # The absolute instant this arming ends, in UTC epoch. Fixed here and never
     # rewritten, so a reload continues the original arming rather than granting
     # a fresh lifetime. Held in a local rather than ``os.environ``: the only
@@ -3246,7 +3120,6 @@ def crew_follow(
             registration=registration,
             reloaded_in_place=reloaded_in_place,
             settle=settle,
-            remind=remind_seconds,
             subscriber=subscriber,
         ):
             # An attach event carries the states the pane already showed, so the
@@ -3369,7 +3242,7 @@ def crew_follow(
                 elif pane_line:
                     _echo_follow_line(replay_dim(str(event.get("line") or "")))
                 continue
-            if event.get("event") in (STATION_GAP_EVENT, STATION_STALE_EVENT):
+            if event.get("event") == STATION_GAP_EVENT:
                 # A station line is about the pane's place rather than a run:
                 # it carries a sentence to print, not a transition to draw.
                 # Handed to the transition painter it would print an empty

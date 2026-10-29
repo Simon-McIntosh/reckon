@@ -46,6 +46,7 @@ import pytest
 
 from reckon import crew
 from reckon import crew_follow_commands as follow_commands
+from reckon.crew import needs_you as needs_you_module
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -259,14 +260,13 @@ def test_an_observed_peers_live_run_keeps_the_child_following(home: Path) -> Non
         thread.join(5.0)
 
 
-def test_a_settle_line_names_an_observed_session(home: Path) -> None:
-    """A settle line that prints names the session it reports on.
+def test_a_settle_prints_no_line_even_with_an_outstanding_run(home: Path) -> None:
+    """A settle emits its event and no line, whatever the pane observes.
 
-    The bare stamp is unambiguous only while the pane watches its own fleet.
-    Observing a peer puts two fleets in view, so a line that prints has to say
-    that the pane's own session drained rather than the observed one. The line
-    prints only when its tail names an outstanding run, so the pane's own run
-    ends unpromoted: it drains as work and stays owed the coordinator.
+    The row is how the child's host retires it, and it names nothing: an
+    outstanding run is the obligations list's to name, not a sentence composed
+    here. The pane's own run ends unpromoted, so the derivation behind that
+    list still holds it while the pane goes quiet.
     """
     _write_pointer("r-mine", session=SESSION, phase="working")
     _write_pointer("r-peer", session=PEER, phase="working")
@@ -280,10 +280,10 @@ def test_a_settle_line_names_an_observed_session(home: Path) -> None:
         time.sleep(1.0)
         settles = _settle_events(events)
         assert len(settles) == 1, settles
-        line = settles[0]["line"]
-        assert line.startswith(f"no live work in {PEER} since"), line
-        assert SESSION not in line, line
-        assert "needs you: r-mine" in line, line
+        assert settles[0]["line"] == "", settles[0]["line"]
+        assert "r-mine" not in json.dumps(settles[0]), settles[0]
+        owed = needs_you_module.needs_you_runs(PROJECT, session=SESSION)
+        assert [row["run_id"] for row in owed] == ["r-mine"], owed
     finally:
         stop.set()
         thread.join(5.0)
@@ -350,7 +350,6 @@ if marker:
         handle.write(f'{os.getpid()}\\n')
 print('FAKE-FOLLOWER-LINE', flush=True)
 if os.environ.get('RECKON_SESSION_HOST_SETTLE') == '1':
-    print('no live work in FAKE since 00:00', flush=True)
     sys.exit(66)
 while True:
     time.sleep(0.05)
@@ -513,7 +512,9 @@ def test_the_host_retires_a_settled_child_and_stays_alive(settling_host: _Host) 
     )
     time.sleep(2.0)
     assert len(settling_host.child_pids()) == 1, settling_host.child_pids()
-    assert settling_host.stdout_text().count("no live work in FAKE") == 1
+    # One child, so one arrival line: a host that restarted the settled child
+    # would show a second.
+    assert settling_host.stdout_text().count("FAKE-FOLLOWER-LINE") == 1
     assert settling_host._process is not None
     assert _process_alive(settling_host._process.pid), "the host exited on the settle"
 

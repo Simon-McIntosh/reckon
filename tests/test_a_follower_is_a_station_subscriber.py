@@ -18,12 +18,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from reckon.crew import station_store, ticker
-from reckon.crew.station_subscriber import (
-    SKIPPED_DAYS_TEXT,
-    STALE_HEARTBEAT_TEXT,
-    StationSubscriber,
-    stale_heartbeat_line,
-)
+from reckon.crew.station_subscriber import SKIPPED_DAYS_TEXT, StationSubscriber
 
 PROJECT = "proj"
 SESSION = "session-a"
@@ -187,14 +182,15 @@ def test_a_cursor_older_than_retention_resumes_with_one_skip_line(tmp_path) -> N
     assert _deliver(subscriber, clock) == [], "the skip line is not repeated"
 
 
-def test_a_stale_heartbeat_prints_one_line(tmp_path) -> None:
-    """One line, once, naming the command that restarts the station."""
+def test_a_stale_heartbeat_prints_nothing(tmp_path) -> None:
+    """A heartbeat older than the pane can trust names no sentence.
+
+    The station's liveness verdict is the obligations hook's, which is the one
+    place a coordinator acts on it; a pane that repeated it on every slow tick
+    told a reader to restart a station that was running.
+    """
     store = _store(tmp_path)
     store.heartbeat(now=datetime.now(tz=UTC) - timedelta(seconds=600))
-
-    line = stale_heartbeat_line(store)
-    assert line is not None
-    assert "reckon crew station" in line
 
     subscriber = _subscriber(store, _Clock())
     stop = threading.Event()
@@ -205,13 +201,11 @@ def test_a_stale_heartbeat_prints_one_line(tmp_path) -> None:
 
     thread = threading.Thread(target=reader, daemon=True)
     thread.start()
-    deadline = time.monotonic() + 2
-    while time.monotonic() < deadline and not received:
-        time.sleep(0.005)
+    time.sleep(0.3)
     stop.set()
     thread.join(timeout=2)
     assert not thread.is_alive()
-    assert [event["event"] for event in received] == ["station-stale"]
+    assert received == [], received
 
 
 def test_a_subscriber_wakes_on_a_day_file_event_and_on_nothing_else(tmp_path) -> None:
@@ -372,12 +366,12 @@ def test_two_session_less_subscribers_over_two_projects_hold_separate_places(
 def test_a_station_line_reaches_the_pane_as_the_sentence_it_carries(
     tmp_path, monkeypatch
 ) -> None:
-    """The skip line and the stale line are sentences, not run rows.
+    """The skip line is a sentence, not a run row.
 
-    Neither event carries a transition; each carries a sentence in ``line``.
-    Drawn through the transition painter they print an empty clock and an
-    unknown run, so what a reader sees is asserted on the printed pane rather
-    than on the payload the subscriber emitted.
+    Its event carries no transition, only a sentence in ``line``. Drawn through
+    the transition painter it would print an empty clock and an unknown run, so
+    what a reader sees is asserted on the printed pane rather than on the
+    payload the subscriber emitted.
     """
     import json
 
@@ -391,7 +385,6 @@ def test_a_station_line_reaches_the_pane_as_the_sentence_it_carries(
     monkeypatch.setenv("RECKON_HOME", str(home))
 
     skipped = SKIPPED_DAYS_TEXT.format(days=16)
-    stale = STALE_HEARTBEAT_TEXT.format(age="10m")
     events = [
         {
             "event": "station-gap",
@@ -401,15 +394,7 @@ def test_a_station_line_reaches_the_pane_as_the_sentence_it_carries(
             "skipped_days": 16,
             "line": skipped,
             "observed_at": BASE.isoformat(),
-        },
-        {
-            "event": "station-stale",
-            "project": PROJECT,
-            "session": SESSION,
-            "run_id": None,
-            "line": stale,
-            "observed_at": BASE.isoformat(),
-        },
+        }
     ]
     monkeypatch.setattr(
         follow, "_follow_watch_lines", lambda *_a, **_kw: (dict(e) for e in events)
@@ -425,15 +410,14 @@ def test_a_station_line_reaches_the_pane_as_the_sentence_it_carries(
 
     pane = render()
     assert skipped in "\n".join(pane), pane
-    assert stale in "\n".join(pane), pane
-    drawn = [line for line in pane if skipped in line or stale in line]
+    drawn = [line for line in pane if skipped in line]
     for line in drawn:
         assert "->" not in line, "a station sentence was drawn as a run row"
         assert "unknown" not in line
 
     stream = [json.loads(line) for line in render("--json")]
-    assert [event["event"] for event in stream] == ["station-gap", "station-stale"]
-    assert [event["line"] for event in stream] == [skipped, stale]
+    assert [event["event"] for event in stream] == ["station-gap"]
+    assert [event["line"] for event in stream] == [skipped]
 
 
 def test_a_second_pane_of_one_session_waits_for_the_claim_and_takes_it_over(

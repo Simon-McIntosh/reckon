@@ -1,26 +1,21 @@
-"""The follower's settle row names the runs the session still owes, or nothing.
+"""The follower's settle row prints nothing and is still emitted.
 
-A pane goes dark exactly when a coordinator looks up from it, and the row it
-leaves behind is the last thing that pane says. That row names what the reader
-must still do about it: the runs the session still owes the coordinator,
-counted by the same derivation the standing needs-you line reads, so the closing
-row and the line it closed cannot disagree. When the fleet has drained there is
-nothing to act on, so the row prints nothing at all, while the follower still
-exits with its settle code so its host retires the child as it does today. When
-it does print, it leads with when the work stopped -- ``no live work since`` and
-the HH:MM stamp -- and names a session only when the pane watches more than its
-own fleet.
+A pane goes dark exactly when a coordinator looks up from it. The row that
+leaves behind is how the follower's host retires the child, so it is emitted
+whatever the fleet still owes -- but its line is empty, because the runs a
+drained session owes are named, with the command for each, by the obligations
+list rather than by a sentence composed for the pane.
 
 Two facts decide the shape of the cases below.
 
 The settle is hinged on the pane having watched its fleet live, because a
 dispatch arms a follower before it publishes the run's pointer: a follower armed
 into an already quiet session keeps following. So every drain here is reached
-from a run the pane saw working, and the second drain is reached the same way.
+from a run the pane saw working.
 
-The tail counts the owning session's runs alone. A peer session's working run in
-the same fixture is work this pane was never asked to watch, so it neither holds
-the pane open nor appears in the row.
+The set is the owning session's runs alone. A peer session's working run in the
+same fixture is work this pane was never asked to watch, so it neither holds the
+pane open nor appears in the derivation.
 """
 
 from __future__ import annotations
@@ -45,15 +40,15 @@ RUN_MINE = "r-mine"
 RUN_PEER = "r-peer"
 
 # The grace the cases drive: the module's own named constant, so the hold under
-# test is the one a real follower runs with.
-GRACE = follow_commands.FOLLOWER_SETTLE_GRACE_SECONDS
+# test is the one a real follower runs with, shortened below to a value a case
+# can wait out.
+GRACE = 0.5
 # The wait pass's step, real time only: the cases' own clock never advances with
 # it, so an empty window lasts exactly as long as the case says.
 POLL = 0.005
 # How long a case waits for the pane to drain. The pane is a thread on a machine
-# carrying a whole test fleet when this runs, and the closing row reads the
-# session's outstanding runs off disk before it can be printed, so a bound tight
-# enough to trip on a loaded worker measures the worker and not the pane.
+# carrying a whole test fleet when this runs, so a bound tight enough to trip on
+# a loaded worker measures the worker and not the pane.
 DRAIN_BOUND = 20.0
 
 
@@ -68,23 +63,6 @@ class _Clock:
 
     def advance(self, seconds: float) -> None:
         self.value += seconds
-
-
-class _Wall:
-    """A wall clock the case sets, so the row's stamp is exact.
-
-    Everything but ``time`` is the real module's, so the row's own
-    ``strftime``/``localtime`` formatting is the production one.
-    """
-
-    def __init__(self, value: float) -> None:
-        self.value = value
-
-    def time(self) -> float:
-        return self.value
-
-    def __getattr__(self, name: str):
-        return getattr(time, name)
 
 
 @pytest.fixture()
@@ -196,9 +174,8 @@ def _wait_until(predicate, *, timeout: float, description: str) -> None:
 class _Arming:
     """One follower generator consumed on a thread, with its own clock."""
 
-    def __init__(self, clock: _Clock, *, remind: float | None = None):
+    def __init__(self, clock: _Clock):
         self.clock = clock
-        self.remind = remind
         self.events: list[dict] = []
         self.stop = threading.Event()
         self.thread: threading.Thread | None = None
@@ -215,7 +192,6 @@ class _Arming:
             sweep=None,
             clock=self.clock,
             settle=True,
-            remind=self.remind,
         )
 
         def run() -> None:
@@ -239,23 +215,13 @@ class _Arming:
         ]
 
 
-def _drain(
-    *,
-    clock: _Clock,
-    wall: _Wall,
-    sighting_wall: float,
-    then,
-    remind: float | None = None,
-) -> list[dict]:
+def _drain(*, clock: _Clock, then) -> list[dict]:
     """Arm one follower over the run live, apply ``then``, and let it drain.
 
     The run is already live when this is called, so the pane has work to watch:
-    that sighting is the hinge the settle is judged on. The wall clock is set to
-    the moment of the sighting and moved on afterwards to a time whose HH:MM
-    differs, so a row printing the later clock could not be naming the sighting.
+    that sighting is the hinge the settle is judged on.
     """
-    wall.value = sighting_wall
-    arming = _Arming(clock, remind=remind).start()
+    arming = _Arming(clock).start()
     try:
         _wait_until(
             lambda: follow_checkpoint.exists(PROJECT, SESSION),
@@ -265,7 +231,6 @@ def _drain(
         arming.clock.advance(5.0)
         time.sleep(0.5)
         then()
-        wall.value = sighting_wall + 2 * 3600
         arming.clock.advance(2.0)
         time.sleep(0.3)
         arming.clock.advance(GRACE)
@@ -279,26 +244,20 @@ def _drain(
         arming.end()
 
 
-def _prefix(sighting_wall: float) -> str:
-    stamp = time.strftime("%H:%M", time.localtime(sighting_wall))
-    return f"no live work since {stamp}"
-
-
-def test_a_drain_names_the_run_that_needs_you(
+def test_a_drain_with_an_outstanding_run_prints_no_line(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A drained pane says what its session still owes, or nothing at all.
+    """A drained pane whose session still owes a run says nothing, and exits.
 
-    The owning session's last working run ends unpromoted, so the row's tail
-    names one run needing the coordinator. A peer session's working run sits in
-    the same fixture, unobserved, and neither holds the pane open nor appears in
-    the row. The run is then live again and is promoted, and the next drain
-    prints nothing: the fleet has drained and names nothing to act on.
+    The owning session's last working run ends unpromoted: the pane has no live
+    work left to watch, and the run is still owed the coordinator. The row it
+    leaves behind is emitted for the host and carries no line naming it. A peer
+    session's working run sits in the same fixture, unobserved, and neither
+    holds the pane open nor appears in the derivation.
     """
-    sighting = time.time() - 3 * 3600
-    wall = _Wall(sighting)
+    monkeypatch.setattr(follow_commands, "FOLLOWER_SETTLE_GRACE_SECONDS", GRACE)
+    monkeypatch.setattr(follow_commands, "FOLLOWER_SETTLE_SAMPLE_SECONDS", GRACE)
     clock = _Clock(2000.0)
-    monkeypatch.setattr(follow_commands, "time", wall)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         _run_working(home, RUN_MINE, session=SESSION)
@@ -307,70 +266,36 @@ def test_a_drain_names_the_run_that_needs_you(
 
         settles = _drain(
             clock=clock,
-            wall=wall,
-            sighting_wall=sighting,
             then=lambda: _run_unpromoted(home, RUN_MINE, session=SESSION),
         )
         assert len(settles) == 1, settles
-        line = settles[0]["line"]
-        prefix = _prefix(sighting)
-        assert line.startswith(prefix), line
-        tail = line[len(prefix) :]
-        # The arming carried no cadence, so no standing line was ever shown:
-        # the set the pane's last needs-you line printed is nothing, and every
-        # run still outstanding is named by this closing row.
-        assert tail == f" · needs you: {RUN_MINE}", (
-            f"the drained pane does not name the run still owed: {line!r}"
-        )
-        # The peer's working run is work this pane was never asked to watch.
-        assert PEER not in line and RUN_PEER not in line, line
-        # The row and the standing line read one derivation over one fixture.
+        assert settles[0]["line"] == "", settles[0]["line"]
+        assert RUN_MINE not in json.dumps(settles[0]), settles[0]
+
+        # The run the settle row used to name is the one the derivation still
+        # holds, and the peer's is work this pane was never asked to watch.
         outstanding = needs_you_module.needs_you_runs(PROJECT, session=SESSION)
         assert [row["run_id"] for row in outstanding] == [RUN_MINE], outstanding
         assert outstanding[0]["kind"] == "unpromoted", outstanding
 
-        _run_working(home, RUN_MINE, session=SESSION)
-        settles = _drain(
-            clock=clock,
-            wall=wall,
-            sighting_wall=sighting + 2 * 3600,
-            then=lambda: _promote(RUN_MINE),
-        )
-        assert len(settles) == 1, settles
-        # The fleet drained with nothing outstanding, so the row prints nothing.
-        assert settles[0]["line"] == "", settles[0]["line"]
-        assert needs_you_module.needs_you_runs(PROJECT, session=SESSION) == []
 
-
-def test_a_drain_names_the_set_no_standing_line_carried(
+def test_a_drain_after_the_run_is_promoted_prints_no_line(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The closing row names the owed runs, because no standing line did.
+    """The fleet drains with nothing outstanding, and the row is still emitted.
 
-    The stream carries no standing needs-you summary, so the closing row is the
-    only line that can name what a drained session owes. Restating a set a line
-    already named is what made the pane noise, and there is no such line now, so
-    the tail names every outstanding run.
+    The row names nothing either way; this is the case that shows the empty
+    line is a decision about the line rather than about the fleet.
     """
-    sighting = time.time() - 3 * 3600
-    wall = _Wall(sighting)
+    monkeypatch.setattr(follow_commands, "FOLLOWER_SETTLE_GRACE_SECONDS", GRACE)
+    monkeypatch.setattr(follow_commands, "FOLLOWER_SETTLE_SAMPLE_SECONDS", GRACE)
     clock = _Clock(2000.0)
-    monkeypatch.setattr(follow_commands, "time", wall)
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         _run_working(home, RUN_MINE, session=SESSION)
         crew.list_live(project=PROJECT)
 
-        settles = _drain(
-            clock=clock,
-            wall=wall,
-            sighting_wall=sighting,
-            remind=1.0,
-            then=lambda: _run_unpromoted(home, RUN_MINE, session=SESSION),
-        )
+        settles = _drain(clock=clock, then=lambda: _promote(RUN_MINE))
         assert len(settles) == 1, settles
-        line = settles[0]["line"]
-        assert "needs you:" in line, (
-            f"the closing row named nothing the session still owes: {line!r}"
-        )
-        assert RUN_MINE in line, line
+        assert settles[0]["line"] == "", settles[0]["line"]
+        assert needs_you_module.needs_you_runs(PROJECT, session=SESSION) == []

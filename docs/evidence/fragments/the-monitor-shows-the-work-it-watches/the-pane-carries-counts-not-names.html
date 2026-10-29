@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s93">
+  <title>The pane carries counts, not names</title>
+</head>
+<body>
+<article id="the-pane-carries-counts-not-names-landing" data-node="the-pane-carries-counts-not-names" data-reckon="landed"></article>
+
+<section id="the-pane-carries-counts-not-names-record">
+  <h3 id="the-pane-carries-counts-not-names-record-title">What changed</h3>
+  <p>The follower pane stops printing three lines that named runs instead of
+  counting them, measured in one pane as 34 stale-heartbeat sentences between
+  03:43 and 05:52 while the station they named was running:</p>
+  <ul>
+    <li>the settle row's <code>needs you: &lt;names&gt;</code> tail. The row is
+    still emitted, because the follower's host retires the child on the event
+    rather than on its text, and its line is now empty
+    (<code>_follower_settle_event</code> in
+    <code>reckon/crew_follow_commands.py</code>);</li>
+    <li>the lifetime end row's <code>N runs need you: &lt;run&gt; (&lt;node&gt;)</code>
+    tail. The row keeps its re-arm instruction, and the event no longer carries a
+    <code>needs_you</code> payload field;</li>
+    <li>the station subscriber's stale-heartbeat line
+    (<code>STATION_STALE_EVENT</code>, <code>stale_heartbeat_line</code>,
+    <code>StationSubscriber.stale_line</code> in
+    <code>reckon/crew/station_subscriber.py</code>). The liveness verdict stays
+    with the obligations hook, which is where a coordinator acts on it.</li>
+  </ul>
+  <p>The composition helpers that served only those tails are removed with them:
+  <code>needs_you_line</code>, <code>drain_tail</code>,
+  <code>needs_you_signature</code>, <code>_entry</code> and
+  <code>DEFAULT_REMIND_SECONDS</code> in <code>reckon/crew/needs_you.py</code>;
+  the follower's <code>_needs_you_runs</code> and its re-export in
+  <code>reckon/cli.py</code>; and the <code>--remind</code> option, whose only
+  promise was re-emitting a line the pane no longer prints.</p>
+  <p>The derivation is untouched. <code>needs_you_rows</code> and
+  <code>needs_you_runs</code> still name every run the owning session owes, with
+  its age, its kind and the stored-review mark, and the obligations view still
+  carries each run's <code>next_command</code> — so the pane loses the names and
+  the reader keeps them in exactly one place.</p>
+  <p><code>skills/reckon-build/SKILL.md</code> now says where a coordinator reads
+  the two: counts on the rows, names and commands from
+  <code>reckon crew view obligations</code>.</p>
+  <h3 id="the-pane-carries-counts-not-names-measure">Measure</h3>
+  <p><code>tests/test_the_pane_carries_counts_not_names.py</code> passes at head
+  (<code>6 passed</code>) and asserts, in one file: the rows a delivered and a
+  halted run draw carry the fleet's <code>d</code> and <code>h</code> counts and
+  no composed sentence; a settle with an outstanding run emits its event with an
+  empty line while the derivation still holds that run; the lifetime end row
+  keeps its re-arm instruction and names no run; a station whose heartbeat is
+  120&nbsp;s old yields no sentence; <code>crew follow --help</code> lists no
+  <code>--remind</code>; and the obligations view still names every outstanding
+  run with its command.</p>
+  <p>Two arms of the same command, run in place on the allocation node, each
+  resolved over its own tree with <code>PYTHONPATH=.</code>:</p>
+  <ul>
+    <li>base <code>49b524f7</code> over the eight test files that exist there:
+    <code>49 passed</code>, <code>EXIT=0</code>;</li>
+    <li>head <code>4fd54aff</code> over those eight plus the new file:
+    <code>55 passed</code>, <code>EXIT=0</code>.</li>
+  </ul>
+  <p>The six extra passes are the new file's six cases, and no case that passed
+  at base fails at head. <code>ruff check</code> reports no added finding across
+  the changed paths — the two it reports
+  (<code>crew_follow_commands.py</code> SIM103, SIM115) are present at base and
+  at head — and <code>ruff format --check</code>'s two unformatted files
+  (<code>crew_follow_commands.py</code>, <code>test_follow_lifetime.py</code>)
+  are unformatted at both revisions.</p>
+  <h3 id="the-pane-carries-counts-not-names-negative-control">Negative controls</h3>
+  <p>Both mutations ran, and each failed a case the head arm passes:</p>
+  <ul>
+    <li>restore the settle tail composition
+    (<code>logs/negative-control-1-settle-tail.log</code>):
+    <code>FAILED tests/test_the_pane_carries_counts_not_names.py::test_a_settle_with_outstanding_runs_prints_no_line_and_still_emits</code>,
+    <code>1 failed, 5 passed</code>, <code>EXIT=1</code>;</li>
+    <li>put back the subscriber's stale-heartbeat line
+    (<code>logs/negative-control-2-stale-heartbeat.log</code>):
+    <code>FAILED tests/test_the_pane_carries_counts_not_names.py::test_a_stale_heartbeat_yields_no_station_line</code>,
+    <code>1 failed, 5 passed</code>, <code>EXIT=1</code>.</li>
+  </ul>
+  <p>Both mutated files were then returned to their committed content, and
+  <code>git diff --stat</code> confirms the working tree carries only the
+  intended change.</p>
+</section>
+</body>
+</html>

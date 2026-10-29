@@ -453,8 +453,8 @@ def test_a_reload_does_not_restart_the_lifetime(home, source_tree) -> None:
     assert final.startswith("follower end:"), (
         f"the last line must be marked as the follower's end; got {final!r}"
     )
-    assert RUN_ID in final, (
-        f"the line must name the run that needs a decision; {final!r}"
+    assert RUN_ID not in final, (
+        f"the line names how to continue watching, not the runs themselves; {final!r}"
     )
     elapsed = ended_at - arm_at
     assert elapsed <= END_WITHIN_SECONDS, (
