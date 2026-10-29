@@ -1,55 +1,35 @@
-"""The runs of one session that need the coordinator, and the line that names them.
+"""The runs of one session that need the coordinator, as rows and counts.
 
-One derivation serves two readers: the follower's standing pane line and, behind
-it, the row it composes at the end of an arming. Both must name the same runs,
-so the list is composed here and never re-derived at a call site.
+This is the derivation behind the obligations view: every run the session still
+owes action on, with the node it runs on, the state it holds now and how long it
+has held it. A coordinator reads the names and next commands from that view, and
+the pane's own rows carry the counts, so the pane prints no line of its own.
 
 A run needs the coordinator when its state is in the fleet partition's blocked
 bucket or its unpromoted bucket, both defined beside the fleet counts in
-:mod:`reckon.crew.recovery_watch` rather than restated here, so the line can
+:mod:`reckon.crew.recovery_watch` rather than restated here, so this list can
 never disagree with the counters beside it. A blocked run whose refusal has
 already been accepted (the ``held`` classification) is waiting, not blocked, and
 is left out exactly as the counters leave it out.
 
 A run the coordinator has deferred is left out too, through the same reader the
-obligations view defers it by, so the line and that view answer the same
-question the same way. A blocked or unpromoted run the coordinator has put off
-until an instant is not owed to them before that instant, and the pane saying so
-on its reminder cadence is a notification for work they have already parked. The
-deferral is read and not re-implemented, and it expires on its own: the instant
-passes and the run is owed again, which changes the set, so the line names it
-once rather than on every reminder.
+obligations view defers it by. A blocked or unpromoted run the coordinator has
+put off until an instant is not owed to them before that instant. The deferral
+is read and not re-implemented, and it expires on its own: the instant passes
+and the run is owed again.
 
 Every row names the node, the state it holds now and how long it has held it. An
 unpromoted run whose review is already stored is marked ``reviewed``: promotion
 unlinks the pointer and the session it captured, so a review read after the fact
 can no longer be answered by resuming its author, and the mark is the live
 window's only warning that the chance to resume has gone.
-
-Every line composed here names something the coordinator can act on: a run they
-still owe. A set with no such run is not a line at all — the composer returns an
-empty string, so an empty set is never announced, however long it stays empty.
-The follower prints each result verbatim, so suppressing the line here is what
-keeps an empty set off the pane and out of every notification a session host
-derives from it.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
-
-# The order the line prints its groups in, and the word each group carries.
-# Unpromoted work leads because a delivered run is one promotion away from
-# landing, where a blocked run may need a repair first.
-NEEDS_YOU_KINDS = ("unpromoted", "blocked")
-
-# The follower re-emits the line on this cadence while the set is non-empty,
-# because an unpromoted or blocked run is work the coordinator still owes.
-# An empty set is not on the cadence at all: it is not a line, and a beat
-# saying nothing needs doing only wakes a reader for nothing.
-DEFAULT_REMIND_SECONDS = 600.0
 
 
 def _elapsed(seconds: float) -> str:
@@ -180,8 +160,8 @@ def needs_you_rows(
     Both halves come from the fleet partition the pane's own counter reads:
     ownership through :func:`reckon.crew.recovery_watch._partition_session_rows`
     and the working, blocked and unpromoted tallies through
-    :func:`reckon.crew.recovery_watch._fleet_counts`, so the line and the
-    counters beside it cannot disagree about which runs they are naming. The
+    :func:`reckon.crew.recovery_watch._fleet_counts`, so the rows and the
+    counters beside them cannot disagree about which runs they are naming. The
     states themselves are read from that module's ``FLEET_*`` buckets rather
     than restated here, and a run whose refusal has been accepted is held out of
     the blocked bucket exactly as the counter holds it out.
@@ -232,9 +212,8 @@ def needs_you_rows(
     # leads its group.
     rows.sort(key=lambda row: (-float(row["age_seconds"]), str(row["node"])))
     # A deferred run is not owed to the coordinator until its deferral expires,
-    # so the line names it once the instant has passed and not on every reminder
-    # before it. The filter sits here rather than in one caller so the standing
-    # pane line and the closing drain row, which both compose from these rows,
+    # so it joins the rows once the instant has passed. The filter sits here
+    # rather than in each reader so the obligations view and the counters
     # cannot disagree about which runs the coordinator still owes.
     deferred = _deferred_run_ids(project, moment=at)
     rows = [row for row in rows if row["run_id"] not in deferred]
@@ -249,7 +228,7 @@ def _is_reviewed(project: str, run_id: str) -> bool:
 
     try:
         return bool(review_module.stored_records_for_run(project, run_id))
-    except Exception:  # noqa: BLE001 - an unreadable store must not silence the line
+    except Exception:  # noqa: BLE001 - an unreadable store must not hide the run
         return False
 
 
@@ -280,94 +259,10 @@ def needs_you_runs(
     session: str | None,
     moment: float | None = None,
 ) -> list[dict[str, Any]]:
-    """The runs alone, for a caller that composes its own line.
+    """The runs alone, for a caller that wants no counts beside them.
 
     ``moment`` is the instant the set is composed for, defaulting to now; a
     deferral is in force at that instant, so a caller that composes the same
     moment twice composes the same set.
     """
     return needs_you(project, session=session, moment=moment)["runs"]
-
-
-def drain_tail(
-    project: str,
-    *,
-    session: str | None,
-    shown: tuple[tuple[str, str, str], ...] | None = None,
-) -> str:
-    """The tail the follower's settle row gains, when the session still owes work.
-
-    The settle row says the pane has nothing left to watch. It is worth a line
-    only when it names a run the coordinator still owes, which is exactly the
-    moment a coordinator looks up: the row therefore carries what the session
-    still owes it, from the same derivation the standing needs-you line reads,
-    so the closing row and the same derivation cannot disagree about what is
-    outstanding.
-
-    It carries it only as news. ``shown`` is the signature of the set the pane's
-    last needs-you line printed, and a set that line already named is not
-    printed again: the row is left with no tail at all, because restating a
-    standing fact is what made the pane noise. Runs the pane has not been shown,
-    and every run when no line has been shown yet, are named by their node.
-
-    A session whose fleet has drained returns no tail at all: the settle row
-    then names nothing to act on, and the follower leaves it off the pane. The
-    caller tells the two apart by the tail being empty.
-    """
-    rows = needs_you_runs(project, session=session)
-    if not rows:
-        return ""
-    signature = needs_you_signature({"runs": rows})
-    if shown is not None and tuple(shown) == signature:
-        return ""
-    names = ", ".join(str(row.get("node") or row.get("run_id") or "") for row in rows)
-    return f"needs you: {names}"
-
-
-def needs_you_signature(summary: Mapping[str, Any]) -> tuple[tuple[str, str, str], ...]:
-    """The identity of the set, so an emitter fires on change and not on repaint.
-
-    Two summaries with the same signature name the same runs in the same states,
-    so a line composed for one is the line the other would compose.
-    """
-    return tuple(
-        sorted(
-            (
-                str(row.get("run_id") or ""),
-                str(row.get("kind") or ""),
-                str(row.get("state") or ""),
-            )
-            for row in summary.get("runs") or ()
-        )
-    )
-
-
-def _entry(row: Mapping[str, Any]) -> str:
-    text = f"{row.get('node')} {_elapsed(float(row.get('age_seconds') or 0.0))}"
-    if row.get("reviewed"):
-        text = f"{text} reviewed"
-    return text
-
-
-def needs_you_line(summary: Mapping[str, Any]) -> str:
-    """Compose the one plain-text line, reading fully without colour.
-
-    The line names something the coordinator can act on: the runs outstanding.
-    With runs outstanding each group leads with its count and its word. With
-    nothing outstanding there is nothing to act on, so the composer returns an
-    empty string rather than a line naming the session's own working count — an
-    empty set is not a fact the coordinator must be woken for, and under a
-    session host every printed line is a notification that starts a turn. The
-    emitter, not this composer, decides which non-empty line is news.
-    """
-    runs: Iterable[Mapping[str, Any]] = summary.get("runs") or ()
-    groups: list[str] = []
-    for kind in NEEDS_YOU_KINDS:
-        members = [row for row in runs if str(row.get("kind") or "") == kind]
-        if not members:
-            continue
-        entries = ", ".join(_entry(row) for row in members)
-        groups.append(f"{len(members)} {kind} {entries}")
-    if not groups:
-        return ""
-    return "needs you: " + " · ".join(groups)

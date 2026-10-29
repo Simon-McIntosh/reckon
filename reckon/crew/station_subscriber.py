@@ -36,9 +36,10 @@ from reckon._timestamps import parse_utc
 from reckon.crew import node, station_store, ticker
 from reckon.crew.follow_checkpoint import cap_history
 
-# How old the station's heartbeat may be before a subscriber says so. The
-# station beats once a tick, so this is many missed ticks rather than one slow
-# pass; past it the pane is reading a store nothing is writing.
+# How old a reading may be before it is treated as no answer. The station beats
+# once a tick, so this is many missed ticks rather than one slow pass; past it a
+# pane is reading a store nothing is writing, and it must reach its own
+# conclusion rather than read silence as "no work".
 STALE_HEARTBEAT_SECONDS = 90.0
 
 # How many rows of the pane's memory the store keeps, and for how long. The
@@ -46,23 +47,15 @@ STALE_HEARTBEAT_SECONDS = 90.0
 HISTORY_ROWS = 100
 HISTORY_SECONDS = 4 * 60 * 60
 
-# Two rows a subscriber emits that carry a sentence to print rather than a run
+# A row a subscriber emits that carries a sentence to print rather than a run
 # transition to draw: a place older than retention, resumed at the oldest event
-# still held, and a station whose heartbeat has gone quiet.
+# still held.
 STATION_GAP_EVENT = "station-gap"
-STATION_STALE_EVENT = "station-stale"
 
 SKIPPED_DAYS_TEXT = (
     "── {days} day(s) of events are older than the station keeps; "
     "resuming at its oldest retained event ──"
 )
-
-STALE_HEARTBEAT_TEXT = (
-    "the station's heartbeat is {age} old, so no fleet row is being written; "
-    "restart it with: reckon crew station"
-)
-
-_RESTART_COMMAND = "reckon crew station"
 
 # The station value one project's has-live-work readings live under, suffixed
 # with the project name. The station writes it on every tick and a pane reads
@@ -150,9 +143,10 @@ def live_work_verdict(
     by; a named session asks its own. A reading older than ``max_age_seconds``,
     or no readable reading at all, is not a reading of no work: it is no
     answer, and a caller that would end a pane on "no work" has to reach its
-    own conclusion instead. A station that has stopped is separately named to
-    the pane by :func:`stale_heartbeat_line`; deciding a settle on a reading
-    nothing is refreshing would end a pane over a fleet nobody is looking at.
+    own conclusion instead: deciding a settle on a reading nothing is
+    refreshing would end a pane over a fleet nobody is looking at. A station
+    that has stopped is the obligations hook's to report, which is where a
+    coordinator acts on it.
     """
     raw = store.station_value(f"{LIVE_WORK_KEY}:{project}")
     try:
@@ -215,35 +209,6 @@ def _age_seconds(stamp: str | None, *, now: datetime) -> float | None:
     return (now - moment.astimezone(UTC)).total_seconds()
 
 
-def _human_age(seconds: float) -> str:
-    if seconds < 120:
-        return f"{seconds:.0f}s"
-    if seconds < 7200:
-        return f"{seconds / 60:.0f}m"
-    return f"{seconds / 3600:.1f}h"
-
-
-def stale_heartbeat_line(
-    store: station_store.StationStore,
-    *,
-    now: datetime | None = None,
-    stale_seconds: float = STALE_HEARTBEAT_SECONDS,
-) -> str | None:
-    """One line naming a heartbeat too old to trust, or None while it is fresh.
-
-    ``None`` is the answer for a store that has never beaten: a station that has
-    written no heartbeat has written no rows either, and a pane owed nothing is
-    not owed a warning.
-    """
-    stamp = store.station_value(station_store.HEARTBEAT_KEY)
-    if not stamp:
-        return None
-    age = _age_seconds(stamp, now=now or datetime.now(tz=UTC))
-    if age is None or age < stale_seconds:
-        return None
-    return STALE_HEARTBEAT_TEXT.format(age=_human_age(age))
-
-
 class StationSubscriber:
     """One pane's place in the station's event sequence."""
 
@@ -256,7 +221,6 @@ class StationSubscriber:
         observed: Iterable[str] = (),
         run_ids: Iterable[str] = (),
         clock=time.time,
-        stale_seconds: float = STALE_HEARTBEAT_SECONDS,
     ) -> None:
         self.store = store
         self.project = project
@@ -264,7 +228,6 @@ class StationSubscriber:
         self.observed = tuple(name for name in observed if name)
         self.run_ids = tuple(run_ids)
         self.clock = clock
-        self.stale_seconds = stale_seconds
         self.audience = session or "*"
         self._row = store.read_cursor(self.project, self.audience)
         checkpoint = self._row.get("checkpoint") or {}
@@ -518,11 +481,6 @@ class StationSubscriber:
             self.save_checkpoint()
         return released
 
-    def stale_line(self, *, now: datetime | None = None) -> str | None:
-        return stale_heartbeat_line(
-            self.store, now=now, stale_seconds=self.stale_seconds
-        )
-
     def live_work(self, session: str | None = None) -> bool | None:
         """The station's answer for that population, or ``None`` for no answer.
 
@@ -541,7 +499,6 @@ class StationSubscriber:
         stop=None,
         interval: float = 0.1,
         sleeper=time.sleep,
-        stale_interval: float = 5.0,
         each_pass=None,
     ) -> Iterator[Mapping[str, Any]]:
         """Yield this pane's rows until ``stop`` is set.
@@ -553,31 +510,17 @@ class StationSubscriber:
         an arming — and returning false from it ends the loop, exactly as
         ``stop`` does.
 
-        The station's heartbeat is checked on its own cadence rather than on
-        every pass, and its line is printed once — a subscriber that repeated it
-        every poll would bury the fleet under the same sentence.
+        A quiet station yields nothing: a stale heartbeat is a verdict the
+        obligations hook reports, not a sentence the pane repeats.
         """
-        stale_reported = False
         while stop is None or not stop.is_set():
             for event in self.poll():
                 yield event
             for event in self.flush():
                 yield event
-            line = None if stale_reported else self.stale_line()
-            if line is not None:
-                stale_reported = True
-                yield {
-                    "event": STATION_STALE_EVENT,
-                    "project": self.project,
-                    "session": self.session or "",
-                    "run_id": None,
-                    "line": line,
-                }
             if each_pass is not None and not each_pass():
                 return
             sleeper(interval)
-            if stale_reported and stale_interval and self.stale_line() is None:
-                stale_reported = False
 
 
 def _moment(*, at: float) -> datetime:
