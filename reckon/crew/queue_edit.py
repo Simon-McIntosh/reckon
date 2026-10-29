@@ -23,12 +23,19 @@ than editing a run underneath a worker.
 from __future__ import annotations
 
 import hashlib
+import os
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon.crew.node import CrewError, TaskNode, validate_node
+from reckon.crew.node import (
+    CompetenceLimit,
+    CrewError,
+    ScopeConflict,
+    TaskNode,
+    validate_node,
+)
 
 #: The one file a waiting request's steering text lives in, inside the request's
 #: own run directory. The queued path writes it at queue time and admission
@@ -177,6 +184,119 @@ def _contract_findings(
     return list(verdict.findings)
 
 
+def _live_claim_conflict(
+    node: TaskNode, record: Mapping[str, Any]
+) -> ScopeConflict | None:
+    """The first live claim the edited write scope would collide with.
+
+    A request whose edit names a path a live run already claims would be refused
+    at its next launch, and the coordinator who made the change is not there to
+    read that refusal. The same comparison the admission pass makes is run here,
+    while the edit can still be changed, and its answer names the holder.
+    """
+    from reckon.crew import runs as runs_module
+    from reckon.crew.node import claim_disposition
+    from reckon.crew.queue_admission import _declared_scope_paths
+
+    here = str(record.get("run_id") or "")
+    project = str(record.get("project") or "")
+    repo = str(record.get("repo") or "")
+    ours = _declared_scope_paths(
+        {
+            "run_id": here,
+            "repo": repo,
+            "node": {
+                **(record.get("node") or {}),
+                "write_paths": list(node.write_paths),
+            },
+        }
+    )
+    if not ours:
+        return None
+    shared = (
+        runs_module._shared_write_paths(project, Path(repo))
+        if project and repo
+        else frozenset()
+    )
+    for other in runs_module.list_live(project=project or None):
+        other_id = str(other.get("run_id") or "")
+        if not other_id or other_id == here:
+            continue
+        other_repo = str(other.get("repo") or "")
+        if (
+            repo
+            and other_repo
+            and os.path.normpath(other_repo) != os.path.normpath(repo)
+        ):
+            continue
+        theirs = _declared_scope_paths(other)
+        for path in ours:
+            if path in shared:
+                continue
+            claimed = next(
+                (claim for claim in theirs if runs_module._scopes_overlap(path, claim)),
+                None,
+            )
+            if claimed is None or not claim_disposition(other).binding:
+                continue
+            return ScopeConflict(
+                run_id=other_id,
+                node_id=str((other.get("node") or {}).get("id") or ""),
+                candidate_path=path,
+                claimed_path=claimed,
+            )
+    return None
+
+
+def _context_fit_refusal(
+    node: TaskNode, record: Mapping[str, Any]
+) -> CompetenceLimit | None:
+    """Refuse an edit that no lane in the configuration has the window for.
+
+    An edit may grow a request past the lane it was queued on, which the
+    admission pass would route to a wider lane. Growing it past every lane's
+    window is a change no pass can place, so it is refused here, naming the
+    shortfall against the widest window the configuration declares.
+    """
+    from reckon.crew.picker.snapshot import estimated_context_tokens
+    from reckon.crew.queue_admission import _resolve_lane_config
+
+    config = _resolve_lane_config(record)
+    widest: int | None = None
+    for backend in (config.get("backends") or {}).values():
+        if not isinstance(backend, Mapping) or backend.get("derived_from"):
+            continue
+        widths = [
+            int(width)
+            for width in (
+                backend.get("usable_input_window"),
+                backend.get("effective_input_window"),
+            )
+            if isinstance(width, int) and not isinstance(width, bool) and width > 0
+        ]
+        if not widths:
+            # A lane that declares no ceiling is unbounded, so nothing fits
+            # outside it and no edit can outgrow every lane.
+            return None
+        width = min(widths)
+        if widest is None or width > widest:
+            widest = width
+    if widest is None:
+        return None
+    estimated = estimated_context_tokens(node, Path(str(record.get("repo") or ".")))
+    if estimated <= widest:
+        return None
+    return CompetenceLimit(
+        {
+            "allowed": False,
+            "reason": "context-window-exceeded",
+            "estimated_tokens": estimated,
+            "window_tokens": widest,
+            "shortfall_tokens": estimated - widest,
+        }
+    )
+
+
 def edit(
     run_id: str,
     *,
@@ -251,6 +371,17 @@ def edit(
             f"the edited request fails its contract checks and was not stored — {detail}"
         )
 
+    # The two refusals the admission pass would raise later, raised here while
+    # the coordinator who made the edit is still present: a claim a live run
+    # holds over the new scope, and a size no lane in the configuration has the
+    # window for.
+    conflict = _live_claim_conflict(node, record)
+    if conflict is not None:
+        raise conflict
+    refusal = _context_fit_refusal(node, record)
+    if refusal is not None:
+        raise refusal
+
     digest = (
         hashlib.sha256(steering_text.encode("utf-8")).hexdigest()
         if steering_text is not None
@@ -292,9 +423,19 @@ def edit(
         current["edited_at"] = _now()
         runs_module._write_json(runs_module.pointer_path(run_id), current)
 
+    # An edit can change the section or the brief the request was queued
+    # against, so the contract recorded at queue time may name content this
+    # request no longer reads. Stamping it again keeps the narrowed hold an
+    # edited request is admitted under, rather than falling to the dispatch
+    # gate's wider one.
+    from reckon.crew.queue_admission import record_review_contract
+
+    contract_recorded = record_review_contract(current)
+
     return {
         "run_id": run_id,
         "phase": _phase_of(current),
+        "review_contract_recorded": bool(contract_recorded),
         "changed": [name for name, changed in changes.items() if changed],
         "steering_path": str(target) if steering_text is not None else "",
         "steering_sha256": digest,
