@@ -327,7 +327,7 @@
     at 71. CPU follows the same shape, 42 % of one core and then 92 %, against a bound of 5 %. The D-state sample that
     fails the third part of the bound is a wait on the XFS journal of the runtime root, not on GPFS.</p>
     <p>A separate probe says where the bytes go. On a cold runtime root one store tick over five live runs reads 8.2 MB and
-    one whole station tick reads 90.9 MB; every later tick reads 0.07 MB. The store’s stream ingest is therefore already
+    one whole station tick reads 91 MB, or 83 MB when the store is already warm; every later tick reads 0.07 MB. The store’s stream ingest is therefore already
     incremental — a tick whose streams have not grown reads nothing at all — and the cost is the classification pass. It
     replays a run’s whole stream whenever the run’s pointer file signature moves, and a live run’s signature moves
     continuously, so the whole-stream read is paid every tick for every run that is doing anything. The fix that would meet
