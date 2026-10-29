@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-10-29T20:41:14.761Z",
+  "dispatched_at": "2026-10-29T20:35:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:173",
+      "id": "reasoning-1",
+      "reason": "the node would land a mechanism that passes its gate and still leaves the lease stale under store contention, so the renewal must move somewhere the store write cannot block it (a lease thread of its own, or a renewal on each write attempt) or arm 3 and the \"never goes stale\" claim must be narrowed to tick duration.",
+      "text": "the deliverable renews the lease from the beat thread *before* that thread's own SQLite heartbeat write, and states that this keeps \"a live station's lease \u2026 never \u2026 stale however long a tick runs\"; but the same thread cannot renew while that write is blocked, and the section itself says the write \"can wait up to its 30 s busy timeout \u2026, as long as the lease's whole stale window\" (`reckon/crew/station_store.py:330`), with `STATION_BEAT_SECONDS = 5.0` (`reckon/crew/station.py:60`), so the renewal-to-renewal gap is up to about 35 s against a 30 s window and the lease reads stale for the tail of every saturated write \u2014 a second station may then claim it, which is the two-writer failure the section exists to remove, and the Why names this contention (\"the beat thread's write waits behind the other writer's transactions\") as a contributing cause; correspondingly arm 3, \"with the heartbeat write blocked for longer than the stale window, the lease is still renewed\", is satisfied by the weaker reading \"a renewal happened before the block began\" while the lease goes stale during it.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:173",
+      "id": "wiring-1",
+      "reason": "both upstream sections are already `done`, so the queue releases s14 immediately either way and only the record is incomplete.",
+      "text": "s14 extends \u00a712's `StationBeat` and repairs the duplicate station that \u00a711's reload started, yet `plan-section-depends-on` carries no `s14` entry, unlike \u00a713 which declares its `s7` upstream.",
+      "type": "wiring",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "35d56ab873360cce27c493e2a95309c8613204ac",
+  "plan_fingerprint": "21f41ca261d51fc13838b6acf8fba1664a71169cc2a0d9aaf5956ea196d8d5ce",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 82,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261029T203318104499-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "1fc0913a4ac8af1b441cc8c01c9b1b3ed8c646a8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `run_station` and `lease.renew()` after `station.tick()` are at `reckon/crew/station.py:511-524`, `LEASE_STALE_SECONDS = 30.0` at `reckon/crew/host_lease.py:16`, the 30 s busy timeout at `reckon/crew/station_store.py:330`, `StationHeldError` at `station.py:52`, and `StationProcess.ensure` in `reckon/crew/fleet_supervisor.py`.",
+    "done_when": "pass \u2014 five arms, and the single declared negative control (renewal moved back to the tick loop) falsifies the held-open arm; arm 2's `StationProcess.ensure` half also fails on the unfixed code, since `ensure` falls through to `subprocess.Popen` when the lease reads stale (`fleet_supervisor.py:1924-1953`), and arm 4 fails on code that has no write guard.",
+    "evidence_paths": "pass \u2014 no gate log, scratchpad or node-local path is cited; the evidence is pids, timestamps and code anchors that resolve in the tree.",
+    "naming": "pass \u2014 `test_the_station_holds_its_lease_while_it_beats.py` and the mechanism's symbols carry no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the root cause matches the evidence, but the mechanism (renew in the beat thread, before the heartbeat write) cannot deliver the property the deliverable claims once the store write is the thing that blocks, which is the condition the Why names.",
+    "single_goal": "pass \u2014 one deliverable, holding the lease while the beat runs, of which the write guard is the loss-handling half rather than a second feature; the refresh bound that s12 split out is still excluded.",
+    "wiring": "pass \u2014 s14 declares no `depends-on`, but both sections it builds on (\u00a712's `StationBeat` thread and \u00a711's reload path) are declared `done` in `plan-section-declarations`, so the queue loses no wait; the gap is raised below as a record-only finding."
+  },
+  "section_digests": {
+    "_document": "73e9fcfa9c40e3a103b02a110bb84572496352fa17a1be06a529b66bd9dcd61f",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "f30951e3f6022ec5471a43e1b83d60d73826824c5518dadd0041ee7b0da4fc0e",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2660f0a8230174b58e453e15cd31c113f234218a69c1e8c217b6dd03334a224c",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T20:49:21.692036+00:00"
+}
