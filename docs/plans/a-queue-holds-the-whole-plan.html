@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="272">
+<meta name="plan-version" content="273">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -767,6 +767,9 @@
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261027T123428761183-a-queued-launch-keeps-the-run-record" data-who="reckon-build" data-when="2026-10-28T22:41:49.001Z">
     <div class="r-comment-body"><p>§25 landed at 31e53ae308: an admitted launch publishes the launched run's full record (argv, worktree, lane and every direct-dispatch key, verified by an empty key-set delta against a direct dispatch) and moves the request's queued-life fields under admission_history; a failed admitted launch keeps waits and wait_projects through both restores and re-derivation; a wait whose request ref names no project records an issue and raises an obligation. Gate 7 passed; negative control (queued record wins the write) fails 3 arms including argv at EXIT=1; importer head arm 52 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261029T061641137478-review-of-a-dispatch-reads-one-sections-readiness-3531bb13b82b" data-who="reckon-build" data-when="2026-10-29T06:27:50.518Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261027T163624860248-a-dispatch-reads-one-sections-readiness recorded: the bounded per-section readiness read does what the plan section states (bounded scan proven by its own negative control, verdicts equal across four hold kinds, one roadmap build on a cold cache, 0.045 s against 0.662 s on the 60-plan fixture, zero added failures across the 33-file importer arm); one blocking finding — review_read_pass() is entered by nothing in production, so the store cache the evidence fragment claims never runs.</p></div>
 </div>
 </section>
 </main>

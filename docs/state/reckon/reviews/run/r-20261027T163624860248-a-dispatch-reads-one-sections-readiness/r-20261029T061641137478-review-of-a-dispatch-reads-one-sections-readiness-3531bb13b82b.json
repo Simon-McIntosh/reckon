@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-29T06:27:50.518Z",
+  "dispatched_at": "2026-10-29T06:20:20Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f775419b2e0",
+      "line": 1318,
+      "severity": "blocking",
+      "text": "review_read_pass() has no production caller: admit_once (reckon/crew/queue_admission.py:3127) enters readiness_pass() alone, so the per-pass plan-review store cache never activates, while the landed evidence fragment (docs/evidence/fragments/a-queue-holds-the-whole-plan/a-dispatch-reads-one-sections-readiness.html:6) and the manifest both state the store is cached for the length of an admission pass."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "f7cea7ccfe7",
+      "line": 5079,
+      "severity": "non-blocking",
+      "text": "_plan_inventory_item rebuilds the roadmap inventory row rather than routing the plan through reckon/mcp_discovery.py:_inventory_row, the owner of that row shape on the whole-project path, and omits fields the owner supplies (resource_id, href, tags, last, workflow_status), so a field the roadmap later reads reaches the whole-project read and is absent on the bounded read; the equality arm cannot catch it because the fixture plans carry none of those fields."
+    },
+    {
+      "file": "tests/test_an_admission_pass_reads_the_roadmap_once.py",
+      "id": "f0877d68c1f",
+      "line": 178,
+      "severity": "non-blocking",
+      "text": "the test whose name and docstring say a direct dispatch outside a pass builds its own now asserts it adds no build at all (len(builds) stays 1), so the name states the opposite of the assertion it guards."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read plan section s26 of docs/plans/a-queue-holds-the-whole-plan.html and the landed change; the diff bounds a dispatch's own-section readiness read to its plan and the plans its waits name through reckon/crew/plan_review.py:section_readiness_rows and reckon/roadmap.py:section_verdicts_by_plan, which is what the goal states.\nVERDICT done_when: the done_when names four measurements in the new test file; tests/test_a_dispatch_reads_one_sections_readiness.py carries one arm per measurement (scan count, verdict equality with hold kinds asserted, build count, timing ratio) and the manifest records 5 passed with the negative control red on the read-count arm alone.\nVERDICT write_paths: read the manifest's declared paths (reckon/crew/plan_review.py, reckon/crew/queue_admission.py, reckon/roadmap.py, the new test, the evidence fragment); every changed path is inside them except the pre-existing tests/test_an_admission_pass_reads_the_roadmap_once.py, whose build-count expectation the change necessarily moves.\nVERDICT manifest: read; it records commits 1cfe9e46e3 and 3531bb13b8 over base 205fd8691b, gate 5 passed in 15.62s EXIT=0, importer arms 332 passed against 327 passed, and names its four logs on disk.\nVERDICT diff: read all three commits against base 205fd8691b commit by commit; 6 files, 780 insertions and 50 deletions, adding the bounded row read, the scope reuse, the two pass contexts and the new test.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:queue_requests, reckon/crew/queue_admission.py:dispatch_waits, reckon/crew/queue_admission.py:_section_readiness_state, reckon/crew/queue_admission.py:_ref_state, reckon/crew/queue_admission.py:resolve_waits, reckon/crew/queue_admission.py:_validated_batch_waits, reckon/crew/plan_review.py:project_section_readiness, reckon/crew/plan_review.py:list_plan_reviews, reckon/crew/routing.py:2734\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1698 reads only the named plan and its waits' plans outside a pass, and reckon/crew/plan_review.py:5060 reuses the discovery build so the whole-project read builds once.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_dispatch_reads_one_sections_readiness.py:212 proves the scan set, but the fifth arm at line 358 exercises a context no production caller enters, and the evidence fragment claims it as shipped.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every hunk is inside the declared write paths except the 8-line expectation change in tests/test_an_admission_pass_reads_the_roadmap_once.py:204, which the change makes unavoidable.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_dispatch_reads_one_sections_readiness.py:212 reddens when the check is routed back through the whole-project build, but no test asserts that admit_once enters the review cache.\nSCORE fit: 16\nJUSTIFICATION fit: the new names carry no plan label or version, and the only mismatch is the test name at tests/test_an_admission_pass_reads_the_roadmap_once.py:178 stating the opposite of its assertion.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/plan_review.py:5079 re-implements the inventory row that reckon/mcp_discovery.py:_inventory_row owns, without routing through it or extending it.\nFINDING reckon/crew/plan_review.py:1318 blocking: review_read_pass() has no production caller; admit_once at reckon/crew/queue_admission.py:3127 enters readiness_pass() alone, so the per-pass store cache never activates although the evidence fragment at docs/evidence/fragments/a-queue-holds-the-whole-plan/a-dispatch-reads-one-sections-readiness.html:6 says it does.\nFINDING reckon/crew/plan_review.py:5079 non-blocking: _plan_inventory_item rebuilds the row that reckon/mcp_discovery.py:_inventory_row owns and omits fields it supplies, so the two reads can drift beyond what the equality arm's fixtures exercise.\nFINDING tests/test_an_admission_pass_reads_the_roadmap_once.py:178 non-blocking: the test name and docstring say a direct dispatch builds its own, while the assertion now requires it to add no build.\n",
+  "review_run_id": "r-20261029T061641137478-review-of-a-dispatch-reads-one-sections-readiness-3531bb13b82b",
+  "reviewed_base_sha": "205fd8691b919099a87b24f487cd639a98560150",
+  "reviewed_head_sha": "3531bb13b82b8bffa67150e40a1aed636b063293",
+  "reviewed_run_id": "r-20261027T163624860248-a-dispatch-reads-one-sections-readiness",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T06:34:36.413561+00:00",
+  "total": 85
+}
