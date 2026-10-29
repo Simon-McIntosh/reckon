@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms in its manifest: baseline_suite (logs/base.log, revision 9da1277b52 with this node's test copied in, completed, exit_status 1, failure_count 4, failure_ids the four tests of tests/test_the_fleet_supervisor_runs_current_code.py) and after_suite (logs/head.log, revision 8e574c0865, completed, exit_status 0, failure_count 0, failure_ids []). Every failing id at base passes at head, so the change adds no failure id. The importer arms agree: logs/importers-base.log and logs/importers-head.log both read 33 passed EXIT=0. I read head.log and base.log myself.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:2232",
+    "reckon/crew/fleet_node.py:216"
+  ],
+  "completed_at": "2026-10-29T05:06:03.060Z",
+  "dispatched_at": "2026-10-29T05:00:17Z",
+  "findings": [
+    {
+      "blocks": true,
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "2158",
+      "severity": "blocking",
+      "text": "tested_stamp excludes a stamp that has already been tested from every future pass, with no expiry, so one untrusted or non-moved verdict for stamp B is final for B: HEAD advances to B while a tracked file under reckon/ is dirty, the loop tests once at :2165-2167, records tested_stamp = B, and when the dirt is later discarded the identity is still B (source_code_identity reads only the committed HEAD tree, checkout_trust.py:363-382), so the supervisor keeps its stale image indefinitely; the same pin happens on a transient untrusted reason such as an import-probe timeout (checkout_trust.py:959-961) or a race in which the verdict's own identity read disagrees with code_stamp() and returns moved=False. This is a regression against 407e04e0ad, where the verdict was recomputed each pass and a tree that became trusted was adopted, and it defeats the section's purpose (the 73-minute stale-image outage the fragment records) for that stamp; the repository's owner of this pacing retries with a backoff instead of giving up (reckon/crew/follower_reload.py:333-343, 373-400). No gate arm covers it: tests/test_the_fleet_supervisor_runs_current_code.py:279-288 asserts only that a *different* stamp is tested once the interval passes."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/fleet_supervisor.py:2232 is main(), the only caller of serve(), reached in production by the batch step that execs $HOME/.local/bin/fleet-supervisor at reckon/crew/fleet_node.py:216; the node's own test file is not counted.",
+    "diff": "read commit by commit; one commit 8e574c0865 with 209 insertions and 115 deletions over three declared paths: the copy-pasted _supervisor_source_root/_source_code_stamp/_checkout_code_is_trusted trio replaced by _checkout_root/_source_code_stamp/_moved_checkout delegating to checkout_trust.source_code_identity and served_code.moved_checkout (fleet_supervisor.py:1814-1842), a tested_stamp/tested_at pacing added to the serve loop (:2139-2179) with MOVE_CHECK_INTERVAL_SECONDS (:134), a fourth gate arm plus an independence repair in the service arm (test file), and the fragment rewritten to match.",
+    "done_when": "the done-when names tests/test_the_fleet_supervisor_runs_current_code.py with an injected exec_ and a temporary runtime tree, no new request verb, ruff clean and no added importer failures; logs/head.log records 4 passed EXIT=0 at 8e574c0865, logs/base.log records 4 failed EXIT=1 at 9da1277b52, logs/negative-control.log records 3 failed 1 passed EXIT=1, both importer arms read 33 passed, and I re-ran ruff check (all checks passed) and ruff format --check (2 files already formatted) over the two changed source paths.",
+    "goal": "the goal is to reload the fleet supervisor onto current code when its stamp moves; the reviewed commit repairs the trust-test cost and reckon/crew/fleet_supervisor.py:2156-2179 still re-executes through _reexec (fleet_supervisor.py:1805) on a moved-and-trusted verdict, so the goal survives the repair, with the retry hole recorded below.",
+    "manifest": "read in full; status reads complete, checkpoint names the four-arm head gate, after_suite records 4 passed EXIT=0 at 8e574c0865 and baseline_suite 4 failed EXIT=1, and both retry_failures carry scaffolding attributions (a half-written stamp file and a missing migration directory in the test fixture) rather than code under test.",
+    "write_paths": "the manifest declares reckon/crew/fleet_supervisor.py, tests/test_the_fleet_supervisor_runs_current_code.py, the evidence fragment and an unused figure directory; git diff --stat over 407e04e0ad..8e574c0865 lists exactly the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_fleet_supervisor_runs_current_code.py:262-291 reddens if the moved stamp stops replacing the image and if the 60 s interval stops gating a second stamp, and :300-320 now rests on the service's own pid and lock rather than a second reading of the supervisor's record, but no arm covers the branch this commit introduces at fleet_supervisor.py:2158, where a tested stamp is excluded even after the interval has passed.",
+    "evidence": "logs/head.log (4 passed, EXIT=0, revision 8e574c0865), logs/base.log (4 failed, EXIT=1, base 9da1277b52), logs/negative-control.log (3 failed 1 passed, EXIT=1) and both 33-passed importer arms are recorded with revision and exit status, and I re-ran the ruff clause rather than reading it; the negative-control header names 407e04e0ad plus a working tree, so the revision it was mutated from is stated less precisely than the head arm's.",
+    "fit": "fleet_supervisor.py:134 and :2139-2179 follow the module's existing constant-and-comment idiom, and the names _checkout_root, _source_code_stamp and _moved_checkout say what each decides with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:2156-2179 replaces the image through _reexec when the moved verdict is trusted, which is the node's goal, but the tested_stamp exclusion at :2158 means a stamp that was once refused is never asked about again, so the reload the goal promises can be lost permanently for a stamp.",
+    "reuse": "fleet_supervisor.py:1826-1842 now extends the owners rather than copying them, calling checkout_trust.source_code_identity for the cheap identity and served_code.moved_checkout for the moved-and-trusted verdict, which retires the earlier review's finding that the queue_admission trio was restated body for body.",
+    "scope_discipline": "every path in 407e04e0ad..8e574c0865 is a declared write path, no request verb or CLI option was added, the manual reload branch is untouched, and the fragment change is the node's own landing fragment."
+  },
+  "node": "review-of-the-fleet-supervisor-runs-current-code-8e574c086522",
+  "node:reviewed": "the-fleet-supervisor-runs-current-code",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to reload the fleet supervisor onto current code when its stamp moves; reckon/crew/fleet_supervisor.py:2156-2179 re-executes through _reexec on a moved-and-trusted verdict, so the reviewed commit keeps the goal while cutting the trust test to once per moved stamp.\nVERDICT done_when: the done-when names tests/test_the_fleet_supervisor_runs_current_code.py; logs/head.log records 4 passed EXIT=0 at 8e574c0865, logs/base.log 4 failed EXIT=1 at 9da1277b52, logs/negative-control.log 3 failed 1 passed EXIT=1, both importer arms 33 passed, and ruff check and format --check pass when I re-ran them on both changed source paths.\nVERDICT write_paths: the manifest declares fleet_supervisor.py, the new test, the fragment and an unused figure directory; git diff --stat over 407e04e0ad..8e574c0865 lists exactly the first three and nothing else.\nVERDICT manifest: read in full; status complete, after_suite 4 passed EXIT=0 at 8e574c0865 against baseline_suite 4 failed EXIT=1, and both retry_failures are attributed to the test fixture rather than to code under test.\nVERDICT diff: read commit by commit, one commit 8e574c0865 with 209 insertions and 115 deletions over three declared paths: the copied root/stamp/trust trio replaced by delegation to checkout_trust and served_code (fleet_supervisor.py:1814-1842), tested_stamp/tested_at pacing at :2139-2179 with MOVE_CHECK_INTERVAL_SECONDS, a fourth gate arm plus an independence repair in the service arm, and the fragment rewritten.\nCALL_SITES: reckon/crew/fleet_supervisor.py:2232, reckon/crew/fleet_node.py:216\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: fleet_supervisor.py:2156-2179 still replaces the image through _reexec on a moved-and-trusted verdict, but the tested_stamp exclusion at :2158 can lose that reload permanently for a stamp.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head.log (4 passed EXIT=0 at 8e574c0865), logs/base.log (4 failed EXIT=1), logs/negative-control.log (3 failed 1 passed) and the 33-passed importer arms are recorded, and the ruff clause I verified by re-running it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 407e04e0ad..8e574c0865 is a declared write path, and no request verb or CLI option was added.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_the_fleet_supervisor_runs_current_code.py:262-291 reddens on a lost reload and on a lost interval gate, but no arm covers the tested-stamp-is-final branch the commit introduces at fleet_supervisor.py:2158.\nSCORE fit: 18\nJUSTIFICATION fit: fleet_supervisor.py:134 and :2139-2179 follow the module's constant-and-comment idiom, and the new names describe what each decides.\nSCORE reuse: 18\nJUSTIFICATION reuse: fleet_supervisor.py:1826-1842 delegates to checkout_trust.source_code_identity and served_code.moved_checkout, retiring the copied queue_admission trio the earlier review flagged.\nFINDING reckon/crew/fleet_supervisor.py:2158 blocking: a stamp tested once is excluded from every later pass with no expiry, so an untrusted or racy verdict for stamp B is final for B; a dirty tree that is later cleaned keeps identity B (checkout_trust.py:363-382) and the supervisor stays on stale code indefinitely, a regression against 407e04e0ad where the verdict was recomputed each pass, with follower_reload.py:333-400 retrying where this gives up.\n",
+  "review_run_id": "r-20261029T045636014888-review-of-the-fleet-supervisor-runs-current-code-8e574c086522",
+  "reviewed_base_sha": "407e04e0ad3c428725f74fb05e4506e0c32654fc",
+  "reviewed_head_sha": "8e574c0865226b3024af65a4e3bd2c36ba5ebdd3",
+  "reviewed_range_note": "scored only the commit the reviewed run gained since its earlier review: 407e04e0ad..8e574c0865 (one commit, 8e574c0865), read in the reviewed run's worktree at the-fleet-supervisor-runs-current-code. The dispatch base of the whole run is 9da1277b5258df110fd0d1943cf87b53767e4d1f; the earlier review of 407e04e0ad is stored beside this record.",
+  "reviewed_run_id": "r-20261029T035511535393-the-fleet-supervisor-runs-current-code",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T05:44:00+00:00",
+  "total": 101
+}
