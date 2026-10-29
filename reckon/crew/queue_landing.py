@@ -7,6 +7,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,16 @@ _run_srun = subprocess.run
 # A revision as a manifest entry may spell it: hexadecimal, at least the
 # seven characters git abbreviates to.
 _REVISION = re.compile(r"[0-9A-Fa-f]{7,40}")
+
+#: Seconds before a refusal that is environmental — a measurement bound that
+#: was exceeded, or a base checkout that could not be built — is judged again.
+#: Neither says anything about the run's code, so the run must be re-read even
+#: though its code and review have not moved.
+RETRY_BACKOFF_SECONDS = 900.0
+
+#: The cap on that back-off. It doubles per repeated timeout, and without a cap
+#: a run stuck on a permanently slow host would drift out of reach.
+RETRY_BACKOFF_CAP_SECONDS = 6 * 60 * 60.0
 
 
 def _delivered_revision(entries: Sequence[Any]) -> str:
@@ -195,22 +206,117 @@ def _review_stamp(review: Mapping[str, Any] | None) -> str:
     return _digest(review)
 
 
+#: The refusals that say the measurement could not be taken rather than that
+#: the run is wrong. A timeout is a population that outgrew its bound on this
+#: host, and a base-checkout failure is a scratch tree that could not be built;
+#: neither is a finding about the delivered code, so neither holds without a
+#: retry.
+_ENVIRONMENTAL_GUARDS = (
+    "landing measure unreadable: the base checkout could not be built",
+)
+
+
+def _is_environmental(guard: str) -> bool:
+    """Whether a guard states an environmental failure rather than a finding.
+
+    A refusal whose guard is a timeout or a base-checkout failure is judged
+    again on a back-off; a refusal for an added regression, a blocking finding
+    or a merge conflict stays hold until the code or the review moves.
+    """
+    text = str(guard or "")
+    if text.startswith(_ENVIRONMENTAL_GUARDS):
+        return True
+    return (
+        text.startswith("landing measure unreadable: ")
+        and "exceeded its" in text
+        and text.endswith("bound")
+    )
+
+
+def _retry_backoff(attempts: int) -> float:
+    """Seconds to wait before judging an environmental refusal again.
+
+    The wait doubles per repeated timeout and is capped, so a run whose host
+    was briefly slow is retried soon while one that keeps timing out is retried
+    no more often than the cap allows.
+    """
+    count = max(1, int(attempts or 1))
+    try:
+        waited = RETRY_BACKOFF_SECONDS * (2 ** (count - 1))
+    except OverflowError:
+        return RETRY_BACKOFF_CAP_SECONDS
+    return min(waited, RETRY_BACKOFF_CAP_SECONDS)
+
+
+def _retry_due(previous: Mapping[str, Any]) -> float | None:
+    """When an environmental refusal recorded on the run may be judged again.
+
+    ``None`` when the record carries no failure time, which is what a refusal
+    stored before the retry clock was kept leaves: it says nothing about when
+    it was made, so the run is judged once more rather than held on a guess.
+    """
+    failed_at = previous.get("failed_at")
+    if isinstance(failed_at, bool) or not isinstance(failed_at, (int, float)):
+        return None
+    attempts = previous.get("attempts")
+    count = (
+        1 if isinstance(attempts, bool) or not isinstance(attempts, int) else attempts
+    )
+    return float(failed_at) + _retry_backoff(count)
+
+
 def _refusal_holds(
-    previous: Mapping[str, Any], code_stamp: str = "", review_stamp: str = ""
+    previous: Mapping[str, Any],
+    code_stamp: str = "",
+    review_stamp: str = "",
+    now: float | None = None,
 ) -> bool:
-    """Whether a recorded refusal was made by this code about this record.
+    """Whether a recorded refusal still stands under this code and record.
 
     A refusal states the rule that made it and the record it read, and holds
-    only while both are unchanged. A refusal recorded before those were kept
-    carries neither, so it says nothing about the current rule and the run is
-    judged once more.
+    while both are unchanged. The one exception is a refusal whose guard is
+    environmental: a timeout or a base-checkout failure is retried once its
+    back-off has elapsed, with the code and the review unchanged, because
+    waiting for either to move would hold a run behind a busy host. A refusal
+    recorded before the stamps were kept carries none of them, so it says
+    nothing about the current rule and the run is judged once more.
     """
     if not code_stamp or not review_stamp:
         return False
-    return (
-        str(previous.get("code_stamp") or "") == code_stamp
-        and str(previous.get("review_stamp") or "") == review_stamp
+    if (
+        str(previous.get("code_stamp") or "") != code_stamp
+        or str(previous.get("review_stamp") or "") != review_stamp
+    ):
+        return False
+    if not _is_environmental(str(previous.get("guard") or "")):
+        return True
+    due = _retry_due(previous)
+    if due is None:
+        return False
+    return (time.time() if now is None else float(now)) < due
+
+
+def _refusal_attempts(
+    previous: Mapping[str, Any] | None, *, head: str, guard: str
+) -> int:
+    """How many times this head has been refused for the same kind of failure.
+
+    Only an environmental refusal counts a repeat: a further timeout on the
+    same head at the same kind of failure doubles its back-off, while a refusal
+    for a finding starts the count again because it is a different judgement.
+    """
+    if not isinstance(previous, Mapping) or previous.get("status") != "refused":
+        return 1
+    if not recovery.same_revision(str(previous.get("head") or ""), head):
+        return 1
+    earlier = str(previous.get("guard") or "")
+    if not (_is_environmental(earlier) and _is_environmental(guard)):
+        return 1
+    recorded = previous.get("attempts")
+    count = (
+        1 if isinstance(recorded, bool) or not isinstance(recorded, int) else recorded
     )
+    return max(1, count) + 1
 
 
 def _record_attempt(
@@ -221,9 +327,16 @@ def _record_attempt(
     status: str,
     code_stamp: str = "",
     review_stamp: str = "",
+    previous: Mapping[str, Any] | None = None,
+    now: float | None = None,
 ) -> None:
     """Keep a refusal on the live run, with what made it, so a later pass can
-    tell a refusal that still stands from one the current rule would reverse."""
+    tell a refusal that still stands from one the current rule would reverse.
+
+    The record also keeps when the refusal was made and how many times this
+    head has been refused for an environmental failure, because that pair is
+    what a retry's back-off is counted from and how far it doubles.
+    """
 
     def mutation(pointer: dict[str, Any]) -> dict[str, Any]:
         pointer["admission_landing"] = {
@@ -232,6 +345,8 @@ def _record_attempt(
             "status": status,
             "code_stamp": code_stamp,
             "review_stamp": review_stamp,
+            "attempts": _refusal_attempts(previous, head=head, guard=guard),
+            "failed_at": time.time() if now is None else float(now),
         }
         return pointer
 
@@ -271,6 +386,11 @@ def _stored_measurement(
     A pass never re-measures a head it has already measured: the record is kept
     under the run's directory and is valid only for the head and the command it
     names, so a moved head or a changed command measures again.
+
+    A record the measurement could not be taken for is not one: it states the
+    bound the arm exceeded or the failure to build the base tree, and reusing
+    it would refuse the retry the back-off exists to allow. Such a head is
+    measured again, under the bound its own timed-out arm has just widened.
     """
     if not command:
         return None
@@ -284,7 +404,39 @@ def _stored_measurement(
         return None
     if str(record.get("command") or "") != command:
         return None
+    if str(record.get("unreadable") or ""):
+        return None
     return landing_measure.Measurement.from_dict(record)
+
+
+def _stored_measurements(project: str) -> list[dict[str, Any]]:
+    """Every measurement stored for one project, as bound-sizing history.
+
+    A bound is sized from how long this project's populations actually take, so
+    the history is read from the run directories — which outlive the live
+    pointer — and only records naming this project are used: another
+    repository's seconds per file measure a different suite. A project with no
+    readable history gets an empty list, which is the floor.
+    """
+    records: list[dict[str, Any]] = []
+    if not project:
+        return records
+    try:
+        directories = sorted(runs.runs_dir().iterdir())
+    except OSError:
+        return records
+    for directory in directories:
+        try:
+            record = json.loads(
+                (directory / "landing-measure" / "measurement.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+        except (OSError, ValueError):
+            continue
+        if isinstance(record, Mapping) and str(record.get("project") or "") == project:
+            records.append(dict(record))
+    return records
 
 
 def _merge_conflicts(pointer: Mapping[str, Any], head: str) -> list[str]:
@@ -338,6 +490,7 @@ def _measure_delivery(
     if not command:
         return None
     base_sha = str(pointer.get("base_sha") or "").strip()
+    project = str(pointer.get("project") or "")
     repo = Path(str(pointer.get("repo") or tree or ""))
     if not base_sha or not repo.is_dir():
         return landing_measure.Measurement(
@@ -345,8 +498,11 @@ def _measure_delivery(
             suite={},
             population={},
             unreadable="the run records no base revision to compare against",
+            head=head,
+            project=project,
         )
     timeout = _measure_timeout(pointer)
+    stored = _stored_measurements(project)
     logs = runs.run_dir(run_id) / "landing-measure"
     try:
         # Only the checkout is inside this except: an error raised by the
@@ -362,6 +518,8 @@ def _measure_delivery(
                     logs_dir=logs,
                     test_files=_node_test_files(pointer),
                     timeout=timeout,
+                    stored=stored,
+                    project=project,
                 )
             except (OSError, ValueError) as exc:
                 measured = landing_measure.Measurement(
@@ -370,6 +528,7 @@ def _measure_delivery(
                     population={},
                     unreadable=(f"the measurement raised {type(exc).__name__}: {exc}"),
                     head=head,
+                    project=project,
                 )
     except landing_measure.BaseCheckoutError as exc:
         measured = landing_measure.Measurement(
@@ -378,6 +537,7 @@ def _measure_delivery(
             population={},
             unreadable=f"the base checkout could not be built: {exc}",
             head=head,
+            project=project,
         )
     _record_suite_evidence(run_id, measured)
     return measured
@@ -621,7 +781,11 @@ def land_once() -> dict[str, Any]:
     A head refused on an earlier pass is judged again as soon as the rule that
     refused it or the review it read has changed, so a run held by a rule since
     replaced does not stay held: the refusal is skipped only while the code
-    stamp and the review record it judged are both unchanged. A manifest whose
+    stamp and the review record it judged are both unchanged. A refusal for an
+    environmental failure — a measurement bound that was exceeded, or a base
+    checkout that could not be built — is judged again on a doubling back-off
+    with the code and the review unchanged, because neither would move while
+    the host was merely busy. A manifest whose
     last commit entry names no revision is refused with that entry quoted and an
     obligation for the run's session, so the run is visible to a coordinator
     rather than dropped from the pass in silence. A delivered run whose head
@@ -665,6 +829,7 @@ def land_once() -> dict[str, Any]:
                         guard=guard,
                         status="refused",
                         code_stamp=code_stamp,
+                        previous=previous,
                     )
                     obligations.append(
                         {
@@ -694,6 +859,7 @@ def land_once() -> dict[str, Any]:
                     status="refused",
                     code_stamp=code_stamp,
                     review_stamp=review_stamp,
+                    previous=previous,
                 )
                 obligations.append(
                     {
@@ -725,6 +891,7 @@ def land_once() -> dict[str, Any]:
                 status="refused",
                 code_stamp=code_stamp,
                 review_stamp=review_stamp,
+                previous=previous,
             )
             obligations.append(
                 {
@@ -749,6 +916,7 @@ def land_once() -> dict[str, Any]:
                 status="refused",
                 code_stamp=code_stamp,
                 review_stamp=review_stamp,
+                previous=previous,
             )
             obligations.append(
                 {
@@ -779,6 +947,7 @@ def land_once() -> dict[str, Any]:
                 status="refused",
                 code_stamp=code_stamp,
                 review_stamp=review_stamp,
+                previous=previous,
             )
             obligations.append(
                 {
@@ -800,6 +969,7 @@ def land_once() -> dict[str, Any]:
             status="attempting",
             code_stamp=code_stamp,
             review_stamp=review_stamp,
+            previous=previous,
         )
         try:
             accepted, guard = _land(run_id)
@@ -843,6 +1013,7 @@ def land_once() -> dict[str, Any]:
                 status="refused",
                 code_stamp=code_stamp,
                 review_stamp=review_stamp,
+                previous=previous,
             )
             obligations.append(
                 {
