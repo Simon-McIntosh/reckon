@@ -302,6 +302,41 @@
     <p>The reading confirms §3's diagnosis and adds one cause §3 did not name: the workers themselves. Each walk was a
     worker looking for a fact reckon stores at a known path. The fence governs writes, and nothing bounded reads, so
     one search could cost more than every monitor process on the node combined.</p>
+    <h2 id="s11">§11 — The cutover measure on 2026-10-29: the station alone is far above the bound</h2>
+    <p>The station was dispatched to retire the per-project producer seats, the producer user units and the follower
+    snapshot path, on the condition that it carry every row they carry and cost the node less than they do. The second
+    half of that condition is not met. The station carries every row — §5’s list included — but it does not yet read each
+    fact once at a cost the node can afford, so the retirement is withheld and the producers stay.</p>
+    <p>The measure is §2’s instrument, unchanged: a 60 s window of per-process <code>/proc/&lt;pid&gt;/io</code> deltas,
+    <code>/proc/&lt;pid&gt;/stat</code> utime and stime deltas, and six samples of process state 10 s apart. The process set is
+    selected on adjacent argv tokens (<code>crew station</code>, <code>crew watch</code>, <code>crew follow</code>), never on a
+    substring of the whole command line, because a substring match selects the shell that launched the watch whose own argv
+    contains the pattern. The station ran alone as <code>crew station --interval 1</code>, with its own runtime root and a copy
+    of the crew home carrying 71 live pointers.</p>
+    <figure>
+      <img src="/reckon/figures/monitor-storage-load-rca/read-volume-against-the-bound.svg" alt="Read volume and CPU of one node station at 5 and 71 live runs, against the cutover bound">
+      <figcaption>One node station, measured alone over 60 s windows on clu-2068 on 2026-10-29. The cutover bound is
+      20 MB/min of read volume and 5 % of one core for all crew monitor processes together, drawn dotted. Read volume is
+      <code>rchar</code>, which counts bytes served from the page cache as well as from GPFS; <code>read_bytes</code> was 0.0
+      in both arms, so nothing was refetched from the file server. Both arms were measured while eight test processes ran
+      on the same node, which suppresses the station’s CPU share, so the CPU figures are a lower bound. At 71 live runs the
+      window also recorded one D-state sample, at wait channel <code>xlog_wait_on_iclog</code>.</figcaption>
+    </figure>
+    <p>Read volume scales with the number of live runs, and its slope is the cost that matters: 126 MB/min at five live
+    runs, 1,067 MB/min at 71. Against a bound of 20 MB/min the station is five times over at five runs and fifty times over
+    at 71. CPU follows the same shape, 42 % of one core and then 92 %, against a bound of 5 %. The D-state sample that
+    fails the third part of the bound is a wait on the XFS journal of the runtime root, not on GPFS.</p>
+    <p>A separate probe says where the bytes go. On a cold runtime root one store tick over five live runs reads 8.2 MB and
+    one whole station tick reads 90.9 MB; every later tick reads 0.07 MB. The store’s stream ingest is therefore already
+    incremental — a tick whose streams have not grown reads nothing at all — and the cost is the classification pass. It
+    replays a run’s whole stream whenever the run’s pointer file signature moves, and a live run’s signature moves
+    continuously, so the whole-stream read is paid every tick for every run that is doing anything. The fix that would meet
+    the bound is in that pass: classify from the folded state the store already keeps, so a moved pointer reads only the
+    bytes its stream appended.</p>
+    <p>The before figures cannot be plotted beside these. §10 counted file syscalls per second rather than bytes, so the
+    producers’ 6,312, 3,323 and 875 calls per second and the fourteen followers’ 310 each are a reading of a different
+    quantity. What the two readings do share is the shape: in both, the cost is paid per run per tick, and the redesign has
+    moved it from the followers into the station rather than removing it.</p>
   </main>
 </body>
 </html>
