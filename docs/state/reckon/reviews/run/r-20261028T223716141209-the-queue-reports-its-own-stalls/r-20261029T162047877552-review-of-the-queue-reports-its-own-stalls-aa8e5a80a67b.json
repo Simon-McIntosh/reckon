@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-29T16:28:17.695Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "exempted",
+      "reason": "follow-up: drain view's stuck phases should come from node.WAITING_REQUEST_PHASES, not a fourth copy",
+      "recorded_at": "2026-10-29T16:37:18.271398+00:00"
+    }
+  },
+  "dispatched_at": "2026-10-29T16:23:23Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "follow-up: drain view's stuck phases should come from node.WAITING_REQUEST_PHASES, not a fourth copy",
+      "recorded_at": "2026-10-29T16:37:05.552753+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "follow-up: the stage_seconds assertion round-trips its own constant",
+      "recorded_at": "2026-10-29T16:37:09.263570+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "follow-up: the admissible_age assertion round-trips its own literal; the independent half is in queue_admission's tests",
+      "recorded_at": "2026-10-29T16:37:13.807572+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 2104,
+      "severity": "non-blocking",
+      "text": "_DRAIN_STUCK_PHASES re-declares the waiting-request phases that reckon/crew/node.py:1529 (WAITING_REQUEST_PHASES) and reckon/crew/queue_edit.py:47 (WAITING_PHASES) already own, so the vocabulary now has four copies including the inline set at reckon/crew/runs.py:2153 in the same function; they already differ (launch-failed here, absent from both owners), so a phase added to one leaves the drain view's stuck rule silently stale."
+    },
+    {
+      "file": "tests/test_the_queue_reports_its_own_stalls.py",
+      "line": 269,
+      "severity": "non-blocking",
+      "text": "`row[\"stage_seconds\"] == LAST_LAUNCH_SECONDS` compares the drain view's output against the same constant the test wrote into the verdict record at :255, so it holds whatever duration is recorded and only proves the field is copied through; the assertion that does discriminate independently is :270's age bound derived from the pointer's own stamp."
+    },
+    {
+      "file": "tests/test_the_queue_reports_its_own_stalls.py",
+      "line": 262,
+      "severity": "non-blocking",
+      "text": "`week[\"project\"][\"admissible_age_seconds\"] == 720.0` compares against the literal the test itself put in the verdict record, so it guards the log-to-view wiring but cannot fail if the pass measured the wrong age \u2014 the independent half of that measurement lives in queue_admission's own tests, not here."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the repair's goal is to answer the two blocking findings on r-20261028T223716141209, and the diff does exactly that \u2014 reckon/crew/runs.py:2234 narrows the stuck predicate and tests/test_the_queue_reports_its_own_stalls.py:236 and :273 drive the drain view directly.\nVERDICT done_when: the repair prompt's evidence fence asks that the drain view report each stuck request's age and that its overdue computation read the recorded stall verdict rather than resolve waits again; tests/test_the_queue_reports_its_own_stalls.py:262-270 now assert the age, stalled flag, verdict, stage and stage duration off one drain call, and logs/repair-after.log records 6 passed EXIT=0 at head.\nVERDICT write_paths: the manifest declares six paths for the node; the repair diff touches three of them \u2014 reckon/crew/runs.py, tests/test_the_queue_reports_its_own_stalls.py and the always-permitted landing fragment \u2014 and no path outside that set.\nVERDICT manifest: read; it records the head arm as 6 passed EXIT=0 (logs/repair-after.log), the base arm as 1 failed / 5 passed EXIT=1 at a07d04759a (logs/repair-baseline.log) with test_a_launched_run_is_not_stuck named, a related 34 passed EXIT=0 run, both negative-control logs, and six rubric lines.\nVERDICT diff: read commit by commit against a07d04759a \u2014 b4655f295f adds the two drain-view tests, be771b82bd narrows the stuck rule to a waiting phase plus a waiting verdict (\u00a7_DRAIN_STUCK_PHASES runs.py:2104, _DRAIN_STUCK_VERDICTS :2110, predicate :2234), aa8e5a80a6 updates the landing fragment; 3 files, 145 insertions, 13 deletions.\nCALL_SITES: reckon/crew_run_commands.py:1565 (crew drain), reckon/mcp_views.py:4269 (mcp crew view), reckon/crew/obligations.py:1765 (obligations snapshot)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2234 now requires phase in _DRAIN_STUCK_PHASES and last_verdict in _DRAIN_STUCK_VERDICTS, so the launched-run misreport the prior review blocked on is closed at the exact predicate it named.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/repair-after.log carries `6 passed in 9.26s` and a bare `EXIT=0` header-stamped at aa8e5a80a6, and logs/repair-baseline.log carries `1 failed, 5 passed` and `EXIT=1` at a07d04759a naming test_a_launched_run_is_not_stuck, so the gate measures the drain-view behaviour the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three changed paths (reckon/crew/runs.py, tests/test_the_queue_reports_its_own_stalls.py, docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/the-queue-reports-its-own-stalls.html) are inside the manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: reverting be771b82bd leaves tests/test_the_queue_reports_its_own_stalls.py:300 red at EXIT=1 as logs/negative-control-f388-stuck-rule.log shows, but the stall-field assertions at :262 and :269 compare against the values the test itself wrote into the verdict log, so they guard wiring only.\nSCORE fit: 18\nJUSTIFICATION fit: the two frozensets at reckon/crew/runs.py:2104 and :2110 follow the module's `#:` comment-and-constant idiom used at :2094 and carry no plan or stage label.\nSCORE reuse: 5\nJUSTIFICATION reuse: _DRAIN_STUCK_PHASES at reckon/crew/runs.py:2104 is a fourth declaration of the waiting-request phase vocabulary already owned by reckon/crew/node.py:1529 and reckon/crew/queue_edit.py:47, duplicating rather than extending the owner; the verdict set at :2110 has no owner and is the only scan of that capability I found (grep for VERDICTS and WAITING_PHASES under reckon/).\nFINDING reckon/crew/runs.py:2104 non-blocking: _DRAIN_STUCK_PHASES re-declares the waiting-request phases that reckon/crew/node.py:1529 (WAITING_REQUEST_PHASES) and reckon/crew/queue_edit.py:47 (WAITING_PHASES) already own, so the vocabulary now has four copies including the inline set at reckon/crew/runs.py:2153 in the same function; they already differ (launch-failed here, absent from both owners), so a phase added to one leaves the drain view's stuck rule silently stale.\nFINDING tests/test_the_queue_reports_its_own_stalls.py:269 non-blocking: `row[\"stage_seconds\"] == LAST_LAUNCH_SECONDS` compares the drain view's output against the same constant the test wrote into the verdict record at :255, so it holds whatever duration is recorded and only proves the field is copied through; the assertion that does discriminate independently is :270's age bound derived from the pointer's own stamp.\nFINDING tests/test_the_queue_reports_its_own_stalls.py:262 non-blocking: `week[\"project\"][\"admissible_age_seconds\"] == 720.0` compares against the literal the test itself put in the verdict record, so it guards the log-to-view wiring but cannot fail if the pass measured the wrong age \u2014 the independent half of that measurement lives in queue_admission's own tests, not here.\n",
+  "review_run_id": "r-20261029T162047877552-review-of-the-queue-reports-its-own-stalls-aa8e5a80a67b",
+  "reviewed_base_sha": "a07d04759a286c51bebd5956382f39b5b655547c",
+  "reviewed_head_sha": "aa8e5a80a67b0ee2550c93cefa1c8e95f2575915",
+  "reviewed_run_id": "r-20261028T223716141209-the-queue-reports-its-own-stalls",
+  "rubric": "text",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T16:35:00.000000+00:00",
+  "total": 95
+}
