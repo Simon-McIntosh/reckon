@@ -28,7 +28,7 @@ from reckon.crew import (
     station_subscriber,
     ticker,
 )
-from reckon.crew.host_lease import HostLease, local_host
+from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
 from reckon.crew.run_paths import crew_home
 from reckon.crew_follow_commands import (
     _FOLLOWER_IMAGE_COMMIT_ENV as IMAGE_IDENTITY_ENV,
@@ -84,6 +84,7 @@ class StationBeat:
         beat_seconds: float | None = None,
         clock: Callable[[], datetime] | None = None,
         store: station_store.StationStore | None = None,
+        guard: station_store.StoreWriteGuard | None = None,
     ) -> None:
         self.root = root
         self.beat_seconds = (
@@ -91,6 +92,7 @@ class StationBeat:
         )
         self._clock = clock or (lambda: datetime.now(tz=UTC))
         self._store = store
+        self.guard = guard
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -102,7 +104,7 @@ class StationBeat:
         the kind of coupling that turns one slow tick into a corrupted beat.
         """
         if self._store is None:
-            self._store = station_store.StationStore(self.root)
+            self._store = station_store.StationStore(self.root, guard=self.guard)
         return self._store
 
     def beat_once(self) -> None:
@@ -140,6 +142,85 @@ class StationBeat:
         if self._store is not None:
             self._store.close()
             self._store = None
+
+
+class LeaseBeat:
+    """Renew the station's writer lease from a thread of its own.
+
+    A tick walks every mounted project and can outlast the lease's whole stale
+    window, so a renewal written between ticks is no renewal at all: for most
+    of a long tick the lease reads stale, and anything that asks -- the
+    supervisor's station check or a hand-run ``crew station`` -- is free to
+    claim it and start a second writer beside this one.
+
+    So the renewal runs here, beside the beat thread and on the same handful of
+    seconds, and touches only the lease file: no SQLite at all, so a heartbeat
+    write waiting out its busy timeout cannot hold it. When a renewal fails the
+    lease names another holder, and every row this station would commit from
+    then on belongs beside that successor. The loss is marked on the store's
+    shared guard, which refuses those writes, and the station's loop stops.
+    """
+
+    def __init__(
+        self,
+        lease: HostLease,
+        *,
+        guard: station_store.StoreWriteGuard,
+        renew_seconds: float | None = None,
+    ) -> None:
+        self.lease = lease
+        self.guard = guard
+        self.renew_seconds = (
+            LEASE_RENEW_SECONDS if renew_seconds is None else renew_seconds
+        )
+        self._stop = threading.Event()
+        self._lost = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def renew_once(self) -> bool:
+        """Renew once, marking the loss and every write it refuses when it fails."""
+        if self.lease.renew():
+            return True
+        self.guard.mark_lost(
+            f"station lost its lease at {self.lease.path}; "
+            "refusing to write beside its holder"
+        )
+        self._lost.set()
+        return False
+
+    def lost(self) -> bool:
+        """Whether this station has lost its lease."""
+        return self._lost.is_set()
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                if not self.renew_once():
+                    return
+            except Exception:  # noqa: BLE001 - a failed read is retried, not a loss
+                print(
+                    "station-lease-failure: the lease could not be renewed",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                traceback.print_exc(file=sys.stderr)
+            self._stop.wait(self.renew_seconds)
+
+    def start(self) -> None:
+        """Renew once, then keep renewing on its own thread."""
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(
+            target=self._run, name="station-lease", daemon=True
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Stop renewing."""
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=max(1.0, self.renew_seconds * 2))
+            self._thread = None
 
 
 class SweepBeat:
@@ -470,19 +551,30 @@ class Station:
         return published
 
 
-def run_station(*, interval: float = 1.0, once: bool = False) -> None:
+def run_station(
+    *,
+    interval: float = 1.0,
+    once: bool = False,
+    store: station_store.StationStore | None = None,
+    station_instance: Station | None = None,
+    lease: HostLease | None = None,
+    beat_seconds: float | None = None,
+    renew_seconds: float | None = None,
+) -> None:
     """Run the node's single station until stopped or one requested tick ends."""
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
 
     _adopt_launched_workers_from_reexec()
-    store = station_store.StationStore.at_runtime_root()
+    if store is None:
+        store = station_store.StationStore.at_runtime_root()
     stopping = False
 
     def stop(_signum: int, _frame: Any) -> None:
         nonlocal stopping
         stopping = True
 
-    lease = station_lease(store.root)
+    if lease is None:
+        lease = station_lease(store.root)
     previous_holder = lease.holder()
     if previous_holder is not None and previous_holder.host == local_host():
         try:
@@ -501,32 +593,54 @@ def run_station(*, interval: float = 1.0, once: bool = False) -> None:
         )
         raise StationHeldError(f"station at {lease.path} is held by {identity}")
     with store:
-        previous = {
-            signum: signal.signal(signum, stop)
-            for signum in (signal.SIGINT, signal.SIGTERM)
-        }
+        # A station hosted off the main thread cannot be signalled -- the stop
+        # handler installs only in the interpreter's main thread -- so a caller
+        # that runs it elsewhere keeps the handlers it already has.
+        previous = (
+            {
+                signum: signal.signal(signum, stop)
+                for signum in (signal.SIGINT, signal.SIGTERM)
+            }
+            if threading.current_thread() is threading.main_thread()
+            else {}
+        )
         beat: StationBeat | None = None
+        renewal: LeaseBeat | None = None
         try:
-            station = Station(store)
+            station = Station(store) if station_instance is None else station_instance
             reloader = StationReloader(store.root)
-            # The beat starts before the first tick, so a station whose opening
-            # tick is slow is never read as one that never started.
-            beat = StationBeat(store.root, clock=station.clock)
+            # Both threads start before the first tick, so a station whose
+            # opening tick is slow is never read as one that never started, and
+            # its lease never lapses while that tick runs.
+            beat = StationBeat(
+                store.root,
+                clock=station.clock,
+                guard=store.guard,
+                beat_seconds=beat_seconds,
+            )
             beat.start()
-            renewed_at = time.monotonic()
+            renewal = LeaseBeat(lease, guard=store.guard, renew_seconds=renew_seconds)
+            renewal.start()
             while not stopping:
-                station.tick()
-                if time.monotonic() - renewed_at >= 5:
-                    if not lease.renew():
-                        raise StationHeldError(
-                            f"station lost its lease at {lease.path}"
-                        )
-                    renewed_at = time.monotonic()
+                if renewal.lost():
+                    break
+                try:
+                    station.tick()
+                except station_store.StationLeaseLostError as lost:
+                    raise StationHeldError(
+                        f"station lost its lease at {lease.path}: {lost}"
+                    ) from None
+                if renewal.lost():
+                    break
                 if once:
                     break
                 reloader.poll()
                 time.sleep(interval)
+            if renewal.lost():
+                raise StationHeldError(f"station lost its lease at {lease.path}")
         finally:
+            if renewal is not None:
+                renewal.stop()
             if beat is not None:
                 beat.stop()
             for signum, handler in previous.items():

@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
 from collections.abc import Iterable, Mapping
 from contextlib import closing
 from datetime import UTC, date, datetime, timedelta
@@ -153,6 +154,47 @@ CREATE INDEX IF NOT EXISTS events_by_project ON events (project, id);
 
 class StationStoreError(RuntimeError):
     """The station's store cannot be opened or used as a node-local store."""
+
+
+class StationLeaseLostError(StationStoreError):
+    """The station no longer holds its lease, so it must write nothing here."""
+
+
+class StoreWriteGuard:
+    """The station's right to write, shared by every handle it holds.
+
+    A station that loses its lease mid-tick keeps running for as long as the
+    stage it is in takes, and every row it would commit from that point belongs
+    beside the successor that now holds the lease. So the loss is marked once,
+    on a mark each handle reads before it writes: the tick's own handle and the
+    beat thread's, which hold separate connections to the same database and
+    would otherwise disagree about whether the station may still write.
+    """
+
+    def __init__(self) -> None:
+        self._lost = threading.Event()
+        self._reason = ""
+
+    def lost(self) -> bool:
+        """Whether the station has been marked as having lost its lease."""
+        return self._lost.is_set()
+
+    def reason(self) -> str:
+        """Why the station lost its lease, or an empty string while it holds it."""
+        return self._reason
+
+    def mark_lost(self, reason: str) -> None:
+        """Mark the loss. Writes attempted from now on are refused."""
+        self._reason = reason
+        self._lost.set()
+
+    def check(self) -> None:
+        """Refuse a write once the loss is marked."""
+        if self._lost.is_set():
+            raise StationLeaseLostError(
+                self._reason
+                or "the station no longer holds its lease; refusing to write"
+            )
 
 
 _UNSET: Any = object()
@@ -281,9 +323,16 @@ def _day_from_name(name: str) -> date | None:
 class StationStore:
     """One node's station store: the schema, its day files and its readers."""
 
-    def __init__(self, root: Path, *, retention_days: int = RETENTION_DAYS) -> None:
+    def __init__(
+        self,
+        root: Path,
+        *,
+        retention_days: int = RETENTION_DAYS,
+        guard: StoreWriteGuard | None = None,
+    ) -> None:
         self.root = Path(root)
         self.retention_days = int(retention_days)
+        self.guard = StoreWriteGuard() if guard is None else guard
         self.database = self.root / DATABASE_NAME
         self.day_directory = self.root / DAY_DIRECTORY
         self._connection: sqlite3.Connection | None = None
@@ -443,6 +492,7 @@ class StationStore:
         return None if row is None else str(row["value"])
 
     def set_station_value(self, key: str, value: str) -> None:
+        self.guard.check()
         connection = self.connect()
         connection.execute(
             "INSERT INTO station (key, value) VALUES (?, ?) "
@@ -458,6 +508,7 @@ class StationStore:
 
     def rebuild(self, *, home: str | Path | None = None) -> None:
         """Rebuild the store from the crew home, discarding what it held."""
+        self.guard.check()
         connection = self.connect()
         for table in ("pointers", "streams"):
             connection.execute(f"DELETE FROM {table}")  # noqa: S608 - a fixed table name
@@ -470,6 +521,7 @@ class StationStore:
         A pointer is parsed only when its ``file_memo.file_signature`` has moved
         against the stored one; a stream is read only past its stored offset.
         """
+        self.guard.check()
         root = Path(home) if home is not None else crew_home()
         present = set((root / "live").glob("*.json"))
         for path in sorted(present):
@@ -519,6 +571,7 @@ class StationStore:
 
     def ingest_pointer(self, path: Path) -> bool:
         """Parse and store one pointer, returning whether it was re-parsed."""
+        self.guard.check()
         if self.pointer_is_current(path):
             return False
         try:
@@ -567,6 +620,7 @@ class StationStore:
         is folded from its start, so a rewrite is refolded rather than folded
         on top of bytes that no longer exist.
         """
+        self.guard.check()
         try:
             info = path.stat()
         except OSError:
@@ -732,6 +786,7 @@ class StationStore:
         manifest moves neither its pointer nor its stream, and its delivery is
         still seen on the tick that manifest lands.
         """
+        self.guard.check()
         moment = recovery._utc_seconds() if now_seconds is None else float(now_seconds)
         cache = self._classification_cache()
         verdicts: dict[str, dict[str, Any]] = {}
@@ -821,6 +876,7 @@ class StationStore:
         only the cursor does not rewrite the pane's checkpoint and history, and
         a field explicitly set to ``None`` clears it.
         """
+        self.guard.check()
         existing = self.read_cursor(project, audience)
         values: dict[str, Any] = {
             "cursor": int(existing.get("cursor", 0)) if cursor is None else int(cursor),
@@ -913,6 +969,7 @@ class StationStore:
         reader can refuse a row written for another project's session of the
         same name rather than serving it.
         """
+        self.guard.check()
         connection = self.connect()
         connection.execute(
             "INSERT INTO obligations (session, changed_at, payload) VALUES (?, ?, ?) "
@@ -964,6 +1021,7 @@ class StationStore:
 
     def delete_obligation(self, session: str) -> None:
         """Remove one session's row."""
+        self.guard.check()
         connection = self.connect()
         connection.execute("DELETE FROM obligations WHERE session = ?", (str(session),))
         connection.commit()
@@ -1016,6 +1074,7 @@ class StationStore:
         payload: Mapping[str, Any] | None = None,
     ) -> int:
         """Append one event to its UTC day's file, returning its sequence id."""
+        self.guard.check()
         moment = at.astimezone(UTC)
         day = moment.date()
         counter = self.connect()
@@ -1080,6 +1139,7 @@ class StationStore:
         therefore rolls back an unfinished tick and a restarted writer compares
         against the image committed with the last completed one.
         """
+        self.guard.check()
         rows = list(events)
         connection = self.connect()
         with closing(self._open_day(at.astimezone(UTC).date())):
@@ -1257,6 +1317,7 @@ class StationStore:
         against ``now``'s own day, so a file survives until its day falls
         outside it.
         """
+        self.guard.check()
         today = (now or datetime.now(tz=UTC)).astimezone(UTC).date()
         cutoff = today - timedelta(days=self.retention_days)
         removed: list[Path] = []
