@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -2857,6 +2859,86 @@ def _held_paths_by_section(
     return grouped
 
 
+class _RoadmapScope:
+    """The roadmap the builds inside one scope produced, read after its work."""
+
+    __slots__ = ("built",)
+
+    def __init__(self) -> None:
+        self.built: dict[str, Any] | None = None
+
+
+#: The scope whose builds record their roadmap, when a caller opened one. A
+#: project's discovery derives a roadmap for its ready set, and a reader that
+#: also asks for that project's section verdicts would otherwise derive the
+#: whole project a second time for an answer already in hand.
+_BUILT_ROADMAP: ContextVar[_RoadmapScope | None] = ContextVar(
+    "roadmap_built_in_scope", default=None
+)
+
+
+@contextmanager
+def roadmap_build_scope() -> Iterator[_RoadmapScope]:
+    """Record the roadmap the builds inside this scope produce.
+
+    The caller reads ``scope.built`` once the work inside the scope is done. A
+    caller that needs the whole project's roadmap for more than the ready set
+    uses it to make one derivation serve both answers.
+    """
+
+    scope = _RoadmapScope()
+    token = _BUILT_ROADMAP.set(scope)
+    try:
+        yield scope
+    finally:
+        _BUILT_ROADMAP.reset(token)
+
+
+def section_verdicts_by_plan(
+    roadmap: Mapping[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Each pending plan's readiness and its implementable-section verdicts.
+
+    One shape, read by the whole-project readiness read and by the bounded
+    per-section read a dispatch makes, so the two cannot disagree about which
+    sections a row carries or under which key.
+    """
+
+    return {
+        str(row.get("slug")): {
+            "readiness": str(row.get("readiness") or "unknown"),
+            "sections": {
+                section: row["section_verdicts"][section]
+                for section in row.get("implementable_sections") or ()
+                if section in row.get("section_verdicts", {})
+            },
+        }
+        for row in roadmap.get("pending_work") or ()
+        if row.get("slug")
+    }
+
+
+def section_readiness_rows(
+    project: str,
+    inventory: list[dict[str, Any]],
+    *,
+    docs_dir: Path | str | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Section readiness for exactly the plans ``inventory`` names.
+
+    A dispatch judges its own section, so it builds the roadmap over the plans
+    it reads rather than over the whole project: the caller puts one plan and
+    the plans its declared waits name into ``inventory``, and every verdict
+    comes from the same :func:`section_readiness_verdict` the whole-project
+    build uses. A plan absent from ``inventory`` carries no row, which is the
+    same answer a whole-project build gives a plan it does not find.
+    """
+
+    return section_verdicts_by_plan(
+        build_roadmap(project, list(inventory), [], docs_dir=docs_dir)
+    )
+
+
 def build_roadmap(
     project: str,
     inventory: list[dict[str, Any]],
@@ -2881,7 +2963,7 @@ def build_roadmap(
     """
 
     with resource_scan_scope():
-        return _build_roadmap(
+        roadmap = _build_roadmap(
             project,
             inventory,
             sprints,
@@ -2892,6 +2974,10 @@ def build_roadmap(
             review=review,
             docs_dir=docs_dir,
         )
+    scope = _BUILT_ROADMAP.get()
+    if scope is not None:
+        scope.built = roadmap
+    return roadmap
 
 
 def _build_roadmap(

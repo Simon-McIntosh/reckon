@@ -21,8 +21,9 @@ import os
 import subprocess
 import sys
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager, nullcontext
+from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -1519,7 +1520,7 @@ def _validated_batch_waits(
             elif not ref.startswith((GATE_REF_PREFIX, "readiness:")):
                 section_edges(child)
         if read_own_verdict and node.plan and node.section:
-            rows, _ = _readiness_rows(project, current_docs, cache)
+            rows, _ = _readiness_rows(project, current_docs, cache, node.plan, refs)
             verdicts = (rows.get(node.plan) or {}).get("sections", {})
             own = next(
                 (
@@ -1659,20 +1660,56 @@ def _plan_tree_fingerprint(docs_dir: str | Path | None) -> tuple[int, int, str]:
 
 
 def _readiness_rows(
-    project: str, docs_dir: str | Path | None, cache: dict[str, Any]
+    project: str,
+    docs_dir: str | Path | None,
+    cache: dict[str, Any],
+    plan: str = "",
+    refs: Iterable[str] = (),
 ) -> tuple[Mapping[str, Mapping[str, Any]], Mapping[str, Mapping[str, Any]]]:
-    """Read one project's roadmap section verdicts and inventory per pass.
+    """Read the roadmap section verdicts and inventory a request judges by.
 
     ``cache`` is the pass's own, so a pass that launches several requests in
     one project derives that project's roadmap once. The entry is keyed by the
-    project, its docs directory and :func:`_plan_tree_fingerprint`, so a plan
-    edited or a landing merged while the pass runs misses it.
+    project, its docs directory, the plan and refs asked about and
+    :func:`_plan_tree_fingerprint`, so a plan edited or a landing merged while
+    the pass runs misses it.
+
+    ``plan`` names the plan a dispatch is judging. Outside an admission pass
+    that read covers the plan and the plans its waits name, through
+    :func:`reckon.crew.plan_review.section_readiness_rows`, rather than the
+    whole project. Inside a pass the pass has already built the project once
+    and shares it, so the whole-project read is the one that answers.
     """
     fingerprint = _plan_tree_fingerprint(docs_dir)
-    key = "|".join((project, str(docs_dir or ""), *(str(part) for part in fingerprint)))
+    key = "|".join(
+        (
+            project,
+            str(docs_dir or ""),
+            plan,
+            ",".join(sorted(str(ref) for ref in refs)),
+            *(str(part) for part in fingerprint),
+        )
+    )
     cached = cache.get(key)
     if cached is not None:
         return cached
+    if (
+        plan
+        and docs_dir is not None
+        and _BOUNDED_READ.get()
+        and not _READINESS_PASS_ACTIVE.get()
+    ):
+        try:
+            from reckon.crew.plan_review import section_readiness_rows
+
+            bounded, bounded_inventory = section_readiness_rows(
+                project, Path(docs_dir), plan, refs=refs
+            )
+        except Exception:  # noqa: BLE001 - the project read below carries it
+            bounded, bounded_inventory = {}, {}
+        if plan in bounded:
+            cache[key] = (bounded, bounded_inventory)
+            return cache[key]
     rows: dict[str, Mapping[str, Any] | Any] = {}
     inventory: dict[str, Mapping[str, Any] | Any] = {}
     try:
@@ -1698,6 +1735,38 @@ def _readiness_rows(
         rows, inventory = {}, {}
     cache[key] = (rows, inventory)
     return rows, inventory
+
+
+#: Whether the caller is inside an admission pass, which builds one roadmap per
+#: project and shares it across the pass's requests.
+_READINESS_PASS_ACTIVE: ContextVar[bool] = ContextVar(
+    "readiness_pass_active", default=False
+)
+
+
+@contextmanager
+def readiness_pass() -> Iterator[None]:
+    """Hold one admission pass, whose reads are shared across its requests."""
+    token = _READINESS_PASS_ACTIVE.set(True)
+    try:
+        yield
+    finally:
+        _READINESS_PASS_ACTIVE.reset(token)
+
+
+#: Whether a request's readiness may be read from its own plan alone. Queuing
+#: holds a batch against one project-wide view so its requests are judged alike.
+_BOUNDED_READ: ContextVar[bool] = ContextVar("bounded_readiness_read", default=True)
+
+
+@contextmanager
+def project_read() -> Iterator[None]:
+    """Judge every request in the batch against one project-wide read."""
+    token = _BOUNDED_READ.set(False)
+    try:
+        yield
+    finally:
+        _BOUNDED_READ.reset(token)
 
 
 def _project_of_docs_dir(docs_dir: str | Path | None) -> str:
@@ -1939,7 +2008,7 @@ def _section_readiness_state(
     )
     if target_docs is None:
         return PENDING
-    rows, inventory = _readiness_rows(target_project, target_docs, cache)
+    rows, inventory = _readiness_rows(target_project, target_docs, cache, parsed.slug)
     item = inventory.get(parsed.slug)
     if item is None:
         return PENDING
@@ -2081,7 +2150,7 @@ def dispatch_waits(
         ]
         return refs, wait_projects, unmet
     cache = readiness_cache if readiness_cache is not None else {}
-    rows, inventory = _readiness_rows(owner_project, docs_dir, cache)
+    rows, inventory = _readiness_rows(owner_project, docs_dir, cache, node.plan, refs)
     dead = _dead_sections(live)
     unmet = [
         ref
@@ -2139,7 +2208,9 @@ def _ref_state(
         )
         if target_docs is None:
             return PENDING
-        rows, inventory = _readiness_rows(target_project, target_docs, cache)
+        rows, inventory = _readiness_rows(
+            target_project, target_docs, cache, parsed.slug
+        )
     slug, section = parsed.slug, normalize_section(parsed.stage or "")
     if section and (slug, section) in dead_sections:
         return ABANDONED
@@ -2228,6 +2299,7 @@ def resolve_waits(
         str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir),
         docs_dir,
         cache,
+        str(dict(pointer.get("node") or {}).get("plan") or pointer.get("plan") or ""),
     )
     issues: list[str] = []
     owner_project = str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir)
@@ -2424,17 +2496,18 @@ def queue_requests(
     from reckon.crew import runs as runs_module
     from reckon.crew.dispatch import queue_requests as dispatch_queue_requests
 
-    stored = dispatch_queue_requests(
-        nodes,
-        project=project,
-        session=session,
-        repo_root=repo_root,
-        config=config,
-        backend_name=backend_name,
-        launch_kind=launch_kind,
-        run_ids=run_ids,
-        cap=cap,
-    )
+    with project_read():
+        stored = dispatch_queue_requests(
+            nodes,
+            project=project,
+            session=session,
+            repo_root=repo_root,
+            config=config,
+            backend_name=backend_name,
+            launch_kind=launch_kind,
+            run_ids=run_ids,
+            cap=cap,
+        )
     for run_id in stored:
         pointer = runs_module.read_pointer(run_id)
         if isinstance(pointer, dict):
@@ -3049,7 +3122,13 @@ def admit_once(
     local_gated = gate.get("state") in _LANE_GATE_WAITING_STATES
     if local_gated:
         _record_gated_verdicts(result, gate=gate, lane=lane, config_for=config_for)
-    with _admit_lock() if lock else nullcontext():
+    from reckon.crew.plan_review import review_read_pass
+
+    with (
+        _admit_lock() if lock else nullcontext(),
+        readiness_pass(),
+        review_read_pass(),
+    ):
         result["requeued"] = _requeue_admitted_failures(
             runs.list_live(phase=LAUNCH_FAILED_PHASE)
         )
