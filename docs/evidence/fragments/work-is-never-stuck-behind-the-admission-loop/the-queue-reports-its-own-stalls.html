@@ -1,0 +1,41 @@
+<section class="r-evidence" id="the-queue-reports-its-own-stalls-landed">
+  <h3>the-queue-reports-its-own-stalls</h3>
+  <p>An admission pass now records a stall verdict, in the record a coordinator already reads, for a
+  request that has stayed admissible on a lane with room for longer than ten minutes while nothing
+  holds it. The verdict names the request, the stage it is owed — release, launch or land — and that
+  stage's duration on the most recent pass, read from the verdict log. It is written once per
+  request and stands until a later verdict for the same request replaces it, so a request that has
+  since launched no longer reads as stalled.</p>
+  <p>The stall belongs only to a request the lane could have advanced and did not. A request the
+  pass holds on purpose — for its session's allowance, behind its lane's gate, on a live run's
+  claim, until its plan changes, on a retry back-off, behind an earlier request — carries the hold
+  instead, because the hold names the reason it waits and nothing admissible is being left undone.
+  A request waiting for its dependencies to release is not stalled either: it is not admissible
+  yet. The stall is recorded after the pass has walked its queue, so the hold a request is owed is
+  the first row a reader sees.</p>
+  <p>Every row a pass writes carries the age of the oldest request the lane could launch and did not,
+  measured through the lane's own gate and allowance. The drain view reports each stuck request's
+  age and stage from the recorded verdict in place of resolving its waits a second time: an overdue
+  request is stuck when it is still in a waiting phase and its last recorded verdict is one that
+  leaves it there — the stall, a hold, a refusal. A run a pass launched carries a launch verdict and
+  a working phase, so its age is never reported as a wait. A request the lane has no room for, and
+  one a live run's claim holds, record no stall — its wait is accounted for by the hold the pass
+  already names. No monitor-stream row is written; the stall is the one added verdict kind and no new
+  row kind is added.</p>
+  <p>The request's own session sees the stall once through the needs-you rows, under the blocked
+  kind, carrying the stage the stall named, and the row clears when a later verdict for the request
+  replaces the stall.</p>
+  <p>Measured by <code>tests/test_the_queue_reports_its_own_stalls.py</code>: fifteen test cases pass.
+  An eleven-minute wait on a lane with room yields exactly one stall verdict naming the launch stage
+  and its last recorded duration (12.5 s); a second pass over the same wait yields none; the recorded
+  stall reaches its session as one row and clears on a later verdict; a lane with no room and a
+  request a live claim holds each yield no stall; each of the seven hold verdicts, and a hold the
+  pass writes itself, leaves no stall; a request waiting on its dependencies leaves none; the drain
+  view carries the age the pass recorded and the stall's stage and stage duration on its stuck row;
+  and a run a pass launched is not stuck however old it is. Negative controls: removing the room
+  clause leaves <code>test_a_lane_with_no_room_or_a_live_claim_records_no_stall</code> failing at
+  exit 1; reverting the stuck-rule repair leaves <code>test_a_launched_run_is_not_stuck</code>
+  failing at exit 1; deleting the hold clauses from the stall rule leaves the nine hold cases failing
+  at exit 1; and <code>tests/test_a_refusal_at_admission_is_routed.py</code> fails at exit 1 at the
+  base revision, where a request no lane fits reads as held and stalled on its second pass.</p>
+</section>
