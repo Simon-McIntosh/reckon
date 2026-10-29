@@ -320,17 +320,20 @@
       <code>rchar</code>, which counts bytes served from the page cache as well as from GPFS; <code>read_bytes</code> was 0.0
       in every arm, so nothing was refetched from the file server. The two large arms are the same station over the same
       crew home taken twice, once while eight test processes shared the node and once on a quiet node; the populations
-      differ by two runs because the live fleet moved between them. A D-state sample was taken in both: one at
-      <code>xlog_wait_on_iclog</code> and three at <code>cxiWaitEventWait</code>.</figcaption>
+      differ by two runs because the live fleet moved between them. A third window over 69 pointers repeated the quiet
+      arm and is not drawn: 1,069 MB/min. D-state samples were taken in two of the three, one at
+      <code>xlog_wait_on_iclog</code> and three at <code>cxiWaitEventWait</code>, and none in the third.</figcaption>
     </figure>
     <p>Read volume scales with the number of live runs, and its slope is the cost that matters: 126 MB/min at five live
-    runs, and 1,067 and 1,160 MB/min in two windows over about seventy. Against a bound of 20 MB/min the station is five
-    times over at five runs and more than fifty times over at seventy. CPU follows the same shape but not the same
-    proportion, 42 % of one core at five runs and 57 % or 92 % at seventy depending on what else the node is doing; every
-    arm is more than ten times the 5 % bound. The D-state samples that fail the third part of the bound sit on two
-    different waits: the contended window waits on the runtime root’s own journal (<code>xlog_wait_on_iclog</code>) and the
-    quiet one waits on the file server where the streams live (<code>cxiWaitEventWait</code>), so the station blocks on
-    storage in both places it reads from.</p>
+    runs, and 1,067, 1,160 and 1,069 MB/min in three windows over about seventy. Against a bound of 20 MB/min the station
+    is five times over at five runs and more than fifty times over at seventy, and the three large arms agree on that
+    within a tenth. CPU follows the same shape but not the same proportion: 42 % of one core at five runs, and 57 %, 82 %
+    and 92 % at seventy depending on what else the node is doing, so it is reported as a range and every arm is more than
+    ten times the 5 % bound. The D-state samples that fail the third part of the bound appeared in two windows out of
+    three and sat on two different waits: the contended window waits on the runtime root’s own journal
+    (<code>xlog_wait_on_iclog</code>) and one quiet window waits on the file server where the streams live
+    (<code>cxiWaitEventWait</code>), so the station blocks on storage in both places it reads from. None appeared in the
+    third, which is why this part of the bound is recorded as intermittent rather than constant.</p>
     <p>A separate probe says where the bytes go. On a cold runtime root one store tick over five live runs reads 8.2 MB and
     one whole station tick reads 91 MB, or 83 MB when the store is already warm; every later tick reads 0.07 MB. The store’s stream ingest is therefore already
     incremental — a tick whose streams have not grown reads nothing at all — and the cost is the classification pass. It
