@@ -1,0 +1,550 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "b58264ae9e40b1bf0989fd2528f7e19662080eec",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 11205412,
+      "input_tokens_cumulative": 11205412,
+      "output_tokens": 45286,
+      "output_tokens_cumulative": 45286,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 435,
+    "files": 5,
+    "removed": 11
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 1689,
+        "name": "_obligations_view",
+        "path": "reckon/crew/obligations.py"
+      },
+      "run_function": {
+        "line": 1293,
+        "name": "payload_for",
+        "path": "reckon/crew/obligation_snapshot.py"
+      },
+      "window_line": 1392
+    },
+    {
+      "existing_function": {
+        "line": 160,
+        "name": "_stall_verdicts",
+        "path": "reckon/crew/needs_you.py"
+      },
+      "run_function": {
+        "line": 700,
+        "name": "admission_verdicts",
+        "path": "reckon/crew/obligations.py"
+      },
+      "window_line": 717
+    },
+    {
+      "existing_function": {
+        "line": 442,
+        "name": "_tag_audit_findings",
+        "path": "reckon/mcp_discovery.py"
+      },
+      "run_function": {
+        "line": 1452,
+        "name": "_held_worktrees_by_session",
+        "path": "reckon/crew/obligations.py"
+      },
+      "window_line": 1473
+    },
+    {
+      "existing_function": {
+        "line": 323,
+        "name": "test_a_manifest_with_no_commits_line_is_unaffected",
+        "path": "tests/test_cited_identifier_resolves.py"
+      },
+      "run_function": {
+        "line": 1452,
+        "name": "_held_worktrees_by_session",
+        "path": "reckon/crew/obligations.py"
+      },
+      "window_line": 1475
+    },
+    {
+      "existing_function": {
+        "line": 504,
+        "name": "test_a_non_passing_verdict_beside_a_contradictory_log_is_unaffected",
+        "path": "tests/test_crew_gate_log_agrees.py"
+      },
+      "run_function": {
+        "line": 1452,
+        "name": "_held_worktrees_by_session",
+        "path": "reckon/crew/obligations.py"
+      },
+      "window_line": 1475
+    },
+    {
+      "existing_function": {
+        "line": 71,
+        "name": "_verdict",
+        "path": "tests/test_done_when_lints.py"
+      },
+      "run_function": {
+        "line": 1452,
+        "name": "_held_worktrees_by_session",
+        "path": "reckon/crew/obligations.py"
+      },
+      "window_line": 1475
+    },
+    {
+      "existing_function": {
+        "line": 1293,
+        "name": "payload_for",
+        "path": "reckon/crew/obligation_snapshot.py"
+      },
+      "run_function": {
+        "line": 1689,
+        "name": "_obligations_view",
+        "path": "reckon/crew/obligations.py"
+      },
+      "window_line": 1849
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "47952bcec12cd10912bc54c5c11dd8ac64d24864",
+    "e4a650166af4ae4c6ca951095aae3106b6a6bf39",
+    "9e959d520fb3ae3ebffd61b94b2a326f02c17d32"
+  ],
+  "completed_at": "2026-10-29T18:46:19.038Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-29T18:24:41Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 8 tests/test_a_derivation_builds_the_ledger_index_once.py tests/test_a_duration_override_is_read_one_way.py tests/test_a_duty_follows_the_current_head.py tests/test_a_failed_catalogue_read_is_not_an_absent_catalogue.py tests/test_a_follower_on_another_node_renews_a_lease.py tests/test_a_full_queue_is_a_wait_not_a_refusal.py tests/test_a_hand_dispatched_review_is_recognised.py tests/test_a_launch_code_change_reloads_the_producer.py tests/test_a_missing_snapshot_names_a_live_seat.py tests/test_a_model_notice_reaches_the_session.py tests/test_a_pane_counts_its_session_across_projects.py tests/test_a_queued_refusal_names_its_remedy.py tests/test_a_queued_review_is_not_missing.py tests/test_a_queued_run_is_never_told_to_redispatch.py tests/test_a_quiet_foreign_producer_reads_live.py tests/test_a_quoted_session_id_is_not_a_session_refusal.py tests/test_a_remote_producer_reads_as_live.py tests/test_a_reopened_run_reads_as_working.py tests/test_a_resume_that_delivers_at_the_same_head_is_reviewed.py tests/test_a_resumed_run_counts_as_working.py tests/test_a_resumed_run_is_not_read_by_its_old_status.py tests/test_a_review_row_reads_its_head_from_files.py tests/test_a_running_review_finishes_across_a_resume.py tests/test_a_session_side_refusal_reaches_the_session.py tests/test_a_slow_station_still_reads_as_alive.py tests/test_a_snapshot_is_published_for_every_host.py tests/test_a_stale_snapshot_names_its_remedy.py tests/test_a_stalled_request_reaches_its_obligations.py tests/test_a_stop_during_a_reload_says_so.py tests/test_a_sweep_decodes_each_document_once.py tests/test_a_sweep_resolves_review_heads_once.py tests/test_a_sweep_thread_ends_with_its_test.py tests/test_a_worktree_held_row_is_rechecked_at_read.py tests/test_a_wrapped_health_record_parses.py tests/test_abandoned_lift_claim_directories_are_swept.py tests/test_ack_after_promotion.py tests/test_an_unreadable_review_duty_names_its_fault.py tests/test_coordinator_obligations_hook.py tests/test_crew_ack.py tests/test_crew_obligations.py tests/test_expired_acknowledgement_is_swept.py tests/test_gc_reaches_every_tree_its_obligation_names.py tests/test_gc_spares_a_live_pointers_worktree.py tests/test_held_worktree_records_match_each_record_once.py tests/test_held_worktrees_read_run_files.py tests/test_hook_installer.py tests/test_hook_scripts_correct_their_interpreter.py tests/test_in_flight_review_has_one_predicate.py tests/test_mcp_crew_obligations.py tests/test_new_work_names_no_lane.py tests/test_obligations_do_not_mislead.py tests/test_obligations_hook_reads_the_snapshot.py tests/test_obligations_read_the_station.py tests/test_obligations_snapshot_is_published.py tests/test_one_actor_dispatches_a_runs_review.py tests/test_one_function_names_the_interpreter.py tests/test_queued_work_shows_where_held_work_shows.py tests/test_reckon_hook_commands.py tests/test_reload_images_live_on_node_local_storage.py tests/test_review_carries_forward.py tests/test_review_gate_reads_the_hot_set.py tests/test_review_in_flight_by_record_path.py tests/test_review_obligation_reads_the_head.py tests/test_review_record_reads_answers_from_every_copy.py tests/test_skill_contracts.py tests/test_skipped_record_reaches_the_checklist.py tests/test_snapshot_loader_keeps_one_instance.py tests/test_stale_producer_warning_waits_for_its_reload.py tests/test_stop_hook_honours_late_state.py tests/test_stop_hook_reads_the_snapshot.py tests/test_sub_floor_dimension_is_an_obligation.py tests/test_sub_floor_disposition_has_a_writer.py tests/test_the_cli_module_set_has_one_owner.py tests/test_the_held_worktree_read_is_bounded.py tests/test_the_read_only_region_refuses_a_mutation.py tests/test_unreadable_review_record_is_reported.py tests/test_worktree_held_names_an_existing_tree.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261029T175000539238-a-stalled-request-reaches-its-obligations/logs/armed-suite/head.log"
+  },
+  "impl_move": {
+    "at_complete": 0.8615384615384616,
+    "at_dispatch": 0.8615384615384616,
+    "plan": "work-is-never-stuck-behind-the-admission-loop",
+    "reason": "the landing beat marks s13 done after merge; impl derives from the declaration",
+    "verdict": "waived"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-29T19:23:16.408287+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-29T18:23:16Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 9,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 0,
+    "headroom": 12,
+    "mean_context": 80000,
+    "observed_at": "2026-10-29T18:23:18Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 9,
+      "aggregate_tokens_per_second": 48.722,
+      "detail": "",
+      "mean_tokens_per_second": 81.204,
+      "observed_at": "2026-10-29T18:23:18Z",
+      "runs": 0.6,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-29T18:46:19.038Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261029T175000539238-a-stalled-request-reaches-its-obligations/manifest.md",
+  "member": "disposable-r-20261029T175000539238-a-stalled-request-reaches-its-obligations",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_fresh_snapshot_build_carries_the_stalled_row",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_later_launch_verdict_clears_the_stalled_row",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_request_is_a_stalled_row_in_obligations",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_row_does_not_hold_the_hook_stop",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_one_obligations_build_reads_the_verdict_log_once"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_fresh_snapshot_build_carries_the_stalled_row",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_later_launch_verdict_clears_the_stalled_row",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_request_is_a_stalled_row_in_obligations",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_row_does_not_hold_the_hook_stop",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_one_obligations_build_reads_the_verdict_log_once"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_fresh_snapshot_build_carries_the_stalled_row",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_later_launch_verdict_clears_the_stalled_row",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_request_is_a_stalled_row_in_obligations",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_row_does_not_hold_the_hook_stop",
+      "tests/test_a_stalled_request_reaches_its_obligations.py::test_one_obligations_build_reads_the_verdict_log_once"
+    ],
+    "declaration": "drop the stall check from _queued_item; the stalled case fails",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261029T175000539238-a-stalled-request-reaches-its-obligations/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261029T175000539238-a-stalled-request-reaches-its-obligations/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_a_stalled_request_reaches_its_obligations.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-stalled-request-reaches-its-obligations",
+  "node_definition": {
+    "after": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "moderate",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "detail": "the dispatching harness exposed no authoring-turn token usage",
+        "status": "unknown",
+        "tokens": null
+      },
+      "harness": null,
+      "runtime_session_id": null,
+      "session_id": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd"
+    },
+    "done_when": "the plan's §13 done-when holds: tests/test_a_stalled_request_reaches_its_obligations.py shows the stalled row through obligations and a fresh obligation_snapshot build, the plain run-queued row without the verdict, the stalled row cleared by a later launch, a stalled row not holding the hook's stop, and one verdict-log read per build; the armed suite command run at the base and the head with logs naming revision and command and ending EXIT=; the test files importing reckon.crew.obligations, reckon.crew.obligation_snapshot and reckon.hooks.coordinator_obligations add no failure against the base, run on the fleet allocation one arm at a time; ruff check and ruff format --check add no findings on the staged paths",
+    "estimated_hours": null,
+    "goal": "Show a request admission has stalled as a non-blocking stalled row in its coordinator's obligations, reading the verdict log once per obligations build",
+    "id": "a-stalled-request-reaches-its-obligations",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-29T18:23:16Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 9,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 0,
+      "headroom": 12,
+      "mean_context": 80000,
+      "observed_at": "2026-10-29T18:23:18Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 9,
+        "aggregate_tokens_per_second": 48.722,
+        "detail": "",
+        "mean_tokens_per_second": 81.204,
+        "observed_at": "2026-10-29T18:23:18Z",
+        "runs": 0.6,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261029T175000539238-a-stalled-request-reaches-its-obligations/manifest.md",
+    "negative_control": "drop the stall check from _queued_item; the stalled case fails",
+    "plan": "work-is-never-stuck-behind-the-admission-loop",
+    "regenerate_paths": [],
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§13",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/obligations.py",
+      "reckon/crew/obligation_snapshot.py",
+      "reckon/hooks/coordinator_obligations.py",
+      "tests/test_a_stalled_request_reaches_its_obligations.py",
+      "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-stalled-request-reaches-its-obligations.html",
+      "docs/figures/work-is-never-stuck-behind-the-admission-loop/a-stalled-request-reaches-its-obligations"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 3077486.0,
+  "outcome": "",
+  "outside_scope_paths": [
+    "tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module",
+    "reckon.ledger",
+    "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt"
+  ],
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "a-stalled-request-reaches-its-obligations",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-29T18:24:01.376920+00:00",
+    "score": 0.64375,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5000.374,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 1380.492,
+      "context-estimate": 56.423,
+      "records": 1492.571,
+      "verdict-inputs": 1883.007
+    }
+  },
+  "plan": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_impl_at_dispatch": 0.8615384615384616,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "9e959d520fb3ae3ebffd61b94b2a326f02c17d32",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "b58264ae9e40b1bf0989fd2528f7e19662080eec",
+    "reviewed_head_sha": "9e959d520fb3ae3ebffd61b94b2a326f02c17d32",
+    "scores": {
+      "durability": 17,
+      "evidence": 18,
+      "fit": 16,
+      "goal_fidelity": 19,
+      "reuse": 5,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 94
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261029T175000539238-a-stalled-request-reaches-its-obligations",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§13",
+  "session": "404513fc-8e68-4a0f-8060-29ac9ff3d5fd",
+  "session_harness": "claude",
+  "session_id": "293be97f-ba33-4315-99b8-55ef8d64183b",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stalled_request_reaches_its_obligations.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261029T175000539238-a-stalled-request-reaches-its-obligations/logs/armed-suite/head.log",
+      "revision": "9e959d520fb3ae3ebffd61b94b2a326f02c17d32"
+    },
+    "baseline_measured_nothing": true,
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stalled_request_reaches_its_obligations.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 5,
+      "failure_ids": [
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_fresh_snapshot_build_carries_the_stalled_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_later_launch_verdict_clears_the_stalled_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_request_is_a_stalled_row_in_obligations",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_row_does_not_hold_the_hook_stop",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_one_obligations_build_reads_the_verdict_log_once"
+      ],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261029T175000539238-a-stalled-request-reaches-its-obligations/logs/armed-suite/base.log",
+      "revision": "b58264ae9e40b1bf0989fd2528f7e19662080eec"
+    },
+    "failure_attribution": {},
+    "status": "clean",
+    "suite_command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_stalled_request_reaches_its_obligations.py",
+    "waiver_reason": null
+  },
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 11205412,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 1275.003,
+    "generated_tokens": 45286,
+    "generation_seconds": 448.265,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 66.2,
+    "machine_seconds": 826.738,
+    "peak_input_tokens": 152388,
+    "tokens_per_second": 101.03,
+    "wall_tokens_per_second": 35.52
+  },
+  "time_budget": "60m",
+  "tool_steps": 108.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 1298,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-10-29T18:46:21Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-29T18:24:49Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [],
+    "run_id": "r-20261029T175000539238-a-stalled-request-reaches-its-obligations",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 5554,
+    "worker_pid": 871450
+  },
+  "worker_seconds": 1250,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="75">
+<meta name="plan-version" content="76">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -287,7 +287,10 @@
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261029T184750106064-review-of-a-stalled-request-reaches-its-obligations-9e959d520fb3" data-who="reckon-build" data-when="2026-10-29T18:56:38.470Z">
-    <div class="r-comment-body"><p>Independent review of r-20261029T175000539238-a-stalled-request-reaches-its-obligations at head 9e959d520f reads as parsed with scores goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 16, reuse 5 (total 94) and zero added failures — the head arm&#x27;s 2 failed ids both appear in the base arm&#x27;s 5 — with three non-blocking findings: the verdict-log reader re-implements the bulk read owned by needs_you._stall_verdicts, the _stalled_item docstring claims an admissible age the forwarded field does not carry, and the test fixture sets the pass-level and per-row ages to one constant so the age assertions cannot tell which field the row reads.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261029T175000539238-a-stalled-request-reaches-its-obligations at head 9e959d520f reads as parsed with scores goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 16, reuse 5 (total 94) and zero added failures — the head arm's 2 failed ids both appear in the base arm's 5 — with three non-blocking findings: the verdict-log reader re-implements the bulk read owned by needs_you._stall_verdicts, the _stalled_item docstring claims an admissible age the forwarded field does not carry, and the test fixture sets the pass-level and per-row ages to one constant so the age assertions cannot tell which field the row reads.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261029T175000539238-a-stalled-request-reaches-its-obligations" data-who="reckon-build" data-when="2026-10-29T18:46:19.038Z">
+    <div class="r-comment-body"><p>A queued request whose last recorded admission verdict is the stall verdict now builds a run-stalled duty naming the age it has been admissible, the stage the pass was in with that stage&#x27;s duration, and a reprioritise-or-drop action; the kind is non-blocking in the derivation and in the hook&#x27;s mirror set, and both producers read the admission verdict log once per build and hand that one reading to every queued row, so a later launch verdict clears the stall. Measured: head arm 499 passed / 2 failed against base 490 passed / 5 failed — zero added failures; negative control 5 failed, 1 passed, EXIT=1.</p></div>
 </div>
 </section>
 </main>
