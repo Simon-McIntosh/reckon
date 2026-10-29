@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -248,6 +248,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261029T150141634077-review-of-a-refusal-at-admission-is-routed-c61e454595bf" data-who="reckon-build" data-when="2026-10-29T15:12:07.977Z">
     <div class="r-comment-body"><p>Reviewed r-20261028T223157371721-a-refusal-at-admission-is-routed at c61e454595bf067522db784d0cd29247b52b0204 (base c97238c91cb566c6b6151a8a9f0dd7d9814be6fc): goal met by reckon/crew/queue_admission.py:1052 _route_competence_refusal and reckon/crew/queue_edit.py:371-381, gate 6 passed EXIT=0 plus 0 added importer failures; scores goal_fidelity 18, evidence 18, scope_discipline 20, durability 15, fit 18, reuse 5, with three non-blocking findings (the live-claim check duplicates dispatch_claims.refuse_widen_scope_conflicts; a CompetenceLimit on the budget-fallback arm is never routed; one test assertion echoes its own input).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261028T223157371721-a-refusal-at-admission-is-routed" data-who="reckon-build" data-when="2026-10-29T15:00:16.940Z">
+    <div class="r-comment-body"><p>Landed: an admission pass that refuses a queued request with CompetenceLimit now asks picker.snapshot.candidates and moves it to the first lane whose competence verdict passes — launched in the same pass when this service owns that lane, else left queued on the named lane with one obligation; when no lane fits the attempt is still reported as the failure it was, one obligation names the shortfall in tokens, and the recorded guard holds every later pass until the request changes; crew queue edit raises the existing ScopeConflict (naming the holder) and CompetenceLimit (naming the shortfall) and re-records the review contract through queue_admission.record_review_contract. Node gate tests/test_a_refusal_at_admission_is_routed.py 6 passed, EXIT=0; importer arms added 0 failures (base 1 failed / 361 passed, head 1 failed / 367 passed, same id).</p></div>
 </div>
 </section>
 </main>
