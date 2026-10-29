@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "baseline_suite at b2de715e names three failures (test_a_missing_pointer_is_recorded_with_what_stood_on_disk, test_an_executable_that_cannot_be_run_still_names_the_command_and_path, test_a_relaunch_keeps_the_earlier_attempts_exit_record) and after_suite at 4e30315c76 names none, so the difference adds no failure; the targeted population failure the manifest records under retry_failures (test_a_delivered_run_released_after_its_halt_is_not_recreated) is outside the suite pair and passes in isolation at both arms.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3598",
+    "reckon/crew/dispatch_launch.py:3737",
+    "reckon/crew/queue_admission.py:3406",
+    "reckon/crew/dispatch.py:514",
+    "reckon/crew/dispatch.py:3548"
+  ],
+  "completed_at": "2026-10-29T09:14:58.708Z",
+  "dispatched_at": "2026-10-29T09:05:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "3420",
+      "severity": "non-blocking",
+      "text": "the commit carries pure reflow edits to two pre-existing conditionals (:3420 and :3514, plus the pending_step_since assignments beside them) that the change never touches, so the diff mixes formatting churn with the intent and is harder to read against its base."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "3767",
+      "severity": "non-blocking",
+      "text": "_publish_stored_phase is handed the in-memory failure_record carrying the spec's attempt number (1 on a relaunch) while _write_attempt_artifact stores the free number (2) in the receipt, so the pointer's stored record and attempt-2-exit.json disagree about which attempt failed."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "661",
+      "severity": "non-blocking",
+      "text": "_admitting_pass_identity is the only producer of the launch-failure record's admitting_pass, and no test exercises it \u2014 the gate supplies that dict as a literal to write_handover \u2014 so a regression dropping pid, at or code from the stamp would leave the gate green while the record lost the pass identity it exists to carry."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch_launch.py:3598 calls _supervisor_spawn_worker inside _run_supervisor's try, whose except at :3737 is where the evidence record is composed; reckon/crew/queue_admission.py:3406 passes admitted_by on the admission handover; reckon/crew/dispatch.py:514 writes a handover without admitted_by.",
+    "diff": "read both commits against b2de715e: 4e30315c76 changes dispatch_launch.py (+187), queue_admission.py (+12), runs.py (+34) and adds the 251-line test; 96afa1ead2 adds the 34-line landing fragment.",
+    "done_when": "\u00a713's measure names a test that removes the pointer before the supervisor's first read and finds the record with the directory listing, the queued pointer's presence and the admitting pass, plus a relaunch keeping the first receipt and a second arm for a non-exec'able backend; tests/test_an_admitted_launch_keeps_the_record_of_its_failure.py:150, :190 and :219 are those three arms, and after-arm.log records 3 passed EXIT=0 at 4e30315c76.",
+    "goal": "the node goal is to have a supervisor that finds no pointer on an admitted launch record what it saw, keep every attempt's exit record, and name the missing pointer in the remedy; reckon/crew/dispatch_launch.py:2568 raises _PointerMissingError at the read, :2591 _launch_failure_evidence composes listing/pointer/handover/discard facts, :2640 _launch_failure_detail branches pointer vs command+PATH, and :1877 _free_attempt_number gives each receipt its own number.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T233827707346-an-admitted-launch-keeps-the-record-of-its-failure/manifest.md; status complete, commits 4e30315c76 and 96afa1ead2, baseline_suite 3 failures at b2de715e, after_suite 0 at 4e30315c76, negative_control_log named as a bare path.",
+    "write_paths": "the manifest declares reckon/crew/dispatch_launch.py, reckon/crew/queue_admission.py, reckon/crew/runs.py, the new test and the fragment; git diff --stat b2de715e..96afa1ead2 changes exactly those five files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admitted_launch_keeps_the_record_of_its_failure.py:161 fails if _PointerMissingError is removed (kind becomes 'spawn'), :169 if the listing is taken after the record is written, :186 if the handover is not found, :219-235 if the free attempt number is reverted, and the base arm reddens all three; the gap is _admitting_pass_identity at reckon/crew/queue_admission.py:661, which no assertion exercises because the test supplies the pass dict as a literal.",
+    "evidence": "after-arm.log, baseline-arm.log and negative-control.log each carry a # revision header, a # command header and a bare EXIT= line, and the base arm's three failure ids match baseline_suite's failure_ids; the one caveat is stated in baseline-arm.log's own header, that the base arm ran the test with write_handover's admitted_by argument dropped because the base function takes none, so the base arm is a faithful but not literal replay of the landed test.",
+    "fit": "reckon/crew/dispatch_launch.py:2568-2665 follows the module's existing idiom of a private exception subclass, a module-level helper with a docstring stating the failure it prevents, and a lazy import inside the function, and no added name carries a plan, issue or version label.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:2591 records the run directory listing, pointer presence/phase/mtime, handover presence and the admitting pass, and :1877 keeps every receipt under its own number, so all three clauses of the goal are present; the plan's 'pointer path's last writer if one is recorded' is honestly replaced by discard_recorded, with the reason stated in the docstring.",
+    "reuse": "_free_attempt_number extends reckon/crew/dispatch_launch.py's own _attempt_artifact_path rather than forking it and find_handover lives in the owner reckon/crew/runs.py beside write_handover/clear_handover/list_handovers/sweep_handovers, but find_handover's third copy of the glob-and-parse handover_directory loop duplicates the read that list_handovers at reckon/crew/runs.py:475 already owns.",
+    "scope_discipline": "every changed path is inside the five declared write paths, but reckon/crew/dispatch_launch.py:3420 and :3514 also carry pure reflow edits to two pre-existing conditionals the change never touches, which is churn the goal does not imply."
+  },
+  "node": "review-of-an-admitted-launch-keeps-the-record-of-its-failure-96afa1ead2ec",
+  "node:reviewed": "an-admitted-launch-keeps-the-record-of-its-failure",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to have a supervisor that finds no pointer on an admitted launch record what it saw, keep every attempt's exit record, and name the missing pointer in the remedy; reckon/crew/dispatch_launch.py:2568 raises _PointerMissingError at the read, :2591 _launch_failure_evidence composes listing/pointer/handover/discard facts, :2640 _launch_failure_detail branches pointer vs command+PATH, and :1877 _free_attempt_number gives each receipt its own number.\nVERDICT done_when: \u00a713's measure names a test that removes the supervisor's pointer before its first read and finds the record with the directory listing, the queued pointer's presence and the admitting pass, plus a relaunch keeping the first receipt and a second arm for a non-exec'able backend; tests/test_an_admitted_launch_keeps_the_record_of_its_failure.py:150, :190 and :219 are those three arms, and after-arm.log records 3 passed EXIT=0 at 4e30315c76.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch_launch.py, reckon/crew/queue_admission.py, reckon/crew/runs.py, the new test and the fragment; git diff --stat b2de715e..96afa1ead2 changes exactly those five files and nothing else.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261026T233827707346-an-admitted-launch-keeps-the-record-of-its-failure/manifest.md; status complete, commits 4e30315c76 and 96afa1ead2, baseline_suite 3 failures at b2de715e, after_suite 0 at 4e30315c76, negative_control_log named as a bare path.\nVERDICT diff: read both commits against b2de715e: 4e30315c76 changes dispatch_launch.py (+187), queue_admission.py (+12), runs.py (+34) and adds the 251-line test; 96afa1ead2 adds the 34-line landing fragment.\nCALL_SITES: reckon/crew/dispatch_launch.py:3598, reckon/crew/dispatch_launch.py:3737, reckon/crew/queue_admission.py:3406, reckon/crew/dispatch.py:514, reckon/crew/dispatch.py:3548\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2591 records the run directory listing, pointer presence/phase/mtime, handover presence and the admitting pass, and :1877 keeps every receipt under its own number, so all three clauses of the goal are present; the plan's 'pointer path's last writer if one is recorded' is honestly replaced by discard_recorded, with the reason stated in the docstring.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-arm.log, baseline-arm.log and negative-control.log each carry a # revision header, a # command header and a bare EXIT= line, and the base arm's three failure ids match baseline_suite's failure_ids; the one caveat is stated in baseline-arm.log's own header, that the base arm ran the test with write_handover's admitted_by argument dropped because the base function takes none, so the base arm is a faithful but not literal replay of the landed test.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path is inside the five declared write paths, but reckon/crew/dispatch_launch.py:3420 and :3514 also carry pure reflow edits to two pre-existing conditionals the change never touches, which is churn the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_admitted_launch_keeps_the_record_of_its_failure.py:161 fails if _PointerMissingError is removed (kind becomes 'spawn'), :169 if the listing is taken after the record is written, :186 if the handover is not found, :219-235 if the free attempt number is reverted, and the base arm reddens all three; the gap is _admitting_pass_identity at reckon/crew/queue_admission.py:661, which no assertion exercises because the test supplies the pass dict as a literal.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:2568-2665 follows the module's existing idiom of a private exception subclass, a module-level helper with a docstring stating the failure it prevents, and a lazy import inside the function, and no added name carries a plan, issue or version label.\nSCORE reuse: 17\nJUSTIFICATION reuse: _free_attempt_number extends reckon/crew/dispatch_launch.py's own _attempt_artifact_path rather than forking it and find_handover lives in the owner reckon/crew/runs.py beside write_handover/clear_handover/list_handovers/sweep_handovers, but find_handover's third copy of the glob-and-parse handover-directory loop duplicates the read that list_handovers at reckon/crew/runs.py:475 already owns.\nFINDING reckon/crew/dispatch_launch.py:3420 non-blocking: the commit carries pure reflow edits to two pre-existing conditionals (:3420 and :3514, plus the pending_step_since assignments beside them) that the change never touches, so the diff mixes formatting churn with the intent and is harder to read against its base.\nFINDING reckon/crew/dispatch_launch.py:3767 non-blocking: _publish_stored_phase is handed the in-memory failure_record carrying the spec's attempt number (1 on a relaunch) while _write_attempt_artifact stores the free number (2) in the receipt, so the pointer's stored record and attempt-2-exit.json disagree about which attempt failed.\nFINDING reckon/crew/queue_admission.py:661 non-blocking: _admitting_pass_identity is the only producer of the launch-failure record's admitting_pass, and no test exercises it \u2014 the gate supplies that dict as a literal to write_handover \u2014 so a regression dropping pid, at or code from the stamp would leave the gate green while the record lost the pass identity it exists to carry.",
+  "review_run_id": "r-20261029T090105319854-review-of-an-admitted-launch-keeps-the-record-of-its-failure-96afa1ead2ec",
+  "reviewed_base_sha": "b2de715e8fd231965428bf2a73f51c219f147c20",
+  "reviewed_head_sha": "96afa1ead2ec9f7dd64a3daf8dd8653cf0fa5632",
+  "reviewed_run_id": "r-20261026T233827707346-an-admitted-launch-keeps-the-record-of-its-failure",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T09:28:00+00:00",
+  "total": 106
+}
