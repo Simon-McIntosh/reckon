@@ -96,6 +96,17 @@ ADMISSION_RETRY_BACKOFF_CAP_SECONDS = 600.0
 #: service that runs for days cannot grow it without limit.
 ADMISSION_VERDICT_LOG = "admission-verdicts.jsonl"
 ADMISSION_VERDICT_LOG_MAX_BYTES = 1_048_576
+#: The verdict a pass records for a request that has stayed admissible, on a
+#: lane with room, for longer than :data:`STALL_AFTER_SECONDS`. It is recorded
+#: once per request and stands until a later verdict for the same request
+#: replaces it, so a reader of the last verdict tells a request that was stalled
+#: from one that has since launched.
+STALL_VERDICT = "stalled"
+#: How long a request may stay admissible and unlaunched while its lane has room
+#: before the pass records a stall verdict. Ten minutes is the point at which an
+#: idle lane is indistinguishable from a halted system unless the queue says
+#: which stage held the work.
+STALL_AFTER_SECONDS = 600.0
 
 
 def _now() -> datetime:
@@ -1329,6 +1340,190 @@ def _verdict_row(
     return row
 
 
+def _last_verdict_of(run_id: str) -> str:
+    """The verdict the most recent recorded pass gave this request.
+
+    Read from the verdict log rather than from the pointer, because a verdict is
+    what a pass decided rather than what the request says about itself. A later
+    pass for the same request replaces the answer, so a request whose stall has
+    since launched no longer reads as stalled.
+    """
+    if not run_id:
+        return ""
+    try:
+        text = (runs.crew_home() / ADMISSION_VERDICT_LOG).read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    for line in reversed(text.splitlines()):
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        for row in record.get("pointers") or ():
+            if str(row.get("run_id") or "") == run_id:
+                return str(row.get("verdict") or "")
+    return ""
+
+
+def _last_stage_seconds(stage: str) -> float | None:
+    """The duration the named stage took on the most recent recorded pass.
+
+    A stall names the stage that held the request and that stage's duration on
+    the last pass, so a reader learns which of release, launch and land to look
+    at rather than only that the request waited. ``None`` when no pass has
+    recorded that stage yet, which is the first pass of a service.
+    """
+    key = f"{stage}_seconds"
+    try:
+        text = (runs.crew_home() / ADMISSION_VERDICT_LOG).read_text(encoding="utf-8")
+    except OSError:
+        return None
+    for line in reversed(text.splitlines()):
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        value = record.get(key)
+        if isinstance(value, (int, float)):
+            return round(float(value), 3)
+    return None
+
+
+def _stall_stage(pointer: Mapping[str, Any]) -> str:
+    """The stage whose completion a still-waiting request is owed.
+
+    Release hands a request to the queue, launch hands it to a worker, and land
+    settles what the worker delivered. A request is owed the stage that reads
+    its phase, so the stall names the stage a reader should look at rather than
+    every stage the pass ran.
+    """
+    phase = str(pointer.get("phase") or "")
+    if phase in {"awaiting-upstream", "blocked-upstream"}:
+        return "release"
+    if phase in {"landed", "landing"}:
+        return "land"
+    return "launch"
+
+
+def _lane_has_room(
+    pointer: Mapping[str, Any],
+    *,
+    gated: bool,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> bool:
+    """Whether the lane could launch this request on this pass.
+
+    A request the lane has no room for is waiting on capacity, which the pass
+    records as its own hold; it is not stalled, because nothing about it is
+    stuck. This is the clause that keeps a full lane from reading as a stall.
+    """
+    if gated:
+        return False
+    if _lane_gate_hold(pointer, config_for=config_for) is not None:
+        return False
+    allowance, _source = _session_allowance_read(pointer, config_for=config_for)
+    return allowance is None or allowance > 0
+
+
+def _record_stalls(
+    order: Sequence[Mapping[str, Any]],
+    *,
+    moment: datetime,
+    gated: bool,
+    live: Sequence[Mapping[str, Any]],
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+    claim_dispositions: dict[str, Any],
+    shared_files: dict[tuple[str, str], frozenset[str]],
+    result: dict[str, Any],
+) -> list[str]:
+    """Record one stall verdict per request that has waited past the threshold.
+
+    A request is stalled when the lane could launch it now, no live run's claim
+    holds it, and it has been admissible for longer than
+    :data:`STALL_AFTER_SECONDS` without being launched. The verdict names the
+    stage the request is owed and that stage's duration on the last pass, so the
+    record a coordinator already reads says which stage held it. The verdict is
+    written once: a request already recorded as stalled keeps that record until
+    a later verdict for it replaces it, so a wait that spans many passes yields
+    one stall rather than one per pass.
+    """
+    stalled: list[str] = []
+    for pointer in order:
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id or _last_verdict_of(run_id) == STALL_VERDICT:
+            continue
+        queued_at = parse_utc(pointer.get("queued_at"))
+        if queued_at is None:
+            continue
+        age = (moment - queued_at).total_seconds()
+        if age < STALL_AFTER_SECONDS:
+            continue
+        if not _lane_has_room(pointer, gated=gated, config_for=config_for):
+            continue
+        shared_key = (
+            str(pointer.get("project") or ""),
+            str(pointer.get("repo") or ""),
+        )
+        if shared_key not in shared_files:
+            shared_files[shared_key] = (
+                runs._shared_write_paths(shared_key[0], Path(shared_key[1]))
+                if all(shared_key)
+                else frozenset()
+            )
+        if (
+            _live_claim_hold(
+                pointer,
+                live,
+                dispositions=claim_dispositions,
+                shared_files=shared_files[shared_key],
+            )
+            is not None
+        ):
+            continue
+        stage = _stall_stage(pointer)
+        allowance, source = _session_allowance_read(pointer, config_for=config_for)
+        row = _verdict_row(
+            pointer,
+            allowance=allowance,
+            allowance_source=source,
+            verdict=STALL_VERDICT,
+            detail=f"held at the {stage} stage",
+        )
+        row["stage"] = stage
+        row["stage_seconds"] = _last_stage_seconds(stage)
+        row["age_seconds"] = round(age, 3)
+        result["verdicts"].append(row)
+        stalled.append(run_id)
+    return stalled
+
+
+def _admissible_age_seconds(
+    order: Sequence[Mapping[str, Any]],
+    *,
+    moment: datetime,
+    gated: bool,
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
+) -> float | None:
+    """How long the oldest request the lane could launch now has waited.
+
+    A pass that reports only what it did leaves a reader unable to tell an idle
+    lane from one whose queue is old: a request held for its session's allowance
+    and a request nothing has examined look identical when neither appears in a
+    verdict. This figure is the age of the head of the queue a launch would have
+    taken, and it is `None` on a pass with nothing the lane could launch.
+    """
+    oldest: float | None = None
+    for pointer in order:
+        queued_at = parse_utc(pointer.get("queued_at"))
+        if queued_at is None:
+            continue
+        if not _lane_has_room(pointer, gated=gated, config_for=config_for):
+            continue
+        age = (moment - queued_at).total_seconds()
+        oldest = age if oldest is None else max(oldest, age)
+    return None if oldest is None else round(max(0.0, oldest), 3)
+
+
 def _record_gated_verdicts(
     result: dict[str, Any],
     *,
@@ -1384,6 +1579,8 @@ def _pass_verdict_record(
         "lane": lane,
         "code_stamp": code_stamp,
         "gate": result.get("gate"),
+        "admissible_age_seconds": result.get("admissible_age_seconds"),
+        "stalls": list(result.get("stalls") or ()),
         "pointers": list(verdicts),
         "landing": landing,
     }
@@ -3542,6 +3739,23 @@ def admit_once(
         # derived instead of rebuilding it: admission throughput, not the lane,
         # is what caps how full the lane gets otherwise.
         readiness_cache: dict[str, Any] = {}
+        # The queue's own liveness, recorded before anything is launched: a
+        # request that has been admissible on a lane with room for longer than
+        # the stall threshold is stalled whatever this pass goes on to do with
+        # it, and the age of the oldest such request is what the pass reports.
+        result["stalls"] = _record_stalls(
+            order,
+            moment=moment,
+            gated=local_gated,
+            live=live,
+            config_for=config_for,
+            claim_dispositions=claim_dispositions,
+            shared_files=shared_files,
+            result=result,
+        )
+        result["admissible_age_seconds"] = _admissible_age_seconds(
+            order, moment=moment, gated=local_gated, config_for=config_for
+        )
         for index, pointer in enumerate(order):
             session = str(pointer["session"])
             allowance_key = (str(pointer.get("backend") or ""), session)
@@ -3867,6 +4081,13 @@ def admit_once(
         result["action"] = (
             "admitted" if result["launched"] else "gated" if local_gated else "idle"
         )
+        # Every row a pass records carries the queue's age beside its own
+        # verdict, so a row that says a request was held also says how old the
+        # queue it was held in was. The figure is the pass's, not the row's, and
+        # is set here once rather than threaded through every verdict site.
+        admissible_age = result.get("admissible_age_seconds")
+        for row in result["verdicts"]:
+            row.setdefault("admissible_age_seconds", admissible_age)
         return result
 
 

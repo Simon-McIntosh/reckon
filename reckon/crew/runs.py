@@ -2107,6 +2107,16 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
     hour_ago = now - timedelta(hours=1)
     landed, _version = ledger.load(project, use_index=False)
     latest_verdict: dict[str, str] = {}
+    #: The stall each request's last pass recorded, beside the stage the stall
+    #: named. A later verdict for the same request replaces the entry, which is
+    #: how a stall clears: the pass that launches the request records a
+    #: ``launched`` verdict against it.
+    stalled: dict[str, dict[str, Any]] = {}
+    #: The age of the oldest request the last pass could launch and did not,
+    #: while its lane had room. The pass measures it with the lane's own gate
+    #: and allowance, so the view reports the measurement rather than judging
+    #: room a second time from a pointer.
+    admissible_age: float | None = None
     try:
         with (crew_home() / "admission-verdicts.jsonl").open() as stream:
             for line in stream:
@@ -2114,10 +2124,24 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
                     record = json.loads(line)
                 except ValueError:
                     continue
+                stamp = record.get("admissible_age_seconds")
+                if isinstance(stamp, (int, float)):
+                    admissible_age = round(float(stamp), 3)
                 for verdict in record.get("pointers") or ():
                     run_id = str(verdict.get("run_id") or "")
-                    if run_id:
-                        latest_verdict[run_id] = str(verdict.get("verdict") or "")
+                    if not run_id:
+                        continue
+                    word = str(verdict.get("verdict") or "")
+                    latest_verdict[run_id] = word
+                    if word == "stalled":
+                        stalled[run_id] = {
+                            "at": str(record.get("at") or ""),
+                            "stage": str(verdict.get("stage") or ""),
+                            "stage_seconds": verdict.get("stage_seconds"),
+                            "age_seconds": verdict.get("age_seconds"),
+                        }
+                    else:
+                        stalled.pop(run_id, None)
     except FileNotFoundError:
         pass
 
@@ -2130,14 +2154,12 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
             "remaining": 0,
             "finish_estimate_days": None,
             "stuck": [],
+            "admissible_age_seconds": admissible_age,
         }
 
     project_view = empty()
     plans: dict[str, dict[str, Any]] = {}
     landed_ids = {str(record.get("run_id") or "") for record in landed["runs"]}
-    wait_cache: dict[str, Any] = {}
-    dead_sections: set[tuple[str, str]] | None = None
-    live_for_waits: list[dict[str, Any]] | None = None
 
     def targets(plan: str) -> tuple[dict[str, Any], dict[str, Any]]:
         return project_view, plans.setdefault(plan, empty())
@@ -2173,25 +2195,16 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
             phase_stamp = pointer.get("created_at")
         phase_start = parse_utc(phase_stamp)
         overdue = phase_start is not None and phase_start < hour_ago
-        stuck = overdue and phase in {"queued", "launch-failed"}
-        if overdue and phase == "awaiting-upstream":
-            from reckon.crew import queue_admission
-
-            if live_for_waits is None:
-                live_for_waits = _list_live_records()
-                dead_sections = queue_admission._dead_sections(live_for_waits)
-            assert dead_sections is not None
-            docs_dir = Path(str(pointer.get("repo") or "") or ".") / "docs"
-            stuck = (
-                queue_admission.resolve_waits(
-                    pointer,
-                    live=live_for_waits,
-                    docs_dir=docs_dir,
-                    cache=wait_cache,
-                    dead_sections=dead_sections,
-                )
-                != phase
-            )
+        # A request is stuck when a pass examined it, recorded why it did not
+        # launch, and the request is still here an hour or more later. The cause
+        # is read from that record rather than derived a second time: the drain
+        # view no longer resolves a request's waits to decide this, so the
+        # request that waited past an hour is named by the verdict the pass that
+        # last looked at it recorded, and a request no pass has examined is not
+        # reported stuck on this view's own judgement.
+        run_id = str(pointer.get("run_id") or "")
+        last_verdict = latest_verdict.get(run_id)
+        stuck = bool(overdue and last_verdict)
         for view in targets(plan):
             view["phases"][bucket] += 1
             view["remaining"] += 1
@@ -2200,14 +2213,21 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
             if started is not None and day_ago <= started <= now:
                 view["launches_24h"] += 1
             if stuck:
+                stall = stalled.get(run_id) or {}
                 view["stuck"].append(
                     {
-                        "run_id": str(pointer.get("run_id") or ""),
+                        "run_id": run_id,
                         "phase": phase,
                         "since": phase_start.isoformat(),
-                        "last_verdict": latest_verdict.get(
-                            str(pointer.get("run_id") or "")
-                        ),
+                        "age_seconds": round((now - phase_start).total_seconds(), 3),
+                        "last_verdict": last_verdict,
+                        # The stall's own record, when this request has one: the
+                        # stage that held it and that stage's duration on the
+                        # last pass, so a reader learns which of release, launch
+                        # and land to look at.
+                        "stalled": bool(stall),
+                        "stage": stall.get("stage") or "",
+                        "stage_seconds": stall.get("stage_seconds"),
                     }
                 )
 

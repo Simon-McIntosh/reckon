@@ -12,6 +12,13 @@ never disagree with the counters beside it. A blocked run whose refusal has
 already been accepted (the ``held`` classification) is waiting, not blocked, and
 is left out exactly as the counters leave it out.
 
+One request joins this list on the record's authority rather than the
+partition's: a queued request an admission pass recorded as stalled. It is
+counted as waiting by the partition, because a queued run is waiting, and the
+stall is the record that its wait is not accounted for by its lane — nothing
+about it is held, and the lane had room. It is reported under the blocked kind,
+which is what the coordinator owes action on, until a later verdict clears it.
+
 A run the coordinator has deferred is left out too, through the same reader the
 obligations view defers it by. A blocked or unpromoted run the coordinator has
 put off until an instant is not owed to them before that instant. The deferral
@@ -27,6 +34,7 @@ window's only warning that the chance to resume has gone.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -149,6 +157,96 @@ def _deferred_run_ids(project: str, *, moment: float) -> frozenset[str]:
     return frozenset(in_force)
 
 
+def _stall_verdicts() -> dict[str, dict[str, Any]]:
+    """The requests an admission pass recorded as stalled, by run id.
+
+    Read from the verdict log the admission service writes, where each request's
+    last verdict replaces the one before it. A stall therefore stops reading as
+    one the moment a later pass records a different verdict for the request —
+    the pass that launches it, or one that names the hold that replaced it — so
+    a stall is reported once and clears on the record rather than on a second
+    judgement made here.
+    """
+    from reckon.crew import queue_admission as admission_module
+    from reckon.crew import runs as runs_module
+
+    path = runs_module.crew_home() / admission_module.ADMISSION_VERDICT_LOG
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    latest: dict[str, dict[str, Any]] = {}
+    for line in text.splitlines():
+        try:
+            record = json.loads(line)
+        except ValueError:
+            continue
+        for row in record.get("pointers") or ():
+            run_id = str(row.get("run_id") or "")
+            if not run_id:
+                continue
+            if str(row.get("verdict") or "") == admission_module.STALL_VERDICT:
+                latest[run_id] = {
+                    "at": str(record.get("at") or ""),
+                    "stage": str(row.get("stage") or ""),
+                    "stage_seconds": row.get("stage_seconds"),
+                    "age_seconds": row.get("age_seconds"),
+                }
+            else:
+                latest.pop(run_id, None)
+    return latest
+
+
+def _stall_rows(
+    pointers: Mapping[str, Mapping[str, Any]],
+    *,
+    session: str | None,
+    already: set[str],
+) -> list[dict[str, Any]]:
+    """One row per request a recorded stall leaves waiting for its session.
+
+    A stalled request is queued, so the fleet partition counts it as waiting and
+    it reaches no row of its own; the stall is the record that says the wait is
+    not accounted for by its lane. The row keeps the blocked kind because that
+    is what the coordinator owes action on, and it carries the stage the stall
+    named so the next command can be chosen from the record rather than
+    inferred.
+    """
+    rows: list[dict[str, Any]] = []
+    for run_id, stall in _stall_verdicts().items():
+        if run_id in already:
+            continue
+        pointer = pointers.get(run_id)
+        if pointer is None:
+            continue
+        owner = str(pointer.get("session") or "")
+        if session is not None and owner != session:
+            continue
+        age = stall.get("age_seconds")
+        if not isinstance(age, (int, float)):
+            age = 0.0
+        node = pointer.get("node")
+        if not isinstance(node, Mapping):
+            node = {}
+        rows.append(
+            {
+                "run_id": run_id,
+                "node": str(
+                    node.get("id") or pointer.get("node_id") or run_id or "unknown"
+                ),
+                "state": str(pointer.get("phase") or ""),
+                "kind": "blocked",
+                "age_seconds": max(0.0, float(age)),
+                "reviewed": False,
+                "stalled": True,
+                "stage": str(stall.get("stage") or ""),
+                "stage_seconds": stall.get("stage_seconds"),
+                "stalled_at": str(stall.get("at") or ""),
+            }
+        )
+    return rows
+
+
 def needs_you_rows(
     project: str,
     *,
@@ -208,6 +306,17 @@ def needs_you_rows(
                 "reviewed": kind == "unpromoted" and _is_reviewed(project, run_id),
             }
         )
+    # A request an admission pass recorded as stalled is queued, so the fleet
+    # partition holds it out of both buckets and it reaches no row of its own.
+    # The stall is the record that its wait is not accounted for by its lane, so
+    # it joins the blocked rows here until a later verdict clears it.
+    rows.extend(
+        _stall_rows(
+            pointers,
+            session=session,
+            already={str(row["run_id"]) for row in rows},
+        )
+    )
     # Oldest first within a kind, so the run that has needed attention longest
     # leads its group.
     rows.sort(key=lambda row: (-float(row["age_seconds"]), str(row["node"])))
