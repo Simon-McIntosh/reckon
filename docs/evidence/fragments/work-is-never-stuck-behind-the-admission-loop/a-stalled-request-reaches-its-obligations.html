@@ -1,0 +1,78 @@
+<section id="a-stalled-request-reaches-its-obligations-landing">
+  <h2>A stalled request reaches its coordinator as a stalled duty</h2>
+
+  <p><strong>What changed.</strong> A queued request whose last recorded admission verdict
+  is the stall verdict now builds a <code>run-stalled</code> duty in its coordinator's
+  obligations instead of the plain <code>run-queued</code> row it built before — the two used
+  to read identically, so a request admission had already failed to take looked exactly like
+  one that was simply waiting its turn. The new kind carries the pass's own record rather than
+  a second derivation: the age the request has been <em>admissible</em>
+  (<code>age_seconds</code> from the verdict, not the request's own age, because a request
+  queued before its section was ready has waited long without ever being launchable), the
+  stage the pass was in (<code>stage</code>), that stage's duration on the last pass
+  (<code>stage_seconds</code>), and an action naming the two things a coordinator can do with
+  a request the lane owns — reprioritise it or drop it.</p>
+
+  <p>The kind is non-blocking in both places that decide a stop: it is added to
+  <code>obligations.NON_BLOCKING_DUTY_KINDS</code> and to the hook's mirror set
+  <code>_NON_BLOCKING_KINDS</code> in <code>reckon/hooks/coordinator_obligations.py</code>,
+  because the request stays the lane's to launch and a coordinator cannot shorten the wait by
+  acting.</p>
+
+  <p>The admission verdict log is read once per obligations build and that one reading is
+  handed to every <code>_queued_item</code> call — the derivation reads it in
+  <code>_obligations_view</code>, the published slice reads it in
+  <code>obligation_snapshot.payload_for</code> — so two rows in one build cannot disagree
+  about what the pass last decided, and a later <code>launched</code> verdict replaces the
+  stall for every reader. A request that is merely waiting keeps its existing row, and a
+  verdict left behind by a request that has since moved to another phase is ignored: the row
+  is built as stalled only while the request still reads as queued.
+  <code>needs_you.py</code> and the drain view's reader are untouched.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: the test files that import <code>reckon.crew.obligations</code>,
+  <code>reckon.crew.obligation_snapshot</code> or
+  <code>reckon.hooks.coordinator_obligations</code> — 76 files at the base revision, 77 at the
+  head, the new case among them — run one arm at a time in the fleet allocation with the
+  repository venv. Each arm is a log whose first line names its revision, tree, module path and
+  command, and whose last line reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base (76 importing files)</td>
+        <td><code>b58264ae</code>, extracted scratch tree</td>
+        <td>490 passed, 5 failed, exit 1</td></tr>
+      <tr><td>head (76 + the new case)</td>
+        <td><code>e4a65016</code></td>
+        <td><strong>499 passed</strong>, 2 failed, exit 1</td></tr>
+      <tr><td>negative control (stall check dropped from <code>_queued_item</code>)</td>
+        <td><code>e4a65016</code> + mutation</td>
+        <td><strong>5 failed, 1 passed</strong>, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>The head arm adds no failure the base arm did not already carry: its two failures,
+  <code>test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module</code>
+  and <code>test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>,
+  fail at the base revision too, and the first fails there with the same import set
+  (<code>reckon._backends</code>, <code>reckon._plan_html</code>, <code>reckon.ledger</code>).
+  The three base-only failures are the extracted tree's own: two in
+  <code>test_hook_installer.py</code> and one in
+  <code>test_hook_scripts_correct_their_interpreter.py</code> assert on a
+  <code>.venv/bin/python</code> the extraction does not contain.</p>
+
+  <p>The negative control applies the declared mutation — the stall branch removed from
+  <code>_queued_item</code>, leaving every queued request on the plain row — and five of the
+  six new cases fail: the derivation and the fresh snapshot build both report
+  <code>run-queued</code> where the stalled row is expected, so the two expected-verdict cases,
+  the clearing case, the non-blocking case and the single-read case all go red. The sixth, the
+  plain-queue case, still passes, which is correct: that one asserts a row with no stall
+  verdict stays queued, and the mutation leaves it so.</p>
+
+  <p><code>ruff check</code> on the four staged paths reports the two findings already present
+  at the base revision in <code>coordinator_obligations.py</code> (both <code>S105</code>, on a
+  token-vs-flag comparison this change does not touch) and no others;
+  <code>ruff format --check</code> reports all four formatted.</p>
+</section>
