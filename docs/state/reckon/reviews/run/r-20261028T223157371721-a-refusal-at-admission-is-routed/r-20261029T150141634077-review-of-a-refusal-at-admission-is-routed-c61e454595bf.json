@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3960 the admit service loop calls admit_once, which is where a CompetenceLimit is now intercepted and routed",
+    "reckon/crew/queue_admission.py:3989 the manual admission pass calls admit_once, the same interception",
+    "reckon/crew_run_commands.py:2248 crew_queue_edit calls queue_edit_module.edit, so the two new edit-time refusals reach the CLI as ClickExceptions",
+    "reckon/mcp_crew_actions.py:304 routes the queue edit verb to crew_queue_edit"
+  ],
+  "completed_at": "2026-10-29T15:12:07.977Z",
+  "dispatched_at": "2026-10-29T15:05:54Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_edit.py",
+      "id": "f3c5856d6ae",
+      "line": "187",
+      "severity": "non-blocking",
+      "text": "non-blocking: _live_claim_conflict duplicates the judgement reckon/crew/dispatch_claims.py:2094 refuse_widen_scope_conflicts already owns \u2014 a widening onto added fence paths judged against live claims \u2014 by rebuilding it from _shared_write_paths, _scopes_overlap and claim_disposition instead of extending or wrapping that owner; the narrower copy skips directory claims and the regard_waiting rule, so crew queue edit can accept an edit the next launch refuses, and refuse one dispatch would accept. Fold it onto refuse_widen_scope_conflicts(pointer, added_paths)."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "id": "ff1e3d69572",
+      "line": "3743",
+      "severity": "non-blocking",
+      "text": "non-blocking: a CompetenceLimit raised on the local-fallback arm inside the except BudgetHold handler is caught by the inner except Exception at :3743 and recorded as a plain failure, never reaching _route_competence_refusal at :3774, so a request that hits a budget hold and is then refused for context fit is still parked rather than routed or reported with its shortfall."
+    },
+    {
+      "file": "tests/test_a_refusal_at_admission_is_routed.py",
+      "id": "fe254f55ce4",
+      "line": "316",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert accepted[\"write_paths\"] == [\"one.txt\", \"two.txt\"] compares the returned field against the exact list the test passed in, so it holds whenever the code echoes its argument and cannot fail on a path-resolution or normalisation regression; assert the stored pointer independently or drop the line, since the refusal half below it is the real claim."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223157371721-a-refusal-at-admission-is-routed/gate-importers-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223157371721-a-refusal-at-admission-is-routed/gate-importers-base.log",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223157371721-a-refusal-at-admission-is-routed/negative-control.log",
+    "node_gate": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T223157371721-a-refusal-at-admission-is-routed/gate-head.log"
+  },
+  "item_verdicts": {
+    "diff": "Read a069e19d78 (routing at admission plus the two edit-time refusals and the test, 718 insertions) and c61e454595 (reporting the no-lane case as the failure it was rather than as a hold, 15 insertions / 19 deletions) against base c97238c9; both stay inside the declared scope and the second commit narrows the first rather than adding surface.",
+    "done_when": "tests/test_a_refusal_at_admission_is_routed.py carries all four bulleted behaviours, and gate-head.log ends 6 passed EXIT=0 at revision c61e454595bf; the importer arms in gate-importers-base.log (1 failed / 361 passed) and gate-importers-head.log (1 failed / 367 passed) carry the same failing id, so the population adds no failure; I ran ruff check and ruff format --check on the three changed paths in the reviewed worktree and both returned 0, though neither run is recorded in the manifest.",
+    "goal": "The node goal is that a CompetenceLimit refusal at admission is routed to a lane that fits or reported, never parked; reckon/crew/queue_admission.py:1052 _route_competence_refusal asks picker.snapshot.candidates and moves the request via move_queued_run at :1113, leaving it queued on a lane this service does not own at :1118, and reporting the shortfall at :1131.",
+    "manifest": "The manifest states 6 passed at the node gate, 2 failed under the negative control, and importer arms of 1 failed / 361 passed at base against 1 failed / 367 passed at head; each claim matches the log it names and each log ends in a bare EXIT= line, but it records no ruff result although the plan's done_when requires one.",
+    "write_paths": "The node declared reckon/crew/queue_admission.py, reckon/crew/queue_edit.py, the new test and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-refusal-at-admission-is-routed.html; git diff c97238c9..c61e454595 changes exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "negative-control.log reddens tests 1 and 3 of tests/test_a_refusal_at_admission_is_routed.py by skipping the picker query, but tests 2, 4, 5 and 6 are unproven against a partial regression and line 316 compares the returned write_paths against the exact list the test passed in.",
+    "evidence": "gate-head.log runs at revision c61e454595bf over exactly the new test and ends 6 passed EXIT=0, and the two importer logs differ only by the 6 new tests with the same failure id, so the result is recorded rather than claimed; the done_when's ruff clause is unrecorded in the manifest but verified green.",
+    "fit": "The new helpers at reckon/crew/queue_admission.py:996-1135 and reckon/crew/queue_edit.py:187-286 follow the module's private-helper, docstring-first idiom and introduce no plan or version identifier.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:1052-1135 moves a refused request to the first candidate the picker clears, queues it on a lane another service owns, or names the token shortfall, which is the plan section's first two arms, and reckon/crew/queue_edit.py:371-381 raises the two edit-time refusals, which are its last two.",
+    "reuse": "reckon/crew/queue_edit.py:187 _live_claim_conflict re-implements the added-path claim judgement that reckon/crew/dispatch_claims.py:2094 refuse_widen_scope_conflicts already owns, while reckon/crew/queue_edit.py:251 correctly reuses picker.snapshot.estimated_context_tokens and the existing CompetenceLimit.",
+    "scope_discipline": "git diff c97238c9..c61e454595 touches only the four declared paths and the two source deletions are the rewritten import lines at reckon/crew/queue_admission.py:42-48 and reckon/crew/queue_edit.py:30-36."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a CompetenceLimit refusal at admission is routed to a lane that fits or reported, never parked; reckon/crew/queue_admission.py:1052 _route_competence_refusal asks picker.snapshot.candidates, moves the request with move_queued_run at :1113, leaves it queued on a lane another service owns at :1118, and names the token shortfall at :1131.\nVERDICT done_when: tests/test_a_refusal_at_admission_is_routed.py carries the four bulleted behaviours and gate-head.log ends 6 passed EXIT=0 at revision c61e454595bf, while gate-importers-base.log (1 failed / 361 passed) and gate-importers-head.log (1 failed / 367 passed) share the same failing id; ruff check and ruff format --check on the three changed paths both return 0 in the reviewed worktree, though the manifest records neither.\nVERDICT write_paths: the node declared reckon/crew/queue_admission.py, reckon/crew/queue_edit.py, the new test and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-refusal-at-admission-is-routed.html; git diff c97238c9..c61e454595 changes exactly those four paths.\nVERDICT manifest: the manifest states 6 passed at the node gate, 2 failed under the negative control, and importer arms of 1 failed / 361 passed at base against 1 failed / 367 passed at head; each matches the log it names and each log ends in a bare EXIT= line, but no ruff result is recorded.\nVERDICT diff: read a069e19d78 (routing at admission plus the two edit-time refusals and the test) and c61e454595 (reporting the no-lane case as the failure it was, not as a hold) against base c97238c9; both commits stay inside the declared scope.\nCALL_SITES: reckon/crew/queue_admission.py:3960 admit_once from the admit service loop, reckon/crew/queue_admission.py:3989 admit_once from the manual pass, reckon/crew_run_commands.py:2248 crew_queue_edit -> queue_edit_module.edit, reckon/mcp_crew_actions.py:304 the queue edit verb route\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1052-1135 covers the plan section's first two arms and reckon/crew/queue_edit.py:371-381 its last two, with only the budget-hold-then-competence path unrouted.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log runs at revision c61e454595bf over the new test and ends 6 passed EXIT=0, and the importer arms differ only by the 6 new tests with the same failure id.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c97238c9..c61e454595 touches only the four declared paths, and its two source deletions are the rewritten import lines at reckon/crew/queue_admission.py:42-48 and reckon/crew/queue_edit.py:30-36.\nSCORE durability: 15\nJUSTIFICATION durability: negative-control.log reddens only tests 1 and 3 of tests/test_a_refusal_at_admission_is_routed.py, leaving tests 2, 4, 5 and 6 unproven against a partial regression, and line 316 compares the returned value against the input the test supplied.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers at reckon/crew/queue_admission.py:996-1135 and reckon/crew/queue_edit.py:187-286 follow the module's private-helper docstring-first idiom and carry no plan or version identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_edit.py:187 _live_claim_conflict re-implements the added-path claim judgement owned by reckon/crew/dispatch_claims.py:2094 refuse_widen_scope_conflicts without extending it, though reckon/crew/queue_edit.py:251 does reuse estimated_context_tokens and the existing CompetenceLimit.\nFINDING reckon/crew/queue_edit.py:187 non-blocking: _live_claim_conflict duplicates the widening claim check reckon/crew/dispatch_claims.py:2094 already owns, and its narrower copy skips directory claims and regard_waiting, so crew queue edit can accept an edit the next launch refuses or refuse one dispatch would accept.\nFINDING reckon/crew/queue_admission.py:3743 non-blocking: a CompetenceLimit raised on the local-fallback arm inside except BudgetHold is caught by the inner except Exception and never reaches _route_competence_refusal, so a budget-held request also refused for context fit is still parked.\nFINDING tests/test_a_refusal_at_admission_is_routed.py:316 non-blocking: the assertion compares the returned write_paths against the exact list the test passed in, so it holds whenever the code echoes its argument and cannot fail on a path-resolution regression.\n",
+  "review_run_id": "r-20261029T150141634077-review-of-a-refusal-at-admission-is-routed-c61e454595bf",
+  "reviewed_base_sha": "c97238c91cb566c6b6151a8a9f0dd7d9814be6fc",
+  "reviewed_head_sha": "c61e454595bf067522db784d0cd29247b52b0204",
+  "reviewed_run_id": "r-20261028T223157371721-a-refusal-at-admission-is-routed",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T15:13:48.273732+00:00",
+  "total": 94
+}
