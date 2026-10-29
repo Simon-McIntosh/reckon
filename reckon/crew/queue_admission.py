@@ -22,7 +22,7 @@ import subprocess
 import sys
 import threading
 import time
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager, nullcontext
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
@@ -107,6 +107,24 @@ STALL_VERDICT = "stalled"
 #: idle lane is indistinguishable from a halted system unless the queue says
 #: which stage held the work.
 STALL_AFTER_SECONDS = 600.0
+#: The verdicts that leave a request where it is on purpose. A hold says the
+#: pass decided against advancing this request and named why, so nothing
+#: admissible is being left undone and the wait is not a stall. The stall
+#: verdict belongs only to a request the lane could have advanced and did not.
+HOLD_VERDICTS = frozenset(
+    {
+        "held-for-allowance",
+        "held-by-gate",
+        "held-on-claim",
+        "held-until-changed",
+        "held-on-retry-backoff",
+        "held-on-plan-review",
+        "held-behind-earlier-request",
+    }
+)
+#: The phases in which a request is not admissible at all, because the work it
+#: waits on has not been released. A wait here is the queue working as designed.
+NOT_ADMISSIBLE_PHASES = frozenset({"awaiting-upstream", "blocked-upstream"})
 
 
 def _now() -> datetime:
@@ -1434,23 +1452,34 @@ def _record_stalls(
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
     claim_dispositions: dict[str, Any],
     shared_files: dict[tuple[str, str], frozenset[str]],
+    held: Collection[str],
     result: dict[str, Any],
 ) -> list[str]:
-    """Record one stall verdict per request that has waited past the threshold.
+    """Record one stall verdict per request that waited while it could have run.
 
     A request is stalled when the lane could launch it now, no live run's claim
     holds it, and it has been admissible for longer than
-    :data:`STALL_AFTER_SECONDS` without being launched. The verdict names the
-    stage the request is owed and that stage's duration on the last pass, so the
-    record a coordinator already reads says which stage held it. The verdict is
-    written once: a request already recorded as stalled keeps that record until
-    a later verdict for it replaces it, so a wait that spans many passes yields
-    one stall rather than one per pass.
+    :data:`STALL_AFTER_SECONDS`. The verdict names the stage the request is owed
+    and that stage's duration on the last pass, so the record a coordinator
+    already reads says which stage held it. The verdict is written once: a
+    request already recorded as stalled keeps that record until a later verdict
+    for it replaces it, so a wait that spans many passes yields one stall rather
+    than one per pass.
+
+    A request this pass holds on purpose is never stalled, and neither is one an
+    earlier pass's hold verdict accounts for: the hold is the pass doing its job
+    and naming why, so nothing admissible is being left undone. ``held`` names
+    the requests this pass wrote a hold for.
     """
     stalled: list[str] = []
     for pointer in order:
         run_id = str(pointer.get("run_id") or "")
-        if not run_id or _last_verdict_of(run_id) == STALL_VERDICT:
+        if not run_id or run_id in held:
+            continue
+        if str(pointer.get("phase") or "") in NOT_ADMISSIBLE_PHASES:
+            continue
+        last_verdict = _last_verdict_of(run_id)
+        if last_verdict == STALL_VERDICT or last_verdict in HOLD_VERDICTS:
             continue
         queued_at = parse_utc(pointer.get("queued_at"))
         if queued_at is None:
@@ -3739,20 +3768,6 @@ def admit_once(
         # derived instead of rebuilding it: admission throughput, not the lane,
         # is what caps how full the lane gets otherwise.
         readiness_cache: dict[str, Any] = {}
-        # The queue's own liveness, recorded before anything is launched: a
-        # request that has been admissible on a lane with room for longer than
-        # the stall threshold is stalled whatever this pass goes on to do with
-        # it, and the age of the oldest such request is what the pass reports.
-        result["stalls"] = _record_stalls(
-            order,
-            moment=moment,
-            gated=local_gated,
-            live=live,
-            config_for=config_for,
-            claim_dispositions=claim_dispositions,
-            shared_files=shared_files,
-            result=result,
-        )
         result["admissible_age_seconds"] = _admissible_age_seconds(
             order, moment=moment, gated=local_gated, config_for=config_for
         )
@@ -4078,6 +4093,26 @@ def admit_once(
                 joined_reviews[str(record["run_id"])] = joined
             if allowance is not None:
                 remaining[allowance_key] = allowance - 1
+        # The queue's own liveness, recorded after the pass has decided what to
+        # do with each request: a request this pass held on purpose is not
+        # stalled, because the hold names the reason it waits. What remains is a
+        # request the lane could have advanced and did not.
+        held_this_pass = {
+            str(row.get("run_id") or "")
+            for row in result["verdicts"]
+            if str(row.get("verdict") or "") in HOLD_VERDICTS
+        }
+        result["stalls"] = _record_stalls(
+            order,
+            moment=moment,
+            gated=local_gated,
+            live=live,
+            config_for=config_for,
+            claim_dispositions=claim_dispositions,
+            shared_files=shared_files,
+            held=held_this_pass,
+            result=result,
+        )
         result["action"] = (
             "admitted" if result["launched"] else "gated" if local_gated else "idle"
         )

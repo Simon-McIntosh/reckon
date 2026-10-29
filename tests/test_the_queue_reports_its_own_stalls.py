@@ -207,6 +207,92 @@ def test_a_lane_with_no_room_or_a_live_claim_records_no_stall(
     assert _stalls(_admit()) == []
 
 
+@pytest.mark.parametrize("hold", sorted(queue_admission.HOLD_VERDICTS))
+def test_a_request_a_pass_holds_is_never_stalled(
+    chain_repo, monkeypatch: pytest.MonkeyPatch, hold: str
+) -> None:
+    """A hold says why the request waits, so the wait is not a stall.
+
+    Every hold word is the pass accounting for a wait it decided on: a full
+    lane, a gate, a live claim, an unchanged plan, a retry back-off, or an
+    earlier request ahead of this one. Reporting one as a stall would accuse
+    the queue of leaving undone work it is deliberately not doing, and it would
+    put the stall row ahead of the hold that explains the wait.
+    """
+    _write_log([_previous_pass(launch_seconds=LAST_LAUNCH_SECONDS)])
+    _queue_one(chain_repo)
+    rows = [
+        {
+            "run_id": RUN_ID,
+            "verdict": hold,
+            "detail": "recorded by the pass before this one",
+        }
+    ]
+
+    monkeypatch.setattr(
+        queue_admission, "_last_verdict_of", lambda run_id: rows[0]["verdict"]
+    )
+    result = _admit()
+
+    assert _stalls(result) == [], result["verdicts"]
+
+
+def test_a_request_the_pass_holds_on_this_pass_is_never_stalled(
+    chain_repo, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The hold this pass writes is the row the request is owed, not a stall.
+
+    The stall is recorded after the pass has decided what to do with each
+    request, so a request held here carries its hold as the first row a reader
+    sees rather than a stall the hold would have to explain away.
+    """
+    _write_log([_previous_pass(launch_seconds=LAST_LAUNCH_SECONDS)])
+    _queue_one(chain_repo)
+    monkeypatch.setattr(
+        queue_admission,
+        "_until_changed_hold",
+        lambda pointer, *, config_for: "nothing the request depends on has moved",
+    )
+
+    result = _admit()
+
+    assert _stalls(result) == [], result["verdicts"]
+    assert result["verdicts"][0]["verdict"] == "held-until-changed", result["verdicts"]
+    assert result["held"] == [RUN_ID], result["held"]
+
+
+def test_a_request_waiting_on_its_dependencies_is_never_stalled(chain_repo) -> None:
+    """A request waiting for upstream work to release is not the queue stalling.
+
+    The stall rule is checked where it runs, because a pass promotes a request
+    whose dependencies have landed before it decides anything: an admissible
+    request in a waiting phase has, by that point, already stopped waiting.
+    """
+    _queue_one(chain_repo)
+    pointer = dict(runs.read_pointer(RUN_ID))
+    pointer["queued_at"] = (
+        datetime.now(UTC) - timedelta(seconds=WAITED_SECONDS)
+    ).isoformat()
+    for phase in sorted(queue_admission.NOT_ADMISSIBLE_PHASES):
+        waiting = dict(pointer, phase=phase)
+        result = {"verdicts": []}
+
+        stalled = queue_admission._record_stalls(
+            [waiting],
+            moment=datetime.now(UTC),
+            gated=False,
+            live=[],
+            config_for=fixtures._config_for(),
+            claim_dispositions={},
+            shared_files={},
+            held=set(),
+            result=result,
+        )
+
+        assert stalled == [], (phase, result["verdicts"])
+        assert result["verdicts"] == [], phase
+
+
 def _drained(repository, monkeypatch, pointers, verdict_records):
     """The drain view over one seeded fleet, with the ledger and plans stubbed."""
     for pointer in pointers:
