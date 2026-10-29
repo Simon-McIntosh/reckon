@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="85">
+<meta name="plan-version" content="86">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -301,6 +301,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261029T212041223009-review-of-the-station-holds-its-lease-while-it-beats-9ed06210bd19" data-who="reckon-build" data-when="2026-10-29T21:36:52.537Z">
     <div class="r-comment-body"><p>Reviewed run r-20261029T205338248424-the-station-holds-its-lease-while-it-beats at head 9ed06210bd against base f845e102ac: parsed record, total 91 over six dimensions (goal_fidelity 19, evidence 16, scope_discipline 19, durability 15, fit 17, reuse 5), added_failure_count 0, and five non-blocking findings with none blocking, so the node stands as landed on the record alone, with the reuse duplication and the unguarded connect() named for a coordinator decision.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-run-r-20261029T205338248424-the-station-holds-its-lease-while-it-beats" data-who="reckon-build" data-when="2026-10-29T21:19:46.536Z">
+    <div class="r-comment-body"><p>The station renews its writer lease from a thread of its own, beside the beat, touching only the lease file, and a failed renewal marks a store-wide write guard that refuses every write from that moment and ends the loop with StationHeldError; gate tests/test_the_station_holds_its_lease_while_it_beats.py 3 passed at head (EXIT 0) against 3 failed at base, negative control 3 failed, and the lease read fresh in every sample across 1.6 stale windows of a held-open tick.</p></div>
 </div>
 </section>
 </main>
