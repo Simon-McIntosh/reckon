@@ -25,8 +25,8 @@
   <title>A Held Dispatch Waits Its Fair Turn | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="243">
-<meta name="plan-modified" content="2026-10-21">
+<meta name="plan-version" content="244">
+<meta name="plan-modified" content="2026-10-29">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="3c837fc1">
 </head>
@@ -640,6 +640,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-close-s7" data-who="reckon-build" data-when="2026-10-20T20:50:00Z">
     <div class="r-comment-body"><p>§7 audited as met in the tree on 2026-10-20, where it was marked landed on 2026-10-08: <code>tests/test_queue_order.py::test_wait_breaks_equal_counts_and_queued_runs_hold_no_slot</code> builds a session whose only live pointer is queued and asserts it holds no slot. No node was needed.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261008T104759434567-the-order-test-fails-when-a-queued-run-holds-a-slot" data-who="reckon-build" data-when="2026-10-08T11:10:07Z">
+    <div class="r-comment-body"><p>tests/test_queue_order.py: made the queued-holds-no-slot case fail-capable (test_queued_run_holds_no_lane_slot) and restored the coverage its rewrite dropped with test_other_backend_and_terminal_runs_hold_no_local_slot; gate 5 passed, controls (queued-counts, all-live-pointers) each red EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s28" data-id="c-s28-cause-stale-admit" data-who="reckon-build" data-when="2026-10-18T14:20:00Z">
     <div class="r-comment-body"><p>Cause found, 2026-10-18 14:20Z. The grant for a review's record directory was added by <code>f912c7ec5</code> (<em>fix(crew): admit isolated run review records</em>, 2026-10-17 06:11). The clive admit service, pid 2819595, has run since 2026-10-16 14:58 and never reloads, so it validates queued requests with the code from before that fix. Direct dispatch runs current code and accepts the same request. Two observations confirm it. The refusal text lacks the <em>review node … reviews run …</em> suffix that current code appends for a review. And the queued review <code>r-20261018T140449792154-review-of-velocity-answers-for-every-scope-34a04e5036d3</code>, run through current code's <code>_node_from_pointer</code> and <code>_reviewed_run_id_for_node</code>, resolves its reviewed run correctly. So the input that differs is the code version, not the fleet. §28's deliverable becomes that the admit service never validates with code older than the checkout it launches from, re-executing on a code-stamp change as the followers and the served process already do. The section text is revised before §28 is dispatched.</p></div>
