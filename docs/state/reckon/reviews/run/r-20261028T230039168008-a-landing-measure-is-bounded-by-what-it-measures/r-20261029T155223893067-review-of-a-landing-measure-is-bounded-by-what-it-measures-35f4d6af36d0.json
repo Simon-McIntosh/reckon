@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:512 _measure_delivery calls landing_measure.measure_run",
+    "reckon/crew/queue_landing.py:505 _measure_delivery calls _stored_measurements",
+    "reckon/crew/queue_landing.py:872 land_once calls _refusal_holds",
+    "reckon/crew/queue_admission.py:3997 calls queue_landing.land_once"
+  ],
+  "completed_at": "2026-10-29T16:00:54.656Z",
+  "dispatched_at": "2026-10-29T15:55:57Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landing_measure_is_bounded_by_what_it_measures.py",
+      "line": "125",
+      "severity": "non-blocking",
+      "text": "the bound assertion compares the recorded arm bound against a call to landing_measure.arm_bound built from the same stored record the test supplied, so both sides move with the code under test and it holds even if arm_bound is reverted to the floor; the literals at :137-:138 carry the guard."
+    },
+    {
+      "file": "tests/test_a_landing_measure_is_bounded_by_what_it_measures.py",
+      "line": "219",
+      "severity": "non-blocking",
+      "text": "the retry window is built from queue_landing._retry_backoff, the same function _refusal_holds calls, so the case passes for any back-off value including zero; only :262-:267 pins the delay values independently."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "236",
+      "severity": "non-blocking",
+      "text": "_retry_backoff re-implements the capped doubling delay owned at reckon/crew/queue_admission.py:553 (_retry_delay) and reckon/crew/fleet_supervisor.py:772 (next_backoff); a helper parameterised by base and cap would own the formula once."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "line": "412",
+      "severity": "non-blocking",
+      "text": "_stored_measurements walks every run directory and parses each landing-measure/measurement.json on every measured run, so a runs directory of the size reckon/crew/review.py:2970 records (4,233 entries) costs that many file reads per run inside the pass that exists to keep work unstuck; read the history once per pass."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures/logs/after-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures/logs/base-arm.log"
+  },
+  "item_verdicts": {
+    "diff": "read the single gained commit 35f4d6af36 against base 1ed6b58d0e; landing_measure.py adds arm_bound, median_seconds_per_file, seconds_per_file and per-arm elapsed/file_count, queue_landing.py adds the environmental guard test, the doubling back-off, attempts and failed_at, project-scoped history and the refusal of an unreadable stored record, and the test file adds ten cases",
+    "done_when": "the done_when names tests/test_a_landing_measure_is_bounded_by_what_it_measures.py with four required behaviours; logs/after-arm.log records 10 passed at 35f4d6af36, logs/base-arm.log and logs/head-importers.log record 61 passed each, and logs/negative-control.log records the restored fixed bound failing the first case at EXIT=1, while the ruff clause is logged nowhere and I re-ran it on the three changed source paths to confirm it",
+    "goal": "the goal is to size a landing measure's bound from recorded arm durations and retry a timeout; reckon/crew/landing_measure.py:433 arm_bound and reckon/crew/queue_landing.py:236 _retry_backoff implement both, and reckon/crew/queue_landing.py:412 reads the project's stored measurements as the history",
+    "manifest": "read; it names commit 35f4d6af36, ten cases, both arms and the negative control, and each claim matches the log it cites, though it states no ruff result for the done_when's lint clause",
+    "write_paths": "the brief grants reckon/crew/landing_measure.py, reckon/crew/queue_landing.py, the new test and the landing fragment; git diff 1ed6b58d0e..35f4d6af36 changes exactly those four and nothing else"
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_measure_is_bounded_by_what_it_measures.py:137 asserts the bound above 900 s and :247-254 asserts a regression refusal far past the cap against literals, while the assertions at :125 and :219 compare against calls to the code under test.",
+    "evidence": "logs/after-arm.log records the ten cases at 35f4d6af36 and logs/negative-control.log records the restored fixed bound failing the first case with EXIT=1, but the done_when's ruff clause appears in no log and I had to run it myself.",
+    "fit": "reckon/crew/landing_measure.py:433 sits beside measure_timeout and the existing arm helpers, and reckon/crew/queue_landing.py:236 follows the module's existing stamp-and-compare refusal idiom.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:433 arm_bound returns max(floor, multiple x file_count x rate) and reckon/crew/queue_landing.py:268 _refusal_holds re-judges an environmental refusal once its back-off has elapsed.",
+    "reuse": "reckon/crew/queue_landing.py:236 _retry_backoff repeats the capped doubling formula already owned at reckon/crew/queue_admission.py:553 and again at reckon/crew/fleet_supervisor.py:772 rather than extending either.",
+    "scope_discipline": "git diff 1ed6b58d0e..35f4d6af36 touches only the four declared paths, and the figures directory the brief offers is left unwritten."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to size a landing measure's bound from recorded arm durations and retry a timeout; reckon/crew/landing_measure.py:433 arm_bound and reckon/crew/queue_landing.py:236 _retry_backoff implement both, and reckon/crew/queue_landing.py:412 reads the project's stored measurements as the history\nVERDICT done_when: the done_when names tests/test_a_landing_measure_is_bounded_by_what_it_measures.py with four required behaviours; logs/after-arm.log records 10 passed at 35f4d6af36, logs/base-arm.log and logs/head-importers.log record 61 passed each, and logs/negative-control.log records the restored fixed bound failing the first case at EXIT=1, while the ruff clause is logged nowhere and I re-ran it on the three changed source paths to confirm it\nVERDICT write_paths: the brief grants reckon/crew/landing_measure.py, reckon/crew/queue_landing.py, the new test and the landing fragment; git diff 1ed6b58d0e..35f4d6af36 changes exactly those four and nothing else\nVERDICT manifest: read; it names commit 35f4d6af36, ten cases, both arms and the negative control, and each claim matches the log it cites, though it states no ruff result for the done_when's lint clause\nVERDICT diff: read the single gained commit 35f4d6af36 against base 1ed6b58d0e; landing_measure.py adds arm_bound, median_seconds_per_file, seconds_per_file and per-arm elapsed/file_count, queue_landing.py adds the environmental guard test, the doubling back-off, attempts and failed_at, project-scoped history and the refusal of an unreadable stored record, and the test file adds ten cases\nCALL_SITES: reckon/crew/queue_landing.py:512 _measure_delivery calls landing_measure.measure_run, reckon/crew/queue_landing.py:505 _measure_delivery calls _stored_measurements, reckon/crew/queue_landing.py:872 land_once calls _refusal_holds, reckon/crew/queue_admission.py:3997 calls queue_landing.land_once\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:433 arm_bound returns max(floor, multiple x file_count x rate) and reckon/crew/queue_landing.py:268 _refusal_holds re-judges an environmental refusal once its back-off has elapsed.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/after-arm.log records the ten cases at 35f4d6af36 and logs/negative-control.log records the restored fixed bound failing the first case with EXIT=1, but the done_when's ruff clause appears in no log and I had to run it myself.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 1ed6b58d0e..35f4d6af36 touches only the four declared paths, and the figures directory the brief offers is left unwritten.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_landing_measure_is_bounded_by_what_it_measures.py:137 asserts the bound above 900 s and :247-254 asserts a regression refusal far past the cap against literals, while the assertions at :125 and :219 compare against calls to the code under test.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/landing_measure.py:433 sits beside measure_timeout and the existing arm helpers, and reckon/crew/queue_landing.py:236 follows the module's existing stamp-and-compare refusal idiom.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_landing.py:236 _retry_backoff repeats the capped doubling formula already owned at reckon/crew/queue_admission.py:553 and again at reckon/crew/fleet_supervisor.py:772 rather than extending either.\nFINDING tests/test_a_landing_measure_is_bounded_by_what_it_measures.py:125 non-blocking: the bound assertion compares the recorded arm bound against a call to landing_measure.arm_bound built from the same stored record the test supplied, so both sides move with the code under test and it holds even if arm_bound is reverted to the floor; the literals at :137-:138 carry the guard.\nFINDING tests/test_a_landing_measure_is_bounded_by_what_it_measures.py:219 non-blocking: the retry window is built from queue_landing._retry_backoff, the same function _refusal_holds calls, so the case passes for any back-off value including zero; only :262-:267 pins the delay values independently.\nFINDING reckon/crew/queue_landing.py:236 non-blocking: _retry_backoff re-implements the capped doubling delay owned at reckon/crew/queue_admission.py:553 (_retry_delay) and reckon/crew/fleet_supervisor.py:772 (next_backoff); a helper parameterised by base and cap would own the formula once.\nFINDING reckon/crew/queue_landing.py:412 non-blocking: _stored_measurements walks every run directory and parses each landing-measure/measurement.json on every measured run, so a runs directory of the size reckon/crew/review.py:2970 records (4,233 entries) costs that many file reads per run inside the pass that exists to keep work unstuck; read the history once per pass.\n",
+  "review_run_id": "r-20261029T155223893067-review-of-a-landing-measure-is-bounded-by-what-it-measures-35f4d6af36d0",
+  "reviewed_base_sha": "1ed6b58d0ef839ff6ea47ea433744374df5a1e5a",
+  "reviewed_head_sha": "35f4d6af36d0d3439df4f3958d47d22b56cd865a",
+  "reviewed_run_id": "r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T16:04:16.103404+00:00",
+  "total": 95
+}
