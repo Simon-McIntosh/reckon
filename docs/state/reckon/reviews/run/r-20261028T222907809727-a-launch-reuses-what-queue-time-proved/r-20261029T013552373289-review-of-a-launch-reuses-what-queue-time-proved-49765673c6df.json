@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite (logs/baseline-suite.log, 0baeb0d40d, completed, 5 passed, EXIT=0) and after_suite (logs/head-gate.log, 5b6cefcbc8, completed, 6 passed, EXIT=0) both record zero failures, so no failure id is added by the change.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch_plan.py:872",
+    "reckon/crew/queue_admission.py:2604",
+    "reckon/crew/queue_admission.py:2599",
+    "reckon/crew/plan_review.py:1328"
+  ],
+  "completed_at": "2026-10-29T02:41:08.689Z",
+  "dispatched_at": "2026-10-29T02:22:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "id": "fb3f9aff7f1",
+      "line": "2800",
+      "severity": "non-blocking",
+      "text": "the short-circuit branch calls read_plan_review(project, node.plan) with no plan=, so it selects the mtime-newest record for the plan rather than the newest covering record that plan_review.read_plan_review's own docstring and the else branch specify; with more than one stored review for a plan the launch can judge another section's findings, which is the same launch-versus-direct divergence the repair exists to close and is invisible to the tests because every fixture stores one review."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "id": "f135817fc7d",
+      "line": "2605",
+      "severity": "non-blocking",
+      "text": "the section-match test duplicates queue_admission._contract_is_current (queue_admission.py:2521) line for line, and _contract_still_describes (routing.py:2642) repeats the digest comparison inside queue_admission._plan_review_owed (queue_admission.py:2700); routing.py already imports queue_admission lazily, so the checks could be factored into one owner rather than copied."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "id": "f8860f9d3c8",
+      "line": "2728",
+      "severity": "non-blocking",
+      "text": "`launching` is inferred from `units is not None`, but queue_admission._dispatch_gate_owed (queue_admission.py:2599) also passes units explicitly for a queued request that recorded no contract, so that path can adopt a stale handover's contract for the same node and section and skip the coverage hold its own docstring says the full gate decides."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T222907809727-a-launch-reuses-what-queue-time-proved/logs/head-importers.log",
+      "id": "fe8ab297c8f",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "the done_when clause 'the test files importing reckon.crew.routing and reckon.crew.plan_review add no failures against the base revision' is still unestablished after the repair round; the only artifact is the aborted attempt-1 log, 20 lines with one F at 84%, no summary and no EXIT line, and neither manifest records an importer arm."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch_plan.py:872 and reckon/crew/queue_admission.py:2604 reach require_plan_reviewed; queue_admission.py:2599 _dispatch_gate_owed reaches it too, and plan_review.py:1328 read_plan_review now routes through review_coverage_memo.",
+    "diff": "read 0baeb0d40d..49765673c6 commit by commit: 5b6cefcbc8 replaces an early return with a findings-judging read of the review record and adds one arm; 49765673c6 adds the evidence rows.",
+    "done_when": "the measure names tests/test_a_launch_reuses_what_queue_time_proved.py plus a timing arm and an importer-failure floor; the first two are recorded (6 passed, ratio 0.049833), the importer floor is not.",
+    "goal": "the goal is 'reuse a queued request's recorded contract at launch'; the gained commits keep the reuse and repair it so a launch judges the review's findings, at reckon/crew/routing.py:2790-2806.",
+    "manifest": "read both the current and the attempt-1 as-delivered manifest; the current one records 6 passed at 5b6cefcbc8, a 5-passed base arm at 0baeb0d40d, two negative-control logs, and ruff status.",
+    "write_paths": "the manifest declares reckon/crew/routing.py, reckon/crew/plan_review.py, the new test and the evidence fragment; every path in the gained commits is inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_launch_reuses_what_queue_time_proved.py:243 reddens when the short-circuit returns before the findings check, as logs/negative-control-unanswered.log records (FAILED at that id, EXIT=1), but the parity arm at line 16 is still vacuous in its edit=False case and no arm stores two reviews for one plan.",
+    "evidence": "the head arm (logs/head-gate.log, 6 passed, EXIT=0) and the base arm (logs/baseline-suite.log, 5 passed, EXIT=0 at 0baeb0d40d) are recorded, but the done_when's importer clause rests on logs/head-importers.log, truncated at 84% with one F and no summary.",
+    "fit": "the new arms follow the file's idiom (module-level _launch/_direct helpers, monkeypatched review_coverage, rubric-driven report text) and reckon/crew/routing.py:2790 reuses the module's existing _plan_review_verdict refusal shape.",
+    "goal_fidelity": "reckon/crew/routing.py:2800-2806 replaces the early return with a record read plus the existing findings check, so a launch now reaches a direct dispatch's verdict while still skipping the coverage computation.",
+    "reuse": "reckon/crew/routing.py:2605-2620 re-derives the section-match check that reckon/crew/queue_admission.py:2521 _contract_is_current already owns, and routing.py:2642 re-derives part of queue_admission.py:2700 _plan_review_owed's digest comparison, instead of importing either.",
+    "scope_discipline": "git show --stat over 0baeb0d40d..49765673c6 lists only reckon/crew/routing.py, tests/test_a_launch_reuses_what_queue_time_proved.py and the declared evidence fragment."
+  },
+  "node": "review-of-a-launch-reuses-what-queue-time-proved-49765673c6df",
+  "node:reviewed": "a-launch-reuses-what-queue-time-proved",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'reuse a queued request's recorded contract at launch'; the gained commits keep the reuse and repair it so a launch judges the review's findings, at reckon/crew/routing.py:2790-2806.\nVERDICT done_when: the measure names tests/test_a_launch_reuses_what_queue_time_proved.py plus a timing arm and an importer-failure floor; the first two are recorded (6 passed, ratio 0.049833), the importer floor is not.\nVERDICT write_paths: the manifest declares routing.py, plan_review.py, the new test and the evidence fragment; every path in the gained commits is inside them.\nVERDICT manifest: read both the current and the attempt-1 as-delivered manifest; the current one records 6 passed at 5b6cefcbc8, a 5-passed base arm at 0baeb0d40d, two negative-control logs, and ruff status.\nVERDICT diff: read 0baeb0d40d..49765673c6 commit by commit: 5b6cefcbc8 replaces an early return with a findings-judging read of the review record and adds one arm; 49765673c6 adds the evidence rows.\nVERDICT call_sites: reckon/crew/dispatch_plan.py:872 and reckon/crew/queue_admission.py:2604 reach require_plan_reviewed; queue_admission.py:2679 reaches it through _dispatch_gate_owed, and plan_review.py:1319 now routes read_plan_review through the memo.\nCALL_SITES: reckon/crew/dispatch_plan.py:872, reckon/crew/queue_admission.py:2604, reckon/crew/queue_admission.py:2599 _dispatch_gate_owed -> routing.require_plan_reviewed, reckon/crew/plan_review.py:1328 read_plan_review -> review_coverage_memo\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:2800-2806 replaces the early return with a record read plus the existing findings check, so a launch now reaches a direct dispatch's verdict while still skipping the coverage computation.\nSCORE evidence: 13\nJUSTIFICATION evidence: the head arm (logs/head-gate.log, 6 passed, EXIT=0) and the base arm (logs/baseline-suite.log, 5 passed, EXIT=0 at 0baeb0d40d) are recorded, but the done_when's importer clause rests on logs/head-importers.log, truncated at 84% with one F and no summary.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat over 0baeb0d40d..49765673c6 lists only reckon/crew/routing.py, tests/test_a_launch_reuses_what_queue_time_proved.py and the declared evidence fragment.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_launch_reuses_what_queue_time_proved.py:243 reddens when the short-circuit returns before the findings check, as logs/negative-control-unanswered.log records (FAILED at that id, EXIT=1), but the parity arm at line 240 is still vacuous in its edit=False case and no arm stores two reviews for one plan.\nSCORE fit: 17\nJUSTIFICATION fit: the new arms follow the file's idiom (module-level _launch/_direct helpers, monkeypatched review_coverage, rubric-driven report text) and reckon/crew/routing.py:2790 reuses the module's existing _plan_review_verdict refusal shape.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/routing.py:2605-2620 re-derives the section-match check that reckon/crew/queue_admission.py:2521 _contract_is_current already owns, and routing.py:2642 re-derives part of queue_admission.py:2700 _plan_review_owed's digest comparison, instead of importing either.\nFINDING reckon/crew/routing.py:2800 non-blocking: the short-circuit branch calls read_plan_review(project, node.plan) with no plan=, so it selects the mtime-newest record for the plan rather than the newest covering record that plan_review.read_plan_review's own docstring and the else branch specify; with more than one stored review for a plan the launch can judge another section's findings, which is the same launch-versus-direct divergence the repair exists to close and is invisible to the tests because every fixture stores one review.\nFINDING reckon/crew/routing.py:2605 non-blocking: the section-match test duplicates queue_admission._contract_is_current (queue_admission.py:2521) line for line, and _contract_still_describes (routing.py:2642) repeats the digest comparison inside queue_admission._plan_review_owed (queue_admission.py:2700); both files are already imported lazily from routing.py, so the checks could be factored into one owner rather than copied.\nFINDING reckon/crew/routing.py:2728 non-blocking: `launching` is inferred from `units is not None`, but queue_admission._dispatch_gate_owed (queue_admission.py:2599) also passes units explicitly for a queued request that recorded no contract, so that path can adopt a stale handover's contract for the same node and section and skip the coverage hold its own docstring says the full gate decides.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T222907809727-a-launch-reuses-what-queue-time-proved/logs/head-importers.log:19 non-blocking: the done_when clause 'the test files importing reckon.crew.routing and reckon.crew.plan_review add no failures against the base revision' is still unestablished after the repair round; the only artifact is the aborted attempt-1 log, 20 lines with one F at 84%, no summary and no EXIT line, and neither manifest records an importer arm.",
+  "review_run_id": "r-20261029T013552373289-review-of-a-launch-reuses-what-queue-time-proved-49765673c6df",
+  "reviewed_base_sha": "0baeb0d40d780256c17223fe67396b938c5723f0",
+  "reviewed_head_sha": "49765673c6df36c9115b1689ff614e1765835ae8",
+  "reviewed_range_note": "scored the delta gained since the earlier review at 0baeb0d40d (commits 5b6cefcbc8, 49765673c6); the full change fd7bb0bbad..49765673c6 was also read for context, including reckon/crew/plan_review.py, which the dispatch's goal list does not name but which the first commit carries.",
+  "reviewed_run_id": "r-20261028T222907809727-a-launch-reuses-what-queue-time-proved",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T02:35:00+00:00",
+  "total": 89
+}
