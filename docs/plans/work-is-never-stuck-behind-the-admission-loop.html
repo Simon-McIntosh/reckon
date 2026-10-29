@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="60">
+<meta name="plan-version" content="61">
 <meta name="plan-modified" content="2026-10-29">
 </head>
 <body>
@@ -258,8 +258,11 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261029T155223893067-review-of-a-landing-measure-is-bounded-by-what-it-measures-35f4d6af36d0" data-who="reckon-build" data-when="2026-10-29T16:00:54.656Z">
     <div class="r-comment-body"><p>Independent review of r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures at 35f4d6af36 against base 1ed6b58d0e: parsed, total 95/120 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 5), added_failure_count 0, four non-blocking findings — two self-referential assertions in the new test and two reuse/cost notes on queue_landing — and no blocking finding.</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261029T161434401699-review-of-a-landing-measure-is-bounded-by-what-it-measures-8dbc633a903a" data-who="reckon-build" data-when="2026-10-29T16:23:05.109Z">
+    <div class="r-comment-body"><p>Independent review of r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures covering only the gained commit 8dbc633a90 (base 35f4d6af36): status parsed, six dimensions scored goal_fidelity 16, evidence 16, scope_discipline 19, durability 13, fit 18, reuse 13, zero added failures (base arm 61 passed and after arm 11 passed, both EXIT=0), and four non-blocking findings — the history-read case&#x27;s second assertion compares a counter against itself, no case drives land_once so the pass-wide wiring is unguarded, _pass_history reads only live pointers so a landed run&#x27;s measurement stops sizing bounds, and _measurement_record duplicates the read half of _stored_measurement.</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261029T155817732809-review-of-the-queue-reports-its-own-stalls-a07d04759a28" data-who="reckon-build" data-when="2026-10-29T16:05:50.396Z">
-    <div class="r-comment-body"><p>independent review of r-20261028T223716141209-the-queue-reports-its-own-stalls at a07d04759a scores goal_fidelity 18, evidence 11, scope_discipline 19, durability 12, fit 15, reuse 11 (total 86), records zero added failures, and raises two blocking findings — the drain view&#x27;s stuck rule at runs.py:2207 marks any live pointer older than an hour with any verdict as stuck (a run launched and working over an hour now reads as stuck), and the done-when&#x27;s drain-view age bullet at runs.py:2222 has no test at all</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261028T223716141209-the-queue-reports-its-own-stalls at a07d04759a scores goal_fidelity 18, evidence 11, scope_discipline 19, durability 12, fit 15, reuse 11 (total 86), records zero added failures, and raises two blocking findings — the drain view's stuck rule at runs.py:2207 marks any live pointer older than an hour with any verdict as stuck (a run launched and working over an hour now reads as stuck), and the done-when's drain-view age bullet at runs.py:2222 has no test at all</p></div>
 </div>
 </section>
 </main>

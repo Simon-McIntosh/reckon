@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:3997 calls queue_landing.land_once",
+    "reckon/crew/queue_landing.py:958 land_once hands the pass history to _measure_delivery",
+    "reckon/crew/queue_landing.py:960 a measured record joins the pass history"
+  ],
+  "completed_at": "2026-10-29T16:23:05.109Z",
+  "dispatched_at": "2026-10-29T16:18:23Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landing_measure_is_bounded_by_what_it_measures.py",
+      "id": "fe0cf32addd",
+      "line": "296",
+      "severity": "non-blocking",
+      "text": "`assert len(reads) == after_history` compares the counter against itself, so it holds whatever _measure_delivery does once after_history is fixed; the independent guard is the `== 3` literal at :269."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "f0685e14513",
+      "line": "958",
+      "severity": "non-blocking",
+      "text": "no case drives land_once, so a revert of this line to _measure_delivery(pointer, run_id, head, tree) without `stored` keeps every case green and the per-run history cost returns silently."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "f7620c7b7c0",
+      "line": "421",
+      "severity": "non-blocking",
+      "text": "_pass_history reads only live pointers, so a measurement taken by a run that has since landed no longer sizes any bound and the project's median seconds per file decays to the floor as runs land; the replaced helper read the run directories because they outlive the live pointer."
+    },
+    {
+      "file": "reckon/crew/queue_landing.py",
+      "id": "f91094f95e6",
+      "line": "412",
+      "severity": "non-blocking",
+      "text": "_measurement_record adds a second reader of landing-measure/measurement.json beside _stored_measurement at :379, which keeps its own identical json.loads and Mapping check."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures/logs/after-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures/logs/base-arm.log"
+  },
+  "item_verdicts": {
+    "diff": "commit 8dbc633a90 against 35f4d6af36: _stored_measurements replaced by _measurement_record + _pass_history, _measure_delivery takes stored, land_once builds history once per project",
+    "done_when": "node tests 11 passed EXIT=0 at 8dbc633a90, base arm 61 passed EXIT=0 at 1ed6b58d0e, importer arm 61 passed EXIT=0 at 8dbc633a90, two negative controls at 1 failed EXIT=1",
+    "goal": "the gained commit's goal is a bounded-cost history read inside the landing pass; _pass_history reads one record per live run of the project",
+    "manifest": "read; commits, both arms, the importer arm and two negative controls recorded",
+    "write_paths": "queue_landing.py, the test file and the landing fragment; all inside the declared scope"
+  },
+  "justifications": {
+    "durability": "the walk regression reddens the history-read case, but land_once's wiring at reckon/crew/queue_landing.py:958 is untested.",
+    "evidence": "tests/test_a_landing_measure_is_bounded_by_what_it_measures.py:269 asserts three reads against 60 unrelated directories; logs/negative-control-history-reads.log records the reinstated walk failing it.",
+    "fit": "reckon/crew/queue_landing.py:412 sits beside _measurement_path and follows the module's private-helper idiom.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:956 builds the history once per project per pass and hands the same list to every measured run.",
+    "reuse": "reckon/crew/queue_landing.py:412 duplicates the read half of _stored_measurement at :379.",
+    "scope_discipline": "the diff touches only the three declared paths, all inside the node's write scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commit's goal is a bounded-cost history read inside the landing pass, and reckon/crew/queue_landing.py:421 `_pass_history` reads one measurement record per live run of the project instead of walking `runs.runs_dir()`.\nVERDICT done_when: the node's done-when names tests/test_a_landing_measure_is_bounded_by_what_it_measures.py with four bound/retry behaviours plus no added failures in the importer tests; logs/after-arm.log records 11 passed EXIT=0 at 8dbc633a90, logs/base-arm.log 61 passed EXIT=0 at 1ed6b58d0e, logs/head-importers.log 61 passed EXIT=0 at 8dbc633a90.\nVERDICT write_paths: the declared scope is reckon/crew/landing_measure.py, reckon/crew/queue_landing.py, tests/test_a_landing_measure_is_bounded_by_what_it_measures.py and the landing fragment; the gained commit touches queue_landing.py, the test file and the fragment, all inside it.\nVERDICT manifest: read; it records commits 35f4d6af36 and 8dbc633a90, the after arm at 11 passed, the base arm at 61 passed, the importer arm at 61 passed, and two negative controls at 1 failed / EXIT=1.\nVERDICT diff: read commit 8dbc633a90 against its parent 35f4d6af36 \u2014 148 insertions, 27 deletions across queue_landing.py, the test file and the fragment; `_stored_measurements` is replaced by `_measurement_record` + `_pass_history`, `_measure_delivery` takes the history as a parameter, and land_once builds `history[project]` once per pass and appends each measurement it takes.\nCALL_SITES: reckon/crew/queue_admission.py:3997 (calls queue_landing.land_once), reckon/crew/queue_landing.py:958 (land_once hands the pass history to _measure_delivery), reckon/crew/queue_landing.py:960 (a measured record joins the pass history)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:956 builds the history once per project per pass and hands the same list to every measured run, which is what the commit states.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_landing_measure_is_bounded_by_what_it_measures.py:269 asserts three records read against 60 unrelated directories, and logs/negative-control-history-reads.log records the reinstated walk failing that case at EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/queue_landing.py, tests/test_a_landing_measure_is_bounded_by_what_it_measures.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-landing-measure-is-bounded-by-what-it-measures.html.\nSCORE durability: 13\nJUSTIFICATION durability: the walk regression reddens tests/test_a_landing_measure_is_bounded_by_what_it_measures.py::test_a_pass_reads_the_projects_history_once_for_every_run_it_measures, but nothing exercises land_once itself, so a revert of reckon/crew/queue_landing.py:958 to `_measure_delivery(pointer, run_id, head, tree)` leaves all 11 cases green.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/queue_landing.py:412 sits beside the existing `_measurement_path` at :391 and follows the module's private-helper idiom, with no plan or ticket label in the code or comments.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/queue_landing.py:412 `_measurement_record` re-reads and re-parses the same landing-measure/measurement.json that `_stored_measurement` at :379 already reads, instead of the one function owning the read.\nFINDING tests/test_a_landing_measure_is_bounded_by_what_it_measures.py:296 non-blocking: `assert len(reads) == after_history` compares the counter against itself, so it is true whatever `_measure_delivery` does once `after_history` is fixed; the independent guard is the `== 3` literal at :269, and this half would not fail if the per-run walk returned to `_measure_delivery`.\nFINDING reckon/crew/queue_landing.py:958 non-blocking: no case drives `land_once`, so the pass-wide once-per-project wiring it adds is unguarded \u2014 reverting this line to call `_measure_delivery` without `stored` keeps every case green, and the real per-run cost the commit removes would return silently.\nFINDING reckon/crew/queue_landing.py:421 non-blocking: `_pass_history` reads only the project's live pointers, so a measurement taken by a run that has since landed (and left the live set) no longer sizes any bound and a project with one run in flight falls back to the floor; the helper it replaces read the run directories because they outlive the live pointer, so the plan's \"median seconds per file across stored measurements\" now decays as runs land.\nFINDING reckon/crew/queue_landing.py:412 non-blocking: `_measurement_record` adds a second reader of landing-measure/measurement.json beside `_stored_measurement` at :379, which keeps its own identical json.loads + Mapping check; the read-and-parse belongs to one owner with the head/command/unreadable checks layered on top.\n",
+  "review_run_id": "r-20261029T161434401699-review-of-a-landing-measure-is-bounded-by-what-it-measures-8dbc633a903a",
+  "reviewed_base_sha": "35f4d6af36d0d3439df4f3958d47d22b56cd865a",
+  "reviewed_head_sha": "8dbc633a903a1cc57eeac859474bce96e9d517ba",
+  "reviewed_run_id": "r-20261028T230039168008-a-landing-measure-is-bounded-by-what-it-measures",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-10-29T16:28:31.669577+00:00",
+  "total": 95
+}
