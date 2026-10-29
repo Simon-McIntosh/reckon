@@ -18,6 +18,7 @@ from typing import Any
 from reckon import checkout_trust, flight
 from reckon.crew import (
     follower_reload,
+    obligation_snapshot,
     recovery,
     recovery_liveness,
     recovery_watch,
@@ -51,8 +52,94 @@ class StationHeldError(RuntimeError):
     """A station already holds this node's writer lease."""
 
 
+# How often the station's own liveness beat is written. It is a handful of
+# seconds because the beat's whole job is to stay inside the stale window while
+# a tick is busy: the tick can spend minutes in one per-project refresh, and a
+# beat written only by the tick hands every reader a station that reads stopped
+# while it is working.
+STATION_BEAT_SECONDS = 5.0
+
+
 def _start_thread(run: Callable[[], None]) -> None:
     threading.Thread(target=run, name="station-sweep", daemon=True).start()
+
+
+class StationBeat:
+    """Write the station's heartbeat from a thread of its own.
+
+    The beat is the one fact an off-node reader has about this station being
+    alive, and the tick is the worst place to write it: a tick walks mounted
+    projects across ledger reads and path resolution, and under a loaded
+    filesystem one takes minutes. So liveness is written here, on its own
+    thread and its own store handle, for as long as the process lives; what the
+    tick records instead is progress -- the stage it has entered and the
+    instants that bound it -- and the reader compares the two to tell a slow
+    station from a stopped one.
+    """
+
+    def __init__(
+        self,
+        root: Path,
+        *,
+        beat_seconds: float | None = None,
+        clock: Callable[[], datetime] | None = None,
+        store: station_store.StationStore | None = None,
+    ) -> None:
+        self.root = root
+        self.beat_seconds = (
+            STATION_BEAT_SECONDS if beat_seconds is None else beat_seconds
+        )
+        self._clock = clock or (lambda: datetime.now(tz=UTC))
+        self._store = store
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def _handle(self) -> station_store.StationStore:
+        """This thread's own store handle, opened on first use.
+
+        A handle of its own rather than the tick's: the two write the same
+        table from different threads, and a connection shared across threads is
+        the kind of coupling that turns one slow tick into a corrupted beat.
+        """
+        if self._store is None:
+            self._store = station_store.StationStore(self.root)
+        return self._store
+
+    def beat_once(self) -> None:
+        """Move the heartbeat to now."""
+        self._handle().heartbeat(now=self._clock())
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self.beat_once()
+            except Exception:  # noqa: BLE001 - a missed beat is retried on the next
+                print(
+                    "station-beat-failure: the heartbeat could not be written",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                traceback.print_exc(file=sys.stderr)
+            self._stop.wait(self.beat_seconds)
+
+    def start(self) -> None:
+        """Beat once, then keep beating on its own thread."""
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(
+            target=self._run, name="station-beat", daemon=True
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Stop beating and close this thread's handle."""
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=max(1.0, self.beat_seconds * 2))
+            self._thread = None
+        if self._store is not None:
+            self._store.close()
+            self._store = None
 
 
 class SweepBeat:
@@ -234,11 +321,13 @@ class Station:
         projects: Callable[[], Mapping[str, Path]] = flight.mounted_project_docs,
         stall_seconds: int = 900,
         sweeps: SweepBeat | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         self.store = store
         self.home = home or crew_home()
         self.projects = projects
         self.stall_seconds = stall_seconds
+        self.clock = clock or (lambda: datetime.now(tz=UTC))
         # The review reflex and settle detection run here, once for every
         # session on the node, rather than in each follower.
         self.sweeps = SweepBeat() if sweeps is None else sweeps
@@ -247,10 +336,28 @@ class Station:
         # another home holds another fleet's rows.
         self.store.set_station_value(station_store.CREW_HOME_KEY, str(self.home))
 
+    def _enter(self, stage: str, *, started: datetime | None = None) -> None:
+        """Record the stage this tick has entered, and its start when it opens.
+
+        The stage is what a reader names when the tick outlives the stale
+        window, and the start is what makes the tick's age measurable at all.
+        Both are written before the work they name rather than after it, so a
+        stage a reader sees is the stage the tick has not yet finished.
+        """
+        if started is not None:
+            self.store.set_station_value(
+                obligation_snapshot.STATION_TICK_STARTED_AT_KEY,
+                started.astimezone(UTC).isoformat(),
+            )
+        self.store.set_station_value(obligation_snapshot.STATION_TICK_STAGE_KEY, stage)
+
     def tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
         """Publish every new transition, then move the heartbeat."""
-        moment = now or datetime.now(tz=UTC)
+        moment = now or self.clock()
+        stages = obligation_snapshot.STATION_TICK_STAGES
+        self._enter(stages[0], started=moment)
         self.store.tick(home=self.home)
+        self._enter(stages[1])
         verdicts = self.store.classify_tick(
             now_seconds=moment.timestamp(), stall_seconds=self.stall_seconds
         )
@@ -258,6 +365,7 @@ class Station:
         # snapshot this pass exports carries the heartbeat it reads: a station
         # that beat only at the end would hand its first reader the previous
         # station's beat, or none at all, and read as stopped while it started.
+        self._enter(stages[2])
         self.store.heartbeat(now=moment)
         pointers = {
             str(row["run_id"]): json.loads(str(row["fields"]))
@@ -270,6 +378,10 @@ class Station:
             | {str(value.get("project") or "") for value in pointers.values()}
         )
         published: list[dict[str, Any]] = []
+        # Every project's refresh and export happens in this one stage, because
+        # it is the stage the night's slow ticks spent their time in: a reader
+        # that names it says the station is walking a project, not that it died.
+        self._enter(stages[3])
         for project in sorted(project_names - {""}):
             current = {
                 run_id: verdict
@@ -347,7 +459,14 @@ class Station:
                     moment=moment,
                     changed=bool(events),
                 )
+        self._enter(stages[4])
         self.store.sweep_retention(now=moment)
+        # The finish stamp is what closes the tick for a reader: until it is
+        # later than the start, a stage on record is a tick still running.
+        self.store.set_station_value(
+            obligation_snapshot.STATION_TICK_FINISHED_AT_KEY,
+            self.clock().astimezone(UTC).isoformat(),
+        )
         return published
 
 
@@ -386,9 +505,14 @@ def run_station(*, interval: float = 1.0, once: bool = False) -> None:
             signum: signal.signal(signum, stop)
             for signum in (signal.SIGINT, signal.SIGTERM)
         }
+        beat: StationBeat | None = None
         try:
             station = Station(store)
             reloader = StationReloader(store.root)
+            # The beat starts before the first tick, so a station whose opening
+            # tick is slow is never read as one that never started.
+            beat = StationBeat(store.root, clock=station.clock)
+            beat.start()
             renewed_at = time.monotonic()
             while not stopping:
                 station.tick()
@@ -403,6 +527,8 @@ def run_station(*, interval: float = 1.0, once: bool = False) -> None:
                 reloader.poll()
                 time.sleep(interval)
         finally:
+            if beat is not None:
+                beat.stop()
             for signum, handler in previous.items():
                 signal.signal(signum, handler)
             lease.release()
