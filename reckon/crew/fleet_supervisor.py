@@ -74,7 +74,10 @@ from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from reckon import served_code
 
 from reckon import service
 from reckon._store import write_json_atomically
@@ -121,6 +124,14 @@ START_MODE = "start"
 # wakeup per interval.
 REQUEST_WAIT_SECONDS = 0.5
 REQUEST_READ_BYTES = 65536
+
+# The trust test behind a moved-checkout verdict loads every module in the
+# package, so it is not something a loop that wakes twice a second can run on
+# every pass. A pass compares the cheap code stamp only; the verdict is paid for
+# when the stamp has moved, once for that stamp, and never twice inside this
+# interval. A checkout left dirty therefore costs one check however long it
+# stays dirty, and a tree that moves several times in a minute costs one.
+MOVE_CHECK_INTERVAL_SECONDS = 60.0
 
 # A session created with ``--create-background`` applies its layout with no
 # client's size to lay it out in, and zellij 0.45 sizes each tab from the
@@ -1800,42 +1811,36 @@ def _reexec(exec_: Any, *, standby: bool = False) -> None:
     exec_(argv[0], argv)
 
 
-def _supervisor_source_root() -> Path:
-    """The checkout that supplied this imported package.
-
-    Resolved the way the followers and the admission service resolve theirs, so
-    the supervisor, the followers and the admit service all name one tree rather
-    than each counting its own way up from ``__file__``.
-    """
-    from reckon.crew_follow_commands import _import_root
-
-    return _import_root(sys.modules[__name__])
+def _checkout_root() -> Path:
+    """The checkout that supplied this imported package."""
+    return Path(__file__).resolve().parents[2]
 
 
 def _source_code_stamp() -> str:
-    """The content identity of the code the checkout would run next.
+    """The cheap half of the moved-code question: the checkout's code identity.
 
-    The same identity the admission service records and compares against, so a
-    commit that changes nothing under ``reckon/`` moves nothing here and
-    re-executes nothing.
-    """
-    from reckon.crew.follower_registration import follower_code_stamp
-
-    return follower_code_stamp()
-
-
-def _checkout_code_is_trusted() -> bool:
-    """Whether the checkout may replace this image.
-
-    The same trusted-checkout test the admission service and the followers use:
-    clean under ``reckon/`` against ``HEAD`` and importable. A tree mid-merge
-    refuses, so a running supervisor is never replaced by half-finished code.
+    One reading of git's own answer for the package, with no trust test behind
+    it, so a loop can ask it on every pass. It is the same identity
+    :func:`reckon.served_code.moved_checkout` compares, which is what lets the
+    trust test be deferred to the moment the two differ.
     """
     from reckon import checkout_trust
 
-    return checkout_trust.moved_checkout_is_trustworthy(
-        _supervisor_source_root()
-    ).trusted
+    return checkout_trust.source_code_identity(_checkout_root() / "reckon")
+
+
+def _moved_checkout(running_stamp: str) -> served_code.MovedCheckout:
+    """Whether the checkout's code moved off this image, and whether it may load.
+
+    The decision is the one the served-code path already makes, so the
+    supervisor, the followers and the MCP server agree on what a moved tree is
+    and on which moved trees are fit to run.
+    """
+    from reckon import served_code
+
+    return served_code.moved_checkout(
+        root=_checkout_root(), running_stamp=running_stamp
+    )
 
 
 def _run_session_copy(name: str, layout: str, environ: Mapping[str, str] | None) -> int:
@@ -2059,7 +2064,8 @@ def serve(
     exec_: Any = os.execv,
     standby: bool = False,
     code_stamp: Callable[[], str] | None = None,
-    checkout_trusted: Callable[[], bool] | None = None,
+    moved_checkout: Callable[[str], Any] | None = None,
+    clock: Callable[[], float] = time.monotonic,
 ) -> int:
     """Read requests from the FIFO until the batch step ends.
 
@@ -2068,16 +2074,15 @@ def serve(
     ``reload`` replaces this image, or when this loop's own stamp comparison
     finds the checkout has moved onto code this image does not carry.
 
-    ``code_stamp`` and ``checkout_trusted`` default to the stamp and
-    trusted-checkout test the admission service uses; both enter by argument so
-    a caller can drive the comparison against a temporary checkout.
+    ``code_stamp`` and ``moved_checkout`` default to the cheap code identity and
+    the moved-checkout decision the served-code path already makes; both enter
+    by argument, with ``clock``, so a caller can drive them against a temporary
+    checkout.
     """
     from reckon import checkout_trust
 
     code_stamp = _source_code_stamp if code_stamp is None else code_stamp
-    checkout_trusted = (
-        _checkout_code_is_trusted if checkout_trusted is None else checkout_trusted
-    )
+    moved_checkout = _moved_checkout if moved_checkout is None else moved_checkout
     environ = os.environ if environ is None else environ
     strip_inherited_variables(environ)
     apply_task_ceiling(environ)
@@ -2132,28 +2137,46 @@ def serve(
     try:
         pending = b""
         recorded_stamp = code_stamp()
+        tested_stamp: str | None = None
+        tested_at: float | None = None
         while True:
             _reap_finished_children()
             current_stamp = code_stamp()
             stamp_read = current_stamp != checkout_trust.IDENTITY_UNKNOWN
+            interval_passed = (
+                tested_at is None or clock() - tested_at >= MOVE_CHECK_INTERVAL_SECONDS
+            )
             if recorded_stamp == checkout_trust.IDENTITY_UNKNOWN:
                 # The identity this image would compare against did not answer
                 # at start, so there is nothing to compare against yet: adopt
-                # the checkout's stamp rather than re-executing on every tick,
-                # which would loop forever while the read keeps failing.
+                # the checkout's stamp rather than testing on every tick, which
+                # would loop forever while the read keeps failing.
                 if stamp_read:
                     recorded_stamp = current_stamp
-            elif stamp_read and current_stamp != recorded_stamp and checkout_trusted():
-                # The checkout has moved onto code this image does not carry and
-                # it may be run: replace the image in place through the same
-                # path a manual ``reload`` takes, so the declared services it
-                # adopted keep running and a later reader sees one supervisor.
-                log(
-                    f"code stamp moved from {recorded_stamp} to {current_stamp}; "
-                    "re-executing"
-                )
-                recorded_stamp = current_stamp
-                _reexec(exec_, standby=is_standby)
+            elif (
+                stamp_read
+                and current_stamp not in (recorded_stamp, tested_stamp)
+                and interval_passed
+            ):
+                # The cheap stamp has moved, so this is the one pass in the
+                # interval that pays for the verdict. That verdict carries the
+                # trust test, and it is remembered for this stamp, so a tree
+                # left dirty costs one check rather than one per pass.
+                tested_stamp = current_stamp
+                tested_at = clock()
+                verdict = moved_checkout(recorded_stamp)
+                if verdict.moved and verdict.trusted:
+                    # The checkout carries code this image does not, and it may
+                    # be run: replace the image in place through the same path a
+                    # manual ``reload`` takes, so the declared services it
+                    # adopted keep running and a later reader sees one
+                    # supervisor.
+                    log(
+                        f"code stamp moved from {recorded_stamp} to "
+                        f"{current_stamp}; re-executing"
+                    )
+                    recorded_stamp = current_stamp
+                    _reexec(exec_, standby=is_standby)
             if not is_standby:
                 station_process.ensure()
             if not readable_within(descriptor, REQUEST_WAIT_SECONDS):

@@ -4,7 +4,9 @@ The supervisor outlives every session on the node, so a fix to the code it runs
 reaches the node only when it notices that the checkout has moved on. It compares
 its recorded code stamp with the checkout's on each pass and re-executes in place
 through the same reload path a manual request takes -- unless the checkout is
-mid-edit, in which case it keeps running the image it has.
+mid-edit, in which case it keeps running the image it has. The trust test behind
+that verdict is expensive, so it is paid for once per moved stamp, not once per
+pass.
 """
 
 from __future__ import annotations
@@ -23,11 +25,12 @@ ROOT = Path(fleet_supervisor.__file__).resolve().parents[2]
 
 # The driver runs one real ``serve`` loop in its own process, so the loop's
 # child reaping and its task-limit change stay out of the test process. Only the
-# three things a test must control enter by injection: the process replacement,
-# the recorded stamp and the trusted-checkout verdict.
-DRIVER = '''
+# things a test must control enter by injection: the process replacement, the
+# cheap code stamp, the moved-checkout verdict and the clock.
+DRIVER = """
 import json
 import sys
+import types
 from pathlib import Path
 
 sys.path.insert(0, sys.argv[1])
@@ -37,8 +40,10 @@ config = json.loads(Path(sys.argv[2]).read_text())
 environ = dict(config["environ"])
 runtime = Path(config["runtime"])
 calls = Path(config["calls"])
+verdicts = Path(config["verdicts"])
 stamp_path = Path(config["stamp"])
 trust_path = Path(config["trust"])
+clock_path = Path(config["clock"])
 
 
 def no_station(self):
@@ -52,18 +57,30 @@ def code_stamp():
     return stamp_path.read_text(encoding="utf-8").strip()
 
 
-def checkout_trusted():
-    return trust_path.read_text(encoding="utf-8").strip() == "trusted"
+def clock():
+    return float(clock_path.read_text(encoding="utf-8").strip())
+
+
+def moved_checkout(running_stamp):
+    current = code_stamp()
+    trusted = trust_path.read_text(encoding="utf-8").strip() == "trusted"
+    with verdicts.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps({"running": running_stamp, "disk": current}) + "\\n")
+    return types.SimpleNamespace(
+        moved=current != running_stamp,
+        trusted=trusted,
+        detail="",
+        running_stamp=running_stamp,
+        disk_stamp=current,
+    )
 
 
 def exec_(program, argv):
-    """Stand in for os.execv: record the replacement and adopt its services."""
     declared = fleet_supervisor.declared_services(environ) or {}
     services = fleet_supervisor.DeclaredServices(runtime, environ)
     services.reload()
     adopted = {
-        name: fleet_supervisor.recorded_service_pid(runtime, name)
-        for name in declared
+        name: fleet_supervisor.recorded_service_pid(runtime, name) for name in declared
     }
     with calls.open("a", encoding="utf-8") as handle:
         handle.write(
@@ -77,19 +94,21 @@ raise SystemExit(
         environ,
         exec_=exec_,
         code_stamp=code_stamp,
-        checkout_trusted=checkout_trusted,
+        moved_checkout=moved_checkout,
+        clock=clock,
     )
 )
-'''
+"""
 
 SERVICE = """
+import os
 import pathlib
 import sys
 import time
 
 starts = pathlib.Path(sys.argv[1])
 with starts.open("a", encoding="utf-8") as handle:
-    handle.write("start\\n")
+    handle.write(f"start {os.getpid()}\\n")
 time.sleep(600)
 """
 
@@ -102,9 +121,12 @@ class Running:
         self.state = tmp_path / "state"
         self.stamp = tmp_path / "stamp"
         self.trust = tmp_path / "trust"
+        self.clock = tmp_path / "clock"
         self.calls = tmp_path / "calls.jsonl"
+        self.verdicts = tmp_path / "verdicts.jsonl"
         self.stamp.write_text("stamp-a\n", encoding="utf-8")
         self.trust.write_text(("trusted" if trusted else "untrusted") + "\n")
+        self.clock.write_text("0\n", encoding="utf-8")
 
         config = tmp_path / "config" / "fleet"
         config.mkdir(parents=True)
@@ -132,8 +154,10 @@ class Running:
                     "environ": environ,
                     "runtime": str(self.runtime),
                     "calls": str(self.calls),
+                    "verdicts": str(self.verdicts),
                     "stamp": str(self.stamp),
                     "trust": str(self.trust),
+                    "clock": str(self.clock),
                 }
             )
         )
@@ -154,14 +178,23 @@ class Running:
         replacement.write_text(value + "\n", encoding="utf-8")
         replacement.replace(self.stamp)
 
-    def recorded_calls(self) -> list[dict]:
-        if not self.calls.exists():
+    def set_clock(self, seconds: float) -> None:
+        self.clock.write_text(f"{seconds}\n", encoding="utf-8")
+
+    def recorded(self, path: Path) -> list[dict]:
+        if not path.exists():
             return []
         return [
             json.loads(line)
-            for line in self.calls.read_text(encoding="utf-8").splitlines()
+            for line in path.read_text(encoding="utf-8").splitlines()
             if line.strip()
         ]
+
+    def replacements(self) -> list[dict]:
+        return self.recorded(self.calls)
+
+    def verdict_checks(self) -> list[dict]:
+        return self.recorded(self.verdicts)
 
     def stop(self) -> None:
         try:
@@ -184,22 +217,27 @@ def _open_task_limit() -> int:
     return 6000 if soft == resource.RLIM_INFINITY else soft
 
 
+def _passes(seconds: float) -> None:
+    """Let the loop run a known number of its own passes."""
+    time.sleep(fleet_supervisor.REQUEST_WAIT_SECONDS * seconds * 2)
+
+
 def test_a_moved_stamp_re_executes_once_on_a_trusted_checkout(tmp_path):
     run = Running(tmp_path, trusted=True)
     try:
         wait_for((run.runtime / "requests").exists)
-        assert run.recorded_calls() == []
+        assert run.replacements() == []
 
         run.set_stamp("stamp-b")
-        wait_for(run.recorded_calls)
+        wait_for(run.replacements)
 
         # A real exec never returns; the stand-in does, so the loop sees the
         # same moved stamp again on its next passes and must not act on it.
-        time.sleep(fleet_supervisor.REQUEST_WAIT_SECONDS * 4)
-        calls = run.recorded_calls()
-        assert len(calls) == 1, calls
-        assert calls[0]["argv"][1:3] == ["-m", "reckon.crew.fleet_supervisor"]
-        assert "--standby" not in calls[0]["argv"]
+        _passes(2)
+        replacements = run.replacements()
+        assert len(replacements) == 1, replacements
+        assert replacements[0]["argv"][1:3] == ["-m", "reckon.crew.fleet_supervisor"]
+        assert "--standby" not in replacements[0]["argv"]
     finally:
         run.stop()
 
@@ -209,14 +247,46 @@ def test_an_untrusted_checkout_leaves_the_supervisor_running(tmp_path):
     try:
         wait_for((run.runtime / "requests").exists)
         run.set_stamp("stamp-b")
-        time.sleep(fleet_supervisor.REQUEST_WAIT_SECONDS * 4)
+        _passes(2)
 
-        assert run.recorded_calls() == []
+        assert run.replacements() == []
         # The loop is still serving: a request written now is answered.
         token = "b" * 32
         send_request(run.runtime, f"ready {token}")
         answered = run.state / "migration" / f"ready-{token}.json"
         wait_for(answered.exists)
+    finally:
+        run.stop()
+
+
+def test_a_dirty_checkout_costs_one_trust_test_per_moved_stamp(tmp_path):
+    run = Running(tmp_path, trusted=False)
+    try:
+        wait_for((run.runtime / "requests").exists)
+        assert run.verdict_checks() == []
+
+        # One move, then many passes on the tree it moved to: the verdict is
+        # remembered for that stamp, so exactly one trust test is paid.
+        run.set_stamp("stamp-b")
+        wait_for(run.verdict_checks)
+        _passes(2)
+        checks = run.verdict_checks()
+        assert len(checks) == 1, checks
+        assert checks[0] == {"running": "stamp-a", "disk": "stamp-b"}
+        assert run.replacements() == []
+
+        # A second move is a second stamp, so it costs one more check -- once
+        # the interval has passed; inside it the loop does not pay again.
+        run.set_stamp("stamp-c")
+        _passes(2)
+        assert len(run.verdict_checks()) == 1, run.verdict_checks()
+
+        run.set_clock(fleet_supervisor.MOVE_CHECK_INTERVAL_SECONDS)
+        wait_for(lambda: len(run.verdict_checks()) == 2)
+        _passes(2)
+        assert len(run.verdict_checks()) == 2, run.verdict_checks()
+        assert run.verdict_checks()[1] == {"running": "stamp-a", "disk": "stamp-c"}
+        assert run.replacements() == []
     finally:
         run.stop()
 
@@ -232,30 +302,28 @@ def test_a_declared_service_keeps_running_across_the_re_exec(tmp_path):
     )
     try:
         wait_for((run.runtime / "requests").exists)
-        wait_for(lambda: starts.exists() and starts.read_text().count("start") == 1)
-        recorded = fleet_supervisor.recorded_service_pid(run.runtime, "demo")
-        assert recorded is not None
+        wait_for(lambda: starts.exists() and len(starts.read_text().splitlines()) == 1)
+        # The service names its own pid: every later reading is of the process,
+        # not of the supervisor's record of it.
+        pid = int(starts.read_text().split()[1])
 
         run.set_stamp("stamp-b")
-        wait_for(run.recorded_calls)
-        time.sleep(fleet_supervisor.REQUEST_WAIT_SECONDS * 4)
+        wait_for(run.replacements)
+        _passes(2)
 
-        calls = run.recorded_calls()
-        assert len(calls) == 1, calls
-        # The replacement image finds the service the old image started: same
-        # pid, so the recorded service is adopted rather than started again.
-        assert calls[0]["adopted"] == {"demo": recorded}
-        assert recorded_service_alive(recorded)
-        assert starts.read_text().count("start") == 1
+        assert len(run.replacements()) == 1, run.replacements()
+        assert _alive(pid)
+        assert fleet_supervisor.lock_held("demo", run.runtime)
+        assert len(starts.read_text().splitlines()) == 1, starts.read_text()
 
         run.stop()
-        assert starts.read_text().count("start") == 1
+        assert len(starts.read_text().splitlines()) == 1, starts.read_text()
     finally:
         if run.process.poll() is None:
             run.stop()
 
 
-def recorded_service_alive(pid: int) -> bool:
+def _alive(pid: int) -> bool:
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
