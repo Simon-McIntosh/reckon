@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T21:59:13.609Z",
+  "dispatched_at": "2026-11-02T21:49:19Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:90",
+      "id": "reasoning-1",
+      "reason": "the deliverable's justification for skipping the gate's verdict is this equality, and a node implementing it as written will either weaken the direct gate to make case 4 green or ship a test whose fixture cannot reach the two refusing conditions.",
+      "text": "s4's fast path checks only the request's two digests, the surviving covering record and that one record's unanswered findings, while `require_plan_reviewed` (`reckon/crew/routing.py:2694\u20132755`) also refuses when the plan has no non-incomplete design review, and refuses on unanswered findings of the newest review record and of the design review \u2014 records the fast path never reads; so a queued request can be launched while a fresh direct dispatch of the same section at the same moment is refused, which is the opposite of the section's stated equivalence",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:90",
+      "id": "done_when-1",
+      "reason": "a control that cannot turn its case red leaves the section's central measure (zero coverage computations on an unchanged plan) unshown, so the node has no evidence that the fast path is what suppressed the call rather than a memo elsewhere.",
+      "text": "s4's first negative control says \"Dropping the digest comparison in `_plan_review_owed` fails the first case\", but the digest comparison is a guard on the fast-path return, so deleting it makes the fast path strictly more permissive: on the unchanged, covered plan the first case's zero `review_coverage` calls still hold and the control stays green",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:205",
+      "id": "done_when-2",
+      "reason": "without a control that removes the pointer write and shows case 3 red, the node can pass its gate with fields written nowhere or written only for the request it launched.",
+      "text": "s21's third case (\"each queued pointer carries `queue_position`, `rank_key` and `last_admission`\") has no negative control: the one control substitutes a whole pass for `--run`, which launches the higher-ranked request either way, so it neither exercises nor falsifies the pointer-writing case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:90",
+      "id": "reasoning-2",
+      "reason": "the deliverable's behaviour is unaffected, since that branch falls through the same recompute-then-gate route the section describes; only the path description needs the second call site named.",
+      "text": "the Why says `routing.require_plan_reviewed` \"is reached only through `_dispatch_gate_owed`, for a pointer with no current contract\", but `_plan_review_owed` also calls `_dispatch_gate_owed` for a pointer that does carry a current contract, when no stored review covers any unit the request reads (`reckon/crew/queue_admission.py:3309\u20133318`)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "0d4c16f2750c4e14c0d743ea03da50d75a35f0d3",
+  "plan_fingerprint": "6da0cf02f709691ff0579c6b4cb6d896c0fa1a06823cb736e1788ce819773d2b",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 150,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T214800789151-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "4dfdaffb8f42e342d51a2d862d99e40e57b695d8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_plan_review_owed` is at `reckon/crew/queue_admission.py:3244`, `record_review_contract` at :3160 with the contract dict at :3137\u20133142, `advance_waiting_requests` at :2923, `_release_plan_review_holds` at :3389, `plan_review.review_coverage` at `plan_review.py:966`, `crew_run_commands.py` and `crew/runs.py` both exist, and the extensionless `a-read-costs-what-changed` href resolves as `.html` under the house convention.",
+    "done_when": "a finding \u2014 s4's first negative control (\"Dropping the digest comparison in `_plan_review_owed`\") cannot make its first case fail, and s21's third case (pointer fields written by a pass) is covered by no control at all.",
+    "evidence_paths": "pass \u2014 s4's timing arm writes under the run's `logs/` and the test file sits in `tests/`, both durable, with no session scratchpad or node-local temporary path named.",
+    "naming": "pass \u2014 the new names (`waits_seconds`, `queue_position`, `rank_key`, `last_admission`, `admit --run`) describe the mechanism and carry no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 s4 claims the fast path yields \"the same verdict a fresh direct dispatch would\", but the direct dispatch refuses on a missing/incomplete design review and on unanswered findings in the newest review record and the design review, none of which the fast path examines; and the Why sentence misplaces one of the two call sites that reach `require_plan_reviewed`.",
+    "single_goal": "pass \u2014 s4 is one goal (a launch reuses what queue time proved) with its contract-recording step and stage clock as means to that goal, and s21 is one verb plus the fields that verb reads, closed by one verdict over three cases.",
+    "wiring": "pass \u2014 s4 declares `depends-on` `a-read-costs-what-changed#s6` and s21 declares the same, and both named upstream sections exist in that plan; the plan-level `informs` names `a-queue-holds-the-whole-plan`, which exists."
+  },
+  "section_digests": {
+    "_document": "0610c3eb8e5f68f649b3cfa041b215ba6c61aa315b28ff3e7ab36669ee820516",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "c93c9f5deb4d2ceb3ee99b575a2b3473ae1184d25b2f6b954c357f6da2acf09a",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "6f07231ea3305e926c8d4bd8b458ad524a09fbb89e43ea93e33b5100216e1678",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T22:13:41.036602+00:00"
+}
