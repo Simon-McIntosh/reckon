@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/supervisor_main.py:26",
+    "reckon/crew/dispatch_launch.py:_run_supervisor:3822",
+    "reckon/crew/dispatch_launch.py:_supervisor_spawn_worker:2804",
+    "reckon/crew/dispatch_launch.py:_spawn_worker_retrying_a_vanished_bind:1710"
+  ],
+  "completed_at": "2026-11-02T22:20:01.116Z",
+  "dispatched_at": "2026-11-02T22:04:42Z",
+  "findings": [
+    {
+      "file": "tests/test_stop_before_spawn_spawns_nothing.py",
+      "id": "f3e1c0206ca",
+      "line": "809",
+      "severity": "non-blocking",
+      "text": "the current read of worker.json is a single unsynchronised observation: the marker at :795 proves the child ran, not that the parent's on_spawn write has completed, so the head arm's pass rests on the parent's json write beating the child's sandbox startup rather than on a synchronised condition; it held 10/10 at head and 5/5 controls are red, but a loaded host is exactly the case the prior intermittency finding named."
+    },
+    {
+      "file": "manifest.md",
+      "id": "fa4546bf083",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "the after_suite command (and the tests: line at :13) records the relative template `PYTHONPATH=. .venv/bin/python -m pytest ... tests/test_stop_before_spawn_spawns_nothing.py`, while the gate log's own `# command:` header at logs/r2-head-10.log:4 shows the absolute invocation actually handed to the shell, so the recorded string is not the one that ran."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit for 24e802e691..6cf756782a: two files, +70/-38, being a pure extraction of the worker-record payload dict into _worker_record_payload used at dispatch_launch.py:2726 and :3862, plus test changes that lengthen the stub sleep to 120 s, read worker.json once at marker time and wait for any exit.json so the worker_pid assertion is no longer implied by the wait.",
+    "done_when": "The source done_when names tests/test_stop_before_spawn_spawns_nothing.py::test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit passing ten serial runs at head and failing at base, each log naming revision, tree and literal command and ending EXIT=; the manifest's baseline_suite (c9aab06a, exit 1, one id) and after_suite (6cf756782a, exit 0) reconcile with logs/r2-base-1.log and logs/r2-head-10.log, and all ten r2-head-*.log end with a bare EXIT=0 line.",
+    "goal": "The delta since the prior review at 24e802e691 refactors the worker-record composition into one helper, _worker_record_payload (reckon/crew/dispatch_launch.py:2674), used by both writers, and rewrites the post-spawn-stop case so the stop is delivered as soon as the worker reports running; the source goal is preserved, and the reuse finding the prior review raised is folded into it.",
+    "manifest": "Read; it records five commits, the ten head runs, the base arm, five serial controls and one stated gap (the importer arm was not re-run at head), and its claims reconcile with the logs on disk; its after_suite/test command fields (manifest.md:13 and :20) record the relative template form rather than the absolute invocation the gate log's header carries.",
+    "write_paths": "The source node's declared paths are reckon/crew/dispatch_launch.py, reckon/_worker_fence.py, reckon/crew/process_signal.py, tests/test_stop_before_spawn_spawns_nothing.py and the plan's fragment/figures paths; the delta 24e802e691..6cf756782a touches exactly dispatch_launch.py and the test file, both inside that set."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The delta since the prior review at 24e802e691 refactors the worker-record composition into one helper, _worker_record_payload (reckon/crew/dispatch_launch.py:2674), used by both writers, and rewrites the post-spawn-stop case so the stop is delivered as soon as the worker reports running; the source goal is preserved, and the reuse finding the prior review raised is folded into it.\nVERDICT done_when: The source done_when names tests/test_stop_before_spawn_spawns_nothing.py::test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit passing ten serial runs at head and failing at base, each log naming revision, tree and literal command and ending EXIT=; the manifest's baseline_suite (c9aab06a, exit 1, one id) and after_suite (6cf756782a, exit 0) reconcile with logs/r2-base-1.log and logs/r2-head-10.log, and all ten r2-head-*.log end with a bare EXIT=0 line.\nVERDICT write_paths: The source node's declared paths are reckon/crew/dispatch_launch.py, reckon/_worker_fence.py, reckon/crew/process_signal.py, tests/test_stop_before_spawn_spawns_nothing.py and the plan's fragment/figures paths; the delta 24e802e691..6cf756782a touches exactly dispatch_launch.py and the test file, both inside that set.\nVERDICT manifest: Read; it records five commits, the ten head runs, the base arm, five serial controls and one stated gap (the importer arm was not re-run at head), and its claims reconcile with the logs on disk; its after_suite/test command fields (manifest.md:13 and :20) record the relative template form rather than the absolute invocation the gate log's header carries.\nVERDICT diff: Read commit by commit for 24e802e691..6cf756782a: two files, +70/-38, being a pure extraction of the worker-record payload dict into _worker_record_payload used at dispatch_launch.py:2726 and :3862, plus test changes that lengthen the stub sleep to 120 s, read worker.json once at marker time and wait for any exit.json so the worker_pid assertion is no longer implied by the wait.\nCALL_SITES: reckon/crew/supervisor_main.py:26, reckon/crew/dispatch_launch.py:_run_supervisor:3822, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker:2804, reckon/crew/dispatch_launch.py:_spawn_worker_retrying_a_vanished_bind:1710\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: The delta keeps the landed mechanism intact at reckon/crew/dispatch_launch.py:2674 and removes the duplicated payload composition, so both writers name the same worker.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/r2-head-1.log..r2-head-10.log each end EXIT=0 and logs/r2-base-1.log ends EXIT=1 with the same single failing id, but the importer arm was not re-run at head and the manifest's command fields are not the literal invocation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 24e802e691..6cf756782a lists only reckon/crew/dispatch_launch.py and tests/test_stop_before_spawn_spawns_nothing.py, both inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_stop_before_spawn_spawns_nothing.py:810 now fails when the record is absent and :845 compares exit.json against the pre-stop worker.json, reddening 5/5 in logs/r2-control-*.log, though the :809 read is unsynchronised against on_spawn.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:2674 follows the module's existing helper-and-docstring idiom and introduces no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/dispatch_launch.py:2674 is the single composer now used at :2726 and :3862, keeping _write_attempt_artifact and _claim_registration_for_worker as the delta's only primitives.\nFINDING tests/test_stop_before_spawn_spawns_nothing.py:809 non-blocking: the current read of worker.json is a single unsynchronised observation: the marker at :795 proves the child ran, not that the parent's on_spawn write has completed, so the head arm's pass rests on the parent's json write beating the child's sandbox startup rather than on a synchronised condition; it held 10/10 at head and 5/5 controls are red, but a loaded host is exactly the case the prior intermittency finding named.\nFINDING manifest.md:20 non-blocking: the after_suite command (and the tests: line at :13) records the relative template `PYTHONPATH=. .venv/bin/python -m pytest ... tests/test_stop_before_spawn_spawns_nothing.py`, while the gate log's own `# command:` header at logs/r2-head-10.log:4 shows the absolute invocation actually handed to the shell, so the recorded string is not the one that ran.\n",
+  "review_brief": "independent review of a landed node, delta since its prior review",
+  "review_run_id": "r-20261102T215600359632-review-of-a-group-stop-reaches-the-fenced-worker-6cf756782aa0",
+  "reviewed_base_sha": "24e802e691dda326f955d850454fc71d85c35c51",
+  "reviewed_head_sha": "6cf756782aa093973cf5617c0e1167763b78af47",
+  "reviewed_run_id": "r-20261027T063529804270-a-group-stop-reaches-the-fenced-worker",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T22:26:51.718443+00:00",
+  "total": 111
+}
