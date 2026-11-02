@@ -132,6 +132,7 @@ from reckon.crew.routing import (
     _boundary_tree_roots as _boundary_tree_roots,
     _budget_verdict as _budget_verdict,
     _competence_verdict as _competence_verdict,
+    _context_fit_verdict as _context_fit_verdict,
     _create_worktree as _create_worktree,
     _disposable_member_id as _disposable_member_id,
     _fleet_script as _fleet_script,
@@ -557,28 +558,19 @@ def _offered_local_backend(
     return None
 
 
-def _gating_input_window(backend_settings: Mapping[str, Any]) -> int | None:
-    """The token figure that gates one backend's context fit, or ``None``.
+def _gating_input_window(resolution: DispatchPlan, repo: Path) -> int | None:
+    """The token figure that gates this lane's context fit, or ``None``.
 
-    The arithmetic is the router's own: the smaller of the declared usable
-    window and the effective boundary a recorded refusal established. A backend
-    declaring neither is unbounded rather than zero, so nothing gates it and no
-    request can be too large for it.
+    Read through the router's own verdict rather than recomputed here, so a lane
+    whose declared window is malformed is refused by the reader that weighs it
+    on the router's path instead of quietly reading as unbounded. A lane
+    declaring neither a window nor a recorded boundary is unbounded, so nothing
+    gates it and no request can be too large for it.
     """
-    windows: list[int] = []
-    for declared in (
-        backend_settings.get("usable_input_window"),
-        backend_settings.get("effective_input_window"),
-    ):
-        if declared is None:
-            continue
-        try:
-            window = int(declared)
-        except (TypeError, ValueError):
-            continue
-        if window > 0:
-            windows.append(window)
-    return min(windows) if windows else None
+    verdict = _context_fit_verdict(resolution=resolution, repo=repo)
+    if verdict is None:
+        return None
+    return int(verdict["window_tokens"])
 
 
 def _candidate_window(candidate: Mapping[str, Any]) -> int | None:
@@ -616,33 +608,6 @@ def _widest_context_candidate(
 
     fitting = [candidate for candidate in candidates if not candidate.get("reasons")]
     return min(fitting, key=rank) if fitting else None
-
-
-def _context_shortfall_verdict(
-    candidates: Iterable[Mapping[str, Any]],
-    estimate: int,
-    resolution: DispatchPlan,
-) -> dict[str, Any]:
-    """The refusal a request no permitted lane holds, naming its shortfall.
-
-    The window reported is the widest any candidate declares, so the shortfall
-    is the smallest distance this node has to shrink by rather than the distance
-    from the lane it happened to resolve on.
-    """
-    declared = [
-        window
-        for window in (_candidate_window(candidate) for candidate in candidates)
-        if window is not None
-    ]
-    window = max(declared) if declared else estimate
-    return {
-        "allowed": False,
-        "reason": "context-window-exceeded",
-        "estimated_tokens": estimate,
-        "window_tokens": window,
-        "shortfall_tokens": max(0, estimate - window),
-        "backend": resolution.backend,
-    }
 
 
 def _router_free_resolution(
@@ -699,8 +664,7 @@ def _reroute_oversized_request(
     exists, and a fresh one otherwise — and the widest is taken. A request no
     permitted lane holds refuses with its shortfall instead of queueing.
     """
-    backend_settings = resolution.backend_settings or {}
-    window = _gating_input_window(backend_settings)
+    window = _gating_input_window(resolution, repo)
     if window is None:
         return resolution, None
     from reckon.crew.picker import PickRequest
@@ -734,9 +698,13 @@ def _reroute_oversized_request(
         ]
     chosen = _widest_context_candidate(candidates)
     if chosen is None:
-        raise CompetenceLimit(
-            _context_shortfall_verdict(candidates, estimate, resolution)
-        )
+        # Refuse through the same competence verdict the dispatch's own check
+        # builds, so the real refusal and the dry run that previewed it carry one
+        # payload rather than two descriptions of the same shortfall.
+        refusal = _competence_verdict(resolution=resolution, project=project, repo=repo)
+        if not refusal.get("allowed"):
+            raise CompetenceLimit(refusal)
+        return resolution, None
     chosen_backend = str(chosen.get("backend") or "")
     if not chosen_backend or chosen_backend == resolution.backend:
         return resolution, None
@@ -1681,9 +1649,6 @@ def dispatch(
         # let the second pick choose a backend the check never saw. Reuse the
         # caller's answer so the checked backend is the dispatched backend.
         picker_selection = dict(picker_selection)
-        snapshot_candidates = list(
-            picker_selection.pop("snapshot_candidates", ()) or ()
-        )
     elif not deferred_shadow_selection:
         (
             picker_records,
@@ -1708,6 +1673,13 @@ def dispatch(
             orchestrator_assessment=orchestrator_assessment,
             due=due,
             urgency=urgency,
+        )
+    if picker_selection is not None:
+        # The scan is this check's input rather than part of the answer the pick
+        # gave, so it is taken out of the selection here — whichever branch asked
+        # — before anything records that selection.
+        snapshot_candidates = list(
+            picker_selection.pop("snapshot_candidates", ()) or ()
         )
     # A hold whose offered candidates include the local lane is a wait for that
     # lane, not a refusal: the request is validated and continued there, and the

@@ -25,6 +25,7 @@ from reckon.crew.picker import snapshot
 from tests import test_dispatch_names_its_backend as backend_tests
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
+dispatch_plan = importlib.import_module("reckon.crew.dispatch_plan")
 
 LOCAL = "clive"
 CODEX = "beta"
@@ -76,27 +77,40 @@ def scan(monkeypatch: pytest.MonkeyPatch) -> None:
     # so it is lifted here and every lane is weighed on its window alone.
     monkeypatch.setattr(snapshot.recovery, "IN_HARNESS_LAUNCH", "test-no-lane")
 
+    def fit(*, resolution, repo):
+        window = resolution.backend_settings.get("usable_input_window")
+        if window is None:
+            return None
+        return {"window_tokens": window, "estimated_tokens": ESTIMATE}
+
     def verdict(*, resolution, project, repo, verdict_inputs=None):
         window = resolution.backend_settings.get("usable_input_window")
         if window is None:
             return {"allowed": True}
         allowed = window >= ESTIMATE
+        reason = "within-context-window" if allowed else "context-window-exceeded"
         return {
             "allowed": allowed,
-            "reason": (
-                "within-context-window" if allowed else "context-window-exceeded"
-            ),
+            "reason": reason,
             "context": {
                 "allowed": allowed,
                 "window_tokens": window,
                 "estimated_tokens": ESTIMATE,
-                "reason": (
-                    "within-context-window" if allowed else "context-window-exceeded"
-                ),
+                "reason": reason,
             },
+            "window_tokens": window,
+            "estimated_tokens": ESTIMATE,
+            "shortfall_tokens": max(0, ESTIMATE - window),
+            "recommendation": "split-the-node",
         }
 
     monkeypatch.setattr(snapshot.routing, "_competence_verdict", verdict)
+    # The dispatcher binds these names at import, so a patch on the router's
+    # module does not reach its calls; the same verdicts are bound on the
+    # dispatcher itself.
+    monkeypatch.setattr(dispatch_module, "_context_fit_verdict", fit)
+    monkeypatch.setattr(dispatch_module, "_competence_verdict", verdict)
+    monkeypatch.setattr(dispatch_plan, "_competence_verdict", verdict)
 
 
 def _lane_document(path: Path, *, slots: float) -> Path:
@@ -185,13 +199,14 @@ def _stub_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(dispatch_module, "dispatch_picker_selection", stub)
 
 
-def _invoke(repo: Path, *, node: str):
+def _invoke(repo: Path, *, node: str, dry_run: bool = False):
     arguments = [
-        *backend_tests._arguments(repo, node=node, dry_run=False),
+        *backend_tests._arguments(repo, node=node, dry_run=dry_run),
         "--route",
         "picker",
-        "--no-watch",
     ]
+    if not dry_run:
+        arguments.append("--no-watch")
     return CliRunner().invoke(cli.main, arguments)
 
 
@@ -288,3 +303,9 @@ def test_a_request_no_permitted_lane_holds_refuses_with_its_shortfall(
     assert str(ESTIMATE - 230_144) in payload["detail"]
     assert "230144" in payload["detail"]
     assert runs.list_live(project=PROJECT, phase="queued") == []
+
+    # The refusal is the verdict the dispatch's own competence check builds, so
+    # the preview that ran before it answers with the same payload.
+    dry_payload = _payload(_invoke(dispatch_repo, node="unfittable", dry_run=True))
+    assert dry_payload["error"] == payload["error"]
+    assert dry_payload["competence"] == payload["competence"]
