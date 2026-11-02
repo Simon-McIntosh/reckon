@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T10:21:48.908Z",
+  "dispatched_at": "2026-11-02T10:18:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:113",
+      "id": "reasoning-1",
+      "reason": "two opposite implementations both satisfy the prose (immediate classification can kill a run whose probe merely failed once, while a bound needs a history the plan never says `sweep` records for non-answers), so the node's done-when and its guard differ by whoever reads it.",
+      "text": "the deliverable says \"The producer-gone rule applies only to a probe that answered\" and defines producer-gone as all three clauses, then says a non-answering probe with no live process and no exit record \"is producer-gone as well\"; but the stillness clause (`wait_probe_history` recording \"each observed probe value and its time\") cannot be evaluated for a probe that produced no value, so the node is left to choose between classifying on the first unanswered sweep and inventing a bound and a history entry the plan does not specify.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:113",
+      "id": "reasoning-2",
+      "reason": "the section exists to stop a dead run reading as live, and as written it would make a live run read as dead after fifteen minutes of a still probe, which is a worse failure than the one it repairs.",
+      "text": "clause 1, \"No process of the run is alive \u2026 read through `process_liveness.process_alive` and `recovery_liveness._live_descendant`, never a second process check\", is satisfied by an unresolved reading: `process_alive` returns `None` when the pointer records no pid, `_live_descendant` returns `False` when the child list is unreadable, and the existing `_process_reading` (recovery_liveness.py:437-461) deliberately calls that state \"liveness unknown\" rather than death, because a stored answer from another host is not an observation; the plan forbids the second check that would tell these apart, so a live run on a host whose liveness cannot be proven is classified producer-gone.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:119",
+      "id": "done_when-1",
+      "reason": "an unguarded branch is exactly the case this plan's own controls exist to catch, and the revision added it without one.",
+      "text": "arm 4 now ends \"With no exit record and no live process, the run is producer-gone\", but the two declared negative controls cover only the process-liveness clause (file-wait arm) and the scheduler-job clause (`squeue` arm); neither removes the no-exit-record routing, so a node could omit that branch entirely and still pass every arm and both controls.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:114",
+      "id": "done_when-2",
+      "reason": "a node runs every named arm regardless of the count, so the miscount changes no behaviour.",
+      "text": "\"Done when \u2026 shows four things\" introduces a list of five bullets.",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "8a685c01af70d352554358422673df9ea1519a01",
+  "plan_fingerprint": "2498302eb68fa3a30dd83de53a089e5bce5c194694253d8e1b4fce458acb9fd4",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 103,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T101611705781-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "2416eff8439a671c02b8f768235be6ae9225520a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves: `resume-1-advice.txt` exists beside the cited run and carries the exact \"12 of 66 rows\" sentence; `recovery_classification.py:372` defines `_the_probe_did_not_answer` and `:1227-1229` is the branch cited; `process_liveness.py:13` defines `process_alive`, `recovery_liveness.py:419` defines `_live_descendant`, `resumption.py:1776` defines `sweep`; `fleet_node.py:357` is the `squeue -h -j` shape read.",
+    "done_when": "a finding \u2014 the branch this revision added (probe did not answer, no exit record, no live process \u2192 producer-gone) has no declared negative control, and arm 4 carries two different classifications in one bullet.",
+    "evidence_paths": "pass \u2014 \u00a76 directs no evidence into a scratchpad or node-local temporary; its gate is a test file plus the ruff pair, and the ledger log path is the harness's to name.",
+    "naming": "pass \u2014 `WAIT_PRODUCER_GONE_SECONDS` and `wait_probe_history` are named by mechanism, and no plan label, ticket number or version tag enters a symbol.",
+    "reasoning": "a finding \u2014 the added sentence contradicts the definition it sits beside, and the process-liveness clause is satisfiable by an unresolved reading.",
+    "single_goal": "pass \u2014 \u00a76 has one goal (classify a waiting run whose producer is gone as an obligation); the `wait_probe_history` recording by `resumption.sweep` is the mechanism supporting it, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a76 declares no upstream and needs none: every symbol it builds on (`classify_pointer`, `resumption.sweep`, `_the_probe_did_not_answer`, `process_alive`, `_live_descendant`) already exists on the branch, and no `plan-section-depends-on` entry is owing."
+  },
+  "section_digests": {
+    "_document": "142990c7c6bba60d8d3af884a5af04bef7a3ddd4bb515467c9a5c295ac5d2b36",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "64cfb5e2429c22454930b81fa2fbdd8bf61eeeedb6e60065607f05ee035fd33e",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T10:25:58.349093+00:00"
+}
