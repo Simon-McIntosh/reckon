@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T21:54:37.086Z",
+  "dispatched_at": "2026-11-02T21:44:16Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:67",
+      "id": "reasoning-1",
+      "reason": "node 1 must also stop writing or strip the nested copy, or the move frees nothing on a fifth of live pointers and the bound cannot be reached.",
+      "text": "the section's central saving is defeated on a measured subset: `_pointer_payload` writes `dispatch_options` (reckon/crew/dispatch.py:249) after setting `dispatch_options[\"picker_selection\"]` at dispatch.py:1798, and the preserved implementation's `_split_dispatch_detail` (commit 31091b24c, reckon/crew/runs.py) moves only top-level keys \u2014 so a pointer whose picker selection was routed keeps a full nested copy, measured today at 675, 29,014, 29,873, 31,794, 32,476, 37,654 and 37,917 bytes across 7 of 54 live pointers; the 8 KB bound and the reason \u00a71 gives for this section are both unmet on those runs",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:82",
+      "id": "done_when-1",
+      "reason": "a measure that cannot fail for the stated goal closes the section on a check that proves nothing about live pointers, which is the store \u00a71 measured.",
+      "text": "the bound is measured on the smallest possible object: deleting all thirteen fields from today's 54 live pointers leaves 15 at or above 8 KB (177,418 bytes driven by `suite_evidence` 158,289; five others 12,619\u201342,354 bytes driven by `dispatch_options` of 30,967\u201340,570; eight by `peer_channel` of 6,760\u20138,913), and the section names none of those fields, so a synthetic test-dispatch pointer passes the check while \u00a71's 44\u201394 KB production pointers survive untouched",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:75",
+      "id": "reasoning-2",
+      "reason": "a worker routing only the four named modules leaves four fields' readers unrouted, the AST-walk measure goes red, and the section is redispatched for work the plan could have named.",
+      "text": "\"Their readers in reckon/serve.py, reckon/run_record.py, reckon/hooks/ and reckon/crew/recovery_watch.py\" reads as the reader inventory for the seven newly moved fields, but three of them have no pointer read in any named module: `authority` is read at reckon/crew/dispatch_claims.py:302, :400 and :2126 and at reckon/crew/promotion_checks.py:1644; `final_message` and `pace` are additionally read at reckon/crew/recovery_wait.py:45, :55 and reckon/crew/dispatch_sessions.py:139; `lane_advisory` and `watch` have no read in the named four at all (their consumers are reckon/crew/dispatch_plan.py, dispatch.py and promotion.py)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:66",
+      "id": "reasoning-3",
+      "reason": "the accessor preserves those reads and every one of them goes through it, and the pointer a reader must still load shrinks, so the mechanism the section describes still holds.",
+      "text": "\"Dispatch-time detail that no live reader consults\" is contradicted by the section's own seventh field: `node` is read for every live pointer on the board's list path, `_crew_rows` (reckon/serve.py:888)",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "06375bab6dd5e855c598e61a6f3e8ccbffdf73b1",
+  "plan_fingerprint": "5d8601912c0849f1eab3ab03a449649e0686b96dc93befb9565878bf5611e062",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 45,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T214255412599-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "cd1094357cc59bbf028518813ba711ddbb08f8a7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 branch preserve/dispatch-detail-moves-off-the-live-pointer and commit 31091b24c both resolve (git cat-file -t 31091b24c \u2192 commit), and every file named (reckon/crew/runs.py, reckon/serve.py, reckon/run_record.py, reckon/hooks/, reckon/crew/recovery_watch.py) exists.",
+    "done_when": "a finding \u2014 the 8 KB bound is asserted only for \"a pointer written by a test dispatch\" (plan:82), an object that carries none of the residue fields production pointers carry.",
+    "evidence_paths": "pass \u2014 \u00a72 introduces no new store; the run-directory gate logs the rest of the plan uses are where this section's measurements land, and nothing in the section sends evidence to a scratchpad or node-local path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or release tags reach the prose; the commit hash and the two dates are citations, and the thirteen field names are real pointer keys.",
+    "reasoning": "a finding \u2014 the preserved six-field move strips only top-level keys, while the pointer writer keeps a second full copy of picker_selection nested inside dispatch_options, so the saving the section exists for does not happen on the pointers that carry it.",
+    "single_goal": "pass \u2014 the three named nodes each carry one deliverable: the six-field move routed through the accessor, the seven-field move routed through it, and the proof of the bound and the routing.",
+    "wiring": "pass \u2014 \u00a72 declares no depends-on, correctly, because \u00a71 states the section is independent of the station, and nothing else in the section table points at it."
+  },
+  "section_digests": {
+    "_document": "ad90dd78a90c978767a5e946ff44fcde0b319f69a2ff61abec4ca38355e3ddfc",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s2": "d14a1c61fcdf103c5188fd06ef90c3ff74722705a7d416fe3ec7e94d8766f132",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc03fa54cdefe8b48312fabda86a4fca8277e025db66430978900e888a969066",
+    "s9": "94c64e9a52c50d223769478a5aa73517f29bc51fd5a6b123d7978de2b35c4317"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T22:03:40.432820+00:00"
+}
