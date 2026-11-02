@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-02T22:51:43.644Z",
+  "dispatched_at": "2026-11-02T22:36:54Z",
+  "findings": [
+    {
+      "id": "fb08adfa3e2",
+      "line": 1366,
+      "path": "reckon/crew/obligation_snapshot.py",
+      "severity": "non-blocking",
+      "text": "an unresolvable wait still renders as \"waiting upstream: <refs>\" because _upstream_hold_item builds that next_command for every awaiting-upstream pointer and never reads pointer[\"upstream_obligations\"], so crew view live shows the wait the change exists to distinguish; the live view is outside the node's fence and this is recorded under outside_scope."
+    },
+    {
+      "id": "fe2b70cf461",
+      "line": 3200,
+      "path": "reckon/crew/queue_admission.py",
+      "severity": "non-blocking",
+      "text": "the _hold_pointer change is unreachable \u2014 no call site for _hold_pointer exists anywhere in reckon/ at the reviewed head, so only _rederive_waits actually records wait_projects, and the evidence fragment's account of two runtime writers overstates what the landed code exercises."
+    },
+    {
+      "id": "f35592ef9e5",
+      "line": 1815,
+      "path": "reckon/crew/queue_admission.py",
+      "severity": "non-blocking",
+      "text": "wait_projects_for calls wait_project_for_run per ref, and each call re-reads the mount registry through _mounted_projects at :1754 (flight.py:527 does an uncached JSON read), so the registry is parsed once per unresolved ref per pointer on every admission pass instead of once per pass."
+    },
+    {
+      "id": "fa2729225ce",
+      "line": 363,
+      "path": "tests/test_a_queued_launch_keeps_the_run_record.py",
+      "severity": "non-blocking",
+      "text": "the repaired regression has no head log naming it \u2014 consumers-head-2.log runs only tests/test_obligations_hook_reads_the_snapshot.py (9 tests), and the sole log naming :363 is consumers-head.log where it failed, so the manifest's claim that the re-run passes it is supported by reading the reworded string at queue_admission.py:2459 rather than by a recorded run."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a719's goal is that a run wait always names the project it lands in; queue_admission.py:1764 `wait_project_for_run` supplies that project for both the writers and the reader, so a pointer with a missing entry is released and a ref no project holds is reported rather than stalling.\nVERDICT done_when: the done_when names five cases in tests/test_a_run_wait_names_its_project.py:74,110,131,158,190; the manifest records that file at 5 passed EXIT=0 in after-suite.log, and the two declared negative controls each redden one named case.\nVERDICT write_paths: the declared set is reckon/crew/queue_admission.py, reckon/crew/obligations.py, tests/test_a_run_wait_names_its_project.py, the docs/evidence fragment and a docs/figures directory; the diff touches only the first four, and `git status` on the reviewed tree is clean.\nVERDICT manifest: read; it states the gate command verbatim, both negative controls with their failing ids (negative-control-reader.log 1 failed/4 passed, negative-control-writer.log 2 failed/3 passed), and names the outward-facing live-view work under outside_scope.\nVERDICT diff: read all three commits against 27dca04b11 \u2014 5b5a3a2ece adds the derivation, the two writer changes, the reader change and the wait-unresolvable obligation; e870210e8c rewords the obligation string; ce0f36c449 adds only the evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:3076 (advance_waiting_requests, the admission pass), reckon/crew/queue_admission.py:2454 (_wait_state, reached from _resolve_and_move at reckon/crew/queue_admission.py:2790), reckon/crew/obligations.py:1803 (the coordinator obligations view), reckon/crew/obligation_snapshot.py:1366 (the live/session obligation slice, which still renders waiting upstream)\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:2454 resolves the missing entry and :3036/:3226 write it, but the plan's third requirement that crew view live show the duty is unmet because reckon/crew/obligation_snapshot.py:1366 still emits \"waiting upstream: <refs>\" for the same pointer.\nSCORE evidence: 14\nJUSTIFICATION evidence: gates and controls are logged under the run directory, but baseline-suite.log is \"no tests ran\" (exit 4), consumers-head-2.log covers only tests/test_obligations_hook_reads_the_snapshot.py, and gate-head.log records \"12 passed\" with no revision or command header, so the repaired consumer case at tests/test_a_queued_launch_keeps_the_run_record.py:363 is never shown green in a log that names it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is one of the four declared paths, and the two out-of-fence surfaces the plan names are reported under outside_scope instead of edited.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_run_wait_names_its_project.py:113 and :160 redden under the two recorded mutations, so the reader and writer guards fail if the change regresses; cases :170 and :190 have no control but assert the released/held phase directly.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's existing shape in reckon/crew/queue_admission.py:1730 (a constant beside its user, a mechanism-stating docstring), and the added symbols name the mechanism with no plan or ticket identifier.\nSCORE reuse: 16\nJUSTIFICATION reuse: no existing owner resolves a run ref to a project across mounts, so wait_project_for_run at reckon/crew/queue_admission.py:1764 is the first; its helper _run_record_held at :1742 re-states the ledger-row presence stat that reckon/crew/promotion_scope.py:2140 and reckon/crew/recovery_watch.py:621 already perform rather than extending either.\nFINDING reckon/crew/obligation_snapshot.py:1366 non-blocking: an unresolvable wait still renders as \"waiting upstream: <refs>\" because _upstream_hold_item builds that next_command for every awaiting-upstream pointer and never reads pointer[\"upstream_obligations\"], so crew view live shows the wait the change exists to distinguish; the live view is outside the node's fence and this is recorded under outside_scope.\nFINDING reckon/crew/queue_admission.py:3200 non-blocking: the _hold_pointer change is unreachable \u2014 no call site for _hold_pointer exists anywhere in reckon/ at the reviewed head, so only _rederive_waits actually records wait_projects, and the evidence fragment's account of two runtime writers overstates what the landed code exercises.\nFINDING reckon/crew/queue_admission.py:1815 non-blocking: wait_projects_for calls wait_project_for_run per ref, and each call re-reads the mount registry through _mounted_projects at :1754 (flight.py:527 does an uncached JSON read), so the registry is parsed once per unresolved ref per pointer on every admission pass instead of once per pass.\nFINDING tests/test_a_queued_launch_keeps_the_run_record.py:363 non-blocking: the repaired regression has no head log naming it \u2014 consumers-head-2.log runs only tests/test_obligations_hook_reads_the_snapshot.py (9 tests), and the sole log naming :363 is consumers-head.log where it failed, so the manifest's claim that the re-run passes it is supported by reading the reworded string at queue_admission.py:2459 rather than by a recorded run.\n",
+  "review_run_id": "r-20261102T221724500111-review-of-a-run-wait-names-its-project-ce0f36c4499f",
+  "reviewed_base_sha": "27dca04b11dbe5312965ad4d675d895656413421",
+  "reviewed_head_sha": "ce0f36c4499ff57bfb30fba7406066d5be4ff164",
+  "reviewed_run_id": "r-20261102T213645585965-a-run-wait-names-its-project",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T22:57:13.381942+00:00",
+  "total": 100
+}
