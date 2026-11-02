@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-read-costs-what-changed">
+  <meta name="plan-title" content="A Read Costs What Changed">
+  <meta name="plan-summary" content="A plan read, a plan write, a dispatch and an admission pass each answer in under five seconds, cold or warm, by paying only for files that changed">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-blocks" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-section-depends-on" content="{&quot;s7&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;a-read-costs-what-changed#s4&quot;,&quot;a-read-costs-what-changed#s5&quot;,&quot;a-read-costs-what-changed#s6&quot;],&quot;s4&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s3&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s6&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s19&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <title>A Read Costs What Changed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="0">
+<meta name="plan-modified" content="2026-11-02">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why a read now takes a minute, and a queued dispatch forty</h2>
+    <section data-reckon="section" data-id="s1" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
+    <p><a href="/reckon/plans/reckon-reads-answer-in-seconds">reckon-reads-answer-in-seconds</a> shipped on 25 September with warm reads under five seconds. On 2 November the same reads measured as follows on the fleet node, which is clu-2068, at <code>889c335354</code>:</p>
+    <table>
+      <thead><tr><th>Operation</th><th>Measured</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td><code>read_plan(view="summary")</code>, one plan, fresh process</td><td>83 s; the MCP call overran its 30 s deadline at 16.8 s CPU</td><td>under 5 s</td></tr>
+        <tr><td><code>edit_plan</code> on a large plan</td><td>36–52 s CPU; every write overran its 60 s deadline and still landed</td><td>under 5 s</td></tr>
+        <tr><td>Admission readiness read for one project, nothing changed since the last read</td><td>26–55 s per call</td><td>under 5 s for the whole pass</td></tr>
+        <tr><td>One admission pass with 27 waiting requests</td><td>1,250–2,980 s logged as <code>launch_seconds</code></td><td>under 5 s</td></tr>
+      </tbody>
+    </table>
+    <p>Three profiles were taken: a <code>py-spy</code> sample of the live admit service, and <code>cProfile</code> runs of <code>_readiness_rows</code> and of <code>read_plan</code>. They name six causes. Each was then confirmed in the code.</p>
+    <ul>
+      <li><strong>The memo dies with its process.</strong> <code>file_memo.memoized</code> keeps parses in process memory, and the parse is <code>_plan_html.read_state</code> through BeautifulSoup, about 0.15 s per plan. A fresh process re-parses all of them: 198 calls, 33 s, in one <code>read_plan</code>. Fresh processes are now the common case. An MCP current-code child is fresh after every landing. The admit service re-executes on every new code stamp, which happened about ten times on 2 November. The CLI and dispatch run fresh every time.</li>
+      <li><strong>Validating the cache walks directories that hold nothing it covers.</strong> <code>metadata_index._reuse_covered</code> stats every recorded directory to prove the file set is unchanged. Of the 2,727 directories under <code>docs/</code>, 2,369 sit under <code>docs/state/reckon</code>, the stored review JSON. Together they hold two HTML files.</li>
+      <li><strong>The validation runs again on every lookup within one request.</strong> One <code>read_plan</code> called <code>_reuse_covered</code> 21 times, giving 57,267 directory identities and 86,098 <code>stat</code> calls, 25 s on GPFS. A request scope exists, <code>metadata_index._DISCOVERY_FILES</code>, but the MCP read, the admission pass and dispatch do not enter it.</li>
+      <li><strong>Each ref rebuilds the identity index.</strong> <code>resources._canonical_identity_is_unique</code> calls <code>_directory_identity_index</code> once for every ref it resolves. That is 18 calls and 30 s in one <code>read_plan</code>, coming from <code>_section_dependency_rows</code>, and once per section wait in <code>roadmap._plan_section_deps</code>.</li>
+      <li><strong>A one-plan read composes the whole project.</strong> <code>_store._add_north_star_diagnostic</code> calls <code>project_state.compose_project_state</code> to learn the project's declared north stars, which costs 38 s of the 83.</li>
+      <li><strong>The admission pass shares nothing across requests.</strong> <code>queue_admission._readiness_rows</code> keys its per-pass cache on the plan and refs asked about. The whole-project answer it caches depends on neither, so each distinct ref recomputes the project. It also calls <code>read_state</code> on the text of every plan in the inventory. That bypasses the file memo, so it is 216 BeautifulSoup parses and 34 s per call.</li>
+    </ul>
+    <p>The shipped plan's measure was a warm read in one long-lived process. That measure still holds and still misses the cases that now dominate: a fresh process, a tree that has grown 2,369 directories of review records, and callers that never went through the memo. This plan's measure covers all three. Each section's done-when therefore counts operations on a synthetic store, deterministically, and §7 times the real store, cold and warm.</p>
+
+    <h2 id="s2">§2 — One request validates the docs tree once</h2>
+    <section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Two changes to how the covered tree is proved unchanged.</p>
+    <ul>
+      <li><strong>Walk and validation skip the review trees.</strong> They do not descend into directories under <code>docs/state/&lt;project&gt;/</code>, which hold review and state records rather than covered documents. The HTML files directly in <code>docs/state/&lt;project&gt;/</code> stay covered. Name this rule once in <code>metadata_index</code> and have both <code>_walk_covered</code> and <code>_reuse_covered</code> read it, so the walked set and the validated set cannot drift.</li>
+      <li><strong>Each top-level request validates once.</strong> Every MCP tool call — <code>read_plan</code>, <code>edit_plan</code>, <code>roadmap</code>, <code>audit</code> and <code>crew</code> — enters the existing request scope, <code>metadata_index._DISCOVERY_FILES</code>, once at the tool boundary, so the covered file set and its directory identities are computed once and shared by every lookup in that call. The scope is exposed as one public context manager in <code>metadata_index</code>, which §6 enters for an admission pass, a landing pass and <code>crew dispatch</code>. A write inside the scope invalidates the scope's entry for the tree it wrote, so a read after a write in the same request sees the write.</li>
+    </ul>
+    <p><strong>Done when</strong> a new <code>tests/test_a_request_validates_the_tree_once.py</code> builds a synthetic docs tree with 40 plans and 2,000 directories of JSON under <code>docs/state/&lt;project&gt;/reviews/</code>. With <code>os.stat</code> counted through a patch, it shows three things:</p>
+    <ul>
+      <li>One <code>read_plan(view="summary")</code> stats fewer than 300 paths, against more than 20,000 on the base revision.</li>
+      <li>A file added under the reviews tree changes no read's answer, and a plan added to <code>docs/plans/</code> is seen by the next read.</li>
+      <li>Within one scope, an <code>edit_plan</code> write followed by a read returns the written value.</li>
+    </ul>
+    <p>The negative control removes the scope entry at the MCP boundary, and the first measure fails. The test files importing <code>reckon.metadata_index</code>, <code>reckon.serve</code> and <code>reckon.mcp</code> add no failure against the base revision. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the staged paths. Write paths: <code>reckon/metadata_index.py</code>, <code>reckon/mcp.py</code> and the new test.</p>
+
+    <h2 id="s3">§3 — A parsed plan survives its process</h2>
+    <section data-reckon="section" data-id="s3" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>_plan_html.read_state_and_text_file</code> keeps its result in the persisted metadata index beside the row it already stores. The entry is keyed by the file's content digest and by a digest of the parser's own source. A fresh process with an unchanged file then reads the stored state and does not parse it. A changed file, or a changed parser, is parsed again and the entry is rewritten. The stored value is the same mapping the in-process memo returns. Callers receive an isolated copy, or a read-only view inside <code>file_memo.read_only_region</code>, as now. An index that cannot be read falls back to a parse and never to a wrong answer.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_parsed_plan_survives_its_process.py</code> shows four things, with <code>_plan_html.read_state</code> counted through a patch:</p>
+    <ul>
+      <li>A second process, simulated by clearing <code>file_memo</code>, reads 40 unchanged plans with zero parses.</li>
+      <li>One edited plan is parsed once and the others are not parsed.</li>
+      <li>A change to the parser digest re-parses every plan.</li>
+      <li>A corrupt index entry yields the parsed value, not an error.</li>
+    </ul>
+    <p>The negative control keys the stored entry on the path alone, and the edited-plan case fails. The test files importing <code>reckon._plan_html</code> and <code>reckon.metadata_index</code> add no failure against the base revision. Ruff adds no findings on the staged paths. Write paths: <code>reckon/_plan_html.py</code>, <code>reckon/metadata_index.py</code> and the new test.</p>
+
+    <h2 id="s4">§4 — A request resolves its refs against one identity index</h2>
+    <section data-reckon="section" data-id="s4" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>resources._directory_identity_index</code> is computed once per docs directory within the §2 request scope, and <code>_canonical_identity_is_unique</code> reads that one index for every ref. Outside a scope the behaviour is unchanged.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_request_resolves_refs_against_one_index.py</code> shows that resolving 20 section refs in one <code>read_plan</code> of a plan builds the index once, counted through a patch, against 20 times on the base revision. It also shows that a duplicate canonical identity is still refused exactly as before. The negative control builds the index per call, and the count case fails. The test files importing <code>reckon.resources</code> and <code>reckon.roadmap</code> add no failure against the base revision. Ruff adds no findings on the staged paths. Write paths: <code>reckon/resources.py</code> and the new test.</p>
+
+    <h2 id="s5">§5 — A one-plan read composes one plan</h2>
+    <section data-reckon="section" data-id="s5" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>_store._declared_north_stars</code> reads the project's declared north stars from the project resource where they are declared, not from <code>project_state.compose_project_state</code>. It is memoized on that resource file's signature. A read or write of one plan then never composes the project's state. The north-star diagnostic it feeds is unchanged.</p>
+    <p><strong>Done when</strong> a new <code>tests/test_a_one_plan_read_composes_one_plan.py</code> shows two things, with <code>compose_project_state</code> counted through a patch:</p>
+    <ul>
+      <li><code>read_plan(view="summary")</code> and an <code>edit_plan</code> <code>set</code> call it zero times.</li>
+      <li>A plan naming an undeclared north star still carries the same diagnostic text as on the base revision.</li>
+    </ul>
+    <p>The negative control restores the compose call, and the count case fails. The test files importing <code>reckon._store</code> add no failure against the base revision. Ruff adds no findings on the staged paths. Write paths: <code>reckon/_store.py</code> and the new test.</p>
+
+    <h2 id="s6">§6 — Every hot path reads plan state through the memo</h2>
+    <section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Four changes, all in the admission, dispatch and review paths.</p>
+    <ul>
+      <li>One admission pass, one landing pass and one <code>crew dispatch</code> each enter the §2 request scope once, so every lookup inside them shares one validation of the tree.</li>
+      <li><code>queue_admission._readiness_rows</code> takes each plan's <code>section_declarations</code> from the memoized <code>read_state_and_text_file</code>, not from <code>read_state</code> on the file's text.</li>
+      <li>Inside an admission pass, its whole-project read is cached on the project, its docs directory and the tree fingerprint only, so a pass computes each project once however many plans and refs its requests name. The bounded read outside a pass keeps its present key.</li>
+      <li><code>plan_review.review_coverage</code> reads stored review snapshots through the same persisted parse as §3.</li>
+    </ul>
+    <p><strong>Done when</strong> a new <code>tests/test_an_admission_pass_reads_each_project_once.py</code> builds a synthetic project of 40 plans and 30 awaiting-upstream requests naming 70 refs across 12 plans. It shows three things:</p>
+    <ul>
+      <li>One <code>advance_waiting_requests</code> pass calls <code>project_section_readiness</code> once and <code>_plan_html.read_state</code> at most 40 times, counted through patches.</li>
+      <li>Each request's resulting phase equals its phase under the base revision's per-ref read.</li>
+      <li>A plan edited between two passes is seen by the second.</li>
+      <li>One <code>crew dispatch --dry-run</code> of a one-section node stats fewer than 300 paths on the synthetic store.</li>
+    </ul>
+    <p>The negative control restores the plan and refs in the pass key, and the count case fails. The test files importing <code>reckon.crew.queue_admission</code> and <code>reckon.crew.plan_review</code> add no failure against the base revision. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/queue_landing.py</code>, <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/plan_review.py</code> and the new test.</p>
+
+    <h2 id="s7">§7 — Five seconds on the real store, cold and warm</h2>
+    <section data-reckon="section" data-id="s7" data-effort-hours="2" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A measurement node that times six operations on the fleet node against the real reckon store at the merged head of §2 to §6:</p>
+    <ul>
+      <li><code>read_plan(view="summary")</code> of <code>work-is-never-stuck-behind-the-admission-loop</code>;</li>
+      <li>an <code>edit_plan</code> <code>set</code> on a scratch copy of that plan;</li>
+      <li><code>roadmap(project="reckon", view="summary")</code>;</li>
+      <li><code>crew dispatch --dry-run</code> of a one-section node;</li>
+      <li>one <code>advance_waiting_requests</code> over the live pointers, read-only, with pointer writes patched out;</li>
+      <li>one admission launch decision for a queued request.</li>
+    </ul>
+    <p>Each is timed three times in a fresh process (cold) and three times in one process (warm). Base and head are timed in the same session, one after the other, and both are recorded in a log under the run's <code>logs/</code>, with the stat and parse counts for each. Where an operation is still over five seconds, the node profiles it and records the top five cumulative frames. It changes no code.</p>
+    <p><strong>Done when</strong> the log shows every operation under five seconds, cold and warm, at the head. Any that is not is named, with its profile, as a finding the coordinator turns into a section of this plan. Write paths: <code>docs/evidence/fragments/a-read-costs-what-changed/</code>.</p>
+
+    <section data-reckon="decisions"></section>
+    <section data-reckon="comments"></section>
+    <section data-reckon="followups">
+      <article class="r-fu" data-id="f-arcwc-001" data-status="open">
+        <h4 class="r-fu-title">Build §2 to §6, then measure §7</h4>
+        <div class="r-fu-body"><p>§2 and §5 start at once; §3 and §4 follow §2; §6 follows §2, §3 and work-is-never-stuck-behind-the-admission-loop §19, whose write paths it shares or reads; §7 follows all five.</p></div>
+        <pre class="r-fu-prompt">/reckon-build a-read-costs-what-changed</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
