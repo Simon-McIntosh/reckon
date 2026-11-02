@@ -576,34 +576,23 @@ class BudgetHold(CrewError):  # noqa: N818 - public refusal name
         )
 
 
-def _context_dominant_clause(verdict: Mapping[str, Any]) -> str:
-    """Return which input dominates the estimate and how it arrived.
+def _rendered_context_detail(verdict: Mapping[str, Any]) -> str | None:
+    """Return routing's own rendering of the fit, or None when it carries none.
 
-    A refusal that states only a total leaves the coordinator guessing which
-    input to cut, and they rationally cut the only one they control. The
-    ranking is routing's own, so the sentence printed at dispatch and the
-    payload a reader inspects name the same input; the origin matters because a
-    declared write path cannot leave the brief, while a mention can be cut or
-    replaced by a reference. A verdict built without the fit it came from
-    carries no ranking, so the clause is omitted rather than invented.
+    The figures and the dominant-term wording are rendered once, by routing, so
+    the line dispatch prints and the payload a reader inspects cannot drift
+    apart: the printed line is that rendering rather than a sentence assembled
+    beside it. A verdict built without the fit it came from -- a hand-built
+    refusal, or one that fell through on another measure -- has nothing to
+    borrow, and the caller states the figures it does carry.
     """
 
-    from reckon.crew.routing import _context_contributors
+    from reckon.crew.routing import _context_refusal_detail
 
     context_fit = verdict.get("context")
     if not isinstance(context_fit, Mapping):
-        return ""
-    contributors = _context_contributors(context_fit, limit=1)
-    if not contributors:
-        return (
-            "; no repository file dominates the estimate; the standing "
-            "instruction context alone exceeds the window"
-        )
-    lead = contributors[0]
-    return (
-        f"; dominant term: {lead['path']} ({lead['estimated_tokens']} tokens), "
-        f"which arrived as a {lead['origin']}"
-    )
+        return None
+    return _context_refusal_detail(context_fit)
 
 
 def _context_refusal_recommendation(verdict: Mapping[str, Any]) -> str:
@@ -636,12 +625,16 @@ class CompetenceLimit(CrewError):  # noqa: N818 - public refusal name
         # horizon nobody measured and sends the reader to the wrong remedy.
         self.verdict = dict(verdict)
         if str(verdict.get("reason") or "") == "context-window-exceeded":
-            detail = (
+            rendered = _rendered_context_detail(verdict)
+            figures = (
                 f"node context estimate {verdict['estimated_tokens']} usable input "
                 f"tokens exceeds the {verdict['window_tokens']} token window by "
                 f"{verdict['shortfall_tokens']} tokens"
-                f"{_context_dominant_clause(verdict)}; "
-                f"{_context_refusal_recommendation(verdict)}"
+            )
+            detail = (
+                f"{rendered} {_context_refusal_recommendation(verdict)}"
+                if rendered is not None
+                else f"{figures}; {_context_refusal_recommendation(verdict)}"
             )
         else:
             detail = (

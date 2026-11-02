@@ -120,14 +120,13 @@ def _dominant_clause(message: str) -> str:
     return message.split("dominant term:", 1)[1]
 
 
-def _assert_figures_unchanged(refusal: CompetenceLimit, message: str) -> None:
-    """The total, window and shortfall a reader already relies on still read."""
+def _assert_one_rendering(refusal: CompetenceLimit, message: str) -> None:
+    """The printed line is routing's own rendering, not a sentence beside it."""
     verdict = refusal.verdict
-    assert (
-        f"node context estimate {verdict['estimated_tokens']} usable input tokens "
-        f"exceeds the {verdict['window_tokens']} token window by "
-        f"{verdict['shortfall_tokens']} tokens"
-    ) in message
+    assert verdict["detail"] in message
+    assert f"estimated {verdict['estimated_tokens']} usable input tokens" in message
+    assert f"{verdict['window_tokens']} token window" in message
+    assert f"shortfall {verdict['shortfall_tokens']} tokens" in message
     assert verdict["estimated_tokens"] > verdict["window_tokens"]
     assert (
         verdict["shortfall_tokens"]
@@ -155,7 +154,7 @@ def test_the_printed_refusal_names_a_declared_write_path_as_dominant(
     assert "large_module.py" in clause
     assert "declared write path" in clause
     assert str(_repository_tokens(refusal.verdict, "large_module.py")) in clause
-    _assert_figures_unchanged(refusal, message)
+    _assert_one_rendering(refusal, message)
 
 
 def test_the_printed_refusal_names_a_mention_as_dominant(
@@ -179,7 +178,7 @@ def test_the_printed_refusal_names_a_mention_as_dominant(
     assert "mention" in clause
     assert "declared write path" not in clause
     assert str(_repository_tokens(refusal.verdict, "large_module.py")) in clause
-    _assert_figures_unchanged(refusal, message)
+    _assert_one_rendering(refusal, message)
 
 
 def test_the_printed_refusal_says_no_repository_file_dominates(
@@ -199,4 +198,4 @@ def test_the_printed_refusal_says_no_repository_file_dominates(
     assert "no repository file dominates the estimate" in message
     assert "dominant term:" not in message
     assert refusal.verdict["estimated_tokens"] == STANDING_INSTRUCTION_TOKENS
-    _assert_figures_unchanged(refusal, message)
+    _assert_one_rendering(refusal, message)
