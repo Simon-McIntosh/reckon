@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T11:21:38.131Z",
+  "dispatched_at": "2026-11-02T11:15:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:187",
+      "id": "reasoning-1",
+      "reason": "the node must be told to build the refusal from the fit check's own `estimate - window` (the context refusal `_context_fit_verdict` builds), otherwise its third done-when case can only pass on a fixture whose two estimators agree and production crashes or misreports.",
+      "text": "s16 says that when the chooser returns nothing the fallback \"refuses with the shortfall, exit 5, whatever the competence verdict says of the resolved lane\", but `routing._competence_verdict` returns `allowed: True` whenever its own estimate (standing instructions plus repository files) fits the window, and in that case it carries no shortfall at all \u2014 the reachable case, because the dispatch fit check compares the picker's `estimated_context_tokens` against the same window, so two estimators can disagree with the resolved lane measured too small by one and inside by the other \u2014 and `CompetenceLimit.__init__` (node.py:597-622) then takes its `else` branch and reads `competence_horizon_hours`/`target_size_hours`, which are absent when no horizon was measured, so the dispatch raises `KeyError` instead of exiting 5, or states a false \"exceeds the competence horizon\" for a lane that passed",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:113",
+      "id": "reasoning-2",
+      "reason": "the retention rule must be stated by time span covering the bound (prune only entries older than the bound plus one sweep), or the section ships a guard that fires in its own test and never on the waits it exists for.",
+      "text": "s6 measures stillness as \"the probe's observed value has not changed for `WAIT_PRODUCER_GONE_SECONDS` (15 minutes)\" from a `wait_probe_history` that `resumption.sweep` keeps as \"the last few entries\", but the sweep runs at `resumption.DEFAULT_SWEEP_SECONDS` of 120 s and \u00a714 of this plan measures station ticks of 14.5 minutes, so a count-bounded history spans two to ten minutes in the ordinary case and the stillness clause can never be proven in production while a fixture that writes timestamps fifteen minutes apart passes it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1120cacf6860e8b9c48f03872e96a2928da3f869",
+  "plan_fingerprint": "ad5a77d28b6af86baddf2bb8619bbdb1a87adbd03729c2b89eb92bcab9152529",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 116,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T111422331605-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "eb886f90a18dc127f1e040b497db91c6a454419b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `5f0c012058` and `4949fe9200` both resolve as commits, the anchored evidence section `#a-request-too-large-for-local-is-never-placed-there` exists in the archive page, and every code anchor in s6 and s16 (`_route_competence_refusal` at queue_admission.py:1081, `_widest_context_candidate`/`_candidate_window` at dispatch.py:576-610, `_context_fit_verdict`/`_competence_verdict` at routing.py:3428/3808, `local_liveness` at recovery_liveness.py:1186, `_the_probe_did_not_answer` at recovery_classification.py:372, `squeue -h -j` at fleet_node.py:357) resolves at the reviewed head.",
+    "done_when": "pass \u2014 s16's four cases carry two negative controls (admission's first-usable choice; the unchanged-resolution return) and s6's six arms carry five, one per clause, each of which fails a named arm when removed.",
+    "evidence_paths": "pass \u2014 every gate is a new file under `tests/`, the landing record sits in `docs/evidence/archive/work-is-never-stuck-behind-the-admission-loop-landed.html`, and no gate writes to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 `WAIT_PRODUCER_GONE_SECONDS`, `wait_probe_history` and both test filenames name the mechanism, and neither unit carries a plan label, ticket number or changelog phrase.",
+    "reasoning": "two findings \u2014 s16's unconditional refusal cannot be built from the verdict it names, and s6's history retention cannot span the bound its stillness clause measures.",
+    "single_goal": "pass \u2014 s16 delivers one shared chooser, and s6 one producer-gone classification whose history write serves that same deliverable rather than a second one.",
+    "wiring": "pass \u2014 s16 declares `s15` as its upstream in `plan-section-depends-on`, the section it modifies (`s5`) is already `done` so no wait is owed, and `s6` correctly declares none."
+  },
+  "section_digests": {
+    "_document": "7ffe9323d552fdfe4589126aea5cd91efed01f5d68f11fedfdad5196aab95071",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "b0b1203bf1a696df72285f9bf28f8a3c080eb7417fa34697b526262a7bf626de",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "002ab2de4446b58da61d2d3c99558fec5f3b94ab56c23246ba73e79894baa35f",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T11:25:13.610394+00:00"
+}
