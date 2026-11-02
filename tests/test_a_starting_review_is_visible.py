@@ -97,6 +97,7 @@ def test_a_starting_review_counts_as_the_runs_review_in_flight(
     assert row["review_run_phase"] == "starting"
     assert "reckon crew dispatch" not in row["next_action"]
     assert REVIEW_RUN in row["next_action"]
+    assert REVIEW_RUN in row["detail"] and "starting" in row["detail"]
 
 
 def test_the_live_view_lists_the_starting_review(config_home: Path) -> None:

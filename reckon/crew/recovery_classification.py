@@ -1434,14 +1434,18 @@ def classify_pointer(
                     f"the attached review is {review.get('status') or 'incomplete'}"
                 )
             if in_flight_review[0]:
-                review_detail = (
-                    f"its review is in flight as {in_flight_review[0]} "
-                    f"(phase: {in_flight_review[1]})"
+                detail = (
+                    "the worker manifest reports completion and its review is "
+                    f"in flight as {in_flight_review[0]} "
+                    f"(phase: {in_flight_review[1]}); the run is not promotable "
+                    "until that review files its record"
                 )
-            detail = (
-                "the worker manifest reports completion, but "
-                f"{review_detail}; an independent review must be produced before promotion"
-            )
+            else:
+                detail = (
+                    "the worker manifest reports completion, but "
+                    f"{review_detail}; an independent review must be produced "
+                    "before promotion"
+                )
             action = (
                 _review_in_flight_action(run_id, *in_flight_review)
                 if in_flight_review[0]
