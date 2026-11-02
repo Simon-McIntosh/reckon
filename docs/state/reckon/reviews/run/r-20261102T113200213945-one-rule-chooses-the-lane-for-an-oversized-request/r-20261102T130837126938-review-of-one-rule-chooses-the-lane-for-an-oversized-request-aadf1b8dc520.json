@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1773",
+    "reckon/crew/queue_admission.py:4004"
+  ],
+  "completed_at": "2026-11-02T13:16:06.532Z",
+  "dispatched_at": "2026-11-02T13:10:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py:576 non-blocking",
+      "line": "",
+      "severity": "non-blocking",
+      "text": "_context_shortfall_refusal duplicates a capability routing.py owns -- the context-window-exceeded refusal payload with its D08 recommendation, assembled at routing.py:3858-3876 -- rather than extending it, and its hand-written detail drops the contributing-file and origin information routing._context_refusal_detail renders at routing.py:3579; the two renderings of one refusal can drift, and dispatch.py:130-135 already imports from routing so a shared builder with the agent-key and nested-context fields omitted was available."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read commit by commit; the rule is added at snapshot.py:612, dispatch.py's private window reader and widest-candidate helper are deleted, the no-usable-lane branch at dispatch.py:699-708 now refuses, queue_admission.py:1119 collapses its loop to one call, and the tests gain eleven cases plus three control-targeted cases.",
+    "done_when": "logs/after_suite.log records 15 passed EXIT=0 at aadf1b8dc5 over both node files, logs/baseline_suite.log 4 passed EXIT=0 at 67d1e26d0b, the importer arms are 25 passed EXIT=0 on each side, and logs/negative-control-1.log, negative-control-2.log and refused-lane-exclusion.log each end EXIT=1 with named FAILED ids.",
+    "goal": "The goal is one function choosing the lane for an oversized request on both the admission pass and the dispatch fallback; reckon/crew/picker/snapshot.py:612 adds widest_fitting_candidate(candidates, refused_backend), and both reckon/crew/dispatch.py:693 and reckon/crew/queue_admission.py:1119 call it.",
+    "manifest": "Read; status complete, three commits, both suite arms exit_status 0 with failure_count 0 and completed true, negative_control_log is a bare path, and the note names the mutation logs/negative-control-2.log restores.",
+    "write_paths": "The manifest declares six paths; git diff --stat 67d1e26d0b..aadf1b8dc5 touches exactly those six and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:196 reddens under the restored competence-verdict-first refusal (logs/negative-control-2.log) and the admission case reddens when the rule's refused-lane exclusion is removed (logs/refused-lane-exclusion.log).",
+    "evidence": "logs/after_suite.log ends '15 passed in 17.30s' EXIT=0 at aadf1b8dc5 and logs/baseline_suite.log '4 passed in 6.22s' EXIT=0 at 67d1e26d0b, and the three control logs each end EXIT=1, but the done_when's ruff clause is asserted with no lint log stored and I re-ran ruff check and ruff format --check myself to confirm it.",
+    "fit": "reckon/crew/picker/snapshot.py:575-655 keeps the module's one-docstring-per-helper idiom, reads a candidate through both the scan dataclass and the exported mapping, and the diff introduces no plan label, ticket reference or version name.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:612 now holds the only lane rule and both reckon/crew/dispatch.py:693 and reckon/crew/queue_admission.py:1119 read it, with no caller-side skip and no branch at dispatch.py:699-708 returning the oversized resolution unchanged.",
+    "reuse": "reckon/crew/dispatch.py:576 rebuilds the context-window-exceeded payload routing.py:3858-3876 already assembles, with a thinner detail than routing._context_refusal_detail (routing.py:3579).",
+    "scope_discipline": "git diff --stat 67d1e26d0b..aadf1b8dc5 names only the six paths the manifest declares, including docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/one-rule-chooses-the-lane-for-an-oversized-request.html, and the fragment carries no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is one function choosing the lane for an oversized request on both the admission pass and the dispatch fallback; reckon/crew/picker/snapshot.py:612 adds widest_fitting_candidate(candidates, refused_backend), and reckon/crew/dispatch.py:693 and reckon/crew/queue_admission.py:1119 both call it, so neither caller keeps a skip of its own.\nVERDICT done_when: The done_when names tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py, the removal of the two verdict stubs, the two negative controls and clean lint; the run's logs/after_suite.log records 15 passed EXIT=0 at aadf1b8dc5 over both node files, logs/baseline_suite.log 4 passed EXIT=0 at 67d1e26d0b, logs/importers.log and logs/importers_base.log 25 passed EXIT=0 on each arm, and all three control logs end EXIT=1 with at least one FAILED id.\nVERDICT write_paths: The node declares snapshot.py, dispatch.py, queue_admission.py, the two test files and the evidence fragment; git diff --stat 67d1e26d0b..aadf1b8dc5 touches exactly those six paths and nothing outside them.\nVERDICT manifest: Read; status complete, commits 1e2596850d, edf3d4e57bd and aadf1b8dc5, baseline_suite and after_suite both exit_status 0 with failure_count 0 and completed true, negative_control_log is the bare path to logs/negative-control-2.log, and the note names the mutation that log restores.\nVERDICT diff: Read all three commits against 67d1e26d0b; snapshot.py gains _candidate_field, candidate_window_tokens and widest_fitting_candidate (line 612), dispatch.py deletes _candidate_window and _widest_context_candidate and adds _context_shortfall_refusal (line 576) with the no-usable-lane branch refusing at 699-708 instead of returning the resolution, queue_admission.py's for-loop collapses to one call at 1119, and the two test files gain eleven cases, three control-targeted cases and the removal of four monkeypatched verdict stubs.\nCALL_SITES: reckon/crew/dispatch.py:1773, reckon/crew/queue_admission.py:4004\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:612 now holds the only lane rule and both reckon/crew/dispatch.py:693 and reckon/crew/queue_admission.py:1119 read it, with no caller-side skip and no branch at dispatch.py:699-708 returning the oversized resolution unchanged.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/after_suite.log ends '15 passed in 17.30s' EXIT=0 at aadf1b8dc5 and logs/baseline_suite.log '4 passed in 6.22s' EXIT=0 at 67d1e26d0b, and the three control logs each end EXIT=1, but the done_when's ruff clause is asserted in the manifest with no lint log stored and I re-ran ruff check and ruff format --check myself to confirm it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 67d1e26d0b..aadf1b8dc5 names only the six paths the manifest declares, including docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/one-rule-chooses-the-lane-for-an-oversized-request.html, and the fragment carries no figure.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:196 reddens under the restored competence-verdict-first refusal (logs/negative-control-2.log) and the admission case reddens when the rule's refused-lane exclusion is removed (logs/refused-lane-exclusion.log), which is the regression each case names.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/picker/snapshot.py:575-655 keeps the module's one-docstring-per-helper idiom, reads a candidate through both the scan dataclass and the exported mapping, and the diff introduces no plan label, ticket reference or version name.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch.py:576 _context_shortfall_refusal rebuilds the context-window-exceeded payload that routing.py:3858-3876 already assembles, with a thinner detail than routing._context_refusal_detail (routing.py:3579), even though dispatch.py:130-135 already imports from that module.\nFINDING reckon/crew/dispatch.py:576 non-blocking: _context_shortfall_refusal duplicates a capability routing.py owns -- the context-window-exceeded refusal payload with its D08 recommendation, assembled at routing.py:3858-3876 -- rather than extending it, and its hand-written detail drops the contributing-file and origin information routing._context_refusal_detail renders at routing.py:3579; the two renderings of one refusal can drift, and dispatch.py:130-135 already imports from routing so a shared builder with the agent-key and nested-context fields omitted was available.\n",
+  "review_run_id": "r-20261102T130837126938-review-of-one-rule-chooses-the-lane-for-an-oversized-request-aadf1b8dc520",
+  "reviewed_base_sha": "67d1e26d0b8df8176276478aae632d5558e83357",
+  "reviewed_head_sha": "aadf1b8dc52006b20c672a81ee9bdd4d33f9a696",
+  "reviewed_run_id": "r-20261102T113200213945-one-rule-chooses-the-lane-for-an-oversized-request",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_note": "derived from the reviewed run's own arms: logs/baseline_suite.log ends '4 passed in 6.22s' with EXIT=0 at 67d1e26d0b and logs/after_suite.log ends '15 passed in 17.30s' with EXIT=0 at aadf1b8dc5; both record failure_count 0, so the set difference of failing ids is empty.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T13:21:10.570099+00:00",
+  "total": 97
+}
