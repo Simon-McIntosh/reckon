@@ -68,6 +68,7 @@ def widen_claim(
     acceptance: bool = False,
     reason: str = "",
     self_widen: bool = False,
+    grant_source: str = "",
 ) -> tuple[dict[str, Any], list[str]]:
     """Add paths to a run, checking peer claims under the pointer lock.
 
@@ -76,6 +77,14 @@ def widen_claim(
     it is the writer asking for its own boundary to move, so ``self_widen``
     admits it and records the grant, its reason and the fact that the worker
     made it. Any other caller waits for the process to exit.
+
+    ``grant_source`` names a caller other than the worker that grants a path on
+    the run's behalf, and its grant is recorded the same way with that source.
+    A repair round passes ``repair-round`` with the finding's id as the reason,
+    so the path the round widened to reads back as a repair round's grant
+    rather than as part of the declaration the run was dispatched with. A
+    caller that names no source records no grant entry; the added path is then
+    only part of the declaration.
 
     A promotion acceptance keeps the scope from before its grant. Promotion
     validates the stated reason against that scope while the widened claim
@@ -88,8 +97,9 @@ def widen_claim(
     if not requested:
         raise CrewError("widen_claim needs at least one path")
     stated_reason = str(reason).strip()
-    if self_widen and not stated_reason:
-        raise CrewError("a self-widen must state the reason for the grant")
+    source = str(grant_source).strip() or ("worker" if self_widen else "")
+    if source and not stated_reason:
+        raise CrewError("a recorded grant must state the reason for the grant")
     added: list[str] = []
 
     def amend(pointer: dict[str, Any]) -> dict[str, Any]:
@@ -115,10 +125,10 @@ def widen_claim(
                 pointer,
                 added,
                 set_aside_run_ids=_set_aside_on_acceptance(run_id, acceptance),
-                regard_waiting=self_widen,
+                regard_waiting=bool(source),
             )
-        if self_widen and added:
-            _record_self_grant(node, added, stated_reason)
+        if source and added:
+            _record_grant(node, added, stated_reason, source)
         if not acceptance and isinstance(original, list):
             original.extend(path for path in added if path not in original)
         node["write_paths"] = declared
@@ -128,11 +138,15 @@ def widen_claim(
     return _mutate_pointer(run_id, amend), added
 
 
-def _record_self_grant(node: dict[str, Any], added: Iterable[str], reason: str) -> None:
-    """Record each path a run's own worker granted itself, with its reason.
+def _record_grant(
+    node: dict[str, Any], added: Iterable[str], reason: str, source: str
+) -> None:
+    """Record each path a caller granted the run, with its reason and source.
 
     The grant is kept beside the declaration it widened, so a reader can tell a
-    path the worker widened the boundary for from one it was dispatched with.
+    path the run's boundary was widened to from one it was dispatched with, and
+    which caller widened it: the run's own worker, or a repair round acting on
+    the run's behalf.
     """
     from reckon.crew.dispatch_claims import WRITE_GRANTS_KEY
     from reckon.crew.runs import _utc_now
@@ -150,7 +164,7 @@ def _record_self_grant(node: dict[str, Any], added: Iterable[str], reason: str) 
             {
                 "path": path,
                 "reason": reason,
-                "source": "worker",
+                "source": source,
                 "at": _utc_now(),
             }
         )

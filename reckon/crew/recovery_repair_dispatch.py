@@ -431,8 +431,85 @@ def _record_repair_dispatch(
     return written.get("attempt", 0)
 
 
+def _grant_round_scope(
+    run_id: str,
+    scope: Sequence[str],
+    findings: Sequence[Mapping[str, Any]],
+) -> tuple[list[str], list[str], list[dict[str, str]]]:
+    """Grant the round's out-of-scope paths on the reviewed run's claim.
+
+    A round's findings may name a path the reviewed run never declared, and the
+    resumed worker edits it because the advice says to. Recording the grant on
+    the run's claim is what lets promotion accept that change without a
+    coordinator passing an exception by hand, and what tells a peer the path is
+    held while the round edits it. Each path is granted through the same
+    mechanism a worker's own widening uses, with the source ``repair-round`` and
+    the finding that named the path as its reason.
+
+    A path a peer's binding claim already holds is refused by that mechanism;
+    it is not granted, and the round is told about it rather than resuming into
+    a fence it does not have. The returned scope therefore holds only the paths
+    the run declares or now carries a grant for.
+
+    Returns the scope to advise, the paths this call granted, and the refusals
+    as ``{"path", "peer"}`` rows.
+    """
+    from reckon.crew import claims as claims_module
+
+    declared = set(claims_module.declared_claim_paths(run_id))
+    granted: list[str] = []
+    conflicts: list[dict[str, str]] = []
+    refused: set[str] = set()
+    for path in scope:
+        if path in declared or path in refused:
+            continue
+        try:
+            _pointer, added = claims_module.widen_claim(
+                run_id,
+                [path],
+                reason=_grant_reason(path, findings),
+                grant_source="repair-round",
+            )
+        except CrewError as exc:
+            refused.add(path)
+            conflicts.append(
+                {
+                    "path": path,
+                    "peer": str(getattr(exc, "run_id", "") or ""),
+                    "reason": str(exc),
+                }
+            )
+            continue
+        granted.extend(added)
+        declared.update(added)
+    advised = [path for path in scope if path not in refused]
+    return advised, granted, conflicts
+
+
+def _grant_reason(path: str, findings: Sequence[Mapping[str, Any]]) -> str:
+    """The finding id that named a path, for the grant's recorded reason.
+
+    A finding names the path itself or a file under a directory the scope
+    grants, so the exact match is tried first and a prefix match after it. A
+    path no finding named still needs a reason to be recorded, and the round's
+    first finding is the one that made it work.
+    """
+    for finding in findings:
+        if str(finding.get("file") or "").strip() == path:
+            return str(finding.get("id") or "")
+    for finding in findings:
+        named = str(finding.get("file") or "").strip()
+        if named and named.startswith(path.rstrip("/") + "/"):
+            return str(finding.get("id") or "")
+    return str(findings[0].get("id") or "") if findings else ""
+
+
 def _repair_resume_advice(
-    composed: Mapping[str, Any], scope: Sequence[str], round_id: str
+    composed: Mapping[str, Any],
+    scope: Sequence[str],
+    round_id: str,
+    *,
+    conflicts: Sequence[Mapping[str, str]] = (),
 ) -> str:
     """The advice a resume of the reviewed run carries for its composed round.
 
@@ -442,6 +519,11 @@ def _repair_resume_advice(
     scope the round's findings grant, the round's done-when and the negative
     control the composer declared. The findings are therefore answered by id in
     the reviewed run's own manifest, and no finding is left without an answer.
+
+    ``conflicts`` names the paths the round could not be granted because a peer
+    claim holds them: each is left out of the scope line and named with the peer
+    that holds it, so the worker is told which file it must not edit rather than
+    discovering the refusal at promotion.
 
     The advice opens with the round id, so a worker's refusal that quotes the
     advice names the round it refused and a retry can tell it from a manifest
@@ -463,6 +545,17 @@ def _repair_resume_advice(
         f"Done when: {composed.get('done_when') or ''}",
         f"Negative control: {composed.get('negative_control') or ''}",
     ]
+    if conflicts:
+        parts.insert(
+            -2,
+            "Grant refused: "
+            + "; ".join(
+                f"{conflict.get('path')} is held by peer run "
+                f"{conflict.get('peer') or 'unrecorded'}"
+                for conflict in conflicts
+            )
+            + ". A held path is left out of this round's scope; do not edit it.",
+        )
     return "\n".join(parts).strip() + "\n"
 
 
@@ -1191,7 +1284,8 @@ def dispatch_repair_for_run(
                 "reason": reason,
             }
 
-        advice = _repair_resume_advice(composed, scope, round_id)
+        scope, granted, conflicts = _grant_round_scope(run_id, scope, blocking)
+        advice = _repair_resume_advice(composed, scope, round_id, conflicts=conflicts)
         try:
             resumed = resumption_module._resume(
                 run_id, record, config=config, launcher=launcher, advice=advice
@@ -1250,6 +1344,8 @@ def dispatch_repair_for_run(
             "attempt": attempt,
             "reason": "resumed the reviewed run with the composed findings as advice",
             "resumed_turn": resumed.get("turn"),
+            "granted": granted,
+            "grant_conflicts": conflicts,
         }
 
     # The split above offered the resume, so reaching here means the refusal was
