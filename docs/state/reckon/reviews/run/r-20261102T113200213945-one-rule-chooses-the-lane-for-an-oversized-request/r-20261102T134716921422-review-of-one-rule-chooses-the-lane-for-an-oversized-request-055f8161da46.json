@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_reroute_oversized_request",
+    "reckon/crew/routing.py:_competence_verdict",
+    "reckon/crew/dispatch_plan.py:1076",
+    "reckon/crew/dispatch_sessions.py:1738",
+    "reckon/crew/picker/snapshot.py:703"
+  ],
+  "completed_at": "2026-11-02T14:09:59.434Z",
+  "dispatched_at": "2026-11-02T13:59:01Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the manifest's missing rubric self-check lines are a record gap; the independent review scored all six dimensions, and the coordinator's own measurement is recorded at landing",
+      "recorded_at": "2026-11-02T14:27:53.817556+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T113200213945-one-rule-chooses-the-lane-for-an-oversized-request/manifest.md",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the manifest carries no rubric.<dimension> line for any of the six review dimensions, though the dispatch contract requires one line per dimension and reports a dimension with no line as no self-check at all rather than as a passing one, so a reader cannot tell whether the worker checked the work it delivered against the rubric."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read commit 055f8161da against aadf1b8d; routing.py:3617 adds _context_refusal with agent_key and nested_context as optional extras, routing.py:3900 makes the competence verdict use it, dispatch.py deletes _context_shortfall_refusal and refuses through the shared builder at dispatch.py:666, and the test file renames one case to a raising stub and adds the detail-parity case.",
+    "done_when": "The done_when names tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py, both negative controls, the unstubbed tests/test_a_request_too_large_for_local_is_never_placed_there.py, the importer delta and clean ruff; logs/after_suite.log records 16 passed EXIT=0 at 055f8161da, logs/baseline_suite.log 4 passed EXIT=0 at 67d1e26d0b, the three control logs end EXIT=1, both importer arms record 46 passed EXIT=0, and the ruff clause is stated in the manifest without a lint log.",
+    "goal": "The node goal is one function choosing the lane for an oversized request on both the admission and dispatch paths; the delta leaves reckon/crew/picker/snapshot.py:612 untouched and has reckon/crew/dispatch.py:666 refuse through routing._context_refusal(routing._context_fit_verdict(...)), so neither path regains a lane rule of its own.",
+    "manifest": "Read; status complete, four commits, after_suite at 055f8161da 16 passed EXIT=0 and baseline_suite 4 passed EXIT=0, negative_control_log is the bare path to logs/negative-control-2.log, and it carries no rubric.<dimension> self-check line.",
+    "write_paths": "The manifest declares seven paths including reckon/crew/routing.py; the delta touches reckon/crew/dispatch.py, reckon/crew/routing.py, tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py and the evidence fragment, all inside them, routing.py having entered scope through the coordinator's resume-3 advice."
+  },
+  "justifications": {
+    "durability": "tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:399 asserts the dispatch detail equals the preview's for one node, a comparison that separates the instant a private builder is restored and that no control log demonstrates, and :367 makes the verdict call raise so a fallback reaching it fails there, which logs/negative-control-2.log shows reddening.",
+    "evidence": "logs/after_suite.log ends '16 passed in 16.78s' EXIT=0 at 055f8161da, logs/baseline_suite.log '4 passed in 6.22s' EXIT=0 at 67d1e26d0b, the three control logs each end EXIT=1 with the quoted assertion lines present, and both importer arms record 46 passed EXIT=0, but the done_when's ruff clause is asserted in the manifest with no lint log stored.",
+    "fit": "reckon/crew/routing.py:3617 keeps the module's one-docstring builder idiom with keyword-only optional extras, and the delta introduces no plan label, ticket reference, version name or attribution in code or the commit message.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:612 still holds the one lane rule, dispatch.py:666 now refuses through routing._context_refusal(routing._context_fit_verdict(...)) instead of a branch of its own, and routing.py:3900 gives the competence refusal the same builder, so the delta changes only where the refusal is built.",
+    "reuse": "reckon/crew/routing.py:3617 adds the builder inside the module that owns the refusal, routing.py:3900 and reckon/crew/dispatch.py:666 both call it, and the search for a competing assembler found only the pre-existing minimal payload at reckon/crew/queue_edit.py:290, which this delta neither touches nor forks.",
+    "scope_discipline": "git diff --stat aadf1b8d..055f8161da names only the four paths the manifest declares, and reckon/crew/routing.py, absent from the dispatched FENCE \u2014 SCOPE list, entered scope through the coordinator's resume-3 advice."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is one function choosing the lane for an oversized request on both the admission and the dispatch path; the delta leaves that rule at reckon/crew/picker/snapshot.py:612 untouched and has reckon/crew/dispatch.py:666 refuse through routing._context_refusal(routing._context_fit_verdict(...)), so neither path regains a lane choice of its own.\nVERDICT done_when: The done_when names tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py, both negative controls, tests/test_a_request_too_large_for_local_is_never_placed_there.py unstubbed, the importer delta and clean ruff; logs/after_suite.log records 16 passed EXIT=0 at 055f8161da and logs/baseline_suite.log 4 passed EXIT=0 at 67d1e26d0b, the three control logs each end EXIT=1, both importer arms record 46 passed EXIT=0, and the ruff clause is stated in the manifest with no lint log stored.\nVERDICT write_paths: The manifest declares seven paths including reckon/crew/routing.py; the delta touches reckon/crew/dispatch.py, reckon/crew/routing.py, tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py and the evidence fragment, all inside them; routing.py was absent from the dispatched FENCE \u2014 SCOPE list and entered scope through the coordinator's resume-3 advice.\nVERDICT manifest: Read; status complete with four commits, after_suite at 055f8161da 16 passed EXIT=0 and baseline_suite 4 passed EXIT=0, negative_control_log is the bare path to logs/negative-control-2.log, and no rubric.<dimension> self-check line is present.\nVERDICT diff: Read commit 055f8161da against aadf1b8d; routing.py:3617 adds _context_refusal with agent_key and nested_context as optional extras and routing.py:3900 makes the competence verdict use it, dispatch.py deletes _context_shortfall_refusal and refuses through the shared builder at dispatch.py:666, and the test file renames one case to a raising stub plus adds the detail-parity case.\nCALL_SITES: reckon/crew/dispatch.py:_reroute_oversized_request, reckon/crew/routing.py:_competence_verdict, reckon/crew/dispatch_plan.py:1076, reckon/crew/dispatch_sessions.py:1738, reckon/crew/picker/snapshot.py:703\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:612 still holds the one lane rule, dispatch.py:666 now refuses through routing._context_refusal(routing._context_fit_verdict(...)) instead of a branch of its own, and routing.py:3900 gives the competence refusal the same builder, so the delta changes only where the refusal is built.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/after_suite.log ends '16 passed in 16.78s' EXIT=0 at 055f8161da, logs/baseline_suite.log '4 passed in 6.22s' EXIT=0 at 67d1e26d0b, the three control logs each end EXIT=1 with the quoted assertion lines present, and both importer arms record 46 passed EXIT=0, but the done_when's ruff clause is asserted in the manifest with no lint log stored.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat aadf1b8d..055f8161da names only the four paths the manifest declares, and reckon/crew/routing.py, absent from the dispatched FENCE \u2014 SCOPE list, entered scope through the coordinator's resume-3 advice.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:399 asserts the dispatch detail equals the preview's for one node, a comparison that separates the instant a private builder is restored and that no control log demonstrates, and :367 makes the verdict call raise so a fallback reaching it fails there, which logs/negative-control-2.log shows reddening.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/routing.py:3617 keeps the module's one-docstring builder idiom with keyword-only optional extras, and the delta introduces no plan label, ticket reference, version name or attribution in code or the commit message.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/routing.py:3617 adds the builder inside the module that owns the refusal, routing.py:3900 and reckon/crew/dispatch.py:666 both call it, and the search for a competing assembler found only the pre-existing minimal payload at reckon/crew/queue_edit.py:290, which this delta neither touches nor forks.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T113200213945-one-rule-chooses-the-lane-for-an-oversized-request/manifest.md:1 non-blocking: the manifest carries no rubric.<dimension> line for any of the six review dimensions, though the dispatch contract requires one line per dimension and reports a dimension with no line as no self-check at all rather than as a passing one, so a reader cannot tell whether the worker checked the work it delivered against the rubric.\n",
+  "review_run_id": "r-20261102T134716921422-review-of-one-rule-chooses-the-lane-for-an-oversized-request-055f8161da46",
+  "reviewed_base_sha": "aadf1b8dc52006b20c672a81ee9bdd4d33f9a696",
+  "reviewed_head_sha": "055f8161da46aa34339c7a3fb1dc4c40d30a8cb1",
+  "reviewed_run_id": "r-20261102T113200213945-one-rule-chooses-the-lane-for-an-oversized-request",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_note": "derived from the reviewed run's own arms: logs/baseline_suite.log ends '4 passed in 6.22s' with EXIT=0 at 67d1e26d0b and logs/after_suite.log ends '16 passed in 16.78s' with EXIT=0 at 055f8161da; both record failure_count 0, so the set difference of failing ids is empty. The base arm runs only the pre-existing test file (4 cases), which is all that exists at 67d1e26d0b, and the after arm runs that file plus the 12 cases in the new file; neither arm reports a failure.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T14:27:40.151906+00:00",
+  "total": 113
+}
