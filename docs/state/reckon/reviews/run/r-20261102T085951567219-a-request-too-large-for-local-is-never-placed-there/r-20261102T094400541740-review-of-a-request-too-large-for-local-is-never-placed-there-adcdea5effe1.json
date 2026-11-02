@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-02T09:54:59.935Z",
+  "dispatched_at": "2026-11-02T09:45:51Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "f56a8eeeb55",
+      "line": 560,
+      "severity": "non-blocking",
+      "text": "non-blocking: `_gating_input_window` re-implements the gating-window rule owned by `reckon/crew/routing.py:_context_fit_verdict` (routing.py:3447), already copied once at `reckon/crew/queue_edit.py:272`; the plan asks for 'the same context-fit check the router's `_fit` applies'. The new copy also diverges: it skips a non-integer or non-positive window with `continue` and treats that lane as unbounded, where routing raises `CrewError`, so a malformed window is unbounded on this path and a refusal on the router's."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "fab8cf8c8f7",
+      "line": 1683,
+      "severity": "non-blocking",
+      "text": "non-blocking: on the branch where `dispatch()` runs the picker itself (`elif not deferred_shadow_selection:`), the fallback selection's `snapshot_candidates` is neither popped nor handed to `_reroute_oversized_request`, so the context-fit check re-scans every lane \u2014 the cost the timed-out pick had just avoided \u2014 and the raw scan is then persisted through `dispatch_options['picker_selection']` (dispatch.py:1839 into the record built at dispatch.py:246). The CLI path is unaffected because crew_dispatch_commands.py:1666 pre-runs the picker and passes the selection in."
+    },
+    {
+      "file": "tests/test_a_request_too_large_for_local_is_never_placed_there.py",
+      "id": "f9ec5871cb3",
+      "line": 210,
+      "severity": "non-blocking",
+      "text": "non-blocking: the plan's done-when second case says the request 'queues on codex, not local', while this assertion checks that codex is resolved and that the queued-live list is empty. Only the local lane queues at dispatch time (dispatch.py:2351), so the named case cannot be produced and the test substitutes the outcome the goal protects; the manifest records this under outside_scope, and closing it is a plan correction rather than a repair to this node."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node's goal against dispatch.py:1784-1830; the fallback and deterministic routes now apply a context-fit check, move an oversized request to the widest fitting lane from the picker's own candidate scan, and refuse with the shortfall when none fits, which is what the goal states.\nVERDICT done_when: read plan section 15's done-when and tests/test_a_request_too_large_for_local_is_never_placed_there.py; three of the four cases assert it (codex placement with a context-fit route fallback, fitting request stays local, unfittable request refuses naming its shortfall), the second case ('queues on codex when local is full') is substituted by a codex placement with nothing queued because only the local lane queues at dispatch time.\nVERDICT write_paths: read the source dispatch prompt's FENCE - SCOPE and the commit's file list; the four changed paths (reckon/crew/dispatch.py, reckon/crew/dispatch_picker.py, tests/test_a_request_too_large_for_local_is_never_placed_there.py, docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-request-too-large-for-local-is-never-placed-there.html) are all inside the declared paths.\nVERDICT manifest: read; it records the head gate as '4 passed' at adcdea5eff, the base arm as '3 failed, 1 passed' at a878f1a8, a red negative control, an importer delta of 87 passed on both arms, and names every log path.\nVERDICT diff: read commit adcdea5eff in full against a878f1a8; it adds six helpers and one reroute step to reckon/crew/dispatch.py (+274), threads the captured candidate scan through reckon/crew/dispatch_picker.py (+30/-2), adds a 290-line four-case test, and a 54-line evidence fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:2051, reckon/crew/queue_admission.py:267, reckon/crew/dispatch_plan.py:1063\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1818-1830 reroutes before the lane gate and records the move as a context-fit route fallback, and dispatch.py:907 refuses with the shortfall, so the goal's placement and refusal both hold.\nSCORE evidence: 14\nJUSTIFICATION evidence: after-suite.log records '4 passed' at revision adcdea5eff and baseline-suite.log '3 failed, 1 passed' at a878f1a8, but the done-when's second case is asserted as a substituted outcome at tests/test_a_request_too_large_for_local_is_never_placed_there.py:210 and no case exercises the snapshot-reuse clause.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git show --stat adcdea5eff` is one of the four paths declared in the source prompt's scope fence, and nothing outside them changed.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_request_too_large_for_local_is_never_placed_there.py:174 fails if the reroute is removed \u2014 the negative-control run at a878f1a8 reddens it along with two others \u2014 but no assertion would notice the reuse clause or the fallback-path divergence at dispatch.py:568 regressing.\nSCORE fit: 15\nJUSTIFICATION fit: the helpers at reckon/crew/dispatch.py:560-746 follow the module's docstring style and carry mechanism names, but `_gating_input_window` silently tolerates a malformed window where reckon/crew/routing.py:3480 raises, so the two readings of one configuration disagree.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/routing.py:_context_fit_verdict (routing.py:3432) owns the gating-window and shortfall computation, and dispatch.py:560 and dispatch.py:625 re-implement it rather than calling it, with a third copy already at reckon/crew/queue_edit.py:272.\nFINDING reckon/crew/dispatch.py:560 non-blocking: `_gating_input_window` duplicates the window rule owned by reckon/crew/routing.py:_context_fit_verdict and diverges on a malformed window.\nFINDING reckon/crew/dispatch.py:1683 non-blocking: dispatch's own picker branch drops the captured scan instead of reusing it, re-scanning every lane and persisting the raw scan in dispatch_options.\nFINDING tests/test_a_request_too_large_for_local_is_never_placed_there.py:210 non-blocking: the done-when's 'queues on codex' case is asserted as a codex placement with nothing queued.",
+  "review_run_id": "r-20261102T094400541740-review-of-a-request-too-large-for-local-is-never-placed-there-adcdea5effe1",
+  "reviewed_base_sha": "a878f1a8e03a60b3b3693d3761bad7b42f8e4142",
+  "reviewed_head_sha": "adcdea5effe12849a856ff904d87231b6fc515df",
+  "reviewed_run_id": "r-20261102T085951567219-a-request-too-large-for-local-is-never-placed-there",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T10:18:39.399562+00:00",
+  "total": 86
+}
