@@ -18,7 +18,12 @@ the finding's id as the reason, immediately before it resumes the worker.
 so the widened path is in the scope promotion measures with no
 <code>--accept-path</code>. A path a peer's binding claim already holds is
 refused by the existing conflict check: it is not granted, it is left out of the
-advice's scope line, and the advice names the peer that holds it.</p>
+advice's scope line, and the advice names the peer that holds it. Only a scope
+conflict names a peer, so only that is reported as one: any other refusal — the
+claim amendment refusing because the run's own worker is still running, or a
+pointer recording no claim to widen — carries its own error text into the advice
+and names no peer, since it is about this run rather than about contention for
+the path.</p>
 <p id="a-repair-round-grants-its-scope-measure">Measured through
 <code>resumption.sweep</code> with the resume entry point and the dispatch
 stubbed, against a reviewed run declaring <code>reckon/crew/declared.py</code>
@@ -30,11 +35,17 @@ scope product now measures a commit changing the granted path with no
 acceptances recorded; before the grant the same measurement refuses it. With a
 peer pointer holding <code>ticker.py</code> as a binding claim, the path is
 absent from both the declaration and the grant list, and the peer's run id
-appears in the advice while the path is absent from its scope line. Gate:
-3 passed. Base arm 175 passed / head arm 175 passed over the twenty test files
-importing <code>reckon.crew.recovery_repair_dispatch</code> and
-<code>reckon.crew.claims</code> (plus the widening behaviour tests), no added
-failure id. The declared negative control skips the grant and the second case
-fails: 3 failed, <code>test_promotion_accepts_a_head_that_changed_the_granted_path</code>
-among them.</p>
+appears in the advice while the path is absent from its scope line. A claim
+amendment refused for the run's own live worker is reproduced against the
+pre-fix revision, where the advice read <em>reckon/crew/ticker.py is held by
+peer run r-unpromoted</em> — the reviewed run named as its own peer, the real
+reason discarded; at the fix the same probe renders <em>Scope grant refused:
+reckon/crew/ticker.py: cannot amend the write claim of run 'r-unpromoted': its
+worker is still running…</em> and names no peer. Gate: 4 passed. Base arm 175
+passed / head arm 175 passed over the twenty test files importing
+<code>reckon.crew.recovery_repair_dispatch</code> and <code>reckon.crew.claims</code>
+(plus the widening behaviour tests), no added failure id. The declared negative
+control skips the grant and the second case fails: 4 failed,
+<code>test_promotion_accepts_a_head_that_changed_the_granted_path</code> among
+them.</p>
 </article>
