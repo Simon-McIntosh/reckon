@@ -53,6 +53,13 @@
   (<code>1 failed, 4 passed</code>). The 87 related files of the crew suite pass
   (<code>644 passed</code>) with no added failure.</p>
 
+  <p id="a-coordinator-gate-shows-on-its-pane-record-is-not-the-work">The record is never
+  the gate's work. A gate record that cannot be written is reported on stderr and the gate runs
+  anyway, on both verbs. Opening the record for <code>suite run</code> reads the declared command
+  from an object or a mapping, because the declaration is external configuration and a shape the
+  gate did not expect refused the suite before it started — that regression was caught by the
+  related-file gate and repaired.</p>
+
   <p id="a-coordinator-gate-shows-on-its-pane-gap">One gap remains outside this node's write scope:
   <code>ticker.stream_carries</code> in <code>reckon/crew/ticker.py</code> admits rows by state
   family and does not yet carry the gate states, so the rows reach the stream and the owning session
