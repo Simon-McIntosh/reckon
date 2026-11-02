@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1773",
+    "reckon/crew/queue_admission.py:4004"
+  ],
+  "completed_at": "2026-11-02T12:48:52.512Z",
+  "dispatched_at": "2026-11-02T12:42:35Z",
+  "findings": [
+    {
+      "file": "tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:298 non-blocking",
+      "line": "",
+      "severity": "non-blocking",
+      "text": "test_the_refused_widest_lane_is_not_chosen_by_the_admission_pass is configured with the refused lane LOCAL at 100_000 tokens against CODEX at 900_000 and alpha at 150_000, so destination == CODEX holds on the pre-change code as well (the old rule would pick CODEX and the old caller skip would not fire); the case cannot fail if the refused-backend exclusion regresses, which is the behaviour its name and comment claim, so the admission path's exclusion rests on the rule's unit case at line 270 alone."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/one-rule-chooses-the-lane-for-an-oversized-request.html:63 non-blocking",
+      "line": "",
+      "severity": "non-blocking",
+      "text": "the fragment and the manifest's negative_control_note describe the second control as restoring the unchanged-resolution return, but logs/negative-control-2.log reddens on assert 'context' not in competence, which is what restoring the competence-verdict-first refusal produces, and the restored return is unreachable now that the rule excludes the refused backend and picker.types.Candidate.backend is a required str, so the record misnames the mutation it ran and the plan's literal second control no longer reproduces."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py:1119 non-blocking",
+      "line": "",
+      "severity": "non-blocking",
+      "text": "the rule's refused_backend parameter is now required, so the admission call cannot omit it, but no case binds the value passed at this call site to the pointer's backend other than by excluding a value that would coincidentally change the destination, leaving a wrong-value regression here undetected by the gate."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read the single new commit edf3d4e57bd against 1e2596850d; snapshot.py:612 gains the refused_backend parameter and a second exclusion clause, dispatch.py replaces the competence-verdict refusal with the fit check's figures and deletes the unchanged-resolution return, queue_admission.py passes refused_backend and drops its caller-side skip, and the tests gain five cases plus shortfall and payload-shape assertions.",
+    "done_when": "logs/after_suite.log records 14 passed EXIT=0 at edf3d4e57bd over the two node files, logs/baseline_suite.log 4 passed EXIT=0 at 67d1e26d0b, my re-run of the named file at head gave 10 passed EXIT=0, both controls are red in logs/negative-control-1.log and logs/negative-control-2.log, ruff check and ruff format --check are clean on the five staged .py paths when I re-ran them, and the importer arms are 25 passed EXIT=0 on both sides.",
+    "goal": "The goal is one rule in reckon/crew/picker/snapshot.py choosing the destination from a candidate list and the refused backend, shared by the admission pass and the dispatch fallback; widest_fitting_candidate(candidates, refused_backend) at snapshot.py:612 excludes the refused backend itself, and dispatch.py:693 and queue_admission.py:1119 both pass it so neither caller keeps a skip.",
+    "manifest": "Read; status complete, commits 1e2596850d and edf3d4e57bd, both suite arms exit_status 0 with failure_count 0, negative_control_log is the bare path to logs/negative-control-2.log, and test_logs name the gate, importer and control logs.",
+    "write_paths": "The manifest declares snapshot.py, dispatch.py, queue_admission.py, the two test files and the evidence fragment; git diff --stat 1e2596850d..edf3d4e57bd touches exactly those six paths."
+  },
+  "justifications": {
+    "durability": "tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:270 reddens if the refused-backend exclusion is removed and :330 reddens if the refusal is built from the competence verdict, but :298 passes on the pre-change code because its refused lane is also the narrowest candidate.",
+    "evidence": "logs/after_suite.log records 14 passed EXIT=0 at edf3d4e57bd and logs/baseline_suite.log 4 passed EXIT=0, but the second control is labelled a mutation the log does not show and no ruff log is stored for the done_when's ruff clause.",
+    "fit": "reckon/crew/picker/snapshot.py:612-652 keeps the module's docstring-per-helper idiom and the diff introduces no plan label, ticket reference or version name.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:643 excludes the refused backend inside the rule and reckon/crew/dispatch.py:696-708 refuses from _context_fit_verdict's own estimate and window with no path returning the oversized resolution.",
+    "reuse": "the commit adds no definition, removes the last caller-side reading of the lane rule and points the refusal at routing._context_fit_verdict rather than a second estimator, so nothing forks an owned capability.",
+    "scope_discipline": "git diff --stat 1e2596850d..edf3d4e57bd names only the six paths the node manifest declares, including docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/one-rule-chooses-the-lane-for-an-oversized-request.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is one rule in reckon/crew/picker/snapshot.py that chooses the destination from a candidate list and the refused backend, shared by the admission pass and the dispatch fallback; widest_fitting_candidate(candidates, refused_backend) at snapshot.py:612 now excludes the refused backend itself and dispatch.py:693 and queue_admission.py:1119 both pass it, so neither caller keeps a skip.\nVERDICT done_when: The done_when names tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py and four behaviours; logs/after_suite.log records 14 passed EXIT=0 at edf3d4e57bd over the two node files, logs/baseline_suite.log 4 passed EXIT=0 at 67d1e26d0b, and I re-ran the named file at head for 10 passed EXIT=0; the two negative controls are red in logs/negative-control-1.log and logs/negative-control-2.log, ruff check and ruff format --check are clean on the five staged .py paths when I re-ran them, and the importer arms are 25 passed EXIT=0 on both sides.\nVERDICT write_paths: The node manifest declares snapshot.py, dispatch.py, queue_admission.py, the two test files and the evidence fragment; git diff --stat 1e2596850d..edf3d4e57bd touches exactly those six paths and nothing outside them.\nVERDICT manifest: Read; status complete, commits 1e2596850d and edf3d4e57bd, baseline_suite and after_suite both record exit_status 0 with failure_count 0, negative_control_log is the bare path to logs/negative-control-2.log, and test_logs name the gate, importer and control logs on disk.\nVERDICT diff: Read the single new commit edf3d4e57bd against 1e2596850d; snapshot.py:612 gains the refused_backend parameter and a second exclusion clause in its usable filter, dispatch.py:693-708 replaces the competence-verdict refusal with the fit check's own figures and deletes the unchanged-resolution return at old line 710, queue_admission.py:1119 passes refused_backend and drops its caller-side skip, and the two tests gain five cases plus shortfall and payload-shape assertions.\nCALL_SITES: reckon/crew/dispatch.py:1773, reckon/crew/queue_admission.py:4004\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:643 excludes the refused backend inside the rule and reckon/crew/dispatch.py:696-708 refuses from _context_fit_verdict's own estimate and window with no path returning the oversized resolution.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after_suite.log records 14 passed EXIT=0 at edf3d4e57bd and logs/baseline_suite.log 4 passed EXIT=0, but the second control is labelled a mutation the log does not show and no ruff log is stored for the done_when's ruff clause.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1e2596850d..edf3d4e57bd names only the six paths the node manifest declares, including docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/one-rule-chooses-the-lane-for-an-oversized-request.html.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:270 reddens if the refused-backend exclusion is removed and :330 reddens if the refusal is built from the competence verdict, but :298 passes on the pre-change code because its refused lane is also the narrowest candidate.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/picker/snapshot.py:612-652 keeps the module's docstring-per-helper idiom and the diff introduces no plan label, ticket reference or version name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition, removes the last caller-side reading of the lane rule and points the refusal at routing._context_fit_verdict rather than a second estimator, so nothing forks an owned capability.\nFINDING tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:298 non-blocking: test_the_refused_widest_lane_is_not_chosen_by_the_admission_pass is configured with the refused lane LOCAL at 100_000 tokens against CODEX at 900_000 and alpha at 150_000, so destination == CODEX holds on the pre-change code as well (the old rule would pick CODEX and the old caller skip would not fire); the case cannot fail if the refused-backend exclusion regresses, which is the behaviour its name and comment claim, so the admission path's exclusion rests on the rule's unit case at line 270 alone.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/one-rule-chooses-the-lane-for-an-oversized-request.html:63 non-blocking: the fragment and the manifest's negative_control_note describe the second control as restoring the unchanged-resolution return, but logs/negative-control-2.log reddens on assert 'context' not in competence, which is what restoring the competence-verdict-first refusal produces, and the restored return is unreachable now that the rule excludes the refused backend and picker.types.Candidate.backend is a required str, so the record misnames the mutation it ran and the plan's literal second control no longer reproduces.\nFINDING reckon/crew/queue_admission.py:1119 non-blocking: the rule's refused_backend parameter is now required, so the admission call cannot omit it, but no case binds the value passed at this call site to the pointer's backend other than by excluding a value that would coincidentally change the destination, leaving a wrong-value regression here undetected by the gate.\n",
+  "review_run_id": "r-20261102T124021887623-review-of-one-rule-chooses-the-lane-for-an-oversized-request-edf3d4e57bdb",
+  "reviewed_base_sha": "1e2596850d211c118f25f0752e20444f0a066857",
+  "reviewed_head_sha": "edf3d4e57bdb51abf592e4fdf15edcb2eff1743e",
+  "reviewed_run_id": "r-20261102T113200213945-one-rule-chooses-the-lane-for-an-oversized-request",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_note": "derived from the reviewed run's own arms: logs/baseline_suite.log ends '4 passed in 6.22s' with EXIT=0 at 67d1e26d0b and logs/after_suite.log ends '14 passed in 7.65s' with EXIT=0 at edf3d4e57bd; both record failure_count 0, so the set difference of failing ids is empty.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T12:52:24.656575+00:00",
+  "total": 108
+}
