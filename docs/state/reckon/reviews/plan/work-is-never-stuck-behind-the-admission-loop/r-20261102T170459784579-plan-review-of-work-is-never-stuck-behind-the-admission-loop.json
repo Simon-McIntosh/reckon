@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T17:12:29.478Z",
+  "dispatched_at": "2026-11-02T17:06:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:193",
+      "id": "reasoning-1",
+      "reason": "an implementation that merges the steerable fields onto a fresh `_queued_request_record` (as `queue_dispatch` does today) reproduces the incident for `argv` and `base_sha` while passing the test, because the test constructs its queued request without them.",
+      "text": "\u00a717's Deliverable now says \"They were lost because launch followed the repointed manifest path into a second run directory, so keeping the original `manifest_path` is what keeps them\", but `argv` and `base_sha` are written by launch unconditionally into the request's own pointer (`reckon/crew/dispatch.py:3231` from the composed plan, `:2979` from the worktree) and never read from the manifest path; the write that removes them is `queue_dispatch`'s whole-record overwrite (`reckon/crew/runs.py:770`), which preserves only `run_id`, `queued_at` and `created_at`. A queued pointer can carry those fields: every internal re-queue goes through `_mutate_pointer` (`reckon/crew/queue_admission.py:3377`), so a request held and released after a launch attempt keeps its launched fields, and a coordinator re-dispatch of it wipes them again under the stated remedy.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:194",
+      "id": "done_when-1",
+      "reason": "the node's gate as written cannot pass without either a failing assertion or launch-time code outside the deliverable, so the node would chase a field this defect never lost at launch; the case should assert `argv`/`base_sha` from launch and take the session id through `observe`, which is the path whose absence made `crew resume` refuse.",
+      "text": "the third case requires \"a live pointer carrying the `session_id`, `argv` and `base_sha` that launch writes\", but `session_id` is written at launch as `reuse_session` (`reckon/crew/dispatch.py:3023`), which is `None` for any run that does not continue a prior session, and the only writer of an observed session id is `dispatch_sessions.observe` (`:230`, `:290`), a separate call that folds the stream. A stub worker launched through the admission pass therefore leaves `session_id` null in the pointer, whatever the manifest path names.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:193",
+      "id": "reasoning-2",
+      "reason": "the constant is the deliverable's single definition of steerable, so an omission there becomes a behaviour the node builds and the test does not exercise; a coordinator re-dispatching a briefed node would get the old authority without an error.",
+      "text": "the steerable set is enumerated as \"goal, done-when, negative control, write paths, inputs, time budget and dispatch options\", which omits `node.brief`, `node.brief_path` and `node.brief_sha256` that `_queued_request_record` stores and that `_launch_queued` reads (`reckon/crew/queue_admission.py:274-281`); a re-dispatch of a briefed queued node with a changed brief would therefore drop the new brief silently and launch the old one.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c720db96f3c64b400398be2f252b3bfbbc2832b1",
+  "plan_fingerprint": "6d5d26ddff05a9def25c00ef30bbb4a7555dbdde5e1d45cd1c0037de81e6c96e",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 134,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T170459784579-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "aacc504846aeb75635cbd8f63aab8667ce5da3f4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_answer_existing_node_run` is at `reckon/crew/dispatch.py:403`, `_queued_request_record` at `:205`, `queue_dispatch` at `reckon/crew/runs.py:686`, and the launch's manifest read at `reckon/crew/dispatch_sessions.py:1006` (`_recorded_manifest_path`).",
+    "done_when": "a finding \u2014 the third case requires the live pointer to carry a `session_id` that launch writes, and launch writes only a resumed session's id.",
+    "evidence_paths": "pass \u2014 the measure is a committed test under `tests/` plus the ruff checks, both durable repository paths.",
+    "naming": "pass \u2014 the new test filename and the proposed constant are named by what they do; the run ids in the Why paragraph are evidence identities, not plan labels.",
+    "reasoning": "a finding \u2014 the plan attributes the loss of `argv` and `base_sha` to launch following the repointed manifest path, which those two fields' writers do not depend on, and its steerable set omits the brief fields the same queued record carries.",
+    "single_goal": "pass \u2014 one deliverable (a re-dispatch merges only the steerable fields and keeps the queued request's identity), with one test file and one constant.",
+    "wiring": "pass \u2014 \u00a717 declares no depends-on/informs/gates and names every code path it relies on, so there is no relationship to resolve wrongly."
+  },
+  "section_digests": {
+    "_document": "8fc6fb07e5a942341d3a24d01b1788f796ede3581a5e49ef7ca893060307a711",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "be26a512821ffaacfe324428255650f40f5c695b59e3344a3f536f3a6713c1f4",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T17:17:29.477780+00:00"
+}
