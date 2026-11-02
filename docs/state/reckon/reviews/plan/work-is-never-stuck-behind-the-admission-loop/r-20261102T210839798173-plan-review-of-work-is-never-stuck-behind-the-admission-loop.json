@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T21:24:39.813Z",
+  "dispatched_at": "2026-11-02T21:10:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:90",
+      "id": "reasoning-1",
+      "reason": "the node would otherwise implement the fast path as specified, land a review-gate bypass, and fail its own case 3; the plan needs the coverage fact recorded in the contract (or the fast path restricted to requests that still prove a covering review without `review_coverage`).",
+      "text": "s4's mechanism is \"a request whose stored section and contract digests equal the plan's present ones is answered from them, without calling `review_coverage`\", but today `_plan_review_owed` uses `review_coverage`'s `uncovered` set to decide that a request whose units no stored review covers is owed the dispatch gate's verdict (`reckon/crew/queue_admission.py:3305-3332`), and a contract carries only `section`/`section_digest`/`document_digest` (`queue_admission.py:3122-3135`), no record of coverage. An unchanged plan whose covering review was later removed or left incomplete therefore passes the fast path and launches unreviewed, while a fresh dispatch of the same section holds \u2014 which is exactly what the section's own done-when, \"Each request's verdict equals the verdict of a fresh direct dispatch at the same moment\", forbids.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:90",
+      "id": "done_when-1",
+      "reason": "the assertion passes on the unfixed attribution, so the stage-clock half of the node can close with no proof that wait resolution was separated; the case needs a fixture where wait resolution is made to take measurable time and `waits_seconds` is shown to carry it while `launch_seconds` excludes it.",
+      "text": "s4's fourth case asserts that \"its `release_seconds`, `waits_seconds` and `launch_seconds` sum to the pass duration within 0.1 s\", but the row carries no per-stage truth to compare against: an implementation that writes `waits_seconds = 0` and lets `launch_seconds` keep the whole `ended - released` span satisfies the sum exactly, which is the state the section exists to remove (wait resolution timed as launch).",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:205",
+      "id": "done_when-2",
+      "reason": "the node would deliver a test whose declared control cannot go red, which is the one property the section's gate rests on; stating the second admittable request in the done-when makes the control able to fail.",
+      "text": "s21's first case asserts \"`crew admit --run` launches the named request and no other\" with the launcher stubbed, and its negative control is \"runs the whole pass for `--run`, and the first case fails\"; with a single admittable queued request in the fixture, the whole pass launches that same request and the case still passes, so the named control discriminates nothing unless the fixture also holds a second queued request the lane can admit.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f1b0419586581150f4c3de6452cb4c89e954739b",
+  "plan_fingerprint": "6df22a5599ece0b5d4d8ab3b18242fb07c788e92a39caaa7317f68fe442d56d8",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 149,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T210839798173-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "2be82996cdbf052c3c39e162893a304e2b189103",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_wait_state` (`reckon/crew/queue_admission.py:2323`, read at 2354), `_hold_pointer` (3070, waiting write at 3095), `_rederive_waits` (2873, mutation at 2911), `_plan_review_owed` (3244), `REVIEW_CONTRACT_KEY` (70), `admit_once`'s release-before-queued order (queue_admission.py:3683 before the `queued = [...]` build), `crew view live` (`reckon/crew_run_commands.py:358`), `docs/plans/a-queue-holds-the-whole-plan.html` and `a-read-costs-what-changed#s6` all resolve; extensionless plan refs resolve as `<path>.html` by the surface convention.",
+    "done_when": "a finding \u2014 s21's negative control (\"runs the whole pass for `--run`\") cannot fail its first case unless the fixture holds a second admittable queued request, and the done-when does not require one; s4's fourth case is also unsatisfiable as an attribution check (see findings).",
+    "evidence_paths": "pass \u2014 gates write `tests/` results, ruff output and s4's fleet timing arm under the run's `logs/`, none in a scratchpad or a node-local temp path.",
+    "naming": "pass \u2014 the three unit test filenames are behavioural, no plan labels, stage names or ticket numbers reach a symbol or a comment.",
+    "reasoning": "a finding \u2014 s4's fast path answers an unchanged request from digests alone and so skips the stored-review-coverage judgment the same function performs today, which its own third case says must equal a fresh dispatch.",
+    "single_goal": "pass \u2014 s4's stage clock instruments the same goal its reuse change pursues (a launch decision no longer pays queue-time work), and s21's `--run` and pointer fields are one coordinator-facing capability closed on its single test file.",
+    "wiring": "pass \u2014 s4 and s21 declare `depends-on a-read-costs-what-changed#s6`, which resolves (`docs/plans/a-read-costs-what-changed.html:81`), s19 needs no upstream because it repairs `_wait_state`/`_rederive_waits` in place, and the plan's `informs a-queue-holds-the-whole-plan` resolves."
+  },
+  "section_digests": {
+    "_document": "0610c3eb8e5f68f649b3cfa041b215ba6c61aa315b28ff3e7ab36669ee820516",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "306d1f493d5dd6dfef99ecfd925e7fab4d6e9a1927858c4645e968595999dac1",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "c7514fe614e0910614966468912fc7612bb558962f4c63311d244a192ae64d1c",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T21:32:45.729235+00:00"
+}
