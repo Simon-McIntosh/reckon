@@ -1,13 +1,9 @@
 """One rule chooses the lane for a request too large for its own.
 
 Two paths place such a request: the admission pass, when a queued request's own
-lane refuses it, and a dispatch whose picker answer never arrived. Each used to
-choose for itself -- admission took the first candidate carrying no exclusion,
-dispatch took the widest -- and neither read the same rule, so the same
-candidates could resolve two different lanes. Dispatch's copy also read a
-malformed window as an absent one, ranking a broken declaration above every real
-window, and returned the oversized resolution unchanged when no candidate was
-usable.
+lane refuses it, and a dispatch whose picker answer never arrived. Both must
+choose the same widest fitting candidate. A malformed window must raise, and
+an empty candidate set must refuse placement.
 
 These tests fix one rule on both paths: the widest usable window among the
 candidates the picker's own scan produced, unbounded above every declared
@@ -26,7 +22,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli
-from reckon.crew import queue_admission, runs
+from reckon.crew import queue_admission, routing, runs
 from reckon.crew.node import CompetenceLimit, CrewError
 from reckon.crew.picker import snapshot
 from reckon.crew.picker.types import PickRequest
@@ -80,8 +76,8 @@ def _codex_heavy_home(base: Path) -> Path:
 
     Two harnesses load different standing chains, so the request-level estimate
     -- measured without a lane -- and a lane's own verdict can disagree on one
-    node. That disagreement is what an oversized request used to slip through:
-    the lane's verdict was satisfied while the request's estimate was not.
+    node. Placement must use the request estimate even where the lane's own
+    verdict is satisfied.
     """
     home = base / "home"
     (home / ".codex").mkdir(parents=True)
@@ -334,8 +330,12 @@ def test_a_lane_whose_own_chain_fits_refuses_the_request_census(
     result = _invoke(dispatch_repo, node="census-disagrees")
     payload = _payload(result)
     competence = payload["competence"]
+    preview_result = _invoke(dispatch_repo, node="census-disagrees", dry_run=True)
+    preview = _payload(preview_result)
 
     assert result.exit_code == 5, result.output
+    assert preview_result.exit_code == 5, preview_result.output
+    assert competence == preview["competence"]
     assert payload["error"] == "competence-refusal"
     assert competence["reason"] == "context-window-exceeded"
     assert competence["window_tokens"] == 300_000
@@ -346,8 +346,50 @@ def test_a_lane_whose_own_chain_fits_refuses_the_request_census(
     assert str(competence["shortfall_tokens"]) in payload["detail"]
 
 
+def test_a_stale_competence_allowance_cannot_hide_the_fit_refusal(
+    dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure(
+        dispatch_repo,
+        monkeypatch,
+        local_window=100_000,
+        extra_windows={CODEX: 150_000, "alpha": 190_000},
+    )
+    placement._stub_fallback(monkeypatch)
+    original_plan = dispatch_module.plan_dispatch
+
+    def plan_with_stale_allowance(*args, **kwargs):
+        resolution = original_plan(*args, **kwargs)
+        fit = routing._context_fit_verdict(resolution=resolution, repo=dispatch_repo)
+        assert fit is not None and fit["allowed"] is False
+        assert resolution.competence is not None
+        resolution.competence = {**resolution.competence, "allowed": True}
+        return resolution
+
+    monkeypatch.setattr(dispatch_module, "plan_dispatch", plan_with_stale_allowance)
+    monkeypatch.setattr(
+        importlib.import_module("reckon.crew"),
+        "plan_dispatch",
+        plan_with_stale_allowance,
+    )
+
+    live = _invoke(dispatch_repo, node="stale-allowance")
+    preview = _invoke(dispatch_repo, node="stale-allowance", dry_run=True)
+    live_payload = _payload(live)
+    preview_payload = _payload(preview)
+
+    assert live.exit_code == preview.exit_code == 5
+    assert live_payload["error"] == preview_payload["error"] == "competence-refusal"
+    assert live_payload["competence"] == preview_payload["competence"]
+    refusal = live_payload["competence"]
+    assert refusal["shortfall_tokens"] == (
+        refusal["estimated_tokens"] - refusal["window_tokens"]
+    )
+    assert refusal["context"]["shortfall_tokens"] == refusal["shortfall_tokens"]
+
+
 def test_the_refused_lane_is_never_chosen_even_when_it_is_the_widest() -> None:
-    # Both callers used to skip the lane that refused the request themselves,
+    # The rule itself skips the lane that refused the request,
     # so the rule's own answer could be the refused lane and each caller's skip
     # was the only thing standing between the request and a move onto it. The
     # rule excludes it, and the path is asserted through the admission caller.

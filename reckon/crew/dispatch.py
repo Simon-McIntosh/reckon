@@ -51,6 +51,7 @@ from reckon import (
     flight as flight,
     ledger as ledger,
 )
+from reckon.calibration import calibration_configuration_key
 from reckon.figures import rasterise_svg
 from reckon._plan_html import (
     _strip_tags as _strip_tags,
@@ -599,6 +600,36 @@ def _router_free_resolution(
     return True
 
 
+def _oversized_context_refusal(
+    resolution: DispatchPlan, repo: Path, request_estimate: int
+) -> dict[str, Any]:
+    """Build the context refusal both a dispatch and its preview answer with."""
+    context = _context_fit_verdict(resolution=resolution, repo=repo)
+    if context is None:
+        raise CrewError(f"backend {resolution.backend!r} has no context window")
+    window = int(context["window_tokens"])
+    if request_estimate > window and context["estimated_tokens"] <= window:
+        context = {
+            **context,
+            "allowed": False,
+            "reason": "context-window-exceeded",
+            "estimated_tokens": request_estimate,
+            "shortfall_tokens": request_estimate - window,
+        }
+    agent = _agent_configuration(
+        resolution.backend, resolution.launch, resolution.backend_settings
+    )
+    refusal = _context_refusal(
+        context,
+        agent_key=calibration_configuration_key({"agent": agent}),
+        nested_context=True,
+    )
+    refusal["cache_status"] = shared_verdict_inputs(resolution.project, repo)[
+        "cache_status"
+    ]
+    return refusal
+
+
 def _reroute_oversized_request(
     *,
     resolution: DispatchPlan,
@@ -662,35 +693,7 @@ def _reroute_oversized_request(
         ]
     chosen = picker_snapshot.widest_fitting_candidate(candidates, resolution.backend)
     if chosen is None:
-        # No permitted lane holds it, and the lane that refused it is excluded by
-        # the rule itself, so nothing may be placed anywhere. The figures are the
-        # fit check's own: its estimate, this lane's gating window, and the
-        # distance between them. The competence verdict is not the source -- it
-        # can call this lane fit and then carry no shortfall, which a
-        # CompetenceLimit reads as a horizon refusal and dies on -- but the
-        # fields it holds beside that measure (the lane's agent key, its cache
-        # status) are kept when it has them, so the refusal reaches a reader in
-        # the shape a dry run answers with.
-        context_fit = _context_fit_verdict(resolution=resolution, repo=repo)
-        if context_fit is None or context_fit["allowed"]:
-            # The lane's own instruction chain fits while the request's census
-            # does not: the request estimate is what the router refuses on, so
-            # the refusal states that measure against the same gating window.
-            context_fit = {
-                "estimated_tokens": estimate,
-                "window_tokens": window,
-                "shortfall_tokens": max(0, estimate - window),
-                "inputs": {},
-            }
-        refusal = dict(resolution.competence or {})
-        refusal.update(
-            _context_refusal(
-                context_fit,
-                agent_key=refusal.get("agent_key"),
-                nested_context=True,
-            )
-        )
-        raise CompetenceLimit(refusal)
+        raise CompetenceLimit(_oversized_context_refusal(resolution, repo, estimate))
     chosen_backend = str(chosen.get("backend") or "")
     # Re-resolve onto the chosen lane rather than patching the plan, so the new
     # backend gets its own execution fit, sandbox and write-path checks instead
@@ -3873,8 +3876,68 @@ from .dispatch_plan import (  # noqa: E402
     _resolved_wave_id as _resolved_wave_id,
     _session_unreconciled_refusal as _session_unreconciled_refusal,
     open_endedness_score as open_endedness_score,
-    plan_dispatch as plan_dispatch,
+    plan_dispatch as _raw_plan_dispatch,
 )
+
+
+def plan_dispatch(**kwargs: Any) -> DispatchPlan:
+    """Resolve a preview through the same context placement as a real dispatch.
+
+    The CLI requests live-conflict reporting for its preview. That report asks
+    whether the request can actually be placed, including a picker fallback
+    whose resolved lane cannot hold the request. Ordinary resolution callers
+    keep the side-effect-free plan verdict.
+    """
+    node = kwargs["node"]
+    caller_time_budget = node.time_budget
+    caller_write_paths = list(node.write_paths)
+    resolution = _raw_plan_dispatch(**kwargs)
+    if not kwargs.get("report_live_conflicts") or not resolution.validation.ok:
+        return resolution
+    repo = kwargs.get("repo")
+    if repo is None or not _router_free_resolution(
+        resolved_route=resolution.route,
+        picker_selection=kwargs.get("picker_selection"),
+        local=bool(kwargs.get("local")),
+        backend_override=kwargs.get("backend_override"),
+        default_backend_override=kwargs.get("default_backend_override"),
+        member=str(kwargs.get("member") or ""),
+    ):
+        return resolution
+    project = str(kwargs.get("project") or "")
+    rerouted, _fallback = _reroute_oversized_request(
+        resolution=resolution,
+        node=node,
+        config=kwargs["config"],
+        project=project,
+        repo=Path(repo).resolve(),
+        authority=resolution.authority,
+        session=str(kwargs.get("session") or ""),
+        comment="",
+        orchestrator_assessment=None,
+        records=None,
+        verdict_inputs=None,
+        budget_snapshot=None,
+        snapshot_candidates=(),
+        reroute_kwargs={
+            "locked_decisions": kwargs.get("locked_decisions", ()),
+            "peer_scopes": kwargs.get("peer_scopes"),
+            "base": kwargs.get("base", "HEAD"),
+            "execution_override": kwargs.get("execution_override", False),
+            "orchestrator_lane_reason": kwargs.get("orchestrator_lane_reason"),
+            "run_id": resolution.run_id,
+            "allow_unreviewed_plan": kwargs.get("allow_unreviewed_plan", False),
+            "repairs": kwargs.get("repairs", ""),
+            "report_live_conflicts": True,
+            "watch_required": kwargs.get("watch_required", False),
+            "watch_override": kwargs.get("watch_override", False),
+            "accept_directory_claim": kwargs.get("accept_directory_claim", False),
+        },
+        caller_time_budget=caller_time_budget,
+        caller_write_paths=caller_write_paths,
+    )
+    return rerouted
+
 
 from .dispatch_sections import (  # noqa: E402
     DONE_WHEN_PLAN_TEXT_SPAN_WORDS as DONE_WHEN_PLAN_TEXT_SPAN_WORDS,
