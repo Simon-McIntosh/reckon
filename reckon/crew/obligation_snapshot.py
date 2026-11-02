@@ -152,6 +152,16 @@ def obligations_home() -> Path:
     return crew_home() / "obligations"
 
 
+def live_pointer_path(run_id: str) -> Path:
+    """Path of one run's live pointer.
+
+    Repeated here rather than read through ``runs`` for the reason this module
+    repeats the config home: the prompt hook resolves a held answer without
+    importing the crew package.
+    """
+    return crew_home() / "live" / f"{run_id}.json"
+
+
 def _token(name: str, fallback: str) -> str:
     """The filesystem-safe stem ``runs`` gives a project or session name."""
     return re.sub(r"[^A-Za-z0-9._-]", "-", name).strip("-") or fallback
@@ -995,6 +1005,73 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
     ]
     kept.extend(_unreadable_record_items(findings))
     return kept
+
+
+# The one duty kind whose evidence is a live pointer, and only a live pointer.
+#
+# Named as the literal ``reckon.crew.obligations`` spells it, because this
+# module must not import that derivation: the hook loads this file by path so
+# the prompt path reaches no plan, backend or ledger module. The kind is raised
+# only from ``obligations._run_duty_row`` holding a live pointer and reading the
+# refusal out of that pointer's own ``admission_landing``, so a run with no
+# pointer raises no refusal. That is what makes a ``stat`` sufficient here, and
+# it is not sufficient anywhere else.
+#
+# Every other kind is left alone, whatever its run's pointer state. A
+# ``worktree-held`` row is raised from the project's retained ledger records, a
+# queued or stalled row from the queue and the admission verdicts, and a review,
+# hold or blocked row names state the run's record still carries after its
+# pointer is gone. A missing pointer says nothing about any of them, and hiding
+# one on a ``stat`` would be a silent omission rather than a settlement. A
+# landing refusal is the case where the pointer itself is the evidence: the
+# station stored the refusal that pointer carried, so the pointer's removal is
+# the landing the refusal was about.
+LIVE_POINTER_DUTY_KINDS = frozenset({"landing-refused"})
+
+
+def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """A held payload minus the duties of runs that hold no live pointer now.
+
+    A duty of one of :data:`LIVE_POINTER_DUTY_KINDS` names a held run because a
+    live pointer carried the state it was derived from, so a run whose pointer
+    file has been removed has landed or ended and owes nothing. The answer that
+    still names it was computed before the removal, when that pointer was
+    there; a station can hold such an answer for as long as its tick runs,
+    which is minutes. One ``stat`` per such duty answers it at read time.
+
+    A duty of any other kind is kept, whatever its pointer state: its evidence
+    is a ledger record, a queue request or nothing at all, so a missing pointer
+    says nothing about it. That includes a duty that names no run. The summary
+    is recomputed so the header counts the rows actually shown.
+    """
+    rows = payload.get("obligations")
+    if not isinstance(rows, list):
+        return dict(payload)
+    kept: list[Any] = []
+    dropped = False
+    for row in rows:
+        if not isinstance(row, Mapping):
+            kept.append(row)
+            continue
+        run_id = str(row.get("run_id") or "")
+        if (
+            run_id
+            and str(row.get("kind") or "") in LIVE_POINTER_DUTY_KINDS
+            and not live_pointer_path(run_id).exists()
+        ):
+            dropped = True
+            continue
+        kept.append(row)
+    if not dropped:
+        return dict(payload)
+    summary = payload.get("summary")
+    summary = dict(summary) if isinstance(summary, Mapping) else {}
+    summary["count"] = len(kept)
+    summary[_OLDEST_AGE_SECONDS] = max(
+        (int(row.get(_AGE_SECONDS) or 0) for row in kept if isinstance(row, Mapping)),
+        default=0,
+    )
+    return {**payload, "obligations": kept, "summary": summary}
 
 
 def live_payload(document: Mapping[str, Any], *, now: datetime | None = None) -> dict:

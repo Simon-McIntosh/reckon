@@ -1220,7 +1220,16 @@ def _worktree_row_is_stale(
 def recheck_worktree_held_rows(
     payload: dict[str, Any], *, project: str
 ) -> dict[str, Any]:
-    """The payload minus worktree-held rows whose tree the fleet has released.
+    """The payload minus the rows a held answer can no longer stand behind.
+
+    Every reading of a held answer passes through here, so this is where it is
+    settled against the fleet as it reads now. Two rows are dropped:
+
+    * a duty whose run holds no live pointer. The pointer was there when the
+      answer was computed; its removal is the run landing or ending, which no
+      held answer can see until its producer ticks again (``snapshot_module``
+      owns that rule, and the crew view reads it the same way).
+    * a worktree-held row whose tree the fleet has released.
 
     A row whose run still holds its tree is left exactly as the snapshot
     carried it; only a row whose record shows the tree released, or whose
@@ -1230,6 +1239,7 @@ def recheck_worktree_held_rows(
     evidence it was raised on, and dropping a duty on an unreadable file would
     turn a damaged ledger into a silent omission.
     """
+    payload = snapshot_module().without_departed_run_duties(payload)
     items = payload.get("obligations") or ()
     if not any(
         isinstance(item, Mapping) and str(item.get("kind") or "") == _WORKTREE_HELD_KIND
