@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T09:49:43.721Z",
+  "dispatched_at": "2026-11-02T09:43:21Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-is-never-stuck-behind-the-admission-loop/r-20261102T092223155429-plan-review-of-work-is-never-stuck-behind-the-admission-loop/plan.html:113",
+      "id": "reasoning-1",
+      "reason": "as written the node implements an exclusion that leaves the section's own failure class uncovered for any SIGKILLed worker under a `squeue` wait, so the plan needs either a producer-gone arm for \"probe cannot answer and no process of the run is alive\" or an explicit statement that the exit-record gate is dropped when no process is alive, and it needs the matching test arm.",
+      "text": "s6 now limits producer-gone to \"a probe that answered\" and defers the unanswered case to `_the_probe_did_not_answer`, but that branch (reckon/crew/recovery_classification.py:1227-1229) fires only when `_exit_record_ends_the_current_attempt(record, ended_exit)` is true, and a worker killed without writing an exit record leaves `ended_exit` None, so the run falls through to the generic waiting row at :1250-1264 exactly as the incident's 15-hour false \"working\" reading did; arm 4 (plan.html:119) then endorses this fall-through as permanent (\"classifies the run exactly as it does today\"), which is the one path in \u00a76 where a run with no live process and no scheduler job still reads as working",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b6dd0fca45c33a98d1528c376a7b636a4dceb048",
+  "plan_fingerprint": "31d01c8ad0f5936a989790a715523756ee2a796201b05884c8d159442deee650",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 101,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T092223155429-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "716e162905e24488c69461b27515a68ed278bcf0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `process_liveness.process_alive` (reckon/crew/process_liveness.py:13), `recovery_liveness._live_descendant` (reckon/crew/recovery_liveness.py:419), `_the_probe_did_not_answer` (reckon/crew/recovery_classification.py:372), the `squeue -h -j` read (reckon/crew/fleet_node.py:357), `resumption.sweep` (reckon/crew/resumption.py:1776) and `obligations.py`'s classification\u2192duty mapping (:51, :1831) all resolve.",
+    "done_when": "pass \u2014 each of the four arms is a single conjunction whose stated negative control falsifies it (removing the liveness clause fails the file-wait arm; removing the scheduler clause fails the squeue arm), and the paired removals are the two clauses arms 2 and 4 isolate.",
+    "evidence_paths": "pass \u2014 the gate is a repository test file and the cited incident evidence lives under `~/.config/reckon/crew/runs/<run>/`, not a scratchpad.",
+    "naming": "pass \u2014 `WAIT_PRODUCER_GONE_SECONDS` and `wait_probe_history` name mechanisms; no plan label, ticket number or version tag reaches the new symbols.",
+    "reasoning": "a finding \u2014 the exclusion added to \u00a76 hands the scheduler wait's dead case to a branch that also requires an exit record, so a worker that vanished without writing one still reads as waiting.",
+    "single_goal": "pass \u2014 s6 delivers one classification (producer-gone) and the obligation it derives, with one test file.",
+    "wiring": "pass \u2014 s6 declares no depends-on and needs none: it extends `classify_pointer` and the obligation mapping in modules it already owns, and no other section's deliverable is its input."
+  },
+  "section_digests": {
+    "_document": "142990c7c6bba60d8d3af884a5af04bef7a3ddd4bb515467c9a5c295ac5d2b36",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "a708130e6ac5721d17f5b1f4cd6c557f961be4c8bf7c29cbfbf01856f353eb58",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T09:56:50.604213+00:00"
+}
