@@ -40,7 +40,6 @@ from reckon import cli as cli_module
 from reckon import crew
 from reckon import crew_follow_commands as follow
 from reckon.crew import follow_checkpoint, runs, station_store
-from reckon.crew import needs_you as needs_you_module
 from reckon.crew import obligations as obligations_module
 from reckon.crew.station_subscriber import StationSubscriber
 from reckon.crew_follow_commands import follower_row_path
@@ -281,10 +280,7 @@ def test_a_settle_with_outstanding_runs_prints_no_line_and_still_emits(
     ]
     assert len(settles) == 1, settles
     assert settles[0]["line"] == "", settles[0]["line"]
-
-    owed = needs_you_module.needs_you_runs(PROJECT, session=SESSION)
-    assert [row["run_id"] for row in owed] == [WORKING], owed
-    assert owed[0]["kind"] == "unpromoted", owed
+    assert WORKING not in json.dumps(settles[0]), settles[0]
 
 
 def test_the_lifetime_end_row_keeps_the_rearm_and_names_no_run(home: Path) -> None:

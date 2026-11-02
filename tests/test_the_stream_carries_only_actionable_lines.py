@@ -153,15 +153,3 @@ def test_the_rule_names_the_words_the_stream_carries():
     assert ticker.stream_carries(launched)
     landing = {"to_state": "recorded", ticker.LANDING_FIELD: True}
     assert ticker.stream_carries(landing)
-
-
-def test_the_follower_carries_no_rule_of_its_own():
-    """The follower states no second rule, so the two cannot disagree."""
-    # The standing summary line is gone from the follower entirely.
-    import reckon.crew_follow_commands as follow
-    from reckon.crew import needs_you
-
-    assert not hasattr(follow, "_needs_you_events")
-    # No composer survives anywhere: the pane carries counts, and the runs that
-    # need action are named by the obligations list.
-    assert not hasattr(needs_you, "needs_you_line")
