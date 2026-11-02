@@ -576,6 +576,36 @@ class BudgetHold(CrewError):  # noqa: N818 - public refusal name
         )
 
 
+def _context_dominant_clause(verdict: Mapping[str, Any]) -> str:
+    """Return which input dominates the estimate and how it arrived.
+
+    A refusal that states only a total leaves the coordinator guessing which
+    input to cut, and they rationally cut the only one they control. The
+    ranking is routing's own, so the sentence printed at dispatch and the
+    payload a reader inspects name the same input; the origin matters because a
+    declared write path cannot leave the brief, while a mention can be cut or
+    replaced by a reference. A verdict built without the fit it came from
+    carries no ranking, so the clause is omitted rather than invented.
+    """
+
+    from reckon.crew.routing import _context_contributors
+
+    context_fit = verdict.get("context")
+    if not isinstance(context_fit, Mapping):
+        return ""
+    contributors = _context_contributors(context_fit, limit=1)
+    if not contributors:
+        return (
+            "; no repository file dominates the estimate; the standing "
+            "instruction context alone exceeds the window"
+        )
+    lead = contributors[0]
+    return (
+        f"; dominant term: {lead['path']} ({lead['estimated_tokens']} tokens), "
+        f"which arrived as a {lead['origin']}"
+    )
+
+
 def _context_refusal_recommendation(verdict: Mapping[str, Any]) -> str:
     """Return the split-or-reroute remedy a context refusal carries.
 
@@ -609,7 +639,8 @@ class CompetenceLimit(CrewError):  # noqa: N818 - public refusal name
             detail = (
                 f"node context estimate {verdict['estimated_tokens']} usable input "
                 f"tokens exceeds the {verdict['window_tokens']} token window by "
-                f"{verdict['shortfall_tokens']} tokens; "
+                f"{verdict['shortfall_tokens']} tokens"
+                f"{_context_dominant_clause(verdict)}; "
                 f"{_context_refusal_recommendation(verdict)}"
             )
         else:
