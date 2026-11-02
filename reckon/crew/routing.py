@@ -63,13 +63,18 @@ if TYPE_CHECKING:
 # ── Routing ─────────────────────────────────────────────────────────────────
 
 _CONTEXT_BYTES_PER_TOKEN = 3.5
-# A regenerated write path is overwritten wholesale rather than read, so the
-# census charges it one fixed reference cost instead of its full size. The
-# figure is the byte charge of a small module (a few kilobytes), which keeps a
-# regenerated node's estimate independent of the generated record's size while
-# still pricing the brief that names the work. The value is flat by design: a
-# size-dependent charge would reintroduce the cost this path exists to remove.
-_REGENERATED_PATH_REFERENCE_TOKENS = 4_000
+# A regenerated write path is overwritten wholesale rather than read, and a path
+# a brief merely mentions -- or names in a negative clause -- is either not
+# opened or opened only to locate it. Neither is a file load, so the census
+# charges one fixed reference cost instead of the path's full size. The figure
+# is the byte charge of a small module (a few kilobytes), which keeps such a
+# node's estimate independent of the named file's size while still pricing the
+# brief that names the work. The value is flat by design: a size-dependent
+# charge would reintroduce the cost this rule exists to remove.
+_REFERENCE_COST_TOKENS = 4_000
+# The regenerated-path charge is the same constant; it keeps its own name
+# because its readers ask about a write path that is not read, not a mention.
+_REGENERATED_PATH_REFERENCE_TOKENS = _REFERENCE_COST_TOKENS
 _MEASURED_LAUNCH_CONTEXT_FLOOR_TOKENS = 50_392
 _NAMED_REPOSITORY_FILE = re.compile(
     r"(?<![A-Za-z0-9_./-])(?:/?(?:[A-Za-z0-9_.-]+/)+"
@@ -3177,14 +3182,15 @@ def _standing_context_input(
 def _declared_input_files(node: TaskNode) -> list[str]:
     """Extract repository files the node's brief declares as its inputs.
 
-    A path a brief merely names is not a read. The estimate once charged every
-    resolvable path in the prose at full file load, so a done-when that named a
-    large ledger made a one-worker-hour node estimate millions of tokens and be refused
-    against its window. A path counts only when the clause naming it also
-    declares it an input; a clause that only mentions the path is a reference,
-    not a load. A clause that negates the read -- telling the worker a path is
-    excluded -- names the same keywords while asserting the opposite, so the
-    paths its own exclusion phrase governs are withheld.
+    A path a brief merely names is not a file load. The estimate once charged
+    every resolvable path in the prose at full size, so a done-when that named a
+    large ledger made a one-worker-hour node estimate millions of tokens and be
+    refused against its window. A path counts at full only when the clause
+    naming it also declares it an input. A clause that negates the read --
+    telling the worker a path is excluded -- names the same keywords while
+    asserting the opposite, so the paths its own exclusion phrase governs are
+    withheld here and charged at the reference cost by
+    ``_mentioned_repository_files``.
     """
 
     text = f"{node.goal}\n{node.done_when}"
@@ -3195,6 +3201,21 @@ def _declared_input_files(node: TaskNode) -> list[str]:
             continue
         declared.update(_paths_a_clause_charges(clause))
     return sorted(declared)
+
+
+def _mentioned_repository_files(node: TaskNode) -> list[str]:
+    """Every repository file the brief names in prose, declared or not.
+
+    A mention is where the brief points a worker at a file without loading it:
+    the anchor it must find its way to, or the prohibition that keeps it away
+    from a large module. Neither is a read, so each mention is charged the flat
+    reference cost however large the file is. A path the brief declares an input
+    is charged its full size instead, and the caller removes it from this set so
+    one path never carries two charges.
+    """
+
+    text = f"{node.goal}\n{node.done_when}"
+    return sorted({match.group(0) for match in _NAMED_REPOSITORY_FILE.finditer(text)})
 
 
 def _paths_a_clause_charges(clause: str) -> list[str]:
@@ -3219,7 +3240,14 @@ def _paths_a_clause_charges(clause: str) -> list[str]:
 def _context_file_inputs(
     repo: Path, node: TaskNode, authority: Mapping[str, Any] | None
 ) -> tuple[int, dict[str, list[dict[str, Any]]]]:
-    """Measure unique repository reads, retaining dispatcher-grant provenance."""
+    """Measure unique repository inputs at the rate each one's provenance pays.
+
+    A declared write path and a declared input are loads and pay their size; a
+    mention or a regenerated path pays the flat reference cost; a path dispatch
+    grants the node itself is not an input and pays nothing. One resolved path
+    is charged once, at the first provenance that claims it, so a path that is
+    both declared and mentioned pays the load.
+    """
 
     counted: set[Path] = set()
     granted_paths: set[Path] = set()
@@ -3235,23 +3263,32 @@ def _context_file_inputs(
         granted_paths = _landing_fragment_paths(node, authority=authority)
 
     def describe(
-        raw: str, *, declared_read: bool, regenerated: bool = False
+        raw: str,
+        *,
+        declared_read: bool,
+        regenerated: bool = False,
+        reference: bool = False,
     ) -> dict[str, Any]:
         candidate = Path(raw).expanduser()
         resolved = (
             candidate if candidate.is_absolute() else repo / candidate
         ).resolve()
+        fixed_cost = regenerated or reference
+        if regenerated:
+            provenance = "regenerated"
+        elif reference:
+            provenance = "reference"
+        else:
+            provenance = "declared"
         record: dict[str, Any] = {
             "declared": raw,
             "path": str(resolved),
             "bytes": 0,
             "estimated_tokens": 0,
             "counted": False,
-            "provenance": "regenerated" if regenerated else "declared",
+            "provenance": provenance,
             "status": "missing",
-            "reference_tokens": (
-                _REGENERATED_PATH_REFERENCE_TOKENS if regenerated else 0
-            ),
+            "reference_tokens": _REFERENCE_COST_TOKENS if fixed_cost else 0,
         }
         if not regenerated and not declared_read and resolved in granted_paths:
             record["provenance"] = "granted"
@@ -3267,12 +3304,8 @@ def _context_file_inputs(
         if not is_file:
             record["status"] = "directory" if resolved.is_dir() else "missing"
             return record
-        tokens = (
-            _REGENERATED_PATH_REFERENCE_TOKENS
-            if regenerated
-            else _tokens_for_bytes(byte_count)
-        )
-        chargeable = record["provenance"] in ("declared", "regenerated")
+        tokens = _REFERENCE_COST_TOKENS if fixed_cost else _tokens_for_bytes(byte_count)
+        chargeable = record["provenance"] in ("declared", "regenerated", "reference")
         record.update(
             {
                 "bytes": byte_count,
@@ -3294,8 +3327,16 @@ def _context_file_inputs(
         )
         for path in node.write_paths
     ]
-    named_files = [
-        describe(path, declared_read=True) for path in _declared_input_files(node)
+    declared_inputs = _declared_input_files(node)
+    # A path declared an input is read, so it is charged at full and is not
+    # also a reference; every other path the brief names -- an anchor, or one a
+    # negative clause keeps the worker away from -- costs the flat reference.
+    declared_set = set(declared_inputs)
+    mentions = [
+        path for path in _mentioned_repository_files(node) if path not in declared_set
+    ]
+    named_files = [describe(path, declared_read=True) for path in declared_inputs] + [
+        describe(path, declared_read=False, reference=True) for path in mentions
     ]
     all_inputs = [*write_paths, *named_files]
     file_tokens = sum(
