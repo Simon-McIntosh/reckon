@@ -1,0 +1,68 @@
+<section id="a-mention-is-charged-a-reference-cost-landing">
+  <h2>A mention costs a flat reference, and a prohibition costs one too</h2>
+
+  <p><strong>What changed.</strong> The context census in
+  <code>reckon/crew/routing.py</code> charged a repository path in a brief at the
+  file's full size whenever it charged it at all, and charged a mere mention
+  nothing. It now charges every path the brief names in prose one flat reference
+  cost &mdash; <code>_REFERENCE_COST_TOKENS</code>, 4,000, the same constant a
+  regenerated write path already paid &mdash; because a worker either does not
+  open such a file or opens it only to locate it. The three rates are now
+  distinct and named by provenance on each record: <code>declared</code> (a write
+  path or a declared input) pays its size, <code>reference</code> and
+  <code>regenerated</code> pay the flat cost, and <code>granted</code> (the
+  fragment dispatch reserves for the node) pays nothing.</p>
+
+  <p><strong>A path in a negative clause is the case the estimator can be
+  certain of</strong>, and it is charged as a reference outright: the sentence
+  says the worker will not open the file, so its size was never a load. The
+  declaration reader already withholds such paths from the declared inputs; they
+  now re-enter the estimate at the reference rate rather than at zero. One
+  resolved path is still charged once, at the first provenance that claims it,
+  and write paths are described first, so a contradictory brief that both
+  declares an edit and forbids the read pays the load and never less.</p>
+
+  <h3 id="a-mention-is-charged-a-reference-cost-measured">Measured</h3>
+
+  <p>The differential case estimates one brief twice, identical but for a prose
+  mention of a 1,200,000-byte module. The unnamed brief charges 0; the named one
+  charges 4,000; the file's own size would have been 342,858 tokens. The three
+  briefs recorded from the refusal payloads in the plan's section 1 are
+  re-estimated from their own figures: the declared-write-path brief stays at
+  161,013 of its 480,000 window, and the two briefs that named the same module
+  in prose fall from 326,217 and 508,965 to 4,000 and 186,748, both inside the
+  lane.</p>
+
+  <table id="a-mention-is-charged-a-reference-cost-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline suite (node's two files)</td>
+        <td><code>24b3d9df</code>, extraction with <code>.env</code> linked</td>
+        <td>4 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite (node's two files)</td>
+        <td><code>c993966f</code>, extraction</td>
+        <td><strong>12 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>wide gate, base</td>
+        <td><code>24b3d9df</code>, new file absent</td>
+        <td>21 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>wide gate, head</td>
+        <td><code>c993966f</code>, working tree</td>
+        <td>24 passed, 5 failed, <code>EXIT=1</code> &mdash; all five are
+        <code>tests/test_context_estimate_excludes_granted_paths.py</code>
+        assertions that an excluded path is charged nothing, which this section
+        supersedes; the failing ids are named in the manifest's
+        <code>outside_scope</code></td></tr>
+      <tr><td>negative control: charge a mention nothing again</td>
+        <td><code>c993966f</code> + mutation</td>
+        <td>4 failed, 4 passed, <code>EXIT=1</code>; the difference assertion
+        and both reference-charge cases red</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Not done here.</strong> The estimator's token rule is unchanged
+  (still <code>ceil(utf8-bytes/3.5)</code>), a declared write path is still
+  charged at full, and a brief naming no repository path still estimates zero,
+  so the change is a rule about mentions rather than a blanket discount.</p>
+</section>
