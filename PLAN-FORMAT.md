@@ -300,6 +300,31 @@ answer — an option value OR free text), `rationale`, `when`, `by`. `choice == 
 means open — select-from-options and/or a free-form answer. The "locked" state
 is **derived** from a non-empty `data-choice`; no separate flag is stored.
 
+### Section declarations
+Each authored `<h2 id="sN">` carries a typed section record
+(`<section data-reckon="section" data-id="sN" …>`) whose `data-status` is its
+declaration, mirrored in the `plan-section-declarations` meta. There are four:
+
+| Declaration | Meaning | Landing guard | `impl` denominator |
+|---|---|---|---|
+| `implementable` | open, ready to build | open | counted as outstanding |
+| `deferred` | open, waiting on something else | open | outside the denominator |
+| `descoped` | dropped by the plan, with a reason | **closed** | outside the denominator |
+| `done` | built and ticked | closed | counted as built |
+
+A `descoped` declaration states why the work was dropped, in the record's
+`data-descope-reason`. The declaration and its reason are written in one op, so
+neither lands without the other:
+
+```json
+{"op": "set", "path": "section_declarations.s4", "value": {"status": "descoped", "reason": "the interface it built was retired upstream"}}
+```
+
+A `descoped` declaration written as a bare value, or an entry in a whole-map
+`set`, is refused: there is no place in that form for the reason. Use `done` for
+work that was built — `descoped` records a decision not to build, and the two
+are not interchangeable in the plan's history.
+
 ### Followup status derivation
 `status=resolved` is **derived** from `data-resolved-at` being non-empty. A
 literal `data-status` attribute is kept for backward compat but the parser

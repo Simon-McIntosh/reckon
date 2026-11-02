@@ -2690,6 +2690,98 @@ def _move_section_record(working: dict, section_id: str, status: Any) -> None:
                 break
 
 
+#: The keys a reasoned declaration value carries, and the only ones it may.
+_DESCOPED_DECLARATION_KEYS = frozenset({"status", "reason"})
+
+
+def _descoped_declaration_value(section_id: str, value: Any) -> tuple[Any, str | None]:
+    """Split a declaration value into its declaration and its descope reason.
+
+    A plain string is a declaration with no reason, which every value but
+    ``descoped`` accepts. A ``descoped`` declaration states why the section was
+    dropped, so it may also be written as ``{"status": "descoped", "reason":
+    ...}``; that shape carries the reason in the same op as the declaration, so
+    a write cannot land one without the other.
+    """
+    if isinstance(value, str):
+        return value, None
+    if not isinstance(value, Mapping):
+        return value, None
+    unknown = sorted(str(key) for key in value if key not in _DESCOPED_DECLARATION_KEYS)
+    if unknown:
+        raise OpError(
+            f"section_declarations.{section_id}: a reasoned declaration carries "
+            f"'status' and 'reason'; got the extra key(s) {unknown}"
+        )
+    reason = value.get("reason")
+    if reason is not None and not isinstance(reason, str):
+        raise OpError(
+            f"section_declarations.{section_id}.reason must be a string stating "
+            "why the section was dropped"
+        )
+    return value.get("status"), (reason or "").strip() or None
+
+
+def _carry_descope_reason(
+    working: dict, section_id: str, declaration: Any, reason: str | None
+) -> None:
+    """Put the reason on the section's typed record.
+
+    The record is what the page carries and what a read parses, so the reason
+    lives there rather than in a map beside the declarations. A declaration that
+    is not ``descoped`` carries no reason, so any reason the section held before
+    is cleared rather than left behind contradicting the declaration.
+    """
+    if str(declaration or "").strip() == "descoped":
+        if not reason:
+            raise OpError(
+                f"section_declarations.{section_id} cannot be 'descoped' without a "
+                'reason: set {"status": "descoped", "reason": "<why>"} so '
+                "the record says why the section was dropped"
+            )
+    else:
+        reason = None
+    sections = working.get("sections")
+    if not isinstance(sections, list):
+        return
+    for section in sections:
+        if isinstance(section, dict) and section.get("id") == section_id:
+            if reason is None:
+                section.pop("descope_reason", None)
+            else:
+                section["descope_reason"] = reason
+            break
+
+
+def _require_descope_reasons(state: Mapping[str, Any]) -> None:
+    """Refuse a working state whose descoped sections carry no reason.
+
+    The last word on every write path, so a declaration reaching ``descoped``
+    by any route — a dotted set, a whole-map set, an op batch that reorders the
+    two — still has to state its reason before the plan is stored.
+    """
+    declarations = state.get("section_declarations")
+    if not isinstance(declarations, Mapping):
+        return
+    reasons = {
+        str(record.get("id") or ""): str(record.get("descope_reason") or "").strip()
+        for record in state.get("sections") or []
+        if isinstance(record, Mapping)
+    }
+    missing = sorted(
+        str(section)
+        for section, classification in declarations.items()
+        if str(classification or "").strip() == "descoped"
+        and not reasons.get(str(section))
+    )
+    if missing:
+        raise OpError(
+            "a descoped section must state why it was dropped; no reason on "
+            f"{', '.join(missing)} — set section_declarations.<id> to "
+            '{"status": "descoped", "reason": "<why>"}'
+        )
+
+
 def _check_north_star_ids(entries: Any, warnings: list[str]) -> None:
     """Refuse duplicate direction ids and report the advisory collection cap."""
     if not isinstance(entries, list):
@@ -2918,7 +3010,8 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
                 "section declaration id must match "
                 f"a safe section identity; got {section_id!r}"
             )
-        if value not in SECTION_DECLARATION_ENUM:
+        declaration, reason = _descoped_declaration_value(section_id, value)
+        if declaration not in SECTION_DECLARATION_ENUM:
             raise OpError(
                 f"section declaration must be one of {SECTION_DECLARATION_ENUM}; "
                 f"got {value!r}"
@@ -2926,8 +3019,9 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         declarations = working.setdefault("section_declarations", {})
         if not isinstance(declarations, dict):
             raise OpError("plan has no section declarations map")
-        declarations[section_id] = value
-        _move_section_record(working, section_id, value)
+        declarations[section_id] = declaration
+        _move_section_record(working, section_id, declaration)
+        _carry_descope_reason(working, section_id, declaration, reason)
         return
     if head == "section_declarations" and len(parts) == 1:
         # The whole map writes the same statement the dotted form writes one
@@ -2935,6 +3029,21 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         # the map alone left the records contradicting it, and the plan refused
         # the file that write produced on the way back in.
         if isinstance(value, dict):
+            # A reason is part of the descoped declaration, and the whole map
+            # carries no place for one, so a descoped entry is written through
+            # the dotted form that does rather than stored unreasoned.
+            unreasoned = sorted(
+                str(section)
+                for section, declaration in value.items()
+                if isinstance(declaration, str) and declaration == "descoped"
+            )
+            if unreasoned:
+                raise OpError(
+                    "a descoped section must state why it was dropped; the whole "
+                    f"map carries no reason for {', '.join(unreasoned)} — set "
+                    "section_declarations.<id> to "
+                    '{"status": "descoped", "reason": "<why>"} instead'
+                )
             for declared_id, declared_status in value.items():
                 _move_section_record(working, declared_id, declared_status)
         working[head] = value
@@ -4142,6 +4251,7 @@ def apply_ops(
             _require_transition_verdict(working, "plan-terminal")
         _validate_decision_transitions(working, {"decisions": previous_decisions})
         _validate_continuation(working, ops)
+        _require_descope_reasons(working)
     return warnings
 
 

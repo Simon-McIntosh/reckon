@@ -125,9 +125,18 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    are never covered. The failure this catches is not a typo — it is a sentence
    that reads differently to the executor than to its author, and the author
    cannot see it by re-reading, which is why the reader must be someone else.
-   Before the revised plan goes back to work, once the session's writing is
-   done, compose one content review. It names no lane: `review_excluded_backends`
-   keeps a review off metered lanes, so it runs locally or holds.
+   The writer is the reviewer. When the session's authoring burst ends, that
+   session composes one content review, answers every finding before it leaves
+   the plan — fixing it, or declining it with a one-line reason — and only then
+   releases the plan. The session that wrote it still holds the context to fix
+   what a finding names; a coordinator reaching the plan later does not. An
+   edit a finding asked for is covered by that finding's review only while it
+   leaves the section's done-when paragraph unchanged and stays under the
+   change threshold, so an answering edit of that shape starts no new round.
+   An edit to a done-when is never covered, however small: it owes one review,
+   scoped to that section. The review names no lane:
+   `review_excluded_backends` keeps a review off metered lanes, so it runs
+   locally or holds.
 
    ```bash
    reckon crew review --project <project> --plan <slug> --rubric content --session <session>
@@ -180,7 +189,8 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    reckon crew review --project <project> --plan <slug> --rubric content --session <session>
    ```
 
-   and answer every finding it raises before a build is dispatched. The tool
+   and answer every finding it raises before a build is dispatched, rule 9's
+   write-time step. The tool
    composes no review itself, so a burst of edits earns one review and the
    author decides when the session's authoring is finished. An empty
    `review_owed` owes nothing. A **null `review_owed`** means the review owed is
@@ -412,7 +422,7 @@ section carries the result and a link to the evidence. Never a hand edit.
 
 | Op | Required keys | Notes |
 |---|---|---|
-| `set` | `path`, `value` | Plan: `status` (any non-terminal value), `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`, `followups.<id>.prompt`, `followups.<id>.title`, `followups.<id>.body`, `gates.<id>.measure`, `gates.<id>.required_evidence`, `section_depends_on.<sid>`, `sections.<id>.<field>` (a section's title, links, effort_hours, capability or body). Index: `active_sprint_id`, `sprints.<id>.<field>` |
+| `set` | `path`, `value` | Plan: `status` (any non-terminal value), `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`, `followups.<id>.prompt`, `followups.<id>.title`, `followups.<id>.body`, `gates.<id>.measure`, `gates.<id>.required_evidence`, `section_depends_on.<sid>`, `section_declarations.<sid>` (a declaration value; a descoped section's value is an object carrying its status and reason, shown under *A section the plan dropped*), `sections.<id>.<field>` (a section's title, links, effort_hours, capability or body). Index: `active_sprint_id`, `sprints.<id>.<field>` |
 | `close` | `status`, `outcome`, `by` | Closes a plan in one write: sets a terminal `status` and resolves every open followup with `outcome`, reporting every failing terminal guard together. A `set` of a terminal `status` is refused, naming this op. Optional `superseded_by`. |
 | `append` | `target`, `item` | Plan targets: `followups`, `research`, `questions`, `comments`, `decisions` (+ `key`). Index targets: `sprints`, `sprints.<id>.items`, `milestones`, `timeline`, `blockers` |
 | `resolve` | `target`, `id`, `by`, `outcome` or `resolution` | `followups` uses `outcome`; `questions` uses `resolution` |
@@ -429,6 +439,21 @@ and announce the reason in your reply under the bypass rule above.
 a section's declaration moves to `done` — the store refuses a direct write in
 both derivations. A node that lands without closing its section belongs in that
 section's comment, not in `impl`.
+
+**A section the plan dropped is `descoped`, not `done`.** A section whose
+work the plan will not build is declared `descoped` with the reason it was
+dropped, in one op:
+
+```json
+{"op": "set", "path": "section_declarations.s4",
+ "value": {"status": "descoped", "reason": "the interface it built was retired upstream"}}
+```
+
+That closes the section for landing — a plan whose only remaining sections are
+descoped closes — while `impl` excludes it, because nothing was built. A bare
+`"descoped"` value, or a `descoped` entry in a whole-map `set`, is refused: the
+reason has nowhere to go, and a descope with no reason is the same false record
+`done` would have been. `done` stays reserved for work that exists.
 
 **Section effort and risk.** `effort_hours` on an `insert_section` or an
 `append` of a section record is a positive number of quarter hours (`0.25`

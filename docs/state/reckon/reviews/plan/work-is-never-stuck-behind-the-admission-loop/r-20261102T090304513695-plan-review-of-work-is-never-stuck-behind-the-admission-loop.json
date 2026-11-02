@@ -1,0 +1,100 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T09:08:33.841Z",
+  "dispatched_at": "2026-11-02T09:04:23Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:119",
+      "id": "done_when-1",
+      "reason": "the arm and the mechanism disagree on when the verdict arrives, so the implementer must either bend the grade or special-case the clock, and the fixture's own timing becomes undefined.",
+      "text": "arm 4 requires that the run \"becomes producer-gone once that job is no longer listed\", but the deliverable (line 113) requires all three clauses, including \"the probe's observed value has not changed for WAIT_PRODUCER_GONE_SECONDS (15 minutes)\", and the job's disappearance is exactly the observation that changes that value: measured on this node, `squeue -h -j 1291586` prints `R 12-14:18:49 \u2026` while `squeue -h -j 999999999` exits 1 with empty stdout, which the classifier's reader reports as `unknown`/`answered: False` and the sweep's reader as `exit:1` (`recovery_wait.py:509-521`, `resumption.py:1533`) \u2014 a value change that restarts the constancy clock, so a test written to the arm asserts producer-gone where the classifier as specified returns waiting for another fifteen minutes",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:113",
+      "id": "reasoning-1",
+      "reason": "an implementer who appends the clause after that branch gets `stalled` for the arm's second half and a green test that proves nothing, so the plan must name the check's position in the chain.",
+      "text": "the scheduler clause is added to the waiting branch with no statement of where it precedes the existing `_the_probe_did_not_answer` branch at recovery_classification.py:1227-1250, and on this arm's inputs that branch already claims the verdict: once the job is unlisted the probe exits non-zero, `answered` is False, and a run whose worker recorded its own exit is classified `stalled` with a \"resume past the declared wait\" action before any producer-gone clause is reached",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a878f1a8e03a60b3b3693d3761bad7b42f8e4142",
+  "plan_fingerprint": "878c3dffeba6314bd6e15f2381b2c0f9dda572f8914f37baa5c6d26b5d151a8f",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 99,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a878f1a8e03a60b3b3693d3761bad7b42f8e4142",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "reason": "",
+      "when": "2026-11-02T09:19:05.662698+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a878f1a8e03a60b3b3693d3761bad7b42f8e4142",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "reason": "",
+      "when": "2026-11-02T09:19:32.351478+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a878f1a8e03a60b3b3693d3761bad7b42f8e4142",
+      "commit_basis": "edit",
+      "reason": "",
+      "when": "2026-11-02T09:19:05.662698+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a878f1a8e03a60b3b3693d3761bad7b42f8e4142",
+      "commit_basis": "edit",
+      "reason": "",
+      "when": "2026-11-02T09:19:32.351478+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-is-never-stuck-behind-the-admission-loop/r-20261102T090304513695-plan-review-of-work-is-never-stuck-behind-the-admission-loop.json",
+  "review_run_id": "r-20261102T090304513695-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "c1d7affb06e011cc23f1bb468df7ebb688c0c46e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `fleet_node.py`'s scheduler read is real at fleet_node.py:357 (`[\"squeue\", \"-h\", \"-j\", job_id, \"-o\", _SHAPE_FORMAT]`); `process_liveness.process_alive` (process_liveness.py:13), `recovery_liveness._live_descendant` (recovery_liveness.py:419), `resumption.sweep` (resumption.py:1776), `recovery_classification.classify_pointer` (recovery_classification.py:411) and `obligations.py` all resolve; the run citation r-20261029T040536910067 was answered in an earlier round and is unchanged here.",
+    "done_when": "a finding \u2014 arm 4 (plan.html:119) says the squeue run \"becomes producer-gone once that job is no longer listed\", omitting the 15-minute constancy clause the deliverable requires.",
+    "evidence_paths": "pass \u2014 the measure is a committed test file, tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py, plus a ruff gate on the staged paths; nothing is written to a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 `WAIT_PRODUCER_GONE_SECONDS` and `wait_probe_history` name the mechanism and the recorded fact; no plan label, stage name, ticket number or version tag reaches a symbol or a comment.",
+    "reasoning": "a finding \u2014 the deliverable's \"no scheduler job still alive\" clause is added to the waiting branch without saying where it sits relative to the existing no-answer branch at recovery_classification.py:1227, which on this arm's own inputs already classifies the run `stalled`.",
+    "single_goal": "pass \u2014 s6 carries one deliverable (classify a waiting run whose producer is gone and derive its obligation); the duty-kind entry in coordinator_obligations.py is the file the existing obligations vocabulary requires, not a second goal.",
+    "wiring": "pass \u2014 s6 declares no `plan-section-depends-on` and needs none; it touches recovery_classification, resumption, obligations and coordinator_obligations, none of which is produced by another section, and the snapshot's dependency map (plan.html:22) is consistent for every other section."
+  },
+  "section_digests": {
+    "_document": "142990c7c6bba60d8d3af884a5af04bef7a3ddd4bb515467c9a5c295ac5d2b36",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "08f417f75754521cccf71f3f6dd2baa6ae9ea7f4323b8c95ca967a48486a163b",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T09:17:51.038518+00:00"
+}

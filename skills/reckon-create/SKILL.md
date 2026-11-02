@@ -653,10 +653,13 @@ See `~/Code/reckon/PLAN-FORMAT.md` for the full reference. Quick shapes:
 
 A new plan is written by you and executed by others, and nothing between those
 two moments checks that what you wrote says what you meant. Release it only
-after a second reader has read it. When the authoring session's last write is
-done, compose one content review — the rubber-duck read for
+after a second reader has read it. The writing session is that reader: when its
+authoring burst ends it composes one content review — the rubber-duck read for
 wiring, measurable done-whens with negative controls, single goals, durable
-evidence paths, resolving anchors, naming and reasoning:
+evidence paths, resolving anchors, naming and reasoning — answers every finding
+before it leaves the plan, and only then releases it. You still hold the
+context to fix what a finding names; a coordinator reaching the plan later does
+not.
 
 ```bash
 reckon crew review --project <project> --plan <slug> --rubric content --session <session>
@@ -672,9 +675,13 @@ reckon crew review --project <project> --plan <slug> --answer <finding> --acted
 reckon crew review --project <project> --plan <slug> --answer <finding> --declined "<reason>"
 ```
 
-Edit the plan only for a finding you act on. A later edit is judged for
-whether it needs a new review, and a re-review reads only what changed, so a
-burst of fixes earns at most one more, scoped review. The plan also owes one
+Edit the plan only for a finding you act on. An edit a finding asked for is
+covered by that finding's review only while it leaves the section's done-when
+paragraph unchanged and stays under the change threshold, so an answering edit
+of that shape starts no new round; an edit to a done-when is never covered,
+however small, and owes one review scoped to that section. An edit made for a
+reason of your own is judged for whether it needs a new review, which reads
+only what changed. The plan also owes one
 design review — the prior-art and depth search of the codebase — before its
 first implementation node; `reckon-build` composes it, and the dispatch gate
 refuses an implementation node until it exists and is answered. What counts as

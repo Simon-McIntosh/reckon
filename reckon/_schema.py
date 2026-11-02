@@ -106,7 +106,12 @@ STATUS_ENUM = [
     "historical",
     "reference",
 ]
-SECTION_DECLARATION_ENUM = ["implementable", "deferred", "done"]
+#: A section's declaration. ``done`` is built and ticked, ``implementable`` and
+#: ``deferred`` are the two open states, and ``descoped`` records work the plan
+#: deliberately dropped: it closes the section for the landing guard and for the
+#: critical path, and it stays outside the impl denominator because nothing was
+#: built. A descoped section carries the reason it was dropped.
+SECTION_DECLARATION_ENUM = ["implementable", "deferred", "descoped", "done"]
 #: How a plan's impl fraction was obtained: derived from typed section records
 #: ("computed"), derived by count from the section declarations while the records
 #: do not cover them ("declarations"), or read from the plan-impl meta
@@ -972,6 +977,14 @@ class SectionRecord(BaseModel):
     )
     attempts: int = Field(ge=0, strict=True, description="Tool-owned launch count")
     status: str = Field(json_schema_extra=_enum(SECTION_DECLARATION_ENUM))
+    descope_reason: str | None = Field(
+        default=None,
+        min_length=1,
+        description=(
+            "Why the plan dropped this section. Required on a descoped "
+            "declaration and absent on every other declaration"
+        ),
+    )
     links: list[str] = Field(
         description="Plan refs, using [project:]slug[#section][@followup]",
         json_schema_extra={
@@ -1004,6 +1017,28 @@ class SectionRecord(BaseModel):
         if value not in SECTION_DECLARATION_ENUM:
             raise ValueError(f"status must be one of {SECTION_DECLARATION_ENUM}")
         return value
+
+    @model_validator(mode="after")
+    def _descope_reason_matches_status(self) -> SectionRecord:
+        """A descoped declaration states why; no other declaration states one.
+
+        The reason is what makes the record honest — the declaration says the
+        work was dropped, and the reason says why. A ``descoped`` record with no
+        reason would be the same false record the ``done`` tick it replaces, so
+        it is refused here as well as at the write boundary.
+        """
+        reason = (self.descope_reason or "").strip()
+        if self.status == "descoped":
+            if not reason:
+                raise ValueError(
+                    "descope_reason: required when a section is declared descoped"
+                )
+        elif reason:
+            raise ValueError(
+                "descope_reason: only a descoped declaration carries a reason"
+                f" (status is {self.status!r})"
+            )
+        return self
 
     @field_validator("links")
     @classmethod

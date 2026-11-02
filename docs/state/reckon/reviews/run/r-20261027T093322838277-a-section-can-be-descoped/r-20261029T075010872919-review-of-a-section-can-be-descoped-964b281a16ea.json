@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-29T08:08:52.117Z",
+  "dispatched_at": "2026-10-29T07:59:48Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "follow-up: the build skill's section-declaration guidance should list the descoped value",
+      "recorded_at": "2026-11-02T09:07:57.704140+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "skills/reckon-build/SKILL.md",
+      "id": "fc432d7a63b",
+      "line": "90",
+      "severity": "non-blocking",
+      "text": "non-blocking: the build skill still tells a coordinator to map every authored section id to implementable, deferred, or done, so a dropped section has no legal value there and a worker following it would record done for work that does not exist; the file is inside this review's range and the previous round recorded it as outside_scope, so the merge carried it forward unfixed."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a descoped section declaration that carries a required reason and closes the plan and the critical path while staying out of the impl denominator; the gained range does not touch that mechanism \u2014 skills/reckon-edit/SKILL.md:415 only repairs the documented path list \u2014 and the mechanism is intact at the head (reckon/_plan_html.py:787 SECTION_DECLARATION_DESCOPED, reckon/_plan_html.py:1061 open_sections, reckon/_store.py:2697 _descoped_declaration_value).\nVERDICT done_when: the source done_when is the skill-contract sweep plus tests/test_a_section_can_be_descoped.py; the manifest records gate_repair.log (76 passed, 1 failed \u2014 the crew-verb census, which is also present on the base arm at landing-measure/population-base.log:1818), gate_repair_target.log (1 passed, EXIT=0), and landing-measure/isolated shows the repaired guard failing 3/3 at b6d8e128 against 3/3 passing on the pre-change base, which is the defect the repair answers.\nVERDICT write_paths: the source manifest declares nine write paths including skills/reckon-edit/SKILL.md; change 964b281a16 touches exactly that one file and one line, inside the fence, and the merge c4f7f68e1e adds only the origin/main files the dispatch names as this review's scope.\nVERDICT manifest: read; it states status complete, names the seven changes, the armed suite pair (5 failed at 04ffdaf88, 0 failed at b6d8e128), the repair gate and its pre-existing base arm, and I read gate_repair.log, gate_repair_target.log, suite_head.log, gate_base.log, landing-measure/measurement.json and both population logs against it.\nVERDICT diff: read change by change over b6d8e128..964b281a; c4f7f68e1e is a two-parent merge of origin/main (384 files, 341,730 insertions) with the branch's own files unchanged across it (reckon/_plan_html.py, reckon/_schema.py, docs/_shared/plan.schema.json and PLAN-FORMAT.md show an empty diff), and 964b281a16 is the one-line repair that moves the JSON-object span out of the set row's path column into its prose.\nCALL_SITES: reckon/_store.py:_descoped_declaration_value, reckon/_store.py:_require_descope_reasons, reckon/_plan_html.py:open_sections, reckon/_plan_html.py:derive_impl_from_sections\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: skills/reckon-edit/SKILL.md:415 now lists only section_declarations.<sid> as the settable path and points at the worked example at skills/reckon-edit/SKILL.md:433, and the mechanism it documents is present and unchanged at reckon/_store.py:3013.\nSCORE evidence: 16\nJUSTIFICATION evidence: landing-measure/isolated gives three base arms passing and three head arms failing on tests/test_skill_contracts.py::test_the_op_reference_set_row_documents_supported_paths, and gate_repair_target.log records the repaired arm at EXIT=0, though the earlier wider gate (gate_head.log, revision bcb8a8a0b) never ran test_skill_contracts.py at all so it could not have caught this.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: 964b281a16 touches only skills/reckon-edit/SKILL.md, a declared write path, and the merge's files are exactly the set the dispatch enumerates; nothing the goal does not imply was added.\nSCORE durability: 19\nJUSTIFICATION durability: I reinstated the regression in a scratch extraction of 964b281a \u2014 the row's span restored to the JSON-object form \u2014 and tests/test_skill_contracts.py::test_the_op_reference_set_row_documents_supported_paths reddened with \"unsupported plan set path\", so the assertion fails on exactly the defect the fix removes.\nSCORE fit: 18\nJUSTIFICATION fit: the replacement sentence keeps the row's single-line table idiom and its italic pointer names the bold lead sentence carrying the example at skills/reckon-edit/SKILL.md:433, with no plan, ticket or version label introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition at all; it edits one documentation cell, and the capability it describes remains owned by reckon/_store.py:_descoped_declaration_value and reckon/_plan_html.py:open_sections rather than restated as a second mechanism.\nFINDING skills/reckon-build/SKILL.md:90 non-blocking: the build skill still tells a coordinator to map every authored section id to implementable, deferred, or done, so a dropped section has no legal value there and a worker following it would record done for work that does not exist; the file is inside this review's range and the previous round recorded it as outside_scope, so the merge carried it forward unfixed.",
+  "review_run_id": "r-20261029T075010872919-review-of-a-section-can-be-descoped-964b281a16ea",
+  "reviewed_base_sha": "b6d8e128a8498f7da9b41320bceacf0590a2c26e",
+  "reviewed_head_sha": "964b281a16eaa39e605688cabedccf84643c1463",
+  "reviewed_run_id": "r-20261027T093322838277-a-section-can-be-descoped",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T09:04:54.930475+00:00",
+  "total": 109
+}

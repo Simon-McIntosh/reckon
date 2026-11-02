@@ -181,7 +181,7 @@ def test_unknown_declaration_value_is_refused_with_the_accepted_values(plan) -> 
 
     detail = (
         "section declaration must be one of "
-        "['implementable', 'deferred', 'done']; got 'unknown'"
+        "['implementable', 'deferred', 'descoped', 'done']; got 'unknown'"
     )
     assert result == {
         "ok": False,

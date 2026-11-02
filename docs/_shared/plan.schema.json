@@ -511,9 +511,23 @@
           "enum": [
             "implementable",
             "deferred",
+            "descoped",
             "done"
           ],
           "type": "string"
+        },
+        "descope_reason": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Why the plan dropped this section. Required on a descoped declaration and absent on every other declaration"
         },
         "links": {
           "description": "Plan refs, using [project:]slug[#section][@followup]",
@@ -745,6 +759,7 @@
         "enum": [
           "implementable",
           "deferred",
+          "descoped",
           "done"
         ],
         "type": "string"

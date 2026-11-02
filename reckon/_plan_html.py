@@ -777,19 +777,26 @@ def _record_field(record, name):
     return getattr(record, name, None)
 
 
-#: The three values a section's ``section_declarations`` classification takes.
+#: The four values a section's ``section_declarations`` classification takes.
 #: ``done`` is ticked; ``implementable`` and ``deferred`` are the two open
-#: states a section can be left in.
+#: states a section can be left in; ``descoped`` records work the plan dropped,
+#: with the reason it was dropped.
 SECTION_DECLARATION_DONE = "done"
 SECTION_DECLARATION_IMPLEMENTABLE = "implementable"
 SECTION_DECLARATION_DEFERRED = "deferred"
+SECTION_DECLARATION_DESCOPED = "descoped"
 
 #: The declarations that leave a section open — the one predicate the terminal
-#: guard and roadmap readiness both read.
+#: guard and roadmap readiness both read. A descoped section is not open: the
+#: plan decided not to build it, so it closes the section for landing and for
+#: the critical path while staying out of the impl denominator.
 OPEN_SECTION_DECLARATIONS = (
     SECTION_DECLARATION_IMPLEMENTABLE,
     SECTION_DECLARATION_DEFERRED,
 )
+
+#: The attribute a section record carries its descope reason in.
+DESCOPE_REASON_ATTRIBUTE = "data-descope-reason"
 
 #: The id prefix a section's closing record carries. The landing beat writes one
 #: comment per landed section under ``c-close-<section>`` in the same call as the
@@ -932,7 +939,10 @@ def derive_impl_from_sections(sections, declarations=None) -> float | None:
             done += hours
         elif status == SECTION_DECLARATION_IMPLEMENTABLE:
             predicted += hours
-        elif status != SECTION_DECLARATION_DEFERRED:
+        elif status not in (
+            SECTION_DECLARATION_DEFERRED,
+            SECTION_DECLARATION_DESCOPED,
+        ):
             return None
     total = done + predicted
     if total <= 0:
@@ -1183,6 +1193,9 @@ def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]
                 record[field] = convert(value)
             except (TypeError, ValueError):
                 record[field] = value
+        reason = (attrs.get("data-descope-reason") or "").strip()
+        if reason:
+            record["descope_reason"] = reason
         records.append(record)
     if not records:
         return []
@@ -1590,6 +1603,11 @@ def _section_record_attributes(record: dict, attempts_markup: str = "") -> str:
         + _capability_attributes(record["capability"])
         + attempts_markup
         + f' data-status="{_esc(record["status"])}"'
+        + (
+            f' data-descope-reason="{_esc(record["descope_reason"])}"'
+            if record.get("descope_reason")
+            else ""
+        )
         + f' data-links="{_esc(",".join(record["links"]))}"'
     )
 
@@ -1615,7 +1633,8 @@ def _legacy_attempts_markup(opening: str) -> str:
 
 
 _SECTION_RECORD_ATTRIBUTE_RE = re.compile(
-    r"\s+data-(?:reckon|effort-hours|attempts|status|links|capability-(?:"
+    r"\s+data-(?:reckon|effort-hours|attempts|status|descope-reason|links|"
+    r"capability-(?:"
     r"version|class|reasoning|context|tool-autonomy|verification|risk))"
     r"(?:\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s>]+))?(?=\s|>)",
     re.IGNORECASE,
