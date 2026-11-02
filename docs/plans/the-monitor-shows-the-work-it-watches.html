@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="582">
+<meta name="plan-version" content="583">
 <meta name="plan-modified" content="2026-11-02">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -2136,15 +2136,6 @@ Both cases run under the file's existing temporary crew home.</li>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261016T061853259370-a-sweep-acts-on-the-session-it-names" data-who="reckon-build" data-when="2026-10-16T08:24:28.638Z">
     <div class="r-comment-body"><p>sweep takes the session it sweeps and gives it to both passes, the follower's cadence passes the session it serves, and the signature adaptation both that call site and the dispatch picker need is now one accepts_keyword helper; the new tests/test_follow_sweep_is_session_scoped.py runs 5 passed, the follower's own cadence call is covered (its control fails when the session is dropped there), and the 63 test files importing resumption.py or crew_follow_commands.py carry the same failure ids at head as at base.</p></div>
 </div>
-<div class="r-comment" data-section="s91" data-id="c-run-r-20261023T190343087887-review-of-a-disposition-after-promotion-reaches-the-reflex-afd3f6e5bd8b" data-who="reckon-build" data-when="2026-10-23T19:24:11.514Z">
-    <div class="r-comment-body"><p>independent review of r-20261023T163506923854-a-disposition-after-promotion-reaches-the-reflex at afd3f6e5b (base c4bcc1c); all six dimensions scored, delta 0 added failures against the reviewed run's own base arm; one non-blocking finding at reckon/crew/review_records.py:731</p></div>
-</div>
-<div class="r-comment" data-section="s91" data-id="c-run-r-20261023T163506923854-a-disposition-after-promotion-reaches-the-reflex" data-who="reckon-build" data-when="2026-10-23T18:03:59.226Z">
-    <div class="r-comment-body"><p>stored_records_for_run returns each enumerated record carrying the answer fields held by every copy of the same review run, staging and committed, merged through _record_with_merged_answers so a finding disposition recorded after promotion reaches the dispatch refusal; records and order unchanged; new test 4 passed, gate population head 1 failed / 149 passed against base 3 failed / 147 passed (the same pre-existing sweep failure on both arms).</p></div>
-</div>
-<div class="r-comment" data-section="s91" data-id="c-close-s91" data-who="reckon-build" data-when="2026-10-23T19:55:00Z">
-    <div class="r-comment-body"><p>§91 landed at <code>d26461861</code>: a disposition recorded after a review's promotion reaches the reflex, so a re-review after a repaired blocking finding is no longer refused. The population adds no failure. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s91">evidence</a></p></div>
-</div>
 <div class="r-comment" data-section="s90" data-id="c-run-r-20261023T224926763396-review-of-a-quoted-session-id-is-not-a-session-refusal-eaa6354d491d" data-who="reckon-build" data-when="2026-10-23T23:00:07.502Z">
     <div class="r-comment-body"><p>Reviewed run r-20261023T163347899598-a-quoted-session-id-is-not-a-session-refusal at base 40470cfe9a1428cf12a49f0930f64e7051b2cc84 and head eaa6354d491d08eef4120ec6fcbdd6179d9be18b; all six dimensions scored 17-20, added_failure_count 0 from the reviewed run's own arms (head FAILED set is the base set minus the three new-test UnreconciledRuns cases), two non-blocking findings on the head arm's uncommitted tree and the single-run fixture, and the stored record passes crew check --review.</p></div>
 </div>
@@ -2153,6 +2144,15 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s90" data-id="c-close-s90" data-who="reckon-build" data-when="2026-10-23T23:15:00Z">
     <div class="r-comment-body"><p>§90 landed at <code>d9974e3e4</code>: a queued refusal is read by its stamped exception class, and an unreconciled-runs refusal publishes its run's action instead of the follower command. The gate adds no failure. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s90">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s91" data-id="c-run-r-20261023T190343087887-review-of-a-disposition-after-promotion-reaches-the-reflex-afd3f6e5bd8b" data-who="reckon-build" data-when="2026-10-23T19:24:11.514Z">
+    <div class="r-comment-body"><p>independent review of r-20261023T163506923854-a-disposition-after-promotion-reaches-the-reflex at afd3f6e5b (base c4bcc1c); all six dimensions scored, delta 0 added failures against the reviewed run's own base arm; one non-blocking finding at reckon/crew/review_records.py:731</p></div>
+</div>
+<div class="r-comment" data-section="s91" data-id="c-run-r-20261023T163506923854-a-disposition-after-promotion-reaches-the-reflex" data-who="reckon-build" data-when="2026-10-23T18:03:59.226Z">
+    <div class="r-comment-body"><p>stored_records_for_run returns each enumerated record carrying the answer fields held by every copy of the same review run, staging and committed, merged through _record_with_merged_answers so a finding disposition recorded after promotion reaches the dispatch refusal; records and order unchanged; new test 4 passed, gate population head 1 failed / 149 passed against base 3 failed / 147 passed (the same pre-existing sweep failure on both arms).</p></div>
+</div>
+<div class="r-comment" data-section="s91" data-id="c-close-s91" data-who="reckon-build" data-when="2026-10-23T19:55:00Z">
+    <div class="r-comment-body"><p>§91 landed at <code>d26461861</code>: a disposition recorded after a review's promotion reaches the reflex, so a re-review after a repaired blocking finding is no longer refused. The population adds no failure. <a href="/reckon/evidence/archive/the-monitor-shows-the-work-it-watches-landed.html#s91">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s92" data-id="c-run-r-20261024T084213272110-review-of-an-automatic-review-held-by-a-full-lane-is-queued-0144eca7a4f6" data-who="reckon-build" data-when="2026-10-24T08:58:38.514Z">
     <div class="r-comment-body"><p>Review of run r-20261024T080242400717-an-automatic-review-held-by-a-full-lane-is-queued stored at the run's review-records store (legacy and .at-0144eca7a4f6 head-keyed copies); verdict parsed with scores goal_fidelity 19, evidence 14, scope_discipline 20, durability 15, fit 16, reuse 5, zero added failures against the reviewed run's own gate logs, four non-blocking findings (duplicated LaneHeld/withheld-state ownership, an unverified withheld-state branch, an unguarded queue write on the reflex sweep, and placeholder commands in the source manifest's suite arms).</p></div>
@@ -2171,6 +2171,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s93" data-id="c-run-r-20261029T102712893428-the-pane-carries-counts-not-names" data-who="reckon-build" data-when="2026-10-29T10:56:07.693Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-monitor-shows-the-work-it-watches/the-pane-carries-counts-not-names.html</p></div>
+</div>
+<div class="r-comment" data-section="s96" data-id="c-run-r-20261102T130017225433-review-of-the-needs-you-module-is-retired-2cca602d9284" data-who="reckon-build" data-when="2026-11-02T13:11:26.047Z">
+    <div class="r-comment-body"><p>Reviewed r-20261102T122915134165-the-needs-you-module-is-retired at head 2cca602d9284 against base c4aeb25700; scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 15, fit 19, reuse 20 (total 113/120); one non-blocking finding on the dropped follower-side absence guard; added_failure_count 0.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
