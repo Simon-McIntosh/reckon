@@ -24,7 +24,7 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="112">
+<meta name="plan-version" content="113">
 <meta name="plan-modified" content="2026-11-02">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;a-live-worker-is-never-drawn-halted#s13&quot;]}">
 </head>
@@ -580,6 +580,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="2026-11-02T22:10:00Z">
     <div class="r-comment-body"><p>§13 closed. An admitted launch that loses its pointer now records what was on disk, names the missing pointer, and keeps every attempt's exit record. It was merged as <code>8b76d1dfad</code> on 2026-10-29. The pane's remedy now names the missing pointer, not PATH, as its own node <code>bccb9e4f5</code>, reviewed at 115; its population over 283 files adds no failure that survives a rerun. The supervisor's stop and reap path is unchanged. <a href="/reckon/evidence/archive/a-live-worker-is-never-drawn-halted-landed.html#s13">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261102T211022211241-a-missing-pointer-launch-names-the-pointer" data-who="reckon-build" data-when="2026-11-02T21:34:12.976Z">
+    <div class="r-comment-body"><p>§13 — the launch-failed action now reads the exit record&#x27;s launch_failure.kind: pointer-missing names the recorded pointer path and `reckon crew resume --run &lt;run_id&gt;` and carries neither &quot;PATH&quot; nor &quot;fix the command&quot;, while a spawn kind and a record with no launch_failure block keep the command-and-PATH remedy verbatim. Head gate 3 passed (EXIT=0); base arm 1 failed / 2 passed (EXIT=1, the pointer-missing arm gets the command-and-PATH action — reproduced in docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-missing-pointer-launch-names-the-pointer.html); the 75 test files importing recovery_classification ran 653 passed / 0 failed at head; ruff check and format --check clean on both staged paths.</p></div>
 </div>
 </section>
 </main>
