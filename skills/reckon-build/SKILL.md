@@ -107,19 +107,26 @@ reckon crew review --project <project> --plan <slug> --rubric design --session <
 
 Read it back with `crew(project, view="plan-review", plan=<slug>)`. The reuse
 map is its output, and every node's brief cites it. The gate also needs a stored
-review covering the content about to be built. The author's content review
-usually supplies it, and a section edited since stays covered when the
-review-need judge finds its change needs no new review. A refusal names the
-exact command it is waiting for.
+review covering the content about to be built. The author's content review,
+composed by the session that wrote the plan, supplies it, and a section edited
+since stays covered when the review-need judge finds its change needs no new
+review. A refusal names the exact command it is waiting for.
 
-Answer every finding before dispatching, acted on or declined with a reason:
+**A coordinator does not compose that content review, and does not waive the
+gate.** When one is owed, hand the plan back to its writer, who holds the
+context to fix what a finding names; where the writer is unreachable, let the
+producer's backstop compose it. Dispatch waits for the answer — a section
+dispatched over an unanswered review is a gate bypassed, not a wave started.
+
+Answer the design review's findings before dispatching, acted on or declined
+with a reason:
 `reckon crew review --project <project> --plan <slug> --answer <finding> --acted`,
 or `--declined "<reason>"` in place of `--acted`. **Answer rather than edit.**
 Edit the plan only for findings about the sections you are about to build;
 answer a finding an existing section already meets `--acted`, naming it, and
 one on a landed section `--declined` with the honest reason; then dispatch at
 once. A landed section keeps the coverage it had, so land a covered wave before
-composing the next review rather than interleaving landings and reviews.
+the next review round rather than interleaving landings and reviews.
 
 The plan is the passing surface: work that changes a plan's product carries its
 plan, and findings go record, commit, dispatch, in that order — a worker reads
