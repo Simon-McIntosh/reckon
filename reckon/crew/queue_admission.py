@@ -1766,6 +1766,7 @@ def wait_project_for_run(
     *,
     owner_project: str,
     live: Sequence[Mapping[str, Any]] = (),
+    mounted: Sequence[str] | None = None,
 ) -> str:
     """The project a ``run:`` wait lands in, or "" when no project holds it.
 
@@ -1776,6 +1777,10 @@ def wait_project_for_run(
     other mounted project whose ledger holds the run. A ref none of those holds
     is unresolvable, and says so rather than reading as a wait naming no
     project.
+
+    ``mounted`` is the mount registry already parsed by the caller. An
+    admission pass resolving many refs reads it once and threads it here,
+    rather than parsing it again for every ref that misses the owner project.
     """
     if not run_id:
         return ""
@@ -1784,7 +1789,7 @@ def wait_project_for_run(
             return str(pointer.get("project") or owner_project)
     if _run_record_held(owner_project, run_id):
         return owner_project
-    for project in _mounted_projects():
+    for project in _mounted_projects() if mounted is None else mounted:
         if project == owner_project:
             continue
         if _run_record_held(project, run_id):
@@ -1797,6 +1802,7 @@ def wait_projects_for(
     *,
     owner_project: str,
     live: Sequence[Mapping[str, Any]] = (),
+    mounted: Sequence[str] | None = None,
 ) -> dict[str, str]:
     """The project of every resolvable ``run:`` ref in ``refs``.
 
@@ -1804,15 +1810,24 @@ def wait_projects_for(
     ``run:`` ref a request waits on carries the project its landing is read
     from. A ref no project holds is left out: nothing can land for it, and the
     reads of the pointer report that rather than inventing a project.
+
+    The mount registry is parsed at most once for the whole list, so a request
+    waiting on many runs costs one registry read rather than one per ref.
+    An empty ``mounted`` is a caller saying the registry names nothing.
     """
     projects: dict[str, str] = {}
+    refs = [str(ref) for ref in refs]
+    if mounted is None and any(ref.startswith(REQUEST_REF_PREFIX) for ref in refs):
+        mounted = _mounted_projects()
     for ref in refs:
-        if not str(ref).startswith(REQUEST_REF_PREFIX):
+        if not ref.startswith(REQUEST_REF_PREFIX):
             continue
-        run_id = str(ref)[len(REQUEST_REF_PREFIX) :].strip()
+        run_id = ref[len(REQUEST_REF_PREFIX) :].strip()
         if not run_id:
             continue
-        project = wait_project_for_run(run_id, owner_project=owner_project, live=live)
+        project = wait_project_for_run(
+            run_id, owner_project=owner_project, live=live, mounted=mounted or ()
+        )
         if project:
             projects[run_id] = project
     return projects
@@ -2430,6 +2445,7 @@ def _wait_state(
     cache: dict[str, Any] | None = None,
     wait_projects: Mapping[str, str] | None = None,
     issues: list[str] | None = None,
+    mounted: Sequence[str] | None = None,
 ) -> str:
     """Resolve one wait ref of any of the three kinds."""
     kind = wait_ref_kind(ref)
@@ -2452,7 +2468,7 @@ def _wait_state(
         # would sit awaiting-upstream for as long as the pointer exists.
         recorded = str((wait_projects or {}).get(run_id) or "")
         project_for_ref = recorded or wait_project_for_run(
-            run_id, owner_project=project, live=live
+            run_id, owner_project=project, live=live, mounted=mounted
         )
         if not project_for_ref:
             if issues is not None:
@@ -2638,6 +2654,7 @@ def dispatch_waits(
     cache = readiness_cache if readiness_cache is not None else {}
     rows, inventory = _readiness_rows(owner_project, docs_dir, cache, node.plan, refs)
     dead = _dead_sections(live)
+    mounted = _mounted_projects()
     unmet = [
         ref
         for ref in refs
@@ -2652,6 +2669,7 @@ def dispatch_waits(
             docs_dir=docs_dir,
             cache=cache,
             wait_projects=wait_projects,
+            mounted=mounted,
         )
         != SATISFIED
     ]
@@ -2769,6 +2787,7 @@ def resolve_waits(
     docs_dir: str | Path | None,
     cache: dict[str, Any],
     dead_sections: set[tuple[str, str]] = frozenset(),  # type: ignore[assignment]
+    mounted: Sequence[str] | None = None,
 ) -> str:
     """The phase one waiting request takes, from the roadmap's own readiness.
 
@@ -2789,6 +2808,8 @@ def resolve_waits(
     )
     issues: list[str] = []
     owner_project = str(pointer.get("project") or "") or _project_of_docs_dir(docs_dir)
+    if mounted is None and any(wait_ref_kind(ref) == "request" for ref in refs):
+        mounted = _mounted_projects()
     states = [
         _wait_state(
             ref,
@@ -2806,6 +2827,7 @@ def resolve_waits(
             cache=cache,
             wait_projects=dict(pointer.get("wait_projects") or {}),
             issues=issues,
+            mounted=mounted,
         )
         for ref in refs
     ]
@@ -2826,6 +2848,7 @@ def _resolve_and_move(
     cache: dict[str, Any],
     dead_sections: set[tuple[str, str]] = frozenset(),  # type: ignore[assignment]
     run_id: str = "",
+    mounted: Sequence[str] | None = None,
 ) -> str:
     """Resolve one request's waits and move its pointer to the phase they justify.
 
@@ -2846,6 +2869,7 @@ def _resolve_and_move(
         docs_dir=docs_dir,
         cache=cache,
         dead_sections=dead_sections,
+        mounted=mounted,
     )
     if target == phase:
         return phase
@@ -2989,6 +3013,7 @@ def _rederive_waits(
     *,
     cache: dict[tuple[str, str, str], list[str]] | None = None,
     live: Sequence[Mapping[str, Any]] | None = None,
+    mounted: Sequence[str] | None = None,
 ) -> bool:
     """Re-read a stored request's waits from the plan and rewrite them.
 
@@ -3033,7 +3058,9 @@ def _rederive_waits(
             live = runs.list_live()
         except Exception:  # noqa: BLE001 - an unreadable live set derives no project
             live = ()
-    projects = wait_projects_for(derived, owner_project=owner_project, live=live)
+    projects = wait_projects_for(
+        derived, owner_project=owner_project, live=live, mounted=mounted
+    )
 
     def rewrite(current: dict[str, Any]) -> dict[str, Any]:
         current["waits"] = list(derived)
@@ -3071,9 +3098,11 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
     cache: dict[str, Any] = {}
     # One plan read per pass, shared by every request it derives for.
     derived_cache: dict[tuple[str, str, str], list[str]] = {}
+    # One mount-registry read per pass, shared by every ref it resolves.
+    mounted = _mounted_projects()
     for pointer in candidates:
         try:
-            _rederive_waits(pointer, cache=derived_cache, live=live)
+            _rederive_waits(pointer, cache=derived_cache, live=live, mounted=mounted)
         except Exception:  # noqa: BLE001, S112 - one unreadable request cannot end the pass
             continue
     promoted: list[str] = []
@@ -3096,6 +3125,7 @@ def advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
                 cache=cache,
                 dead_sections=dead,
                 run_id=run_id,
+                mounted=mounted,
             )
             issues = list(pointer.get("upstream_obligations") or ())
             if issues:

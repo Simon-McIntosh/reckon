@@ -206,3 +206,48 @@ def test_an_open_upstream_still_reads_as_waiting(
     pointer = _pointer("r-waiting")
     assert pointer["phase"] == queue_admission.AWAITING_UPSTREAM_PHASE
     assert not queue_admission.unresolvable_wait_obligations(pointer)
+
+
+def test_three_run_refs_read_the_mount_registry_once(
+    projects: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The registry is parsed once per derivation, not once per unresolved ref.
+
+    Every ref of a request is derived against the same mount registry, and an
+    admission pass derives every pointer in the pass. Parsing it per ref makes
+    the cost of a pass grow with the product of requests and refs, on a path
+    that runs on every tick. An empty ``mounted`` is the caller saying the
+    registry names nothing, and it must stay authoritative for the whole list:
+    a ref that misses the owner project consults it rather than re-reading.
+    """
+    first, _ = projects
+    reads: list[int] = []
+
+    def counting_read() -> tuple[str, ...]:
+        reads.append(1)
+        return ()
+
+    monkeypatch.setattr(queue_admission, "_mounted_projects", counting_read)
+
+    projects_by_run = queue_admission.wait_projects_for(
+        ["run:r-a", "run:r-b", "run:r-c"], owner_project=PROJECT, live=[]
+    )
+    assert projects_by_run == {}
+    assert len(reads) == 1, "one wait_projects_for must parse the registry once"
+
+    pointer = {
+        "run_id": "r-waiting",
+        "project": PROJECT,
+        "phase": queue_admission.AWAITING_UPSTREAM_PHASE,
+        "waits": ["run:r-a", "run:r-b", "run:r-c"],
+        "node": {"plan": fixtures.PLAN, "section": "s2"},
+    }
+    reads.clear()
+
+    phase = queue_admission.resolve_waits(
+        pointer, live=[], docs_dir=first / "docs", cache={}, dead_sections=set()
+    )
+
+    assert phase == queue_admission.AWAITING_UPSTREAM_PHASE
+    assert len(reads) == 1, "one resolve pass must parse the registry once"
+    assert len(queue_admission.unresolvable_wait_obligations(pointer)) == 3
