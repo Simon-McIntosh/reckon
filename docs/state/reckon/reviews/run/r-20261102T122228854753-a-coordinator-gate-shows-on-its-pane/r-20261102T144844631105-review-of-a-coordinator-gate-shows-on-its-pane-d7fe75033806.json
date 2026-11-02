@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-02T15:00:10.585Z",
+  "dispatched_at": "2026-11-02T14:51:41Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-coordinator-gate-shows-on-its-pane.html",
+      "id": "fa133b680df",
+      "line": 47,
+      "severity": "non-blocking",
+      "text": "the evidence sentence still says the test 'passes five cases' and enumerates five, while the same commit adds a sixth case (test_a_gate_row_is_released_by_the_pane_policy, described in the new paragraph at line 63) and repair-after.log records 6 passed, so the landed artifact under-reports its own gate."
+    },
+    {
+      "file": "manifest.md",
+      "id": "f9f1f2ed949",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite both run only tests/test_a_coordinator_gate_shows_on_its_pane.py at 4ee282df51 and e690958f2d, while \u00a795's done-when also holds the files importing reckon.crew.recovery_watch and reckon.crew.lift_watch, and those exercising crew verify-gate and crew suite run, to no added failure; the related-file run the manifest cites (related-suite.log, 60 files, 1034 passed, 2 failed) predates the repair's renderer change at f5883f817c, so that change carries no delta measurement of its own."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-coordinator-gate-shows-on-its-pane.html",
+      "id": "f911501e462",
+      "line": 53,
+      "severity": "non-blocking",
+      "text": "the fragment still states the 87 related files pass with 644 passed, but the only surviving related log holds a 60-file run of 1034 passed, 2 failed, so a reader cannot reconcile the artifact's gate result with any log; this was raised in the earlier review of this run and still stands in the file this commit edits."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "CALL_SITES: reckon/crew_follow_commands.py:_follow_selects, reckon/crew_follow_commands.py:1293, reckon/crew/ticker.py:1984 RowPolicy._mark_carried, reckon/crew/ticker.py:2072 RowPolicy.feed, reckon/crew/ticker.py:2549 PaneRowPath.feed",
+    "diff": "VERDICT diff: read both commits from 4ee282df51 to d7fe750338; e690958f2d adds the gate words and clause to reckon/crew/ticker.py, a binding comment to reckon/crew/gate_watch.py:52 and the pane-policy test, and d7fe750338 rewrites the evidence fragment's gap paragraph.",
+    "done_when": "VERDICT done_when: \u00a795's done-when names tests/test_a_coordinator_gate_shows_on_its_pane.py with a negative control that skips the record write; the manifest records the repair base arm at 5 passed and head arm at 6 passed, both EXIT=0, and a pane-policy control at 1 failed, 5 passed, EXIT=1.",
+    "goal": "VERDICT goal: the goal is to show a coordinator's own verify-gate and suite run gates as rows on its own pane; the gained fix at reckon/crew/ticker.py:1447 admits gate-running and gate-ended in stream_carries, so the row RowPolicy.feed previously dropped is now released for the owning session.",
+    "manifest": "VERDICT manifest: read; it answers f89b7bd6914 as acted in e690958f2d, records baseline_suite 5 passed and after_suite 6 passed, and names negative-control-ticker.log failing exactly test_a_gate_row_is_released_by_the_pane_policy.",
+    "write_paths": "VERDICT write_paths: the repair round's write scope at resume-1-advice.txt:15 carries reckon/crew/ticker.py, and every path in the gained diff is inside that grant and the node's declared paths, though the live pointer's node.write_paths still omit ticker.py as the manifest's blocker records."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261102T144844631105-review-of-a-coordinator-gate-shows-on-its-pane-d7fe75033806",
+  "reviewed_base_sha": "4ee282df51191cf7c21ec4280072decda8be6a41",
+  "reviewed_head_sha": "d7fe75033806972ef11c7e45257d63f05ed13329",
+  "reviewed_run_id": "r-20261102T122228854753-a-coordinator-gate-shows-on-its-pane",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T15:08:08.517510+00:00",
+  "total": 110
+}
