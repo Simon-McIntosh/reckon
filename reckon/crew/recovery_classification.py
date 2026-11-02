@@ -612,7 +612,11 @@ def _review_in_flight_phase(phase: str) -> bool:
     return phase in _PRE_SPAWN_PHASES or phase in {"queued", "working"}
 
 
-def _review_run_in_flight(record: Mapping[str, Any]) -> tuple[str, str]:
+def _review_run_in_flight(
+    record: Mapping[str, Any],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
+) -> tuple[str, str]:
     """The dispatched review standing for this run's head, and its phase.
 
     The recogniser is the reflex's own — the reviewed run and the head the
@@ -623,13 +627,20 @@ def _review_run_in_flight(record: Mapping[str, Any]) -> tuple[str, str]:
     the store answers for a filed record, and a review that died without one
     leaves the run owed a review again.
 
+    ``pointers`` is the view's own read of the live pointers, handed over by a
+    caller classifying several rows from one snapshot. The recogniser accepts
+    it for the same reason: without it every row lists the project's live
+    pointers again, so one live-view read over N rows would read the directory
+    N more times. A caller holding no snapshot passes none and the recogniser
+    reads them itself, so the answer is the same either way.
+
     ``("", "")`` is the answer for every case the reader cannot resolve — no
     review, an unreadable pointer, or a phase that is not in flight — so a row
     never loses the dispatch it would otherwise print over a review it cannot
     see.
     """
     try:
-        review_run_id = _review_in_flight(record)
+        review_run_id = _review_in_flight(record, pointers=pointers)
     except (CrewError, OSError, ValueError):
         return "", ""
     if not review_run_id:
@@ -701,6 +712,7 @@ def classify_pointer(
     stale_after_seconds: int = LOG_STALE_AFTER_SECONDS,
     now_seconds: float | None = None,
     condition_test: Callable[[Mapping[str, Any], Mapping[str, Any]], Any] | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Classify one live pointer, without touching it.
 
@@ -712,6 +724,11 @@ def classify_pointer(
     ``socket.gethostname()`` on the machine that launched the run. Delivery
     comes from the manifest's status, because a terminal stream event only says
     the worker's turn ended. It does not say the node completed successfully.
+
+    ``pointers`` is the live-pointer snapshot a view is classifying several
+    rows from, so recognising an already-dispatched review reads that snapshot
+    instead of listing the directory once per row. A caller with one record and
+    no snapshot passes none and every read is taken itself.
     """
     run_id = str(record.get("run_id") or "")
     phase = str(record.get("phase") or "")
@@ -1424,7 +1441,7 @@ def classify_pointer(
             # flight: the lane refuses a second dispatch of it naming the run
             # that holds it, so the row reads that run rather than offering a
             # command that cannot run.
-            in_flight_review = _review_run_in_flight(record)
+            in_flight_review = _review_run_in_flight(record, pointers=pointers)
             if review_error:
                 review_detail = f"the stored review could not be read: {review_error}"
             elif review is None:

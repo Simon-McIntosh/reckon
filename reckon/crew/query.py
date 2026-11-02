@@ -420,8 +420,11 @@ def project_live_rows(
     answer from one order rather than each ordering the queue itself.
     """
     records = list(records)
+    # Every row is classified from this one read of the live pointers, so the
+    # classification is handed the snapshot rather than listing the project's
+    # pointers again per row: one live-view read, one directory read.
     classified = group_terminal_lane_events(
-        [classify_pointer(record) for record in records]
+        [classify_pointer(record, pointers=records) for record in records]
     )
     from reckon.crew.queue_admission import queued_placements
 
@@ -884,7 +887,7 @@ def runs_view(
                     if str(record.get("project") or "") == project
                 ]
         classified_live = group_terminal_lane_events(
-            [classify_pointer(record) for record in live_records]
+            [classify_pointer(record, pointers=live_records) for record in live_records]
         )
         records_by_id = {
             str(record.get("run_id") or ""): record for record in live_records
