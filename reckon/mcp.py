@@ -2320,13 +2320,17 @@ def _roadmap_scoped(
 ) -> dict[str, Any]:
     """Scan plan dependencies and return executable work plus graph health.
 
-    Portfolio scans default to ``view='summary'`` with per-project completion,
-    ready/blocked/deferred counts, and finding totals. ``view='detail'`` adds a
-    cursor-paginated findings page; ``view='raw'`` returns the lossless report.
-    A ``graph:<handle>`` project target returns the derived cross-project
-    dependency closure carried by its endpoint plan. Direct internal calls
-    without ``view`` preserve the legacy raw response; the registered MCP
-    wrapper defaults single-project clients to the compact summary.
+    A single project's default answer, as the registered MCP wrapper resolves
+    it, is ``view='brief'``: the composed lines that say what to do next, with
+    the payload rows behind them. ``view='summary'`` gives the compact report
+    of per-project completion, ready/blocked/deferred counts and finding
+    totals; ``view='detail'`` adds a cursor-paginated findings page;
+    ``view='raw'`` returns the lossless report. Portfolio scans keep
+    ``view='summary'`` as their own default, because neither a portfolio nor a
+    ``graph:<handle>`` target carries one project to brief: the graph target
+    returns the derived cross-project dependency closure carried by its
+    endpoint plan. Direct internal calls without ``view`` preserve the legacy
+    raw response.
     ``checkout_path`` is accepted for a single project and follows the same
     worktree-routing contract as ``read_plan``.
     """
