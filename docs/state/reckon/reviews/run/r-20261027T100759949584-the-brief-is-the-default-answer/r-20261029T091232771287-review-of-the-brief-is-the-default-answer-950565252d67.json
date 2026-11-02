@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-10-29T09:26:51.953Z",
+  "dispatched_at": "2026-10-29T09:19:15Z",
+  "findings": [
+    {
+      "file": "logs/head-9505652-roadmap-callers.txt",
+      "id": "fbc6a3c684f",
+      "line": 3,
+      "severity": "non-blocking",
+      "summary": "This log, named in the manifest's test_logs, is truncated at 59% with no summary line and no EXIT= line, and its own command header carries the unsubstituted placeholder '<71 files that call the roadmap read>', so the 721-test sweep it claims to be cannot be re-run and its completion cannot be read; the completed 721-pass/1-fail run at dba62f7f88 (logs/head-dba62f7-roadmap-callers.txt) is the record that actually stands behind the sweep claim."
+    },
+    {
+      "file": "reckon/mcp_budget.py",
+      "id": "f47b2f8134a",
+      "line": 66,
+      "severity": "non-blocking",
+      "summary": "DEFAULT_VIEWS still maps roadmap to summary and VIEW_BUDGETS has no (\"roadmap\", \"brief\") row, so the new default brief answer is held to the 20,000-character summary row; it serialised to 17,772 on reckon, leaving roughly 13% headroom before a moderately larger project has its default read refused by a budget sized for the payload it replaced."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "id": "f9222c78054",
+      "line": 2329,
+      "severity": "non-blocking",
+      "summary": "The _roadmap_scoped docstring still states 'the registered MCP wrapper defaults single-project clients to the compact summary', which is the behaviour this node replaced with the brief; a reader of the function's contract is pointed at the old default."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node's goal is to make roadmap(project) with no view answer the composed project brief and to have both skills lead with it, and at the reviewed head the delta preserves that: reckon/mcp.py:2028 declares BRIEF_VIEW, reckon/mcp.py:2095 resolves a view-less single-project read to it, and reckon/mcp.py:2516 composes the brief, which the two post-review commits (a test-shape repair and an evidence record) leave intact.\nVERDICT done_when: the done_when asserts a default fixture read returns the brief with each ranked row carrying the ranking's reason, a named summary read unchanged, both skill fast paths naming the brief first, and a negative control; the manifest records logs/head-9505652-three-files.txt as 32 passed EXIT=0 at 950565252d covering tests/test_the_brief_is_the_default_answer.py, and logs/negative-control.txt shows the default-brief assertion red at EXIT=1, so the gate asserts the measure, though the sweep log also named there is truncated.\nVERDICT write_paths: the node's declared paths are reckon/mcp.py, skills/reckon-roadmap/SKILL.md, skills/reckon-status/SKILL.md, tests/test_the_brief_is_the_default_answer.py, the evidence fragment and the figures directory; the post-review delta touches docs/evidence/fragments/the-mcp-answers-the-question-asked/the-brief-is-the-default-answer.html (declared) and tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py (not declared, disclosed under outside_scope).\nVERDICT manifest: read; it states status complete and records the baseline arm 5 failed/1 passed at 411ddcee, the after arm 32 passed EXIT=0 at 950565252d, the negative control EXIT=1, and the merged-head slow-read case 6 failed/5 passed before dba62f7f88 and 11 passed after, with the truncated callers log a recorded blemish.\nVERDICT diff: read commit by commit against dd8e349: the range holds 00540b20c4 and the other origin/main commits brought in by merge 6995106b13 (other nodes' landed work, unreviewed here per scope), plus this node's own dba62f7f88 (renaming the slow-read test's default shape constant to the brief and flipping one expectation) and 950565252d (adding a snapshot paragraph to the evidence fragment); reckon/mcp.py and both skills are absent from the range, so the merge dropped nothing.\nCALL_SITES: reckon/mcp.py:3776 (roadmap MCP tool registration), reckon/mcp.py:2572 (_roadmap_tool), reckon/mcp.py:2429 (_roadmap re-entry), reckon/mcp_deadlines.py:808 (_roadmap_scoped readiness read), reckon/project_maintenance_commands.py:1580 (_roadmap CLI route)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp.py:2095 returns BRIEF_VIEW for a view-less single-project read at the reviewed head and dba62f7f88 files that read's snapshot under view=\"brief\", so the delta keeps the stated goal.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-9505652-three-files.txt records 32 passed with EXIT=0 at 950565252d and logs/negative-control.txt shows the mutation red at EXIT=1, but logs/head-9505652-roadmap-callers.txt is truncated at 59% with no EXIT and an unsubstituted placeholder command.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:55 is outside the node's declared write paths, disclosed under outside_scope because the section's own default-shape change requires it.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_slow_roadmap_read_serves_its_last_snapshot.py:244 asserts stale[\"shape\"] equals the file's own written-out DEFAULT_SHAPE literal, an independent source, so a default reverting to summary files a summary shape and a brief-shaped lookup returns None; the manifest's negative control shows the sibling default-brief assertion red at EXIT=1.\nSCORE fit: 15\nJUSTIFICATION fit: the delta introduces no forbidden names and follows the surrounding test idiom, but reckon/mcp.py:2329 still documents the wrapper as defaulting clients to the compact summary.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition; it renames existing test helpers (DEFAULT_SHAPE, _shape, _key, _last) so they name the shape they already composed, forking no capability.\nFINDING logs/head-9505652-roadmap-callers.txt:3 non-blocking: the log is truncated at 59% with no summary or EXIT line and its command header carries the placeholder '<71 files that call the roadmap read>', so the sweep it is cited for cannot be read or re-run, and the completed dba62f7f88 run is the record that actually stands.\nFINDING reckon/mcp_budget.py:66 non-blocking: DEFAULT_VIEWS maps roadmap to summary and VIEW_BUDGETS has no (\"roadmap\", \"brief\") row, so the new default brief answer is held to the 20,000-character summary row and a project about 13% larger than reckon would have its default read refused.\nFINDING reckon/mcp.py:2329 non-blocking: the _roadmap_scoped docstring still says the registered MCP wrapper defaults single-project clients to the compact summary, contradicting the landed brief default.",
+  "review_run_id": "r-20261029T091232771287-review-of-the-brief-is-the-default-answer-950565252d67",
+  "reviewed_base_sha": "dd8e349f63ea9876151ebb10dfaad59427ddcae2",
+  "reviewed_head_sha": "950565252d67ebbbfba5d361e4549c215b8c969b",
+  "reviewed_run_id": "r-20261027T100759949584-the-brief-is-the-default-answer",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T21:33:23.117863+00:00",
+  "total": 95
+}
