@@ -12,13 +12,14 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from reckon._store import (
     _config_home,
 )
-from reckon.crew.host_lease import HostLease
+from reckon.crew.host_lease import HostLease, LeaseHolder
 from reckon.crew.node import (
     DEFAULT_WATCH_STALL_WINDOW,
     CrewError,
@@ -38,20 +39,35 @@ def watch_host_lease(project: str):
     )
 
 
-def _fresh_watch_holder(project: str, record: Mapping[str, Any]):
-    """Use a remote lease, but clear a local holder confirmed dead by this host."""
+@dataclass(frozen=True)
+class WatchHolder:
+    """A seat lease as a read sees it: its live holder, and one left stale.
+
+    A holder confirmed dead by this host is reported in ``stale`` and left on
+    disk. Whether a caller may clear it depends on who the caller is: a read
+    answers a question about the fleet and must not decide ownership from a
+    process-table probe, while a producer taking the seat clears it on its way
+    through. Reporting the two answers separately is what lets the read path
+    stay write-free without the stale holder disappearing from the record.
+    """
+
+    live: LeaseHolder | None
+    stale: LeaseHolder | None
+
+
+def _fresh_watch_holder(project: str, record: Mapping[str, Any]) -> WatchHolder:
+    """Read the seat lease, separating a live holder from one confirmed dead."""
     lease = watch_host_lease(project)
     holder = lease.holder()
     if holder is None or holder.host != socket.gethostname():
-        return holder
+        return WatchHolder(live=holder, stale=None)
     if (record.get("host"), record.get("pid")) == (holder.host, holder.pid):
         dead = record_process_alive(record) is False
     else:
         dead = process_alive(holder.pid) is False
     if dead:
-        lease.release_holder(holder)
-        return None
-    return holder
+        return WatchHolder(live=None, stale=holder)
+    return WatchHolder(live=holder, stale=None)
 
 
 def _seat_host(record: Mapping[str, Any]) -> str:
@@ -485,7 +501,7 @@ def watch_state(project: str, *, session: str | None = None) -> dict[str, Any]:
     # producer as absent, and one that sees it held reads a dead process as
     # live — each the wrong way to decide a dispatch guard. The running answer
     # is the one the guard may trust.
-    holder = _fresh_watch_holder(project, registration)
+    holder = _fresh_watch_holder(project, registration).live
     if holder is not None:
         if (registration.get("host"), registration.get("pid")) != (
             holder.host,

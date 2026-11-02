@@ -3771,20 +3771,28 @@ def watch_observer_alive(registration: Mapping[str, Any]) -> bool | None:
     )
 
 
-def _probe_seat_read_only(project: str) -> tuple[bool, dict[str, Any]]:
+def _probe_seat_read_only(project: str) -> tuple[bool | None, dict[str, Any]]:
     """Read a project's seat lock state without creating or writing its file.
 
     A reader must answer under a read-only config home, where opening the seat
     for update fails and creating it is impossible, so an absent seat reads as
     an empty seat rather than being created on demand. A present seat is opened
-    read-only and its advisory lock probed from that descriptor, which
-    ``flock`` permits whatever mode the file was opened in.
+    read-only and its advisory lock probed from that
+    descriptor, which ``flock`` permits whatever mode the file was opened in.
+
+    A seat this reader cannot open answers ``None`` rather than ``False``. The
+    two are different facts: a free lock is a seat nobody holds, while a seat
+    the fence will not let this reader look at is a holder whose state is
+    unknown here, and reporting it as unheld would have the reader offer to arm
+    a second producer over one it simply could not see.
     """
     path = watch_lock_path(project)
     try:
         handle = path.open("rb")
     except FileNotFoundError:
         return False, {}
+    except OSError:
+        return None, {}
     with handle:
         try:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -3803,8 +3811,10 @@ def project_watch_visibility(
     arming_line = _watch_arming_line(project)
     attach_line = _watch_attach_line(project, session=session)
     seat_held, registration = _probe_seat_read_only(project)
+    seat_readable = seat_held is not None
 
-    holder = _fresh_watch_holder(project, registration)
+    holders = _fresh_watch_holder(project, registration)
+    holder = holders.live
     if holder is not None:
         seat_held = True
         if (registration.get("host"), registration.get("pid")) != (
@@ -3861,6 +3871,22 @@ def project_watch_visibility(
         "project": project,
         "status": status,
         "seat_held": seat_held,
+        # A seat the reader could not open is neither held nor free, and the
+        # holder it names is unknown here. Stated beside ``seat_held`` so a
+        # caller can tell an unheld seat from one it was not allowed to look at.
+        "seat_readable": seat_readable,
+        # A lease naming a holder this host's process table says is gone. It is
+        # reported and left in place: the lease is the claim a producer makes,
+        # and a read that unlinked it would be deciding ownership from a probe.
+        "stale_lease": (
+            None
+            if holders.stale is None
+            else {
+                "host": holders.stale.host,
+                "pid": holders.stale.pid,
+                "job": holders.stale.job,
+            }
+        ),
         "pid": pid,
         "armed_at": registration.get("started_at"),
         # The code the armed seat is running, and whether it differs from this
