@@ -263,8 +263,10 @@ def test_a_file_wait_over_a_live_worker_stays_waiting(live_pid: int) -> None:
     run = _waiting_run(
         RUN_IDS[1],
         probe=["test", "-e", str(directory / "never-written" / "rows.jsonl")],
+        # The value has stood still past the bound and the probe now answers
+        # nothing at all, so only the live process keeps this run waiting.
         history=_history(
-            (BOUND + 300, "unavailable", False),
+            (BOUND + 300, "absent", True),
             (60, "unavailable", False),
         ),
         pid=live_pid,
@@ -349,6 +351,8 @@ def test_a_scheduler_job_still_queued_keeps_its_wait(
         RUN_IDS[4],
         probe=["squeue", "-h", "-j", "1293562"],
         terminal=("COMPLETED", "FAILED"),
+        # The probe answers the same state it has reported for longer than the
+        # bound; only the queued job keeps this run waiting.
         history=_history(
             (BOUND + 300, "RUNNING", True),
             (60, "RUNNING", True),
@@ -356,7 +360,15 @@ def test_a_scheduler_job_still_queued_keeps_its_wait(
         pid=_absent_pid(),
     )
 
-    row = _row(run)
+    row = _row(
+        run,
+        condition_test=lambda _pointer, _wait: {
+            "state": "unknown",
+            "observed": "RUNNING",
+            "answered": True,
+            "detail": "the job is still in the queue",
+        },
+    )
 
     assert row["process_alive"] is False
     assert row["classification"] == "waiting"
