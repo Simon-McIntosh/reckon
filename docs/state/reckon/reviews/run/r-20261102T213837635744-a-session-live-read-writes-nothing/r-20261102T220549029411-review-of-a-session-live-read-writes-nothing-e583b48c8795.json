@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/mcp_views.py:4256",
+    "reckon/crew/runs.py:3339",
+    "reckon/crew/watch_unit.py:504",
+    "reckon/crew/dispatch.py:383",
+    "reckon/crew/dispatch_watch.py:459",
+    "reckon/crew/forgotten_runs.py:100"
+  ],
+  "completed_at": "2026-11-02T22:28:08.496Z",
+  "dispatched_at": "2026-11-02T22:14:58Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T213837635744-a-session-live-read-writes-nothing/manifest.md",
+      "id": "f54b5169b52",
+      "line": "18",
+      "severity": "blocking",
+      "text": "the after_suite command names four test files (the three pre-existing ones plus the node's own), while the run record's armed suite command resolves over the head tree to tests/test_a_session_live_read_writes_nothing.py alone; promotion_records._arm_missing_fields returns ['after_suite.command_matches_suite_command'] for this run, so promotion refuses the pair as missing evidence and the node cannot land until the after arm is re-run with the run's armed command."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "id": "f0fd391539d",
+      "line": "3339",
+      "severity": "non-blocking",
+      "text": "watch_seat_needs_replacement returns False whenever visibility['seat_held'] is falsy, and the change makes seat_held None reachable for an unopenable seat at runs.py:3795-3796; None is falsy, so the unknown-seat state the visibility block now distinguishes is read as a free seat by the one consumer that decides replacement. Reachable only under a home where the seat cannot be opened, where the same reader cannot arm a producer either."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T213837635744-a-session-live-read-writes-nothing/manifest.md",
+      "id": "f22f3c13f04",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "the rubric.reuse self-check states that _no_registration_remains replaces a literal repeated at two sites, but reckon/crew/follower_registration.py:518 has a single caller at :546; the record overstates the extraction as de-duplication when it is a named constant for one branch."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against base 27dca04b11; three production modules plus a test file under the fix commit, and the landing fragment under the evidence commit.",
+    "done_when": "the gate names tests/test_a_session_live_read_writes_nothing.py; both arms fail at base (logs/base-arm.log, 2 failed EXIT=1), pass at head (15 passed EXIT=0 in logs/head-gate.log, and I re-ran the two arms at head: 2 passed EXIT=0), and the negative control is recorded at EXIT=1; the armed suite pair does not match the armed command.",
+    "goal": "read the goal and the landed code; all three named write sites are read-only on the session-scoped live read path at follower_registration.py:542, watch_unit.py:69 and runs.py:3795-3796.",
+    "manifest": "read; status complete with commits, logs, a negative control and a landing line; its after_suite command at line 18 does not match the run's armed suite command.",
+    "write_paths": "every changed path is inside the six declared write paths; host_lease.py and the figure directory are untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_session_live_read_writes_nothing.py:191 (lease.exists()) and :171 (the tree is unchanged) redden if reckon/crew/watch_unit.py:69 or follower_registration.py:542 is reverted, and the negative control demonstrates the second.",
+    "evidence": "the arms and negative control are recorded and reproducible, but the after arm at the manifest's line 18 names four test files where the armed command resolves to one, so promotion refuses the pair as missing evidence.",
+    "fit": "WatchHolder at reckon/crew/watch_unit.py:43 follows the module's dataclass idiom, but the seat tri-state is not carried into the consumer at reckon/crew/runs.py:3339.",
+    "goal_fidelity": "the three named write sites become read-only at reckon/crew/follower_registration.py:542, reckon/crew/watch_unit.py:69 and reckon/crew/runs.py:3795-3796, while the reconcile-on-read repair at reckon/crew/runs.py:3516 still writes a writable home.",
+    "reuse": "no existing owner reports a stale lease while leaving it in place (host_lease.LeaseHolder at reckon/crew/host_lease.py:27 holds one holder; runs._record_producer_dead only answers liveness), so the additions extend _fresh_watch_holder rather than forking it.",
+    "scope_discipline": "every path in 27dca04b11..e583b48c87 is inside the declared write paths and the declared-but-unused host_lease.py is left alone."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a session-scoped live read that takes no write under a read-only crew home; reckon/crew/follower_registration.py:542 opens the registration \"rb\", reckon/crew/watch_unit.py:69 returns a dead local holder as stale instead of releasing it, and reckon/crew/runs.py:3795-3796 answers an unopenable seat with None, and the read-only arm drives the whole live view to an answer under a 0555/0444 home with a mode-000 seat.\nVERDICT done_when: the done_when names tests/test_a_session_live_read_writes_nothing.py with two arms that fail at base, a negative control restoring the \"a+b\" open, and the armed suite pair; the manifest records all of these, I re-ran the two arms at head (2 passed, EXIT=0, /tmp/reckon-crew-scratch/r-20261102T220549029411-review-of-a-session-live-read-writes-nothing-e583b48c8795/head-arm-check.log) and read base-arm.log (2 failed, EXIT=1), but the recorded armed suite pair does not match the armed command and is refused, recorded as a blocking finding.\nVERDICT write_paths: the declared paths are reckon/crew/follower_registration.py, reckon/crew/host_lease.py, reckon/crew/watch_unit.py, reckon/crew/runs.py, tests/test_a_session_live_read_writes_nothing.py and the landing fragment; every path in the diff is inside them, and host_lease.py, the figure directory and the plan are untouched.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T213837635744-a-session-live-read-writes-nothing/manifest.md; status complete, recording commits c927b1cc97 and e583b48c87, 15 passed at head against 13 at base and a negative control at EXIT=1, with the after_suite command at line 18 naming four test files where the armed command resolves to one.\nVERDICT diff: read both commits against base 27dca04b11; c927b1cc97 changes reckon/crew/follower_registration.py, reckon/crew/watch_unit.py and reckon/crew/runs.py and adds a 212-line test file, e583b48c87 adds the 29-line landing fragment, and nothing outside the declared scope is touched.\nCALL_SITES: reckon/mcp_views.py:4256, reckon/crew/runs.py:3339, reckon/crew/watch_unit.py:504, reckon/crew/dispatch.py:383, reckon/crew/dispatch_watch.py:459, reckon/crew/forgotten_runs.py:100\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the three named write sites are read-only at reckon/crew/follower_registration.py:542, reckon/crew/watch_unit.py:69 and reckon/crew/runs.py:3795-3796, while the reconcile-on-read repair at reckon/crew/runs.py:3516 still writes a writable home, which the goal's \"every write site\" does not literally reach.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/base-arm.log ends EXIT=1 with both arms failing and logs/head-gate.log ends EXIT=0 with 15 passed, but the after arm recorded at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T213837635744-a-session-live-read-writes-nothing/manifest.md:18 names four test files where the armed command resolves to tests/test_a_session_live_read_writes_nothing.py alone, and promotion_records._arm_missing_fields returns after_suite.command_matches_suite_command for it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in 27dca04b11..e583b48c87 is inside the declared write paths, and host_lease.py at the declared path is left unchanged because the read path stopped calling release_holder instead.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_session_live_read_writes_nothing.py:191 asserts lease.exists() and :171 asserts the home is unchanged, so reinstating the release_holder call at reckon/crew/watch_unit.py:69 or the append open at reckon/crew/follower_registration.py:542 reddens the arms, as the recorded negative control shows for the second.\nSCORE fit: 16\nJUSTIFICATION fit: WatchHolder at reckon/crew/watch_unit.py:43 and the tri-state probe at reckon/crew/runs.py:3774 follow the module's existing dataclass and docstring idiom, but the seat's new tri-state is left unhandled by the consumer at reckon/crew/runs.py:3339 which treats it as a two-state boolean.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for a live/stale lease pair exists \u2014 the search over reckon/crew found host_lease.LeaseHolder (a single holder, at reckon/crew/host_lease.py:27), watch_unit.watch_state and runs._record_producer_dead, none of which reports a stale holder while leaving it in place, and the added definitions extend _fresh_watch_holder rather than duplicating them.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T213837635744-a-session-live-read-writes-nothing/manifest.md:18 blocking: the after_suite command names four test files (the three pre-existing ones plus the node's own), while the run record's armed suite command \"PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q {node_test_files}\" resolves over the head tree to tests/test_a_session_live_read_writes_nothing.py alone; running promotion_records._arm_missing_fields against this run's record and manifest returns ['after_suite.command_matches_suite_command'], so promotion refuses the pair as missing evidence and the node cannot land until the after arm is re-run with the armed command and re-recorded.\nFINDING reckon/crew/runs.py:3339 non-blocking: watch_seat_needs_replacement takes project_watch_visibility(project) and returns False whenever seat_held is falsy, and the change makes seat_held None reachable for an unopenable seat at reckon/crew/runs.py:3795-3796; None is falsy, so the unknown-seat state the visibility block now distinguishes is collapsed to \"free\" by the one consumer that decides whether to replace a seat, which matters only under the fenced home where the reader cannot arm a producer anyway.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T213837635744-a-session-live-read-writes-nothing/manifest.md:29 non-blocking: the rubric.reuse self-check states that _no_registration_remains replaces a literal repeated at two sites, but the helper added no second caller (reckon/crew/follower_registration.py:518 has one use, at :546), so the record overstates the extraction as a de-duplication when it is a named constant for a single branch.\n",
+  "review_run_id": "r-20261102T220549029411-review-of-a-session-live-read-writes-nothing-e583b48c8795",
+  "reviewed_base_sha": "27dca04b11dbe5312965ad4d675d895656413421",
+  "reviewed_head_sha": "e583b48c8795df311dc14ea515036125a7f91524",
+  "reviewed_run_id": "r-20261102T213837635744-a-session-live-read-writes-nothing",
+  "scores": {
+    "durability": 19,
+    "evidence": 10,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T23:27:00+00:00",
+  "total": 103
+}
