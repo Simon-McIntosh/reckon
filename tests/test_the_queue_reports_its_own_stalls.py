@@ -27,7 +27,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from reckon.crew import needs_you, queue_admission, runs
+from reckon.crew import obligations as obligations_module
+from reckon.crew import queue_admission, runs
 from tests import test_a_queued_request_waits_on_its_dependencies as fixtures
 
 PROJECT = fixtures.PROJECT
@@ -81,6 +82,15 @@ def _admit(*, launcher=None, config_for=None) -> dict:
         config_for=config_for or fixtures._config_for(),
         launcher=launcher or fixtures._launcher(recorded),
     )
+
+
+def _stalled_rows(payload: dict) -> list[dict]:
+    """The duties the view owes for a request the pass recorded as stalled."""
+    return [
+        row
+        for row in payload.get("obligations") or ()
+        if row.get("kind") == obligations_module.STALLED_RUN_DUTY_KIND
+    ]
 
 
 def _stalls(result: dict) -> list[dict]:
@@ -159,12 +169,10 @@ def test_a_recorded_stall_reaches_its_session_once_until_it_clears(
     runs._write_json(runs.pointer_path(RUN_ID), pointer)
     _write_log([{"at": datetime.now(UTC).isoformat(), "pointers": [recorded[0]]}])
 
-    rows, _counts = needs_you.needs_you_rows(PROJECT, session=fixtures.SESSION)
+    stalled = _stalled_rows(obligations_module.obligations(PROJECT, fixtures.SESSION))
 
-    stalled = [row for row in rows if row.get("stalled")]
-    assert len(stalled) == 1, rows
+    assert len(stalled) == 1, stalled
     assert stalled[0]["run_id"] == RUN_ID
-    assert stalled[0]["kind"] == "blocked"
     assert stalled[0]["stage"] == recorded[0]["stage"]
     assert stalled[0]["age_seconds"] >= WAITED_SECONDS
 
@@ -174,9 +182,9 @@ def test_a_recorded_stall_reaches_its_session_once_until_it_clears(
             "pointers": [{"run_id": RUN_ID, "verdict": "launched"}],
         }
     )
-    cleared, _counts = needs_you.needs_you_rows(PROJECT, session=fixtures.SESSION)
+    cleared = _stalled_rows(obligations_module.obligations(PROJECT, fixtures.SESSION))
 
-    assert [row for row in cleared if row.get("stalled")] == []
+    assert cleared == []
 
 
 def test_a_lane_with_no_room_or_a_live_claim_records_no_stall(

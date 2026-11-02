@@ -46,7 +46,6 @@ import pytest
 
 from reckon import crew
 from reckon import crew_follow_commands as follow_commands
-from reckon.crew import needs_you as needs_you_module
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -282,8 +281,7 @@ def test_a_settle_prints_no_line_even_with_an_outstanding_run(home: Path) -> Non
         assert len(settles) == 1, settles
         assert settles[0]["line"] == "", settles[0]["line"]
         assert "r-mine" not in json.dumps(settles[0]), settles[0]
-        owed = needs_you_module.needs_you_runs(PROJECT, session=SESSION)
-        assert [row["run_id"] for row in owed] == ["r-mine"], owed
+        assert "r-peer" not in json.dumps(settles[0]), settles[0]
     finally:
         stop.set()
         thread.join(5.0)

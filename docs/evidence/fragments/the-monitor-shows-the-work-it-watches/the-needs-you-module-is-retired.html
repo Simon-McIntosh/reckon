@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s96">
+  <title>The needs-you module is retired</title>
+</head>
+<body>
+<article id="the-needs-you-module-is-retired-landing" data-node="the-needs-you-module-is-retired" data-reckon="landed"></article>
+
+<section id="the-needs-you-module-is-retired-record">
+  <h3 id="the-needs-you-module-is-retired-record-title">What changed</h3>
+  <p><code>reckon/crew/needs_you.py</code> is deleted. It had no production
+  importer left once the pane stopped printing a needs-you line, and the
+  obligations view and the fleet counters are the readers of what a coordinator
+  owes. The import grep the done-when names finds nothing across
+  <code>reckon/ tests/ scripts/ skills/</code>; the identical phrase in
+  <code>tests/fixtures/plan_review_store/current_plan.html</code> is fixture
+  prose and is left alone, as the section directs.</p>
+  <p>The seven test files are treated case by case:</p>
+  <ul>
+    <li><code>test_a_deferred_run_leaves_the_needs_you_line.py</code> (2 cases)
+    tested the derivation's deferral filter; the file is deleted.</li>
+    <li><code>test_follow_needs_you_line.py</code> loses four derivation cases
+    (rows against the fleet counters, ageing from creation, the stored-review
+    mark, and the owning-session-only derivation) and keeps four stream cases.
+    <code>test_a_draining_set_prints_nothing</code> keeps its stream assertions
+    and no longer computes an owed set.</li>
+    <li><code>test_the_stream_carries_only_actionable_lines.py</code> loses
+    <code>test_the_follower_carries_no_rule_of_its_own</code>, whose
+    <code>needs_you_line</code> absence check the done-when now asserts.</li>
+    <li><code>test_follow_drain_line.py</code>,
+    <code>test_the_pane_carries_counts_not_names.py</code> and
+    <code>test_a_pane_settles_when_no_work_is_live.py</code> keep their settle
+    cases and assert against the run ids their own fixtures write instead of a
+    derived owed set.</li>
+    <li><code>test_the_queue_reports_its_own_stalls.py</code> reads the stall
+    from the <code>run-stalled</code> duty in
+    <code>obligations.obligations</code> — the row that replaced
+    <code>needs_you_rows</code> — and drops once a launch verdict clears it.</li>
+  </ul>
+  <p>No production behaviour changes; nothing outside the deleted module and
+  the seven test files is touched.</p>
+  <h3 id="the-needs-you-module-is-retired-measure">Measure</h3>
+  <p>Gate, both arms over the node's own tests, run in place on the fleet node:
+  base <code>c4aeb257</code> <code>51 passed</code> (<code>EXIT=0</code>, seven
+  files); head <code>85f888a7</code> <code>44 passed</code>
+  (<code>EXIT=0</code>, six files — the deleted file drops out of the resolved
+  command). The seven-case difference is exactly the deleted cases.</p>
+  <p>Negative control, the declared mutation <em>make
+  <code>_follower_settle_event</code> append the fixture's owed run names</em>,
+  applied to a scratch extraction of <code>85f888a7</code>:
+  <code>5 failed, 15 passed</code>, <code>EXIT=1</code>. The failing ids are
+  the kept owed-set cases — both cases of <code>test_follow_drain_line.py</code>,
+  <code>test_the_pane_carries_counts_not_names.py::test_a_settle_with_outstanding_runs_prints_no_line_and_still_emits</code>,
+  and <code>test_a_pane_settles_when_no_work_is_live.py::test_a_settle_prints_no_line_even_with_an_outstanding_run</code>
+  plus <code>::test_a_child_settles_once_its_session_work_drains</code>.</p>
+  <p>The 61 files importing <code>reckon.crew.obligations</code> run at head:
+  <code>1 failed, 368 passed</code>. The failure,
+  <code>test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module</code>,
+  also fails at base <code>c4aeb257</code> run alone (<code>1 failed</code>,
+  <code>EXIT=1</code>), so this node adds no failure against the base revision.
+  <code>ruff check</code> and <code>ruff format --check</code> report nothing on
+  the staged paths.</p>
+</section>
+</body>
+</html>

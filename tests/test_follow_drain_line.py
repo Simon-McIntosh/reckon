@@ -15,7 +15,7 @@ from a run the pane saw working.
 
 The set is the owning session's runs alone. A peer session's working run in the
 same fixture is work this pane was never asked to watch, so it neither holds the
-pane open nor appears in the derivation.
+pane open nor appears in the row this pane leaves behind.
 """
 
 from __future__ import annotations
@@ -31,7 +31,6 @@ import pytest
 from reckon import crew
 from reckon import crew_follow_commands as follow_commands
 from reckon.crew import follow_checkpoint, runs
-from reckon.crew import needs_you as needs_you_module
 
 PROJECT = "drain-proj"
 SESSION = "drain-owner"
@@ -271,12 +270,9 @@ def test_a_drain_with_an_outstanding_run_prints_no_line(
         assert len(settles) == 1, settles
         assert settles[0]["line"] == "", settles[0]["line"]
         assert RUN_MINE not in json.dumps(settles[0]), settles[0]
-
-        # The run the settle row used to name is the one the derivation still
-        # holds, and the peer's is work this pane was never asked to watch.
-        outstanding = needs_you_module.needs_you_runs(PROJECT, session=SESSION)
-        assert [row["run_id"] for row in outstanding] == [RUN_MINE], outstanding
-        assert outstanding[0]["kind"] == "unpromoted", outstanding
+        # The peer's run is work this pane was never asked to watch, and the
+        # settle row names neither it nor the run its session still owes.
+        assert RUN_PEER not in json.dumps(settles[0]), settles[0]
 
 
 def test_a_drain_after_the_run_is_promoted_prints_no_line(
@@ -298,4 +294,4 @@ def test_a_drain_after_the_run_is_promoted_prints_no_line(
         settles = _drain(clock=clock, then=lambda: _promote(RUN_MINE))
         assert len(settles) == 1, settles
         assert settles[0]["line"] == "", settles[0]["line"]
-        assert needs_you_module.needs_you_runs(PROJECT, session=SESSION) == []
+        assert RUN_MINE not in json.dumps(settles[0]), settles[0]

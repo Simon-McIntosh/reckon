@@ -8,15 +8,11 @@ session host where every printed line starts a coordinator turn. It is gone, and
 these cases hold it gone: however long the set holds, however it drains, and in
 an arming that passes no flag at all.
 
-The derivation behind it survives, because the counters and the obligations list
-read it. So the cases here assert two things together: the stream emits nothing,
-and the derivation still names exactly the runs the coordinator owes -- the
-owning session's, never a peer's -- with the age and the stored-review mark a
-reader of a row needs.
-
-The set is the owning session's runs alone. A peer's blocked run in the same
-fixture must never appear: the reader can do nothing about it, and naming it
-would send a coordinator to a run another session already owns.
+The runs a coordinator owes are named by the obligations list, never by a
+sentence composed for the pane. The set is the owning session's runs alone: a
+peer's blocked run in the same fixture must never reach a row this pane prints,
+because the reader can do nothing about it, and naming it would send a
+coordinator to a run another session already owns.
 """
 
 from __future__ import annotations
@@ -30,7 +26,6 @@ import pytest
 
 from reckon import crew
 from reckon import crew_follow_commands as follow
-from reckon.crew import needs_you as need_module
 from reckon.crew import runs
 
 PROJECT = "needs-proj"
@@ -106,17 +101,6 @@ def _stamp_seconds_ago(seconds: float) -> str:
 
     moment = datetime.fromtimestamp(time.time() - seconds, tz=UTC)
     return moment.isoformat(timespec="seconds").replace("+00:00", "Z")
-
-
-def _write_stored_review(project: str, run_id: str) -> None:
-    """File a staging review record against a reviewed run, as a reviewer does."""
-    from reckon.crew import review as review_module
-
-    store = review_module.review_store_root() / project
-    store.mkdir(parents=True, exist_ok=True)
-    (store / f"{run_id}.json").write_text(
-        json.dumps({"reviewed_run_id": run_id, "verdict": "pass"})
-    )
 
 
 class _Clock:
@@ -252,8 +236,9 @@ def test_an_empty_set_is_never_announced(home):
 def test_a_draining_set_prints_nothing(home):
     """A set that empties after the pane was shown it full prints nothing.
 
-    A run is owed, then promoted: the derivation drops it, and the stream never
-    carried a sentence about it either way.
+    The fixture's delivered run is the one its owner owes, and it is promoted
+    mid-arming. The stream carries no sentence about the set either way: the
+    names live in the obligations list.
     """
     clock = _Clock()
     events: list[dict] = []
@@ -269,14 +254,12 @@ def test_a_draining_set_prints_nothing(home):
             manifest_status="complete",
         )
         _advance(clock, 2.0)
-        assert [
-            row["run_id"]
-            for row in need_module.needs_you_runs(PROJECT, session=SESSION)
-        ] == ["r-own"]
+        assert _needs_you_lines(events) == [], _needs_you_lines(events)
 
+        # The run is promoted: its pointer is unlinked, and the stream stays
+        # silent about the set it left behind.
         crew.pointer_path("r-own").unlink()
         _advance(clock, 2.0)
-        assert need_module.needs_you_runs(PROJECT, session=SESSION) == []
         assert _needs_you_lines(events) == [], _needs_you_lines(events)
 
         # And then nothing, for as long as the fleet stays quiet.
@@ -322,138 +305,3 @@ def test_an_arming_with_no_flag_carries_no_line(home):
         stop.set()
         thread.join(timeout=2.0)
         assert not thread.is_alive()
-
-
-def test_the_rows_and_the_fleet_counters_agree(home):
-    """The rows the derivation returns tally with the counters beside them.
-
-    Both halves come from :mod:`reckon.crew.recovery_watch`: ownership from its
-    partition and the working, blocked and unpromoted figures from its counter.
-    This asserts that the two readers still agree about the same fixture rather
-    than each about itself.
-    """
-    _write_pointer(
-        home,
-        "r-own-unpromoted",
-        "own-unpromoted",
-        session=SESSION,
-        manifest_status="complete",
-    )
-    _write_pointer(
-        home,
-        "r-own-blocked",
-        "own-blocked",
-        session=SESSION,
-        manifest_status="blocked",
-    )
-    _write_pointer(
-        home, "r-own-work", "own-node", session=SESSION, manifest_status="running"
-    )
-    _write_pointer(
-        home, "r-peer-block", "peer-block-node", session=PEER, manifest_status="blocked"
-    )
-
-    rows, counts = need_module.needs_you_rows(PROJECT, session=SESSION)
-    tallies = {"unpromoted": 0, "blocked": 0}
-    for row in rows:
-        tallies[str(row["kind"])] += 1
-
-    assert tallies["unpromoted"] == counts["unpromoted"], (rows, counts)
-    assert tallies["blocked"] == counts["blocked"], (rows, counts)
-    assert counts["working"] == 1, (rows, counts)
-    assert not any(row["node"] == "peer-block-node" for row in rows), rows
-
-
-def test_a_run_with_no_dated_transition_ages_from_its_creation(home):
-    """A run the stream never dated must still age, and lead by that age.
-
-    A stall writes no transition, and a run that has delivered then stopped has
-    no ``blocked`` row to find, so the state-age lookup comes back empty and the
-    row falls back to the run's own creation instant. Aged from the wrong field
-    every such row reads ``0m`` and sorts to the bottom of its group by node
-    name, which is precisely the row a coordinator is meant to see first.
-    """
-    _write_pointer(
-        home,
-        "r-own-recent",
-        "own-recent",
-        session=SESSION,
-        manifest_status="complete",
-        created_at=_stamp_seconds_ago(300),
-    )
-    _write_pointer(
-        home,
-        "r-own-old",
-        "own-old",
-        session=SESSION,
-        manifest_status="complete",
-        created_at=_stamp_seconds_ago(HELD_SECONDS),
-    )
-
-    rows, _counts = need_module.needs_you_rows(PROJECT, session=SESSION)
-
-    assert [row["node"] for row in rows] == ["own-old", "own-recent"], rows
-    assert rows[0]["age_seconds"] >= HELD_SECONDS - 60, rows[0]
-    assert rows[1]["age_seconds"] < 600, rows[1]
-
-
-def test_a_stored_review_marks_its_run(home):
-    """An unpromoted run whose review already landed is marked ``reviewed``.
-
-    Promotion unlinks the pointer and the session it captured, so a review read
-    after the fact can no longer be answered by resuming its author; the mark is
-    the live window's only warning that the chance to resume is going.
-    """
-    _write_pointer(
-        home,
-        "r-reviewed",
-        "reviewed-node",
-        session=SESSION,
-        manifest_status="complete",
-    )
-    _write_stored_review(PROJECT, "r-reviewed")
-
-    rows, _counts = need_module.needs_you_rows(PROJECT, session=SESSION)
-
-    assert [row["node"] for row in rows] == ["reviewed-node"], rows
-    assert rows[0]["reviewed"] is True, rows[0]
-
-
-def test_the_derivation_names_the_owning_sessions_runs_only(home):
-    """One fixture, one reader: the derivation names the owed set and no peer's run."""
-    _write_pointer(
-        home,
-        "r-own-unpromoted",
-        "own-unpromoted",
-        session=SESSION,
-        manifest_status="complete",
-    )
-    _write_pointer(
-        home, "r-own-work", "own-node", session=SESSION, manifest_status="running"
-    )
-    _write_pointer(
-        home,
-        "r-peer-block",
-        "peer-block-node",
-        session=PEER,
-        manifest_status="blocked",
-    )
-
-    clock = _Clock()
-    events: list[dict] = []
-    stop = threading.Event()
-    thread = _drive_at_own_pace(events, stop, clock, session=SESSION)
-    try:
-        time.sleep(0.2)
-        _advance(clock, 20 * 60, step=10.0)
-    finally:
-        stop.set()
-        thread.join(timeout=2.0)
-        assert not thread.is_alive()
-
-    derived_rows, _counts = need_module.needs_you_rows(PROJECT, session=SESSION)
-    assert {str(row["node"]) for row in derived_rows} == {"own-unpromoted"}, (
-        derived_rows
-    )
-    # The stream names no set at all: the names live in the obligations list.
-    assert _needs_you_lines(events) == [], _needs_you_lines(events)
