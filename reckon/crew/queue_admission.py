@@ -2457,9 +2457,9 @@ def _wait_state(
         if not project_for_ref:
             if issues is not None:
                 issues.append(
-                    f"{WAIT_UNRESOLVABLE_PREFIX} {ref} — no project holds this "
-                    "run, so the landing that would release this request can "
-                    "never be read"
+                    f"{WAIT_UNRESOLVABLE_PREFIX} {ref} — the wait names no "
+                    "project and no project holds this run, so the landing "
+                    "that would release this request can never be read"
                 )
             return PENDING
         return _request_state(
