@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/obligations.py:638",
+    "reckon/crew/resumption.py:1971",
+    "reckon/crew/query.py:422",
+    "reckon/crew/recovery_watch.py:312",
+    "reckon/crew/runs.py:3904",
+    "reckon/serve.py:899"
+  ],
+  "completed_at": "2026-11-02T12:18:54.018Z",
+  "dispatched_at": "2026-11-02T12:09:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "549",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_scheduler_job_alive(...) is True` lets the helper's own None fall through to the producer-gone reading, so an unreadable scheduler counts as no job alive, contradicting the docstrings at line 505 and line 545 that say such an answer never contributes; a squeue-probe run whose query fails is then called producer-gone on two of the three clauses the plan requires."
+    },
+    {
+      "file": "tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py",
+      "line": "515",
+      "severity": "non-blocking",
+      "text": "non-blocking: both assertions pass absolute epoch seconds to _stamp instead of NOW_SECONDS minus the age, so they name 1970 timestamps that cannot appear in times and cannot fail; the 840-second-old entry they name is in fact kept by the prune, so a corrected assertion here would have to assert presence, not absence."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": "471",
+      "severity": "non-blocking",
+      "text": "non-blocking: when the probe is answering but the pointer carries no wait_probe_history, the stillness clock falls back to the wait's age, which the plan permits only for a probe that never answered, so a run restored from an older pointer is read still-by-construction on evidence that was never taken."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit from 67d1e26d0b to 97c7bcf2a5; the classifier gains a scheduler read, a stillness clock and the producer-gone branch, resumption.sweep writes and age-prunes wait_probe_history, and obligations.py builds the duty and its fields.",
+    "done_when": "the done_when names tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py and the section's behaviours; logs/gate-after.log records 9 passed EXIT=0 and logs/negative-controls.log records five mutations each failing its named arm, while the done_when's ruff clause is claimed with no ruff log recorded (re-run clean at head by this review).",
+    "goal": "the node goal is to make a waiting run whose producer is gone an obligation for its session; reckon/crew/recovery_classification.py:1432 adds the producer-gone branch and reckon/crew/obligations.py:781 turns it into a run-producer-gone duty naming the probe, its stuck value, the terminal states and the stillness.",
+    "manifest": "read; status complete, commits 031502566c/fcf9bbb69c/97c7bcf2a5, baseline_suite records exit 4 with no test file at the base revision, after_suite records 9 passed, and negative_control_log names a log holding five mutations.",
+    "write_paths": "read all seven declared paths; the diff touches four of them, reckon/crew/recovery_classification.py, reckon/crew/resumption.py, reckon/crew/obligations.py and the new test, plus the always-permitted landing fragment, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "logs/negative-controls.log shows five recorded mutations each reddening its named case, but tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py:515 can never fail and the scheduler clause is exercised only with _scheduler_job_alive monkeypatched at line 340.",
+    "evidence": "tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py is named by the done_when and its run is recorded as 9 passed in logs/gate-after.log, but the done_when's ruff clause has no recorded run in the manifest.",
+    "fit": "the helpers at reckon/crew/recovery_classification.py:400-560 follow the module's constant-and-docstring idiom and introduce no plan label, ticket reference or version name.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1432 raises the producer-gone reading and reckon/crew/obligations.py:781 turns it into a duty with the resume-or-discard command, which is the goal statement delivered.",
+    "reuse": "a capability search found no owner of scheduler-job liveness \u2014 reckon/crew/fleet_node.py:340 allocation_shape reads a job's shape and reckon/crew/placement.py:97 reads its state \u2014 and the plan mandates this helper, so nothing is forked.",
+    "scope_discipline": "every path in the five-file diff at 67d1e26d0b..97c7bcf2a5 lies inside the declared write paths, including the landing fragment under docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to make a waiting run whose producer is gone an obligation for its session; reckon/crew/recovery_classification.py:1432 adds the producer-gone branch and reckon/crew/obligations.py:781 turns it into a run-producer-gone duty naming the probe, its stuck value, the terminal states and the stillness.\nVERDICT done_when: the done_when names tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py and the section's behaviours; logs/gate-after.log records 9 passed EXIT=0 and logs/negative-controls.log records five mutations each failing its named arm, while the done_when's ruff clause is claimed with no ruff log recorded (re-run clean at head by this review).\nVERDICT write_paths: read all seven declared paths; the diff touches four of them, reckon/crew/recovery_classification.py, reckon/crew/resumption.py, reckon/crew/obligations.py and the new test, plus the always-permitted landing fragment, and nothing outside them.\nVERDICT manifest: read; status complete, commits 031502566c/fcf9bbb69c/97c7bcf2a5, baseline_suite records exit 4 with no test file at the base revision, after_suite records 9 passed, and negative_control_log names a log holding five mutations.\nVERDICT diff: read commit by commit from 67d1e26d0b to 97c7bcf2a5; the classifier gains a scheduler read, a stillness clock and the producer-gone branch, resumption.sweep writes and age-prunes wait_probe_history, and obligations.py builds the duty and its fields.\nCALL_SITES: reckon/crew/obligations.py:638, reckon/crew/resumption.py:1971, reckon/crew/query.py:422, reckon/crew/recovery_watch.py:312, reckon/crew/runs.py:3904, reckon/serve.py:899\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1432 raises the producer-gone reading and reckon/crew/obligations.py:781 turns it into a duty with the resume-or-discard command, which is the goal statement delivered.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py is named by the done_when and its run is recorded as 9 passed in logs/gate-after.log, but the done_when's ruff clause has no recorded run in the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the five-file diff at 67d1e26d0b..97c7bcf2a5 lies inside the declared write paths, including the landing fragment under docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/.\nSCORE durability: 15\nJUSTIFICATION durability: logs/negative-controls.log shows five recorded mutations each reddening its named case, but tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py:515 can never fail and the scheduler clause is exercised only with _scheduler_job_alive monkeypatched at line 340.\nSCORE fit: 19\nJUSTIFICATION fit: the helpers at reckon/crew/recovery_classification.py:400-560 follow the module's constant-and-docstring idiom and introduce no plan label, ticket reference or version name.\nSCORE reuse: 18\nJUSTIFICATION reuse: a capability search found no owner of scheduler-job liveness \u2014 reckon/crew/fleet_node.py:340 allocation_shape reads a job's shape and reckon/crew/placement.py:97 reads its state \u2014 and the plan mandates this helper, so nothing is forked.\nFINDING reckon/crew/recovery_classification.py:549 non-blocking: `_scheduler_job_alive(...) is True` lets the helper's own None fall through to the producer-gone reading, so an unreadable scheduler counts as no job alive, contradicting the docstrings at line 505 and line 545 that say such an answer never contributes; a squeue-probe run whose query fails is then called producer-gone on two of the three clauses the plan requires.\nFINDING tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py:515 non-blocking: both assertions pass absolute epoch seconds to _stamp instead of NOW_SECONDS minus the age, so they name 1970 timestamps that cannot appear in times and cannot fail; the 840-second-old entry they name is in fact kept by the prune, so a corrected assertion here would have to assert presence, not absence.\nFINDING reckon/crew/recovery_classification.py:471 non-blocking: when the probe is answering but the pointer carries no wait_probe_history, the stillness clock falls back to the wait's age, which the plan permits only for a probe that never answered, so a run restored from an older pointer is read still-by-construction on evidence that was never taken.",
+  "review_run_id": "r-20261102T120815240747-review-of-a-wait-whose-producer-is-gone-is-an-obligation-97c7bcf2a569",
+  "reviewed_base_sha": "67d1e26d0b8df8176276478aae632d5558e83357",
+  "reviewed_head_sha": "97c7bcf2a5696fae692b2157c124d454603383db",
+  "reviewed_run_id": "r-20261102T112937256651-a-wait-whose-producer-is-gone-is-an-obligation",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_note": "derived from the reviewed run's own arms: logs/gate-before.log ends 'no tests ran in 0.00s' with EXIT=4 (the node's only test file does not exist at base 67d1e26d0b, so the base arm records no failure ids), and logs/gate-after.log ends '9 passed' with EXIT=0; set difference of failing ids is empty.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T12:17:05.170441+00:00",
+  "total": 107
+}
