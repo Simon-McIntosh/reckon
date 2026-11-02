@@ -51,6 +51,7 @@ from reckon import (
     flight as flight,
     ledger as ledger,
 )
+from reckon.calibration import calibration_configuration_key
 from reckon.figures import rasterise_svg
 from reckon._plan_html import (
     _strip_tags as _strip_tags,
@@ -133,6 +134,7 @@ from reckon.crew.routing import (
     _budget_verdict as _budget_verdict,
     _competence_verdict as _competence_verdict,
     _context_fit_verdict as _context_fit_verdict,
+    _context_refusal as _context_refusal,
     _create_worktree as _create_worktree,
     _disposable_member_id as _disposable_member_id,
     _fleet_script as _fleet_script,
@@ -573,43 +575,6 @@ def _gating_input_window(resolution: DispatchPlan, repo: Path) -> int | None:
     return int(verdict["window_tokens"])
 
 
-def _candidate_window(candidate: Mapping[str, Any]) -> int | None:
-    """A candidate's gating input window, or ``None`` when it declares none."""
-    context = candidate.get("context")
-    if not isinstance(context, Mapping):
-        return None
-    window = context.get("window_tokens")
-    try:
-        figure = int(window) if window is not None else None
-    except (TypeError, ValueError):
-        return None
-    return figure if figure and figure > 0 else None
-
-
-def _widest_context_candidate(
-    candidates: Iterable[Mapping[str, Any]],
-) -> Mapping[str, Any] | None:
-    """The fitting candidate with the largest usable input window.
-
-    A candidate carrying any reason is excluded — for a review, that is where
-    the role's withdrawn lanes have already been removed. A candidate declaring
-    no window is unbounded and ranks above every declared window, and ties break
-    by backend name so two equally wide lanes resolve the same way on every
-    call.
-    """
-
-    def rank(candidate: Mapping[str, Any]) -> tuple[int, int, str]:
-        window = _candidate_window(candidate)
-        return (
-            0 if window is None else 1,
-            -(window or 0),
-            str(candidate.get("backend") or ""),
-        )
-
-    fitting = [candidate for candidate in candidates if not candidate.get("reasons")]
-    return min(fitting, key=rank) if fitting else None
-
-
 def _router_free_resolution(
     *,
     resolved_route: str,
@@ -633,6 +598,36 @@ def _router_free_resolution(
     if resolved_route == "picker":
         return str((picker_selection or {}).get("action") or "") == "fallback"
     return True
+
+
+def _oversized_context_refusal(
+    resolution: DispatchPlan, repo: Path, request_estimate: int
+) -> dict[str, Any]:
+    """Build the context refusal both a dispatch and its preview answer with."""
+    context = _context_fit_verdict(resolution=resolution, repo=repo)
+    if context is None:
+        raise CrewError(f"backend {resolution.backend!r} has no context window")
+    window = int(context["window_tokens"])
+    if request_estimate > window and context["estimated_tokens"] <= window:
+        context = {
+            **context,
+            "allowed": False,
+            "reason": "context-window-exceeded",
+            "estimated_tokens": request_estimate,
+            "shortfall_tokens": request_estimate - window,
+        }
+    agent = _agent_configuration(
+        resolution.backend, resolution.launch, resolution.backend_settings
+    )
+    refusal = _context_refusal(
+        context,
+        agent_key=calibration_configuration_key({"agent": agent}),
+        nested_context=True,
+    )
+    refusal["cache_status"] = shared_verdict_inputs(resolution.project, repo)[
+        "cache_status"
+    ]
+    return refusal
 
 
 def _reroute_oversized_request(
@@ -696,18 +691,10 @@ def _reroute_oversized_request(
                 authority=authority,
             )
         ]
-    chosen = _widest_context_candidate(candidates)
+    chosen = picker_snapshot.widest_fitting_candidate(candidates, resolution.backend)
     if chosen is None:
-        # Refuse through the same competence verdict the dispatch's own check
-        # builds, so the real refusal and the dry run that previewed it carry one
-        # payload rather than two descriptions of the same shortfall.
-        refusal = _competence_verdict(resolution=resolution, project=project, repo=repo)
-        if not refusal.get("allowed"):
-            raise CompetenceLimit(refusal)
-        return resolution, None
+        raise CompetenceLimit(_oversized_context_refusal(resolution, repo, estimate))
     chosen_backend = str(chosen.get("backend") or "")
-    if not chosen_backend or chosen_backend == resolution.backend:
-        return resolution, None
     # Re-resolve onto the chosen lane rather than patching the plan, so the new
     # backend gets its own execution fit, sandbox and write-path checks instead
     # of inheriting the oversized lane's. The caller's own time budget and write
@@ -3889,8 +3876,68 @@ from .dispatch_plan import (  # noqa: E402
     _resolved_wave_id as _resolved_wave_id,
     _session_unreconciled_refusal as _session_unreconciled_refusal,
     open_endedness_score as open_endedness_score,
-    plan_dispatch as plan_dispatch,
+    plan_dispatch as _raw_plan_dispatch,
 )
+
+
+def plan_dispatch(**kwargs: Any) -> DispatchPlan:
+    """Resolve a preview through the same context placement as a real dispatch.
+
+    The CLI requests live-conflict reporting for its preview. That report asks
+    whether the request can actually be placed, including a picker fallback
+    whose resolved lane cannot hold the request. Ordinary resolution callers
+    keep the side-effect-free plan verdict.
+    """
+    node = kwargs["node"]
+    caller_time_budget = node.time_budget
+    caller_write_paths = list(node.write_paths)
+    resolution = _raw_plan_dispatch(**kwargs)
+    if not kwargs.get("report_live_conflicts") or not resolution.validation.ok:
+        return resolution
+    repo = kwargs.get("repo")
+    if repo is None or not _router_free_resolution(
+        resolved_route=resolution.route,
+        picker_selection=kwargs.get("picker_selection"),
+        local=bool(kwargs.get("local")),
+        backend_override=kwargs.get("backend_override"),
+        default_backend_override=kwargs.get("default_backend_override"),
+        member=str(kwargs.get("member") or ""),
+    ):
+        return resolution
+    project = str(kwargs.get("project") or "")
+    rerouted, _fallback = _reroute_oversized_request(
+        resolution=resolution,
+        node=node,
+        config=kwargs["config"],
+        project=project,
+        repo=Path(repo).resolve(),
+        authority=resolution.authority,
+        session=str(kwargs.get("session") or ""),
+        comment="",
+        orchestrator_assessment=None,
+        records=None,
+        verdict_inputs=None,
+        budget_snapshot=None,
+        snapshot_candidates=(),
+        reroute_kwargs={
+            "locked_decisions": kwargs.get("locked_decisions", ()),
+            "peer_scopes": kwargs.get("peer_scopes"),
+            "base": kwargs.get("base", "HEAD"),
+            "execution_override": kwargs.get("execution_override", False),
+            "orchestrator_lane_reason": kwargs.get("orchestrator_lane_reason"),
+            "run_id": resolution.run_id,
+            "allow_unreviewed_plan": kwargs.get("allow_unreviewed_plan", False),
+            "repairs": kwargs.get("repairs", ""),
+            "report_live_conflicts": True,
+            "watch_required": kwargs.get("watch_required", False),
+            "watch_override": kwargs.get("watch_override", False),
+            "accept_directory_claim": kwargs.get("accept_directory_claim", False),
+        },
+        caller_time_budget=caller_time_budget,
+        caller_write_paths=caller_write_paths,
+    )
+    return rerouted
+
 
 from .dispatch_sections import (  # noqa: E402
     DONE_WHEN_PLAN_TEXT_SPAN_WORDS as DONE_WHEN_PLAN_TEXT_SPAN_WORDS,

@@ -31,9 +31,18 @@ LOCAL = "clive"
 CODEX = "beta"
 PROJECT = "proj"
 SESSION = "session"
-# The node's context estimate, in the units the fit check weighs against each
-# lane's declared usable input window.
-ESTIMATE = 240_000
+# A node is oversized when its own brief loads more than a lane's window, so the
+# brief declares one input big enough that the estimate routing measures -- the
+# standing chain plus that file -- clears the windows these tests declare. The
+# file is sized rather than the estimate stubbed, because a stubbed estimate
+# answers the preview and the launch from two different figures, and the two
+# paths must agree on the placement.
+CORPUS_BYTES = 700_000
+DONE_WHEN = (
+    "the declared input corpus.txt is read; pytest -q "
+    "tests/test_a_request_too_large_for_local_is_never_placed_there.py reports "
+    "four placement cases"
+)
 
 WINDOWS = {
     "alpha": 200_000,
@@ -44,7 +53,9 @@ WINDOWS = {
 
 @pytest.fixture()
 def dispatch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    return backend_tests.dispatch_repo.__wrapped__(tmp_path, monkeypatch)
+    repo = backend_tests.dispatch_repo.__wrapped__(tmp_path, monkeypatch)
+    (repo / "corpus.txt").write_text("x" * CORPUS_BYTES, encoding="utf-8")
+    return repo
 
 
 @pytest.fixture()
@@ -52,11 +63,12 @@ def scan(monkeypatch: pytest.MonkeyPatch) -> None:
     """A candidate scan whose lanes are measured on their declared windows.
 
     The scan's own structure — the per-backend fit, the exclusion reasons and
-    the context block — runs for real; only the facts that need a live fleet
-    (serving probes, the lane gate, the account view) and the node's estimate
-    are fixed, so a test places the estimate against a chosen window.
+    the context block — runs for real, and so do routing's context-fit and
+    competence verdicts: the node carries a genuinely oversized input, so every
+    lane is weighed on the figure the request itself measures. Only the facts
+    that need a live fleet (serving probes, the lane gate, the account view) are
+    fixed.
     """
-    monkeypatch.setattr(snapshot, "estimated_context_tokens", lambda *a, **k: ESTIMATE)
     monkeypatch.setattr(
         snapshot, "_dispatch_lane_gate", lambda backend: {"state": "open"}
     )
@@ -76,41 +88,6 @@ def scan(monkeypatch: pytest.MonkeyPatch) -> None:
     # about which lanes a spawned dispatch can reach, not about their windows,
     # so it is lifted here and every lane is weighed on its window alone.
     monkeypatch.setattr(snapshot.recovery, "IN_HARNESS_LAUNCH", "test-no-lane")
-
-    def fit(*, resolution, repo):
-        window = resolution.backend_settings.get("usable_input_window")
-        if window is None:
-            return None
-        return {"window_tokens": window, "estimated_tokens": ESTIMATE}
-
-    def verdict(*, resolution, project, repo, verdict_inputs=None):
-        window = resolution.backend_settings.get("usable_input_window")
-        if window is None:
-            return {"allowed": True}
-        allowed = window >= ESTIMATE
-        reason = "within-context-window" if allowed else "context-window-exceeded"
-        return {
-            "allowed": allowed,
-            "reason": reason,
-            "context": {
-                "allowed": allowed,
-                "window_tokens": window,
-                "estimated_tokens": ESTIMATE,
-                "reason": reason,
-            },
-            "window_tokens": window,
-            "estimated_tokens": ESTIMATE,
-            "shortfall_tokens": max(0, ESTIMATE - window),
-            "recommendation": "split-the-node",
-        }
-
-    monkeypatch.setattr(snapshot.routing, "_competence_verdict", verdict)
-    # The dispatcher binds these names at import, so a patch on the router's
-    # module does not reach its calls; the same verdicts are bound on the
-    # dispatcher itself.
-    monkeypatch.setattr(dispatch_module, "_context_fit_verdict", fit)
-    monkeypatch.setattr(dispatch_module, "_competence_verdict", verdict)
-    monkeypatch.setattr(dispatch_plan, "_competence_verdict", verdict)
 
 
 def _lane_document(path: Path, *, slots: float) -> Path:
@@ -166,7 +143,7 @@ def _node(name: str) -> TaskNode:
         section="dispatch",
         role="implement",
         spec_level="exact",
-        done_when="pytest -q tests/test_a_request_too_large_for_local_is_never_placed_there.py reports four placement cases",
+        done_when=DONE_WHEN,
         write_paths=["result.json"],
         time_budget="20m",
     )
@@ -200,11 +177,11 @@ def _stub_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _invoke(repo: Path, *, node: str, dry_run: bool = False):
-    arguments = [
-        *backend_tests._arguments(repo, node=node, dry_run=dry_run),
-        "--route",
-        "picker",
-    ]
+    arguments = backend_tests._arguments(repo, node=node, dry_run=dry_run)
+    # The shared argument list carries a brief that declares no input; this
+    # file's nodes are oversized because their brief loads one.
+    arguments[arguments.index("--done-when") + 1] = DONE_WHEN
+    arguments = [*arguments, "--route", "picker"]
     if not dry_run:
         arguments.append("--no-watch")
     return CliRunner().invoke(cli.main, arguments)
@@ -297,15 +274,30 @@ def test_a_request_no_permitted_lane_holds_refuses_with_its_shortfall(
     payload = _payload(result)
 
     assert result.exit_code != 0
-    # The refusal names the distance to the widest window any lane declares, so
-    # the reader is told how much the node has to shrink by rather than which
-    # lane happened to be tried first.
-    assert str(ESTIMATE - 230_144) in payload["detail"]
-    assert "230144" in payload["detail"]
+    competence = payload["competence"]
+    # The refusal names the distance to the lane's own window, so the reader is
+    # told how much the node has to shrink by rather than which lane happened to
+    # be tried first.
+    assert competence["estimated_tokens"] > competence["window_tokens"]
+    assert str(competence["shortfall_tokens"]) in payload["detail"]
+    assert str(competence["window_tokens"]) in payload["detail"]
     assert runs.list_live(project=PROJECT, phase="queued") == []
 
-    # The refusal is the verdict the dispatch's own competence check builds, so
-    # the preview that ran before it answers with the same payload.
+    # The preview measures the same node against the same lane, so it refuses
+    # with the same payload rather than a second description of the shortfall.
     dry_payload = _payload(_invoke(dispatch_repo, node="unfittable", dry_run=True))
     assert dry_payload["error"] == payload["error"]
-    assert dry_payload["competence"] == payload["competence"]
+    # The preview answers from the resolution's competence verdict, which carries
+    # the same fit check as its context block; the live dispatch refuses from
+    # that fit check itself. The two must name the same estimate, window and
+    # shortfall, or the preview would be answering a different question from the
+    # dispatch it previews.
+    dry_competence = dry_payload["competence"]
+    for field in ("estimated_tokens", "window_tokens", "shortfall_tokens"):
+        assert dry_competence[field] == payload["competence"][field]
+    assert (
+        dry_competence["context"]["shortfall_tokens"]
+        == (  # type: ignore[index]
+            payload["competence"]["shortfall_tokens"]
+        )
+    )

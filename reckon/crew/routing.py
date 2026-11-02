@@ -3614,6 +3614,42 @@ def _context_refusal_detail(context_fit: Mapping[str, Any]) -> str:
     )
 
 
+def _context_refusal(
+    context_fit: Mapping[str, Any],
+    *,
+    agent_key: str | None = None,
+    nested_context: bool = False,
+) -> dict[str, Any]:
+    """The fields a context-window-exceeded refusal answers with.
+
+    Two readings refuse on this measure: the competence verdict, which knows the
+    lane's agent configuration and keeps the whole fit verdict it was built from,
+    and a placement that has only the fit check's own figures. Both state the
+    same estimate, window and shortfall and the same contributing-file detail,
+    so the builder takes those two extras as options rather than letting either
+    reader assemble a second description of the refusal.
+    """
+
+    payload: dict[str, Any] = {
+        "allowed": False,
+        "reason": "context-window-exceeded",
+        "detail": _context_refusal_detail(context_fit),
+        "estimated_tokens": context_fit["estimated_tokens"],
+        "window_tokens": context_fit["window_tokens"],
+        "shortfall_tokens": context_fit["shortfall_tokens"],
+        "recommendation": format_refusal(
+            "D08",
+            "split the node or route it to a backend with at least "
+            f"{context_fit['estimated_tokens']} usable input tokens",
+        ),
+    }
+    if agent_key is not None:
+        payload["agent_key"] = agent_key
+    if nested_context:
+        payload["context"] = dict(context_fit)
+    return payload
+
+
 def _docs_scan_inputs(docs: Path) -> tuple[list[str], list[str]]:
     """Return the docs-relative directories and files a resource scan reads.
 
@@ -3861,19 +3897,11 @@ def _competence_verdict(
         if context_fit["allowed"]:
             return verdict
         verdict.update(
-            {
-                "allowed": False,
-                "reason": "context-window-exceeded",
-                "detail": _context_refusal_detail(context_fit),
-                "estimated_tokens": context_fit["estimated_tokens"],
-                "window_tokens": context_fit["window_tokens"],
-                "shortfall_tokens": context_fit["shortfall_tokens"],
-                "recommendation": format_refusal(
-                    "D08",
-                    "split the node or route it to a backend with at least "
-                    f"{context_fit['estimated_tokens']} usable input tokens",
-                ),
-            }
+            _context_refusal(
+                context_fit,
+                agent_key=verdict.get("agent_key"),
+                nested_context=True,
+            )
         )
         # ``CompetenceLimit`` reads its message from ``reason``: a token refusal
         # names the window it exceeded, so no neutral-hour placeholder is
