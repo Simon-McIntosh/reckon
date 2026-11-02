@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T20:50:41.227Z",
+  "dispatched_at": "2026-11-02T20:42:11Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:86",
+      "id": "reasoning-1",
+      "reason": "as written the node either cannot reproduce its stated base figure or writes a test that passes on the unfixed code, and if it fails it reports a base figure a reviewer cannot reconcile with \u00a71's own \"18 calls and 30 s\".",
+      "text": "\u00a74's premise \"each ref rebuilds the identity index\" and its done-when \"builds the index once \u2026 against 20 times on the base revision\" name a counter the code cannot produce: `_directory_identity_index` (reckon/resources.py:832-856) returns from `_INDEX_MEMO` on a matching listing and rebuilds only when the listing moves, so a *build* counter reads 1 on the base revision, while a *call* counter reads 20 at both arms because the head also calls it once per ref and answers from the scope \u2014 the measure compares a build against calls and cannot fail",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:98",
+      "id": "done_when-1",
+      "reason": "a dispatch-scope regression would pass \u00a76's gate silently, so the section can be closed on a verdict that proves neither of its two arms fires.",
+      "text": "\u00a76 declares three measures then lists four, and the only negative control offered (\"restores the plan and refs in the pass key\") governs the readiness-pass arm alone, leaving the `crew dispatch --dry-run` stat budget \u2014 the dispatch half of \u00a71's measured target \u2014 with no control at all",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:61",
+      "id": "done_when-2",
+      "reason": "the node can satisfy the gate while leaving `edit_plan` \u2014 the 36\u201352 s operation in \u00a71's table with a 60 s deadline it overruns \u2014 outside the scope, and the deliverable's own sentence about exposing \"one public context manager\" describes `discovery_file_scope`, which already exists.",
+      "text": "\u00a72's deliverable requires every MCP tool (`read_plan`, `edit_plan`, `roadmap`, `audit`, `crew`) to enter the request scope once, but its done-when measures only `read_plan`; and `roadmap` already enters `metadata_index.discovery_file_scope` (reckon/mcp.py:2224), so at least one named tool's entry is pre-existing rather than new",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:128",
+      "id": "done_when-3",
+      "reason": "\u00a77 is the section that decides whether \u00a72\u2013\u00a76 actually delivered, and an uncontrolled measurement there converts a missed target into a pass.",
+      "text": "\u00a77's done-when declares no negative control: it asserts \"every operation under five seconds, cold and warm\" and names no falsifying observation, so a session that times an already-cold cache, or times the head only, produces a green log that no mutation ever has to fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:90",
+      "id": "reasoning-2",
+      "reason": "\u00a75's done-when tests a distributed fixture's undeclared-star case only, so a legacy mounted tree would lose the warning with no measure able to show it, and the section needs either a legacy fallback or an explicit statement that legacy stores are out of scope.",
+      "text": "\u00a75 moves north-star declaration from `compose_project_state` to the project resource, but that resource is the distributed-mode source only (`reckon/project_state.py:1583`); `read_project_derivations` (line 1589) branches on `project_state_mode`, and in legacy mode there is no project resource to read, so `_declared_north_stars` returns None and the diagnostic is silently dropped for such a store",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b7cda2f91e24a710a82f39428866a8a31f89dc3b",
+  "plan_fingerprint": "290356c3feadca3a25b27a009f23348797035eb0ec9da146e315b45dccb7af38",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T204048561479-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "3ffc46951d19e3d74030196cce02e907dd0a825b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `metadata_index._DISCOVERY_FILES`/`_reuse_covered`/`_walk_covered`, `file_memo.memoized`, `_plan_html.read_state`/`read_state_and_text_file`, `resources._canonical_identity_is_unique`/`_directory_identity_index`, `_store._add_north_star_diagnostic`/`_declared_north_stars`, `project_state.compose_project_state`, `queue_admission._readiness_rows`/`advance_waiting_requests`, `plan_review.review_coverage`/`project_section_readiness`, `roadmap._plan_section_deps` and commit `889c335354` all resolve, and the extensionless `/reckon/plans/reckon-reads-answer-in-seconds` resolves to `docs/plans/reckon-reads-answer-in-seconds.html`.",
+    "done_when": "a finding \u2014 \u00a72, \u00a76 and \u00a77 each assert measures their own mechanism does not cover, and \u00a74's base-arm figure cannot be produced by the counter it names.",
+    "evidence_paths": "pass \u2014 \u00a77 writes to `docs/evidence/fragments/a-read-costs-what-changed/` and the run's `logs/`, both durable; \u00a71's three profiles are cited without a log path, which costs a reader re-derivation but not the sections, since each cause is also stated as a checkable code fact.",
+    "naming": "pass \u2014 the new test filenames name the mechanism (`test_a_request_validates_the_tree_once.py` etc.), and no plan label, stage name or ticket number is carried into a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a71's fourth cause and \u00a74's deliverable state that each ref *rebuilds* the identity index, which `reckon/resources.py:832` contradicts: the index is memoised in `_INDEX_MEMO` and rebuilt only when its listing moves, so the per-ref cost is a revalidation, not a rebuild.",
+    "single_goal": "pass \u2014 \u00a72's two changes and \u00a76's four changes each serve one goal (one validation per request; one parse per unchanged plan), and their shared write sets make them one deliverable apiece.",
+    "wiring": "pass \u2014 every `plan-section-depends-on` entry resolves (a-read \u00a77 on \u00a72\u2013\u00a76; \u00a73, \u00a74, \u00a76 on \u00a72; \u00a76 also on `work-is-never-stuck-behind-the-admission-loop#s19`, which exists, is `implementable`, and writes `reckon/crew/queue_admission.py` as \u00a76 does), and the reciprocal wiring on the far side is present (`work-is-never-stuck-behind-the-admission-loop` \u00a74 and \u00a721 both declare `depends-on: a-read-costs-what-changed#s6`)."
+  },
+  "section_digests": {
+    "_document": "b95a28df95a3cf747f96acb25bf6b168ca47110360b4579222b186023d934918",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s2": "f754d8aa9c7a875d416b0579608cf562e6629179edb7645fcb73284c02294d65",
+    "s3": "afe4d23d57715027d55faf5e36a2e87e1f44da0a2fc27fd40da6d44796d5ac1c",
+    "s4": "c0a35642a602420a4b9b2540669c435920b26370236ad91463ba3a320d274e37",
+    "s5": "7be2e4b602610c7e5926051de6005adcfd4d6312a81702b9fa1ec00a8bf330bb",
+    "s6": "930e7fbf11b0a072d8d1b9db25ab3241c766bf63a4feec0a2357d0be9fb6ecd4",
+    "s7": "5ce241793745f6234cd6b0b304353a82e4663fe485dcf457b29e30be08242df8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T20:56:08.582794+00:00"
+}
