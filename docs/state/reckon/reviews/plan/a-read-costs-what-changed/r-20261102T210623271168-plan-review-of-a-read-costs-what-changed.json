@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T21:18:31.986Z",
+  "dispatched_at": "2026-11-02T21:08:15Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:82",
+      "id": "done_when-1",
+      "reason": "without a measure and control for the review-coverage parse (and the landing arm), the node's gate proves three of four deliverables and can close on a partial implementation.",
+      "text": "\u00a76's done-when measures `project_section_readiness` calls, phase parity, edit visibility and the dispatch stat budget, none of which exercises `plan_review.review_coverage`; the fourth deliverable is `plan_review.py`'s snapshot parse, so a node that changes every other hot path and leaves that one untouched passes the gate. The done-when also never measures the landing pass named in the same deliverable, and \u00a72's tool list names `crew` while its measure covers only the other four tools.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:86",
+      "id": "reasoning-1",
+      "reason": "the control as written cannot hold against \u00a73's own mechanism, so the \u00a77 node would either wrongly reject a valid log or invent an unintended mutation; the control must force reparse by a mechanism \u00a73 actually invalidates (changed content or a changed parser digest).",
+      "text": "\u00a77's second control says one extra cold head run \"after every plan file's mtime is touched\" must record a parse count equal to the number of plans, but \u00a73 (line 62) keys the persisted entry on the file's content digest and parser digest, so touching mtime without changing bytes leaves every digest equal and the persisted index serves every plan with zero parses; the control therefore reports \"log invalid\" on a correct head, or the node must change each plan's content to satisfy it.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f1b0419586581150f4c3de6452cb4c89e954739b",
+  "plan_fingerprint": "5593bc7db8e9ca9c4b321052efaf1e91126a79dca563ab96896e06ad83e00b32",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T210623271168-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "423c347222285d512ee109df91472b920985428b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/mcp.py` line 2224 is the `roadmap` boundary entry into `metadata_index.discovery_file_scope`, `reckon/resources.py` 789\u2013856 is `_identity_listing` plus `_directory_identity_index`, `project_state.project_state_mode` and `_store._declared_north_stars` exist as named, and the legacy declaration file resolves to `docs/state/<project>/index.json` via `legacy_index_path`.",
+    "done_when": "a finding \u2014 \u00a76 declares four deliverables (lines 82) but its done-when measures only the admission-pass and dispatch arms; the fourth deliverable, `plan_review.review_coverage` reading snapshots through \u00a73's persisted parse, has no measure and no control.",
+    "evidence_paths": "pass \u2014 \u00a77 writes its timing/profile log under the run's `logs/` and its fragments under `docs/evidence/fragments/a-read-costs-what-changed/`; neither is session scratch or node-local /tmp.",
+    "naming": "pass \u2014 no plan, stage, ticket or version labels reach the new symbols; the new test names describe the mechanism (`test_a_request_validates_the_tree_once.py`, `test_a_request_resolves_refs_against_one_index.py`).",
+    "reasoning": "a finding \u2014 \u00a77's second control asserts that touching every plan file's mtime forces one parse per plan, but \u00a73 keys its persisted entry on the file's content digest, so a same-content mtime touch is served from the persisted index with zero parses and the control fails at the head.",
+    "single_goal": "pass \u2014 each reviewed section names one deliverable set under one ~5s-per-operation goal; \u00a72's two changes are one \"validate once\" goal and \u00a76's four are one \"read through the memo\" goal.",
+    "wiring": "pass \u2014 every section depends-on resolves inside this plan and to a real section: s4\u2192s2, s3\u2192s2, s6\u2192s2/s3 plus work-is-never-stuck-behind-the-admission-loop#s19 (which exists at that file's line 195); plan-informs and plan-blocks name an existing plan."
+  },
+  "section_digests": {
+    "_document": "b95a28df95a3cf747f96acb25bf6b168ca47110360b4579222b186023d934918",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s2": "293e1c18bbbd9b5e3230ee761da863f87ebc765f5f545ff5c6d7bf9ffe2410f1",
+    "s3": "afe4d23d57715027d55faf5e36a2e87e1f44da0a2fc27fd40da6d44796d5ac1c",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "0e41ab0044c170460fc3ffe8bacac8ab3afe090224431629ec38f07f1537a9ef",
+    "s6": "a1935079e45f08d6d3af9ca027fa1c2371525bd2ce99143383f4a235aba1cb81",
+    "s7": "cc4e124bf7ad47b2a174ecfdc7dd209e9034509a8a914d27f3634dabb3d40c45"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T21:29:02.296327+00:00"
+}
