@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-02T22:52:11.267Z",
+  "dispatched_at": "2026-11-02T22:40:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "id": "fa934b49657",
+      "line": "861",
+      "severity": "non-blocking",
+      "text": "alert() opens the fleet alerts log and logs the message, which duplicates the same append already inlined in announce_requeue at fleet_supervisor.py:585; two writers of one alerts log should be one, so fold announce_requeue onto alert()."
+    },
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "id": "f78ac866e79",
+      "line": "1407",
+      "severity": "non-blocking",
+      "text": "write_service_pid is given recorded_service_lock_inode(...) or _lock_inode(...), so a restart prefers the previous copy's recorded inode over the lock file's current one; where the lock file was deleted and recreated the pair written is (new pid, stale inode), which is the confusion the inode record exists to remove. Prefer the live lock file and fall back to the record."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a service whose lock file vanishes while it runs keeps exactly one running copy; reckon/crew/fleet_supervisor.py:1554 _alive now returns true for a recorded pid whose /proc command line is the service's (process_runs_service at :847) before falling back to lock_held, so a vanished lock no longer reads as an exit.\nVERDICT done_when: the done_when names tests/test_a_vanished_lock_starts_no_second_copy.py with a temporary runtime, the real directories asserted untouched, no added importer failure and clean ruff; after.log records 3 passed EXIT=0, head-importers.log records 1 failed / 60 passed against baseline.log's 2 failed / 2 errors / 261 passed with no failure id added, and ruff check plus ruff format --check were re-run by this review on both staged paths and are clean.\nVERDICT write_paths: the declared paths are reckon/crew/fleet_supervisor.py, tests/test_a_vanished_lock_starts_no_second_copy.py, the evidence fragment and the figures directory; git diff 27dca04b11..b4838498fc changes exactly the first three.\nVERDICT manifest: the manifest names commits 33dcdfc6ce and b4838498fc, the head arm 3 passed / exit 0, the negative control 1 failed / exit 1, the base arm with its four failure ids and a scaffolding attribution for three of them, and states the remaining head failure as a leftover /tmp/39486-fleet/reload-trees directory; its logs match those claims.\nVERDICT diff: read the two commits against 27dca04b11: 33dcdfc6ce adds the cmdline-based liveness, the inode record, the duplicate-copy sweep and the alerts write to fleet_supervisor.py plus the 280-line test, and b4838498fc adds the 32-line evidence fragment; no path outside the declaration.\nCALL_SITES: reckon/crew/fleet_supervisor.py:2320 DeclaredServices(runtime, environ) builds the supervisor the station ticks, reckon/crew/fleet_supervisor.py:2440 run_declared_service enters through the service wrapper, reckon/crew/fleet_supervisor.py:1426 supervise_loop calls supervise_once each tick, reckon/crew/fleet_supervisor.py:1530 supervise_once calls _alive\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: fleet_supervisor.py:1554 keeps a copy whose command line matches the service alive whatever the lock path says, :1603 logs one alert per vanished lock, and :1611 stops every copy but the recorded one, matching all three deliverables.\nSCORE evidence: 16\nJUSTIFICATION evidence: after.log ends 3 passed / EXIT=0 at revision 33dcdfc6ce and baseline.log records its own failure ids, but the done_when's ruff clause carries no log in the run and was verified only by this review's own re-run.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 27dca04b11..b4838498fc touches only fleet_supervisor.py, the new test and the landing fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control at negative-control.log restores the lock-only read and fails test_a_vanished_lock_file_starts_no_second_copy with a live second copy, and the test's expected pids are read from the instances directory rather than from the value under test.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the module's idiom of small documented module-level helpers with log() at fleet_supervisor.py:813-861 and a dataclass-carried state at :1256, and carry no plan, stage or ticket identifier.\nSCORE reuse: 14\nJUSTIFICATION reuse: fleet_supervisor.py:861 alert() re-implements the alerts-log append already inlined at :585, and :813 process_cmdline repeats the /proc cmdline decode already present at reckon/crew/dispatch_watch.py:146 beside reckon/crew/process_liveness.py, which owns process liveness.\nFINDING reckon/crew/fleet_supervisor.py:861 non-blocking: alert() repeats the alerts-log append already inline in announce_requeue at :585, so the fleet alerts log has two writers instead of one.\nFINDING reckon/crew/fleet_supervisor.py:1407 non-blocking: the restart path prefers the previous copy's recorded lock inode over the current lock file's inode, so a restart after a replaced lock file records a pair that describes the old file.\n",
+  "review_run_id": "r-20261102T222139988123-review-of-a-vanished-lock-starts-no-second-copy-b4838498fc28",
+  "reviewed_base_sha": "27dca04b11dbe5312965ad4d675d895656413421",
+  "reviewed_head_sha": "b4838498fc280300753dc7b72830ae1ac5be8859",
+  "reviewed_run_id": "r-20261102T213931926007-a-vanished-lock-starts-no-second-copy",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T23:00:39.495869+00:00",
+  "total": 104
+}
