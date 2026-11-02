@@ -133,7 +133,6 @@ from reckon.crew.routing import (
     _budget_verdict as _budget_verdict,
     _competence_verdict as _competence_verdict,
     _context_fit_verdict as _context_fit_verdict,
-    _context_refusal as _context_refusal,
     _create_worktree as _create_worktree,
     _disposable_member_id as _disposable_member_id,
     _fleet_script as _fleet_script,
@@ -664,10 +663,13 @@ def _reroute_oversized_request(
     if chosen is None:
         # No permitted lane holds it, and the lane that refused it is excluded by
         # the rule itself, so nothing may be placed anywhere. The refusal is the
-        # fit check's own: the estimate it measured against the resolved lane's
-        # gating window, and the distance between the two.
+        # resolution's competence verdict, the same object a dry run answers
+        # with: its context block is the fit check's verdict for the resolved
+        # lane, so the estimate, window and shortfall are that check's own, and
+        # it carries the lane's agent key and cache status beside them.
         raise CompetenceLimit(
-            _context_refusal(_context_fit_verdict(resolution=resolution, repo=repo))
+            resolution.competence
+            or _competence_verdict(resolution=resolution, project=project, repo=repo)
         )
     chosen_backend = str(chosen.get("backend") or "")
     # Re-resolve onto the chosen lane rather than patching the plan, so the new

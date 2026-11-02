@@ -281,12 +281,15 @@ def test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree(
     assert competence["shortfall_tokens"] == (
         competence["estimated_tokens"] - competence["window_tokens"]
     )
-    # The refusal is the fit check's own, not the competence verdict's: taking
-    # the verdict would put its agent key and its own context block on the
-    # payload, and a reader would be reading a second description of the same
-    # shortfall rather than the measure that refused.
-    assert "context" not in competence
-    assert "agent_key" not in competence
+    # The refusal is the resolution's competence verdict, which is the object a
+    # dry run answers with: the lane's agent key and cache status sit beside the
+    # nested fit verdict, and that nested block is what states the figures, so
+    # the shortfall a reader acts on is the fit check's own.
+    assert competence["agent_key"]
+    assert competence["cache_status"]
+    assert competence["context"]["estimated_tokens"] == competence["estimated_tokens"]
+    assert competence["context"]["window_tokens"] == competence["window_tokens"]
+    assert competence["context"]["shortfall_tokens"] == competence["shortfall_tokens"]
     assert str(competence["shortfall_tokens"]) in payload["detail"]
     assert str(competence["window_tokens"]) in payload["detail"]
     assert created == []
@@ -364,14 +367,13 @@ def test_the_admission_pass_hands_the_rule_the_pointers_own_backend(
     assert destination == CODEX
 
 
-def test_the_refusal_is_the_fit_checks_and_never_consults_the_verdict(
+def test_the_refusal_is_the_payload_its_dry_run_previews(
     dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # A refusal built from the competence verdict would carry that verdict's own
-    # estimate and shortfall and a horizon it did not measure. Making the call
-    # raise proves the fallback never reaches it: the refusal a request nothing
-    # holds answers with is the fit check's, whose shortfall is that check's
-    # estimate minus the resolved lane's window.
+    # The real refusal and the preview of it are one payload, so a reader who
+    # ran the dry run has already seen every field the dispatch answers with:
+    # the lane's agent key, the cache status it was judged against, the nested
+    # fit verdict, and the estimate, window and shortfall that verdict states.
     _configure(
         dispatch_repo,
         monkeypatch,
@@ -380,20 +382,13 @@ def test_the_refusal_is_the_fit_checks_and_never_consults_the_verdict(
     )
     placement._stub_fallback(monkeypatch)
 
-    def never(**_kwargs):
-        raise AssertionError("the fallback consulted the competence verdict")
+    real = _payload(_invoke(dispatch_repo, node="one-payload"))
+    preview = _payload(_invoke(dispatch_repo, node="one-payload", dry_run=True))
 
-    monkeypatch.setattr(dispatch_module, "_competence_verdict", never)
-
-    result = _invoke(dispatch_repo, node="verdict-disallows")
-    assert result.exit_code == 5, result.output
-    payload = _payload(result)
-    competence = payload["competence"]
-
-    assert competence["shortfall_tokens"] == (
-        competence["estimated_tokens"] - competence["window_tokens"]
-    )
-    assert competence["estimated_tokens"] > competence["window_tokens"]
+    assert real["error"] == preview["error"] == "competence-refusal"
+    assert real["competence"] == preview["competence"]
+    verdict = real["competence"]
+    assert verdict["shortfall_tokens"] == verdict["context"]["shortfall_tokens"]
 
 
 def test_the_fallback_refusal_renders_routing_s_own_detail(
