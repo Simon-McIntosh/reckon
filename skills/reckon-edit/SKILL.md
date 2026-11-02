@@ -125,9 +125,18 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    are never covered. The failure this catches is not a typo — it is a sentence
    that reads differently to the executor than to its author, and the author
    cannot see it by re-reading, which is why the reader must be someone else.
-   Before the revised plan goes back to work, once the session's writing is
-   done, compose one content review. It names no lane: `review_excluded_backends`
-   keeps a review off metered lanes, so it runs locally or holds.
+   The writer is the reviewer. When the session's authoring burst ends, that
+   session composes one content review, answers every finding before it leaves
+   the plan — fixing it, or declining it with a one-line reason — and only then
+   releases the plan. The session that wrote it still holds the context to fix
+   what a finding names; a coordinator reaching the plan later does not. An
+   edit a finding asked for is covered by that finding's review only while it
+   leaves the section's done-when paragraph unchanged and stays under the
+   change threshold, so an answering edit of that shape starts no new round.
+   An edit to a done-when is never covered, however small: it owes one review,
+   scoped to that section. The review names no lane:
+   `review_excluded_backends` keeps a review off metered lanes, so it runs
+   locally or holds.
 
    ```bash
    reckon crew review --project <project> --plan <slug> --rubric content --session <session>
@@ -180,7 +189,8 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    reckon crew review --project <project> --plan <slug> --rubric content --session <session>
    ```
 
-   and answer every finding it raises before a build is dispatched. The tool
+   and answer every finding it raises before a build is dispatched, rule 9's
+   write-time step. The tool
    composes no review itself, so a burst of edits earns one review and the
    author decides when the session's authoring is finished. An empty
    `review_owed` owes nothing. A **null `review_owed`** means the review owed is
