@@ -1,0 +1,62 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1776",
+    "reckon/crew/queue_admission.py:4003"
+  ],
+  "completed_at": "2026-11-02T12:20:18.654Z",
+  "dispatched_at": "2026-11-02T12:12:23Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py:612 non-blocking",
+      "line": "",
+      "severity": "non-blocking",
+      "text": "the plan requires the shared rule to take the refused backend and skip it, but widest_fitting_candidate(candidates) takes only the list, so each caller re-implements the skip and reckon/crew/dispatch.py:710 returns the resolution unchanged when the refused lane is the widest usable - the exact return the plan says must be gone. It is excluded in the normal path by the context-fit reason the scan attaches to an oversized lane, so this is a latent hole rather than a live one, and the evidence fragment at line 25 claiming dispatch raises 'for every case instead of returning the resolution' overstates the code."
+    },
+    {
+      "file": "reckon/crew/dispatch.py:703 non-blocking",
+      "line": "",
+      "severity": "non-blocking",
+      "text": "the refusal is still built from _competence_verdict when that verdict disallows, which the plan explicitly forbids ('Never build this refusal from routing._competence_verdict'); the payload is safe today because that verdict embeds the context-fit figures, but the branch is untested and is the shape the plan bans because such a verdict can be satisfied while the request is not."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read the single commit against 67d1e26d0b8df8; snapshot.py gains candidate_window_tokens and widest_fitting_candidate, dispatch.py deletes _candidate_window and _widest_context_candidate and adds _context_shortfall_refusal beside a changed refusal branch, queue_admission.py replaces its first-usable loop with the shared call, and the placement test loses its four verdict stubs in favour of a genuinely oversized brief.",
+    "done_when": "The done_when names tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py and four behaviours; logs/after_suite.log records 11 passed EXIT=0 over the two node files, logs/baseline_suite.log 4 passed EXIT=0, logs/negative-control-1.log and logs/negative-control-2.log each record 1 failed / 6 passed EXIT=1 on the two cases the plan names, and the two verdict stubs are removed from tests/test_a_request_too_large_for_local_is_never_placed_there.py. The done_when's ruff clause is claimed in the manifest's artifacts line but no ruff log is recorded.",
+    "goal": "The node goal is one rule choosing the lane for a request too large for its own, shared by the admission pass and a router-free dispatch; reckon/crew/picker/snapshot.py:612 adds widest_fitting_candidate, dispatch.py:693 and queue_admission.py:1119 both call it, and dispatch.py:576-614 deletes the private copy. Found: the rule correctly ranks the widest usable window, excludes any candidate carrying a reason and raises on a malformed declaration, but it does not take the refused backend the plan names, so that skip remains in the two callers rather than in the rule.",
+    "manifest": "Read; status complete, commit 1e2596850d, baseline_suite and after_suite both record exit_status 0 with failure_count 0, negative_control_log is the bare path to logs/negative-control-2.log, and test_logs name the four gate logs on disk.",
+    "write_paths": "The node manifest declares reckon/crew/picker/snapshot.py, reckon/crew/dispatch.py, reckon/crew/queue_admission.py, the two test files and the evidence fragment; git diff --stat 67d1e26d0b..1e2596850d touches exactly those six paths and nothing outside them."
+  },
+  "justifications": {
+    "durability": "the two negative controls recorded in logs/negative-control-1.log and logs/negative-control-2.log redden the exact cases they target and the stubs were genuinely removed, but the _competence_verdict branch at reckon/crew/dispatch.py:703 and the unchanged return at line 710 are never exercised by any case.",
+    "evidence": "logs/after_suite.log records 11 passed EXIT=0 and both negative controls are red on the named cases in logs/, but the done_when's ruff clause is asserted at reckon/crew/... nowhere except the manifest's artifacts line and no ruff log exists under logs/.",
+    "fit": "reckon/crew/picker/snapshot.py:582-650 follows the module's docstring-and-helper idiom and introduces no plan label, ticket reference or version name.",
+    "goal_fidelity": "reckon/crew/picker/snapshot.py:612 delivers the shared widest-window rule and dispatch.py:693 refuses with exit 5 shortfall, but the rule does not take the refused backend the plan specifies and dispatch.py:710 still returns the oversized resolution unchanged when that lane is the widest usable.",
+    "reuse": "the change removes the forked capability rather than adding one - dispatch.py:576-614 deletes _candidate_window and _widest_context_candidate and both paths extend picker.snapshot, whose candidate scan was already the owner of the candidate set; a search over reckon/crew found no other reader that chooses a lane by candidate window.",
+    "scope_discipline": "every one of the six paths in git diff --stat 67d1e26d0b..1e2596850d lies inside the write paths the node manifest declares, including docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/one-rule-chooses-the-lane-for-an-oversized-request.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is one rule choosing the lane for a request too large for its own, shared by the admission pass and a router-free dispatch; reckon/crew/picker/snapshot.py:612 adds widest_fitting_candidate, dispatch.py:693 and queue_admission.py:1119 both call it, and dispatch.py:576-614 deletes the private copy. Found: the rule correctly ranks the widest usable window, excludes any candidate carrying a reason and raises on a malformed declaration, but it does not take the refused backend the plan names, so that skip remains in the two callers rather than in the rule.\nVERDICT done_when: The done_when names tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py and four behaviours; logs/after_suite.log records 11 passed EXIT=0 over the two node files, logs/baseline_suite.log 4 passed EXIT=0, logs/negative-control-1.log and logs/negative-control-2.log each record 1 failed / 6 passed EXIT=1 on the two cases the plan names, and the two verdict stubs are removed from tests/test_a_request_too_large_for_local_is_never_placed_there.py. The done_when's ruff clause is claimed in the manifest's artifacts line but no ruff log is recorded.\nVERDICT write_paths: The node manifest declares reckon/crew/picker/snapshot.py, reckon/crew/dispatch.py, reckon/crew/queue_admission.py, the two test files and the evidence fragment; git diff --stat 67d1e26d0b..1e2596850d touches exactly those six paths and nothing outside them.\nVERDICT manifest: Read; status complete, commit 1e2596850d, baseline_suite and after_suite both record exit_status 0 with failure_count 0, negative_control_log is the bare path to logs/negative-control-2.log, and test_logs name the four gate logs on disk.\nVERDICT diff: Read the single commit against 67d1e26d0b8df8; snapshot.py gains candidate_window_tokens and widest_fitting_candidate, dispatch.py deletes _candidate_window and _widest_context_candidate and adds _context_shortfall_refusal beside a changed refusal branch, queue_admission.py replaces its first-usable loop with the shared call, and the placement test loses its four verdict stubs in favour of a genuinely oversized brief.\nCALL_SITES: reckon/crew/dispatch.py:1776, reckon/crew/queue_admission.py:4003\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/picker/snapshot.py:612 delivers the shared widest-window rule and dispatch.py:693 refuses with exit 5 shortfall, but the rule does not take the refused backend the plan specifies and dispatch.py:710 still returns the oversized resolution unchanged when that lane is the widest usable.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after_suite.log records 11 passed EXIT=0 and both negative controls are red on the named cases in logs/, but the done_when's ruff clause is asserted at reckon/crew/... nowhere except the manifest's artifacts line and no ruff log exists under logs/.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the six paths in git diff --stat 67d1e26d0b..1e2596850d lies inside the write paths the node manifest declares, including docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/one-rule-chooses-the-lane-for-an-oversized-request.html.\nSCORE durability: 17\nJUSTIFICATION durability: the two negative controls recorded in logs/negative-control-1.log and logs/negative-control-2.log redden the exact cases they target and the stubs were genuinely removed, but the _competence_verdict branch at reckon/crew/dispatch.py:703 and the unchanged return at line 710 are never exercised by any case.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/picker/snapshot.py:582-650 follows the module's docstring-and-helper idiom and introduces no plan label, ticket reference or version name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change removes the forked capability rather than adding one - dispatch.py:576-614 deletes _candidate_window and _widest_context_candidate and both paths extend picker.snapshot, whose candidate scan was already the owner of the candidate set; a search over reckon/crew found no other reader that chooses a lane by candidate window.\nFINDING reckon/crew/picker/snapshot.py:612 non-blocking: the plan requires the shared rule to take the refused backend and skip it, but widest_fitting_candidate(candidates) takes only the list, so each caller re-implements the skip and reckon/crew/dispatch.py:710 returns the resolution unchanged when the refused lane is the widest usable - the exact return the plan says must be gone. It is excluded in the normal path by the context-fit reason the scan attaches to an oversized lane, so this is a latent hole rather than a live one, and the evidence fragment at line 25 claiming dispatch raises 'for every case instead of returning the resolution' overstates the code.\nFINDING reckon/crew/dispatch.py:703 non-blocking: the refusal is still built from _competence_verdict when that verdict disallows, which the plan explicitly forbids ('Never build this refusal from routing._competence_verdict'); the payload is safe today because that verdict embeds the context-fit figures, but the branch is untested and is the shape the plan bans because such a verdict can be satisfied while the request is not.",
+  "review_run_id": "r-20261102T121044955674-review-of-one-rule-chooses-the-lane-for-an-oversized-request-1e2596850d21",
+  "reviewed_base_sha": "67d1e26d0b8df8176276478aae632d5558e83357",
+  "reviewed_head_sha": "1e2596850d211c118f25f0752e20444f0a066857",
+  "reviewed_run_id": "r-20261102T113200213945-one-rule-chooses-the-lane-for-an-oversized-request",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_note": "derived from the reviewed run's own arms: logs/baseline_suite.log ends '4 passed in 6.22s' with EXIT=0 at 67d1e26d0b and logs/after_suite.log ends '11 passed in 9.84s' with EXIT=0 at 1e2596850d; both record failure_count 0, so the set difference of failing ids is empty.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T12:26:03.164146+00:00",
+  "total": 107
+}
