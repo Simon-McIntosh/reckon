@@ -581,11 +581,9 @@ def announce_requeue(environ: Mapping[str, str] | None = None) -> str | None:
     notice = requeue_notice(environ)
     if notice is None:
         return None
+    alert(notice, environ)
     state = state_directory(environ)
-    with open(state / ALERTS_NAME, "a", encoding="utf-8") as alerts:
-        alerts.write(notice + "\n")
     (state / NOTICE_NAME).write_text(notice + "\n", encoding="utf-8")
-    log(notice)
     return notice
 
 
@@ -1404,8 +1402,8 @@ class DeclaredServices:
                 self._runtime,
                 name,
                 process.pid,
-                recorded_service_lock_inode(self._runtime, name)
-                or _lock_inode(self._runtime, name),
+                _lock_inode(self._runtime, name)
+                or recorded_service_lock_inode(self._runtime, name),
             )
         log(f"declared service {name} started as pid {process.pid}")
         state = self._states.get(name)

@@ -278,3 +278,41 @@ def test_a_service_that_really_ended_is_restarted_after_its_backoff(home):
     )[0]
     assert _alive(second)
     assert second != first
+
+
+def test_a_recreated_lock_file_records_its_new_inode(home, monkeypatch):
+    """A lock file remade between two starts records its new inode.
+
+    The first copy records the inode of the lock file it held. That file is
+    deleted, a new one is made in its place, and the next start must record the
+    inode now on disk beside the new pid rather than the one the previous copy
+    recorded. The wrapper is replaced by the declared argv so the record under
+    test is the supervisor's own, and with the previous inode preferred this
+    case fails.
+    """
+    manager, first = _start(home)
+    first_inode = fleet_supervisor.recorded_service_lock_inode(home.runtime, "demo")
+    assert first_inode is not None, "the first copy recorded no lock inode"
+
+    # The copy ends without the supervisor clearing its record, as when a
+    # service exits and the lock file is deleted and remade before the restart.
+    os.kill(first, signal.SIGTERM)
+    with suppress(ChildProcessError):
+        os.waitpid(first, 0)
+    assert not _alive(first), "the first copy did not exit"
+
+    lock_path = fleet_supervisor.service_lock_path(home.runtime, "demo")
+    lock_path.unlink()
+    lock_path.write_text("", encoding="utf-8")
+    new_inode = lock_path.stat().st_ino
+    assert new_inode != first_inode
+
+    monkeypatch.setattr(
+        fleet_supervisor, "service_wrapper_argv", lambda name, argv: list(argv)
+    )
+    second = manager.start("demo", home.argv("run"))
+    assert second is not None
+    assert fleet_supervisor.recorded_service_pid(home.runtime, "demo") == second
+    assert (
+        fleet_supervisor.recorded_service_lock_inode(home.runtime, "demo") == new_inode
+    )
