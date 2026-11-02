@@ -2171,12 +2171,6 @@ def classify_pointer(
         "wait_observed": (
             wait_observation.get("observed") if wait_observation is not None else None
         ),
-        # Carried only on a producer-gone reading: how long the probe's value
-        # has stood still, and the probe and terminal list the obligation names.
-        "wait_still_seconds": (
-            wait_verdict["still_seconds"] if wait_verdict is not None else None
-        ),
-        "wait_producer_gone": wait_verdict is not None,
         # A declaration that lifted its run and came back unchanged is the
         # defect the lift loop's own stop cannot name; carried on the row so a
         # reader sees why the run is still parked rather than inferring it. A
@@ -2197,6 +2191,12 @@ def classify_pointer(
         if wait
         else None,
     }
+    if wait is not None and wait_verdict is not None:
+        # The evidence behind a producer-gone reading. It travels inside the
+        # wait the row already carries rather than as a new row field, because
+        # the row's field set is declared once and a key added here would be
+        # served by the view and refused by the pre-flight read.
+        wait["producer_gone"] = wait_verdict
     if session_refusal is not None:
         # A queued request the session itself must unblock. Carried whole so a
         # surface projecting duties reads one verdict rather than re-deriving

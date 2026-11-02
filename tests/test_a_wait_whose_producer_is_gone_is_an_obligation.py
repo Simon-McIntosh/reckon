@@ -230,7 +230,7 @@ def test_a_wait_over_a_gone_producer_is_a_duty_and_not_working() -> None:
     assert row["recovery_classification"] == "producer-gone"
     assert row["process_alive"] is False
     assert row["liveness_proven"] is True
-    assert row["wait_still_seconds"] >= BOUND
+    assert row["external_wait"]["producer_gone"]["still_seconds"] >= BOUND
     assert "producer is gone" in row["detail"]
     assert "reckon crew resume" in row["next_action"]
     assert "reckon crew discard" in row["next_action"]
@@ -409,7 +409,7 @@ def test_a_worker_killed_outright_is_producer_gone(
 
     assert row["exit_record"] is None
     assert row["classification"] == "producer-gone"
-    assert row["wait_still_seconds"] >= BOUND
+    assert row["external_wait"]["producer_gone"]["still_seconds"] >= BOUND
     assert "run-producer-gone" in _duty_kinds()
 
 

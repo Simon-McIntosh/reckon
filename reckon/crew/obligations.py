@@ -801,7 +801,9 @@ def _producer_gone_item(row: Mapping[str, Any], *, now: datetime) -> dict[str, A
     terminal = wait.get("terminal")
     if terminal:
         item["terminal"] = list(terminal)
-    still = row.get("wait_still_seconds")
+    verdict = wait.get("producer_gone")
+    verdict = verdict if isinstance(verdict, Mapping) else {}
+    still = verdict.get("still_seconds")
     if isinstance(still, (int, float)) and not isinstance(still, bool):
         item["still_seconds"] = int(still)
     run_id = str(item.get("run_id") or "")
