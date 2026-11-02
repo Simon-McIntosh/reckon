@@ -279,6 +279,16 @@ LIFT_STATES = frozenset({LIFT_GRANTED, LIFT_IN_FORCE, LIFT_ENDED, LIMIT_RESET})
 LIFT_STAGE = "lift"
 LIMIT_STAGE = "limit"
 
+# The words a coordinator's own gate run occupies. Spelled here for the reason
+# the lift words above are: the gate fold imports the recovery watch, which
+# imports this renderer, so reading them back from it would close an import
+# cycle. The gate fixtures bind them. A gate row is news because the pane exists
+# to show the session blocked on its own check, which is work no worker row
+# describes.
+GATE_RUNNING = "gate-running"
+GATE_ENDED = "gate-ended"
+GATE_STATES = frozenset({GATE_RUNNING, GATE_ENDED})
+
 # What a limit-reset row says, in place of the transition it maps to. A reset
 # is a broadcast about a budget group rather than a state change of a run, and
 # the pane word it lands on — ``working`` — carries none of what a reader needs:
@@ -416,6 +426,11 @@ PANE_STATES = {
             "lift-granted",
             "lift-in-force",
             "limit-reset",
+            # A coordinator's own gate run occupies the session the same way a
+            # lift does: the coordinator is present and working, and the row's
+            # detail carries what the gate is and how it ended.
+            "gate-running",
+            "gate-ended",
         }
     ),
     # A request held on a section it waits for is not working and not halted: it
@@ -1399,7 +1414,8 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
     A carried line names something the coordinator oversees: a duty it must
     discharge, or a state change of the work it is running. One of the pane
     words below, a launch the row policy marked, a limit reset, a budget lift
-    granted or ending that covers the session, a declared wait a worker
+    granted or ending that covers the session, a coordinator's own gate run
+    starting or ending, a declared wait a worker
     addresses to the coordinator, or the follower's own end. A row about
     anything else — a ``working`` or ``waiting`` transition that asks nothing
     and opens no attempt, a bare re-announcement or replay of a start, a re-arm
@@ -1427,6 +1443,12 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
         return False
     to_state = str(event.get("to_state") or "")
     if to_state == LIMIT_RESET or to_state in LIFT_STATES:
+        return True
+    if to_state in GATE_STATES:
+        # A coordinator's own gate run starting or ending. The session has no
+        # worker row while its gate runs — that is what the record exists to
+        # say — so this row is the only line that shows a session blocked on
+        # its own check rather than idle.
         return True
     if declares_a_wait(event):
         return True

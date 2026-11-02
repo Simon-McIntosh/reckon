@@ -7,6 +7,7 @@ from typing import Any
 
 import click
 
+from reckon.crew.gate_watch import SUITE_RUN, VERIFY_GATE
 from reckon.crew.tombstones import tombstone_command
 from reckon.crew_dispatch_commands import (
     _accept_a_matching_project,
@@ -1708,6 +1709,12 @@ def crew_suite_run(project, checkout_path, pretty):
         )
     runs_dir = standing_suite.suite_runs_dir(root, project)
     standing_log = runs_dir / f"suite-{time.time_ns()}.log"
+    gate = _gate_opened(
+        project,
+        verb=SUITE_RUN,
+        checkout=root,
+        command=_declared_command(declaration),
+    )
     record = standing_suite.run(root, declaration, standing_log)
     standing_suite.record(root, project, record)
     populations = []
@@ -1720,6 +1727,7 @@ def crew_suite_run(project, checkout_path, pretty):
         populations.append(
             {"population": name, "path": str(path), "record": population_record}
         )
+    _gate_closed(gate, exit_status=_gate_exit_status(record))
     # The standing suite's own fields ride at the top level, so the command's
     # exit verdict answers the standing suite alone: a named population's
     # failure is recorded on its own row and does not fail this command.
@@ -2370,6 +2378,97 @@ def _ledger_module():
     from reckon import ledger as ledger_module
 
     return ledger_module
+
+
+def _gate_session() -> str:
+    """The calling coordinator's own session, or "" outside a harness.
+
+    The gate row reaches the pane registered under this name, which is the
+    session the calling harness reports rather than any name this command is
+    handed, so a coordinator that runs a gate sees it without passing an option.
+    """
+    from reckon.crew.dispatch_accounting import _coordinator_runtime
+
+    return str(_coordinator_runtime()[1] or "")
+
+
+def _gate_opened(
+    project: str,
+    *,
+    verb: str,
+    checkout: str | Path,
+    command: str,
+    run_id: str = "",
+) -> dict[str, Any] | None:
+    """Write the start record a gate run draws its first pane row from.
+
+    An unwritable record never costs the gate its run: the verb's work is the
+    record it makes on the run, so a failure here is reported on stderr and the
+    gate proceeds without a pane row rather than not at all.
+    """
+    from reckon.crew import gate_watch
+
+    try:
+        return gate_watch.start(
+            project,
+            verb=verb,
+            checkout=checkout,
+            command=command,
+            session=_gate_session(),
+            run_id=run_id,
+            pid=os.getpid(),
+        )
+    except Exception as exc:  # noqa: BLE001 - a record is not the gate's work
+        click.echo(f"gate-record-start-failure: {project}: {exc}", err=True)
+        return None
+
+
+def _gate_closed(record: Mapping[str, Any] | None, *, exit_status: int | None) -> None:
+    """Complete the record a gate run opened, with the status it ended at."""
+    if not record:
+        return
+    from reckon.crew import gate_watch
+
+    try:
+        gate_watch.end(str(record.get("id") or ""), exit_status=exit_status)
+    except Exception as exc:  # noqa: BLE001 - a record is not the gate's work
+        click.echo(f"gate-record-end-failure: {exc}", err=True)
+
+
+def _declared_command(declaration: Any) -> str:
+    """A suite declaration's command as one line.
+
+    A declaration is normally an object carrying the command as a sequence of
+    words; a caller that hands over a mapping instead is read the same way, so
+    the gate's own row is never the reason a suite refuses to start.
+    """
+    words = (
+        declaration.get("command")
+        if isinstance(declaration, Mapping)
+        else getattr(declaration, "command", None)
+    )
+    if isinstance(words, str):
+        return words
+    return " ".join(str(word) for word in words or ())
+
+
+def _gate_exit_status(result: Mapping[str, Any] | None) -> int | None:
+    """The status the gate's own command ended at, or None when it carries none.
+
+    ``verify-gate`` reports it inside the re-run's report; ``suite run`` carries
+    it on the suite row itself. A status that is not an integer is no status at
+    all, so a row that recorded none does not read as a zero.
+    """
+    if not isinstance(result, Mapping):
+        return None
+    report = result.get("report")
+    value = report.get("exit_status") if isinstance(report, Mapping) else None
+    if value is None:
+        value = result.get("exit_status")
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
 
 
 def _refuse_a_flag_as_a_reason(
@@ -3120,6 +3219,13 @@ def crew_verify_gate(
     """
     _accept_a_matching_project(run_id, project)
     crew_module, _ = _crew_modules()
+    record = _gate_opened(
+        project,
+        verb=VERIFY_GATE,
+        checkout=checkout_path,
+        command=command or "",
+        run_id=run_id,
+    )
     try:
         result = crew_module.record_gate_rerun_at_integrated_revision(
             project=project,
@@ -3131,13 +3237,16 @@ def crew_verify_gate(
             command=command,
         )
     except crew_module.CrewError as exc:
+        _gate_closed(record, exit_status=None)
         raise click.ClickException(str(exc)) from exc
     except _ledger_module().LedgerError as exc:
+        _gate_closed(record, exit_status=None)
         raise click.ClickException(
             f"{exc}; the ledger moved while the re-run was being recorded, so "
             f"run `reckon crew verify-gate --project {project} --run {run_id} "
             f"--checkout-path {checkout_path}` again"
         ) from exc
+    _gate_closed(record, exit_status=_gate_exit_status(result))
     _emit_crew_result(result, pretty)
 
 
