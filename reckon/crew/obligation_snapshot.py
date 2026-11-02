@@ -152,6 +152,16 @@ def obligations_home() -> Path:
     return crew_home() / "obligations"
 
 
+def live_pointer_path(run_id: str) -> Path:
+    """Path of one run's live pointer.
+
+    Repeated here rather than read through ``runs`` for the reason this module
+    repeats the config home: the prompt hook resolves a held answer without
+    importing the crew package.
+    """
+    return crew_home() / "live" / f"{run_id}.json"
+
+
 def _token(name: str, fallback: str) -> str:
     """The filesystem-safe stem ``runs`` gives a project or session name."""
     return re.sub(r"[^A-Za-z0-9._-]", "-", name).strip("-") or fallback
@@ -995,6 +1005,43 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
     ]
     kept.extend(_unreadable_record_items(findings))
     return kept
+
+
+def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """A held payload minus the duties of runs that hold no live pointer now.
+
+    A duty names a run because a live pointer carried the state it was derived
+    from, so a run whose pointer file has been removed has landed or ended and
+    owes nothing. The answer that still names it was computed before the
+    removal, when that pointer was there; a station can hold such an answer for
+    as long as its tick runs, which is minutes. One ``stat`` per run-keyed duty
+    answers it at read time.
+
+    A duty that names no run is kept: its evidence is not a pointer, and
+    dropping it would hide a reading nobody can re-derive from one. The summary
+    is recomputed so the header counts the rows actually shown.
+    """
+    rows = payload.get("obligations")
+    if not isinstance(rows, list):
+        return dict(payload)
+    kept: list[Any] = []
+    dropped = False
+    for row in rows:
+        run_id = str(row.get("run_id") or "") if isinstance(row, Mapping) else ""
+        if run_id and not live_pointer_path(run_id).exists():
+            dropped = True
+            continue
+        kept.append(row)
+    if not dropped:
+        return dict(payload)
+    summary = payload.get("summary")
+    summary = dict(summary) if isinstance(summary, Mapping) else {}
+    summary["count"] = len(kept)
+    summary[_OLDEST_AGE_SECONDS] = max(
+        (int(row.get(_AGE_SECONDS) or 0) for row in kept if isinstance(row, Mapping)),
+        default=0,
+    )
+    return {**payload, "obligations": kept, "summary": summary}
 
 
 def live_payload(document: Mapping[str, Any], *, now: datetime | None = None) -> dict:

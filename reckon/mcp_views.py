@@ -4043,7 +4043,10 @@ def serve_crew_view(
             # station never passes its last answer off as current.
             station = snapshot_module.read_station_answer(project, session)
             if station is not None and not station.get("stale"):
-                held = station["payload"]
+                # The held answer is computed once per station tick and can be
+                # minutes old, so a duty whose run has since released its live
+                # pointer is settled here rather than waiting for the next tick.
+                held = snapshot_module.without_departed_run_duties(station["payload"])
                 return {
                     "ok": True,
                     "view": view,
