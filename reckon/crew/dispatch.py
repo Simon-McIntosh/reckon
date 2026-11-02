@@ -133,6 +133,7 @@ from reckon.crew.routing import (
     _budget_verdict as _budget_verdict,
     _competence_verdict as _competence_verdict,
     _context_fit_verdict as _context_fit_verdict,
+    _context_refusal as _context_refusal,
     _create_worktree as _create_worktree,
     _disposable_member_id as _disposable_member_id,
     _fleet_script as _fleet_script,
@@ -573,37 +574,6 @@ def _gating_input_window(resolution: DispatchPlan, repo: Path) -> int | None:
     return int(verdict["window_tokens"])
 
 
-def _context_shortfall_refusal(
-    *, backend: str, estimate: int, window: int
-) -> dict[str, Any]:
-    """The refusal a request no permitted lane holds answers with.
-
-    The window named is the resolved lane's own gating figure, the one the fit
-    check measured too small, and the shortfall is the distance from the
-    request's estimate to it: the figure the reader has to clear by splitting
-    the node or by declaring a wider lane.
-    """
-    shortfall = max(0, estimate - window)
-    recommendation = format_refusal(
-        "D08",
-        "split the node or route it to a backend with at least "
-        f"{estimate} usable input tokens",
-    )
-    return {
-        "allowed": False,
-        "reason": "context-window-exceeded",
-        "detail": (
-            f"node context estimate {estimate} usable input tokens exceeds "
-            f"backend {backend!r}'s {window} token window by {shortfall} "
-            f"tokens; {recommendation}"
-        ),
-        "estimated_tokens": estimate,
-        "window_tokens": window,
-        "shortfall_tokens": shortfall,
-        "recommendation": recommendation,
-    }
-
-
 def _router_free_resolution(
     *,
     resolved_route: str,
@@ -696,13 +666,8 @@ def _reroute_oversized_request(
         # the rule itself, so nothing may be placed anywhere. The refusal is the
         # fit check's own: the estimate it measured against the resolved lane's
         # gating window, and the distance between the two.
-        context_fit = _context_fit_verdict(resolution=resolution, repo=repo)
         raise CompetenceLimit(
-            _context_shortfall_refusal(
-                backend=resolution.backend,
-                estimate=int(context_fit["estimated_tokens"]),
-                window=int(context_fit["window_tokens"]),
-            )
+            _context_refusal(_context_fit_verdict(resolution=resolution, repo=repo))
         )
     chosen_backend = str(chosen.get("backend") or "")
     # Re-resolve onto the chosen lane rather than patching the plan, so the new

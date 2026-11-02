@@ -58,9 +58,15 @@ def _configure(repo: Path, monkeypatch: pytest.MonkeyPatch, **windows: object) -
     return placement._configure(repo, monkeypatch, **windows)
 
 
-def _invoke(repo: Path, *, node: str, done_when: str = placement.DONE_WHEN):
+def _invoke(
+    repo: Path,
+    *,
+    node: str,
+    done_when: str = placement.DONE_WHEN,
+    dry_run: bool = False,
+):
     arguments = [
-        *backend_tests._arguments(repo, node=node, dry_run=False),
+        *backend_tests._arguments(repo, node=node, dry_run=dry_run),
         "--route",
         "picker",
         "--no-watch",
@@ -358,13 +364,14 @@ def test_the_admission_pass_hands_the_rule_the_pointers_own_backend(
     assert destination == CODEX
 
 
-def test_the_refusal_shortfall_is_the_fit_checks_and_not_the_verdicts(
+def test_the_refusal_is_the_fit_checks_and_never_consults_the_verdict(
     dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # The competence verdict disallows the lane too, and carries its own
-    # estimate and shortfall. The refusal a request nothing holds must answer
-    # with the two figures the fit check weighed, so a stubbed verdict carrying
-    # a different shortfall must not reach the payload.
+    # A refusal built from the competence verdict would carry that verdict's own
+    # estimate and shortfall and a horizon it did not measure. Making the call
+    # raise proves the fallback never reaches it: the refusal a request nothing
+    # holds answers with is the fit check's, whose shortfall is that check's
+    # estimate minus the resolved lane's window.
     _configure(
         dispatch_repo,
         monkeypatch,
@@ -372,26 +379,53 @@ def test_the_refusal_shortfall_is_the_fit_checks_and_not_the_verdicts(
         extra_windows={CODEX: 190_000},
     )
     placement._stub_fallback(monkeypatch)
-    monkeypatch.setattr(
-        dispatch_module,
-        "_competence_verdict",
-        lambda **_kwargs: {
-            "allowed": False,
-            "reason": "context-window-exceeded",
-            "estimated_tokens": 987_654,
-            "window_tokens": 1,
-            "shortfall_tokens": 987_653,
-            "detail": "a verdict the refusal must not be built from",
-        },
-    )
+
+    def never(**_kwargs):
+        raise AssertionError("the fallback consulted the competence verdict")
+
+    monkeypatch.setattr(dispatch_module, "_competence_verdict", never)
 
     result = _invoke(dispatch_repo, node="verdict-disallows")
+    assert result.exit_code == 5, result.output
     payload = _payload(result)
     competence = payload["competence"]
 
-    assert result.exit_code == 5, result.output
-    assert competence["shortfall_tokens"] != 987_653
     assert competence["shortfall_tokens"] == (
         competence["estimated_tokens"] - competence["window_tokens"]
     )
     assert competence["estimated_tokens"] > competence["window_tokens"]
+
+
+def test_the_fallback_refusal_renders_routing_s_own_detail(
+    dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The refusal is one payload built in one place, so the detail a dispatch
+    # answers with is the detail routing renders for the same lane and the same
+    # figures -- the contributing files and how the largest of them arrived --
+    # rather than a shorter sentence assembled beside it. The preview answers
+    # through the competence verdict, which builds its detail from the same fit
+    # check, so the two strings are compared directly.
+    _configure(
+        dispatch_repo,
+        monkeypatch,
+        local_window=230_144,
+        extra_windows={CODEX: 190_000},
+    )
+    placement._stub_fallback(monkeypatch)
+
+    live = _payload(_invoke(dispatch_repo, node="detail-parity"))
+    preview = _payload(_invoke(dispatch_repo, node="detail-parity", dry_run=True))
+    live_detail = live["competence"]["detail"]
+
+    assert live["error"] == "competence-refusal"
+    assert live["competence"]["shortfall_tokens"] == (
+        live["competence"]["estimated_tokens"] - live["competence"]["window_tokens"]
+    )
+    # The detail is routing's own rendering of the fit check: the figures, then
+    # the inputs that carried the estimate, and how the largest of them arrived.
+    assert live_detail.startswith("context-window-exceeded: estimated ")
+    assert str(live["competence"]["estimated_tokens"]) in live_detail
+    assert str(live["competence"]["window_tokens"]) in live_detail
+    assert "corpus.txt" in live_detail
+    assert "which arrived as a" in live_detail
+    assert live_detail == preview["competence"]["detail"]
