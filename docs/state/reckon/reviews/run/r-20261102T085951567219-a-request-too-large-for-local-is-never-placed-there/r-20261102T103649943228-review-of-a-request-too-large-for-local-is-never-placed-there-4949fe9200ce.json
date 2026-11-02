@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-02T10:48:33.973Z",
+  "dispatched_at": "2026-11-02T10:38:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "f8c31a04d2e",
+      "line": 586,
+      "severity": "non-blocking",
+      "text": "non-blocking: _candidate_window returns None for a malformed or non-positive window_tokens as well as for an undeclared one, so such a candidate ranks as unbounded above every declared window \u2014 the same tolerance the repair removed from _gating_input_window, which now raises through routing._context_fit_verdict."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "f2b70e1c9a4",
+      "line": 705,
+      "severity": "non-blocking",
+      "text": "non-blocking: when no candidate is usable the code raises only if routing's competence verdict disallows the resolved lane and otherwise returns the oversized resolution unchanged, so an oversized request would be placed on the lane just measured as too small; nothing asserts the two measurements agree."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "f5d92b6a7c1",
+      "line": 589,
+      "severity": "non-blocking",
+      "text": "non-blocking: _widest_context_candidate re-implements the fitting-candidate selection owned by reckon/crew/queue_admission.py:1081 _route_competence_refusal (skip the refused backend, skip candidates carrying reasons, take a usable one) without extending that owner or extracting a shared helper; only the widest-window ranking is this node's own requirement."
+    },
+    {
+      "file": "tests/test_a_request_too_large_for_local_is_never_placed_there.py",
+      "id": "f1a48c05e63",
+      "line": 111,
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture stubs dispatch_module._context_fit_verdict and _competence_verdict, so the repair's claim that the dispatcher reads routing's own fit verdict has no assertion that fails if it regresses; a recomputation from the same config returns the same answer with the stubs uncalled."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal (\"apply the router's context-fit check on the fallback path so a request too large for the local lane resolves to the fitting lane with the largest window and is never queued on local\") against reckon/crew/dispatch.py:1759-1806 and reckon/crew/dispatch.py:638-746; a router-free resolution now asks routing's fit verdict for the lane's gating window, re-plans onto the widest fitting candidate from the picker's own scan, and refuses through routing's competence verdict when nothing fits, which is what the goal states.\nVERDICT done_when: read plan section 15's done-when and tests/test_a_request_too_large_for_local_is_never_placed_there.py; three of its four cases are asserted directly (codex placement with a context-fit route fallback at :217, fitting request stays local at :271, unfittable request refuses naming its shortfall at :299) and the second (\"queues on codex when local is full\") is asserted as a codex placement with nothing queued at :238, a substitution the source manifest records under outside_scope and the prior review recorded as exempted because only the local lane queues at dispatch time.\nVERDICT write_paths: read the source dispatch prompt's scope fence and both node commits; adcdea5eff and 4949fe9200 touch only reckon/crew/dispatch.py, reckon/crew/dispatch_picker.py, tests/test_a_request_too_large_for_local_is_never_placed_there.py and the node's evidence fragment, all four declared.\nVERDICT manifest: read; it records head gate 4 passed at 4949fe9200 (repair-node-suite.log), base arm 3 failed / 1 passed at a878f1a8 (baseline-suite.log), merged-candidate test_crew_routes.py 13 passed, importer arms 87 passed on both sides, a red negative control (2 failed, EXIT=1), and every log path; it records no ruff result for the done-when's ruff clause.\nVERDICT diff: read both node commits against base a878f1a8 \u2014 adcdea5eff adds the five placement helpers and the reroute step to reckon/crew/dispatch.py, the snapshot capture to reckon/crew/dispatch_picker.py, the 290-line four-case test and the fragment; 4949fe9200 replaces the dispatcher-composed refusal with routing._competence_verdict and pops the captured scan on both picker branches \u2014 and the base-to-head diff also carries the merge 0ecf3c56b2 of origin/main, whose files are not this node's work.\nCALL_SITES: reckon/crew_dispatch_commands.py:2026, reckon/crew/queue_admission.py:312, reckon/crew/dispatch.py:1667\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1759-1806 runs the check before anything is queued or launched and dispatch.py:638 re-plans onto the widest fitting candidate, with the base arm's third failing case proving the queued-on-local placement it removes.\nSCORE evidence: 17\nJUSTIFICATION evidence: baseline-suite.log records 3 failed / 1 passed at a878f1a8 and repair-node-suite.log 4 passed at 4949fe9200, both ending EXIT=, but the done-when's ruff clause has no recorded log \u2014 a check of the three staged paths shows one pre-existing C420 at reckon/crew/dispatch_picker.py:422 present at the base and none added \u2014 and the second done-when case is asserted as a substituted outcome at tests/test_a_request_too_large_for_local_is_never_placed_there.py:238.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: both node commits touch only the four paths declared in the source prompt's fence, and the extra files in the base-to-head diff come from the origin/main merge 0ecf3c56b2 rather than from this node.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_request_too_large_for_local_is_never_placed_there.py:238 and :299 fail at the base revision with the new test copied in, so removing the reroute reddens them, but the fixture pins dispatch_module._context_fit_verdict and _competence_verdict to stubs at tests/test_a_request_too_large_for_local_is_never_placed_there.py:111-112, so a regression that recomputed the window inside the dispatcher would still pass.\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers at reckon/crew/dispatch.py:561-746 follow the module's docstring-and-mechanism style and carry no plan, ticket or author identifiers.\nSCORE reuse: 11\nJUSTIFICATION reuse: the gating window and the refusal now delegate to routing._context_fit_verdict and routing._competence_verdict (dispatch.py:568, :705), closing the prior review's finding, but dispatch.py:589 filters candidates by reasons and takes one exactly as reckon/crew/queue_admission.py:1081 _route_competence_refusal already does for the admission path.\nFINDING reckon/crew/dispatch.py:586 non-blocking: _candidate_window returns None for a malformed or non-positive window_tokens as well as for an undeclared one, so such a candidate ranks as unbounded above every declared window \u2014 the same tolerance the repair removed from _gating_input_window, which now raises through routing._context_fit_verdict, leaving the candidate path divergent from the lane path it was aligned with.\nFINDING reckon/crew/dispatch.py:705 non-blocking: when no candidate is usable, the code raises only if routing's competence verdict disallows the resolved lane and otherwise returns the oversized resolution unchanged, so an oversized request would be placed on the lane whose window was just measured as too small; the two measurements agree today only because they read one function, and nothing asserts that agreement.\nFINDING reckon/crew/dispatch.py:589 non-blocking: _widest_context_candidate re-implements the fitting-candidate selection owned by reckon/crew/queue_admission.py:1081 _route_competence_refusal (skip the refused backend, skip any candidate carrying reasons, take a usable one) without extending that owner or extracting a shared helper; only the widest-window ranking is this node's own requirement.\nFINDING tests/test_a_request_too_large_for_local_is_never_placed_there.py:111 non-blocking: the fixture replaces dispatch_module._context_fit_verdict and _competence_verdict with stubs, so the repair commit's central claim \u2014 that the dispatcher reads routing's own fit verdict rather than recomputing the window \u2014 has no assertion that fails if it regresses, because a recomputation from the same config would return the same answer with the stubs uncalled.",
+  "review_run_id": "r-20261102T103649943228-review-of-a-request-too-large-for-local-is-never-placed-there-4949fe9200ce",
+  "reviewed_base_sha": "a878f1a8e03a60b3b3693d3761bad7b42f8e4142",
+  "reviewed_head_sha": "4949fe9200ce3451e3b981aa3d2d17e173b38867",
+  "reviewed_run_id": "r-20261102T085951567219-a-request-too-large-for-local-is-never-placed-there",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 11,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T10:46:15.132537+00:00",
+  "total": 101
+}
