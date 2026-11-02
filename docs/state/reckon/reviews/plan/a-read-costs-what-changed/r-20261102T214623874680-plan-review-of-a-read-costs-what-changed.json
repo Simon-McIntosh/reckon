@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T21:59:03.329Z",
+  "dispatched_at": "2026-11-02T21:47:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:58",
+      "id": "done_when-1",
+      "reason": "implemented literally the node either adds an inert file that proves nothing about the skip rule or, if it adds a real record and the case goes red, treats a correct fresh answer as a failure; the case must be scoped to reads of the covered docs tree (read_plan/roadmap/audit's document set) with a non-review file, and the review-store reads stated as deliberately out of the covered set.",
+      "text": "\u00a72's second done-when case asserts \"A file added under the reviews tree changes no read's answer\", but `docs/state/<project>/reviews/` is exactly the committed review store (`committed_review_root`, reckon/crew/review.py:2397-2416), which `list_plan_reviews` globs directly (reckon/crew/plan_review.py:1446-1457) and `review_coverage` consumes from `edit_plan` (reckon/mcp_edit_plan.py:2177, whose returned `uncovered` set is the answer) and from admission's launch gate (reckon/crew/queue_admission.py:3305) \u2014 so a valid added review record changes those very answers",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:82",
+      "id": "reasoning-1",
+      "reason": "as written the node ships a green \"at most once\" count with two BeautifulSoup parses reduced to one at best, two HTMLParser parses untouched and the prose-based digest/coverage answer still costing a full parse per snapshot, so \u00a76's stated mechanism does not deliver the read cost the section is named for.",
+      "text": "\u00a76's fourth change says `plan_review.review_coverage` reads stored snapshots \"through the same persisted parse as \u00a73\", but `_snapshot_evidence` takes four parses per snapshot and the change reaches one: `_section_digests(text)` calls `_digest_state` \u2192 `_as_state(text)` \u2192 `_plan_html.read_state(text)` (reckon/crew/plan_review.py:429-442, 315-331), `_snapshot_declarations(text)` calls `_plan_html.read_state(text)` again (:896-905), and `_prose_texts(text)` feeds `_structural_spans` \u2014 a second, independent HTML parser \u2014 twice (:445-478, reckon/_plan_html.py:394-398); \u00a73's persisted entry is keyed on a file path and its stored value is the `read_state` mapping, so it cannot serve the prose reader at all, and the sixth done-when's counter (`_plan_html.read_state`) cannot see the two `_structural_spans` parses",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0d4c16f2750c4e14c0d743ea03da50d75a35f0d3",
+  "plan_fingerprint": "cba3d1c53a92c683b9d43937198ddae814db3c179a839071baf4cc6fa89a0752",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T214623874680-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "ab199edab53253366fa29008002714f56dfc4fe4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `metadata_index.discovery_file_scope` (reckon/metadata_index.py:100), `metadata_index._walk_covered` (:1157) and `_reuse_covered` (:870), `reckon/mcp.py` line 2224 (the `discovery_file_scope` entry in `_roadmap_tool`), `_plan_html.read_state_and_text_file` (reckon/_plan_html.py:1560), `plan_review.review_coverage` (reckon/crew/plan_review.py:966), `queue_landing`'s `land_once` (reckon/crew/queue_landing.py:783), `queue_admission.advance_waiting_requests` (:2923) and its `_readiness_rows` (:2034), `_store._declared_north_stars` (reckon/_store.py:782), `project_state.project_state_mode` (reckon/project_state.py:317) and `resources._directory_identity_index` (reckon/resources.py:823) all resolve; the extensionless plan hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 \u00a72's second done-when case, \"A file added under the reviews tree changes no read's answer\", is false as stated: `docs/state/<project>/reviews/` is the committed review store, and `edit_plan` and admission answer from it.",
+    "evidence_paths": "pass \u2014 \u00a77 writes its log to its own fragment directory under `docs/evidence/fragments/a-read-costs-what-changed/` (the convention in `skills/reckon-build/references/sprint-orchestration.md`:422) and under the run's `logs/`; both survive the run.",
+    "naming": "pass \u2014 s2, s6 and s7 name mechanisms (`discovery_file_scope`, `land_once`, `read_state_and_text_file`) and carry no plan labels, stage names, ticket numbers or version tags into code.",
+    "reasoning": "a finding \u2014 \u00a76's fourth change names \"the same persisted parse as \u00a73\" for review snapshots, but \u00a73's persisted entry is keyed by a file path and cannot serve the three other parses each snapshot takes per call.",
+    "single_goal": "pass \u2014 each section names one deliverable; \u00a72's two changes and \u00a76's four changes all serve one goal (one validation per request; every hot path reading through the memo), and \u00a76's fourth change (review snapshots through the persisted parse) is that same goal rather than a second one.",
+    "wiring": "pass \u2014 every entry in `plan-section-depends-on` resolves: s7 \u2192 s2\u2013s6, s4 \u2192 s2, s3 \u2192 s2, s6 \u2192 s2, s3 and `work-is-never-stuck-behind-the-admission-loop#s19` (that plan exists and carries a `data-id=\"s19\"` section); `informs`/`blocks` both name an existing plan; \u00a77's two-arm base/head measure is declared after the sections it compares."
+  },
+  "section_digests": {
+    "_document": "b95a28df95a3cf747f96acb25bf6b168ca47110360b4579222b186023d934918",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s2": "38df181e91b92bb8ad67c8ab86091f8997772dd103f14fb7568b4c8657eaaa7e",
+    "s3": "afe4d23d57715027d55faf5e36a2e87e1f44da0a2fc27fd40da6d44796d5ac1c",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "0e41ab0044c170460fc3ffe8bacac8ab3afe090224431629ec38f07f1537a9ef",
+    "s6": "9b05a7a9bdfb15dfa175163f89ea6095ad7877112eec254305ddedc4bf3e0ff8",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T22:10:20.998566+00:00"
+}
