@@ -9,8 +9,8 @@
   <meta name="plan-title" content="A Promotion Reads the Evidence It Is Given">
   <meta name="plan-summary" content="crew complete accepts honest evidence in the form workers and coordinators write it, and a refusal names the ids or commits it could not match">
   <meta name="plan-status" content="active">
-  <meta name="plan-roi" content="medium">
-  <meta name="plan-effort-hours" content="4">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="4.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="orchestrator">
   <meta name="plan-capability-reasoning" content="deep">
@@ -23,8 +23,9 @@
   <title>A Promotion Reads the Evidence It Is Given | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="0">
+<meta name="plan-version" content="1">
 <meta name="plan-modified" content="2026-11-02">
+<meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s2&quot;]}">
 </head>
 <body>
   <main class="plan-doc">
@@ -42,58 +43,26 @@
 
     <h2 id="s2">§2 — A red base matches a bare test name to its qualified id</h2>
     <section data-reckon="section" data-id="s2" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The red-base admission compares failure ids on the node name the two sides share:</p>
-    <ul>
-      <li>A bare test name matches a qualified id whose final <code>::</code> part, parameters included, equals it.</li>
-      <li>A qualified id matches only the same qualified id.</li>
-      <li>A bare name that matches more than one head id covers all of them, and the promotion record names that it did.</li>
-    </ul>
-    <p>When the admission still fails, the refusal lists the head failure ids the base does not cover, at most twenty, plus a count of the rest. It replaces the "two contradictory readings" sentence for this case.</p>
-    <p><strong>Done when</strong> a new <code>tests/test_a_red_base_matches_bare_names.py</code> shows three things:</p>
-    <ul>
-      <li>A base of bare names and a head of qualified ids naming the same tests promotes.</li>
-      <li>A head with one id the base lacks is refused, and the refusal names that id.</li>
-      <li>A qualified base id from a different file does not cover a head id with the same test name.</li>
-    </ul>
-    <p>The negative control compares ids exactly, as now, and the first case fails. The test files importing <code>reckon.crew.promotion_evidence</code> and <code>reckon.crew.review</code> add no failure against the base revision. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the staged paths. Write paths: <code>reckon/crew/promotion_evidence.py</code>, <code>reckon/crew/review.py</code> and the new test.</p>
+    <p><strong>Deliverable.</strong> The red-base admission compares failure ids on the node name the two sides share:</p><ul><li>A bare test name matches a qualified id whose final <code>::</code> part, parameters included, equals it.</li><li>A qualified id matches only the same qualified id.</li><li>A bare name that matches more than one head id covers all of them, and the promotion record names that it did, under <code>red_base_bare_matches</code>.</li></ul><p>When the admission still fails, the refusal lists the head failure ids the base does not cover, at most twenty, plus a count of the rest. It replaces the "two contradictory readings" sentence for this case.</p><p><strong>Done when</strong> a new <code>tests/test_a_red_base_matches_bare_names.py</code> shows four things:</p><ul><li>A base of bare names and a head of qualified ids naming the same tests promotes.</li><li>A head with one id the base lacks is refused, and the refusal names that id.</li><li>A qualified base id from a different file does not cover a head id with the same test name.</li><li>A bare base name matching two parametrised head ids covers both, and the promotion record's <code>red_base_bare_matches</code> names the bare name and both ids.</li></ul><p>The negative control compares ids exactly, as now, and the first case fails. The test files importing <code>reckon.crew.promotion_evidence</code> and <code>reckon.crew.review</code> add no failure against the base revision. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the staged paths. Write paths: <code>reckon/crew/promotion_evidence.py</code>, <code>reckon/crew/review.py</code> and the new test.</p>
 
     <h2 id="s3">§3 — A review run's gate check is its stored review record</h2>
     <section data-reckon="section" data-id="s3" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> When a run whose role is review is promoted with a passing gate and no check is given, <code>crew complete</code> builds the gate check from the run's stored review record:</p>
-    <ul>
-      <li>the record's path as the log;</li>
-      <li>its content digest as the digest;</li>
-      <li>exit status 0 when the record parses as a stored review, and a refusal naming the record when it does not.</li>
-    </ul>
-    <p>An implement run keeps the present requirement.</p>
-    <p><strong>Done when</strong> a new <code>tests/test_a_review_run_gate_is_its_record.py</code> shows three things:</p>
-    <ul>
-      <li>A review run with a stored, parseable review record promotes with <code>--gate passed --no-commit</code> and no check, and its ledger row carries the record's path and digest.</li>
-      <li>A review run whose record is missing or unparseable is refused, naming the record.</li>
-      <li>An implement run with no check is still refused with today's message.</li>
-    </ul>
-    <p>The negative control removes the review-role branch, and the first case fails. The test files importing <code>reckon.crew.promotion_checks</code> and <code>reckon.ledger</code> add no failure against the base revision. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/promotion_checks.py</code> and the new test.</p>
+    <p><strong>Deliverable.</strong> A passing gate's check is filled by <code>_default_gate_evidence_from_manifest</code> (<code>reckon/crew/promotion_records.py</code>, near line 244), which <code>promotion.py</code> calls near line 357. For a run whose role is review, promoted with a passing gate and no check given, that function builds the check from the run's stored review record:</p><ul><li>the record's path as the log;</li><li>its content digest as the digest;</li><li>exit status 0 when the record parses as a stored review, and a refusal naming the record when it does not.</li></ul><p>An implement run keeps the present requirement, which <code>promotion_checks._require_gate_check_precondition</code> still enforces unchanged.</p><p><strong>Done when</strong> a new <code>tests/test_a_review_run_gate_is_its_record.py</code> shows three things:</p><ul><li>A review run with a stored, parseable review record promotes with <code>--gate passed --no-commit</code> and no check, and its ledger row carries the record's path and digest.</li><li>A review run whose record is missing or unparseable is refused, naming the record.</li><li>An implement run with no check is still refused with today's message.</li></ul><p>The negative control removes the review-role branch, and the first case fails. The test files importing <code>reckon.crew.promotion_records</code>, <code>reckon.crew.promotion_checks</code> and <code>reckon.ledger</code> add no failure against the base revision. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/promotion_records.py</code> and the new test.</p>
 
     <h2 id="s4">§4 — A presented head covers the commits beneath it</h2>
-    <section data-reckon="section" data-id="s4" data-effort-hours="1" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The commit-list check in <code>reckon/crew/promotion.py</code> takes the commits between the run's base and the presented head as covered. A manifest commit is short only when it is not in <code>base..head</code>. The shortfall record and refusal then name only commits outside that range.</p>
-    <p><strong>Done when</strong> a new <code>tests/test_a_presented_head_covers_its_ancestors.py</code> shows three things:</p>
-    <ul>
-      <li>A manifest listing five commits, promoted with <code>--commit</code> naming the fifth, reports no shortfall when the other four are its ancestors above the base.</li>
-      <li>A manifest commit outside <code>base..head</code> is named in the shortfall.</li>
-      <li>A commit at or below the base is named too, because it is not the run's work.</li>
-    </ul>
-    <p>The negative control requires each commit by sha, as now, and the first case fails. The test files importing <code>reckon.crew.promotion</code> add no failure against the base revision. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/promotion.py</code> and the new test.</p>
+    <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The subset test that produced the 16-of-17 shortfall is <code>_require_gate_evidence</code> in <code>reckon/crew/promotion_evidence.py</code> (near line 908, <code>resolving_presented &lt; resolving_declared</code>). It takes the commits between the run's base and the presented head as covered, so a manifest commit is short only when it is not in <code>base..head</code>. <code>promotion.py</code> only carries the shortfall record it returns. The presented-citation and commitless-beyond-base refusals in <code>_require_commits_beyond_base</code>, in the same file, read the same covered set. The shortfall record and every refusal then name only commits outside that range.</p><p><strong>Done when</strong> a new <code>tests/test_a_presented_head_covers_its_ancestors.py</code> shows three things:</p><ul><li>A manifest listing five commits, promoted with <code>--commit</code> naming the fifth, reports no shortfall when the other four are its ancestors above the base.</li><li>A manifest commit outside <code>base..head</code> is named in the shortfall.</li><li>A commit at or below the base is named too, because it is not the run's work.</li></ul><p>The negative control requires each commit by sha, as now, and the first case fails. The test files importing <code>reckon.crew.promotion_evidence</code> and <code>reckon.crew.promotion</code> add no failure against the base revision. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/promotion_evidence.py</code> and the new test.</p>
 
-    <section data-reckon="decisions"></section>
-    <section data-reckon="comments"></section>
-    <section data-reckon="followups">
-      <article class="r-fu" data-id="f-aprteiig-001" data-status="open">
-        <h4 class="r-fu-title">Build §2 to §4</h4>
-        <div class="r-fu-body"><p>The three sections write disjoint files and can run together.</p></div>
-        <pre class="r-fu-prompt">/reckon-build a-promotion-reads-the-evidence-it-is-given</pre>
-      </article>
-    </section>
+    
+    
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-aprteiig-001" data-status="open" data-written-by="" data-written-at="" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2 to §4</h4>
+    <div class="r-fu-body"><p>The three sections write disjoint files and can run together.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-promotion-reads-the-evidence-it-is-given</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
