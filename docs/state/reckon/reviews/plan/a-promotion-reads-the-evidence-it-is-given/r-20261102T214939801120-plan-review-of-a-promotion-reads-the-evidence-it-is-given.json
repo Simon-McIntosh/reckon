@@ -1,0 +1,43 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T22:10:30.538Z",
+  "dispatched_at": "2026-11-02T22:03:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:46",
+      "id": "reasoning-1",
+      "reason": "a worker implementing \u00a72 as written cannot satisfy done-when case 4 inside its scope; it either fails its own gate or silently widens its write paths, so \u00a72 must either add the row-writing path to its write paths or drop the record key from the done-when.",
+      "text": "\u00a72's fourth done-when case requires \"the promotion record's `red_base_bare_matches` names the bare name and both ids\", but the ledger row stores `_normalized_gate_check(gate_check)` (`reckon/ledger.py:472`), which rebuilds the check from only `command`, `exit_status`, `log_path` and `log_digest`, so any key the admission adds in `promotion_evidence.py` is discarded before the row is written \u2014 and the only places the key can survive are `reckon/ledger.py` or the row augmentation in `reckon/crew/promotion.py`, neither of which is in \u00a72's declared write paths (`reckon/crew/promotion_evidence.py`, `reckon/crew/review.py`, the new test)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "45dfa77cdcf53466b68282da4e560a4a884d8a44",
+  "plan_fingerprint": "ceaa6837457e09e4d7954c53f6aa2b56bb7a9fd62bcec510a271cd1851beeb25",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T214939801120-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "bee9a5bf257c5af010104753d56482a520fcb3c5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion_evidence.py` (`_zero_added_against_a_red_base`, line 1174) and `reckon/crew/review.py` (`canonical_node_id`, line 1938) both exist and match what \u00a72 says they do.",
+    "done_when": "pass \u2014 \u00a72 declares four measurable cases plus a negative control (exact id comparison, first case fails), a no-added-failure check against the base revision, and a ruff delta; the multi-match case the previous review asked for is now present and tested.",
+    "evidence_paths": "pass \u2014 the node writes its gate to the run's own log paths; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 `red_base_bare_matches` names the mechanism, not a plan label, ticket or version.",
+    "reasoning": "a finding \u2014 the stated root cause and the matching mechanism hold, but the mechanism cannot write the record key \u00a72's fourth done-when case asserts, because the row normaliser drops it.",
+    "single_goal": "pass \u2014 the matching rule, the refusal that names uncovered ids, and the record key are one deliverable: the red-base admission's handling of ids the base does not cover.",
+    "wiring": "pass \u2014 `plan-section-depends-on` names only `s4 -> s2`, and \u00a72 depends on no other section; the three sections write disjoint files, matching the followup's claim."
+  },
+  "section_digests": {
+    "_document": "8584f9a2dfade761ea046948d760ea80d0275e70c1027309b9c3544b7d27eee8",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "0f9083f2230f055362c3af29fcf42dfffce0959300f4ac0f8a78faefc57ba9ae",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "6b34455efa5ea745d1bf5093edebda7d474a87de71de654e6cdcc55114110fd6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T22:21:35.708251+00:00"
+}
