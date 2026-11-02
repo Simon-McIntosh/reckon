@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="A missing pointer launch names the pointer">
+  <meta name="plan-summary" content="A launch-failed run whose exit record carries launch_failure kind pointer-missing gets a remedy naming the pointer path it expected and a resume, instead of the command-and-PATH remedy a spawn failure needs.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s13">
+  <meta name="plan-recorded-at" content="2026-11-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,recovery,classification,launch-failure">
+  <title>A missing pointer launch names the pointer — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="a-missing-pointer-launch-names-the-pointer-note" class="r-note" data-node="a-missing-pointer-launch-names-the-pointer" data-reckon="landed" data-when="2026-11-02">
+  <h2 id="a-missing-pointer-launch-names-the-pointer-head">A missing pointer launch names the pointer</h2>
+  <p id="a-missing-pointer-launch-names-the-pointer-rule">A launch that ended before a worker existed is read from its run directory, and the supervisor's exit record distinguishes the causes under <code>launch_failure.kind</code>. Two of them want opposite recoveries. A command that could not be executed needs the command and the PATH it was looked for on; a live pointer that went missing between the dispatch writing it and the supervisor's first read needs the path it was expected at, and a resume. The classification's launch-failed arm offered the command-and-PATH remedy for both, so the one case where PATH is irrelevant was handed the remedy that cannot clear it.</p>
+  <p id="a-missing-pointer-launch-names-the-pointer-mechanism">The change is confined to <code>reckon/crew/recovery_classification.py</code>. A new helper <code>_missing_pointer_recorded</code> reads the exit record's <code>launch_failure</code> block and answers the <code>pointer_path</code> only when <code>kind</code> is <code>pointer-missing</code>; anything else — a <code>spawn</code> kind, no block at all, no exit record — answers <code>None</code> and leaves the branch untouched. The launch-failed arm now composes its next action from that helper: the missing-pointer arm states that the launch found no live pointer at the recorded path and names <code>reckon crew resume --run &lt;run_id&gt;</code>, while every other launch failure keeps the previous command-and-PATH wording verbatim. The detail text, the classification word and the phase are unchanged, so no reader's existing reading of a launch failure shifts.</p>
+  <p id="a-missing-pointer-launch-names-the-pointer-gate">Head gate: <code>tests/test_a_missing_pointer_launch_names_the_pointer.py</code>, 3 passed, <code>EXIT=0</code>. Three exit records are classified: one carrying <code>kind: pointer-missing</code> with a pointer path, one carrying <code>kind: spawn</code>, and one with no <code>launch_failure</code> block. The pointer-missing arm asserts the recorded path and <code>reckon crew resume</code> are in the action and that neither <code>fix the command</code> nor <code>PATH</code> is; the other two assert the command-and-PATH remedy is still offered. The population of the 75 test files that import <code>recovery_classification</code> ran at head: 653 passed, 0 failed, so no failure is added against the base. Ruff <code>check</code> and <code>format --check</code> are clean on both staged paths.</p>
+  <p id="a-missing-pointer-launch-names-the-pointer-base">Base arm, in a scratch tree extracted from the base revision with the new test copied onto it: 1 failed, 2 passed, <code>EXIT=1</code>. The failing arm is the pointer-missing one, and its assertion message records the defect verbatim — the action it got was <code>fix the command and PATH for backend 'fixture-lane', then resume r-launch-failure-pointer-missing by hand — the lift loop stays stopped until then</code>. The other two arms pass at base, which is what makes this a branch on the record's kind rather than a new rule.</p>
+  <p id="a-missing-pointer-launch-names-the-pointer-mutation">Negative control, the mutation this node declared — remove the pointer-missing branch from the launch-failed action; the pointer-missing arm must then give the command-and-PATH action: <code>EXIT=1</code>, with <code>test_a_missing_pointer_names_the_pointer_it_looked_for</code> failing and the spawn and no-block arms still passing.</p>
+</article>
+</body>
+</html>

@@ -599,6 +599,29 @@ def _exit_record_ends_the_current_attempt(
     return _exit_record_names_attempt(record, attempt)
 
 
+def _missing_pointer_recorded(exit_record: Mapping[str, Any] | None) -> str | None:
+    """The live pointer a launch-failure record says went missing, if it does.
+
+    The supervisor stamps why a launch ended before a worker existed on the
+    run's exit record. A pointer that went missing and a command that cannot be
+    run reach that boundary as the same event and want opposite recoveries, so
+    the record's own ``kind`` decides which remedy is offered: a missing
+    pointer names a record a reader should go and look for, and only that kind
+    carries the path the record was expected at.
+
+    ``None`` means the record does not name a missing pointer at all, which
+    keeps every other launch failure on the command-and-PATH remedy.
+    """
+    if exit_record is None:
+        return None
+    block = exit_record.get("launch_failure")
+    if not isinstance(block, Mapping):
+        return None
+    if str(block.get("kind") or "") != "pointer-missing":
+        return None
+    return str(block.get("pointer_path") or "").strip()
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -1813,11 +1836,23 @@ def classify_pointer(
                 f"{recorded_end} before writing any "
                 f"stream record ({cause}); no model was reached"
             )
-        action = (
-            f"fix the command and PATH for backend "
-            f"{latest.get('backend') or record.get('backend')!r}, then resume "
-            f"{run_id} by hand — the lift loop stays stopped until then"
-        )
+        # The launch-failure record separates the two causes: a pointer that
+        # went missing under an admitted launch is a record to go and look for,
+        # while a command that cannot be run is a command and a PATH to fix.
+        missing_pointer = _missing_pointer_recorded(ended_exit)
+        if missing_pointer is not None:
+            where = f" at {missing_pointer}" if missing_pointer else ""
+            action = (
+                f"the launch found no live pointer{where}; resume {run_id} by "
+                f"hand with `reckon crew resume --run {run_id}` — the lift loop "
+                "stays stopped until then"
+            )
+        else:
+            action = (
+                f"fix the command and PATH for backend "
+                f"{latest.get('backend') or record.get('backend')!r}, then resume "
+                f"{run_id} by hand — the lift loop stays stopped until then"
+            )
     elif _stranded_launch(record, now_seconds=moment):
         # A launch cut off between composing its record and spawning a worker
         # leaves a pointer holding a pre-spawn phase and nothing else: no pid,
