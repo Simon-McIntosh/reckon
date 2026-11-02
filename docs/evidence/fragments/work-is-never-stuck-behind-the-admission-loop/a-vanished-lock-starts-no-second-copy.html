@@ -17,16 +17,21 @@ nothing. Each supervision pass also lists the copies of every declared service
 that the current pass can see and stops all but the recorded one, by pid, with
 the list logged first. The pid record now carries the lock file's inode beside
 the pid, so a reader can tell a replaced lock file from the held one.</p>
-<p id="a-vanished-lock-starts-no-second-copy-measure">The new test file's three
+<p id="a-vanished-lock-starts-no-second-copy-measure">The new test file's four
 cases run against a temporary runtime and state tree, and assert that the
 machine's own runtime and state directories carry none of the case's files
-afterwards. Head arm: 3 passed, exit 0. Declared negative control — restoring
+afterwards. Head arm: 4 passed, exit 0. Declared negative control — restoring
 the lock-only liveness read in <code>_alive</code> — fails the vanished-lock
 case: 1 failed, exit 1, with the log showing the restart starting a second
-copy. The files importing <code>reckon.crew.fleet_supervisor</code> were run at
-the base revision in an extracted tree: 2 failed, 2 errors, 261 passed; the
-same three files at head give 1 failed, 60 passed, the remaining failure being
-a leftover <code>reload-trees</code> directory under the real fleet runtime
-that the base extraction itself created. Ruff check and format are clean on
-the two staged paths.</p>
+copy. A fourth case covers a lock file deleted and remade between two starts:
+the record carries the inode now on disk, and with the previous copy's inode
+preferred that case fails while the rest pass. The files importing
+<code>reckon.crew.fleet_supervisor</code> were run at the base revision in an
+extracted tree (265 tests: 261 passed, 2 failed, 2 errors) and at head (269
+tests: 268 passed, 1 failed): four more tests pass at head than at base, and
+the failures reduce to the single id already failing at base,
+<code>test_station_reloads_from_a_node_local_image</code>, which fails on a
+leftover <code>reload-trees</code> directory under the real fleet runtime that
+the base extraction itself created. Ruff check and format are clean on the two
+staged paths.</p>
 </article>
