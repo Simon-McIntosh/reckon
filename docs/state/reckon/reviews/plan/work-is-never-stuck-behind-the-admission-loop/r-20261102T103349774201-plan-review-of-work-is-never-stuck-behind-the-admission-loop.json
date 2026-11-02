@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T10:40:19.343Z",
+  "dispatched_at": "2026-11-02T10:35:06Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:119",
+      "id": "done_when-1",
+      "reason": "without a control on clause 2 a node can ship a producer-gone rule that fires on the first observation and every declared arm and control stays green.",
+      "text": "clause 2 (\"the probe's observed value has not changed for `WAIT_PRODUCER_GONE_SECONDS`\") has no negative control: the three controls name the process-liveness clause, the scheduler-job clause and the no-exit-record route, and removing the stillness clause fails none of the five arms \u2014 arm 1 still passes (a still value is still classified producer-gone with no bound), arms 2 and 3 pass through the process-liveness clause, arm 4 through the scheduler clause \u2014 so the third arm's \"whose probe value is still moving\" only tests the bound if its fixture has no live process, which the arm does not say",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:113",
+      "id": "reasoning-1",
+      "reason": "a node implementing clause 1 literally raises a false producer-gone obligation on live runs classified from a coordinator node, and cannot fix it inside the declared write paths.",
+      "text": "clause 1 tells the node to read \"`process_liveness.process_alive` returns `False` for the recorded worker pid\" and \"`recovery_liveness._live_descendant` returns `False`\", but `process_alive` returns `False` (ProcessLookupError) for a pid that belongs to another host, and `_live_descendant` returns `False` when `_process_children` cannot read the task list at all (`recovery_liveness.py:388-416, 419-434`), so the conjunction holds for a live run launched on a different login node \u2014 exactly the case `local_liveness` marks `proven=False` and `classify_pointer` guards at line 548, where the descendant is only read when `local_reading and alive is True`; the plan's exemption names \"an unreadable child list\" but routes it through a function that cannot distinguish unreadable from empty, and neither `launcher_host`/`liveness_proven` nor `recovery_liveness.py` appears in the deliverable or the write paths",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f4be4af7cd4f75c548b4126af583aa06c3b09dd8",
+  "plan_fingerprint": "f52ad5bb7db2e61cff2d7517e7d4961ca8c1238ffe5804b43013baa1c657ee92",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 108,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T103349774201-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "03ad7d5880a7292f44fbce752d18217d642a28d4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery_classification.py` (`_the_probe_did_not_answer`, `classify_pointer`), `obligations.py`, `fleet_node.py:357` (`squeue -h -j`), `process_liveness.process_alive` and `recovery_liveness._live_descendant` all resolve; `wait_probe_history` is declared as new.",
+    "done_when": "a finding \u2014 the 15-minute stillness clause carries no negative control, and the third arm does not state the process state that would make it test it.",
+    "evidence_paths": "pass \u2014 the gate is a new test file plus ruff on the staged paths; nothing is written to a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 `WAIT_PRODUCER_GONE_SECONDS` and \"producer-gone\" name the mechanism, carrying no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 clause 1's process-liveness reading omits the host gate the surrounding code applies, so as written it is satisfied by a live run launched on another login node.",
+    "single_goal": "pass \u2014 s6 has one deliverable, a producer-gone classification that becomes an obligation.",
+    "wiring": "pass \u2014 s6's declared write paths (`recovery_classification.py`, `resumption.py`, `obligations.py`, `coordinator_obligations.py`) are the modules its mechanism runs through, and it names no section dependency it does not have."
+  },
+  "section_digests": {
+    "_document": "142990c7c6bba60d8d3af884a5af04bef7a3ddd4bb515467c9a5c295ac5d2b36",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "368ec24f4cec7fd1f6e3d3d190616c787dd85843f38587ee4f441d95aad92c7d",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T10:46:36.540839+00:00"
+}
