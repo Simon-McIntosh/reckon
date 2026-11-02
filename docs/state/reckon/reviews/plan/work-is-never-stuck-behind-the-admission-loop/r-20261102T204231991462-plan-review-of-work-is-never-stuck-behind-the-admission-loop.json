@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T20:51:09.081Z",
+  "dispatched_at": "2026-11-02T20:44:01Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:204",
+      "id": "reasoning-1",
+      "reason": "part 1 of the existing deliverable moves a request ahead of the ranked walk to avoid a delay it does not actually incur, so a node would implement queue-jumping and could never show the stall it was written for.",
+      "text": "s21 says a request released from awaiting-upstream \"waits for the rest of its pass's launch stage, which ran 1,200\u20134,000 s that day\", but `admit_once` calls `advance_waiting_requests(live)` (reckon/crew/queue_admission.py:3683) before it builds its queued list from the same `live` objects, and `_resolve_and_move` mutates the pointer's phase in place (2711-2739) while `_move_pointer` leaves `queued_at` untouched (3196-3213), so the released request is in that pass's queue walk at its original queue rank and is launched there, not on a later pass; the 1,200\u20134,000 s the section cites is the pass's `launch_seconds`, which s4 attributes to wait resolution inside the same pass",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:88",
+      "id": "reasoning-2",
+      "reason": "a node implementing the shortcut inside `require_plan_reviewed` would leave the per-launch `review_coverage` calls untouched, so the section's first done-when (\"calls review_coverage zero times\") would fail after the work was done in the place the plan named.",
+      "text": "s4's deliverable says the launch-time reuse happens in `require_plan_reviewed` (\"compares those digests with the plan's present ones and returns at once when neither moved\"), but a queued request reaches the launch through `_plan_review_owed` (reckon/crew/queue_admission.py:3244), which already compares the stored contract digests (`REVIEW_CONTRACT_KEY`, 3296-3339) and calls `plan_review.review_coverage` for every request on every pass with no per-pass cache; `routing.require_plan_reviewed` is reached only for a pointer with no current contract, through `_dispatch_gate_owed` (3216-3236)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:196",
+      "id": "done_when-1",
+      "reason": "the case as worded and the control cannot both fail on the same defect, so a node can land all three parts with part 3 (the reader fallback) dead and still see the declared control pass.",
+      "text": "s19's first case asks for a request \"whose stored waits gain a run: ref through `_rederive_waits`, with that ref absent from `wait_projects`\", and its negative control restores `or \"\"` in `_wait_state`; but the section's own part 2 makes `_rederive_waits` write `wait_projects` in the same pointer mutation that writes the waits (the `_rederive_waits` rewrite at reckon/crew/queue_admission.py:2930-2945 writes only `waits` and `waits_at` today), so once the writer is fixed a ref that \"gains\" through `_rederive_waits` can no longer be absent from `wait_projects`, and the first case passes through the writer while the restored `or \"\"` is never consulted",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b7cda2f91e24a710a82f39428866a8a31f89dc3b",
+  "plan_fingerprint": "fc456f32308a7b9679124741bb2699840a5bdf4680acdbdcc83463cddf860f3f",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 148,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T204231991462-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "142c8ef5923d1863b3aeb634a4b86c1aea6fe3d5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 s19's _wait_state (reckon/crew/queue_admission.py:2323, reads `wait_projects.get(run_id) or \"\"` at 2354), _rederive_waits (2873, writes only `waits`/`waits_at`), target() (1811), _hold_pointer (3070, writes `wait_projects` at 3095), s20's _alive (reckon/crew/fleet_supervisor.py:1428) and lock_held (735, opens without O_CREAT), s21's admit_once (3632) and s4's require_plan_reviewed (reckon/crew/routing.py:2586) all resolve.",
+    "done_when": "a finding \u2014 s19's first case and its declared negative control cannot both hold once the section's own writer fix lands.",
+    "evidence_paths": "pass \u2014 s4's timing arm writes under the run's logs/ on the fleet node, and every other done-when runs a named test file in the repository's tests/ directory.",
+    "naming": "pass \u2014 the new symbols the sections name (wait_projects, wait-unresolvable, waits_seconds, queue_position, rank_key, last_admission) are mechanism names; no ticket, plan label or version tag reaches code, and no changelog prose is specified.",
+    "reasoning": "a finding \u2014 s21's stated cause is not what the code does, and s4 aims its mechanism at a function the launch path does not reach.",
+    "single_goal": "pass \u2014 s19 (a wait names its project), s20 (a vanished lock starts no second copy) and s21 (a released request launches) each carry one deliverable with its own test file.",
+    "wiring": "pass \u2014 the new s21 -> a-read-costs-what-changed#s6 and s4 -> a-read-costs-what-changed#s6 edges name sections that exist (docs/plans/a-read-costs-what-changed.html:98), and s19 and s20 carry no dependency they need, since each repairs a self-contained module."
+  },
+  "section_digests": {
+    "_document": "0610c3eb8e5f68f649b3cfa041b215ba6c61aa315b28ff3e7ab36669ee820516",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "8c2721bf0c64d38810d62ec0e011ab1261b76dc9799e72766aff45b81fcd8fe7",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "ca479091ea413ea9312244b4ab5fe33ed8e1b668bef96590e6d58c2b236b4209",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "784cf675ed28632c79c4ca92859a2e4c434ed7d7c129c452d71c7dcaa927a38c",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T20:58:41.012128+00:00"
+}
