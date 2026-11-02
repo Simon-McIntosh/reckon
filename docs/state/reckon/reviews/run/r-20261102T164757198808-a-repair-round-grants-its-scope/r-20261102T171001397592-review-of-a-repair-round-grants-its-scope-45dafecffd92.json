@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:660 dispatch_repair_for_run",
+    "reckon/crew/recovery.py:174 and :185 re-export _repair_resume_advice and dispatch_repair_for_run",
+    "reckon/crew_run_commands.py:1491 crew widen calls widen_claim",
+    "reckon/crew_run_commands.py:2046 and :2818 widen_claim callers"
+  ],
+  "completed_at": "2026-11-02T17:17:49.679Z",
+  "dispatched_at": "2026-11-02T17:11:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "473",
+      "severity": "non-blocking",
+      "text": "_grant_round_scope catches every CrewError from widen_claim and reports it as a peer-held conflict, so a ClaimAmendmentRefusedError (the reviewed run's own worker still alive) or a claim-less pointer reaches the worker as 'held by peer run <its own id or unrecorded>' and the path is silently dropped from the round's scope; only ScopeConflict is a peer conflict and the rest should be re-raised or reported as their own refusal."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T164757198808-a-repair-round-grants-its-scope/logs/importers-head.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T164757198808-a-repair-round-grants-its-scope/logs/importers-base.log"
+  },
+  "item_verdicts": {
+    "diff": "Read commit by commit from b722966660a6 to 45dafecffd92; f52341d4d7 changes claims.py (+32/-11, grant_source threaded through widen_claim and _record_self_grant renamed to _record_grant) and recovery_repair_dispatch.py (+100/-2, _grant_round_scope, _grant_reason and the conflicts branch of _repair_resume_advice) and adds the 362-line test; 45dafecffd92 adds only the 40-line evidence fragment.",
+    "done_when": "The done_when names three cases in tests/test_a_repair_round_grants_its_scope.py:286, :305 and :331; the gate log records '3 passed' EXIT=0, the declared negative control that skips the grant records '3 failed' EXIT=1 with test_promotion_accepts_a_head_that_changed_the_granted_path among them, and both importer arms record 175 passed with empty failure_ids.",
+    "goal": "The node goal is to record a repair round's out-of-scope finding paths as grants on the run's claim; reckon/crew/recovery_repair_dispatch.py:458-487 _grant_round_scope widens the claim through claims.widen_claim with grant_source 'repair-round' and the finding id as reason, immediately before the resume at :1287, so the goal is met and the peer-conflict half of the plan's deliverable is met too.",
+    "manifest": "The source manifest reads status complete, commits f52341d4d7d1226f4eb57f372cc3427c730dc8c7 and 45dafecffd92d5429315b56a3abd5384603435bf, records both suite arms as literal commands with on-disk logs, names the negative-control log, and its artefacts line quotes the gate's own summary lines.",
+    "write_paths": "The source brief declares reckon/crew/recovery_repair_dispatch.py, reckon/crew/claims.py, tests/test_a_repair_round_grants_its_scope.py, the evidence fragment and its figure directory; the diff touches the first four and no figure, so every changed path is inside the declaration."
+  },
+  "justifications": {
+    "durability": "tests/test_a_repair_round_grants_its_scope.py:305 asserts promotion's own _landing_scope_products records no acceptance for a commit changing the granted path, and the negative control shows that assertion reddens when the grant is skipped; :262 and :331 read the claim and the advice back rather than restating their inputs.",
+    "evidence": "logs/gate-head.log ends '3 passed ... EXIT=0', logs/negative-control.log ends '3 failed ... EXIT=1' and logs/importers-base.log and importers-head.log both end '175 passed ... EXIT=0' with failure_ids [], though the done_when's ruff clause is asserted in the manifest's artefacts line rather than recorded in a log.",
+    "fit": "reckon/crew/recovery_repair_dispatch.py:434-506 names the mechanism (_grant_round_scope, _grant_reason, grant_source) with no plan or ticket label, and reckon/crew/claims.py:68-95 keeps widen_claim's existing keyword-only shape by defaulting grant_source to ''.",
+    "goal_fidelity": "reckon/crew/recovery_repair_dispatch.py:458-487 grants each undeclared scope path on the run's claim with source 'repair-round' and the finding id, and :1287 does it before resumption._resume, which is what the plan's deliverable states.",
+    "reuse": "the capability search over reckon/crew found claims.widen_claim as the owner of path widening and dispatch_claims.refuse_widen_scope_conflicts as the owner of peer-claim refusal; the diff threads a source through widen_claim and calls both rather than adding a second widening or conflict mechanism.",
+    "scope_discipline": "git diff b722966660a6..45dafecffd92 changes only reckon/crew/claims.py, reckon/crew/recovery_repair_dispatch.py, tests/test_a_repair_round_grants_its_scope.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to record a repair round's out-of-scope finding paths as grants on the run's claim; reckon/crew/recovery_repair_dispatch.py:458-487 _grant_round_scope widens the claim through claims.widen_claim with grant_source 'repair-round' and the finding id as reason, immediately before the resume at :1287.\nVERDICT done_when: The done_when names three cases in tests/test_a_repair_round_grants_its_scope.py:286, :305 and :331; the gate log records '3 passed' EXIT=0, the declared negative control that skips the grant records '3 failed' EXIT=1 with test_promotion_accepts_a_head_that_changed_the_granted_path among them, and both importer arms record 175 passed with empty failure_ids.\nVERDICT write_paths: The source brief declares reckon/crew/recovery_repair_dispatch.py, reckon/crew/claims.py, tests/test_a_repair_round_grants_its_scope.py, the evidence fragment and its figure directory; the diff touches the first four and no figure, so every changed path is inside the declaration.\nVERDICT manifest: The source manifest reads status complete, commits f52341d4d7d1226f4eb57f372cc3427c730dc8c7 and 45dafecffd92d5429315b56a3abd5384603435bf, records both suite arms as literal commands with on-disk logs, and names the negative-control log.\nVERDICT diff: Read commit by commit from b722966660a6 to 45dafecffd92; f52341d4d7 changes claims.py and recovery_repair_dispatch.py and adds the test, 45dafecffd92 adds only the evidence fragment.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:660 dispatch_repair_for_run, reckon/crew/recovery.py:174 and :185 re-export _repair_resume_advice and dispatch_repair_for_run, reckon/crew_run_commands.py:1491 crew widen calls widen_claim, reckon/crew_run_commands.py:2046 and :2818 widen_claim callers\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:458-487 grants each undeclared scope path on the run's claim with source 'repair-round' and the finding id, and :1287 does it before resumption._resume.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log ends '3 passed ... EXIT=0', logs/negative-control.log ends '3 failed ... EXIT=1' and the two importer logs end 175 passed each, though the done_when's ruff clause is asserted rather than logged.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff b722966660a6..45dafecffd92 changes only the declared source, test and fragment paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_repair_round_grants_its_scope.py:305 asserts _landing_scope_products records no acceptance for the granted path change, and the negative control reddens it.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_repair_dispatch.py:434-506 names the mechanism with no plan or ticket label, and claims.py:68-95 keeps widen_claim's keyword-only shape by defaulting grant_source.\nSCORE reuse: 20\nJUSTIFICATION reuse: the search over reckon/crew found claims.widen_claim owning widening and dispatch_claims.refuse_widen_scope_conflicts owning peer refusal; the diff threads a source through the first and calls the second.\nFINDING reckon/crew/recovery_repair_dispatch.py:473 non-blocking: _grant_round_scope catches every CrewError from widen_claim and reports it as a peer-held conflict, so a ClaimAmendmentRefusedError or a claim-less pointer reaches the worker as 'held by peer run <its own id or unrecorded>' and the path is silently dropped from the round's scope.\n",
+  "review_run_id": "r-20261102T171001397592-review-of-a-repair-round-grants-its-scope-45dafecffd92",
+  "reviewed_base_sha": "b722966660a630f68b8949503a3219f254d3b2b1",
+  "reviewed_head_sha": "45dafecffd92d5429315b56a3abd5384603435bf",
+  "reviewed_run_id": "r-20261102T164757198808-a-repair-round-grants-its-scope",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T17:15:02+00:00",
+  "total": 112
+}
