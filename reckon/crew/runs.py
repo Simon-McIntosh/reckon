@@ -683,6 +683,40 @@ def _resolved_queue_max_requests(record: Mapping[str, Any]) -> int:
     return flight.queue_max_requests(resolved.config)
 
 
+# The one node field a steer does not override on a waiting request. A fresh
+# dispatch names a manifest path for its own run directory, but the request
+# already has a worker's manifest path, and repointing it after the worker was
+# told where to write puts the manifest and the worker's stream in different
+# directories.
+_REQUEUE_PRESERVED_NODE_FIELDS = ("manifest_path",)
+
+
+def _merged_requeue(
+    existing: Mapping[str, Any], record: Mapping[str, Any]
+) -> dict[str, Any]:
+    """The pointer a steer writes: the new request's fields over the waiting one's.
+
+    A field the new record carries wins, so every steer a coordinator makes
+    applies. A field only the waiting pointer carries is kept: a launch or an
+    observation already wrote it, and a freshly composed request never carries
+    it. ``node`` merges the same way, except for the fields named in
+    :data:`_REQUEUE_PRESERVED_NODE_FIELDS`.
+    """
+    merged: dict[str, Any] = dict(existing)
+    merged.update(record)
+    held_node = existing.get("node")
+    new_node = record.get("node")
+    if isinstance(held_node, Mapping) or isinstance(new_node, Mapping):
+        node = dict(held_node or {})
+        node.update(dict(new_node or {}))
+        if isinstance(held_node, Mapping):
+            for field in _REQUEUE_PRESERVED_NODE_FIELDS:
+                if field in held_node:
+                    node[field] = held_node[field]
+        merged["node"] = node
+    return merged
+
+
 def queue_dispatch(
     record: dict[str, Any],
     *,
@@ -766,6 +800,7 @@ def queue_dispatch(
                         record["run_id"] = existing_run_id
                         record["queued_at"] = current["queued_at"]
                         record["created_at"] = current["created_at"]
+                        record = _merged_requeue(current, record)
                         requeued = True
                         _write_json(pointer_path(existing_run_id), record)
                     # A pointer that vanished between the scan and this lock was
