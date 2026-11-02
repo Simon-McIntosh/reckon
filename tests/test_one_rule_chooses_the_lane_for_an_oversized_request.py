@@ -105,6 +105,7 @@ def _admission_destination(
     monkeypatch: pytest.MonkeyPatch,
     *,
     lane: str = "",
+    refused: str = LOCAL,
 ) -> str:
     """The lane the admission pass moves a refused request onto."""
     captured: dict[str, str] = {}
@@ -119,7 +120,7 @@ def _admission_destination(
         "project": PROJECT,
         "repo": str(repo),
         "session": SESSION,
-        "backend": LOCAL,
+        "backend": refused,
         "node": placement._node("oversized").as_dict(),
         "dispatch_options": {},
     }
@@ -172,7 +173,7 @@ def test_the_candidates_are_measured_by_routing_and_not_by_the_test(
 
     assert blocks[LOCAL]["estimated_tokens"] > 230_144
     assert blocks[CODEX]["window_tokens"] is None
-    assert snapshot.widest_fitting_candidate(candidates).backend == CODEX
+    assert snapshot.widest_fitting_candidate(candidates, LOCAL).backend == CODEX
 
     (dispatch_repo / "corpus.txt").unlink()
     placement._stub_fallback(monkeypatch)
@@ -214,7 +215,7 @@ def test_the_rule_reads_a_broken_window_as_broken(declared: object) -> None:
     wide = {"backend": "wide", "reasons": [], "context": {"window_tokens": 100_000}}
 
     with pytest.raises(CrewError):
-        snapshot.widest_fitting_candidate([broken, wide])
+        snapshot.widest_fitting_candidate([broken, wide], "elsewhere")
 
 
 def test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree(
@@ -245,11 +246,7 @@ def test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree(
 
     monkeypatch.setattr(dispatch_module, "_create_worktree", refuse_to_create)
 
-    result = _invoke(
-        dispatch_repo,
-        node="unfittable",
-        done_when="pytest -q tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py reports seven cases",
-    )
+    result = _invoke(dispatch_repo, node="unfittable")
     assert created == []
     payload = _payload(result)
 
@@ -258,7 +255,92 @@ def test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree(
     competence = payload["competence"]
     assert competence["reason"] == "context-window-exceeded"
     assert competence["estimated_tokens"] > competence["window_tokens"]
+    assert competence["shortfall_tokens"] == (
+        competence["estimated_tokens"] - competence["window_tokens"]
+    )
+    # The refusal is the fit check's own, not the competence verdict's: taking
+    # the verdict would put its agent key and its own context block on the
+    # payload, and a reader would be reading a second description of the same
+    # shortfall rather than the measure that refused.
+    assert "context" not in competence
+    assert "agent_key" not in competence
     assert str(competence["shortfall_tokens"]) in payload["detail"]
     assert str(competence["window_tokens"]) in payload["detail"]
     assert created == []
     assert runs.list_live(project=PROJECT, phase="queued") == []
+
+
+def test_the_refused_lane_is_never_chosen_even_when_it_is_the_widest() -> None:
+    # Both callers used to skip the lane that refused the request themselves,
+    # so the rule's own answer could be the refused lane and each caller's skip
+    # was the only thing standing between the request and a move onto it. The
+    # rule excludes it, and the path is asserted through the admission caller.
+    refused = {
+        "backend": "refuser",
+        "reasons": [],
+        "context": {"window_tokens": 900_000},
+    }
+    narrow = {"backend": "narrow", "reasons": [], "context": {"window_tokens": 100_000}}
+
+    assert (
+        snapshot.widest_fitting_candidate([refused, narrow], "refuser")["backend"]
+        == "narrow"
+    )
+    assert snapshot.widest_fitting_candidate([refused, narrow], "elsewhere")[
+        "backend"
+    ] == ("refuser")
+
+
+def test_the_refused_widest_lane_is_not_chosen_by_the_admission_pass(
+    dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _configure(
+        dispatch_repo,
+        monkeypatch,
+        local_window=100_000,
+        extra_windows={CODEX: 900_000, "alpha": 150_000},
+    )
+    destination = _admission_destination(
+        dispatch_repo, config, monkeypatch, lane=CODEX, refused=LOCAL
+    )
+
+    assert destination == CODEX
+
+
+def test_the_refusal_shortfall_is_the_fit_checks_and_not_the_verdicts(
+    dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The competence verdict disallows the lane too, and carries its own
+    # estimate and shortfall. The refusal a request nothing holds must answer
+    # with the two figures the fit check weighed, so a stubbed verdict carrying
+    # a different shortfall must not reach the payload.
+    _configure(
+        dispatch_repo,
+        monkeypatch,
+        local_window=230_144,
+        extra_windows={CODEX: 190_000},
+    )
+    placement._stub_fallback(monkeypatch)
+    monkeypatch.setattr(
+        dispatch_module,
+        "_competence_verdict",
+        lambda **_kwargs: {
+            "allowed": False,
+            "reason": "context-window-exceeded",
+            "estimated_tokens": 987_654,
+            "window_tokens": 1,
+            "shortfall_tokens": 987_653,
+            "detail": "a verdict the refusal must not be built from",
+        },
+    )
+
+    result = _invoke(dispatch_repo, node="verdict-disallows")
+    payload = _payload(result)
+    competence = payload["competence"]
+
+    assert result.exit_code == 5, result.output
+    assert competence["shortfall_tokens"] != 987_653
+    assert competence["shortfall_tokens"] == (
+        competence["estimated_tokens"] - competence["window_tokens"]
+    )
+    assert competence["estimated_tokens"] > competence["window_tokens"]

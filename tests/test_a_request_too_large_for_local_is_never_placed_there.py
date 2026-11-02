@@ -287,4 +287,17 @@ def test_a_request_no_permitted_lane_holds_refuses_with_its_shortfall(
     # with the same payload rather than a second description of the shortfall.
     dry_payload = _payload(_invoke(dispatch_repo, node="unfittable", dry_run=True))
     assert dry_payload["error"] == payload["error"]
-    assert dry_payload["competence"] == payload["competence"]
+    # The preview answers from the resolution's competence verdict, which carries
+    # the same fit check as its context block; the live dispatch refuses from
+    # that fit check itself. The two must name the same estimate, window and
+    # shortfall, or the preview would be answering a different question from the
+    # dispatch it previews.
+    dry_competence = dry_payload["competence"]
+    for field in ("estimated_tokens", "window_tokens", "shortfall_tokens"):
+        assert dry_competence[field] == payload["competence"][field]
+    assert (
+        dry_competence["context"]["shortfall_tokens"]
+        == (  # type: ignore[index]
+            payload["competence"]["shortfall_tokens"]
+        )
+    )

@@ -1117,12 +1117,9 @@ def _route_competence_refusal(
     refused_backend = str(pointer.get("backend") or "")
     run_id = str(pointer["run_id"])
     chosen = picker_snapshot.widest_fitting_candidate(
-        picker_snapshot.candidates(request, config, repository)
+        picker_snapshot.candidates(request, config, repository), refused_backend
     )
-    # The lane that refused the request is never the answer, even where the scan
-    # carries no reason for it: moving a request onto the lane it was refused by
-    # is not a move, and the shortfall below says what the reader has to clear.
-    if chosen is not None and str(chosen.backend) != refused_backend:
+    if chosen is not None:
         destination = str(chosen.backend)
         route = _candidate_route(config, destination)
         reason = (

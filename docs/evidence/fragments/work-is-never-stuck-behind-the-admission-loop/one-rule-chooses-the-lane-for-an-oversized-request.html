@@ -19,18 +19,22 @@ on every call. A window that is present but malformed or non-positive raises
 the refusal the router's own fit check raises for the same declaration, rather
 than reading as unbounded. <code>dispatch.py</code>'s private
 <code>_candidate_window</code> and <code>_widest_context_candidate</code> are
-gone. Where nothing fits, <code>_reroute_oversized_request</code> builds the
-refusal from the two figures it weighed —
-<code>_context_shortfall_refusal</code>, naming the estimate, the lane's
-window and the distance between them — and raises <code>CompetenceLimit</code>
-for every case instead of returning the resolution. The resolved lane's own
-verdict is still preferred where it refuses, so the live refusal and the dry
-run that previewed it carry one payload.</p>
+gone. The rule also takes the backend that refused the request and excludes it
+itself, so neither caller keeps a skip of its own and the rule cannot answer
+with the lane the request came from. Where nothing fits,
+<code>_reroute_oversized_request</code> has no branch that returns the
+resolution unchanged: it refuses, and the refusal is the context refusal
+<code>routing._context_fit_verdict</code> builds for the resolved lane — the
+estimate that check measured against that lane's gating window, and the
+distance between the two. The competence verdict is never the source, in any
+branch: it accepts a lane the context fit can refuse, and it carries its own
+estimate and shortfall, so a refusal built from it states a measure the
+placement never weighed.</p>
 <p id="one-rule-chooses-the-lane-for-an-oversized-request-measure">Measured by
 <code>tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py</code>,
-seven cases, driving routing's own <code>_context_fit_verdict</code> and
+ten cases, driving routing's own <code>_context_fit_verdict</code> and
 <code>_competence_verdict</code> from a config that declares the windows and
-stubbing neither. The same candidates resolve the same lane on both paths, and
+stubbing neither for the placement cases. The same candidates resolve the same lane on both paths, and
 it is the widest usable one: with alpha at 300,000 and beta at 400,000 tokens,
 dispatch moves the request to beta with
 <code>route_fallback {"from_backend": "clive", "to_backend": "beta", "reason":
@@ -42,24 +46,27 @@ leaves the request on its own lane. A window declared as <code>0</code> or
 <code>"not-a-number"</code> raises on both paths — dispatch exits non-zero with
 <code>dispatch-refused</code> naming the input window, admission raises
 <code>CrewError</code> — and the rule itself refuses such a candidate rather
-than ranking it. With no usable lane, dispatch exits 5 with
-<code>competence-refusal</code>, naming <code>context-window-exceeded</code>,
-the estimate above the window and the shortfall in its detail, creates no
-worktree and queues nothing; the case is built so the resolved lane's own
-verdict is satisfied while the request's estimate is not, which is exactly the
-disagreement that used to place the request. Gate: <strong>7 passed at
-head</strong>, and the two node files together <strong>11 passed,
+than ranking it. A lane that is the widest usable candidate and also the one
+that refused the request is not chosen: the rule returns the narrow lane beside
+it, and the admission pass moves the request to that narrow lane. With no
+usable lane, dispatch exits 5 with <code>competence-refusal</code>, naming
+<code>context-window-exceeded</code>, the fit check's estimate above that
+lane's window and their difference, creates no worktree and queues nothing; the
+refusal carries no agent key and no nested context block, which is what
+distinguishes it from the competence verdict. Gate: <strong>10 passed at
+head</strong>, and the two node files together <strong>14 passed,
 EXIT=0</strong>, with the two verdict stubs removed from
 <code>tests/test_a_request_too_large_for_local_is_never_placed_there.py</code>
 (4 passed).</p>
 <p id="one-rule-chooses-the-lane-for-an-oversized-request-controls">Negative
 controls, both applied and both reverted. Keeping admission's first-usable
-choice fails the first case: <em>1 failed, 6 passed, EXIT=1</em>, reading
+choice fails the first case: <em>1 failed, 9 passed, EXIT=1</em>, reading
 <code>AssertionError: assert 'alpha' == 'beta'</code> in
 <code>test_both_paths_move_the_request_to_the_widest_fitting_lane</code>.
 Restoring the unchanged-resolution return fails the third:
-<em>1 failed, 6 passed, EXIT=1</em>, reading <code>AssertionError: assert
-[(PosixPath('...'), 'session', 'unfittable', 'HEAD')] == []</code> in
-<code>test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree</code> — a
-worktree was created for a request nothing could hold.</p>
+<em>1 failed, 9 passed, EXIT=1</em>, reading <code>assert 'context' not in
+{'agent_key': …, 'context': {…}, 'estimated_tokens': 250392, …}</code> in
+<code>test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree</code> —
+the placement falls through to the competence verdict, so the refusal a reader
+sees is that verdict rather than the fit check that refused the lane.</p>
 </section>

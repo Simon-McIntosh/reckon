@@ -610,19 +610,22 @@ def candidate_window_tokens(candidate: Any) -> int | None:
 
 
 def widest_fitting_candidate(
-    candidates: Iterable[Any],
+    candidates: Iterable[Any], refused_backend: str
 ) -> Any | None:
     """The lane an oversized request is moved to, when nothing names one.
 
     Both paths that place such a request -- the admission pass and a dispatch
     with no router answer -- choose through this one rule, so the same candidate
-    set resolves the same lane whichever path reads it. A candidate carrying any
-    reason is excluded: for a review that is where the role's withdrawn lanes
-    have already been removed, and a lane whose own window the request exceeds
-    carries the fit refusal itself. Among the rest the largest usable input
-    window wins. A candidate declaring no window is unbounded and ranks above
-    every declared figure, and ties break by backend name so two equally wide
-    lanes resolve the same way on every call.
+    set resolves the same lane whichever path reads it. The lane that refused the
+    request is never the answer, even where the scan carries no reason for it:
+    returning it is not a move, and a caller that skipped it for itself would be
+    a second reading of this rule. A candidate carrying any reason is excluded
+    too: for a review that is where the role's withdrawn lanes have already been
+    removed, and a lane whose own window the request exceeds carries the fit
+    refusal itself. Among the rest the largest usable input window wins. A
+    candidate declaring no window is unbounded and ranks above every declared
+    figure, and ties break by backend name so two equally wide lanes resolve the
+    same way on every call.
     """
 
     def rank(candidate: Any) -> tuple[int, float, str]:
@@ -637,6 +640,7 @@ def widest_fitting_candidate(
         candidate
         for candidate in candidates
         if not _candidate_field(candidate, "reasons")
+        and str(_candidate_field(candidate, "backend") or "") != refused_backend
     ]
     return min(usable, key=rank) if usable else None
 

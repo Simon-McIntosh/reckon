@@ -690,25 +690,21 @@ def _reroute_oversized_request(
                 authority=authority,
             )
         ]
-    chosen = picker_snapshot.widest_fitting_candidate(candidates)
+    chosen = picker_snapshot.widest_fitting_candidate(candidates, resolution.backend)
     if chosen is None:
-        # No permitted lane holds it, so nothing may be placed anywhere: the
-        # request refuses with the shortfall rather than going back on the lane
-        # the check above just measured too small. The resolved lane's own
-        # verdict is preferred, so the refusal and the preview that states why
-        # the lane cannot run it carry one payload. That verdict measures the
-        # lane's instruction chain rather than the request's estimate, so it can
-        # be satisfied while the request is not; in that case the refusal is
-        # built from the two figures this check weighed.
-        refusal = _competence_verdict(resolution=resolution, project=project, repo=repo)
-        if refusal.get("allowed"):
-            refusal = _context_shortfall_refusal(
-                backend=resolution.backend, estimate=estimate, window=window
+        # No permitted lane holds it, and the lane that refused it is excluded by
+        # the rule itself, so nothing may be placed anywhere. The refusal is the
+        # fit check's own: the estimate it measured against the resolved lane's
+        # gating window, and the distance between the two.
+        context_fit = _context_fit_verdict(resolution=resolution, repo=repo)
+        raise CompetenceLimit(
+            _context_shortfall_refusal(
+                backend=resolution.backend,
+                estimate=int(context_fit["estimated_tokens"]),
+                window=int(context_fit["window_tokens"]),
             )
-        raise CompetenceLimit(refusal)
+        )
     chosen_backend = str(chosen.get("backend") or "")
-    if not chosen_backend or chosen_backend == resolution.backend:
-        return resolution, None
     # Re-resolve onto the chosen lane rather than patching the plan, so the new
     # backend gets its own execution fit, sandbox and write-path checks instead
     # of inheriting the oversized lane's. The caller's own time budget and write
