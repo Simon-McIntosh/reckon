@@ -49,6 +49,10 @@ from reckon.crew import obligation_snapshot, process_liveness, recovery_watch
 
 GATES_LEAF = "crew-gates.json"
 
+# The rows' destination states. The renderer spells the same two words itself
+# and carries them, because this module imports the recovery watch, which
+# imports the renderer — reading them back from here would close an import
+# cycle. A test binds the two spellings together.
 GATE_RUNNING = "gate-running"
 GATE_ENDED = "gate-ended"
 

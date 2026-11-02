@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -231,6 +232,47 @@ def test_a_gate_whose_process_is_gone_reads_as_ended(tmp_path: Path) -> None:
     ends = [row for row in rows if row.get("to_state") == gate_watch.GATE_ENDED]
     assert len(ends) == 1
     assert "ended without reporting an exit status" in ends[0]["detail"]
+
+
+def test_a_gate_row_is_released_by_the_pane_policy(tmp_path: Path) -> None:
+    """A gate row is news the pane draws, from start through to its end.
+
+    A row the fold writes is not a row the pane draws: the policy drops every
+    row :func:`reckon.crew.ticker.stream_carries` does not admit, and a
+    destination state it has never been taught classifies as observer context.
+    So the rows are fed through the policy a follower uses, which is the only
+    thing that answers whether the session sees its own gate.
+    """
+    from reckon.crew import ticker
+
+    assert (ticker.GATE_RUNNING, ticker.GATE_ENDED) == (
+        gate_watch.GATE_RUNNING,
+        gate_watch.GATE_ENDED,
+    )
+    document = tmp_path / "crew-gates.json"
+    record = gate_watch.start(
+        PROJECT,
+        verb=gate_watch.VERIFY_GATE,
+        checkout=tmp_path / "repo",
+        command=".venv/bin/python -m pytest -q tests/",
+        session=SESSION,
+        pid=os.getpid(),
+        path=document,
+    )
+    policy = ticker.RowPolicy(own_session=SESSION)
+
+    rows: list = []
+    _sweep(document, seen=None, rows=rows)
+    assert len(rows) == 1
+    started = policy.feed(rows[0], now=time.time())
+    assert [row["to_state"] for row in started] == [ticker.GATE_RUNNING]
+
+    gate_watch.end(record["id"], exit_status=0, path=document)
+    rows.clear()
+    seen = {record["id"]: record}
+    _sweep(document, seen=seen, rows=rows)
+    ended = policy.feed(rows[0], now=time.time())
+    assert [row["to_state"] for row in ended] == [ticker.GATE_ENDED]
 
 
 def test_the_skill_names_the_verb_that_shows_a_long_gate() -> None:
