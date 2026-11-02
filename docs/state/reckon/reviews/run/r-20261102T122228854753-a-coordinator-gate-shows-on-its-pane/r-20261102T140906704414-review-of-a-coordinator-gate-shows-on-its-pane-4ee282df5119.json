@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-02T14:30:01.675Z",
+  "dispatched_at": "2026-11-02T14:19:59Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "id": "f89b7bd6914",
+      "line": 1428,
+      "severity": "blocking",
+      "text": "stream_carries admits rows by state family and has no clause for gate-running/gate-ended, and transition_class(None, 'gate-running') returns ROW_OBSERVER, so the follower's row policy drops every gate row the new fold writes; the node's goal is to show the gate on the pane and no pane will draw it."
+    },
+    {
+      "file": "tests/test_a_coordinator_gate_shows_on_its_pane.py",
+      "id": "ffba5ca4031",
+      "line": 172,
+      "severity": "non-blocking",
+      "text": "the assertion that no row carries OTHER_SESSION can never fail: OTHER_SESSION is never passed to any code under test, so a sweep that mis-scoped rows to a different session would still leave this line true, and the done_when's 'none for another session' case is not actually guarded by it."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-coordinator-gate-shows-on-its-pane.html",
+      "id": "f111f99769b",
+      "line": 53,
+      "severity": "non-blocking",
+      "text": "the fragment cites 87 related files and 644 passed with no added failure, but no surviving log carries that run: related-suite.log now holds a different 60-file run of 1034 passed, 2 failed, so a reader cannot reconcile the artifact's gate result with the manifest or the log it points at."
+    },
+    {
+      "file": "manifest.md",
+      "id": "ff13f2cec0d",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "baseline_suite records a three-test targeted command while after_suite records the 60-file related population, so the base arm does not measure the file set the evidence fence names; the zero added-failure count still holds only because the after arm's two failures are the two ids that base arm also fails."
+    },
+    {
+      "file": "reckon/crew/gate_watch.py",
+      "id": "f17930e65d7",
+      "line": 288,
+      "severity": "non-blocking",
+      "text": "the new module copies lift_watch._append_rows and lift_watch._aware verbatim (reckon/crew/lift_watch.py:230 and :247) instead of importing them, so the stream-path default and the naive-datetime normalisation now have two copies that can drift."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "CALL_SITES: reckon/crew_run_commands.py:crew_verify_gate, reckon/crew_run_commands.py:crew_suite_run, reckon/crew/recovery_watch.py:watch_ticker",
+    "diff": "VERDICT diff: read commit by commit from 0b2ee00735 to 4ee282df51; three commits add gate_watch.py, the two verb call sites, the producer sweep, the skill subsection, the test and the evidence fragment.",
+    "done_when": "VERDICT done_when: section 95's four cases plus the skill sentence are tests/test_a_coordinator_gate_shows_on_its_pane.py, and the manifest records 5 passed with a negative control of 1 failed, 4 passed.",
+    "goal": "VERDICT goal: the goal is to show a coordinator's own verify-gate and suite run gates as rows on its pane; reckon/crew/gate_watch.py writes the record and folds rows, but reckon/crew/ticker.py:1428 drops them.",
+    "manifest": "VERDICT manifest: read; states the node gate passed 5 cases, the negative control failed the start-record case, and the 60-file related run added no failure against base.",
+    "write_paths": "VERDICT write_paths: the six changed paths are each inside the seven declared write paths; docs/figures is declared and untouched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261102T140906704414-review-of-a-coordinator-gate-shows-on-its-pane-4ee282df5119",
+  "reviewed_base_sha": "0b2ee00735faf257190fa49035c88f7adc36546f",
+  "reviewed_head_sha": "4ee282df51191cf7c21ec4280072decda8be6a41",
+  "reviewed_run_id": "r-20261102T122228854753-a-coordinator-gate-shows-on-its-pane",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 10,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T14:35:14.154347+00:00",
+  "total": 91
+}
