@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-02T22:29:09.704Z",
+  "dispatched_at": "2026-11-02T22:11:22Z",
+  "findings": [
+    {
+      "file": "tests/test_the_brief_is_the_default_answer.py",
+      "id": "fa562dec306",
+      "line": 370,
+      "severity": "non-blocking",
+      "summary": "row is read from mcp_budget.VIEW_BUDGETS[(\"roadmap\", \"brief\")] and line 371 then asserts mcp_budget.view_budget(\"roadmap\", {}) == row, so both sides of the assertion resolve from the same table and a row lowered back to the summary's 20,000 moves them together and passes. The companion size check at line 375 cannot compensate: the fixture's brief measures 6,967 characters against the 30,000 row (and would also pass the pre-fix 20,000 row), against reckon's own 17,772, so neither added assertion reddens on the defect this commit repairs unless DEFAULT_VIEWS is reverted as well."
+    },
+    {
+      "file": "tests/test_the_brief_is_the_default_answer.py",
+      "id": "ff2dd8e8dca",
+      "line": 333,
+      "severity": "non-blocking",
+      "summary": "The big_project fixture (40 plans chained linearly, 10 sections each, helper at line 287) re-implements the synthetic mounted-project capability already owned by tests/test_every_default_read_fits.py:107 (PLANS=60, SECTIONS=400, whose sweep at line 294 covers roadmap view=\"brief\" after this commit's ROADMAP_VIEWS change) rather than extending it. It also fails the commit body's claim: because 39 of the 40 plans are blocked the brief carries 7 lines and one ready row and serialises to 6,967 characters, so 'a brief that repeated every section would fail here' does not hold for this fixture."
+    },
+    {
+      "file": "reckon/mcp_budget.py",
+      "id": "faec4f9d75a",
+      "line": 27,
+      "severity": "non-blocking",
+      "summary": "The new comment pins 'On this repository's own project that is 17,772 characters, 1,963 of them prose' \u2014 a measurement of the mounted project at the time of writing that drifts as plans land, so a later reader choosing this row reads a stale figure as the basis for the 30,000 ceiling; a snapshot of a moving number is the fuse the repository's own test rules warn about."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the node goal is that a view-less roadmap(project) read answers with the composed project brief and both skills lead with it; this delta's parent 950565252d landed that (reckon/mcp.py:2083 _roadmap_selected_view, reckon/mcp.py:2551 _roadmap_tool, reckon/mcp.py:2323-2330 docstring) and 4b24e94028 preserves it while giving the brief its own budget row.\nVERDICT done_when: the done_when asks a default fixture read to answer the brief with the ranking's own reason on each ranked row, a named summary read unchanged, both skill fast paths naming the brief first, and an executed negative control; logs/head-4b24e94-armed-three.txt records 33 passed with EXIT=0 at 4b24e94028 over the three armed files, logs/head-4b24e94-budget-parity.txt records 4 passed EXIT=0 at the same head, and logs/base-armed-three.txt fails 12 including tests/test_the_brief_is_the_default_answer.py::test_a_brief_for_a_project_larger_than_reckon_fits_its_row, so the gate asserts the measure.\nVERDICT write_paths: the node's declared paths (prompt.txt:69-75) are reckon/mcp.py, skills/reckon-roadmap/SKILL.md, skills/reckon-status/SKILL.md, tests/test_the_brief_is_the_default_answer.py, the evidence fragment and the figures directory; this delta touches reckon/mcp.py plus reckon/mcp_budget.py and tests/test_every_default_read_fits.py, which are outside that set and are disclosed under the manifest's outside_scope rather than granted in any written record.\nVERDICT manifest: read; status complete, baseline_suite 12 failed at 411ddcee698b with its log path and EXIT=1, after_suite 0 failed at 4b24e94028 with EXIT=0, negative_control_log logs/negative-control.txt shows the default-brief assertion red at EXIT=1, and both suite records declare completed true with the literal command that ran.\nVERDICT diff: read commit by commit against 950565252d \u2014 the range is one commit, 4b24e94028, adding (\"roadmap\", \"brief\") at 30,000 and pointing DEFAULT_VIEWS at it in reckon/mcp_budget.py, adding brief to the parity tuple in tests/test_every_default_read_fits.py, correcting the _roadmap_scoped docstring, and adding one 101-line large-project test to tests/test_the_brief_is_the_default_answer.py.\nCALL_SITES: reckon/mcp.py:2551 (_roadmap_tool), reckon/mcp.py:2083 (_roadmap_selected_view), reckon/mcp_deadlines.py:598 (bound_response), reckon/mcp_budget.py:78 (view_budget), reckon/mcp_budget.py:238 (bound_response)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/mcp_budget.py:71 now resolves a view-less roadmap call to the brief's own row and reckon/mcp.py:2323-2330 states the brief default in the contract a reader sees, so the default answer is held to the answer it receives.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/head-4b24e94-armed-three.txt (33 passed, EXIT=0 at 4b24e94028) and logs/head-4b24e94-budget-parity.txt (4 passed, EXIT=0) are readable with header revision and EXIT trailers, and logs/base-armed-three.txt shows the added test red at the base, though the base arm is the whole-node base 411ddcee rather than the prior reviewed head and the parity file was never run at a base.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: reckon/mcp_budget.py and tests/test_every_default_read_fits.py lie outside the write paths declared at prompt.txt:69-75 and are disclosed under the manifest's outside_scope, with no written grant beyond that disclosure.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_the_brief_is_the_default_answer.py:371 catches a DEFAULT_VIEWS revert (20,000 against the brief row's 30,000) and tests/test_every_default_read_fits.py:311 catches an oversized brief, but line 370 reads its expected row from the same table line 371 compares against and the fixture's 6,967-character brief leaves the size check at line 375 23% of it, so neither assertion reddens if the brief's row is lowered back to the summary's.\nSCORE fit: 16\nJUSTIFICATION fit: the module, table and test follow the surrounding idiom and introduce no forbidden name, but reckon/mcp_budget.py:27 embeds a 17,772-character measurement of one project as the justification for a constant, which a later reader will take as current.\nSCORE reuse: 5\nJUSTIFICATION reuse: the added big_project fixture at tests/test_the_brief_is_the_default_answer.py:333 duplicates the synthetic mounted-project capability owned by tests/test_every_default_read_fits.py:107 instead of extending it, and its size assertion restates that owner's fits-its-row check at tests/test_every_default_read_fits.py:294.\nFINDING tests/test_the_brief_is_the_default_answer.py:370 non-blocking: row is read from the same VIEW_BUDGETS table that line 371 resolves against, so a row lowered back to 370's old 20,000 passes both it and the 6,967-character size check at line 375.\nFINDING tests/test_the_brief_is_the_default_answer.py:333 non-blocking: the big_project fixture duplicates tests/test_every_default_read_fits.py:107 rather than extending it, and its 40 linearly chained plans leave one ready row and a 6,967-character brief, so it cannot exercise the overrun the commit body claims it measures.\nFINDING reckon/mcp_budget.py:27 non-blocking: the comment pins 17,772 characters as the basis for the 30,000 row, a project measurement that drifts as plans land.\n",
+  "review_run_id": "r-20261102T220057227091-review-of-the-brief-is-the-default-answer-4b24e9402861",
+  "reviewed_base_sha": "950565252d67ebbbfba5d361e4549c215b8c969b",
+  "reviewed_head_sha": "4b24e94028615b0ca14073721aba414d85acba42",
+  "reviewed_run_id": "r-20261027T100759949584-the-brief-is-the-default-answer",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T22:42:21.625404+00:00",
+  "total": 80
+}
