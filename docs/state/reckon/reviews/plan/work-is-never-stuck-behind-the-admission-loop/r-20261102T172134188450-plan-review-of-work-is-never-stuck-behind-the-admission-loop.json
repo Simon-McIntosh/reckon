@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T17:26:56.276Z",
+  "dispatched_at": "2026-11-02T17:22:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:193",
+      "id": "reasoning-1",
+      "reason": "the constant the node writes is the deliverable, so an incomplete list ships the regression the section exists to remove, and adding `node.role` and `node.spec_level` also changes what done-when case 1 and case 3 can assert.",
+      "text": "s17's steerable list (goal, done-when, negative control, write paths, inputs, time budget, dispatch options, brief fields) omits `node.role` and `node.spec_level`, both of which `crew dispatch` accepts on the same invocation (`reckon/crew_dispatch_commands.py:1146` `--spec-level`, and `--role`) and neither of which appears in `_node_identity` (`reckon/crew/runs.py:429-444`, which keys on plan/section/node id only), so a re-dispatch that changes a queued request's role or spec level still finds the existing pointer and \u2014 under a merge of only the listed fields \u2014 silently keeps the old value; today's whole-record overwrite applies it, so the specified fix regresses that case and reproduces the section's own failure mode (a coordinator's steer silently discarded) one field over",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "172248bb14a8df9fd589796fd3ed38a60af7efa7",
+  "plan_fingerprint": "b25ed2d0516df470957b97b65e2bd23085e9d98d4b34eed112d31439be3ae077",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 137,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T172134188450-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "15d7a4486c7a6c29ae7e51338f07195e49cac3bc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `queue_dispatch` is at `reckon/crew/runs.py:686` with the whole-record write at `runs.py:770`; `base_sha` and `argv` are written into the pointer at `dispatch.py:2979` and `dispatch.py:3234`; `dispatch_sessions.observe` writes `record[\"session_id\"]` (`dispatch_sessions.py:290`); `queue_admission.py` near 3377 is the hold/release `_mutate_pointer` path a held-and-released request passes through.",
+    "done_when": "pass \u2014 s17's done-when names four measurable cases and a declared negative control (\"restores the whole-record overwrite, and the first case fails\") that targets the first case, so the measure can fail.",
+    "evidence_paths": "pass \u2014 the only artifact named is a repository test file, `tests/test_a_redispatch_keeps_the_queued_identity.py`, which survives the run; no gate log is directed at a scratchpad or node-local path.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches the new constant, the test filename or the section's prose.",
+    "reasoning": "a finding \u2014 the mechanism matches the cited code, but the steerable-field list it makes binding omits node fields the re-dispatch command can change and the node identity does not distinguish.",
+    "single_goal": "pass \u2014 s17 carries one deliverable (make `queue_dispatch` merge steerable fields onto an existing pointer, with the field list named once as a constant); naming the constant is part of that change, not a second goal.",
+    "wiring": "pass \u2014 the plan declares `plan-informs: a-queue-holds-the-whole-plan` and no section declares an in-plan `depends-on`/`gates`, so s17 carries no relationship that is missing or misdirected."
+  },
+  "section_digests": {
+    "_document": "8fc6fb07e5a942341d3a24d01b1788f796ede3581a5e49ef7ca893060307a711",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "cdaf6d4515dd0e7101abdf4471c7b22fab4991e0a56dc7a75e5886bb623e714c",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T17:31:03.393161+00:00"
+}
