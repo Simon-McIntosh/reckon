@@ -86,6 +86,7 @@ from reckon.crew.recovery import (
     resume_window_refusal,
     stream_paths_newest_first,
 )
+from reckon.crew.recovery_classification import WAIT_PRODUCER_GONE_SECONDS
 from reckon.crew.recovery_liveness import _newest_stream_in_motion
 from reckon.crew.runs import (
     AS_DELIVERED_SUFFIX,
@@ -1559,6 +1560,7 @@ def _condition_observation(value: Any) -> dict[str, Any]:
         return {
             "terminal": value,
             "observed": "terminal" if value else "pending",
+            "answered": True,
             "detail": "condition test returned a boolean verdict",
         }
     if not isinstance(value, Mapping):
@@ -1569,6 +1571,10 @@ def _condition_observation(value: Any) -> dict[str, Any]:
     return {
         "terminal": terminal,
         "observed": str(value.get("observed") or "unknown"),
+        # Whether the probe produced any answer at all, carried so the history
+        # this observation is written into can tell a value that is standing
+        # still from a probe that is reporting nothing.
+        "answered": value.get("answered") is not False,
         "detail": str(value.get("detail") or "condition test returned a verdict"),
     }
 
@@ -1581,6 +1587,51 @@ def _stamp_resumption_trigger(run_id: str, signature: str) -> None:
         except CrewError:
             return
         current["auto_resume"] = {"trigger": signature, "at": _utc_now()}
+        _write_json(pointer_path(run_id), current)
+
+
+def _record_wait_probe_history(
+    run_id: str,
+    *,
+    observed: str,
+    answered: bool,
+    now_seconds: float,
+) -> None:
+    """Append one probe observation to the run's wait history and prune it.
+
+    The classifier reads this history to decide whether a wait's value has
+    stopped moving, so the history has to reach back past the stillness bound
+    however often the sweep runs and however long a station tick takes. Entries
+    are therefore kept by age rather than by count: an entry is dropped only
+    once it is older than the bound plus one sweep interval *and* a newer entry
+    is already past the bound, so the recording never removes the last
+    observation that predates the window it is measuring.
+    """
+    at = datetime.fromtimestamp(now_seconds, tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    with _pointer_lock(run_id):
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return
+        history = current.get("wait_probe_history")
+        entries = [dict(item) for item in history or () if isinstance(item, Mapping)]
+        entries.append({"at": at, "observed": observed, "answered": bool(answered)})
+        kept: list[dict[str, Any]] = []
+        for index, entry in enumerate(entries):
+            instant = parse_utc(entry.get("at"))
+            older = instant is not None and (
+                now_seconds - instant.timestamp()
+                > WAIT_PRODUCER_GONE_SECONDS + DEFAULT_SWEEP_SECONDS
+            )
+            newer_past_bound = any(
+                (later := parse_utc(other.get("at"))) is not None
+                and now_seconds - later.timestamp() > WAIT_PRODUCER_GONE_SECONDS
+                for other in entries[index + 1 :]
+            )
+            if older and newer_past_bound:
+                continue
+            kept.append(entry)
+        current["wait_probe_history"] = kept
         _write_json(pointer_path(run_id), current)
 
 
@@ -1858,6 +1909,13 @@ def sweep(
             try:
                 observation = _condition_observation(test_condition(pointer, wait))
             except (OSError, subprocess.SubprocessError, TypeError, ValueError) as exc:
+                if not dry_run:
+                    _record_wait_probe_history(
+                        run_id,
+                        observed="unavailable",
+                        answered=False,
+                        now_seconds=moment.timestamp(),
+                    )
                 skipped.append(
                     {
                         **entry,
@@ -1866,6 +1924,17 @@ def sweep(
                     }
                 )
                 continue
+            # The observation is recorded whatever it says, before any branch
+            # acts on it: the stillness a producer-gone reading measures is the
+            # age of this history, so a sweep that skipped the recording on the
+            # paths it does not act on would measure a history it never wrote.
+            if not dry_run:
+                _record_wait_probe_history(
+                    run_id,
+                    observed=str(observation["observed"]),
+                    answered=bool(observation.get("answered", True)),
+                    now_seconds=moment.timestamp(),
+                )
             if not observation["terminal"]:
                 reason = (
                     "condition-overdue" if wait.get("overdue") else "condition-pending"

@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 import shlex
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -389,6 +390,196 @@ def _the_probe_did_not_answer(observation: Mapping[str, Any] | None) -> bool:
     return observation.get("answered") is False
 
 
+#: How long a declared wait's probe value must have stood still, over a run
+#: with no live process, before nobody is left to change it. A file wait's
+#: probe answers the same value for as long as the wait is healthy, so the
+#: value alone cannot say the producer is gone; the run's own process tree and
+#: this bound together are what can.
+WAIT_PRODUCER_GONE_SECONDS = 15 * 60
+
+#: The classification a waiting run is given when nothing that could lift it
+#: is alive: no process of the run, a probe value that has not moved, and no
+#: scheduler job still holding the work.
+PRODUCER_GONE_STATUS = "producer-gone"
+
+#: The recovery verb a producer-gone run resolves to. It is not in the shared
+#: vocabulary because the vocabulary names lifecycle states; this reading is a
+#: stop the coordinator decides, and investigating it is the remedy.
+PRODUCER_GONE_VERB = "investigate"
+
+
+def _wait_probe_history(record: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The probe observations the sweep has recorded for a wait, oldest first.
+
+    Entries are kept by the sweep on the pointer rather than by this reader, so
+    a classifier that runs on another login node sees the same history a sweep
+    on the launching node wrote. An entry with no readable instant names no
+    observation the clock can be measured from and is dropped.
+    """
+    raw = record.get("wait_probe_history")
+    if not isinstance(raw, Sequence) or isinstance(raw, (str, bytes)):
+        return []
+    history: list[dict[str, Any]] = []
+    for entry in raw:
+        if not isinstance(entry, Mapping):
+            continue
+        at = parse_utc(entry.get("at"))
+        if at is None:
+            continue
+        history.append(
+            {
+                "at": at.timestamp(),
+                "observed": str(entry.get("observed") or ""),
+                "answered": entry.get("answered") is not False,
+            }
+        )
+    history.sort(key=lambda item: item["at"])
+    return history
+
+
+def _wait_value_still_seconds(
+    record: Mapping[str, Any],
+    *,
+    wait: Mapping[str, Any],
+    observation: Mapping[str, Any] | None,
+    now_seconds: float,
+) -> float | None:
+    """How long the probe has reported the same thing, in seconds.
+
+    A probe that is answering is still when the value it reports now is the
+    one it has reported continuously since the oldest entry of the current run
+    in the history. A probe that is not answering reports nothing at all, so
+    its clock runs from the last observation it did report, or from when the
+    wait began when it never reported one: a worker killed outright leaves a
+    declaration and no answer behind it.
+
+    None means the stillness is unproven, and an unproven clock never carries a
+    reading that something has stopped: a probe that answered and left no
+    history has a value this host has never seen hold still, so the wait's own
+    age says nothing about the value. That fallback is kept only for a probe
+    that never answered at all.
+    """
+    answered = [entry for entry in _wait_probe_history(record) if entry["answered"]]
+    observed: str | None = None
+    if observation is not None and observation.get("answered") is not False:
+        observed = str(observation.get("observed") or "")
+    reference: float | None
+    if observed is None:
+        if answered:
+            reference = answered[-1]["at"]
+        else:
+            age = wait.get("age_seconds")
+            reference = (
+                now_seconds - float(age) if isinstance(age, (int, float)) else None
+            )
+    else:
+        reference = None
+        for entry in answered:
+            if entry["observed"] != observed:
+                reference = None
+            elif reference is None:
+                reference = entry["at"]
+    if reference is None:
+        return None
+    return max(0.0, now_seconds - reference)
+
+
+def _wait_probe_job_id(probe: Sequence[Any]) -> str | None:
+    """The scheduler job a probe vector names, or None when it names none.
+
+    A wait on ``squeue`` legitimately has no process while its job runs, so the
+    job the probe asks about is what says the work is still being done. Only a
+    probe whose own command is a scheduler query names one.
+    """
+    parts = [str(item) for item in probe]
+    if not parts or Path(parts[0]).name != "squeue":
+        return None
+    for index, token in enumerate(parts[1:], start=1):
+        if token in {"-j", "--job", "--jobs"} and index + 1 < len(parts):
+            return parts[index + 1]
+        if token.startswith("--job="):
+            return token.split("=", 1)[1] or None
+        if token.startswith("-j") and len(token) > 2:
+            return token[2:]
+    for token in parts[1:]:
+        if token.isdigit():
+            return token
+    return None
+
+
+def _scheduler_job_alive(probe: Sequence[Any]) -> bool | None:
+    """Whether the scheduler still lists the job a wait's probe names.
+
+    None means the wait names no scheduler job, or the scheduler could not be
+    asked: an unreadable answer is not evidence the job is gone, so it never
+    contributes to calling the producer gone.
+    """
+    job_id = _wait_probe_job_id(probe)
+    if not job_id:
+        return None
+    try:
+        result = subprocess.run(
+            ["squeue", "-h", "-j", job_id],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=1.0,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    return bool((result.stdout or "").strip())
+
+
+def _producer_gone_verdict(
+    record: Mapping[str, Any],
+    *,
+    wait: Mapping[str, Any],
+    observation: Mapping[str, Any] | None,
+    alive: bool | None,
+    liveness_proven: bool,
+    now_seconds: float,
+) -> dict[str, Any] | None:
+    """Whether a waiting run's producer is provably gone, and on what evidence.
+
+    Three facts must hold together. The run has no live process and that is a
+    definite reading this host can stand behind — a stored answer carried for a
+    run launched elsewhere is not death and keeps the run waiting. The probe's
+    value has not changed for ``WAIT_PRODUCER_GONE_SECONDS``, so nothing is
+    still producing the thing the wait watches. And the wait names no scheduler
+    job the queue still lists, because a run with no process is normal while
+    the job it started is running.
+
+    None means any of those is unmet, unproven, or unreadable: a scheduler that
+    could not be asked and a stillness the history does not establish both keep
+    the run waiting, because neither is evidence that anything has stopped.
+    """
+    if alive is not False or liveness_proven is not True:
+        return None
+    # A wait that names a job is only settled by a scheduler that answered and
+    # listed no such job; a scheduler that could not be asked leaves the job's
+    # liveness unknown rather than absent. A wait naming no job asks nothing of
+    # the scheduler, so its silence says nothing either way.
+    probe = wait.get("probe") or ()
+    if (
+        _wait_probe_job_id(probe) is not None
+        and _scheduler_job_alive(probe) is not False
+    ):
+        return None
+    still = _wait_value_still_seconds(
+        record, wait=wait, observation=observation, now_seconds=now_seconds
+    )
+    if still is None or still < WAIT_PRODUCER_GONE_SECONDS:
+        return None
+    return {
+        "still_seconds": int(still),
+        "observed": (observation or {}).get("observed"),
+        "probe": [str(item) for item in wait.get("probe") or ()],
+        "terminal": list(wait.get("terminal") or ()),
+    }
+
+
 def _exit_record_ends_the_current_attempt(
     record: Mapping[str, Any], exit_record: Mapping[str, Any] | None
 ) -> bool:
@@ -727,6 +918,9 @@ def classify_pointer(
         # so both readings share one refusal instead of each arm re-deriving it.
         manifest_error = str(wait["error"])
     wait_observation: dict[str, Any] | None = None
+    # The evidence behind a producer-gone reading, carried on the row so the
+    # obligation can name the probe, the value it is stuck on and for how long.
+    wait_verdict: dict[str, Any] | None = None
     if wait is not None and wait["valid"]:
         observe_condition = (
             _run_wait_condition_probe if condition_test is None else condition_test
@@ -1247,6 +1441,38 @@ def classify_pointer(
                 "continue past the declared wait, whose condition probe "
                 "cannot answer"
             )
+        elif (
+            verdict := _producer_gone_verdict(
+                record,
+                wait=wait,
+                observation=wait_observation,
+                alive=alive,
+                liveness_proven=liveness_proven,
+                now_seconds=moment,
+            )
+        ) is not None:
+            # Nothing that could lift this wait is alive. A file wait's probe
+            # answers the same exit code for as long as the wait is healthy, so
+            # the value alone proves nothing; the run's own process tree, the
+            # stillness of that value past the bound and the absence of a
+            # scheduler job holding the work are what say nobody is left to
+            # produce the thing waited on. The row stops reading as working and
+            # the session owes a decision, because no later sweep will lift it.
+            classification = PRODUCER_GONE_STATUS
+            detail = (
+                f"waiting {wait['age_seconds']}s on {wait['condition']}; the "
+                f"producer is gone — no process of the run is alive and the "
+                f"probe {verdict['observed']!r} has not changed for "
+                f"{verdict['still_seconds']}s — with no scheduler job alive, so "
+                f"no later sweep can lift it; terminal when the probe reports "
+                f"{', '.join(verdict['terminal'])}"
+            )
+            action = (
+                f"reckon crew resume --run {run_id} --advice continue to carry "
+                f"the wait past its gone producer, or discard the run with "
+                f"reckon crew discard --run {run_id}"
+            )
+            wait_verdict = verdict
         else:
             observation_detail = (
                 wait_observation["detail"]
@@ -1776,7 +2002,11 @@ def classify_pointer(
         recovery_classification = "wait-aged"
     else:
         recovery_classification = classification
-    recovery_verb = RECOVERY_VERBS[recovery_classification]
+    recovery_verb = (
+        PRODUCER_GONE_VERB
+        if recovery_classification == PRODUCER_GONE_STATUS
+        else RECOVERY_VERBS[recovery_classification]
+    )
     if resume_remedy is not None and recovery_classification in {
         INTERRUPTED_RUN_PHASE,
         "stopped",
@@ -1980,6 +2210,12 @@ def classify_pointer(
         if wait
         else None,
     }
+    if wait is not None and wait_verdict is not None:
+        # The evidence behind a producer-gone reading. It travels inside the
+        # wait the row already carries rather than as a new row field, because
+        # the row's field set is declared once and a key added here would be
+        # served by the view and refused by the pre-flight read.
+        wait["producer_gone"] = wait_verdict
     if session_refusal is not None:
         # A queued request the session itself must unblock. Carried whole so a
         # surface projecting duties reads one verdict rather than re-deriving

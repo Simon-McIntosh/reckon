@@ -1,0 +1,71 @@
+<!doctype html>
+<title>A wait whose producer is gone is an obligation</title>
+<section
+  id="a-wait-whose-producer-is-gone-is-an-obligation-landing"
+  data-node="a-wait-whose-producer-is-gone-is-an-obligation"
+>
+  <h2>A wait whose producer is gone is an obligation</h2>
+
+  <p><strong>What changed.</strong> A run parked on a declared wait is held until
+  its probe reports a terminal value, and nothing noticed when the work the probe
+  watched had died. The classifier now reads a waiting run as
+  <code>producer-gone</code> when three facts hold together: no process of the
+  run is alive and that is a reading proven on the launching host; the probe's
+  observed value has not changed for <code>WAIT_PRODUCER_GONE_SECONDS</code>
+  (fifteen minutes); and no scheduler job the wait names is still listed by
+  <code>squeue -h -j &lt;id&gt;</code>.</p>
+
+  <ul id="a-wait-whose-producer-is-gone-is-an-obligation-changes">
+    <li><code>reckon/crew/recovery_classification.py</code> — the producer-gone
+    arm sits in the waiting branch after the existing probe-did-not-answer
+    branch, so every verdict that branch gives today is kept. Liveness is read
+    only from the hoisted <code>local_liveness</code> reading the classifier
+    already takes: a stored answer carried for a run launched elsewhere is
+    <code>proven=False</code> and keeps the run waiting, and a probe with no
+    recorded pid keeps it waiting too. A probe that cannot answer and left no
+    exit record — a worker killed outright — is producer-gone as well, with the
+    stillness clock taken from its last answered observation, or from when the
+    wait began when it never answered. A probe that answered and left no history
+    has no stillness this host observed, so its clock is unproven and the run
+    waits: the wait's age describes how long the run has been parked, never how
+    long the value has held. <code>_scheduler_job_alive</code> is the one small
+    scheduler read, and a wait naming a job is settled only by a scheduler that
+    answered and listed no such job — an unreadable scheduler leaves the job's
+    liveness unknown, and an unknown liveness is not an absence.</li>
+    <li><code>reckon/crew/resumption.py</code> — <code>_record_wait_probe_history</code>
+    is the one per-sweep actor. Every observation the sweep makes, answered or
+    not, is appended with its time to the pointer's <code>wait_probe_history</code>
+    and pruned by age: an entry goes only once it is older than the bound plus
+    one sweep interval and a newer entry is already past the bound, so the
+    history always reaches back across the window the classifier measures. A dry
+    run records nothing, because a preview that wrote would be a preview that
+    acted.</li>
+    <li><code>reckon/crew/obligations.py</code> —
+    <code>_producer_gone_item</code> projects the reading into the
+    <code>run-producer-gone</code> duty, naming the probe, the value it is stuck
+    on, the terminal states expected and how long that value has stood still,
+    and offering the resume or the discard. The duty blocks a turn: no reflex
+    will lift it, so the session is the only thing that can decide. The
+    coordinator hook needs no registration for it, because it blocks every kind
+    that is not on its non-blocking list.</li>
+  </ul>
+
+  <p><strong>Measure.</strong>
+  <code>tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py</code>
+  passes its eleven cases: the producer-gone arm with its duty; a file wait over a
+  live worker; a value still moving; a run launched on another host; a
+  scheduler job still queued; an unreadable scheduler; a probe that answered
+  with no history; a worker killed outright with no exit record; an ended worker
+  with an exit record keeping its existing stalled reading; a probe reaching its
+  terminal; and the sweep recording and age-pruning the history the reading is
+  taken from. Five negative controls each fail the arm they target: removing the
+  process-liveness clause fails the file-wait arm, removing the stillness clause
+  fails the moving-value and no-history arms, removing the host proof fails the
+  other-host arm, removing the scheduler-job clause fails the queued-job and
+  unreadable-scheduler arms, and removing the no-exit-record route fails that
+  arm's killed-worker case.</p>
+
+  <p><strong>What remains.</strong> Nothing in this node. A waiting run with no
+  live process no longer reads as working: its row names the producer as gone,
+  and its session owes a resume or a discard.</p>
+</section>
