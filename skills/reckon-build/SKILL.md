@@ -110,7 +110,10 @@ map is its output, and every node's brief cites it. The gate also needs a stored
 review covering the content about to be built. The author's content review,
 composed by the session that wrote the plan, supplies it, and a section edited
 since stays covered when the review-need judge finds its change needs no new
-review. A refusal names the exact command it is waiting for.
+review. An edit to a done-when is never covered, however small — it owes one
+review, scoped to that section — and an acted-on edit stays covered only while
+it leaves the done-when paragraph unchanged and stays under the change
+threshold. A refusal names the exact command it is waiting for.
 
 **A coordinator does not compose that content review, and does not waive the
 gate.** When one is owed, hand the plan back to its writer, who holds the

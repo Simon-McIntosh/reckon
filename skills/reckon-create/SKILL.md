@@ -675,10 +675,13 @@ reckon crew review --project <project> --plan <slug> --answer <finding> --acted
 reckon crew review --project <project> --plan <slug> --answer <finding> --declined "<reason>"
 ```
 
-Edit the plan only for a finding you act on. The edit a finding asked for is
-covered by that finding's review, so answering does not start another round; an
-edit made for a reason of your own is judged for whether it needs a new review,
-which reads only what changed. The plan also owes one
+Edit the plan only for a finding you act on. An edit a finding asked for is
+covered by that finding's review only while it leaves the section's done-when
+paragraph unchanged and stays under the change threshold, so an answering edit
+of that shape starts no new round; an edit to a done-when is never covered,
+however small, and owes one review scoped to that section. An edit made for a
+reason of your own is judged for whether it needs a new review, which reads
+only what changed. The plan also owes one
 design review — the prior-art and depth search of the codebase — before its
 first implementation node; `reckon-build` composes it, and the dispatch gate
 refuses an implementation node until it exists and is answered. What counts as

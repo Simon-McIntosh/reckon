@@ -129,9 +129,12 @@ hid it. Canonical rule: `reckon-build` SKILL.md §7a-bis.
    session composes one content review, answers every finding before it leaves
    the plan — fixing it, or declining it with a one-line reason — and only then
    releases the plan. The session that wrote it still holds the context to fix
-   what a finding names; a coordinator reaching the plan later does not. The
-   edit a finding asked for is covered by that finding's review, so answering
-   does not start another round. The review names no lane:
+   what a finding names; a coordinator reaching the plan later does not. An
+   edit a finding asked for is covered by that finding's review only while it
+   leaves the section's done-when paragraph unchanged and stays under the
+   change threshold, so an answering edit of that shape starts no new round.
+   An edit to a done-when is never covered, however small: it owes one review,
+   scoped to that section. The review names no lane:
    `review_excluded_backends` keeps a review off metered lanes, so it runs
    locally or holds.
 
