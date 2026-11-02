@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T16:52:27.261Z",
+  "dispatched_at": "2026-11-02T16:47:36Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:194",
+      "id": "done_when-1",
+      "reason": "a done-when clause that compares absent-to-absent cannot fail, so the node's gate would report success on the very assertion it was meant to prove.",
+      "text": "the first case requires that the re-dispatch keeps \"its run id, manifest path, session and base\", but `_queued_request_record` (reckon/crew/dispatch.py:205-252) writes no `base_sha` key and a live queued pointer carries none (observed keys on `r-20261027T092056010872-a-mention-is-charged-a-reference-cost`: no `base_sha`, no `session_id`, no `argv`); the new record has no base either, so the \"keeps its ... base\" clause passes whether or not the merge is implemented",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:193",
+      "id": "reasoning-1",
+      "reason": "the mechanism as written satisfies its own done-when while leaving the incident's failure (resume refused for a missing session id, landing refused for a missing argv) unaddressed, so a node would ship a fix that does not repair the defect it was dispatched for; the plan needs to say where those fields are written and which record the merge must carry them from.",
+      "text": "the Why section says the live pointer lost `session_id`, `argv` and `base_sha` and that `crew resume` and the landing pass then refused, but the deliverable's remedy is to keep the queued request's identity fields, and a queued request carries none of those three: `_queued_request_record` (dispatch.py:205-252) stores `session` (the coordinator session string, not the worker's `session_id`) and no `argv`/`base_sha` at all, so merging the existing request's fields back cannot restore them",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:194",
+      "id": "done_when-2",
+      "reason": "the guard names the module that was dropped from the write paths rather than the module being edited, so a regression introduced in `runs.queue_dispatch` could pass the stated gate.",
+      "text": "the regression clause still reads \"The test files importing `reckon.crew.dispatch` and `reckon.crew.queue_admission` add no failure against the base revision\", but the deliverable's write paths now name `reckon/crew/runs.py` as the home of `queue_dispatch` and the steerable-field constant, and no clause names the tests importing `reckon.crew.runs`",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b722966660a630f68b8949503a3219f254d3b2b1",
+  "plan_fingerprint": "59d3e03c7777c41d521193522236198b2a0c9273092e8c3f7762689a13e3efc9",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 132,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T164617356943-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "4aae0f3437b8250548ac16511fde1e1a84932b03",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_answer_existing_node_run` (dispatch.py:403), `_queued_request_record` (dispatch.py:205), `queue_dispatch` (runs.py:686) and the `node.get(\"manifest_path\")` read (dispatch_sessions.py:1006) all resolve as cited.",
+    "done_when": "a finding \u2014 the first case asserts the re-dispatch \"keeps its ... base\", but a queued request record never carries `base_sha`, so that clause cannot fail.",
+    "evidence_paths": "pass \u2014 the gate is a named test file under `tests/` plus `ruff check`/`ruff format --check` on staged paths; no scratch, no node-local temp path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the constant, the test file or the comments; \"steerable node fields\" names the mechanism.",
+    "reasoning": "a finding \u2014 the queued request record carries none of `base_sha`, `session_id` or `argv`, so a merge that preserves the request's identity cannot restore the fields whose loss the Why section gives as the incident.",
+    "single_goal": "pass \u2014 s17 has one deliverable (a re-dispatch updates steerable fields and keeps the queued request's identity).",
+    "wiring": "pass \u2014 s17 declares no depends-on/informs/gates of its own and its write paths name only modules that exist (`reckon/crew/dispatch.py`, `reckon/crew/runs.py`)."
+  },
+  "section_digests": {
+    "_document": "8fc6fb07e5a942341d3a24d01b1788f796ede3581a5e49ef7ca893060307a711",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "a1d7d152889343053b8438aacbed6bc7a8ba47ed129b34f684f5e0e3640542dc",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T16:59:47.560429+00:00"
+}
