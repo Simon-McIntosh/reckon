@@ -23,26 +23,29 @@ gone. The rule also takes the backend that refused the request and excludes it
 itself, so neither caller keeps a skip of its own and the rule cannot answer
 with the lane the request came from. Where nothing fits,
 <code>_reroute_oversized_request</code> has no branch that returns the
-resolution unchanged: it refuses with the context fit
-<code>routing._context_fit_verdict</code> measured for the resolved lane — the
-estimate that check weighed against that lane's gating window, and the
-distance between the two. The payload is built by
-<code>routing._context_refusal</code>, the one builder both this refusal and
-routing's own competence refusal answer through, which takes the lane's agent
-key and the nested fit verdict as options the placement does not need. So the
-detail a dispatch renders is routing's own: the figures followed by the inputs
-that carried the estimate and how the largest of them arrived. The competence
-verdict is never the source, in any branch: it accepts a lane the context fit
-can refuse, and it carries its own estimate and shortfall, so a refusal built
-from it states a measure the placement never weighed. Dispatch's private
-<code>_context_shortfall_refusal</code> is gone.</p>
+resolution unchanged: it refuses with the resolution's competence verdict, the
+same object a dry run answers with, computed the way the preview computes it
+when the resolution carries none. Its <code>context</code> block is the fit
+verdict <code>routing._context_fit_verdict</code> measured for the resolved
+lane — the estimate that check weighed against that lane's gating window, and
+the distance between the two — so the figures a reader acts on are that
+check's, and the refusal also carries the lane's agent key and cache status.
+The payload is built by
+<code>routing._context_refusal</code>, the one builder both this refusal and the
+verdict's own context refusal answer through, so the detail is routing's own:
+the figures followed by the inputs that carried the estimate and how the
+largest of them arrived. Because the verdict states the figures from the fit
+check it holds, the shortfall stays the fit check's own estimate minus the
+resolved lane's window rather than a second measure computed beside it. The
+real refusal and its dry run are therefore one payload, field for field, so a
+caller that previewed the dispatch has already seen every field the dispatch
+answers with. Dispatch's private <code>_context_shortfall_refusal</code> is
+gone.</p>
 <p id="one-rule-chooses-the-lane-for-an-oversized-request-measure">Measured by
 <code>tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py</code>,
 twelve cases, driving routing's own <code>_context_fit_verdict</code> and
 <code>_competence_verdict</code> from a config that declares the windows and
-neither stubbed for the placement cases. One case makes
-the verdict call raise, so a fallback that reached for it fails there rather
-than answering with a second description of the shortfall. The same candidates resolve the same lane on both paths, and
+neither stubbed for the placement cases. The same candidates resolve the same lane on both paths, and
 it is the widest usable one: with alpha at 300,000 and beta at 400,000 tokens,
 dispatch moves the request to beta with
 <code>route_fallback {"from_backend": "clive", "to_backend": "beta", "reason":
@@ -63,34 +66,37 @@ the rule records that the name it receives from the admission pass is the
 pointer's own backend. With no
 usable lane, dispatch exits 5 with <code>competence-refusal</code>, naming
 <code>context-window-exceeded</code>, the fit check's estimate above that
-lane's window and their difference, creates no worktree and queues nothing; the
-refusal carries no agent key and no nested context block, which is what
-distinguishes it from the competence verdict. The detail it carries is
-routing's own: the same node previewed and dispatched answers the same
-<code>detail</code> string, naming <code>corpus.txt</code> and the form it
-arrived in, so the fallback renders the refusal rather than a shorter sentence
-beside it. Gate: <strong>12 passed at
-head</strong>, and the two node files together <strong>16 passed,
-EXIT=0</strong>, with the two verdict stubs removed from
+lane's window and their difference, creates no worktree and queues nothing. The
+payload is the one the preview produces: the same node dispatched and previewed
+answers equal <code>competence</code> objects, carrying the lane's agent key,
+its cache status and the nested fit verdict, whose own shortfall equals the
+top-level one. The detail it carries is routing's own: the same
+<code>detail</code> string both times, naming <code>corpus.txt</code> and the
+form it arrived in, so the fallback renders the refusal rather than a shorter
+sentence beside it. Gate: <strong>12 passed at
+head</strong>; with the unstubbed §15 file and
+<code>tests/test_crew_routes.py</code>, whose preview-parity case this change
+restores, <strong>29 passed, EXIT=0</strong>, and the two verdict stubs are
+gone from
 <code>tests/test_a_request_too_large_for_local_is_never_placed_there.py</code>
 (4 passed).</p>
 <p id="one-rule-chooses-the-lane-for-an-oversized-request-controls">Negative
-controls, each applied and reverted. Keeping admission's first-usable
-choice fails the parity case and the two admission cases that read the rule:
-<em>3 failed, 13 passed, EXIT=1</em>, reading
+controls, each applied to the committed head and reverted. Keeping admission's
+first-usable choice fails the parity case and the two admission cases that read
+the rule: <em>3 failed, 26 passed, EXIT=1</em>, reading
 <code>AssertionError: assert 'alpha' == 'beta'</code> in
 <code>test_both_paths_move_the_request_to_the_widest_fitting_lane</code>.
-Restoring the competence-verdict-first refusal fails two:
-<em>2 failed, 14 passed, EXIT=1</em>, reading <code>assert 'context' not in
-{'agent_key': …, 'context': {…}, 'estimated_tokens': 250392, …}</code> in
-<code>test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree</code> —
-the placement falls through to the competence verdict, so the refusal a reader
-sees is that verdict rather than the fit check that refused the lane — and
-<code>assert 1 == 5</code> in
-<code>test_the_refusal_is_the_fit_checks_and_never_consults_the_verdict</code>,
-where the stubbed call raises as it is reached. A third mutation — removing the
-rule's own refused-lane exclusion — fails three: <em>3 failed, 13 passed,
-EXIT=1</em>, reading <code>assert 'beta' == ''</code> in
+Building the refusal from the fit check alone — the reduced payload this
+change replaced — fails three: <em>3 failed, 26 passed, EXIT=1</em>, reading
+<code>KeyError: 'agent_key'</code> in
+<code>test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree</code>,
+a competence comparison showing the five fields the preview carries and the
+dispatch did not in
+<code>test_the_refusal_is_the_payload_its_dry_run_previews</code>, and the same
+comparison in
+<code>tests/test_crew_routes.py::test_context_refusal_is_exit_five_before_worktree_creation</code>.
+Removing the rule's own refused-lane exclusion fails three more: <em>3 failed,
+26 passed, EXIT=1</em>, reading <code>assert 'beta' == ''</code> in
 <code>test_the_refused_widest_lane_is_not_chosen_by_the_admission_pass</code>,
 with the rule-level case and the spy case failing beside it.</p>
 </section>
