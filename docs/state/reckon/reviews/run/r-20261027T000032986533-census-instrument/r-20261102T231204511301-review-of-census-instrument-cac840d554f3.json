@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: logs/base-gate.log collects nothing at the base revision (EXIT=4, no tests ran), and logs/head-gate.log records 7 passed with EXIT=0, so the change adds no failing test id",
+  "base_log_revision": "8b935b9e60d663685cb756a87dfab01d1c918a27",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-02T23:38:29.775Z",
+  "dispatched_at": "2026-11-02T23:29:13Z",
+  "findings": [
+    {
+      "anchor": "scripts/census/monitor_census.py:449",
+      "file": "scripts/census/monitor_census.py",
+      "line": "449",
+      "severity": "non-blocking",
+      "text": "non-blocking: a duty for which obligations._current_review_in_flight returns true through its reflex-claim branch, while obligations._in_flight_review matches no head and so _matching_review_pointer at :365, is recorded stale_snapshot rather than defect, so the report node can read a zero defect count while that path was firing."
+    },
+    {
+      "anchor": "scripts/census/monitor_census.py:242",
+      "file": "scripts/census/monitor_census.py",
+      "line": "242",
+      "severity": "non-blocking",
+      "text": "non-blocking: the watch streams are enumerated by globbing *.events directly, duplicating reckon/crew/query.py:1084 watch_event_paths and its WATCH_EVENT_SUFFIX literal, so a change to the stream naming leaves this census silently counting nothing."
+    },
+    {
+      "anchor": "scripts/census/test_monitor_census.py:143",
+      "file": "scripts/census/test_monitor_census.py",
+      "line": "143",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repair fixture places its halted row 19s after repaired_at with its only claim in the row's own second, so no assertion reddens if REPAIR_WINDOW_SECONDS or the repair-to-row claim guard is removed from scripts/census/monitor_census.py:311-319."
+    },
+    {
+      "anchor": "logs/head-gate.log:1",
+      "file": "logs/head-gate.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head gate's header names revision 8b935b9e6 while the manifest's after_suite records cac840d554 for that same log path, so the receipt a later reader opens cannot be reconciled with the revision it claims to measure; `reckon crew check --manifest` refuses such a pairing outright."
+    },
+    {
+      "anchor": "scripts/census/monitor_census.py:282",
+      "file": "scripts/census/monitor_census.py",
+      "line": "282",
+      "severity": "non-blocking",
+      "text": "non-blocking: a limit-reset row carrying a lift_id passes the LIFT_STATES guard and creates a zero-count lift_transitions entry, so the per-lift output can carry ids that neither granted nor ended anything."
+    },
+    {
+      "anchor": "scripts/census/monitor_census.py:433",
+      "file": "scripts/census/monitor_census.py",
+      "line": "433",
+      "severity": "non-blocking",
+      "text": "non-blocking: sample_once is handed home= for the snapshots and the reviewed pointer, but the candidate set comes from obligations._live_pointers and runs.read_pointer, which read the global crew home, so a caller passing home= alone judges its fixture against the operator's live pointers."
+    }
+  ],
+  "head_log_revision": "8b935b9e60d663685cb756a87dfab01d1c918a27",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call site: the module is a standalone census script whose only in-repo entry is its own main(), so the change is reached from the operator's command line rather than from runtime code",
+    "diff": "read commit by commit against 8b935b9e6; one commit adds scripts/census/monitor_census.py (575 lines), scripts/census/test_monitor_census.py (373 lines) and the evidence fragment (43 lines), all inside scope.",
+    "done_when": "the done_when asks for one synthetic row of each counted kind with each count asserting 1, four sampler snapshots, and a negative control over the 48 hours ending 2026-10-23T12:37Z; scripts/census/test_monitor_census.py:154-168 and :312-373 assert those counts and logs/historical-census.json records 38 process_alive, 128 returns_to_progress and 7 after_status_repair over 242 carried halted rows.",
+    "goal": "the node's goal is to commit the uncommitted false-halt census and its review-missing sampler as one module with a co-located test; scripts/census/monitor_census.py:227 census_streams and :390 sample_once are that module and :471 run_sampler carries the sampler.",
+    "manifest": "read; it states 7 passed EXIT=0 at head, the base arm collecting nothing, a 3-failed negative control, and names every log on disk.",
+    "write_paths": "read the manifest's declared paths (the module, its test, the evidence fragment, a figures directory); git show --name-only cac840d554 lists exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "scripts/census/test_monitor_census.py:171-210 falsifies the second-granularity claim rule and :336-359 falsifies the queued and older-head sampler arms, but no fixture at :143-148 places a halted row beyond REPAIR_WINDOW_SECONDS or a claim strictly between the repair and the row, so two guards of the third kind are unfalsified.",
+    "evidence": "logs/historical-census.json reconciles with the fragment's every figure and both control rows (12:14:49Z under after_status_repair, 12:25:51Z under returns_to_progress), but logs/head-gate.log:1 names revision 8b935b9e6 while the manifest's after_suite claims cac840d554 at that path.",
+    "fit": "scripts/census/monitor_census.py:61-79 follows the sibling census modules' ROOT/sys.path and argparse shape and is ruff-clean, but :95 re-declares QUEUED_PHASE = \"queued\" where reckon/crew/queue_admission.py:58 owns that constant.",
+    "goal_fidelity": "scripts/census/monitor_census.py:449-458 departs from the stated rule at the reflex-claim edge, labelling a reader-true duty stale_snapshot whenever the matching pointer or its launched_at cannot be resolved.",
+    "reuse": "the instrument extends ticker.stream_carries, ticker._pane_word, obligations._current_review_in_flight and runs_dir rather than re-deriving them, but scripts/census/monitor_census.py:242 re-globs *.events where reckon/crew/query.py:1084 watch_event_paths (used at reckon/crew/recovery_watch.py:2318) owns enumerating every project's watch stream.",
+    "scope_discipline": "git show --name-only cac840d554 carries exactly the three declared paths, with no change outside them and no figure written."
+  },
+  "model": "deepseek-v4.1-flash",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to commit the uncommitted false-halt census and its review-missing sampler as one module with a co-located test; scripts/census/monitor_census.py:227 census_streams and :390 sample_once are that module and :471 run_sampler carries the sampler.\nVERDICT done_when: the done_when asks for one synthetic row of each counted kind with each count asserting 1, four sampler snapshots, and a negative control over the 48 hours ending 2026-10-23T12:37Z; scripts/census/test_monitor_census.py:154-168 and :312-373 assert those counts and logs/historical-census.json records 38 process_alive, 128 returns_to_progress and 7 after_status_repair over 242 carried halted rows.\nVERDICT write_paths: read the manifest's declared paths (the module, its test, the evidence fragment, a figures directory); git show --name-only cac840d554 lists exactly those three files and nothing else.\nVERDICT manifest: read; it states 7 passed EXIT=0 at head, the base arm collecting nothing, a 3-failed negative control, and names every log on disk.\nVERDICT diff: read commit by commit against 8b935b9e6; one commit adds scripts/census/monitor_census.py (575 lines), scripts/census/test_monitor_census.py (373 lines) and the evidence fragment (43 lines), all inside scope.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: scripts/census/monitor_census.py:449-458 departs from the stated rule at the reflex-claim edge, labelling a reader-true duty stale_snapshot whenever the matching pointer or its launched_at cannot be resolved.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/historical-census.json reconciles with the fragment's every figure and both control rows (12:14:49Z under after_status_repair, 12:25:51Z under returns_to_progress), but logs/head-gate.log:1 names revision 8b935b9e6 while the manifest's after_suite claims cac840d554 at that path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --name-only cac840d554 carries exactly the three declared paths, with no change outside them and no figure written.\nSCORE durability: 15\nJUSTIFICATION durability: scripts/census/test_monitor_census.py:171-210 falsifies the second-granularity claim rule and :336-359 falsifies the queued and older-head sampler arms, but no fixture at :143-148 places a halted row beyond REPAIR_WINDOW_SECONDS or a claim strictly between the repair and the row, so two guards of the third kind are unfalsified.\nSCORE fit: 16\nJUSTIFICATION fit: scripts/census/monitor_census.py:61-79 follows the sibling census modules' ROOT/sys.path and argparse shape and is ruff-clean, but :95 re-declares QUEUED_PHASE = \"queued\" where reckon/crew/queue_admission.py:58 owns that constant.\nSCORE reuse: 12\nJUSTIFICATION reuse: the instrument extends ticker.stream_carries, ticker._pane_word, obligations._current_review_in_flight and runs_dir rather than re-deriving them, but scripts/census/monitor_census.py:242 re-globs *.events where reckon/crew/query.py:1084 watch_event_paths (used at reckon/crew/recovery_watch.py:2318) owns enumerating every project's watch stream.\nFINDING scripts/census/monitor_census.py:449 non-blocking: a duty for which obligations._current_review_in_flight returns true through its reflex-claim branch, while obligations._in_flight_review matches no head and so _matching_review_pointer at :365, is recorded stale_snapshot rather than defect, so the report node can read a zero defect count while that path was firing.\nFINDING scripts/census/monitor_census.py:242 non-blocking: the watch streams are enumerated by globbing *.events directly, duplicating reckon/crew/query.py:1084 watch_event_paths and its WATCH_EVENT_SUFFIX literal, so a change to the stream naming leaves this census silently counting nothing.\nFINDING scripts/census/test_monitor_census.py:143 non-blocking: the repair fixture places its halted row 19s after repaired_at with its only claim in the row's own second, so no assertion reddens if REPAIR_WINDOW_SECONDS or the repair-to-row claim guard is removed from scripts/census/monitor_census.py:311-319.\nFINDING logs/head-gate.log:1 non-blocking: the head gate's header names revision 8b935b9e6 while the manifest's after_suite records cac840d554 for that same log path, so the receipt a later reader opens cannot be reconciled with the revision it claims to measure; reckon crew check --manifest refuses such a pairing outright.\nFINDING scripts/census/monitor_census.py:282 non-blocking: a limit-reset row carrying a lift_id passes the LIFT_STATES guard and creates a zero-count lift_transitions entry, so the per-lift output can carry ids that neither granted nor ended anything.\nFINDING scripts/census/monitor_census.py:433 non-blocking: sample_once is handed home= for the snapshots and the reviewed pointer, but the candidate set comes from obligations._live_pointers and runs.read_pointer, which read the global crew home, so a caller passing home= alone judges its fixture against the operator's live pointers.\n",
+  "review_run_id": "r-20261102T231204511301-review-of-census-instrument-cac840d554f3",
+  "reviewed_base_sha": "8b935b9e60d663685cb756a87dfab01d1c918a27",
+  "reviewed_head_sha": "cac840d554f32137f02428fcf711f47ab5185b4d",
+  "reviewed_run_id": "r-20261027T000032986533-census-instrument",
+  "reviewer": "review-of-census-instrument-cac840d554f3",
+  "reviewer_run_id": "r-20261102T231204511301-review-of-census-instrument-cac840d554f3",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-03T00:00:00+00:00",
+  "total": 97
+}
