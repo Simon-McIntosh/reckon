@@ -39,6 +39,7 @@ from reckon.crew import (
 from reckon.crew import review as review_module
 from reckon.crew.node import INTERRUPTED_RUN_PHASE, CrewError, parse_duration
 from reckon.crew.query import project_run_rows, run_section_index
+from reckon.crew.recovery_classification import PRODUCER_GONE_STATUS
 from reckon.crew.recovery_review_dispatch import supersedes_head
 from reckon.crew.routing import (
     WorktreeRecordIndex,
@@ -106,6 +107,13 @@ DUTY_ROW_FIELDS = (
     "exempt_alternative",
     # How many requests one plan's review hold keeps waiting.
     "held_count",
+    # A producer-gone duty's own evidence: the probe, the value it is stuck on,
+    # the terminal states it is waiting for and how long the value has stood
+    # still, so a coordinator sees why nothing will lift the wait.
+    "probe",
+    "observed",
+    "terminal",
+    "still_seconds",
 )
 
 # A review whose attempt the lane's admission gate refused with ``lane-paused``
@@ -155,6 +163,14 @@ QUEUED_RUN_DUTY_KIND = "run-queued"
 # coordinator. It stays distinct from the plain kind because the wait is not the
 # same wait — this row says admission has already failed to take it.
 STALLED_RUN_DUTY_KIND = "run-stalled"
+
+# A waiting run whose producer is provably gone: nothing alive can change the
+# value its probe reports, so the declared wait will never end itself. It is
+# not a queued or stalled request — admission holds no part of it — so it is
+# its own kind, and unlike those two it holds a turn open: the only remedies
+# are the session's, a resume that carries the wait past its producer or a
+# discard of the run.
+PRODUCER_GONE_DUTY_KIND = "run-producer-gone"
 
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
@@ -758,6 +774,40 @@ def _stalled_item(
         f"stalled at the {stage or 'admission'} stage: admission could launch it "
         f"and did not — reprioritise it with `reckon crew queue reprioritise "
         f"--run {run_id} --priority 0`, or drop it"
+    )
+    return item
+
+
+def _producer_gone_item(row: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
+    """The duty a waiting run owes when nothing alive can end its wait.
+
+    Every field is the classifier's own evidence rather than a second
+    derivation: the probe vector, the value it last reported, the terminal
+    states it was waiting for and how long that value has stood still. The
+    action names the two remedies left — carry the wait past its gone producer,
+    or discard the run — because no sweep will lift it and the session is the
+    only thing that can decide.
+    """
+    item = _live_item(row, kind=PRODUCER_GONE_DUTY_KIND, now=now)
+    item["reason"] = str(row.get("detail") or "")
+    wait = row.get("external_wait")
+    wait = wait if isinstance(wait, Mapping) else {}
+    probe = wait.get("probe")
+    if probe:
+        item["probe"] = " ".join(str(part) for part in probe)
+    observed = row.get("wait_observed")
+    if observed is not None:
+        item["observed"] = str(observed)
+    terminal = wait.get("terminal")
+    if terminal:
+        item["terminal"] = list(terminal)
+    still = row.get("wait_still_seconds")
+    if isinstance(still, (int, float)) and not isinstance(still, bool):
+        item["still_seconds"] = int(still)
+    run_id = str(item.get("run_id") or "")
+    item["next_command"] = (
+        f"reckon crew resume --run {run_id} --advice continue, or "
+        f"reckon crew discard --run {run_id}"
     )
     return item
 
@@ -1804,6 +1854,12 @@ def _obligations_view(
             )
             continue
         kind = ""
+        if classification == PRODUCER_GONE_STATUS:
+            # Nothing alive can change what the probe reports, so this wait is
+            # a decision rather than a wait: the duty carries the evidence and
+            # the two remedies, and holds the turn open until one is taken.
+            items.append(_producer_gone_item(row, now=now))
+            continue
         if classification in REVIEW_CLASSIFICATION_KINDS:
             if (
                 classification == "scoring"
