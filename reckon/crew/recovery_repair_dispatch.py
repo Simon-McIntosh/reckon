@@ -11,6 +11,7 @@ from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     CrewError,
+    ScopeConflict,
 )
 from reckon.crew.reports import (
     parse_manifest,
@@ -446,13 +447,19 @@ def _grant_round_scope(
     mechanism a worker's own widening uses, with the source ``repair-round`` and
     the finding that named the path as its reason.
 
-    A path a peer's binding claim already holds is refused by that mechanism;
-    it is not granted, and the round is told about it rather than resuming into
-    a fence it does not have. The returned scope therefore holds only the paths
-    the run declares or now carries a grant for.
+    Two kinds of refusal are told apart, because they mean different things to
+    the worker reading the advice. A path a peer's binding claim already holds
+    raises a scope conflict naming that peer; the path is not granted and the
+    round is told which peer holds it. Any other refusal — the claim amendment
+    refusing while the run's own worker is live, or a pointer that records no
+    claim to widen — is reported with its own error and no peer, because it is
+    about this run rather than about the path being contended. Either way the
+    path is not granted, so the returned scope holds only the paths the run
+    declares or now carries a grant for.
 
     Returns the scope to advise, the paths this call granted, and the refusals
-    as ``{"path", "peer"}`` rows.
+    as ``{"path", "peer", "reason"}`` rows; ``peer`` is empty for a refusal
+    that did not name a peer.
     """
     from reckon.crew import claims as claims_module
 
@@ -470,15 +477,19 @@ def _grant_round_scope(
                 reason=_grant_reason(path, findings),
                 grant_source="repair-round",
             )
-        except CrewError as exc:
+        except ScopeConflict as exc:
             refused.add(path)
             conflicts.append(
                 {
                     "path": path,
-                    "peer": str(getattr(exc, "run_id", "") or ""),
+                    "peer": str(exc.run_id or ""),
                     "reason": str(exc),
                 }
             )
+            continue
+        except CrewError as exc:
+            refused.add(path)
+            conflicts.append({"path": path, "peer": "", "reason": str(exc)})
             continue
         granted.extend(added)
         declared.update(added)
@@ -520,10 +531,12 @@ def _repair_resume_advice(
     control the composer declared. The findings are therefore answered by id in
     the reviewed run's own manifest, and no finding is left without an answer.
 
-    ``conflicts`` names the paths the round could not be granted because a peer
-    claim holds them: each is left out of the scope line and named with the peer
-    that holds it, so the worker is told which file it must not edit rather than
-    discovering the refusal at promotion.
+    ``conflicts`` names the paths the round could not be granted, and each is left
+    out of the scope line so the worker is told which file it must not edit
+    rather than discovering the refusal at promotion. One a peer's claim holds
+    is named with that peer; any other refusal is named with its own error and
+    no peer, because it is about this run's claim rather than about contention
+    for the path.
 
     The advice opens with the round id, so a worker's refusal that quotes the
     advice names the round it refused and a retry can tell it from a manifest
@@ -545,16 +558,28 @@ def _repair_resume_advice(
         f"Done when: {composed.get('done_when') or ''}",
         f"Negative control: {composed.get('negative_control') or ''}",
     ]
-    if conflicts:
+    held = [conflict for conflict in conflicts if conflict.get("peer")]
+    refused = [conflict for conflict in conflicts if not conflict.get("peer")]
+    if held:
         parts.insert(
             -2,
             "Grant refused: "
             + "; ".join(
-                f"{conflict.get('path')} is held by peer run "
-                f"{conflict.get('peer') or 'unrecorded'}"
-                for conflict in conflicts
+                f"{conflict.get('path')} is held by peer run {conflict.get('peer')}"
+                for conflict in held
             )
             + ". A held path is left out of this round's scope; do not edit it.",
+        )
+    if refused:
+        parts.insert(
+            -2,
+            "Scope grant refused: "
+            + "; ".join(
+                f"{conflict.get('path')}: {conflict.get('reason')}"
+                for conflict in refused
+            )
+            + ". The path is left out of this round's scope; do not edit it "
+            "until the reason above is resolved.",
         )
     return "\n".join(parts).strip() + "\n"
 

@@ -360,3 +360,42 @@ def test_a_peer_held_path_is_not_granted_and_the_advice_names_the_peer(
     ] == []
     assert PEER_RUN_ID in advice
     assert GRANTED not in _scope_line(advice)
+
+
+def test_an_amendment_refusal_names_its_reason_and_no_peer(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A refusal about this run's own claim is not reported as a peer conflict.
+
+    The claim amendment refuses while the run's own worker is live, which the
+    reflex's busy guard normally settles before a resume is offered; a worker
+    that starts in that window still reaches the grant. That refusal is about
+    this run, not about contention for the path, so the advice must carry the
+    error and name no peer — the path is not silently dropped behind a peer
+    that does not exist.
+    """
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo, write_paths=[DECLARED])
+    _store_review(head_sha, [FINDING])
+    resumed = _stub_resume(monkeypatch)
+    _stub_dispatch(monkeypatch)
+
+    from reckon.crew import claims as claims_module
+
+    def refuse(run_id, paths, **_kwargs):
+        raise claims_module.ClaimAmendmentRefusedError(
+            run_id, "its worker is still running; wait for that process to exit"
+        )
+
+    monkeypatch.setattr(claims_module, "widen_claim", refuse)
+
+    _sweep()
+
+    assert len(resumed) == 1
+    advice = resumed[0]["advice"]
+    pointer = runs.read_pointer(RUN_ID)
+    assert "its worker is still running" in advice
+    assert "held by peer run" not in advice
+    assert PEER_RUN_ID not in advice
+    assert GRANTED not in pointer["node"]["write_paths"]
+    assert GRANTED not in _scope_line(advice)
