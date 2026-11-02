@@ -1,0 +1,25 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-02T18:07:46.219Z",
+  "dispatched_at": "2026-11-02T18:01:37Z",
+  "findings": [],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a coordinator re-dispatch of a still-queued request steers it without losing its identity, and reckon/crew/runs.py:694 `_merged_requeue` plus its call at runs.py:803 merge the new record over the waiting pointer at the top level and inside `node`, keeping argv, base_sha, the observed session_id and node.manifest_path.\nVERDICT done_when: \u00a717's four cases are each a test in tests/test_a_redispatch_keeps_the_queued_identity.py (lines 152, 173, 206, 220); the gate names that file, the manifest records 4 passed EXIT=0, and I re-ran it at 1afb7ef and got 4 passed.\nVERDICT write_paths: the declared paths are reckon/crew/dispatch.py, reckon/crew/runs.py, tests/test_a_redispatch_keeps_the_queued_identity.py and the docs/evidence fragment; the diff touches runs.py, the new test and the fragment, and leaves the worktree clean.\nVERDICT manifest: read; it records the gate command verbatim, the negative control (1 failed, 3 passed, EXIT=1, KeyError 'argv'), the repro, both importer arms and from where, and states no added failure id.\nVERDICT diff: read both commits against base 695f6616 \u2014 3f039a27 adds `_REQUEUE_PRESERVED_NODE_FIELDS`, `_merged_requeue` and its one call site plus the test, and 1afb7ef24c only updates the evidence fragment's measure paragraph to carry both arm counts.\nCALL_SITES: reckon/crew/dispatch.py:427 (_answer_existing_node_run), reckon/crew/dispatch.py:275, reckon/crew/dispatch.py:1969, reckon/crew/dispatch.py:2311, reckon/crew/dispatch.py:2383, reckon/crew/queue_admission.py:460, reckon/crew/recovery_review_dispatch.py:703\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:803 now writes `_merged_requeue(current, record)` where the whole record was written before, so every field the waiting pointer alone carries survives and every steer field wins.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/after-suite.log records \"4 passed\" and EXIT=0 for the named gate, logs/head-importers.log and logs/baseline-suite.log record 1 failed of 183 at head against 2 failed of 183 at base over the same 29 files, so added_failure_ids is empty; I re-ran the single gate test at head and confirmed 4 passed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/runs.py, tests/test_a_redispatch_keeps_the_queued_identity.py, docs/evidence/fragments/.../a-redispatch-keeps-the-queued-identity.html) is inside the declared write paths, and dispatch.py needed no edit because dispatch.py:427 already hands the record to queue_dispatch.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_redispatch_keeps_the_queued_identity.py:161 asserts the seeded argv survives, which the negative-control log shows reddens with KeyError 'argv' when the whole-record overwrite is restored; the third case's assertions would also pass on the pre-change code, so it guards the spec's stated case rather than the regression.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/runs.py:686 carries the reason for the one preserved field as a named constant rather than an enumeration, matching the module's existing style of a constant beside its user and a mechanism-stating docstring.\nSCORE reuse: 19\nJUSTIFICATION reuse: no pointer-record merge owner exists; the nearest mechanism, runs.py:371 `_mutate_pointer`, takes a mutation callable and its own per-run lock, which queue_dispatch already holds at runs.py:795, so wrapping it would have deadlocked, and the new helper is a pure function with no forked capability; the test reuses the dispatch fixtures in tests/test_dispatch_names_its_backend.py rather than forking a harness.\n",
+  "review_run_id": "r-20261102T175931603906-review-of-a-redispatch-keeps-the-queued-identity-1afb7ef24cf2",
+  "reviewed_base_sha": "695f6616fff96cf9a73f525167ca66231d3e02c5",
+  "reviewed_head_sha": "1afb7ef24cf2f8c1cdb092c3517b220c72f76619",
+  "reviewed_run_id": "r-20261102T173323613755-a-redispatch-keeps-the-queued-identity",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T18:11:54.513815+00:00",
+  "total": 115
+}
