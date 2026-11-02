@@ -1007,47 +1007,26 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
     return kept
 
 
-# The duty kinds whose evidence is a live pointer, and only a live pointer.
+# The one duty kind whose evidence is a live pointer, and only a live pointer.
 #
-# Declared here as literals because this module must not import the derivation
-# the hook deliberately avoids, so the kinds are named as
-# ``reckon.crew.obligations`` spells them. Each one is produced from a live
-# pointer, so the derivation itself can raise the kind only while the pointer
-# exists:
-#
-# * ``landing-refused`` and the kinds ``CLASSIFICATION_DUTY_KINDS`` and the
-#   review reassignment in ``obligations._run_duty_row`` carry —
-#   ``obligations.obligations`` raises them from ``_classified_rows``, which
-#   classifies one live pointer each, and the refusal is read from that
-#   pointer's own ``admission_landing``, so no pointer means no row of these
-#   kinds.
-# * ``review-dimension-sub-floor`` — the loop in ``obligations`` that folds
-#   sub-floor dimensions, which reads ``_live_pointers``.
-# * ``run-held`` and ``plan-review-owed`` — the hold loops in
-#   ``obligations.obligations``, which read ``_live_pointers``.
+# Named as the literal ``reckon.crew.obligations`` spells it, because this
+# module must not import that derivation: the hook loads this file by path so
+# the prompt path reaches no plan, backend or ledger module. The kind is raised
+# only from ``obligations._run_duty_row`` holding a live pointer and reading the
+# refusal out of that pointer's own ``admission_landing``, so a run with no
+# pointer raises no refusal. That is what makes a ``stat`` sufficient here, and
+# it is not sufficient anywhere else.
 #
 # Every other kind is left alone, whatever its run's pointer state. A
-# ``worktree-held`` row is raised from the project's retained ledger records and
-# a queued, stalled or waiting row from the queue and the admission verdicts, so
-# a missing pointer says nothing about any of them: a landed run whose worktree
-# remains is a real duty, and hiding it on a ``stat`` would be a silent
-# omission rather than a settlement.
-LIVE_POINTER_DUTY_KINDS = frozenset(
-    {
-        "landing-refused",
-        "review-missing",
-        "review-ready",
-        "review-refused",
-        "promotable-stale",
-        "review-queued",
-        "blocked",
-        "turn-ended-early",
-        "needs-help",
-        "review-dimension-sub-floor",
-        "run-held",
-        "plan-review-owed",
-    }
-)
+# ``worktree-held`` row is raised from the project's retained ledger records, a
+# queued or stalled row from the queue and the admission verdicts, and a review,
+# hold or blocked row names state the run's record still carries after its
+# pointer is gone. A missing pointer says nothing about any of them, and hiding
+# one on a ``stat`` would be a silent omission rather than a settlement. A
+# landing refusal is the case where the pointer itself is the evidence: the
+# station stored the refusal that pointer carried, so the pointer's removal is
+# the landing the refusal was about.
+LIVE_POINTER_DUTY_KINDS = frozenset({"landing-refused"})
 
 
 def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
