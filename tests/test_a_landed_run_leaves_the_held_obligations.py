@@ -271,6 +271,41 @@ def test_a_duty_that_names_no_run_is_kept(
     assert RUNLESS_NODE_ID in checklist, checklist
 
 
+def test_a_ledger_evidenced_duty_survives_its_runs_missing_pointer(
+    repository: Path, runtime_root: Path, follower: None
+) -> None:
+    """A worktree-held row rests on a retained record, not on a live pointer.
+
+    A run that landed can leave its tree behind, and the row that names it is
+    raised from the project's retained ledger records, so it carries no live
+    pointer to be checked against. Dropping it on a missing pointer would hide
+    a real duty from exactly the reader this settlement is meant to help.
+    """
+    _publish_answer(runtime_root, run_id=DEPARTED_RUN_ID, node=DEPARTED_NODE_ID)
+    assert not obligation_snapshot.live_pointer_path(DEPARTED_RUN_ID).exists()
+
+    settled = obligation_snapshot.without_departed_run_duties(
+        {
+            "obligations": [
+                {**_duty(run_id=DEPARTED_RUN_ID, node=DEPARTED_NODE_ID)},
+                {
+                    "kind": "worktree-held",
+                    "run_id": DEPARTED_RUN_ID,
+                    "node": DEPARTED_NODE_ID,
+                    "plan": "fixture-plan",
+                    "age_seconds": 900,
+                    "next_command": "reckon crew gc --run " + DEPARTED_RUN_ID,
+                },
+            ],
+            "summary": {"count": 2, "oldest_age_seconds": 900},
+        }
+    )
+
+    kinds = [row["kind"] for row in settled["obligations"]]
+    assert kinds == ["worktree-held"], kinds
+    assert settled["summary"]["count"] == 1, settled["summary"]
+
+
 def test_settling_an_answer_loads_no_derivation_module(
     config_home: Path, tmp_path: Path
 ) -> None:

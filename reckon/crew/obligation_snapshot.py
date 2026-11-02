@@ -1007,18 +1007,62 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
     return kept
 
 
+# The duty kinds whose evidence is a live pointer, and only a live pointer.
+#
+# Declared here as literals because this module must not import the derivation
+# the hook deliberately avoids, so the kinds are named as
+# ``reckon.crew.obligations`` spells them. Each one is produced from a live
+# pointer, so the derivation itself can raise the kind only while the pointer
+# exists:
+#
+# * ``landing-refused`` and the kinds ``CLASSIFICATION_DUTY_KINDS`` and the
+#   review reassignment in ``obligations._run_duty_row`` carry —
+#   ``obligations.obligations`` raises them from ``_classified_rows``, which
+#   classifies one live pointer each, and the refusal is read from that
+#   pointer's own ``admission_landing``, so no pointer means no row of these
+#   kinds.
+# * ``review-dimension-sub-floor`` — the loop in ``obligations`` that folds
+#   sub-floor dimensions, which reads ``_live_pointers``.
+# * ``run-held`` and ``plan-review-owed`` — the hold loops in
+#   ``obligations.obligations``, which read ``_live_pointers``.
+#
+# Every other kind is left alone, whatever its run's pointer state. A
+# ``worktree-held`` row is raised from the project's retained ledger records and
+# a queued, stalled or waiting row from the queue and the admission verdicts, so
+# a missing pointer says nothing about any of them: a landed run whose worktree
+# remains is a real duty, and hiding it on a ``stat`` would be a silent
+# omission rather than a settlement.
+LIVE_POINTER_DUTY_KINDS = frozenset(
+    {
+        "landing-refused",
+        "review-missing",
+        "review-ready",
+        "review-refused",
+        "promotable-stale",
+        "review-queued",
+        "blocked",
+        "turn-ended-early",
+        "needs-help",
+        "review-dimension-sub-floor",
+        "run-held",
+        "plan-review-owed",
+    }
+)
+
+
 def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     """A held payload minus the duties of runs that hold no live pointer now.
 
-    A duty names a run because a live pointer carried the state it was derived
-    from, so a run whose pointer file has been removed has landed or ended and
-    owes nothing. The answer that still names it was computed before the
-    removal, when that pointer was there; a station can hold such an answer for
-    as long as its tick runs, which is minutes. One ``stat`` per run-keyed duty
-    answers it at read time.
+    A duty of one of :data:`LIVE_POINTER_DUTY_KINDS` names a held run because a
+    live pointer carried the state it was derived from, so a run whose pointer
+    file has been removed has landed or ended and owes nothing. The answer that
+    still names it was computed before the removal, when that pointer was
+    there; a station can hold such an answer for as long as its tick runs,
+    which is minutes. One ``stat`` per such duty answers it at read time.
 
-    A duty that names no run is kept: its evidence is not a pointer, and
-    dropping it would hide a reading nobody can re-derive from one. The summary
+    A duty of any other kind is kept, whatever its pointer state: its evidence
+    is a ledger record, a queue request or nothing at all, so a missing pointer
+    says nothing about it. That includes a duty that names no run. The summary
     is recomputed so the header counts the rows actually shown.
     """
     rows = payload.get("obligations")
@@ -1027,8 +1071,15 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     kept: list[Any] = []
     dropped = False
     for row in rows:
-        run_id = str(row.get("run_id") or "") if isinstance(row, Mapping) else ""
-        if run_id and not live_pointer_path(run_id).exists():
+        if not isinstance(row, Mapping):
+            kept.append(row)
+            continue
+        run_id = str(row.get("run_id") or "")
+        if (
+            run_id
+            and str(row.get("kind") or "") in LIVE_POINTER_DUTY_KINDS
+            and not live_pointer_path(run_id).exists()
+        ):
             dropped = True
             continue
         kept.append(row)
