@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s97">
+  <meta name="plan-recorded-at" content="2026-11-02">
+  <title>A starting review is visible | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-starting-review-is-visible-landing" data-node="a-starting-review-is-visible" data-reckon="landed" data-when="2026-11-02">
+  <h2>A review run that has started counts as its subject's review in flight</h2>
+  <p>A composed review is dispatched before it files anything. In that window the store holds no record for it, so <code>review_present</code> read false, the subject's row printed the composed dispatch anyway, and the command came back <code>already starting</code> — the review run existed and no surface named it.</p>
+  <p><code>classify_pointer</code> now asks the reflex's own recogniser (<code>_review_in_flight</code>) whether a review already stands for the run at its current head, and reads that review run's own pointer for its phase. When the phase is starting, queued or working, the row carries <code>review_run_id</code> and <code>review_run_phase</code>, <code>review_present</code> is true, and <code>next_action</code> is the read of that run (<code>reckon crew observe --run &lt;id&gt;</code>) instead of a dispatch. A review whose phase is terminal is not in flight: the store answers for a filed record, and a review that died without one leaves the run owed a review again. The two names join <code>LIVE_CLASSIFICATION_FIELDS</code> in <code>reckon/crew/query.py</code>, so the live view and the pre-flight read one vocabulary. The live view already listed <code>starting</code> pointers; the new test pins that.</p>
+  <p><code>tests/test_a_starting_review_is_visible.py</code> (3 passed) covers the subject naming its starting review with no dispatch printed, the live view listing the starting review with the subject pointing at it, and a subject with no review run still printing the dispatch. Negative control: <code>_review_run_in_flight</code> returning <code>("", "")</code> — counting only a stored review — reddens the first two cases at <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>

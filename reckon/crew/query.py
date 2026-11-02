@@ -142,6 +142,8 @@ LIVE_CLASSIFICATION_FIELDS = (
     "resets_at",
     "review_error",
     "review_present",
+    "review_run_id",
+    "review_run_phase",
     "review_status",
     "run_id",
     "session",

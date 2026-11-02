@@ -599,6 +599,79 @@ def _exit_record_ends_the_current_attempt(
     return _exit_record_names_attempt(record, attempt)
 
 
+def _review_in_flight_phase(phase: str) -> bool:
+    """Whether a review run in ``phase`` is in flight for its subject.
+
+    A review that has been dispatched and has not reached a terminal phase
+    stands for its subject's review whether or not it has filed the record
+    yet, and this is exactly the window in which a second dispatch of the same
+    review is refused by the lane naming the run that already holds it. The
+    pre-spawn spellings are read from the one import that owns them rather than
+    restated, so a spellings change reaches this reader with the rest.
+    """
+    return phase in _PRE_SPAWN_PHASES or phase in {"queued", "working"}
+
+
+def _review_run_in_flight(record: Mapping[str, Any]) -> tuple[str, str]:
+    """The dispatched review standing for this run's head, and its phase.
+
+    The recogniser is the reflex's own — the reviewed run and the head the
+    review read — so the classifier and the reflex cannot split on whether a
+    run is still owed a review. The review run's own pointer supplies the
+    phase, because the subject's row reports how far that review has got, and
+    a phase outside :func:`_review_in_flight_phase` means the review ended:
+    the store answers for a filed record, and a review that died without one
+    leaves the run owed a review again.
+
+    ``("", "")`` is the answer for every case the reader cannot resolve — no
+    review, an unreadable pointer, or a phase that is not in flight — so a row
+    never loses the dispatch it would otherwise print over a review it cannot
+    see.
+    """
+    try:
+        review_run_id = _review_in_flight(record)
+    except (CrewError, OSError, ValueError):
+        return "", ""
+    if not review_run_id:
+        return "", ""
+    phase = _review_pointer_phase(review_run_id)
+    if not _review_in_flight_phase(phase):
+        return "", ""
+    return review_run_id, phase
+
+
+def _review_pointer_phase(review_run_id: str) -> str:
+    """The phase a review run's own pointer records, or "" when unreadable.
+
+    The review's pointer is the only place its own progress is written, so the
+    subject's row reports the review's phase from here rather than inferring
+    one from the dispatch that composed it.
+    """
+    from reckon.crew.runs import read_pointer
+
+    try:
+        pointer = read_pointer(review_run_id)
+    except (CrewError, OSError):
+        return ""
+    if not isinstance(pointer, Mapping):
+        return ""
+    return str(pointer.get("phase") or "")
+
+
+def _review_in_flight_action(run_id: str, review_run_id: str, phase: str) -> str:
+    """The action for a scoring run whose review is already dispatched.
+
+    A second dispatch of the same review is refused by the lane naming the run
+    that already holds it, so the row offers the read of that run instead: the
+    coordinator sees which review stands for this run and how far it has got,
+    rather than a command that cannot run.
+    """
+    return (
+        f"the review for {run_id} is in flight as {review_run_id} "
+        f"(phase: {phase}); read it with `reckon crew observe --run {review_run_id}`"
+    )
+
+
 def _missing_pointer_recorded(exit_record: Mapping[str, Any] | None) -> str | None:
     """The live pointer a launch-failure record says went missing, if it does.
 
@@ -1124,6 +1197,10 @@ def classify_pointer(
             review, review_error = _stored_review(record)
             memo["review"] = {"record": review, "error": review_error}
     review_complete = _review_is_complete(review)
+    # The branch that decides whether the run still owes a review is the only
+    # one that pays for recognising a dispatched review, so the pair starts
+    # empty and every other row carries it empty.
+    in_flight_review: tuple[str, str] = ("", "")
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
@@ -1343,6 +1420,11 @@ def classify_pointer(
             action = _promotion_command(run_id, record, manifest_commits)
         else:
             classification = "scoring"
+            # A review already dispatched stands as this run's review in
+            # flight: the lane refuses a second dispatch of it naming the run
+            # that holds it, so the row reads that run rather than offering a
+            # command that cannot run.
+            in_flight_review = _review_run_in_flight(record)
             if review_error:
                 review_detail = f"the stored review could not be read: {review_error}"
             elif review is None:
@@ -1351,11 +1433,20 @@ def classify_pointer(
                 review_detail = (
                     f"the attached review is {review.get('status') or 'incomplete'}"
                 )
+            if in_flight_review[0]:
+                review_detail = (
+                    f"its review is in flight as {in_flight_review[0]} "
+                    f"(phase: {in_flight_review[1]})"
+                )
             detail = (
                 "the worker manifest reports completion, but "
                 f"{review_detail}; an independent review must be produced before promotion"
             )
-            action = _review_dispatch_action(record)
+            action = (
+                _review_in_flight_action(run_id, *in_flight_review)
+                if in_flight_review[0]
+                else _review_dispatch_action(record)
+            )
     elif manifest_status == "blocked":
         classification = "blocked"
         # A blocked transition explains itself from the best source available,
@@ -2193,7 +2284,11 @@ def classify_pointer(
         # Review presence and readability are separate facts. An emitted review
         # that did not parse is evidence to repair, never an absent review that
         # can be silently regenerated without showing what the reviewer wrote.
-        "review_present": review is not None or bool(review_error),
+        # A review run that is in flight is present too: it exists, it is
+        # working on this run's head, and re-dispatching it would be refused.
+        "review_present": review is not None
+        or bool(review_error)
+        or bool(in_flight_review[0]),
         "review_status": (
             "unreadable"
             if review_error
@@ -2201,6 +2296,11 @@ def classify_pointer(
             if review is not None
             else None
         ),
+        # The review run standing for this run's head while it is in flight,
+        # and the phase it is in, so a reader names the review it is waiting on
+        # instead of inferring one from the dispatch that composed it.
+        "review_run_id": in_flight_review[0] or None,
+        "review_run_phase": in_flight_review[1] or None,
         "review_error": review_error or None,
         "terminal_at": terminal_at,
         "terminal_age_seconds": terminal_age_seconds,
@@ -2357,6 +2457,7 @@ from .recovery_memo import (  # noqa: E402
     _terminal_lane_signal,
     _write_classification_memo,
 )
+from .recovery_review_dispatch import _review_in_flight  # noqa: E402
 from .recovery_review_subject import (  # noqa: E402
     _canonical_commits,
     _review_dispatch_action,
