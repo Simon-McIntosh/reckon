@@ -60,11 +60,16 @@
   gate did not expect refused the suite before it started — that regression was caught by the
   related-file gate and repaired.</p>
 
-  <p id="a-coordinator-gate-shows-on-its-pane-gap">One gap remains outside this node's write scope:
-  <code>ticker.stream_carries</code> in <code>reckon/crew/ticker.py</code> admits rows by state
-  family and does not yet carry the gate states, so the rows reach the stream and the owning session
-  but a follower's row policy does not draw them. The fold, the records and the rows are complete;
-  the pane-side admission is a one-line addition to <code>stream_carries</code>.</p>
+  <p id="a-coordinator-gate-shows-on-its-pane-pane-policy"><code>stream_carries</code> in
+  <code>reckon/crew/ticker.py</code> admits a row by its destination state, and the gate states were
+  not among the words the renderer knew, so every gate row classified as observer context and the
+  row policy dropped it. The renderer now spells the two gate words itself, for the reason it
+  spells the lift words — the fold imports the recovery watch, which imports the renderer, so
+  reading them back would close an import cycle — carries both, and maps both to the working pane
+  word, because a coordinator running its own gate is present and working rather than idle. A test
+  feeds the fold's start and end rows through the policy a follower uses and requires both to be
+  released; with only that clause removed, it fails on the drop. Writing a row and drawing it are
+  different claims, and only the second one puts the gate on the pane.</p>
 </article>
 </body>
 </html>
