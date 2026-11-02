@@ -32,7 +32,7 @@ estimate and shortfall, so a refusal built from it states a measure the
 placement never weighed.</p>
 <p id="one-rule-chooses-the-lane-for-an-oversized-request-measure">Measured by
 <code>tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py</code>,
-ten cases, driving routing's own <code>_context_fit_verdict</code> and
+eleven cases, driving routing's own <code>_context_fit_verdict</code> and
 <code>_competence_verdict</code> from a config that declares the windows and
 stubbing neither for the placement cases. The same candidates resolve the same lane on both paths, and
 it is the widest usable one: with alpha at 300,000 and beta at 400,000 tokens,
@@ -47,26 +47,35 @@ leaves the request on its own lane. A window declared as <code>0</code> or
 <code>dispatch-refused</code> naming the input window, admission raises
 <code>CrewError</code> — and the rule itself refuses such a candidate rather
 than ranking it. A lane that is the widest usable candidate and also the one
-that refused the request is not chosen: the rule returns the narrow lane beside
-it, and the admission pass moves the request to that narrow lane. With no
+that refused the request is not chosen: given such a lane and a narrow one
+beside it, the rule returns the narrow one, and the admission pass is given the
+case where the refused lane is the widest and the only usable candidate, which
+it answers by refusing rather than moving the request onto that lane. A spy on
+the rule records that the name it receives from the admission pass is the
+pointer's own backend. With no
 usable lane, dispatch exits 5 with <code>competence-refusal</code>, naming
 <code>context-window-exceeded</code>, the fit check's estimate above that
 lane's window and their difference, creates no worktree and queues nothing; the
 refusal carries no agent key and no nested context block, which is what
-distinguishes it from the competence verdict. Gate: <strong>10 passed at
-head</strong>, and the two node files together <strong>14 passed,
+distinguishes it from the competence verdict. Gate: <strong>11 passed at
+head</strong>, and the two node files together <strong>15 passed,
 EXIT=0</strong>, with the two verdict stubs removed from
 <code>tests/test_a_request_too_large_for_local_is_never_placed_there.py</code>
 (4 passed).</p>
 <p id="one-rule-chooses-the-lane-for-an-oversized-request-controls">Negative
-controls, both applied and both reverted. Keeping admission's first-usable
-choice fails the first case: <em>1 failed, 9 passed, EXIT=1</em>, reading
+controls, each applied and reverted. Keeping admission's first-usable
+choice fails the first case: <em>2 failed, 9 passed, EXIT=1</em>, reading
 <code>AssertionError: assert 'alpha' == 'beta'</code> in
 <code>test_both_paths_move_the_request_to_the_widest_fitting_lane</code>.
-Restoring the unchanged-resolution return fails the third:
-<em>1 failed, 9 passed, EXIT=1</em>, reading <code>assert 'context' not in
+Restoring the competence-verdict-first refusal fails the third:
+<em>2 failed, 9 passed, EXIT=1</em>, reading <code>assert 'context' not in
 {'agent_key': …, 'context': {…}, 'estimated_tokens': 250392, …}</code> in
 <code>test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree</code> —
 the placement falls through to the competence verdict, so the refusal a reader
-sees is that verdict rather than the fit check that refused the lane.</p>
+sees is that verdict rather than the fit check that refused the lane. A third
+mutation — removing the rule's own refused-lane exclusion — is what the
+strengthened admission case is held against, and it fails there:
+<em>3 failed, 8 passed, EXIT=1</em>, reading <code>assert 'beta' == ''</code>
+in <code>test_the_refused_widest_lane_is_not_chosen_by_the_admission_pass</code>,
+with the rule-level case and the spy case failing beside it.</p>
 </section>

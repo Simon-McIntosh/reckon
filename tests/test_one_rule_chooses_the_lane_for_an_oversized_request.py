@@ -99,15 +99,15 @@ def _refusal() -> CompetenceLimit:
     )
 
 
-def _admission_destination(
+def _admission_path(
     repo: Path,
     config: dict,
     monkeypatch: pytest.MonkeyPatch,
     *,
     lane: str = "",
     refused: str = LOCAL,
-) -> str:
-    """The lane the admission pass moves a refused request onto."""
+) -> dict:
+    """What the admission pass does with a request its own lane refused."""
     captured: dict[str, str] = {}
 
     def move(run_id: str, backend: str, **_kwargs) -> dict:
@@ -124,13 +124,30 @@ def _admission_destination(
         "node": placement._node("oversized").as_dict(),
         "dispatch_options": {},
     }
-    queue_admission._route_competence_refusal(
-        pointer,
-        _refusal(),
-        config_for=lambda _pointer: config,
-        lane=lane,
+    outcome = dict(
+        queue_admission._route_competence_refusal(
+            pointer,
+            _refusal(),
+            config_for=lambda _pointer: config,
+            lane=lane,
+        )
     )
-    return captured.get("backend", "")
+    outcome["moved_to"] = captured.get("backend", "")
+    return outcome
+
+
+def _admission_destination(
+    repo: Path,
+    config: dict,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    lane: str = "",
+    refused: str = LOCAL,
+) -> str:
+    """The lane the admission pass moves a refused request onto."""
+    return _admission_path(repo, config, monkeypatch, lane=lane, refused=refused)[
+        "moved_to"
+    ]
 
 
 def test_both_paths_move_the_request_to_the_widest_fitting_lane(
@@ -294,16 +311,50 @@ def test_the_refused_lane_is_never_chosen_even_when_it_is_the_widest() -> None:
 def test_the_refused_widest_lane_is_not_chosen_by_the_admission_pass(
     dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # The refused lane is the widest candidate carrying no reason and the only
+    # one, which is the case a first-usable rule answers with that lane: the
+    # request would be moved back onto the lane that refused it. The other two
+    # lanes are narrower than the request, so they carry the fit refusal and are
+    # excluded on their own account.
     config = _configure(
         dispatch_repo,
         monkeypatch,
         local_window=100_000,
-        extra_windows={CODEX: 900_000, "alpha": 150_000},
+        extra_windows={CODEX: 900_000, "alpha": 50_000},
+    )
+    outcome = _admission_path(dispatch_repo, config, monkeypatch, refused=CODEX)
+
+    assert outcome["moved_to"] == ""
+    assert outcome["queued_on"] == ""
+    assert "shortfall" in outcome["obligation"].lower()
+
+
+def test_the_admission_pass_hands_the_rule_the_pointers_own_backend(
+    dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The exclusion has to be the pointer's own backend, not whatever lane the
+    # pass happens to dislike: alpha is the widest candidate here, so a rule
+    # handed any other name would return it and move the request onto the lane
+    # that refused it.
+    refused: list[str] = []
+    real = snapshot.widest_fitting_candidate
+
+    def spy(candidates, refused_backend):
+        refused.append(refused_backend)
+        return real(candidates, refused_backend)
+
+    monkeypatch.setattr(snapshot, "widest_fitting_candidate", spy)
+    config = _configure(
+        dispatch_repo,
+        monkeypatch,
+        local_window=100_000,
+        extra_windows={CODEX: 400_000, "alpha": 900_000},
     )
     destination = _admission_destination(
-        dispatch_repo, config, monkeypatch, lane=CODEX, refused=LOCAL
+        dispatch_repo, config, monkeypatch, refused="alpha"
     )
 
+    assert refused == ["alpha"]
     assert destination == CODEX
 
 
