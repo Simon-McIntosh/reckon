@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-02T22:58:15.448Z",
+  "dispatched_at": "2026-11-02T22:46:29Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "id": "f8ef5507e79",
+      "line": 612,
+      "severity": "non-blocking",
+      "summary": "_review_in_flight_phase excludes terminal phases but no test covers a complete, failed, queued or working review phase, so removing that exclusion or the queued/working half keeps all three cases green."
+    },
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "id": "f209803e879",
+      "line": 1427,
+      "severity": "non-blocking",
+      "summary": "_review_run_in_flight is called without the pointers= the recogniser accepts, so query.project_live_rows (reckon/crew/query.py:887) re-lists the project's live pointers once per scoring row; passing the snapshot it already read would keep the live view linear."
+    }
+  ],
+  "project": "reckon",
+  "review": "VERDICT goal: the goal is that a starting, queued or working review run counts as its subject's review in flight; the landed change reads the reflex's own recogniser (reckon/crew/recovery_classification.py:615 _review_run_in_flight) and the review run's own pointer phase (:643 _review_pointer_phase), so the subject's row carries review_run_id/review_run_phase and its next_action names that run.\nVERDICT done_when: the done_when asks a new tests/test_a_starting_review_is_visible.py to show a subject naming its starting review with no dispatch, the live view listing the starting run, and a subject with no review still printing the dispatch; the manifest records that file passing (head-arm.log \"3 passed in 1.74s\", EXIT=0 at 0a750cc551) and the importers unbroken (head-importers.log \"135 passed\", base-arm.log \"132 passed\"), so the gate asserts the measure.\nVERDICT write_paths: the declared paths are reckon/crew/recovery_classification.py, reckon/crew/query.py, tests/test_a_starting_review_is_visible.py, the evidence fragment and a figures directory (prompt.txt:78-82); every path in the diff at 7982557bec2d..0a750cc551 is one of the first four.\nVERDICT manifest: read at .../r-20261102T215409121985-a-starting-review-is-visible/manifest.md; it reports status complete, two commits, the three gate logs plus the negative control, baseline_suite 132 passed and after_suite 3 passed, each with a log path.\nVERDICT diff: read commit by commit against base 7982557bec2d; 1f5536965f adds the recogniser call, the two row fields and the live vocabulary entries, 0a750cc551b0 splits the scoring detail so a dispatched review is not described as still owed one, and both stay inside the classifier, the field declaration and the test.\nCALL_SITES: reckon/crew/query.py:887, reckon/crew/obligations.py:638, reckon/crew/recovery_review_dispatch.py:2159, reckon/crew/directory.py:97, reckon/crew/promotion.py:387, reckon/serve.py:899\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1427-1443 makes the scoring row carry the in-flight review's id and phase and replaces the dispatch with reckon/crew/recovery_classification.py:661 _review_in_flight_action.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-arm.log records 3 passed EXIT=0 at 0a750cc551 and head-importers.log 135 passed, but the manifest's structured after_suite (manifest.md:22) carries only the three-test arm beside a sixteen-file baseline_suite (manifest.md:21), so the pair alone does not show the importer set unbroken and the negative control (negative-control.log:1) ran at 1f5536965f, one commit before the head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four files in git diff --stat 7982557bec2d 0a750cc551 are exactly reckon/crew/recovery_classification.py, reckon/crew/query.py, tests/test_a_starting_review_is_visible.py and the evidence fragment, all inside the declared paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_starting_review_is_visible.py:95-101 fails when _review_run_in_flight returns (\"\", \"\") \u2014 negative-control.log shows both in-flight cases reddening \u2014 but no test exercises a terminal or queued review phase, so deleting the phase predicate at reckon/crew/recovery_classification.py:612 leaves the suite green.\nSCORE fit: 16\nJUSTIFICATION fit: the prose next_action matches the pre-existing hold action at reckon/crew/recovery_review_subject.py:1158 and the function-local read_pointer import matches reckon/crew/recovery_classification.py:200.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses the reflex's own recogniser _review_in_flight (reckon/crew/recovery_review_dispatch.py:527) rather than restating it, and feeds phase spellings from _PRE_SPAWN_PHASES; the only copy is a second per-row sweep the recogniser's pointers= argument exists to avoid.\nFINDING reckon/crew/recovery_classification.py:612 non-blocking: _review_in_flight_phase excludes terminal phases but no test covers a complete, failed, queued or working review phase, so removing that exclusion or the queued/working half keeps all three cases green.\nFINDING reckon/crew/recovery_classification.py:1427 non-blocking: _review_run_in_flight is called without the pointers= the recogniser accepts, so query.project_live_rows (reckon/crew/query.py:887) re-lists the project's live pointers once per scoring row; passing the snapshot it already read would keep the live view linear.\n",
+  "review_run_id": "r-20261102T224238874935-review-of-a-starting-review-is-visible-0a750cc551b0",
+  "reviewed_base_sha": "7982557bec2d16d9563658271a1b701ede246dfa",
+  "reviewed_head_sha": "0a750cc551b0aa5180d5e10f8f767b99ab59e9ab",
+  "reviewed_run_id": "r-20261102T215409121985-a-starting-review-is-visible",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T23:06:34.250855+00:00",
+  "total": 104
+}
