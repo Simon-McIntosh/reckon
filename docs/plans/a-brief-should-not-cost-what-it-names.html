@@ -23,8 +23,8 @@
   <title>A Brief Should Not Cost What It Names | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
-<meta name="plan-modified" content="2026-10-22">
+<meta name="plan-version" content="16">
+<meta name="plan-modified" content="2026-11-02">
 <meta name="plan-section-declarations" content="{&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -222,22 +222,22 @@ Section 2 comes first and is nearly free: the per-file breakdown is already comp
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="reference-cost" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="reference-cost" data-choice="flat" data-by="Simon McIntosh" data-when="2026-11-02T21:09:02+00:00">
     <p class="r-dec-q">What does a mention cost, once it is not charged at file load?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="flat">a flat per-mention constant</button>
+      <button class="r-opt chosen" data-value="flat">a flat per-mention constant</button>
       <button class="r-opt" data-value="capped-head">the file&#x27;s first N tokens, capped</button>
       <button class="r-opt" data-value="zero">nothing at all</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">A mentioned path is charged one flat reference cost, the same kind of constant regenerated paths already use, so a mention costs a known amount whatever the file&#x27;s size and the estimate stays predictable.</p>
     </div>
-<div class="r-dec" data-key="reduction-marker" data-choice="" data-by="" data-when="">
+<div class="r-dec" data-key="reduction-marker" data-choice="flag" data-by="Simon McIntosh" data-when="2026-11-02T21:09:02+00:00">
     <p class="r-dec-q">How is a reduced brief recorded — as a flag, or as the diff against the refused attempt?</p>
     <p class="r-dec-opts">
-      <button class="r-opt" data-value="flag">a flag plus the two token figures</button>
+      <button class="r-opt chosen" data-value="flag">a flag plus the two token figures</button>
       <button class="r-opt" data-value="diff">the diff between the refused and accepted briefs</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">A run accepted after a context refusal records that it was retried, with the refused and accepted estimates; that is enough for an auditor to see a reduction happened and by how much, without storing brief diffs.</p>
     </div>
 </section>
 
