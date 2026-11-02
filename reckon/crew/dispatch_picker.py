@@ -16,6 +16,7 @@ from typing import (
     Callable,
     Iterable,
     Mapping,
+    Sequence,
 )
 from reckon import (
     ledger,
@@ -158,7 +159,7 @@ def _reportable_picker_selection(
     return {
         key: value
         for key, value in selection.items()
-        if key not in _PICKER_PER_CALL_FIELDS
+        if key not in _PICKER_PER_CALL_FIELDS and key != "snapshot_candidates"
     }
 
 
@@ -170,6 +171,7 @@ def _picker_fallback(
     latency_ms: float | None = None,
     authority_error: str | None = None,
     stage_ms: Mapping[str, float | None] | None = None,
+    snapshot_candidates: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """The selection dispatch records when the picker did not decide one.
 
@@ -178,7 +180,9 @@ def _picker_fallback(
     each case by the ``fallback_reason`` rather than by which keys are present.
     The stages that finished before the pick gave up carry their elapsed
     milliseconds here, so a reader reaches the work that spent the budget even
-    when the reason names only the stage still running.
+    when the reason names only the stage still running. A pick that had already
+    measured the lane windows leaves that scan here, so the placement it falls
+    back to weighs the same measurements.
     """
     client = sys.modules.get("reckon.crew.picker.client")
     return {
@@ -198,6 +202,11 @@ def _picker_fallback(
         "comment": comment,
         **({"input_errors": dict(input_errors)} if input_errors else {}),
         **({"authority_error": authority_error} if authority_error else {}),
+        **(
+            {"snapshot_candidates": list(snapshot_candidates)}
+            if snapshot_candidates
+            else {}
+        ),
     }
 
 
@@ -510,6 +519,21 @@ def dispatch_picker_selection(
 
             from reckon.crew.picker import client as picker_client
 
+            def recording_snapshotter(*args: Any, **kwargs: Any) -> Any:
+                """Return the candidate scan and keep a copy of it on the result.
+
+                A pick that gives up has already measured every lane's window,
+                and the fallback keeps none of it. Capturing the scan here lets a
+                dispatcher that has to place the request without a router answer
+                weigh the lanes on the measurements this pick took rather than
+                reading each window a second time.
+                """
+                options = picker_snapshot.candidates(*args, **kwargs)
+                result["snapshot_candidates"] = [
+                    candidate.as_dict() for candidate in options
+                ]
+                return options
+
             def answering_caller(*args: Any, **kwargs: Any) -> dict[str, Any]:
                 """Return the answer and keep a copy of it on the result.
 
@@ -524,6 +548,7 @@ def dispatch_picker_selection(
 
             inputs = {
                 "records": pick_records,
+                "snapshotter": recording_snapshotter,
                 "caller": answering_caller,
                 "verdict_inputs": pick_verdicts,
                 "budget_snapshot": pick_budget,
@@ -642,6 +667,7 @@ def dispatch_picker_selection(
         latency_ms=round((time.monotonic() - started) * 1000, 3),
         authority_error=authority_error,
         stage_ms=stages,
+        snapshot_candidates=result.get("snapshot_candidates"),
     )
 
 

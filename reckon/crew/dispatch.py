@@ -42,6 +42,7 @@ from typing import (
     Iterable as Iterable,
     Iterator as Iterator,
     Mapping as Mapping,
+    Sequence as Sequence,
 )
 from reckon import (
     _backends as _backends,
@@ -554,6 +555,224 @@ def _offered_local_backend(
         if candidate.get("local") is True or name == local_backend:
             return name or local_backend
     return None
+
+
+def _gating_input_window(backend_settings: Mapping[str, Any]) -> int | None:
+    """The token figure that gates one backend's context fit, or ``None``.
+
+    The arithmetic is the router's own: the smaller of the declared usable
+    window and the effective boundary a recorded refusal established. A backend
+    declaring neither is unbounded rather than zero, so nothing gates it and no
+    request can be too large for it.
+    """
+    windows: list[int] = []
+    for declared in (
+        backend_settings.get("usable_input_window"),
+        backend_settings.get("effective_input_window"),
+    ):
+        if declared is None:
+            continue
+        try:
+            window = int(declared)
+        except (TypeError, ValueError):
+            continue
+        if window > 0:
+            windows.append(window)
+    return min(windows) if windows else None
+
+
+def _candidate_window(candidate: Mapping[str, Any]) -> int | None:
+    """A candidate's gating input window, or ``None`` when it declares none."""
+    context = candidate.get("context")
+    if not isinstance(context, Mapping):
+        return None
+    window = context.get("window_tokens")
+    try:
+        figure = int(window) if window is not None else None
+    except (TypeError, ValueError):
+        return None
+    return figure if figure and figure > 0 else None
+
+
+def _widest_context_candidate(
+    candidates: Iterable[Mapping[str, Any]],
+) -> Mapping[str, Any] | None:
+    """The fitting candidate with the largest usable input window.
+
+    A candidate carrying any reason is excluded — for a review, that is where
+    the role's withdrawn lanes have already been removed. A candidate declaring
+    no window is unbounded and ranks above every declared window, and ties break
+    by backend name so two equally wide lanes resolve the same way on every
+    call.
+    """
+
+    def rank(candidate: Mapping[str, Any]) -> tuple[int, int, str]:
+        window = _candidate_window(candidate)
+        return (
+            0 if window is None else 1,
+            -(window or 0),
+            str(candidate.get("backend") or ""),
+        )
+
+    fitting = [candidate for candidate in candidates if not candidate.get("reasons")]
+    return min(fitting, key=rank) if fitting else None
+
+
+def _context_shortfall_verdict(
+    candidates: Iterable[Mapping[str, Any]],
+    estimate: int,
+    resolution: DispatchPlan,
+) -> dict[str, Any]:
+    """The refusal a request no permitted lane holds, naming its shortfall.
+
+    The window reported is the widest any candidate declares, so the shortfall
+    is the smallest distance this node has to shrink by rather than the distance
+    from the lane it happened to resolve on.
+    """
+    declared = [
+        window
+        for window in (_candidate_window(candidate) for candidate in candidates)
+        if window is not None
+    ]
+    window = max(declared) if declared else estimate
+    return {
+        "allowed": False,
+        "reason": "context-window-exceeded",
+        "estimated_tokens": estimate,
+        "window_tokens": window,
+        "shortfall_tokens": max(0, estimate - window),
+        "backend": resolution.backend,
+    }
+
+
+def _router_free_resolution(
+    *,
+    resolved_route: str,
+    picker_selection: Mapping[str, Any] | None,
+    local: bool,
+    backend_override: str | None,
+    default_backend_override: str | None,
+    member: str,
+) -> bool:
+    """Whether this dispatch resolves a backend without a router answer.
+
+    A lane the caller named — ``--local``, ``--backend``, the briefing's own
+    default or a roster member bound to a harness — is a routing instruction in
+    its own right, so an oversized request on it refuses as it always has rather
+    than being moved. What is left is a pick that fell back, and the
+    deterministic route, where the configured default stands in for an answer
+    nothing gave.
+    """
+    if local or backend_override or default_backend_override or member:
+        return False
+    if resolved_route == "picker":
+        return str((picker_selection or {}).get("action") or "") == "fallback"
+    return True
+
+
+def _reroute_oversized_request(
+    *,
+    resolution: DispatchPlan,
+    node: TaskNode,
+    config: Mapping[str, Any],
+    project: str,
+    repo: Path,
+    authority: Mapping[str, Any] | None,
+    session: str,
+    comment: str,
+    orchestrator_assessment: Mapping[str, Any] | None,
+    records: list[dict[str, Any]] | None,
+    verdict_inputs: Mapping[str, Any] | None,
+    budget_snapshot: Mapping[str, Any] | None,
+    snapshot_candidates: Sequence[Mapping[str, Any]],
+    reroute_kwargs: Mapping[str, Any],
+    caller_time_budget: str | None,
+    caller_write_paths: list[str],
+) -> tuple[DispatchPlan, dict[str, Any] | None]:
+    """Resolve a router-free placement onto a lane whose window holds the node.
+
+    The check is the one the router applies to every candidate it offers: a lane
+    whose window the request's context estimate exceeds cannot run it, so
+    placing the request there queues work that can only fail at launch. When the
+    resolved lane fails that check, the fitting lanes are read from the picker's
+    own candidate scan — the snapshot a timed-out pick had already built when it
+    exists, and a fresh one otherwise — and the widest is taken. A request no
+    permitted lane holds refuses with its shortfall instead of queueing.
+    """
+    backend_settings = resolution.backend_settings or {}
+    window = _gating_input_window(backend_settings)
+    if window is None:
+        return resolution, None
+    from reckon.crew.picker import PickRequest
+    from reckon.crew.picker import snapshot as picker_snapshot
+
+    estimate = picker_snapshot.estimated_context_tokens(node, repo, authority=authority)
+    if estimate <= window:
+        return resolution, None
+    candidates: Sequence[Mapping[str, Any]] = snapshot_candidates
+    if not candidates:
+        request = PickRequest(
+            project,
+            node,
+            estimated_context=estimate,
+            comment=comment,
+            session=session,
+            orchestrator_assessment=dict(orchestrator_assessment or {}),
+        )
+        candidates = [
+            candidate.as_dict()
+            for candidate in picker_snapshot.candidates(
+                request,
+                dict(config),
+                repo,
+                records=records,
+                verdict_inputs=verdict_inputs,
+                budget_snapshot=budget_snapshot,
+                cached_only=True,
+                authority=authority,
+            )
+        ]
+    chosen = _widest_context_candidate(candidates)
+    if chosen is None:
+        raise CompetenceLimit(
+            _context_shortfall_verdict(candidates, estimate, resolution)
+        )
+    chosen_backend = str(chosen.get("backend") or "")
+    if not chosen_backend or chosen_backend == resolution.backend:
+        return resolution, None
+    # Re-resolve onto the chosen lane rather than patching the plan, so the new
+    # backend gets its own execution fit, sandbox and write-path checks instead
+    # of inheriting the oversized lane's. The caller's own time budget and write
+    # paths are restored first, because the resolved plan already filled the
+    # defaults a re-resolution would state again.
+    node.time_budget = caller_time_budget
+    node.write_paths = list(caller_write_paths)
+    rerouted = plan_dispatch(
+        node=node,
+        config=config,
+        project=project,
+        repo=repo,
+        authority=authority,
+        session=session,
+        local=chosen_backend == str(config.get("local_backend") or ""),
+        backend_override=chosen_backend,
+        route="deterministic",
+        picker_selection=None,
+        **dict(reroute_kwargs),
+    )
+    if not rerouted.validation.ok:
+        raise CrewError(
+            f"node is not dispatchable on context-fit lane {chosen_backend!r} — "
+            + "; ".join(
+                f"{finding['property']}: {finding['detail']}"
+                for finding in rerouted.validation.findings
+            )
+        )
+    return rerouted, {
+        "from_backend": resolution.backend,
+        "to_backend": rerouted.backend,
+        "reason": "context-fit",
+    }
 
 
 def _overridden_hold_route_mode() -> str:
@@ -1449,12 +1668,22 @@ def dispatch(
             or bool(backend_override or default_backend_override)
         )
     )
+    picker_records: list[dict[str, Any]] | None = None
+    picker_inputs: Mapping[str, Any] | None = None
+    picker_budget: Mapping[str, Any] | None = None
+    # The candidate scan a pick builds before it asks, carried out of a pick that
+    # gave up so the context-fit check below weighs the lanes that pick already
+    # measured rather than reading every window a second time.
+    snapshot_candidates: list[Mapping[str, Any]] = []
     if picker_selection is not None:
         # The caller already asked the picker and ran the availability check on
         # its answer, so asking again would both double the pick's latency and
         # let the second pick choose a backend the check never saw. Reuse the
         # caller's answer so the checked backend is the dispatched backend.
         picker_selection = dict(picker_selection)
+        snapshot_candidates = list(
+            picker_selection.pop("snapshot_candidates", ()) or ()
+        )
     elif not deferred_shadow_selection:
         (
             picker_records,
@@ -1558,8 +1787,53 @@ def dispatch(
             )
         )
 
+    # A backend resolved without a router answer is the configured default
+    # standing in, and nothing has yet weighed it against the node's context
+    # estimate. Applying the router's own fit check here is what keeps an
+    # oversized request off a lane that can only refuse it at launch, where a
+    # full lane would have queued it first.
+    context_fit_fallback: dict[str, Any] | None = None
+    if _router_free_resolution(
+        resolved_route=resolved_route,
+        picker_selection=picker_selection,
+        local=local,
+        backend_override=backend_override,
+        default_backend_override=default_backend_override,
+        member=member,
+    ):
+        resolution, context_fit_fallback = _reroute_oversized_request(
+            resolution=resolution,
+            node=node,
+            config=config,
+            project=project,
+            repo=repo_root,
+            authority=authority,
+            session=session,
+            comment=comment,
+            orchestrator_assessment=orchestrator_assessment,
+            records=picker_records,
+            verdict_inputs=picker_inputs,
+            budget_snapshot=picker_budget,
+            snapshot_candidates=snapshot_candidates,
+            reroute_kwargs={
+                "locked_decisions": locked_decisions,
+                "peer_scopes": peer_scopes,
+                "base": base,
+                "execution_override": execution_override,
+                "orchestrator_lane_reason": orchestrator_lane_reason,
+                "run_id": resolution.run_id,
+                "allow_unreviewed_plan": unreviewed_plan_override,
+                "repairs": repairs,
+            },
+            caller_time_budget=caller_time_budget,
+            caller_write_paths=caller_write_paths,
+        )
+        route = resolution.route
+
     dispatch_options = dict(dispatch_options or {})
     dispatch_options.setdefault("route", route or resolution.route)
+    if context_fit_fallback is not None:
+        dispatch_options["route_fallback"] = context_fit_fallback
     if not admission_launch:
         if picker_selection is not None:
             dispatch_options["picker_selection"] = dict(

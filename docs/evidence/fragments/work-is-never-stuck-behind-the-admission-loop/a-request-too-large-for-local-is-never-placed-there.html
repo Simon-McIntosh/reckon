@@ -1,0 +1,54 @@
+<article class="r-evidence" data-node="a-request-too-large-for-local-is-never-placed-there">
+<h3>A request too large for the local lane is never placed there</h3>
+<p id="a-request-too-large-for-local-is-never-placed-there-verdict">The router
+already refuses to *offer* a lane whose context window cannot hold the node, so
+on the answered path an oversized request reaches a lane that fits it. The
+fallback path had no such check: a pick that timed out resolved the configured
+default — local — and a full local lane then queued the request there, with the
+context refusal surfacing only when admission launched it. That is the shape of
+the 28 October records in the admit verdict log, where a request of 236,783
+tokens sat against local's 230,144 window across 24 passes.</p>
+<p id="a-request-too-large-for-local-is-never-placed-there-record">A dispatch
+that resolves a backend without a router answer — a pick that fell back, or the
+deterministic route — now applies the router's own check before anything is
+queued or launched. <code>dispatch._gating_input_window</code> reads the
+resolved lane's gating window exactly as <code>routing._context_fit_verdict</code>
+does (the smaller of the declared <code>usable_input_window</code> and
+<code>effective_input_window</code>; declaring neither leaves the lane
+unbounded and skips the check). When the node's estimate exceeds it,
+<code>dispatch._widest_context_candidate</code> takes the fitting candidates
+from <code>picker.snapshot.candidates</code> — the same scan the router weighs,
+under the lifts in force — and chooses the one with the largest usable window,
+with an undeclared window ranking above any declared one and ties broken by
+backend name. No loop over <code>config["backends"]</code> is made. The chosen
+lane is re-planned through <code>plan_dispatch</code> so it gets its own
+execution fit, sandbox and write-path checks, and the move is recorded on the
+run as a route fallback with reason <code>context-fit</code>. With no fitting
+candidate the dispatch raises the shortfall rather than queueing.</p>
+<p id="a-request-too-large-for-local-is-never-placed-there-reuse">The candidate
+scan the fallback needs is the one the timed-out pick had already built.
+<code>dispatch_picker.dispatch_picker_selection</code> now wraps the snapshotter
+it hands the picker and keeps a copy of the scan on its result
+(<code>snapshot_candidates</code>), so a fallback reuses that measurement
+instead of reading every window a second time; the field is stripped from the
+recorded <code>picker_selection</code> by
+<code>_reportable_picker_selection</code>. A fallback with no captured scan
+builds one with <code>cached_only=True</code>, which takes no network probe.</p>
+<p id="a-request-too-large-for-local-is-never-placed-there-authority">A lane the
+caller named — <code>--local</code>, <code>--backend</code>, a briefing default
+or a roster member — stays authoritative:
+<code>dispatch._router_free_resolution</code> excludes every such dispatch, so an
+oversized named request refuses at launch as it did before rather than being
+moved.</p>
+<p id="a-request-too-large-for-local-is-never-placed-there-measure">Measured by
+<code>tests/test_a_request_too_large_for_local_is_never_placed_there.py</code>,
+four cases, all four passing at head and three failing at the base revision with
+the base code and the new test: an oversized fallback resolves the unbounded
+codex lane and records <code>route_fallback.reason == "context-fit"</code>; the
+same dispatch with the local lane full is placed on codex and leaves nothing
+queued on local; a request that fits local still resolves local with no route
+fallback; and a request no permitted lane holds refuses naming its shortfall
+(9,856 tokens against the widest declared window of 230,144) instead of
+queueing. The declared negative control makes the fallback path skip the check,
+and the oversized case fails.</p>
+</article>

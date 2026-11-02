@@ -1,0 +1,290 @@
+"""A request too large for the local lane is never placed there.
+
+A pick that times out falls back to the configured default, and so does the
+deterministic route. Neither used to weigh that lane's context window, so an
+oversized request was queued on a lane that could only refuse it at launch.
+These tests fix the placement: the fallback applies the router's own fit check,
+moves the request to the fitting lane with the largest window, and refuses with
+the shortfall when no permitted lane holds it.
+"""
+
+from __future__ import annotations
+
+import importlib
+import json
+from copy import deepcopy
+from pathlib import Path
+
+import pytest
+from click.testing import CliRunner
+
+from reckon import cli, crew_dispatch_commands
+from reckon.crew import queue_admission, runs
+from reckon.crew.node import TaskNode
+from reckon.crew.picker import snapshot
+from tests import test_dispatch_names_its_backend as backend_tests
+
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
+LOCAL = "clive"
+CODEX = "beta"
+PROJECT = "proj"
+SESSION = "session"
+# The node's context estimate, in the units the fit check weighs against each
+# lane's declared usable input window.
+ESTIMATE = 240_000
+
+WINDOWS = {
+    "alpha": 200_000,
+    "gamma": 180_000,
+    "unusable": 150_000,
+}
+
+
+@pytest.fixture()
+def dispatch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    return backend_tests.dispatch_repo.__wrapped__(tmp_path, monkeypatch)
+
+
+@pytest.fixture()
+def scan(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A candidate scan whose lanes are measured on their declared windows.
+
+    The scan's own structure — the per-backend fit, the exclusion reasons and
+    the context block — runs for real; only the facts that need a live fleet
+    (serving probes, the lane gate, the account view) and the node's estimate
+    are fixed, so a test places the estimate against a chosen window.
+    """
+    monkeypatch.setattr(snapshot, "estimated_context_tokens", lambda *a, **k: ESTIMATE)
+    monkeypatch.setattr(
+        snapshot, "_dispatch_lane_gate", lambda backend: {"state": "open"}
+    )
+    monkeypatch.setattr(
+        snapshot, "_lane", lambda *a: (3, {"waiting": 0}, {"held": False})
+    )
+    monkeypatch.setattr(
+        snapshot, "budget_view", lambda *a, **k: {"backends": [], "groups": []}
+    )
+    monkeypatch.setattr(
+        snapshot.resumption,
+        "probe_lane_availability",
+        lambda *a, **k: {"status": "served"},
+    )
+    # The routed pick withdraws a lane nothing spawns, which would remove every
+    # lane this fixture's dispatch does run in-process. The withdrawal is a fact
+    # about which lanes a spawned dispatch can reach, not about their windows,
+    # so it is lifted here and every lane is weighed on its window alone.
+    monkeypatch.setattr(snapshot.recovery, "IN_HARNESS_LAUNCH", "test-no-lane")
+
+    def verdict(*, resolution, project, repo, verdict_inputs=None):
+        window = resolution.backend_settings.get("usable_input_window")
+        if window is None:
+            return {"allowed": True}
+        allowed = window >= ESTIMATE
+        return {
+            "allowed": allowed,
+            "reason": (
+                "within-context-window" if allowed else "context-window-exceeded"
+            ),
+            "context": {
+                "allowed": allowed,
+                "window_tokens": window,
+                "estimated_tokens": ESTIMATE,
+                "reason": (
+                    "within-context-window" if allowed else "context-window-exceeded"
+                ),
+            },
+        }
+
+    monkeypatch.setattr(snapshot.routing, "_competence_verdict", verdict)
+
+
+def _lane_document(path: Path, *, slots: float) -> Path:
+    path.write_text(
+        json.dumps(
+            {
+                "headroom": 4,
+                "admission": {
+                    "worker_slots": slots,
+                    "observed_seconds": 900,
+                    "sessions": {SESSION: {"worker_slots": slots}},
+                    "verdict": "open" if slots else "congested",
+                    "headroom": 4,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def _configure(
+    repo: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    local_window: int,
+    extra_windows: dict[str, int] | None = None,
+    local_slots: float = 4,
+) -> dict:
+    windows = {LOCAL: local_window, **WINDOWS, **(extra_windows or {})}
+    config = deepcopy(backend_tests.CONFIG)
+    config["local_backend"] = LOCAL
+    config["default_backend"] = LOCAL
+    config["backends"][LOCAL]["lane_document"] = str(
+        _lane_document(repo.parent / "local-lane.json", slots=local_slots)
+    )
+    for name, window in windows.items():
+        config["backends"][name]["usable_input_window"] = window
+    monkeypatch.setattr(
+        crew_dispatch_commands, "_resolved_flight", lambda *_a, **_k: config
+    )
+    monkeypatch.setattr(
+        crew_dispatch_commands, "_model_availability_refusal", lambda *_a, **_k: None
+    )
+    return config
+
+
+def _node(name: str) -> TaskNode:
+    return TaskNode(
+        id=name,
+        goal="place the request on a lane whose window holds it",
+        plan="plan-a",
+        section="dispatch",
+        role="implement",
+        spec_level="exact",
+        done_when="pytest -q tests/test_a_request_too_large_for_local_is_never_placed_there.py reports four placement cases",
+        write_paths=["result.json"],
+        time_budget="20m",
+    )
+
+
+def _fallback_selection() -> dict:
+    """The selection a pick records when it ran past its bound."""
+    return {
+        "action": "fallback",
+        "backend": None,
+        "family": None,
+        "model": None,
+        "effort": None,
+        "probabilities": {},
+        "confidence": None,
+        "jev_model": "jev-test",
+        "fallback_reason": "timeout",
+        "offered": [],
+        "excluded": [],
+        "comment": "",
+    }
+
+
+def _stub_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    selection = _fallback_selection()
+
+    def stub(**_kwargs):
+        return dict(selection)
+
+    monkeypatch.setattr(dispatch_module, "dispatch_picker_selection", stub)
+
+
+def _invoke(repo: Path, *, node: str):
+    arguments = [
+        *backend_tests._arguments(repo, node=node, dry_run=False),
+        "--route",
+        "picker",
+        "--no-watch",
+    ]
+    return CliRunner().invoke(cli.main, arguments)
+
+
+def _payload(result) -> dict:
+    return backend_tests._payload(result)
+
+
+def test_oversized_fallback_resolves_the_unbounded_lane_with_a_context_fit_route(
+    dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure(dispatch_repo, monkeypatch, local_window=230_144)
+    _stub_fallback(monkeypatch)
+
+    result = _invoke(dispatch_repo, node="oversized-fallback")
+    payload = _payload(result)
+
+    assert result.exit_code == 0, result.output
+    assert payload["backend"] == CODEX
+    assert payload["route_fallback"] == {
+        "from_backend": LOCAL,
+        "to_backend": CODEX,
+        "reason": "context-fit",
+    }
+    # The picker's own answer still rides the record, so a reader sees that the
+    # placement came from the fallback rather than from Jev.
+    assert payload["picker_selection"]["action"] == "fallback"
+
+
+def test_the_oversized_fallback_is_placed_on_the_fitting_lane_when_local_is_full(
+    dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A full local lane is the case the check exists for: the fallback would
+    # otherwise queue the oversized request there, and the context refusal would
+    # surface only when admission launched it.
+    config = _configure(dispatch_repo, monkeypatch, local_window=230_144, local_slots=0)
+    monkeypatch.setattr(
+        queue_admission, "_dispatch_fleet_gate", lambda: {"state": "open"}
+    )
+    record = dispatch_module.dispatch(
+        node=_node("oversized-queued"),
+        project=PROJECT,
+        repo=dispatch_repo,
+        config=config,
+        session=SESSION,
+        route="picker",
+        picker_selection=_fallback_selection(),
+        watch_required=False,
+        watch_override=True,
+    )
+
+    # The request is placed on the lane that can run it, so nothing of it waits
+    # on the lane whose window it exceeds.
+    assert record["backend"] == CODEX
+    assert record["route_fallback"] == {
+        "from_backend": LOCAL,
+        "to_backend": CODEX,
+        "reason": "context-fit",
+    }
+    assert runs.list_live(project=PROJECT, phase="queued") == []
+
+
+def test_a_request_that_fits_the_local_lane_still_resolves_it(
+    dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure(dispatch_repo, monkeypatch, local_window=400_000)
+    _stub_fallback(monkeypatch)
+
+    result = _invoke(dispatch_repo, node="fitting-fallback")
+    payload = _payload(result)
+
+    assert result.exit_code == 0, result.output
+    assert payload["backend"] == LOCAL
+    assert not payload.get("route_fallback")
+
+
+def test_a_request_no_permitted_lane_holds_refuses_with_its_shortfall(
+    dispatch_repo: Path, scan: None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _configure(
+        dispatch_repo,
+        monkeypatch,
+        local_window=230_144,
+        extra_windows={CODEX: 190_000},
+    )
+    _stub_fallback(monkeypatch)
+
+    result = _invoke(dispatch_repo, node="unfittable")
+    payload = _payload(result)
+
+    assert result.exit_code != 0
+    # The refusal names the distance to the widest window any lane declares, so
+    # the reader is told how much the node has to shrink by rather than which
+    # lane happened to be tried first.
+    assert str(ESTIMATE - 230_144) in payload["detail"]
+    assert "230144" in payload["detail"]
+    assert runs.list_live(project=PROJECT, phase="queued") == []
