@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1740",
+    "reckon/crew/dispatch.py:1824",
+    "reckon/crew/dispatch_sessions.py:1738",
+    "reckon/crew/node.py:600",
+    "reckon/crew/routing.py:3861"
+  ],
+  "completed_at": "2026-11-02T15:55:57.311Z",
+  "dispatched_at": "2026-11-02T15:47:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "671",
+      "severity": "blocking",
+      "text": "The no-usable-lane refusal is now built from resolution.competence, which plan \u00a716 forbids ('Never build this refusal from routing._competence_verdict'): that verdict can report the resolved lane within its window and then carry no shortfall. Nothing here asserts the stored verdict's context block actually refused the lane, so when it reports allowed, CompetenceLimit.__init__ (reckon/crew/node.py:615-620) takes its non-context branch and reads competence_horizon_hours, raising KeyError instead of the exit-5 context refusal the done_when requires. The divergence is reachable because _reroute_oversized_request censuses with no backend settings (a codex standing chain) while _context_fit_verdict measures the resolved backend's own chain. The added parity assertion covers only the agreeing case."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T113200213945-one-rule-chooses-the-lane-for-an-oversized-request/manifest.md",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The reviewed run's manifest still carries no rubric.<dimension> line for any of the six review dimensions, so a reader cannot tell whether the worker checked the delivered work against the rubric; the same gap was raised at 055f8161da and is unchanged."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "Read both gained commits against 055f8161da: e13107a9bd replaces dispatch.py's _context_refusal(_context_fit_verdict(...)) raise with CompetenceLimit(resolution.competence or _competence_verdict(...)) and rewrites two test cases, and 917722a2b6 rewrites the evidence fragment's refusal and controls paragraphs to match; no other path changed.",
+    "done_when": "The done_when names tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py with four cases and two negative controls; logs/after_suite.log records '29 passed', EXIT=0 at e13107a9bd over the new file, the \u00a715 file and tests/test_crew_routes.py, and the three control logs each record 3 failed.",
+    "goal": "The node goal is one function choosing the lane for an oversized request on both the admission and the dispatch paths; the gained delta leaves that rule alone and instead rebuilds the no-usable-lane refusal, which docs/plans/work-is-never-stuck-behind-the-admission-loop.html:187 (plan \u00a716) explicitly forbids.",
+    "manifest": "The manifest states 29 passed EXIT=0 with the log paths, the two verdict stubs gone, three mutations each red on named cases, and importer arms 59 passed on both sides; it carries no rubric.<dimension> line for any review dimension.",
+    "write_paths": "The declared write paths are reckon/crew/picker/snapshot.py, reckon/crew/dispatch.py, reckon/crew/queue_admission.py, the \u00a715 test file, the new test file, the evidence fragment and its figure directory; the gained diff touches reckon/crew/dispatch.py, the new test and the fragment, all inside."
+  },
+  "justifications": {
+    "durability": "tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:386 asserts the real and previewed competence objects are equal across two separate invocations, and logs/negative-control-2.log shows it reddening under the restored regression.",
+    "evidence": "logs/after_suite.log records 29 passed EXIT=0 at e13107a9bd and logs/negative-control-2.log records 3 failed EXIT=1 for the restored reduced payload, but no arm drives the case where the stored verdict's own fit says the lane is within its window.",
+    "fit": "reckon/crew/dispatch.py:663-673 keeps the module's comment style and drops the now-unused import, introducing no name the naming rules forbid.",
+    "goal_fidelity": "reckon/crew/dispatch.py:671 now raises CompetenceLimit from resolution.competence, the construction plan \u00a716 forbids on the ground that the verdict can call the same lane fit and then carry no shortfall.",
+    "reuse": "The delta removes a bespoke _context_refusal call in favour of routing's own routing.py:3861 _competence_verdict, the owner of the verdict, so it extends rather than duplicates that capability.",
+    "scope_discipline": "Every path in the gained diff (reckon/crew/dispatch.py, the new test, the evidence fragment) is inside the declared write paths, and the removal of the _context_refusal import leaves no dangling reference."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is one function choosing the lane for an oversized request on both the admission and the dispatch paths; the gained delta leaves that rule alone and instead rebuilds the no-usable-lane refusal, which docs/plans/work-is-never-stuck-behind-the-admission-loop.html:187 (plan \u00a716) explicitly forbids.\nVERDICT done_when: The done_when names tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py with four cases and two negative controls; logs/after_suite.log records '29 passed', EXIT=0 at e13107a9bd over the new file, the \u00a715 file and tests/test_crew_routes.py, and the three control logs each record 3 failed.\nVERDICT write_paths: The declared write paths are reckon/crew/picker/snapshot.py, reckon/crew/dispatch.py, reckon/crew/queue_admission.py, the \u00a715 test file, the new test file, the evidence fragment and its figure directory; the gained diff touches reckon/crew/dispatch.py, the new test and the fragment, all inside.\nVERDICT manifest: The manifest states 29 passed EXIT=0 with the log paths, the two verdict stubs gone, three mutations each red on named cases, and importer arms 59 passed on both sides; it carries no rubric.<dimension> line for any review dimension.\nVERDICT diff: Read both gained commits against 055f8161da: e13107a9bd replaces dispatch.py's _context_refusal(_context_fit_verdict(...)) raise with CompetenceLimit(resolution.competence or _competence_verdict(...)) and rewrites two test cases, and 917722a2b6 rewrites the evidence fragment's refusal and controls paragraphs to match; no other path changed.\nCALL_SITES: reckon/crew/dispatch.py:1740, reckon/crew/dispatch.py:1824, reckon/crew/dispatch_sessions.py:1738, reckon/crew/node.py:600, reckon/crew/routing.py:3861\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:671 now raises CompetenceLimit from resolution.competence, the construction plan \u00a716 forbids on the ground that the verdict can call the same lane fit and then carry no shortfall.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after_suite.log records 29 passed EXIT=0 at e13107a9bd and logs/negative-control-2.log records 3 failed EXIT=1 for the restored reduced payload, but no arm drives the case where the stored verdict's own fit says the lane is within its window.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every path in the gained diff (reckon/crew/dispatch.py, the new test, the evidence fragment) is inside the declared write paths, and the removal of the _context_refusal import leaves no dangling reference.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:386 asserts the real and previewed competence objects are equal across two separate invocations, and logs/negative-control-2.log shows it reddening under the restored regression.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:663-673 keeps the module's comment style and drops the now-unused import, introducing no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: The delta removes a bespoke _context_refusal call in favour of routing's own routing.py:3861 _competence_verdict, the owner of the verdict, so it extends rather than duplicates that capability.\nFINDING reckon/crew/dispatch.py:671 blocking: The no-usable-lane refusal is now built from resolution.competence, which plan \u00a716 forbids ('Never build this refusal from routing._competence_verdict'): that verdict can report the resolved lane within its window and then carry no shortfall. Nothing here asserts the stored verdict's context block actually refused the lane, so when it reports allowed, CompetenceLimit.__init__ (reckon/crew/node.py:615-620) takes its non-context branch and reads competence_horizon_hours, raising KeyError instead of the exit-5 context refusal the done_when requires. The divergence is reachable because _reroute_oversized_request censuses with no backend settings (a codex standing chain) while _context_fit_verdict measures the resolved backend's own chain. The added parity assertion covers only the agreeing case.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T113200213945-one-rule-chooses-the-lane-for-an-oversized-request/manifest.md:1 non-blocking: The reviewed run's manifest still carries no rubric.<dimension> line for any of the six review dimensions, so a reader cannot tell whether the worker checked the delivered work against the rubric; the same gap was raised at 055f8161da and is unchanged.",
+  "review_run_id": "r-20261102T154504052446-review-of-one-rule-chooses-the-lane-for-an-oversized-request-917722a2b677",
+  "reviewed_base_sha": "055f8161da46aa34339c7a3fb1dc4c40d30a8cb1",
+  "reviewed_head_sha": "917722a2b677ba8090dfc9e0e7059523a4c02abf",
+  "reviewed_run_id": "r-20261102T113200213945-one-rule-chooses-the-lane-for-an-oversized-request",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 11,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "suite_delta_note": "Derived from the reviewed run's own arms: logs/baseline_suite.log ends '4 passed' with EXIT=0 at 67d1e26d0b and logs/after_suite.log ends '29 passed' with EXIT=0 at e13107a9bd; the manifest records failure_count 0 and an empty failure_ids list for both, so the set difference of failing ids is empty.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T16:02:09.510980+00:00",
+  "total": 99
+}
