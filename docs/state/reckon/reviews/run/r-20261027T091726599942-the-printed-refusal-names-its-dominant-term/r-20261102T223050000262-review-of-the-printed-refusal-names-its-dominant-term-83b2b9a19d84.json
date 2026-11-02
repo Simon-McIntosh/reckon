@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1875",
+    "reckon/crew_dispatch_commands.py:2133",
+    "reckon/crew_dispatch_commands.py:2367",
+    "reckon/crew/dispatch.py:696",
+    "reckon/crew/dispatch.py:1851",
+    "reckon/crew/dispatch_sessions.py:1744",
+    "reckon/crew/queue_edit.py:289"
+  ],
+  "completed_at": "2026-11-02T22:46:41.422Z",
+  "dispatched_at": "2026-11-02T22:39:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/node.py",
+      "id": "f74b8930509",
+      "line": 604,
+      "severity": "non-blocking",
+      "text": "addition duplicates a capability the repository already owns: the dominant-term sentence is rendered identically by routing._context_refusal_detail at reckon/crew/routing.py:3598-3602, so the two surfaces stay alike only by copy-paste rather than by a shared helper; it duplicates rather than extends the owner."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_dispatch_commands.py:1875,2133,2367 render str(exc) as the refusal detail, so the changed message reaches the dispatch CLI.",
+    "diff": "two commits (64a4cf7bdf, 3 files, +314/-1) touching node.py, the test and the fragment, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_the_printed_refusal_names_its_dominant_term.py and all four gate files; logs/head_gate.log and logs/base_gate.log record those runs and their results.",
+    "goal": "the node goal is to carry a context refusal's dominant term and origin into the printed message reusing routing's ranking; reckon/crew/node.py:579-606 does that and imports routing._context_contributors.",
+    "manifest": "the manifest states the head gate, base arm, base arm with the new tests and the negative control, each with a recorded log path and EXIT status.",
+    "write_paths": "the declared paths are reckon/crew/node.py, the new test file, the evidence fragment and the figures directory; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "logs/base_arm_with_new_tests.log shows all three new cases red at the base, and logs/negative_control.log shows them red when the clause is dropped, so the tests fail on the regression they guard.",
+    "evidence": "logs/head_gate.log records 12 passed EXIT=0, logs/base_gate.log 9 passed EXIT=0, logs/base_arm_with_new_tests.log 3 failed EXIT=1 and logs/negative_control.log 3 failed EXIT=1, asserting the done-when measure.",
+    "fit": "reckon/crew/node.py:579 follows the surrounding helper style and its function-local import of routing matches the file's existing deferred-import idiom.",
+    "goal_fidelity": "reckon/crew/node.py:639 appends routing's ranked dominant term, its token figure and its origin to the context-window refusal message, which is exactly the node goal.",
+    "reuse": "reckon/crew/node.py:604 re-renders the dominant-term sentence that reckon/crew/routing.py:3598 already owns, duplicating rather than extending the owner.",
+    "scope_discipline": "the diff touches only reckon/crew/node.py, tests/test_the_printed_refusal_names_its_dominant_term.py and the declared evidence fragment; the declared figures directory is unused and no other path changes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to carry a context refusal's dominant term and origin into the printed message reusing routing's ranking; reckon/crew/node.py:579-606 does that and imports routing._context_contributors.\nVERDICT done_when: the done_when names tests/test_the_printed_refusal_names_its_dominant_term.py and all four gate files; logs/head_gate.log and logs/base_gate.log record those runs and their results.\nVERDICT write_paths: the declared paths are reckon/crew/node.py, the new test file, the evidence fragment and the figures directory; every path in the diff is inside them.\nVERDICT manifest: the manifest states the head gate, base arm, base arm with the new tests and the negative control, each with a recorded log path and EXIT status.\nVERDICT diff: two commits (64a4cf7bdf, 3 files, +314/-1) touching node.py, the test and the fragment, all inside the declared scope.\nCALL_SITES: reckon/crew_dispatch_commands.py:1875, reckon/crew_dispatch_commands.py:2133, reckon/crew_dispatch_commands.py:2367, reckon/crew/dispatch.py:696, reckon/crew/dispatch.py:1851, reckon/crew/dispatch_sessions.py:1744, reckon/crew/queue_edit.py:289\nSCORE goal_fidelity: 18\nSCORE evidence: 19\nSCORE scope_discipline: 20\nSCORE durability: 19\nSCORE fit: 17\nSCORE reuse: 5\nFINDING reckon/crew/node.py:604 non-blocking: the dominant-term rendering duplicates routing._context_refusal_detail at reckon/crew/routing.py:3598.",
+  "review_run_id": "r-20261102T223050000262-review-of-the-printed-refusal-names-its-dominant-term-83b2b9a19d84",
+  "reviewed_base_sha": "4eea7f1bad43c586bcbd77214d6fa2b9295c35e0",
+  "reviewed_head_sha": "83b2b9a19d8430734f1ea9f4d4a8118774161b73",
+  "reviewed_run_id": "r-20261027T091726599942-the-printed-refusal-names-its-dominant-term",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T22:53:41.547811+00:00",
+  "total": 98
+}
