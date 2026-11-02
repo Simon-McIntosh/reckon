@@ -2671,6 +2671,33 @@ def _launch_failure_detail(exc: BaseException, spec: Mapping[str, Any]) -> str:
     return base
 
 
+def _worker_record_payload(
+    spec: Mapping[str, Any],
+    *,
+    pid: int,
+    attempt: int,
+    launched_at: str,
+    registered_at: str,
+) -> dict[str, Any]:
+    """The fields a run's worker record carries, composed in one place.
+
+    Two sites write this record — the spawn retry, as each try starts, and the
+    supervisor, once the spawn has returned — and a reader of the run directory
+    cannot tell which wrote the copy it reads. Composing the fields here is what
+    keeps the two from naming different things about the same worker.
+    """
+    return {
+        "run_id": str(spec.get("run_id") or ""),
+        "attempt": attempt,
+        "pid": pid,
+        "pid_start_time": _process_start_time(pid),
+        "launched_at": launched_at,
+        "claim_registered_at": registered_at,
+        "backend": str(spec["plan"].get("backend") or ""),
+        "argv": list(spec["plan"].get("argv") or ()),
+    }
+
+
 def _worker_record_writer(
     spec: Mapping[str, Any],
 ) -> Callable[[subprocess.Popen], None] | None:
@@ -2696,16 +2723,13 @@ def _worker_record_writer(
         _write_attempt_artifact(
             run_directory,
             WORKER_RECORD_NAME,
-            {
-                "run_id": run_id,
-                "attempt": attempt,
-                "pid": process.pid,
-                "pid_start_time": _process_start_time(process.pid),
-                "launched_at": launched_at,
-                "claim_registered_at": registered_at,
-                "backend": str(spec["plan"].get("backend") or ""),
-                "argv": list(spec["plan"].get("argv") or ()),
-            },
+            _worker_record_payload(
+                spec,
+                pid=process.pid,
+                attempt=attempt,
+                launched_at=launched_at,
+                registered_at=registered_at,
+            ),
             attempt=attempt,
         )
 
@@ -3835,16 +3859,13 @@ def _run_supervisor(spec_path: Path) -> int:
     _write_attempt_artifact(
         run_directory,
         WORKER_RECORD_NAME,
-        {
-            "run_id": str(spec.get("run_id") or ""),
-            "attempt": attempt,
-            "pid": pid,
-            "pid_start_time": _process_start_time(pid),
-            "launched_at": launched_at,
-            "claim_registered_at": registered_at,
-            "backend": str(spec["plan"].get("backend") or ""),
-            "argv": list(spec["plan"].get("argv") or ()),
-        },
+        _worker_record_payload(
+            spec,
+            pid=pid,
+            attempt=attempt,
+            launched_at=launched_at,
+            registered_at=registered_at,
+        ),
         attempt=attempt,
     )
     if attempt == 1 and registered_at:

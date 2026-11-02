@@ -770,7 +770,10 @@ def test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit(
             "#!/bin/sh\n"
             'echo $$ > "$TMPDIR/worker.pid"\n'
             ': > "$TMPDIR/marker"\n'
-            "sleep 30\n"
+            # Long enough that the worker cannot end on its own while the case
+            # is running, so every stop this case delivers meets a live worker
+            # whatever the supervisor is doing when it arrives.
+            "sleep 120\n"
         ),
         node="post-spawn-stop",
         write_path="src/post-spawn-stop.txt",
@@ -788,11 +791,6 @@ def test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit(
             f"{_tail(home / 'driver.err')!r}"
         )
         run_id, supervisor_pid, run_directory = _await_supervisor(home)
-        worker_record = _wait_for(
-            lambda: _load_json(run_directory / "worker.json"), timeout=SCAN_BOUND
-        )
-        assert worker_record, "the supervisor spawned no worker for the stop"
-        worker_pid = int(worker_record["pid"])
         scratch = worker_scratch_dir(run_id)
         started = _wait_for((scratch / "marker").exists, timeout=SCAN_BOUND)
         assert started, (
@@ -803,37 +801,50 @@ def test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit(
             f"{_tail(run_directory / 'supervisor.stderr.log')!r}"
         )
 
+        # The stop is delivered as soon as the worker reports itself running,
+        # and the run directory must already name that worker: a record written
+        # only after the spawn's startup watch is a record of a worker a stop
+        # arriving now can no longer reach, and it is the record every reader
+        # of the run — a stop, a recovery sweep — goes through to find one.
+        recorded_before_the_stop = _load_json(run_directory / "worker.json")
+        assert isinstance(recorded_before_the_stop, dict), (
+            "the run directory carried no worker record when the stop was "
+            f"delivered: {recorded_before_the_stop!r}. The worker has been "
+            "spawned and is reporting itself through "
+            f"{str(scratch / 'marker')!r}, so a record written after it is a "
+            "record written too late for the stop to reach the worker it names."
+        )
+        worker_pid = int(recorded_before_the_stop["pid"])
+
         # Exactly what crew stop sends: SIGTERM to the run's process group,
         # which reaches the worker and the supervisor that leads it.
         os.killpg(os.getpgid(supervisor_pid), signal.SIGTERM)
 
-        def _stopped_exit() -> dict[str, Any] | None:
-            record = _load_json(run_directory / "exit.json")
-            if isinstance(record, dict) and record.get("worker_pid") == worker_pid:
-                return record
-            return None
-
-        exit_record = _wait_for(_stopped_exit, timeout=TERMINAL_BOUND)
+        exit_record = _wait_for(
+            lambda: _load_json(run_directory / "exit.json"), timeout=TERMINAL_BOUND
+        )
         assert isinstance(exit_record, dict), (
             f"the supervisor recorded no exit for the stopped worker {worker_pid} "
             f"within {TERMINAL_BOUND} s, so it exited instead of recording the "
-            "stop's exit. The record it left reads "
-            f"{_load_json(run_directory / 'exit.json')!r}, and the worker it "
-            f"spawned is {_load_json(run_directory / 'worker.json')!r}"
+            f"stop's exit. The record it left reads {exit_record!r}"
         )
         # The declared negative control — recording a plain exit instead of the
         # stop's — fails here.
         assert exit_record.get("signal_name") == "SIGTERM", (
             f"the exit record names signal {exit_record.get('signal_name')!r} "
-            "rather than SIGTERM, the group stop this case delivered"
+            "rather than SIGTERM, the group stop this case delivered; the record "
+            f"reads {exit_record!r}"
         )
         assert exit_record.get("exit_code") is None, (
             "a signal-ended worker must record no exit code, but the record "
             f"carries {exit_record.get('exit_code')!r}"
         )
+        # Not implied by the wait, which only asks for *some* exit record: the
+        # exit must be the worker the run recorded before the stop, not a
+        # sibling's or a leftover's.
         assert exit_record.get("worker_pid") == worker_pid, (
             f"the record names worker {exit_record.get('worker_pid')!r} rather "
-            f"than the stopped worker {worker_pid}"
+            f"than the stopped worker {worker_pid} the run had already recorded"
         )
     finally:
         if process.poll() is None:
