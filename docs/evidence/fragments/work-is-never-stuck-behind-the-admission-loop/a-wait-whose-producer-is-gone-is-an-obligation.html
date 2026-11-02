@@ -25,9 +25,13 @@
     recorded pid keeps it waiting too. A probe that cannot answer and left no
     exit record — a worker killed outright — is producer-gone as well, with the
     stillness clock taken from its last answered observation, or from when the
-    wait began when it never answered. <code>_scheduler_job_alive</code> is the
-    one small scheduler read, and it never contributes to a gone reading when it
-    cannot be answered.</li>
+    wait began when it never answered. A probe that answered and left no history
+    has no stillness this host observed, so its clock is unproven and the run
+    waits: the wait's age describes how long the run has been parked, never how
+    long the value has held. <code>_scheduler_job_alive</code> is the one small
+    scheduler read, and a wait naming a job is settled only by a scheduler that
+    answered and listed no such job — an unreadable scheduler leaves the job's
+    liveness unknown, and an unknown liveness is not an absence.</li>
     <li><code>reckon/crew/resumption.py</code> — <code>_record_wait_probe_history</code>
     is the one per-sweep actor. Every observation the sweep makes, answered or
     not, is appended with its time to the pointer's <code>wait_probe_history</code>
@@ -48,16 +52,18 @@
 
   <p><strong>Measure.</strong>
   <code>tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py</code>
-  passes its nine cases: the producer-gone arm with its duty; a file wait over a
+  passes its eleven cases: the producer-gone arm with its duty; a file wait over a
   live worker; a value still moving; a run launched on another host; a
-  scheduler job still queued; a worker killed outright with no exit record; an
-  ended worker with an exit record keeping its existing stalled reading; a probe
-  reaching its terminal; and the sweep recording and age-pruning the history the
-  reading is taken from. Five negative controls each fail the arm they target:
-  removing the process-liveness clause fails the file-wait arm, removing the
-  stillness clause fails the moving-value arm, removing the host proof fails the
-  other-host arm, removing the scheduler-job clause fails the scheduler arm,
-  and removing the no-exit-record route fails that arm's killed-worker case.</p>
+  scheduler job still queued; an unreadable scheduler; a probe that answered
+  with no history; a worker killed outright with no exit record; an ended worker
+  with an exit record keeping its existing stalled reading; a probe reaching its
+  terminal; and the sweep recording and age-pruning the history the reading is
+  taken from. Five negative controls each fail the arm they target: removing the
+  process-liveness clause fails the file-wait arm, removing the stillness clause
+  fails the moving-value and no-history arms, removing the host proof fails the
+  other-host arm, removing the scheduler-job clause fails the queued-job and
+  unreadable-scheduler arms, and removing the no-exit-record route fails that
+  arm's killed-worker case.</p>
 
   <p><strong>What remains.</strong> Nothing in this node. A waiting run with no
   live process no longer reads as working: its row names the producer as gone,

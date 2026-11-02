@@ -443,7 +443,7 @@ def _wait_value_still_seconds(
     wait: Mapping[str, Any],
     observation: Mapping[str, Any] | None,
     now_seconds: float,
-) -> float:
+) -> float | None:
     """How long the probe has reported the same thing, in seconds.
 
     A probe that is answering is still when the value it reports now is the
@@ -452,6 +452,12 @@ def _wait_value_still_seconds(
     its clock runs from the last observation it did report, or from when the
     wait began when it never reported one: a worker killed outright leaves a
     declaration and no answer behind it.
+
+    None means the stillness is unproven, and an unproven clock never carries a
+    reading that something has stopped: a probe that answered and left no
+    history has a value this host has never seen hold still, so the wait's own
+    age says nothing about the value. That fallback is kept only for a probe
+    that never answered at all.
     """
     answered = [entry for entry in _wait_probe_history(record) if entry["answered"]]
     observed: str | None = None
@@ -459,7 +465,13 @@ def _wait_value_still_seconds(
         observed = str(observation.get("observed") or "")
     reference: float | None
     if observed is None:
-        reference = answered[-1]["at"] if answered else None
+        if answered:
+            reference = answered[-1]["at"]
+        else:
+            age = wait.get("age_seconds")
+            reference = (
+                now_seconds - float(age) if isinstance(age, (int, float)) else None
+            )
     else:
         reference = None
         for entry in answered:
@@ -468,10 +480,7 @@ def _wait_value_still_seconds(
             elif reference is None:
                 reference = entry["at"]
     if reference is None:
-        age = wait.get("age_seconds")
-        reference = now_seconds - float(age) if isinstance(age, (int, float)) else None
-    if reference is None:
-        return 0.0
+        return None
     return max(0.0, now_seconds - reference)
 
 
@@ -542,16 +551,26 @@ def _producer_gone_verdict(
     job the queue still lists, because a run with no process is normal while
     the job it started is running.
 
-    None means any of those is unmet, or the scheduler could not be asked.
+    None means any of those is unmet, unproven, or unreadable: a scheduler that
+    could not be asked and a stillness the history does not establish both keep
+    the run waiting, because neither is evidence that anything has stopped.
     """
     if alive is not False or liveness_proven is not True:
         return None
-    if _scheduler_job_alive(wait.get("probe") or ()) is True:
+    # A wait that names a job is only settled by a scheduler that answered and
+    # listed no such job; a scheduler that could not be asked leaves the job's
+    # liveness unknown rather than absent. A wait naming no job asks nothing of
+    # the scheduler, so its silence says nothing either way.
+    probe = wait.get("probe") or ()
+    if (
+        _wait_probe_job_id(probe) is not None
+        and _scheduler_job_alive(probe) is not False
+    ):
         return None
     still = _wait_value_still_seconds(
         record, wait=wait, observation=observation, now_seconds=now_seconds
     )
-    if still < WAIT_PRODUCER_GONE_SECONDS:
+    if still is None or still < WAIT_PRODUCER_GONE_SECONDS:
         return None
     return {
         "still_seconds": int(still),

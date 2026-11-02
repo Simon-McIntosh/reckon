@@ -48,6 +48,8 @@ RUN_IDS = (
     "r-wait-worker-killed-no-exit-record",
     "r-wait-scheduler-gone-with-exit-record",
     "r-wait-probe-terminal",
+    "r-wait-scheduler-unreadable",
+    "r-wait-answered-with-no-history",
 )
 
 
@@ -413,6 +415,81 @@ def test_a_worker_killed_outright_is_producer_gone(
     assert "run-producer-gone" in _duty_kinds()
 
 
+def test_an_unreadable_scheduler_keeps_the_wait(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A scheduler that cannot answer has not said the job is gone.
+
+    ``squeue`` fails for reasons that say nothing about the job — a slot the
+    query cannot reach, a scheduler in transition, a job name the cluster no
+    longer resolves. Reading that answer as "no job alive" would call a
+    producer gone on the strength of a question that was never answered, so the
+    run goes on waiting until something does answer.
+    """
+    monkeypatch.setattr(
+        recovery_classification, "_scheduler_job_alive", lambda probe: None
+    )
+    run = _waiting_run(
+        RUN_IDS[8],
+        probe=["squeue", "-h", "-j", "1293562"],
+        history=_history(
+            (BOUND + 300, "RUNNING", True),
+            (60, "RUNNING", True),
+        ),
+        pid=_absent_pid(),
+    )
+
+    row = _row(
+        run,
+        condition_test=lambda _pointer, _wait: {
+            "state": "unknown",
+            "observed": "RUNNING",
+            "answered": True,
+            "detail": "the job is still in the queue",
+        },
+    )
+
+    assert row["process_alive"] is False
+    assert row["liveness_proven"] is True
+    assert row["classification"] == "waiting"
+    assert row["recovery_classification"] == "waiting"
+
+
+def test_a_probe_that_answered_with_no_history_is_not_proven_still() -> None:
+    """An answering probe with no recorded history has no stillness to measure.
+
+    The wait's own age says how long the run has been parked, never how long
+    the probe's value has stood still, so using it here would report stillness
+    the host never observed. Only a probe that never answered at all falls back
+    to that age, because then there is no observation to contradict it.
+    """
+    directory = runs_dir() / RUN_IDS[9]
+    state = _state_file(directory, "RUNNING")
+    run = _waiting_run(
+        RUN_IDS[9],
+        probe=["cat", str(state)],
+        history=None,
+        pid=_absent_pid(),
+    )
+
+    row = _row(run)
+
+    assert row["process_alive"] is False
+    assert row["liveness_proven"] is True
+    assert row["wait_observed"] == "RUNNING"
+    assert (
+        recovery_classification._wait_value_still_seconds(
+            run,
+            wait=row["external_wait"],
+            observation={"observed": "RUNNING", "answered": True},
+            now_seconds=NOW_SECONDS,
+        )
+        is None
+    )
+    assert row["classification"] == "waiting"
+    assert row["recovery_classification"] == "waiting"
+
+
 def test_an_ended_worker_with_an_exit_record_keeps_its_existing_reading(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -508,9 +585,13 @@ def test_the_sweep_records_the_history_the_reading_is_taken_from() -> None:
         "observed": "RUNNING",
         "answered": True,
     }
-    # The entry older than the bound plus one sweep interval is gone; every
-    # entry that reaches back past the bound is kept, so the clock still has
-    # its reference.
+    # The entry older than the bound plus one sweep interval is gone, because a
+    # newer entry already reaches past the bound; every entry that does reach
+    # back past the bound is kept, so the clock still has its reference.
     assert len(recorded) == 3
-    assert _stamp(BOUND - 60) not in times
-    assert _stamp(BOUND + 2 * resumption.DEFAULT_SWEEP_SECONDS + 600) not in times
+    assert _stamp(NOW_SECONDS - (BOUND - 60)) in times
+    assert _stamp(NOW_SECONDS - (BOUND + 60)) in times
+    assert (
+        _stamp(NOW_SECONDS - (BOUND + 2 * resumption.DEFAULT_SWEEP_SECONDS + 600))
+        not in times
+    )
