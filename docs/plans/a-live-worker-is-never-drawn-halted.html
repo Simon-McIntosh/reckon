@@ -24,8 +24,8 @@
   <title>A Live Worker Is Never Drawn Halted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="110">
-<meta name="plan-modified" content="2026-10-29">
+<meta name="plan-version" content="111">
+<meta name="plan-modified" content="2026-11-02">
 <meta name="plan-section-depends-on" content="{&quot;s11&quot;:[&quot;a-live-worker-is-never-drawn-halted#s13&quot;]}">
 </head>
 <body>
@@ -573,7 +573,10 @@
     <div class="r-comment-body"><p>Independent review of run r-20261026T233827707346-an-admitted-launch-keeps-the-record-of-its-failure at head 96afa1ead2ec against base b2de715e8fd2 records status parsed, six dimensions scored 19/17/16/18/19/17 (total 106), added_failure_count 0 against the reviewed run's own baseline_suite (3 failures) and after_suite (0), and three non-blocking findings: unrelated reflow churn in dispatch_launch.py, a stored-phase attempt number that disagrees with the per-attempt receipt after a relaunch, and _admitting_pass_identity having no assertion behind it.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261026T233827707346-an-admitted-launch-keeps-the-record-of-its-failure" data-who="reckon-build" data-when="2026-10-29T08:58:39.097Z">
-    <div class="r-comment-body"><p>Launch failures now record the evidence a missing pointer leaves behind: the supervisor marks a missing pointer at its own read, writes the run directory listing, pointer presence/phase/mtime, whether the admitted request is still held, and the admitting pass (pid, time, checkout stamp) that rides the admission handover; the record&#x27;s detail names the pointer for a read_pointer CrewError and keeps naming the command and PATH for an exec failure; and immutable per-attempt receipts take the first free attempt number, so a relaunch leaves attempt-1-exit.json intact beside attempt-2-exit.json. Measure: head gate 3 passed; base arm 3 failed with the relaunch assertion differing in launched_at/exited_at.</p></div>
+    <div class="r-comment-body"><p>Launch failures now record the evidence a missing pointer leaves behind: the supervisor marks a missing pointer at its own read, writes the run directory listing, pointer presence/phase/mtime, whether the admitted request is still held, and the admitting pass (pid, time, checkout stamp) that rides the admission handover; the record's detail names the pointer for a read_pointer CrewError and keeps naming the command and PATH for an exec failure; and immutable per-attempt receipts take the first free attempt number, so a relaunch leaves attempt-1-exit.json intact beside attempt-2-exit.json. Measure: head gate 3 passed; base arm 3 failed with the relaunch assertion differing in launched_at/exited_at.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261102T213559297213-review-of-a-missing-pointer-launch-names-the-pointer-bccb9e4f589f" data-who="reckon-build" data-when="2026-11-02T21:53:50.113Z">
+    <div class="r-comment-body"><p>review of r-20261102T211022211241-a-missing-pointer-launch-names-the-pointer at bccb9e4f58 from base c778776d7 — parsed record scoring goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 20, added_failure_count 0, four non-blocking findings and no blocking finding; the launch-failed action branches on launch_failure.kind and the base arm reproduces the command-and-PATH remedy it replaced</p></div>
 </div>
 </section>
 </main>

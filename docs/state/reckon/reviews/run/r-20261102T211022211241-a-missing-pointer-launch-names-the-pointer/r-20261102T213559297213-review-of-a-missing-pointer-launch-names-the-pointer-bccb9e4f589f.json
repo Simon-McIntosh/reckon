@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:_compute_watch_snapshot",
+    "reckon/crew/recovery_watch.py:recover",
+    "reckon/crew/obligations.py:712",
+    "reckon/crew/promotion.py:423",
+    "reckon/mcp_views.py:1914",
+    "reckon/crew/query.py:422"
+  ],
+  "completed_at": "2026-11-02T21:53:50.113Z",
+  "dispatched_at": "2026-11-02T21:37:55Z",
+  "findings": [
+    {
+      "file": "tests/test_a_missing_pointer_launch_names_the_pointer.py",
+      "line": "130",
+      "severity": "non-blocking",
+      "text": "assert MISSING_POINTER in action compares the test's own constant, supplied to the code under test in the exit record at line 121, against the action the code composes from it, so it is a round trip rather than an independent check; the discriminating assertions are the negative ones at lines 134-135, and the recorded negative control shows the test reddens, so the guard holds, but this line alone would not catch a remedy that echoed the record's fields back unchanged."
+    },
+    {
+      "file": "tests/test_a_missing_pointer_launch_names_the_pointer.py",
+      "line": "161",
+      "severity": "non-blocking",
+      "text": "assert MISSING_POINTER not in action in the spawn arm is trivially true because the spawn fixture writes a different pointer literal (line 150), so it cannot detect the spawn arm taking the pointer branch; the live guards there are the two assertions at lines 159-160."
+    },
+    {
+      "file": "tests/test_a_missing_pointer_launch_names_the_pointer.py",
+      "line": "121",
+      "severity": "non-blocking",
+      "text": "the fixture hand-writes launch_failure.pointer_path into exit.json, so nothing exercises the supervisor's producer and this classifier together; a rename of pointer_path in reckon/crew/dispatch_launch.py:2615 would leave this test and the producer's own test green while production silently lost the path."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-missing-pointer-launch-names-the-pointer.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "the fragment and the manifest state that ruff check and ruff format --check are clean on the staged paths, but no ruff log is named in the manifest's test_logs, so that half of the done_when's gate is claimed rather than recorded."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read against c778776d: one helper and one branch added in recovery_classification.py, a 175-line test and a 30-line fragment added, and the five-line unconditional action replaced.",
+    "done_when": "The done_when names three exit-record shapes; tests/test_a_missing_pointer_launch_names_the_pointer.py:114-175 builds all three and the manifest records the head arm (3 passed) and the base arm (1 failed, 2 passed), both reconciled against the logs they cite.",
+    "goal": "The node goal is that a missing pointer be named when the exit record's launch_failure.kind is pointer-missing; reckon/crew/recovery_classification.py:1846-1852 composes that action and leaves every other kind on the previous wording.",
+    "manifest": "Read; status complete, commit bccb9e4f58, four gate logs named, baseline_suite exit 1 with one failure id and after_suite exit 0 with none, both matching the logs.",
+    "write_paths": "The declared write paths are recovery_classification.py, the new test and the fragment; the landed diff contains exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "The recorded negative control removes the pointer-missing branch and test_a_missing_pointer_names_the_pointer_it_looked_for reddens at tests/test_a_missing_pointer_launch_names_the_pointer.py:130, which is the regression the change could plausibly reintroduce.",
+    "evidence": "tests/test_a_missing_pointer_launch_names_the_pointer.py:128-135 reads the pointer path, the resume and the absence of both other remedies out of the action, and the recorded base-arm log shows the command-and-PATH action at c778776d while the head log shows 3 passed with EXIT=0.",
+    "fit": "reckon/crew/recovery_classification.py:602-621 follows the module's idiom of a private helper taking a Mapping and returning str | None with a docstring stating the mechanism, and introduces no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:1839 branches the launch-failed action on _missing_pointer_recorded, and the producer at reckon/crew/dispatch_launch.py:3749-3752 writes exactly the kind and pointer_path keys the helper reads, so the branch is reachable in production.",
+    "reuse": "No owner of this capability exists: a search over reckon/ for readers of a supervisor exit record's launch_failure block found none (reckon/crew/resumption.py:1203 reads the pointer's launch_failures list, a different source, and reckon/crew/recovery_liveness.py:1398 tests launch failure without reading kind), so _missing_pointer_recorded is the first.",
+    "scope_discipline": "git show bccb9e4f5 --stat lists reckon/crew/recovery_classification.py, tests/test_a_missing_pointer_launch_names_the_pointer.py and docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-missing-pointer-launch-names-the-pointer.html, all inside the node's declared write scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a missing pointer be named when the exit record's launch_failure.kind is pointer-missing; reckon/crew/recovery_classification.py:1846 composes that action and leaves every other kind unchanged.\nVERDICT done_when: the done_when names three exit-record shapes; tests/test_a_missing_pointer_launch_names_the_pointer.py:114-175 builds all three and the manifest records the head arm and the base arm.\nVERDICT write_paths: the declared paths are recovery_classification.py, the new test and the fragment; the landed diff contains exactly those three files.\nVERDICT manifest: read; status complete, commit bccb9e4f58, four gate logs named, baseline 1 failure at c778776d and after arm 0 failures at bccb9e4f5, both matching their logs.\nVERDICT diff: read against c778776d; one helper and one branch added, the unconditional action replaced, and the test and fragment added.\nCALL_SITES: reckon/crew/recovery_watch.py:_compute_watch_snapshot, reckon/crew/recovery_watch.py:recover, reckon/crew/obligations.py:712, reckon/crew/promotion.py:423, reckon/mcp_views.py:1914, reckon/crew/query.py:422\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:1839 branches the action on the exit record's kind, and reckon/crew/dispatch_launch.py:3749-3752 writes those keys.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_missing_pointer_launch_names_the_pointer.py:128-135 asserts the action, and the base and head logs record the two arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only recovery_classification.py, the new test and the fragment.\nSCORE durability: 18\nJUSTIFICATION durability: the recorded negative control reddens tests/test_a_missing_pointer_launch_names_the_pointer.py:130 when the branch is removed.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:602-621 matches the module's private-helper idiom and carries no plan identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no existing reader of an exit record's launch_failure block exists; resumption.py:1203 reads a different source.\nFINDING tests/test_a_missing_pointer_launch_names_the_pointer.py:130 non-blocking: the assertion round-trips the test's own constant; the negative assertions at lines 134-135 and the negative control carry the guard.\nFINDING tests/test_a_missing_pointer_launch_names_the_pointer.py:161 non-blocking: the assertion is trivially true because the spawn fixture uses a different pointer literal.\nFINDING tests/test_a_missing_pointer_launch_names_the_pointer.py:121 non-blocking: the fixture hand-writes the launch_failure block, so producer and classifier are never exercised together.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/a-missing-pointer-launch-names-the-pointer.html:25 non-blocking: the ruff result is claimed with no log named in the manifest.",
+  "review_run_id": "r-20261102T213559297213-review-of-a-missing-pointer-launch-names-the-pointer-bccb9e4f589f",
+  "reviewed_base_sha": "c778776d7d5ecb4f8634bfa55e9b11038c617a1e",
+  "reviewed_head_sha": "bccb9e4f589fcdd3c915701a7c1933e399c0349e",
+  "reviewed_run_id": "r-20261102T211022211241-a-missing-pointer-launch-names-the-pointer",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T21:58:51.142270+00:00",
+  "total": 115
+}
