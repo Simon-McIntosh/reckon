@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T08:26:11.264Z",
+  "dispatched_at": "2026-11-02T08:20:31Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:173",
+      "id": "anchors_resolve-1",
+      "reason": "a node dispatched on \u00a715 confirms the defect before repairing it, and cannot do so against an id that resolves to no run; the id or the anchor must be corrected first.",
+      "text": "\u00a715 cites `power_convertor run r-20261028T112435754554-csrr-fdu-idm-stray-per-circuit` as the reproduction, but no run record with that id exists: `ls .../docs/state/power_convertor/runs/ | grep 20261028T112435754554` returns nothing, `grep -rl 112435754554` over the whole power_convertor tree returns nothing, and the nearest real run is `r-20261028T200825823020-csrr-fdu-stray-per-circuit` (node without `-idm`, dispatched 20:10Z, gate passed), so the only reproduction the section offers cannot be opened",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:166",
+      "id": "reasoning-1",
+      "reason": "the section's defect statement is its justification for the liveness clause, and a node checking it at the cited anchor finds a different wait; the plan should point at the artifact that holds the observed stall (the live pointer reading, or a pasted `crew view live` row) instead of a run whose manifest contradicts it.",
+      "text": "\u00a76 says the run \"wrote `status: waiting` with a `wc -l` probe on a rows file and a terminal value of 66\" and read as working for 15 hours, but the run it cites (`r-20261029T040536910067-csrr-disruption-fdu-cases`, dispatched 2026-10-29T04:07Z) has a durable manifest at `.../crew/runs/r-20261029T040536910067-csrr-disruption-fdu-cases/manifest.md` whose `wait_probe` is `[\"grep\",\"-ho\",\"^EXIT=.*\", \".../gate-rerun.log\"]`, whose `wait_terminal` is `EXIT=0`, and whose `status` reads `complete`; the `wc -l`/66 wait and the `process_alive false` reading the section rests on are preserved in no artifact the section names",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:166",
+      "id": "done_when-1",
+      "reason": "the arm cannot be made to fail or pass as written, so the node must either invent a reader outside its declared scope or drop the clause; naming `fleet_node`'s query (or reducing the clause to the process tree) changes the write paths and the arm.",
+      "text": "\u00a76's deliverable makes \"the run names no external job whose liveness the classifier can read as still alive\" a clause of the classification, and the done-when's third arm requires \"a waiting run \u2026 whose named external job is alive, stays waiting\", but no job-liveness reader is named and none exists on the path the section extends: `reckon/crew/recovery_liveness.py` exposes `process_alive`/`_live_descendant` over pids only, and the sole job reader in the package is `reckon/crew/fleet_node.py:357` (`squeue -h -j`), which is not in the write paths and is not named",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:173",
+      "id": "reasoning-2",
+      "reason": "an implementer must settle an unspecified ordering (and can pick one that sends the request to a metered lane the lead did not intend), so the section should name the order source explicitly.",
+      "text": "\u00a715's remedy \"chooses the first backend in the project's configured lane order that fits\" names an ordering configuration that does not exist: the project's `docs/state/power_convertor/flight.yaml` declares only `review_excluded_backends` and `fences`, `reckon/_flight_schema.py` has no lane-order field, and `grep -rn \"lane_order|backend_order|ordered_lanes\" reckon/crew/*.py` finds only a docstring in `metering.py`, so the order is whatever the host `backends:` YAML mapping happens to emit",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "435362e424e36785f4b5d85a487b1d81d3a3fb40",
+  "plan_fingerprint": "7f541b197a3510766605d2c304d806291755397e087b742e3e66a89b932abcee",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 91,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T081823296726-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "44577667d4e0372630498fdc84e931907ffc072e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a715's cited reproduction run resolves nowhere in the power_convertor tree.",
+    "done_when": "a finding \u2014 \u00a76's third arm requires a named external job to read as alive, and no such liveness reader is named in the section or present in the classifier it extends.",
+    "evidence_paths": "pass \u2014 \u00a715's gate is a new test file at its declared path and \u00a76's gate likewise; neither routes a log to a scratchpad.",
+    "naming": "pass \u2014 `WAIT_PRODUCER_GONE_SECONDS`, `wait_probe_history` and the `context-fit` reason name mechanisms and outcomes, with no plan labels or ticket numbers.",
+    "reasoning": "a finding \u2014 \u00a76's cited run does not carry the wait declaration the section describes, and \u00a715's \"configured lane order\" names no ordering that is configured anywhere.",
+    "single_goal": "pass \u2014 \u00a715 is one deliverable (never resolve a fallback route onto a lane that cannot hold the request); \u00a76 is one deliverable (classify a producer-gone wait and raise one obligation).",
+    "wiring": "pass \u2014 \u00a714's new `depends-on` (s11, s12) matches what it extends and repairs; \u00a715 declares no upstream it actually consumes, and \u00a76's classification is self-contained."
+  },
+  "section_digests": {
+    "_document": "142990c7c6bba60d8d3af884a5af04bef7a3ddd4bb515467c9a5c295ac5d2b36",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "8ba4af1953fc65d1c8eddf3827419ed4edd8a45870b3edc049362cfd03cb0be3",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "ed9fc09d592f72e5f387599d06687683547142165157747802d0b8cb9d71e829",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T08:30:43.218096+00:00"
+}
