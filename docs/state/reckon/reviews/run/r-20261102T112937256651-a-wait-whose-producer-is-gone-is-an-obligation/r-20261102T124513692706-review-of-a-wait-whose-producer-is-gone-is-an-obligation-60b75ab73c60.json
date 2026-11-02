@@ -1,0 +1,61 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:1445",
+    "reckon/crew/obligations.py:638",
+    "reckon/crew/resumption.py:1971",
+    "reckon/crew/query.py:422",
+    "reckon/crew/recovery_watch.py:312",
+    "reckon/serve.py:899"
+  ],
+  "completed_at": "2026-11-02T12:53:50.910Z",
+  "dispatched_at": "2026-11-02T12:47:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T112937256651-a-wait-whose-producer-is-gone-is-an-obligation/logs/importers-head.log",
+      "line": "171",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log ends mid-progress at '.............' with no summary line and no EXIT= line, yet the manifest's artifacts field quotes '1 failed, 1171 passed, 22 warnings' as its summary, so the importer-set claim and the failure_attribution that leans on it are not backed by the log they cite; the gate itself (11 passed, EXIT=0) is unaffected."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read 97c7bcf2a5..60b75ab73c commit by commit (one commit, +132/-26 over three files): the scheduler clause becomes 'named a job and the answer is not False', the stillness function gains a None return and keeps the wait-age fallback only for a probe that never answered, and the sweep test's three assertions are corrected to the stamps the prune keeps.",
+    "done_when": "The node's measure is tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py passing with its behaviours, and logs/gate-after.log records '11 passed in 2.51s' with EXIT=0 while logs/negative-controls.log records five mutations each exit 1 on its named arms.",
+    "goal": "The committed change exists to repair the three findings the previous review recorded; read commit 60b75ab73c, reckon/crew/recovery_classification.py:551-578 now refuses a gone reading on an unreadable scheduler and on an unproven stillness clock, which is that repair.",
+    "manifest": "Read the reviewed run's manifest.md; status complete, commits include 60b75ab73c, gate command and logs named, negative_control_log named as a bare path, though its rubric.tests line still says 'nine cases' where the file now carries eleven and its artifacts line quotes a summary importers-head.log does not contain.",
+    "write_paths": "Read the node's declared paths; the single delta commit changes only the landing fragment, reckon/crew/recovery_classification.py and the test file, all declared, and leaves reckon/crew/resumption.py and reckon/crew/obligations.py untouched."
+  },
+  "justifications": {
+    "durability": "logs/negative-controls.log re-run at the 11-case head reddens the two new arms: the stillness mutation fails test_a_wait_whose_value_is_still_moving_stays_waiting and test_a_probe_that_answered_with_no_history_is_not_proven_still, and the scheduler mutation fails test_a_scheduler_job_still_queued_keeps_its_wait and test_an_unreadable_scheduler_keeps_the_wait, but the no-history case's classification assertions at tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py:487-488 do not discriminate because its fixture wait is only ten seconds old, so only the direct helper assertion at line 481 catches the reverted fallback.",
+    "evidence": "The gate is recorded and readable: logs/gate-after.log ends '11 passed in 2.51s' then EXIT=0 at head content, and logs/gate-before.log ends 'no tests ran in 0.00s' then EXIT=4 at base 67d1e26d0b, but logs/importers-head.log:171 ends mid-progress with no summary and no EXIT line although the manifest's artifacts line quotes '1 failed, 1171 passed, 22 warnings' from it, and the manifest's after_suite names revision 60b75ab73c while that log's header names '97c7bcf2a5 plus the reviewed repairs'.",
+    "fit": "ruff check and ruff format --check are clean on both changed Python files at head, and the new comments at reckon/crew/recovery_classification.py:562-565 state the mechanism rather than a ticket or plan label; the only looseness is that _wait_probe_job_id is derived twice, once at line 566 and again inside _scheduler_job_alive at line 517.",
+    "goal_fidelity": "The one commit 97c7bcf2a5..60b75ab73c closes all three findings of the previous review: reckon/crew/recovery_classification.py:566 now requires a scheduler answer of False, line 484 now returns None instead of the wait-age fallback, and tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py:599-609 now assert the stamps the sweep actually keeps.",
+    "reuse": "The delta adds no production definition at all \u2014 _wait_probe_job_id and _scheduler_job_alive pre-date it at 97c7bcf2a5 \u2014 and the two added functions are test cases over the module's existing fixtures, so nothing forks a capability the repository owns.",
+    "scope_discipline": "The delta touches exactly docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/a-wait-whose-producer-is-gone-is-an-obligation.html, reckon/crew/recovery_classification.py and tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py, all three inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the committed delta exists to repair the three findings the previous review recorded; reckon/crew/recovery_classification.py:551-578 now refuses a gone reading on an unreadable scheduler and on an unproven stillness clock, which is that repair.\nVERDICT done_when: the node's measure is tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py passing with its behaviours; logs/gate-after.log records '11 passed in 2.51s' with EXIT=0 and logs/negative-controls.log records five mutations each exiting 1 on their named arms.\nVERDICT write_paths: read the node's declared paths; the single delta commit changes only the landing fragment, reckon/crew/recovery_classification.py and the test file, all declared, and leaves reckon/crew/resumption.py and reckon/crew/obligations.py untouched.\nVERDICT manifest: read the reviewed run's manifest.md; status complete, commits include 60b75ab73c, gate command and logs named, negative_control_log named as a bare path, though its rubric.tests line still says 'nine cases' where the file now carries eleven and its artifacts line quotes a summary importers-head.log does not contain.\nVERDICT diff: read 97c7bcf2a5..60b75ab73c commit by commit (one commit, +132/-26 over three files): the scheduler clause becomes 'named a job and the answer is not False', the stillness function gains a None return and keeps the wait-age fallback only for a probe that never answered, and the sweep test's three assertions are corrected to the stamps the prune keeps.\nCALL_SITES: reckon/crew/recovery_classification.py:1445, reckon/crew/obligations.py:638, reckon/crew/resumption.py:1971, reckon/crew/query.py:422, reckon/crew/recovery_watch.py:312, reckon/serve.py:899\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: The one commit 97c7bcf2a5..60b75ab73c closes all three findings of the previous review: reckon/crew/recovery_classification.py:566 now requires a scheduler answer of False, line 484 now returns None instead of the wait-age fallback, and tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py:599-609 now assert the stamps the sweep actually keeps.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-after.log ends '11 passed in 2.51s' with EXIT=0 and logs/gate-before.log ends 'no tests ran in 0.00s' with EXIT=4, but logs/importers-head.log:171 ends mid-progress with no summary or EXIT line although the manifest's artifacts line quotes '1 failed, 1171 passed, 22 warnings' from it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta's three changed paths, the landing fragment under docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/, reckon/crew/recovery_classification.py and the test file, all lie inside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-controls.log shows the scheduler mutation failing test_an_unreadable_scheduler_keeps_the_wait and the stillness mutation failing test_a_probe_that_answered_with_no_history_is_not_proven_still, though that case's classification asserts at tests/test_a_wait_whose_producer_is_gone_is_an_obligation.py:487-488 do not discriminate because its fixture wait is ten seconds old.\nSCORE fit: 19\nJUSTIFICATION fit: ruff check and ruff format --check are clean on both changed Python files at head, and the comments at reckon/crew/recovery_classification.py:562-565 state the mechanism, with only the duplicated job-id derivation at line 566 and line 517 as looseness.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no production definition \u2014 _wait_probe_job_id and _scheduler_job_alive pre-date it at 97c7bcf2a5, and the two added functions are test cases over the module's existing fixtures.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261102T112937256651-a-wait-whose-producer-is-gone-is-an-obligation/logs/importers-head.log:171 non-blocking: the log ends mid-progress at '.............' with no summary line and no EXIT= line, yet the manifest's artifacts field quotes '1 failed, 1171 passed, 22 warnings' as its summary, so the importer-set claim and the failure_attribution that leans on it are not backed by the log they cite; the gate itself (11 passed, EXIT=0) is unaffected.",
+  "review_run_id": "r-20261102T124513692706-review-of-a-wait-whose-producer-is-gone-is-an-obligation-60b75ab73c60",
+  "reviewed_base_sha": "97c7bcf2a5696fae692b2157c124d454603383db",
+  "reviewed_head_sha": "60b75ab73c605b055ae463e5a138dceeee0692dd",
+  "reviewed_run_id": "r-20261102T112937256651-a-wait-whose-producer-is-gone-is-an-obligation",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_note": "Derived from the reviewed run's own arms at this head: logs/gate-before.log ends 'no tests ran in 0.00s' with EXIT=4 (the node's only test file does not exist at base 67d1e26d0b, so the base arm records no failure ids), and logs/gate-after.log ends '11 passed in 2.51s' with EXIT=0 (failure_ids empty); the set difference of failing ids is empty.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T12:52:11+00:00",
+  "total": 112
+}
