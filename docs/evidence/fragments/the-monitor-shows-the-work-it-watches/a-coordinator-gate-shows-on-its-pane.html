@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s95">
+  <meta name="plan-recorded-at" content="2026-11-02">
+  <title>A coordinator's own gate draws a row on its own pane | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-coordinator-gate-shows-on-its-pane-landing" data-node="a-coordinator-gate-shows-on-its-pane" data-reckon="landed" data-when="2026-11-02">
+  <h2>A coordinator's own gate run draws a start row and an end row on its own pane</h2>
+
+  <p><code>reckon crew verify-gate</code> and <code>reckon crew suite run</code> now write a durable gate
+  record under the shared config home when a gate starts and complete it with the exit status when
+  it ends. The record holds the calling coordinator's session, the project, the run id when one is
+  named, the checkout, the command's first words, the start instant, and the pid and kernel start
+  tick of the process running the gate.</p>
+
+  <p id="a-coordinator-gate-shows-on-its-pane-record">The new <code>reckon/crew/gate_watch.py</code>
+  reads that document and folds it into watch-stream rows the way <code>lift_watch.py</code> folds
+  budget lifts and resets: one row when a gate starts, one when it ends, and — for a producer that
+  has just re-armed — a baseline row for every gate already running rather than announcing it as
+  new. Each row names the gate's own session, so it reaches that session's pane and no other.
+  <code>reckon/crew/recovery_watch.py</code> calls the sweep in its clock-driven block beside
+  <code>lift_watch.sweep</code>, because a gate becomes due when its process ends, which moves no
+  file.</p>
+
+  <p id="a-coordinator-gate-shows-on-its-pane-writerless-end">An end needs no writer. A gate whose
+  process is gone with no completed record reads as ended, with no exit status, so a killed CLI or a
+  dropped ssh leaves a row saying the gate stopped rather than a pane claiming it still runs. The
+  record's pid and the kernel's start tick for it are compared, so a pid since handed to another
+  process is not mistaken for the gate. The fold is read-only: every project's producer folds one
+  workstation-wide document, and a producer that stamped an end would race its peers over it.</p>
+
+  <p id="a-coordinator-gate-shows-on-its-pane-skill"><code>skills/reckon-build/SKILL.md</code> now
+  names <code>verify-gate --command</code> as the way to run a long coordinator gate, so the verb
+  that puts the gate on the pane is the one the skill recommends.</p>
+
+  <p id="a-coordinator-gate-shows-on-its-pane-evidence">Evidence: <code>tests/test_a_coordinator_gate_shows_on_its_pane.py</code>
+  passes five cases — a <code>verify-gate --command</code> run writes a start record the gate's own
+  command can see and completes it with exit status 0; a sweep over a running gate emits one start
+  row for the owning session and none for another; a second sweep repeats nothing and a sweep after
+  the end emits one end row naming the exit status; a record whose pid is gone with no end reads as
+  ended with no status; and the skill carries the sentence naming the verb. The declared negative
+  control — skipping the record write in <code>verify-gate</code> — fails the start-row case
+  (<code>1 failed, 4 passed</code>). The 87 related files of the crew suite pass
+  (<code>644 passed</code>) with no added failure.</p>
+
+  <p id="a-coordinator-gate-shows-on-its-pane-gap">One gap remains outside this node's write scope:
+  <code>ticker.stream_carries</code> in <code>reckon/crew/ticker.py</code> admits rows by state
+  family and does not yet carry the gate states, so the rows reach the stream and the owning session
+  but a follower's row policy does not draw them. The fold, the records and the rows are complete;
+  the pane-side admission is a one-line addition to <code>stream_carries</code>.</p>
+</article>
+</body>
+</html>

@@ -402,6 +402,17 @@ integration and release. Run the cheap checks in yield-per-second order, then
 read the diff by anomaly at a depth set by blast radius × mechanicalness. The
 practice lives in [references/worker-verification.md](references/worker-verification.md).
 
+### 5c. A long coordinator gate runs through `verify-gate --command`
+
+When you re-run a gate yourself at the integrated head — a whole-suite
+re-measure, or a focused gate that takes most of an hour — run it as
+`reckon crew verify-gate --command "<the command>"` rather than typing the
+command into a shell. That verb and `reckon crew suite run` both write a
+durable gate record when the gate starts and complete it with the exit status
+when it ends, so your own pane shows the gate running and since when. A gate
+started by hand writes nothing, and a pane with no worker row and no gate row
+reads as an idle session rather than as one blocked on its own check.
+
 ## Close
 
 Close the section when its deliverable is in the tree, not when its last sliver

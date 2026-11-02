@@ -2695,6 +2695,30 @@ def _sweep_reset_rows(project: str, seen: set[str] | None) -> set[str] | None:
         return seen
 
 
+def _sweep_gate_rows(
+    project: str, seen: dict[str, Any] | None
+) -> dict[str, Any] | None:
+    """Fold the workstation's coordinator gate runs into the project's stream.
+
+    A gate record is workstation-wide and the stream is per project, so the same
+    gate is announced once for each project's producer, each row naming the
+    session that ran it. The sweep is skipped by any process that is not this
+    project's registered producer — the follower reads the stream and must not
+    write it — and one unreadable document is the no-gate state: the poll is
+    skipped and the memory kept, so a gate is not announced as new when a later
+    poll reads the document again.
+    """
+    from reckon.crew import gate_watch
+
+    if project not in runs._WATCH_STREAM_PRODUCERS:
+        return seen
+    try:
+        return gate_watch.sweep(project, seen=seen)
+    except Exception as exc:  # noqa: BLE001 - one bad read must not end the seat
+        print(f"gate-sweep-failure: {project}: {exc}", flush=True)
+        return seen
+
+
 def watch_ticker(
     project: str,
     *,
@@ -2826,6 +2850,12 @@ def watch_ticker(
         # the sweep's own horizon is what keeps a restart from replaying old
         # news to the fleet.
         reset_seen: set[str] | None = None
+        # The coordinator gate runs this producer has already announced. A gate
+        # ends when its process goes, which moves no file, so this memory rides
+        # the clock-driven block beside the reset sweep. None on the first pass
+        # after a (re)arm, so a gate already running is drawn as baseline
+        # inventory rather than announced as new.
+        gate_seen: dict[str, Any] | None = None
         # The instant of this producer's last orphan sweep, so the pass that
         # walks the whole fleet runs on its own cadence rather than on every
         # tick. Zero rather than the armed instant, so the first pass sweeps:
@@ -2921,6 +2951,12 @@ def watch_ticker(
                 # beside the neighbours rather than the gate above, and it is
                 # best-effort on the same terms.
                 reset_seen = _sweep_reset_rows(project, reset_seen)
+                # A coordinator's own gate run is the third record that becomes
+                # due on the clock: its end is its process going away, with no
+                # file written, so a gate waiting on a document would read as
+                # running until the next unrelated change. Best-effort on the
+                # same terms as its neighbours.
+                gate_seen = _sweep_gate_rows(project, gate_seen)
             moment = _utc_seconds()
             if sweep:
                 current = {
