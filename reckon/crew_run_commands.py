@@ -1713,7 +1713,7 @@ def crew_suite_run(project, checkout_path, pretty):
         project,
         verb=SUITE_RUN,
         checkout=root,
-        command=" ".join(str(word) for word in declaration.command),
+        command=_declared_command(declaration),
     )
     record = standing_suite.run(root, declaration, standing_log)
     standing_suite.record(root, project, record)
@@ -2433,6 +2433,23 @@ def _gate_closed(record: Mapping[str, Any] | None, *, exit_status: int | None) -
         gate_watch.end(str(record.get("id") or ""), exit_status=exit_status)
     except Exception as exc:  # noqa: BLE001 - a record is not the gate's work
         click.echo(f"gate-record-end-failure: {exc}", err=True)
+
+
+def _declared_command(declaration: Any) -> str:
+    """A suite declaration's command as one line.
+
+    A declaration is normally an object carrying the command as a sequence of
+    words; a caller that hands over a mapping instead is read the same way, so
+    the gate's own row is never the reason a suite refuses to start.
+    """
+    words = (
+        declaration.get("command")
+        if isinstance(declaration, Mapping)
+        else getattr(declaration, "command", None)
+    )
+    if isinstance(words, str):
+        return words
+    return " ".join(str(word) for word in words or ())
 
 
 def _gate_exit_status(result: Mapping[str, Any] | None) -> int | None:
