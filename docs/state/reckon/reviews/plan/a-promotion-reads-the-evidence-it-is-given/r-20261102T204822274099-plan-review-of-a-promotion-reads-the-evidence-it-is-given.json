@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T20:56:23.709Z",
+  "dispatched_at": "2026-11-02T20:49:43Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:79",
+      "id": "anchors_resolve-1",
+      "reason": "the section's write path omits the module the fix must edit, so the node either edits outside its scope or returns blocked.",
+      "text": "\u00a74 says \"The commit-list check in `reckon/crew/promotion.py`\", but `promotion.py` only unpacks the value (`promotion.py:527`, `promotion.py:670`); the subset test that produced the 16-of-17 shortfall is `_require_gate_evidence` in `reckon/crew/promotion_evidence.py:~908` (`resolving_presented < resolving_declared`), and the presented-citation and commitless-beyond-base refusals are `_require_commits_beyond_base` in the same file, so a worker scoped to `promotion.py` + the new test would find no commit-list check to change",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:62",
+      "id": "reasoning-1",
+      "reason": "the mechanism cannot be implemented where the plan puts it, and the caller the plan relies on is never named.",
+      "text": "\u00a73 says `crew complete` builds the gate check from the run's stored review record, but the point where a passing gate's check is filled is `_default_gate_evidence_from_manifest` in `reckon/crew/promotion_records.py:244`, called at `reckon/crew/promotion.py:357`; `reckon/crew/promotion_checks.py` holds only `_require_gate_check_precondition` (line 1323), which receives `gate_check`, `gate` and `require_gate_check` and neither the run record nor the run's role, so the declared write path cannot reach the record",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:49",
+      "id": "done_when-1",
+      "reason": "without its own case the worker can drop that deliverable and still pass every stated case, so the plan would certify work it did not get.",
+      "text": "\u00a72 promises that \"a bare name that matches more than one head id covers all of them, and the promotion record names that it did\", but \u00a72's done-when (lines 52-57) tests only the promoting case, the one-uncovered-id refusal and the cross-file non-cover case, so the multi-match behaviour and the record annotation ship unmeasured",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "856cbea1cfe7099a437351270fb3c10a3ccc83ff",
+  "plan_fingerprint": "4b4ca9bc08e02c1534b2bdf10bfccdeb1598a4351e2c1a207f398f03481b27ac",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T204822274099-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "f1aad35f096c12715e936825a1198bbc477ddfdb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a74 names `reckon/crew/promotion.py` as the home of the commit-list check, and that module only re-binds the returned `commit_list_shortfall` value; the check is `_require_gate_evidence` in `reckon/crew/promotion_evidence.py`.",
+    "done_when": "a finding \u2014 \u00a72's third deliverable bullet (a bare name matching several head ids covers all of them and the record says so) has no case in \u00a72's done-when.",
+    "evidence_paths": "pass \u2014 the plan names no log path, so gate logs fall to the crew run directory, which is durable; the tests it names are new repository test files.",
+    "naming": "pass \u2014 the three new test filenames name the mechanism (`test_a_red_base_matches_bare_names.py`, `test_a_review_run_gate_is_its_record.py`, `test_a_presented_head_covers_its_ancestors.py`) and carry no plan labels, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a73 says `crew complete` builds the gate check from the stored review record, but the build point is `_default_gate_evidence_from_manifest` in `reckon/crew/promotion_records.py` (called from `reckon/crew/promotion.py:357`), outside the section's declared write path.",
+    "single_goal": "pass \u2014 each of \u00a72, \u00a73 and \u00a74 names one check to repair, and the followup's single invocation covers all three only because they are disjoint files.",
+    "wiring": "pass \u2014 the plan declares no depends-on, informs or gates, and `plan-standalone` states the same (\"no live plan waits on it and it waits on none\"); the three open sections write disjoint files, as the followup says."
+  },
+  "section_digests": {
+    "_document": "8584f9a2dfade761ea046948d760ea80d0275e70c1027309b9c3544b7d27eee8",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "b22a2fa44f084b3c4ecf1357214ccd064b63af72b95b7ceeb4bfb7d568e426dc",
+    "s3": "23e5aba5ad471cef5e6d7399b59690e3a091144ee0abc7eb007d8d1a4af5626d",
+    "s4": "85fb55054d68eddbd1cb90ec5748554d270af5f362cbfb08c1d9ce4ae212f18a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T21:13:41.104877+00:00"
+}
