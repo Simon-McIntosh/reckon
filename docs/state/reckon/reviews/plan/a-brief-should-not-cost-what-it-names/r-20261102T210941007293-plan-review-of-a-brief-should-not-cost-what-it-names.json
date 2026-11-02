@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T21:23:44.263Z",
+  "dispatched_at": "2026-11-02T21:12:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:213",
+      "id": "wiring-1",
+      "reason": "without the declared dependency a coordinator can dispatch \u00a74 in the same wave as \u00a73 or before it, and the node's gate has no way to lower an estimate in which the anchor costs nothing.",
+      "text": "\u00a78's text says \"Section 4 follows section 3, since an opt-out is only meaningful once a mention is cheap enough\", and \u00a74's done-when at :137 requires the \"same brief estimating lower with the opt-out than without it\", yet the base charges a prose mention nothing (`_declared_input_files` at reckon/crew/routing.py:3177 collects only paths in a clause declaring them inputs, and the plan's own \u00a73 comment at :277 says so), so \u00a74's measure cannot hold unless \u00a73's mention charge has landed \u2014 while no `plan-section-depends-on` meta declares s4 waits on s3 and both sections are declared `implementable` at :28",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-brief-should-not-cost-what-it-names.html:225",
+      "id": "reasoning-1",
+      "reason": "the now-dispatchable section states a root cause its own evidence contradicts, and a node sent to satisfy \"charge a prose mention at a reference cost\" would not be told that the census must first be widened to collect mentions that it currently never sees.",
+      "text": "the `reference-cost` decision is now locked at `flat`, which is the condition every earlier decline of the \u00a73 findings said had to be met before those sections were revised and dispatched, but \u00a73 (still `implementable` at :28) retains the premise the decision was to replace: \"A path a node must edit and a path a node is told never to open are not the same load, and today they cost the same\" (:112) and \"it is currently the place it is most wrong\" (:118) are both false against `_declared_input_files`, which does not see a path that appears only in prose at all, and the same section's done-when at :123-126 still asks a negated path that is \"also a declared write path elsewhere\" to be charged as a reference while \"the write path must still be charged at full\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c778776d7d5ecb4f8634bfa55e9b11038c617a1e",
+  "plan_fingerprint": "436bfab4dfe7d0e11ef4247f7a45151be8e51e27f495ad997218113175084c81",
+  "plan_slug": "a-brief-should-not-cost-what-it-names",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T210941007293-plan-review-of-a-brief-should-not-cost-what-it-names",
+  "reviewed_blob_sha": "1d876e99b42dbee22fe76f94ad61adcec3b0917b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the changed comments' revision pair resolves (`1c734f41` and `85428753` are commits; 85428753 is \"feat(crew): name the origin of a context refusal's dominant term\"), the run ids named resolve to run directories, the cited review's own manifest records evidence 18 / durability 17 / reuse 20 / added_failure 0 with total 108, matching the comment, and the decision rationale's \"constant regenerated paths already use\" resolves to `_REGENERATED_PATH_REFERENCE_TOKENS = 4_000` at reckon/crew/routing.py:72.",
+    "done_when": "pass \u2014 the section in wave (`_document`) declares no measure; the plan's live sections each carry a negative control (\u00a72's \"even when every contribution is small\", \u00a75's \"accepted on its first attempt \u2026 no such marker\", \u00a77's same-filename conflict, \u00a79's base-commit refusal, \u00a710's two mutation arms), and the \u00a73/\u00a74 gaps were raised and declined by an earlier review whose deferral this review presses in `reasoning`.",
+    "evidence_paths": "pass \u2014 the added \u00a72 comments cite the durable evidence record at `/reckon/evidence/archive/a-brief-should-not-cost-what-it-names-landed.html#s2-origin`, which exists with `id=\"s2-origin\"` at docs/evidence/archive/a-brief-should-not-cost-what-it-names-landed.html:33, and point no gate log at a scratchpad or node-local path.",
+    "naming": "pass \u2014 the change is a plan document's decisions and comments; no plan label, ticket number or version tag reaches a symbol, and the rationale states the mechanism (a flat constant, the refused and accepted estimates) rather than a tracker reference.",
+    "reasoning": "a finding \u2014 locking `reference-cost` to `flat` removes the deferral that earlier reviews used to decline the \u00a73 objections, but \u00a73's text was not revised: it still asserts at :112 that a mention and a write path \"cost the same\", which `_declared_input_files` at reckon/crew/routing.py:3177 contradicts and the plan's own comment at :277 states outright.",
+    "single_goal": "pass \u2014 each section names one deliverable (a refusal detail line, a mention charge, an anchor opt-out, a retry record, a figure-directory grant, a regenerate option, its tests).",
+    "wiring": "a finding \u2014 \u00a78's own text at docs/plans/a-brief-should-not-cost-what-it-names.html:213 states \"Section 4 follows section 3\", but the plan declares no `plan-section-depends-on` and both s3 and s4 are declared `implementable`, so \u00a74's measure is dispatchable before the mechanism it rests on exists."
+  },
+  "section_digests": {
+    "_document": "938d128f6bf2448c38ee5aadd1f0a7997b91608132b0a8711a7c589abfc8efe7",
+    "s1": "d7fcfefe329cb385d8051b6135d5841c859cd5608068c3abc22b2dde5922a542",
+    "s10": "2b9ee6303e741d2d156f9e2cc199120146503ad5facd805ae644d7d7ba96659c",
+    "s2": "de9c3b0e07cca426601fe174741c157b6b3f9a95a4b2f5e1e8a21f881bbf30cf",
+    "s3": "e14931a79e53300c533fc95034238316363b38a267eeaed1deca5c9333ae2ae5",
+    "s4": "6dd62a4cd8a88ef35ef6d86f9e54e1f7eb0aa31424abc4dddc3cf2af0832d524",
+    "s5": "35701fe950d085e6f8efb2262f67db43fbbb02a811be9c5e5acf83a807a811c2",
+    "s6": "243e799cfe9e40125eb1da6d912895d8ebc9fde064b1684dc863e2b84a6c5775",
+    "s7": "e79cc324628f520c4867c6f70df4db194485c3f72b2cbec63defa27e9009fab4",
+    "s8": "5d7a0ddfc529c4b7dd6511fd73f6edd50552945a8665b943641b1b77d577812e",
+    "s9": "6cacd75509f791d5d06f64aac3fd9ab7710d79e68e341a36be215f1a0b1ed346"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T21:30:36.988232+00:00"
+}
