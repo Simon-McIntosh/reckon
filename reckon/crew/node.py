@@ -632,7 +632,7 @@ class CompetenceLimit(CrewError):  # noqa: N818 - public refusal name
                 f"{verdict['shortfall_tokens']} tokens"
             )
             detail = (
-                f"{rendered} {_context_refusal_recommendation(verdict)}"
+                f"{rendered}; {_context_refusal_recommendation(verdict)}"
                 if rendered is not None
                 else f"{figures}; {_context_refusal_recommendation(verdict)}"
             )
