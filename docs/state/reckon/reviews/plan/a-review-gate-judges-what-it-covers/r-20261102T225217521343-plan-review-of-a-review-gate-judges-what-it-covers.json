@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T23:35:50.054Z",
+  "dispatched_at": "2026-11-02T23:30:43Z",
+  "findings": [
+    {
+      "anchor": "a-review-gate-judges-what-it-covers#s13 (plan.html:200)",
+      "id": "anchors_resolve-1",
+      "reason": "a node following the section would search for a function that does not exist and has no legal file to edit, and the working resolver `_anchor_unit` (`plan_review.py:2314`) is never named, so the section currently sends its node to rebuild a resolver it already has",
+      "text": "the deliverable says `plan_review.store_review` resolves a finding's unit when it stores it, but that module has no `store_review`; its store is `store_plan_review` at `reckon/crew/plan_review.py:711`, and the only `store_review` in the tree is `reckon/crew/review.py:2890`, a module outside \u00a713's write paths",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "a-review-gate-judges-what-it-covers#s13 (plan.html:200)",
+      "id": "reasoning-1",
+      "reason": "the placement decides whether old records work at all and whether \u00a713's \"old records still resolve\" arm can pass, and the two readings need opposite implementations (a store-time field versus a read-time resolver)",
+      "text": "the deliverable resolves a finding's unit \"when it stores a finding\" and the same list promises \"A stored record written before this change is resolved the same way when read\"; a unit written at store time is absent from every record already stored, and \"Readers use that unit and derive nothing\" forbids the read-time derivation this bullet requires, so the third bullet cannot hold under the first two",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "a-review-gate-judges-what-it-covers#s15 (plan.html:208)",
+      "id": "reasoning-2",
+      "reason": "on a \u00a73-scoped round that raises a finding against \u00a76, an implementer must choose between counting \u00a76 covered (admitted on a review that never traced its code, the exact failure \u00a72 fought) and leaving it uncovered (the inconsistency observed and paid for again); the section must say which set the predicate counts and what an out-of-scope finding does",
+      "text": "\"The scoped review gates the sections it read. A scoped review records its scope. The coverage predicate counts it as covering exactly the units it read\", while the same deliverable instructs the reviewer to read every other section for consistency and to raise a finding there when it would change the plan, so \"read\" names two different sets in adjacent bullets",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "a-review-gate-judges-what-it-covers#s15 (plan.html:208)",
+      "id": "done_when-1",
+      "reason": "a node told to make \"the help-contract tests pass\" must guess the set, and \u00a715's write paths do not include the file that is red, so the guess decides between a green gate, a false blocker and an out-of-scope edit; naming the module, or stating the delta against the base, removes the guess",
+      "text": "\"The help-contract tests pass for the new option\" names no test module and no base revision, and the tree's help-contract tests are not a uniform set: at `a4e6268` `tests/test_cited_commands_exist.py` and `tests/test_option_keys_are_unique.py` pass while `tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition` fails on text unrelated to any option",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9d3eeecc2d1bfb1ce3b9a98be04273607bfdf954",
+  "plan_fingerprint": "7474f25e22cbc1eb906e98d4c90ac84c0ef4b307656bafa026a426073431d32e",
+  "plan_slug": "a-review-gate-judges-what-it-covers",
+  "plan_version": 44,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T225217521343-plan-review-of-a-review-gate-judges-what-it-covers",
+  "reviewed_blob_sha": "0c805af8bc4c6772d8b230d6082f5c527161e37e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `reckon/crew/routing.py` near 2735 (the plan-wide unanswered collection and the refusal text \u00a713 quotes) resolves exactly; `reckon/crew_dispatch_commands.py` near 2423 is `click.option(\"--acted\", is_flag=True)` exactly; `SCOPE_ANSWERED_FINDINGS = 20` is at `reckon/crew/plan_review.py:1524` and the prior-finding loop at 1876\u20131912, both as cited. But \u00a713's `plan_review.store_review` (plan.html:200) does not exist in that module.",
+    "done_when": "a finding \u2014 \u00a715's \"The help-contract tests pass for the new option\" (plan.html:208) names no module, and the candidate set is not interchangeable: run at `a4e6268`, `tests/test_cited_commands_exist.py` and `tests/test_option_keys_are_unique.py` pass, while `tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition` fails for a reason unrelated to any option (log: `logs/help-contract-candidates.log`, 12 passed, 1 failed, EXIT=1). \u00a714 carries the same phrase but its live form gained the skill-example arm; \u00a715 did not.",
+    "evidence_paths": "pass \u2014 every arm runs a test file under `tests/` in the repository, with an importer-population arm against the base revision and `ruff` on staged paths; no arm sends evidence to a scratchpad or a node-local temporary path, and the dispatch mechanism puts gate logs under the run's own `logs/` directory.",
+    "naming": "pass \u2014 the three new test files are named by what they do (`test_a_finding_blocks_its_own_section.py`, `test_an_answer_says_what_was_done.py`, `test_a_review_round_is_section_scoped.py`); no plan label, stage name, ticket number or version tag reaches a symbol, path or comment. The dated incident prose in each Why is evidence of an observation, not changelog.",
+    "reasoning": "a finding \u2014 \u00a713's root cause matches the cited code exactly: `routing.require_plan_reviewed` still collects `plan_review.unanswered_findings(record)` plan-wide and says in its own comment that \"a finding's identity names no unit, so an unanswered one cannot be attributed to the caller's scope\" (routing.py:2735\u20132760), so the plan-wide hold \u00a713 describes is real. \u00a714's root cause also holds: the code at HEAD carries `--acted` and `--declined` on the answer command and no `--note`. \u00a715's mechanism does not hold together, and \u00a713's does so only at read time.",
+    "single_goal": "pass \u2014 \u00a713 carries one deliverable (attribute each finding to a unit and gate on it), \u00a714 one (require and store a note on an acted answer), \u00a715 one (scope a review round and carry the scoped history). Each done-when asserts that one deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` resolves: s14 \u2192 s13, s15 \u2192 s13 and s14, and every id named is in `plan-section-declarations` (plan.html:25). s15's waits are the right ones: it consumes the per-unit attribution \u00a713 adds and the answer note \u00a714 adds. The one wiring defect in the snapshot is in the build-order followup `f-rgjc-002` (plan.html:224), whose body and prompt stop at \u00a712 and never name \u00a713\u2013\u00a715; it is emitted below because a coordinator reading it would not queue the three new sections."
+  },
+  "section_digests": {
+    "_document": "7bff2d36d32d8a8df5ffa990890142ff483878bacd9bb363ae182507cd2c0d4f",
+    "s1": "2f80e3c4526e5da0f46c438dc82b2880b0fa395a71a3807823c00850eb9622b9",
+    "s10": "0347256131d51d907a02af2f58beaa7a22b5537fdced1660d95567b2a3ff101d",
+    "s11": "2010b138f0e5041018c272b7dc46ddae5a5ec3a681dd94f345d06ffffce39f24",
+    "s12": "b9d85c58fba665a6ec6d382c6c08e4af211a0068675727b775a65fd42dc39899",
+    "s13": "1c394d5c34a680746d62cee11ee5b1e966a2493a1ac97d983e917cdd511ab5dc",
+    "s14": "4dc16defa7018bd5d86c6d591a79e0257a3d10515f97757a857e8894a6f050b2",
+    "s15": "ef459cfd9660ce89a49e0abcc0d6151f4bd1a20eab8c53bc3582e25acd73d7c3",
+    "s2": "b003c30eb192f0dfa86d4e6518b4deede24bf6b15c0b15ba5784a6066d3da870",
+    "s3": "7df7d94c9d011998671062ddf1072ba44b1c08d7172f92e43f18961813f1d434",
+    "s4": "491337ffa1e3dbb35aed0b41de9bfb17126787d7b0a08c15bb12879faa1a9b43",
+    "s5": "f21e5477c01ae1e8fb4da7b3d607da52313f50d700b6b7dc3d5a2adb8d9f8956",
+    "s6": "534a6debaffa16edfc0cb75f6488191af897e1ff0b9ad32ecdaaa28148c119ff",
+    "s7": "ce6bf11980ac24dc184e5bd2aa6fd813667fe40e90c0ea97a60a56d649f3fd30",
+    "s8": "fd5dc1e3777871755eeeb65dc14935764ea25a67e2902dd8de2e8831cb64fa78",
+    "s9": "6237a98697d0fead79a4d109178e3da581fa42f7bd6e8028527f46a167cb259e"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T23:46:29.517253+00:00"
+}
