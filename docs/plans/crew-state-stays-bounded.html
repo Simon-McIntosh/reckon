@@ -24,8 +24,8 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="44">
-<meta name="plan-modified" content="2026-10-27">
+<meta name="plan-version" content="45">
+<meta name="plan-modified" content="2026-11-02">
 </head>
 <body>
   <main class="plan-doc">
@@ -64,15 +64,26 @@
     <h2 id="s2">§2 — A live pointer carries only live facts</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p>Dispatch-time detail that no live reader consults moves from the pointer into a file in the run's
-    directory, written once at dispatch: <code>picker_selection</code>, <code>admit_request</code>,
+    directory, written once at dispatch. The first six fields are <code>picker_selection</code>, <code>admit_request</code>,
     <code>argv</code>, <code>competence</code>, <code>peer_scopes</code> and <code>unreconciled_override</code>.
     The pointer keeps a path to that file. Every reader of a moved field reads it through one accessor in
     <code>reckon/crew/runs.py</code> that falls back to the pointer, so pointers written before the change
     still read.</p>
-    <p>Done when: a grep of <code>reckon/</code> finds no read of a moved field except through the accessor;
-    a pointer written by a test dispatch is under 8 KB; tests that read each moved field pass for a
-    pointer of the new shape and one of the old. Negative control: an accessor without the fallback must fail
-    the old-shape test.</p>
+    <p>Measured 2026-10-27: moving those six left a test dispatch's pointer at 15.7 KB, and production pointers
+    at 11.8 to 28 KB. The lead decided on 2026-11-02 that seven further dispatch-time fields move as well:
+    <code>node</code>, <code>directive</code>, <code>authority</code>, <code>pace</code>, <code>watch</code>,
+    <code>lane_advisory</code> and <code>final_message</code>. Their readers in <code>reckon/serve.py</code>,
+    <code>reckon/run_record.py</code>, <code>reckon/hooks/</code> and <code>reckon/crew/recovery_watch.py</code> read
+    through the same accessor. The section runs as three nodes in order. The first re-applies the six-field move
+    preserved at commit 31091b24c on branch <code>preserve/dispatch-detail-moves-off-the-live-pointer</code>, with
+    every reader of those six routed through the accessor. The second moves the seven further fields and routes
+    their readers. The third proves the bound and the routing. No node of this section keeps a write claim while
+    blocked; a blocked node is discarded and dispatched again, so peers queued on the same files are not held.</p>
+    <p>Done when: a walk of <code>reckon/</code> with the <code>ast</code> module finds no read of any of the
+    thirteen moved fields on a live pointer except through the accessor; a pointer written by a test dispatch is
+    under 8 KB; tests that read each moved field pass for a pointer of the new shape and one of the old; and a
+    promoted ledger row still carries every field it carried before. Negative control: an accessor without the
+    fallback must fail the old-shape test.</p>
 
     <h2 id="s3">§3 — Only a run something can still need keeps its directory</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
