@@ -1,0 +1,81 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T16:33:12.132Z",
+  "dispatched_at": "2026-11-02T16:26:43Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:194",
+      "id": "done_when-1",
+      "reason": "the case must assert what the fix actually changes (the queued pointer's `manifest_path` and `node.manifest_path` still name the request's original run directory), or it is a green line that cannot go red.",
+      "text": "\u00a717's done-when requires that \"No second run directory exists under the runs home afterwards\", but no dispatch path creates a run directory on a re-dispatch: the only `run_dir(...).mkdir` on that path is at `dispatch.py:2782`, reached only after the queued branch has already returned at `dispatch.py:2300`, so the assertion holds on the unfixed code and measures nothing",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:194",
+      "id": "anchors_resolve-1",
+      "reason": "a node told to place the constant beside `queue_dispatch` has no grant to edit `runs.py`, so it either stops for a scope change or puts the constant somewhere the plan did not ask for.",
+      "text": "the write paths read \"`reckon/crew/queue_admission.py` (for `queue_dispatch`, if it lives there)\", but `queue_dispatch` is defined at `reckon/crew/runs.py:686` and `runs.py` is not a write path, while the deliverable at line 193 instructs the node to \"Name the steerable fields once, beside `queue_dispatch`\"",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:193",
+      "id": "reasoning-1",
+      "reason": "a merge at the record's top level cannot both carry the new done-when and keep the old manifest path, so the plan must say the split applies within `node` and name the field of the node it preserves; otherwise the very field the incident repointed is left out of the merge.",
+      "text": "\u00a717 splits the record into steerable fields (goal, done-when, negative control, write paths, inputs, time budget, dispatch options) and identity fields (run id, run directory, `manifest_path`, session, `base_sha`, created time), but the steered fields and `manifest_path` all live inside the nested `node` mapping: `_queued_request_record` (`dispatch.py:205-255`) writes `\"node\": node.as_dict()` with no top-level `manifest_path`, and the launch reads the path from `record[\"node\"][\"manifest_path\"]` (`dispatch_sessions.py:1006`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/work-is-never-stuck-behind-the-admission-loop.html:199",
+      "id": "reasoning-2",
+      "reason": "the missing capability sits in `claims.py`, which the section already declares as a write path, and done-when case 1 (\"with source `repair-round`\") fails until the source is recorded, so the node corrects itself without a scope or design change.",
+      "text": "\u00a718 says the round uses `claims.widen_claim` \"with source `repair-round` \u2026 so `dispatch_claims.declared_write_grants` lists it\", but `widen_claim` records a grant only through `_record_self_grant` (`claims.py:146-155`), which runs only when `self_widen=True` and hardcodes `\"source\": \"worker\"`; called the way `crew widen` calls it (`crew_run_commands.py:1491`, `self_widen` unset) the path lands in `node[\"write_paths\"]` \u2014 enough for promotion to accept it \u2014 but no grant entry is written, so `declared_write_grants` reports the path with source `dispatch`",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "dd7f126f6a952c0735f8d7bb49f1918d194fd2d8",
+  "plan_fingerprint": "b321ed0f73731bbf0acb6780b056346e81ed7875c8cae8d4ea54427c0afec232",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 128,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T162510481298-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "23d160fbee5ee2785ee537f395c744128acec964",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a717's write path `reckon/crew/queue_admission.py (for queue_dispatch, if it lives there)` names the wrong module: `queue_dispatch` is defined at `reckon/crew/runs.py:686`, and `runs.py` appears in no write path.",
+    "done_when": "a finding \u2014 \u00a717's second done-when case (\"No second run directory exists under the runs home afterwards\") passes on the unfixed code, because the re-dispatch path never creates a run directory.",
+    "evidence_paths": "pass \u2014 both sections write their gates to `tests/` in the repository, and every evidence anchor the changed `_document` comments cite resolves inside `docs/evidence/archive/work-is-never-stuck-behind-the-admission-loop-landed.html`.",
+    "naming": "pass \u2014 \u00a717 and \u00a718 name no plan label, stage name, ticket number or version tag in the files or symbols they add, and `repair-round` is a data value recorded in a grant, not a label carried into a symbol.",
+    "reasoning": "a finding \u2014 \u00a717's identity/steerable split is stated against top-level record fields, but the manifest path it must preserve and the goal/done-when/write-paths it must replace all live inside `record[\"node\"]`; and \u00a718 says the round calls `claims.widen_claim` \"with source `repair-round`\", a source that mechanism has no parameter for.",
+    "single_goal": "pass \u2014 \u00a717 carries one deliverable (merge only the steerable fields of a queued request) and \u00a718 one (record the repair round's extra paths on the run's claim before resuming).",
+    "wiring": "pass \u2014 \u00a717 and \u00a718 declare no `plan-section-depends-on` entry and need none: each edits a mechanism no other section owns (`_answer_existing_node_run` in dispatch.py, `_repair_resume_advice` in recovery_repair_dispatch.py), and both appear as `implementable` in `plan-section-declarations` consistently with their own `data-status`."
+  },
+  "section_digests": {
+    "_document": "8fc6fb07e5a942341d3a24d01b1788f796ede3581a5e49ef7ca893060307a711",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "5bd7a1156a94b097afbd5ce6389bb76357a6ed8fca7e63f544841424059d75e4",
+    "s18": "c88f887fd33864e4083e445e8a31032e91303929da8a5aecef409bdaf4edae14",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s4": "7d786f379c8df65886dd1f1f6f915d58fc67a316708b7115a19e57af979316b9",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T16:40:13.122565+00:00"
+}
