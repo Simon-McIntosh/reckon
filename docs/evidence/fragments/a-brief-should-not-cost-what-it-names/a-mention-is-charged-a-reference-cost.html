@@ -48,18 +48,27 @@
         <td><code>24b3d9df</code>, new file absent</td>
         <td>21 passed, <code>EXIT=0</code></td></tr>
       <tr><td>wide gate, head</td>
-        <td><code>c993966f</code>, working tree</td>
-        <td>24 passed, 5 failed, <code>EXIT=1</code> &mdash; all five are
+        <td><code>d1dbe76b</code>, working tree</td>
+        <td><strong>29 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: revert <code>d1dbe76b</code></td>
+        <td><code>d1dbe76b</code> + revert</td>
+        <td>5 failed, 24 passed, <code>EXIT=1</code> &mdash; the five
         <code>tests/test_context_estimate_excludes_granted_paths.py</code>
-        assertions that an excluded path is charged nothing, which this section
-        supersedes; the failing ids are named in the manifest's
-        <code>outside_scope</code></td></tr>
+        assertions that an excluded path costs nothing</td></tr>
       <tr><td>negative control: charge a mention nothing again</td>
         <td><code>c993966f</code> + mutation</td>
         <td>4 failed, 4 passed, <code>EXIT=1</code>; the difference assertion
         and both reference-charge cases red</td></tr>
     </tbody>
   </table>
+
+  <p><strong>The exclusion cases now assert the charge too.</strong>
+  <code>tests/test_context_estimate_excludes_granted_paths.py</code> held five
+  assertions that an excluded path is charged nothing &mdash; the rule this
+  section replaces &mdash; so the gate was red at head until they were rewritten
+  for the reference charge. They now read one flat reference per excluded path
+  at provenance <code>reference</code>, keep the declared-input case at full
+  beside them, and separate the two verbs rather than the two files.</p>
 
   <p><strong>Not done here.</strong> The estimator's token rule is unchanged
   (still <code>ceil(utf8-bytes/3.5)</code>), a declared write path is still
