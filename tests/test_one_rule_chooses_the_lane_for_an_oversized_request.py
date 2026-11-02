@@ -244,15 +244,13 @@ def test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree(
     tmp_path: Path,
 ) -> None:
     # The resolved lane's own verdict is satisfied here while the request's
-    # estimate is not: its claude chain is small and the request is measured
-    # against the codex chain. Reading that verdict as permission to keep the
-    # request on the lane is exactly how an oversized request was placed on the
-    # lane the fit check had just refused.
+    # estimate is not: its claude chain is smaller than the codex chain that
+    # the request-level census reads. Placement must obey the request figure.
     monkeypatch.setenv("HOME", str(_codex_heavy_home(tmp_path)))
     config = _configure(
         dispatch_repo,
         monkeypatch,
-        local_window=100_000,
+        local_window=230_144,
         extra_windows={CODEX: 150_000, "alpha": 190_000},
     )
     config["backends"][LOCAL].update({"launch": "cli", "command": "claude"})
@@ -277,18 +275,14 @@ def test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree(
     assert competence["shortfall_tokens"] == (
         competence["estimated_tokens"] - competence["window_tokens"]
     )
-    # This lane's own instruction chain fits: the claude chain it would load is
-    # 50,392 tokens against a 100,000 window, while the request measured without a
-    # lane is 250,392. The refusal must therefore be stated from the measure that
-    # refused it rather than read off the resolution's verdict, whose context block
-    # reports this lane within its window and carries no shortfall -- reading that
-    # verdict as the refusal leaves CompetenceLimit on its horizon branch and
-    # raises KeyError instead of the exit-5 context refusal.
+    # The lane's own chain fits inside its window while the request estimate
+    # exceeds it. Placement follows the request estimate, whose shortfall must
+    # be reported even where the stored competence verdict allows the lane.
     assert competence["estimated_tokens"] == 250_392
-    assert competence["window_tokens"] == 100_000
-    assert competence["shortfall_tokens"] == 150_392
+    assert competence["window_tokens"] == 230_144
+    assert competence["shortfall_tokens"] == 20_248
     assert competence["context"]["allowed"] is False
-    assert competence["context"]["shortfall_tokens"] == 150_392
+    assert competence["context"]["shortfall_tokens"] == 20_248
     # The shape a dry run answers with is kept: the fields the verdict holds
     # beside its own context measure still reach the reader.
     assert competence["agent_key"]
