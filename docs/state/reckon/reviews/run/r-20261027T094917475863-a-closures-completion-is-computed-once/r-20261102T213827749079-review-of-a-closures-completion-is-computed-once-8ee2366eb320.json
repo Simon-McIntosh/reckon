@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-02T21:54:20.862Z",
+  "dispatched_at": "2026-11-02T21:41:52Z",
+  "findings": [
+    {
+      "file": "reckon/graph_target.py",
+      "id": "f6c385c2ad6",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "non-blocking: reckon/graph_target.py is outside the node's declared write paths, which name reckon/roadmap.py; the graph-target family moved to graph_target.py in 4a54f633b0 before this node ran, so the section's named path is stale and the deletion could only land where the two counts actually live. The code is correct and behaviour-preserving; what is owed before landing is a write-scope grant rather than a repair."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that _dependency_endpoints stops counting its own shipped and total members and reads the helper resolve_graph_target uses; reckon/graph_target.py:26 adds _closure_completion and both reckon/graph_target.py:217 and reckon/graph_target.py:418 read it, so one computation now feeds the target's completion and the endpoint's shipped_fraction.\nVERDICT done_when: the done_when asks that _dependency_endpoints no longer counts its members and that tests/test_graph_target.py and tests/test_roadmap_endpoints.py pass unchanged, with a sentinel test red at the base; gate-base.log records 2 failed, 17 passed (EXIT=1) at 00540b20 and gate-head.log records 19 passed (EXIT=0) at 8ee2366e, and negative-control.log records 1 failed, 1 passed (EXIT=1) under the declared mutation, so the gate does assert the named measure.\nVERDICT write_paths: the manifest declares reckon/roadmap.py, tests/test_a_closures_completion_is_computed_once.py, the evidence fragment and a figures directory, while the diff modifies reckon/graph_target.py, which is not among them, so one of the three landed paths sits outside the declared scope.\nVERDICT manifest: read in full; it records status complete, commit 8ee2366eb3, gate 19 passed, base arm 2 failed, 17 passed, negative control 1 failed, 1 passed, and it states its own scope refusal in the checkpoint and blockers lines rather than concealing it.\nVERDICT diff: read commit 8ee2366eb3 against base 00540b20c4 commit by commit; three files change, reckon/graph_target.py collapses two count sites onto _closure_completion, tests/test_a_closures_completion_is_computed_once.py adds 81 lines of sentinel assertions, and the evidence fragment records the landing, with no unrelated edit.\nCALL_SITES: reckon/mcp.py:2333, reckon/roadmap.py:3871, reckon/mcp_views.py:1165, reckon/serve.py:1880, reckon/graph_target.py:62\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/graph_target.py:418 replaces the inline shipped sum and len(member_slugs) with the _closure_completion call that reckon/graph_target.py:217 already uses.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base.log and gate-head.log each name their revision, tree and literal command and end in a bare EXIT= line, and negative-control.log shows the declared mutation red on test_endpoint_view_reports_the_shared_count while the graph-target case stays green.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: reckon/graph_target.py:26 is the file the change edits but it is absent from the declared write paths, which named reckon/roadmap.py before commit 4a54f633b0 moved the family.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_closures_completion_is_computed_once.py:70 asserts the surface reports the sentinel value, so reinstating either surface's private count makes shared_count empty and reddens the assertion, as negative-control.log demonstrates for the endpoint view.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/graph_target.py:35 imports _status from reckon.roadmap inside the helper, which is the call-time import idiom the module docstring at reckon/graph_target.py:1-8 states the import order requires.\nSCORE reuse: 19\nJUSTIFICATION reuse: no existing owner of a closure's member count was found by searching reckon/ for COMPLETED_STATUSES counts and every _completion/_shipped definition, so _closure_completion is the first owner; the same-shape sums at reckon/roadmap.py:600 and reckon/roadmap.py:4493 cover different populations and are not forked by it.\nFINDING reckon/graph_target.py:26 non-blocking: the edited production file is outside the node's declared write paths; the section names reckon/roadmap.py but the graph-target family moved to reckon/graph_target.py in 4a54f633b0, so the code is right and what is owed is a write-scope grant at promotion, not a repair.\n",
+  "review_run_id": "r-20261102T213827749079-review-of-a-closures-completion-is-computed-once-8ee2366eb320",
+  "reviewed_base_sha": "00540b20c4ee48ca1857982e787df51acc6639f5",
+  "reviewed_head_sha": "8ee2366eb320156c5df0af28eeb0a8d29ee0b91b",
+  "reviewed_run_id": "r-20261027T094917475863-a-closures-completion-is-computed-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T22:05:02.461102+00:00",
+  "total": 105
+}
