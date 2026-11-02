@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_stale_producer_warning_waits_for_its_reload.py::test_a_reload_handed_through_crew_follow_defers_the_mismatch"
+  ],
+  "call_sites": [
+    "reckon/mcp_views.py:4049",
+    "reckon/hooks/coordinator_obligations.py:1242"
+  ],
+  "completed_at": "2026-11-02T15:37:20.560Z",
+  "dispatched_at": "2026-11-02T15:27:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 1029,
+      "severity": "non-blocking",
+      "text": "plan section 94's Deliverable says \"a held answer's run-keyed duty is dropped at read time when that run's live pointer file no longer exists\", but LIVE_POINTER_DUTY_KINDS is the single-element set {\"landing-refused\"}, so every other run-keyed duty is kept whatever its pointer state; the narrowing is measured (the fragment records 8 added failures from the broad form) and documented in the commit bodies and the landing fragment, but it narrows the stated deliverable of an exact-spec node and was reported as a design decision rather than as the blocker the node's SPEC clause asks for, so the coordinator should decide whether section 94's Deliverable sentence is amended to match the landed behaviour or the section is left stating more than the code does."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-landed-run-leaves-the-held-obligations.html",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "the fragment's Gate paragraph states \"5 passed\" and the manifest names head_node.log as the gate log, but that log's header records revision d702ae4fc5+worktree, which predates 98103650fc and 93bd494c6d -- the two commits that changed without_departed_run_duties and narrowed its kind set -- so no recorded green arm measures the landed head; I re-ran the named test at 5133583ddb (5 passed, EXIT=0, log review_gate.log in the review run directory) so the code is sound, but the node's own receipt does not evidence it."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-landed-run-leaves-the-held-obligations.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "the Population paragraph claims \"the change adds no failure\", but comparing the run's own base arm (importing_base.log, 7 failed, 1083 passed at fbfe4c81) with its head arm (importing_head.log, 4 failed, 1091 passed at 98103650fc) yields one added failure, tests/test_stale_producer_warning_waits_for_its_reload.py::test_a_reload_handed_through_crew_follow_defers_the_mismatch; the manifest explains it as the arm reading the worktree's own uncommitted edit, and the log carries the deferral line that supports that reading, but the manifest holds no baseline_suite object and no scaffolding-attributed failure id, so the promotion receipt cannot derive the delta the record asks for and must take the prose's word for it."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-landed-run-leaves-the-held-obligations.html",
+      "line": 28,
+      "severity": "non-blocking",
+      "text": "the fragment states \"ruff check reports no finding on the staged paths\", but ruff check reports five findings on exactly those four files (reckon/hooks/coordinator_obligations.py:562 and :565 S105, reckon/mcp_views.py:2411, :2930 and :4108); all five are pre-existing and none lies on an added line, so the claim that holds is \"adds no finding\" -- the same delta reading the repository's rule asks for -- and the sentence as written overstates what was measured."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "VERDICT diff: read commit by commit from fbfe4c81 to 5133583ddb; d6566b0014 adds live_pointer_path, LIVE_POINTER_DUTY_KINDS and without_departed_run_duties with both call sites and 316 lines of test, 98103650fc and 93bd494c6d narrow the duty-kind set to landing-refused and adjust the fragment, d702ae4fc5 and 5133583ddb write the evidence fragment, and the final helper at reckon/crew/obligation_snapshot.py:1055 stats only rows whose kind is in LIVE_POINTER_DUTY_KINDS.",
+    "done_when": "VERDICT done_when: the done_when names tests/test_a_landed_run_leaves_the_held_obligations.py, the negative control, the importing population's delta against the base and ruff on the staged paths; the manifest records head_node.log (5 passed, EXIT=0), negative_control.log (3 failed, 2 passed, EXIT=1) and importing_head.log (4 failed, 1091 passed) but records no baseline_suite object, and its cited base arm importing_base.log (7 failed, 1083 passed) yields one added failure rather than none; I re-ran the named test at the landed head and saw 5 passed in 13.62s, EXIT=0.",
+    "goal": "VERDICT goal: the node goal is to drop a held obligation whose run's live pointer is gone at read time; reckon/crew/obligation_snapshot.py:1032 adds without_departed_run_duties and both readers call it (reckon/mcp_views.py:4049, reckon/hooks/coordinator_obligations.py:1242), but the drop is scoped to LIVE_POINTER_DUTY_KINDS = {\"landing-refused\"} at reckon/crew/obligation_snapshot.py:1029, so only the landing refusal is settled while every other run-keyed duty is kept.",
+    "manifest": "VERDICT manifest: read from the run's stored classification (the run directory carries no manifest.md on disk); it reports status complete, five commits, the same five changed paths, tests/test_a_landed_run_leaves_the_held_obligations.py as the gate, and names head_node.log, negative_control.log and importing_head.log, while baseline_suite is null and the base arm survives only as prose in failure_attribution.",
+    "write_paths": "VERDICT write_paths: the node's declared paths are reckon/crew/obligation_snapshot.py, reckon/mcp_views.py, reckon/hooks/coordinator_obligations.py, tests/test_a_landed_run_leaves_the_held_obligations.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-landed-run-leaves-the-held-obligations.html; every one of the five paths in git diff fbfe4c81..5133583ddb is in that list and no sixth path appears."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261102T152316323801-review-of-a-landed-run-leaves-the-held-obligations-5133583ddbde",
+  "reviewed_base_sha": "fbfe4c813e3574cbf80871e95c81dbe18c94b0d9",
+  "reviewed_head_sha": "5133583ddbdec5b0f7acb3dc5fb2ef96f24bac7c",
+  "reviewed_run_id": "r-20261102T120928572360-a-landed-run-leaves-the-held-obligations",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T16:12:00+00:00",
+  "total": 103
+}
