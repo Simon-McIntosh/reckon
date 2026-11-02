@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    "tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:267,293-294 fail if a worktree or queued pointer is created; :270-274 fail if unchanged placement returns or a non-context refusal replaces exit 5; :275-281 fail if the shortfall is wrong or the declared 300000-token window is lost.",
+    "tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:282-290 fail if nested and top-level fit fields disagree or ancillary fields disappear; :291-292 fail if the rendered detail omits the figures.",
+    "tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:328-338 fail if either live or preview stops refusing the disagreement case or returns different payloads; :355-357 fail if the fixture ceases to exercise a real fit refusal; :373-380 fail if a stale competence allowance controls the result or loses its shortfall."
+  ],
+  "call_sites": [
+    "reckon/crew/dispatch.py:1763",
+    "reckon/crew/dispatch.py:3908",
+    "reckon/crew_dispatch_commands.py:1798"
+  ],
+  "completed_at": "2026-11-02T17:01:15Z",
+  "dispatched_at": "2026-11-02T16:52:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "f6dd1fbb933",
+      "line": "616",
+      "severity": "non-blocking",
+      "text": "When the request census exceeds a 300000-token window but the lane's own 250392-token estimate fits, this override changes estimated_tokens and shortfall_tokens while retaining context.inputs from the smaller lane estimate; routing._context_refusal_detail can therefore describe the wrong dominant input beside the correct refusal total. Exempted for this node because lane selection, exit 5 and the reported shortfall remain correct; correcting provenance needs a request-level input breakdown."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read each gained commit over 917722a2b677..b7a587613f40: 87284e48d3 and 11d980168f repair dispatch.py and tests, 8b385836c3 and 03f9f88c65 sharpen the tests, and 0e18bf873f and b7a587613f update the evidence fragment.",
+    "done_when": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:188 names the new test, two controls and importer delta; the reviewed run's logs/after-suite-final.log records 18 passed EXIT=0, both control logs record failures, and importer logs record 59 passed on each arm.",
+    "goal": "docs/plans/work-is-never-stuck-behind-the-admission-loop.html:187 requires one widest-fitting rule on both paths and an exit-5 context refusal; the gained dispatch.py:603-630 repair makes live dispatch and preview refuse the disagreement case without changing the shared candidate rule.",
+    "manifest": "The reviewed run's manifest.md is complete, names b7a587613f403ec94d09547db7d6d857ac191b84, records 18 passing node tests, 31 passing route tests, both red controls and six rubric self-check lines.",
+    "write_paths": "The reviewed manifest.md declares dispatch.py, the new test and the evidence fragment among its allowed paths; the six gained commits change only those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:267-294 and :328-380 fail on unchanged placement, wrong exit, missing shortfall or unequal preview, as the reviewed run's red unchanged-resolution control demonstrates; they do not inspect the input breakdown.",
+    "evidence": "The reviewed run's logs/after-suite-final.log ends '18 passed' and EXIT=0 at b7a587613f40, and logs/negative-control-unchanged-resolution-final.log ends with three named failures and EXIT=1.",
+    "fit": "reckon/crew/dispatch.py:603 and :3883 use the surrounding private-helper and export idiom, and the gained definitions contain no prohibited plan or version labels.",
+    "goal_fidelity": "reckon/crew/dispatch.py:689 now raises the routing context refusal using the request estimate when the lane's own fit differs, while dispatch.py:3908 sends previews through the same placement helper.",
+    "reuse": "The capability search found routing.py:3617 _context_refusal and dispatch_plan.py:487 plan_dispatch; dispatch.py:622 calls the former and dispatch.py:3894 wraps the latter while sharing dispatch.py:633 _reroute_oversized_request with live dispatch.",
+    "scope_discipline": "The gained diff changes only reckon/crew/dispatch.py, tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: docs/plans/work-is-never-stuck-behind-the-admission-loop.html:187 requires one widest-fitting rule on both paths and an exit-5 context refusal; the gained dispatch.py:603-630 repair makes live dispatch and preview refuse the disagreement case without changing the shared candidate rule.\nVERDICT done_when: docs/plans/work-is-never-stuck-behind-the-admission-loop.html:188 names the new test, two controls and importer delta; the reviewed run's logs/after-suite-final.log records 18 passed EXIT=0, both control logs record failures, and importer logs record 59 passed on each arm.\nVERDICT write_paths: The reviewed manifest.md declares dispatch.py, the new test and the evidence fragment among its allowed paths; the six gained commits change only those three paths.\nVERDICT manifest: The reviewed run's manifest.md is complete, names b7a587613f403ec94d09547db7d6d857ac191b84, records 18 passing node tests, 31 passing route tests, both red controls and six rubric self-check lines.\nVERDICT diff: Read each gained commit over 917722a2b677..b7a587613f40: 87284e48d3 and 11d980168f repair dispatch.py and tests, 8b385836c3 and 03f9f88c65 sharpen the tests, and 0e18bf873f and b7a587613f update the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:1763, reckon/crew/dispatch.py:3908, reckon/crew_dispatch_commands.py:1798\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:689 now raises the routing context refusal using the request estimate when the lane's own fit differs, while dispatch.py:3908 sends previews through the same placement helper.\nSCORE evidence: 18\nJUSTIFICATION evidence: The reviewed run's logs/after-suite-final.log ends '18 passed' and EXIT=0 at b7a587613f40, and logs/negative-control-unchanged-resolution-final.log ends with three named failures and EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The gained diff changes only reckon/crew/dispatch.py, tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py and the declared evidence fragment.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py:267-294 and :328-380 fail on unchanged placement, wrong exit, missing shortfall or unequal preview, as the reviewed run's red unchanged-resolution control demonstrates; they do not inspect the input breakdown.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:603 and :3883 use the surrounding private-helper and export idiom, and the gained definitions contain no prohibited plan or version labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found routing.py:3617 _context_refusal and dispatch_plan.py:487 plan_dispatch; dispatch.py:622 calls the former and dispatch.py:3894 wraps the latter while sharing dispatch.py:633 _reroute_oversized_request with live dispatch.\nFINDING reckon/crew/dispatch.py:616 non-blocking: When the request census exceeds a 300000-token window but the lane's own 250392-token estimate fits, this override changes estimated_tokens and shortfall_tokens while retaining context.inputs from the smaller lane estimate; routing._context_refusal_detail can therefore describe the wrong dominant input beside the correct refusal total. Exempted for this node because lane selection, exit 5 and the reported shortfall remain correct; correcting provenance needs a request-level input breakdown.",
+  "review_run_id": "r-20261102T164948692469-review-of-one-rule-chooses-the-lane-for-an-oversized-request-b7a587613f40",
+  "reviewed_base_sha": "917722a2b677ba8090dfc9e0e7059523a4c02abf",
+  "reviewed_head_sha": "b7a587613f403ec94d09547db7d6d857ac191b84",
+  "reviewed_run_id": "r-20261102T113200213945-one-rule-chooses-the-lane-for-an-oversized-request",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_note": "From the reviewed run's own baseline_suite and after_suite: logs/baseline-suite-current.log has 4 passed EXIT=0 and failure_ids [], while logs/after-suite-final.log has 18 passed EXIT=0 and failure_ids []; set difference is empty. Importer logs each show 59 passed EXIT=0.",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T17:06:48.441940+00:00",
+  "total": 111
+}
