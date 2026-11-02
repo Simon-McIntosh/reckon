@@ -133,6 +133,7 @@ from reckon.crew.routing import (
     _budget_verdict as _budget_verdict,
     _competence_verdict as _competence_verdict,
     _context_fit_verdict as _context_fit_verdict,
+    _context_refusal as _context_refusal,
     _create_worktree as _create_worktree,
     _disposable_member_id as _disposable_member_id,
     _fleet_script as _fleet_script,
@@ -662,15 +663,34 @@ def _reroute_oversized_request(
     chosen = picker_snapshot.widest_fitting_candidate(candidates, resolution.backend)
     if chosen is None:
         # No permitted lane holds it, and the lane that refused it is excluded by
-        # the rule itself, so nothing may be placed anywhere. The refusal is the
-        # resolution's competence verdict, the same object a dry run answers
-        # with: its context block is the fit check's verdict for the resolved
-        # lane, so the estimate, window and shortfall are that check's own, and
-        # it carries the lane's agent key and cache status beside them.
-        raise CompetenceLimit(
-            resolution.competence
-            or _competence_verdict(resolution=resolution, project=project, repo=repo)
+        # the rule itself, so nothing may be placed anywhere. The figures are the
+        # fit check's own: its estimate, this lane's gating window, and the
+        # distance between them. The competence verdict is not the source -- it
+        # can call this lane fit and then carry no shortfall, which a
+        # CompetenceLimit reads as a horizon refusal and dies on -- but the
+        # fields it holds beside that measure (the lane's agent key, its cache
+        # status) are kept when it has them, so the refusal reaches a reader in
+        # the shape a dry run answers with.
+        context_fit = _context_fit_verdict(resolution=resolution, repo=repo)
+        if context_fit is None or context_fit["allowed"]:
+            # The lane's own instruction chain fits while the request's census
+            # does not: the request estimate is what the router refuses on, so
+            # the refusal states that measure against the same gating window.
+            context_fit = {
+                "estimated_tokens": estimate,
+                "window_tokens": window,
+                "shortfall_tokens": max(0, estimate - window),
+                "inputs": {},
+            }
+        refusal = dict(resolution.competence or {})
+        refusal.update(
+            _context_refusal(
+                context_fit,
+                agent_key=refusal.get("agent_key"),
+                nested_context=True,
+            )
         )
+        raise CompetenceLimit(refusal)
     chosen_backend = str(chosen.get("backend") or "")
     # Re-resolve onto the chosen lane rather than patching the plan, so the new
     # backend gets its own execution fit, sandbox and write-path checks instead

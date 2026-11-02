@@ -281,10 +281,20 @@ def test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree(
     assert competence["shortfall_tokens"] == (
         competence["estimated_tokens"] - competence["window_tokens"]
     )
-    # The refusal is the resolution's competence verdict, which is the object a
-    # dry run answers with: the lane's agent key and cache status sit beside the
-    # nested fit verdict, and that nested block is what states the figures, so
-    # the shortfall a reader acts on is the fit check's own.
+    # This lane's own instruction chain fits: the claude chain it would load is
+    # 50,392 tokens against a 100,000 window, while the request measured without a
+    # lane is 250,392. The refusal must therefore be stated from the measure that
+    # refused it rather than read off the resolution's verdict, whose context block
+    # reports this lane within its window and carries no shortfall -- reading that
+    # verdict as the refusal leaves CompetenceLimit on its horizon branch and
+    # raises KeyError instead of the exit-5 context refusal.
+    assert competence["estimated_tokens"] == 250_392
+    assert competence["window_tokens"] == 100_000
+    assert competence["shortfall_tokens"] == 150_392
+    assert competence["context"]["allowed"] is False
+    assert competence["context"]["shortfall_tokens"] == 150_392
+    # The shape a dry run answers with is kept: the fields the verdict holds
+    # beside its own context measure still reach the reader.
     assert competence["agent_key"]
     assert competence["cache_status"]
     assert competence["context"]["estimated_tokens"] == competence["estimated_tokens"]
@@ -294,6 +304,46 @@ def test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree(
     assert str(competence["window_tokens"]) in payload["detail"]
     assert created == []
     assert runs.list_live(project=PROJECT, phase="queued") == []
+
+
+def test_a_lane_whose_own_chain_fits_refuses_the_request_census(
+    dispatch_repo: Path,
+    scan: None,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    # The two measures can disagree: the fallback censuses the request with no
+    # backend settings, while the fit check weighs the resolved lane's own
+    # instruction chain. Here the lane's chain leaves it 250,392 tokens against
+    # a 300,000 window, so the fit check calls the lane fit, and the request
+    # census measured through the codex chain does not fit any lane. The
+    # refusal must still be the context refusal with a shortfall: read off the
+    # store's verdict, this lane's payload carries no shortfall at all and
+    # CompetenceLimit answers it on its horizon branch, which raises KeyError
+    # instead of exiting 5.
+    monkeypatch.setenv("HOME", str(_codex_heavy_home(tmp_path)))
+    config = _configure(
+        dispatch_repo,
+        monkeypatch,
+        local_window=300_000,
+        extra_windows={CODEX: 150_000, "alpha": 190_000},
+    )
+    config["backends"][LOCAL].update({"launch": "cli", "command": "claude"})
+    placement._stub_fallback(monkeypatch)
+
+    result = _invoke(dispatch_repo, node="census-disagrees")
+    payload = _payload(result)
+    competence = payload["competence"]
+
+    assert result.exit_code == 5, result.output
+    assert payload["error"] == "competence-refusal"
+    assert competence["reason"] == "context-window-exceeded"
+    assert competence["window_tokens"] == 300_000
+    assert competence["estimated_tokens"] > competence["window_tokens"]
+    assert competence["shortfall_tokens"] == (
+        competence["estimated_tokens"] - competence["window_tokens"]
+    )
+    assert str(competence["shortfall_tokens"]) in payload["detail"]
 
 
 def test_the_refused_lane_is_never_chosen_even_when_it_is_the_widest() -> None:
