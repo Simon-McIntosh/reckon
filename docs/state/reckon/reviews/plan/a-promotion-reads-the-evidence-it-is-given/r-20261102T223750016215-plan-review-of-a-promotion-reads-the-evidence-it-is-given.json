@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-02T23:17:22.877Z",
+  "dispatched_at": "2026-11-02T23:06:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:46",
+      "id": "done_when-1",
+      "reason": "the case as written is unsatisfiable under the section's own rule, so the worker either widens the rule to compare the node name before the parameter bracket (the real fix, and the case that would have caught the parametrised form of the \u00a71 refusal) or drops the case and ships a rule that still refuses a bare name against a parametrised head id one test name at a time.",
+      "text": "\u00a72's fourth case requires \"A bare base name matching two parametrised head ids covers both, so a head failing only those two is admitted\", but the deliverable's matching rule admits a bare name only when the head id's final `::` part equals it with parameters included, so a bare `test_charge` can never equal `tests/x.py::test_charge[1]` and `tests/x.py::test_charge[2]`; the case is satisfiable only by two ids in different files that happen to share one identical parametrised final part, which is not what \"two parametrised head ids\" describes",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/404513fc-8e68-4a0f-8060-29ac9ff3d5fd/plan-review-of-a-promotion-reads-the-evidence-it-is-given/reckon/crew/promotion_evidence.py:1291",
+      "id": "reasoning-1",
+      "reason": "the worker would remove or duplicate the existing refusal text; the plan must scope the id list to the measured case where uncovered ids exist and keep the unmeasured case's arm-completion explanation, which also means naming the caller and the richer return the id list needs.",
+      "text": "\u00a72 says the refusal lists the uncovered head failure ids whenever \"the admission still fails\", but `_zero_added_against_a_red_base` returns `False` for reasons that carry no uncovered set to list, and the caller `_require_verdict_matches_exit_status` (which owns the \"two contradictory readings\" sentence at line 1294 and the withheld-arm clause at 1281-1289) cannot tell them apart from a boolean; as written, a missing arm, an arm without `completed: true`, a green baseline, or an unreadable head log would have its explanatory clause replaced by an empty id list",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:62",
+      "id": "wiring-1",
+      "reason": "a coordinator following the followup dispatches \u00a72 and \u00a74 concurrently into one file and into a scope the declared dependency forbids, producing exactly the lost work the exclusive-write-scope rule exists to prevent.",
+      "text": "the followup \"Build \u00a72 to \u00a74\" states \"The three sections write disjoint files and can run together\", but \u00a72 and \u00a74 both declare `reckon/crew/promotion_evidence.py` as a write path, `plan-section-depends-on` makes \u00a74 depend on \u00a72, and s3's descope leaves two sections rather than three",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:21",
+      "id": "wiring-2",
+      "reason": "",
+      "text": "\u2014 `plan-standalone` still says \"It repairs three checks inside `crew complete`\" after \u00a73 was descoped, so the plan now declares one of \u00a72 and \u00a74 to be empty; WOULD_CHANGE_THE_PLAN: no \u2014 REASON: it is a declaration a reader may trust for orientation, but no node's scope or gate is dispatched from it, so it changes no work; it is corrected by the same edit that updates the followup.",
+      "type": "wiring",
+      "would_change": null
+    }
+  ],
+  "plan_commit": "467cfd3f931339d65efb01d5208cd8fcb18da7f6",
+  "plan_fingerprint": "a63beb861e824842b46ce6fc5e9a91984e1da4773e39259e5c3dcf4dfbf00adf",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261102T223750016215-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "25a8160b8eefe10751aec637a3861874f424cdd0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `canonical_node_id` is at `reckon/crew/review.py:1938`, `_zero_added_against_a_red_base` at `reckon/crew/promotion_evidence.py:1174`, the cited subset test `resolving_presented < resolving_declared` at `promotion_evidence.py:908` inside `_require_gate_evidence`, `_require_commits_beyond_base` at `:244`, `_default_gate_evidence_from_manifest` at `reckon/crew/promotion_records.py:244` called at `reckon/crew/promotion.py:357`, and the descope reason's target `a-review-gate-judges-what-it-covers.html#s4` exists and covers the same stored-review-record promotion.",
+    "done_when": "a finding \u2014 \u00a72's fourth case asserts a bare base name \"matching two parametrised head ids covers both\", which the section's own matching rule (final `::` part, parameters included, equal) cannot produce.",
+    "evidence_paths": "pass \u2014 \u00a72 writes into the repository tree (`reckon/crew/promotion_evidence.py`, `reckon/crew/review.py`, a new test under `tests/`), with no scratchpad or node-local temporary path named.",
+    "naming": "pass \u2014 the section's test filename `test_a_red_base_matches_bare_names.py` and its prose name the mechanism, with no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 \u00a72 states its refusal lists the uncovered head ids whenever \"the admission still fails\", which includes the unmeasured failures that have no uncovered set to list.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable (the red-base id comparison and the refusal its failure produces); the refusals in \u00a73 and \u00a74 belong to their own sections.",
+    "wiring": "a finding \u2014 the followup at `a-promotion-reads-the-evidence-it-is-given.html:62` still tells the coordinator the sections \"write disjoint files and can run together\", but \u00a72 and \u00a74 both declare `reckon/crew/promotion_evidence.py` as a write path and `plan-section-depends-on` has \u00a74 depend on \u00a72."
+  },
+  "section_digests": {
+    "_document": "f2a441de328f42c505b525acc186fbe5ca4e0f961188094d2e92f4b70d4a83a3",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s2": "a959a624a38e9cf5e3ed9a00004b20d57261a7c64dcc742528e41faca5f85249",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "6b34455efa5ea745d1bf5093edebda7d474a87de71de654e6cdcc55114110fd6"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T23:28:43.143847+00:00"
+}
