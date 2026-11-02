@@ -5,7 +5,7 @@ import json
 import math
 import time
 from collections import Counter
-from collections.abc import Mapping, MutableMapping
+from collections.abc import Iterable, Mapping, MutableMapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -30,7 +30,7 @@ from reckon.crew.dispatch import (
     _dispatch_lane_gate,
     _lane_worker_allowance,
 )
-from reckon.crew.node import NodeValidation
+from reckon.crew.node import CrewError, NodeValidation
 from reckon.crew.review import REVIEW_DIMENSIONS
 
 from . import lane_context
@@ -570,6 +570,75 @@ def _context_block(
         "headroom_pct": headroom_pct,
         **utilisation,
     }
+
+
+def _candidate_field(candidate: Any, name: str) -> Any:
+    """One candidate attribute, read from a scan result or its exported mapping."""
+    if isinstance(candidate, Mapping):
+        return candidate.get(name)
+    return getattr(candidate, name, None)
+
+
+def candidate_window_tokens(candidate: Any) -> int | None:
+    """A candidate's own gating input window, or ``None`` when it declares none.
+
+    An absent window is unbounded, never zero: the backend accepts whatever it
+    is sent, so nothing gates it. A window that is present but malformed or
+    non-positive is a broken declaration rather than an absence. Reading it as
+    unbounded would rank it above every real window and place the request on a
+    lane whose capacity nobody stated, so it raises the refusal the router's own
+    fit check raises for the same declaration.
+    """
+    context = _candidate_field(candidate, "context")
+    if not isinstance(context, Mapping):
+        return None
+    window = context.get("window_tokens")
+    if window is None:
+        return None
+    backend = _candidate_field(candidate, "backend")
+    try:
+        figure = int(window)
+    except (TypeError, ValueError) as exc:
+        raise CrewError(
+            f"backend {backend!r} carries a non-integer input window {window!r}"
+        ) from exc
+    if figure <= 0:
+        raise CrewError(
+            f"backend {backend!r} carries a non-positive input window {figure}"
+        )
+    return figure
+
+
+def widest_fitting_candidate(
+    candidates: Iterable[Any],
+) -> Any | None:
+    """The lane an oversized request is moved to, when nothing names one.
+
+    Both paths that place such a request -- the admission pass and a dispatch
+    with no router answer -- choose through this one rule, so the same candidate
+    set resolves the same lane whichever path reads it. A candidate carrying any
+    reason is excluded: for a review that is where the role's withdrawn lanes
+    have already been removed, and a lane whose own window the request exceeds
+    carries the fit refusal itself. Among the rest the largest usable input
+    window wins. A candidate declaring no window is unbounded and ranks above
+    every declared figure, and ties break by backend name so two equally wide
+    lanes resolve the same way on every call.
+    """
+
+    def rank(candidate: Any) -> tuple[int, float, str]:
+        window = candidate_window_tokens(candidate)
+        return (
+            0 if window is None else 1,
+            -(window or 0),
+            str(_candidate_field(candidate, "backend") or ""),
+        )
+
+    usable = [
+        candidate
+        for candidate in candidates
+        if not _candidate_field(candidate, "reasons")
+    ]
+    return min(usable, key=rank) if usable else None
 
 
 def _lane(

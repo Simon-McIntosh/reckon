@@ -1088,13 +1088,13 @@ def _route_competence_refusal(
     """Ask the picker which lane fits a request its own lane refused, and move it.
 
     The pass does not judge fit itself: the picker's candidates have already run
-    the competence verdict per backend under the lifts in force, so the first
-    candidate that carries no exclusion is the lane whose window holds the
-    request. A destination this service launches is launched in the same pass;
-    any other leaves the request queued on that lane, named in an obligation.
-    Only when no lane fits does the request stay where it was, and the
-    obligation then names the shortfall in tokens rather than the lane's last
-    allowance.
+    the competence verdict per backend under the lifts in force, and the lane is
+    chosen by the same rule a dispatch with no router answer uses, so both paths
+    resolve one lane from one candidate set. A destination this service launches
+    is launched in the same pass; any other leaves the request queued on that
+    lane, named in an obligation. Only when no lane fits does the request stay
+    where it was, and the obligation then names the shortfall in tokens rather
+    than the lane's last allowance.
     """
     from reckon.crew.picker import snapshot as picker_snapshot
     from reckon.crew.picker.types import PickRequest
@@ -1116,10 +1116,14 @@ def _route_competence_refusal(
     )
     refused_backend = str(pointer.get("backend") or "")
     run_id = str(pointer["run_id"])
-    for candidate in picker_snapshot.candidates(request, config, repository):
-        destination = str(candidate.backend)
-        if destination == refused_backend or candidate.reasons:
-            continue
+    chosen = picker_snapshot.widest_fitting_candidate(
+        picker_snapshot.candidates(request, config, repository)
+    )
+    # The lane that refused the request is never the answer, even where the scan
+    # carries no reason for it: moving a request onto the lane it was refused by
+    # is not a move, and the shortfall below says what the reader has to clear.
+    if chosen is not None and str(chosen.backend) != refused_backend:
+        destination = str(chosen.backend)
         route = _candidate_route(config, destination)
         reason = (
             f"routed off {refused_backend or 'its lane'} after a context-fit "

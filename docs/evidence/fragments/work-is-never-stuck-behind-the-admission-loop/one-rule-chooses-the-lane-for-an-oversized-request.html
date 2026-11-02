@@ -1,0 +1,65 @@
+<section id="one-rule-chooses-the-lane-for-an-oversized-request" class="r-evidence" data-node="one-rule-chooses-the-lane-for-an-oversized-request">
+<h2 id="one-rule-chooses-the-lane-for-an-oversized-request-heading">One rule chooses the lane for an oversized request</h2>
+<p id="one-rule-chooses-the-lane-for-an-oversized-request-verdict">Two
+paths place a request too large for its own lane, and each chose for itself.
+The admission pass took the first candidate carrying no exclusion; a dispatch
+whose router answer never arrived took the widest. Neither read the same rule,
+so the same candidate set could resolve two different lanes. Dispatch's copy
+also read a malformed window as an absent one, ranking a broken declaration
+above every real window, and returned the oversized resolution unchanged when
+no candidate was usable — so a request no permitted lane holds went back onto
+the lane the fit check had just measured too small.</p>
+<p id="one-rule-chooses-the-lane-for-an-oversized-request-record">The rule is
+<code>picker.snapshot.widest_fitting_candidate</code>, and both paths call it.
+It reads a candidate either as the scan's dataclass or as the mapping dispatch
+exports, excludes any candidate carrying a reason, takes the largest usable
+input window, ranks an absent window as unbounded above every declared figure,
+and breaks ties by backend name so two equally wide lanes resolve the same way
+on every call. A window that is present but malformed or non-positive raises
+the refusal the router's own fit check raises for the same declaration, rather
+than reading as unbounded. <code>dispatch.py</code>'s private
+<code>_candidate_window</code> and <code>_widest_context_candidate</code> are
+gone. Where nothing fits, <code>_reroute_oversized_request</code> builds the
+refusal from the two figures it weighed —
+<code>_context_shortfall_refusal</code>, naming the estimate, the lane's
+window and the distance between them — and raises <code>CompetenceLimit</code>
+for every case instead of returning the resolution. The resolved lane's own
+verdict is still preferred where it refuses, so the live refusal and the dry
+run that previewed it carry one payload.</p>
+<p id="one-rule-chooses-the-lane-for-an-oversized-request-measure">Measured by
+<code>tests/test_one_rule_chooses_the_lane_for_an_oversized_request.py</code>,
+seven cases, driving routing's own <code>_context_fit_verdict</code> and
+<code>_competence_verdict</code> from a config that declares the windows and
+stubbing neither. The same candidates resolve the same lane on both paths, and
+it is the widest usable one: with alpha at 300,000 and beta at 400,000 tokens,
+dispatch moves the request to beta with
+<code>route_fallback {"from_backend": "clive", "to_backend": "beta", "reason":
+"context-fit"}</code> and the admission pass moves it to beta too. The figure
+the rule weighs is routing's, not the test's: the node's brief declares a
+700,000-byte input, and the candidate block reads 200,000 estimated tokens
+against clive's 230,144 window, while deleting that input from the same node
+leaves the request on its own lane. A window declared as <code>0</code> or
+<code>"not-a-number"</code> raises on both paths — dispatch exits non-zero with
+<code>dispatch-refused</code> naming the input window, admission raises
+<code>CrewError</code> — and the rule itself refuses such a candidate rather
+than ranking it. With no usable lane, dispatch exits 5 with
+<code>competence-refusal</code>, naming <code>context-window-exceeded</code>,
+the estimate above the window and the shortfall in its detail, creates no
+worktree and queues nothing; the case is built so the resolved lane's own
+verdict is satisfied while the request's estimate is not, which is exactly the
+disagreement that used to place the request. Gate: <strong>7 passed at
+head</strong>, and the two node files together <strong>11 passed,
+EXIT=0</strong>, with the two verdict stubs removed from
+<code>tests/test_a_request_too_large_for_local_is_never_placed_there.py</code>
+(4 passed).</p>
+<p id="one-rule-chooses-the-lane-for-an-oversized-request-controls">Negative
+controls, both applied and both reverted. Keeping admission's first-usable
+choice fails the first case: <em>1 failed, 6 passed, EXIT=1</em>, reading
+<code>AssertionError: assert 'alpha' == 'beta'</code> in
+<code>test_both_paths_move_the_request_to_the_widest_fitting_lane</code>.
+Restoring the unchanged-resolution return fails the third:
+<em>1 failed, 6 passed, EXIT=1</em>, reading <code>AssertionError: assert
+[(PosixPath('...'), 'session', 'unfittable', 'HEAD')] == []</code> in
+<code>test_no_usable_lane_refuses_with_the_shortfall_and_creates_no_worktree</code> — a
+worktree was created for a request nothing could hold.</p>
+</section>

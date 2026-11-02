@@ -573,41 +573,35 @@ def _gating_input_window(resolution: DispatchPlan, repo: Path) -> int | None:
     return int(verdict["window_tokens"])
 
 
-def _candidate_window(candidate: Mapping[str, Any]) -> int | None:
-    """A candidate's gating input window, or ``None`` when it declares none."""
-    context = candidate.get("context")
-    if not isinstance(context, Mapping):
-        return None
-    window = context.get("window_tokens")
-    try:
-        figure = int(window) if window is not None else None
-    except (TypeError, ValueError):
-        return None
-    return figure if figure and figure > 0 else None
+def _context_shortfall_refusal(
+    *, backend: str, estimate: int, window: int
+) -> dict[str, Any]:
+    """The refusal a request no permitted lane holds answers with.
 
-
-def _widest_context_candidate(
-    candidates: Iterable[Mapping[str, Any]],
-) -> Mapping[str, Any] | None:
-    """The fitting candidate with the largest usable input window.
-
-    A candidate carrying any reason is excluded — for a review, that is where
-    the role's withdrawn lanes have already been removed. A candidate declaring
-    no window is unbounded and ranks above every declared window, and ties break
-    by backend name so two equally wide lanes resolve the same way on every
-    call.
+    The window named is the resolved lane's own gating figure, the one the fit
+    check measured too small, and the shortfall is the distance from the
+    request's estimate to it: the figure the reader has to clear by splitting
+    the node or by declaring a wider lane.
     """
-
-    def rank(candidate: Mapping[str, Any]) -> tuple[int, int, str]:
-        window = _candidate_window(candidate)
-        return (
-            0 if window is None else 1,
-            -(window or 0),
-            str(candidate.get("backend") or ""),
-        )
-
-    fitting = [candidate for candidate in candidates if not candidate.get("reasons")]
-    return min(fitting, key=rank) if fitting else None
+    shortfall = max(0, estimate - window)
+    recommendation = format_refusal(
+        "D08",
+        "split the node or route it to a backend with at least "
+        f"{estimate} usable input tokens",
+    )
+    return {
+        "allowed": False,
+        "reason": "context-window-exceeded",
+        "detail": (
+            f"node context estimate {estimate} usable input tokens exceeds "
+            f"backend {backend!r}'s {window} token window by {shortfall} "
+            f"tokens; {recommendation}"
+        ),
+        "estimated_tokens": estimate,
+        "window_tokens": window,
+        "shortfall_tokens": shortfall,
+        "recommendation": recommendation,
+    }
 
 
 def _router_free_resolution(
@@ -696,15 +690,22 @@ def _reroute_oversized_request(
                 authority=authority,
             )
         ]
-    chosen = _widest_context_candidate(candidates)
+    chosen = picker_snapshot.widest_fitting_candidate(candidates)
     if chosen is None:
-        # Refuse through the same competence verdict the dispatch's own check
-        # builds, so the real refusal and the dry run that previewed it carry one
-        # payload rather than two descriptions of the same shortfall.
+        # No permitted lane holds it, so nothing may be placed anywhere: the
+        # request refuses with the shortfall rather than going back on the lane
+        # the check above just measured too small. The resolved lane's own
+        # verdict is preferred, so the refusal and the preview that states why
+        # the lane cannot run it carry one payload. That verdict measures the
+        # lane's instruction chain rather than the request's estimate, so it can
+        # be satisfied while the request is not; in that case the refusal is
+        # built from the two figures this check weighed.
         refusal = _competence_verdict(resolution=resolution, project=project, repo=repo)
-        if not refusal.get("allowed"):
-            raise CompetenceLimit(refusal)
-        return resolution, None
+        if refusal.get("allowed"):
+            refusal = _context_shortfall_refusal(
+                backend=resolution.backend, estimate=estimate, window=window
+            )
+        raise CompetenceLimit(refusal)
     chosen_backend = str(chosen.get("backend") or "")
     if not chosen_backend or chosen_backend == resolution.backend:
         return resolution, None
