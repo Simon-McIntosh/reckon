@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:_run_supervisor",
+    "reckon/crew/dispatch_launch.py:_supervisor_spawn_worker",
+    "reckon/crew/dispatch_launch.py:_spawn_worker_retrying_a_vanished_bind",
+    "reckon/crew/dispatch.py"
+  ],
+  "completed_at": "2026-10-29T13:19:17.134Z",
+  "dispatched_at": "2026-10-29T13:12:58Z",
+  "findings": [
+    {
+      "file": "tests/test_stop_before_spawn_spawns_nothing.py",
+      "id": "f011e64b61f",
+      "line": "834",
+      "severity": "non-blocking",
+      "text": "the assertion `exit_record.get(\"worker_pid\") == worker_pid` is vacuous \u2014 the wait at :810-816 returns a record only when it already carries that pid \u2014 so it states a property the wait enforces and would not redden on any change that leaves the wait in place."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "id": "f66749f31b2",
+      "line": "2696",
+      "severity": "non-blocking",
+      "text": "the worker-record payload is composed at two sites in one module \u2014 the new writer here and the post-watch block at :3835-3853 \u2014 so the two can drift in field set, and the later write immediately overwrites the early one; one helper should serve both."
+    },
+    {
+      "file": "logs/head-final-2-10.log",
+      "id": "fd045bd899d",
+      "line": "6",
+      "severity": "non-blocking",
+      "text": "the after arm's log ends `run 10 EXIT=0 8s` instead of the bare `EXIT=<code>` line the record contract names as where promotion reads a gate's status, so the head arm's receipt rests on the manifest's exit_status rather than on the log."
+    },
+    {
+      "file": "tests/test_stop_before_spawn_spawns_nothing.py",
+      "id": "f1b63ce4c58",
+      "line": "758",
+      "severity": "non-blocking",
+      "text": "with the repair reverted this case reddens only intermittently (the worker's own measurement: one failure in five at a fixture-repaired base), so it is a weak regression guard however green the ten head runs are; the thirty-second stub sleep against a thirty-second startup watch leaves the race undecided."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read commit by commit against c9aab06ac8; three files change by 90 insertions and 8 deletions \u2014 an on_spawn callback, a _worker_record_writer helper, an early spec[\"launched_at\"] assignment, the gate's marker moved to $TMPDIR, and the landing fragment.",
+    "done_when": "The done_when names tests/test_stop_before_spawn_spawns_nothing.py::test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit, ten serial passes at head and failure at base; the manifest's baseline_suite and after_suite record exactly that pair, with exit_status 1 and 0 and the same id in both.",
+    "goal": "The node's goal is that a group stop delivered after the spawn is recorded as that stop's exit even when the fenced worker survives the fence; reckon/crew/dispatch_launch.py:2780 now writes the run's worker record from inside the spawn retry via on_spawn=_worker_record_writer(spec), so the stop can reach a named worker inside the startup watch rather than after it.",
+    "manifest": "Read; it records four commits, the ten head runs, the base arm, the red negative control, and states one measured gap rather than glossing it: the full importer arm was not re-run at 24e802e691, only the 36 cases reaching the two changed private functions.",
+    "write_paths": "The declared write paths are reckon/crew/dispatch_launch.py, reckon/_worker_fence.py, reckon/crew/process_signal.py, tests/test_stop_before_spawn_spawns_nothing.py and the plan's fragment/figures paths; the diff touches dispatch_launch.py, the gate's test file and the landing fragment, all inside that set."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a group stop delivered after the spawn is recorded as that stop's exit even when the fenced worker survives the fence; reckon/crew/dispatch_launch.py:2780 now writes the run's worker record from inside the spawn retry via on_spawn=_worker_record_writer(spec), so the stop can reach a named worker inside the startup watch rather than after it.\nVERDICT done_when: The done_when names tests/test_stop_before_spawn_spawns_nothing.py::test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit, ten serial passes at head and failure at base; the manifest's baseline_suite and after_suite record exactly that pair, with exit_status 1 and 0 and the same id in both.\nVERDICT write_paths: The declared write paths are reckon/crew/dispatch_launch.py, reckon/_worker_fence.py, reckon/crew/process_signal.py, tests/test_stop_before_spawn_spawns_nothing.py and the plan's fragment/figures paths; the diff touches dispatch_launch.py, the gate's test file and the landing fragment, all inside that set, and the manifest's changed_paths names the same three.\nVERDICT manifest: Read; it records four commits (8d14de482f, 279180243e, 44d99de703, 24e802e691), the ten head runs, the base arm, the red negative control, and states one measured gap rather than glossing it: the full importer arm was not re-run at 24e802e691, only the 36 cases reaching the two changed private functions.\nVERDICT diff: Read commit by commit against c9aab06ac8; three files change by 90 insertions and 8 deletions \u2014 an on_spawn callback on _spawn_worker_retrying_a_vanished_bind, a _worker_record_writer helper, an early spec[\"launched_at\"] assignment in _run_supervisor, the gate's marker moved to $TMPDIR, and the landing fragment.\nCALL_SITES: reckon/crew/dispatch_launch.py:_run_supervisor (calls _supervisor_spawn_worker at 3798), reckon/crew/dispatch_launch.py:_supervisor_spawn_worker (calls _spawn_worker_retrying_a_vanished_bind at 2780 with on_spawn), reckon/crew/dispatch_launch.py:_spawn_worker_retrying_a_vanished_bind (calls on_spawn after each attempt at 1705 and 1729), reckon/crew/dispatch.py:3464 (re-exports WORKER_RECORD_NAME and the two seam functions from dispatch_launch)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2785 passes on_spawn=_worker_record_writer(spec) into the spawn retry, so worker.json exists before the startup watch at 1712-1725 can hold the launch, which is the mechanism the goal names.\nSCORE evidence: 14\nJUSTIFICATION evidence: The manifest's baseline_suite/after_suite pair (c9aab06ac8 exit 1, 24e802e691 exit 0) is backed by logs/base-arm-gate.log and logs/head-final-2-10.log, but the after arm's log ends `run 10 EXIT=0 8s` rather than a bare `EXIT=` line and the full importer arm was not re-run at head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: Every path in `git diff --stat c9aab06ac8 24e802e691` is inside the declared write paths, and no file the node was not fenced to write appears in the diff.\nSCORE durability: 11\nJUSTIFICATION durability: tests/test_stop_before_spawn_spawns_nothing.py:810-816 is the real guard, but the manifest's own figure for the un-repaired behaviour is one failure in five runs, so a regression reddens this case only intermittently; the explicit assertion at :834 can never fail because the wait at :810 already filtered on the same condition.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:2674 follows the module's existing helper idiom and docstring form, adds no module, and introduces no name the repository naming rules forbid.\nSCORE reuse: 11\nJUSTIFICATION reuse: reckon/crew/dispatch_launch.py:2696 reuses _write_attempt_artifact and _claim_registration_for_worker, but composes the same worker-record payload a second time beside the existing block at :3835-3853 instead of extracting it.\nFINDING tests/test_stop_before_spawn_spawns_nothing.py:834 non-blocking: the assertion `exit_record.get(\"worker_pid\") == worker_pid` is vacuous \u2014 the wait at :810-816 returns a record only when it already carries that pid \u2014 so it states a property the wait enforces and would not redden on any change that leaves the wait in place.\nFINDING reckon/crew/dispatch_launch.py:2696 non-blocking: the worker-record payload is composed at two sites in one module \u2014 the new writer here and the post-watch block at :3835-3853 \u2014 so the two can drift in field set, and the later write immediately overwrites the early one; one helper should serve both.\nFINDING logs/head-final-2-10.log:6 non-blocking: the after arm's log ends `run 10 EXIT=0 8s` instead of the bare `EXIT=<code>` line the record contract names as where promotion reads a gate's status, so the head arm's receipt rests on the manifest's exit_status rather than on the log.\nFINDING tests/test_stop_before_spawn_spawns_nothing.py:758 non-blocking: with the repair reverted this case reddens only intermittently (the worker's own measurement: one failure in five at a fixture-repaired base), so it is a weak regression guard however green the ten head runs are; the thirty-second stub sleep against a thirty-second startup watch leaves the race undecided.\n",
+  "review_brief": "independent review of a landed node",
+  "review_run_id": "r-20261029T130824260757-review-of-a-group-stop-reaches-the-fenced-worker-24e802e691dd",
+  "reviewed_base_sha": "c9aab06ac87de71d17d46c0cbe7645f69b7a870c",
+  "reviewed_head_sha": "24e802e691dda326f955d850454fc71d85c35c51",
+  "reviewed_run_id": "r-20261027T063529804270-a-group-stop-reaches-the-fenced-worker",
+  "scores": {
+    "durability": 11,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 11,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-02T21:24:10.961887+00:00",
+  "total": 89
+}
